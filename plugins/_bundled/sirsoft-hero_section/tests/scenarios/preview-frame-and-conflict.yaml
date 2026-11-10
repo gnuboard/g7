@@ -27,6 +27,7 @@ axes:
     - preview_frame_slot_inside_device_viewport
     - preview_frame_refreshes_after_layout_edit
     - preview_frame_layout_error_logged
+    - preview_frame_styles_ready
     - conflict_others_change_kept_by_default
     - conflict_both_changed_requires_choice
     - conflict_stale_image_not_resent
@@ -40,11 +41,13 @@ axes:
 
 effects:
   - preview_matches_site_slot
+  - preview_hidden_until_styles_ready
   - others_changes_not_overwritten
   - stale_image_id_never_resent
   - my_temp_images_preserved
   - my_media_change_not_dropped
   - long_text_not_lost
+  - preview_without_frame_uses_device_width   # 구좌 틀이 없거나 그 위치에 확장점이 없으면 기기 폭 전체에 그린다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/PreviewFrameResolverTest.php

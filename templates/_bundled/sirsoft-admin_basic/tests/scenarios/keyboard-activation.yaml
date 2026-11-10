@@ -1,0 +1,19 @@
+feature: 관리자 템플릿 — 눌러 쓰는 비단추 요소의 키보드 접근
+
+description: |
+  클릭만 받던 div, span 이 Tab 으로 닿지 않고 Enter, Space 로도 동작하지 않았다(#869, 설계 확정 2026-11-08 「전부 #869 에서 고침」).
+  부품이 클릭을 받을 때 의미에 맞는 role(button, menuitem), tabIndex(비활성은 -1 과 aria-disabled), Enter 와 Space 동작
+  (Space 의 스크롤 막기), 키보드 포커스 표시(focus-visible)를 준다. 공통 도우미는 support/keyboardActivation 이다.
+
+# axis 의미:
+#   element — 키보드 접근을 받는 부품 요소.
+axes:
+  element: [flex, grid, card, category_toggle, dropdown_item, menu_item, sortable_row, thumbnail_zoom, notification_item, search_suggestion, footer_link, tag_remove, multilingual_tag, profile_detail, version_option, grid_column_toggle, permission_scope_option]
+
+effects:
+  - clickable_element_keyboard_operable   # 클릭을 받는 비단추 요소가 Tab 으로 닿고 Enter, Space 로 같은 동작을 한다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/__tests__/keyboardActivation.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/__tests__/keyboardActivationShared.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/__tests__/keyboardActivationRest.test.tsx

@@ -656,6 +656,10 @@ abstract class BaseApiController extends Controller
      *                                 크기·건수가 유계가 아닌 통로는 `true` (형제 `PublicStorageController`
      *                                 와 같은 선언). 스트림 응답은 오늘 압축 경로를 지나지 않지만 그것은
      *                                 미들웨어가 응답 **클래스**를 보고 건너뛰는 우연이라, 계약은 선언으로 둔다
+     * @param  bool  $private  권한이 걸린 파일인지. `true` 면 공유 캐시(CDN·프록시)가 저장하지 못하게
+     *                         production 은 `private, max-age={n}`(immutable 없음), 그 외 환경은 `private, no-cache`.
+     *                         304 에도 같은 값을 싣는다. 비밀글 첨부·숨김 리뷰처럼 요청자마다 볼 수 있는지가 갈리는
+     *                         응답이 공유 캐시에 남으면 다음 방문자가 게이트 없이 받는다
      * @return StreamedResponse|Response 스트림 응답 또는 304
      */
     protected function streamedFileResponse(
@@ -665,7 +669,8 @@ abstract class BaseApiController extends Controller
         ?bool $immutable = null,
         ?int $lastModifiedAt = null,
         ?string $mimeType = null,
-        bool $skipCompression = false
+        bool $skipCompression = false,
+        bool $private = false
     ): StreamedResponse|Response {
         // 형제(`fileResponse`)와 같은 기본값 규칙 — `null` 이면 요청의 `?v=` 로 판정한다.
         $immutable ??= $this->requestCarriesAssetVersion();
@@ -725,6 +730,12 @@ abstract class BaseApiController extends Controller
         $cacheControl = app()->environment('production')
             ? $productionPolicy
             : 'no-cache';
+
+        if ($private) {
+            $cacheControl = app()->environment('production')
+                ? "private, max-age={$maxAge}"
+                : 'private, no-cache';
+        }
 
         $expires = gmdate('D, d M Y H:i:s', time() + $maxAge).' GMT';
         $lastModified = $lastModifiedAt !== null
@@ -823,6 +834,7 @@ abstract class BaseApiController extends Controller
      * @param  bool  $skipCompression  압축 미들웨어에서 제외할지 (형제 헬퍼와 같은 뜻)
      * @param  array<string, mixed>  $logContext  누락 로그에 실을 호출부 문맥 (hash·slug 등)
      * @param  string  $errorMessageKey  누락 시 500 응답의 메시지 키
+     * @param  bool  $private  권한이 걸린 파일인지 (형제 헬퍼와 같은 뜻 — 공유 캐시 저장 금지)
      * @return StreamedResponse|Response|JsonResponse 스트림·304 또는 메타 누락 시 500
      */
     protected function streamedFileResponseFromMeta(
@@ -831,7 +843,8 @@ abstract class BaseApiController extends Controller
         bool $immutable,
         bool $skipCompression,
         array $logContext = [],
-        string $errorMessageKey = 'errors.500.message'
+        string $errorMessageKey = 'errors.500.message',
+        bool $private = false
     ): StreamedResponse|Response|JsonResponse {
         $missing = FileServingMeta::missingKey($meta, requireMaxAge: $maxAge === null);
 
@@ -850,7 +863,8 @@ abstract class BaseApiController extends Controller
             immutable: $immutable,
             lastModifiedAt: $serving->lastModifiedAt,
             mimeType: $serving->mimeType,
-            skipCompression: $skipCompression
+            skipCompression: $skipCompression,
+            private: $private
         );
     }
 

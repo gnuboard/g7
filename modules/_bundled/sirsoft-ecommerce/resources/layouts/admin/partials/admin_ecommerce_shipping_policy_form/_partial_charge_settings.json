@@ -707,8 +707,15 @@
                             "id": "field_api_http_method",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:gap-4"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -886,8 +893,15 @@
                                     "comment": "후보 5종 체크박스 (자유 텍스트 대체 — silent drop 차단)",
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-2"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:gap-2"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2"
                                     },
                                     "children": [
                                         {

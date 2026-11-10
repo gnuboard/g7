@@ -5,15 +5,14 @@
  *
  * 토스트·모달·탭 줄 같은 관리자 템플릿 부품 없이 어느 관리자 템플릿에서나 뜨도록, 부품이 탭·저장 결과·확인 창을 직접 그린다.
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects settings_layout_saves_template_settings
- * @effects settings_tabs_per_section
- * @effects settings_reset_to_defaults
- * @effects read_only_without_settings_permission
+ * 효과: settings_layout_saves_template_settings
+ * 효과: settings_tabs_per_section
+ * 효과: settings_reset_to_defaults
+ * 효과: read_only_without_settings_permission
  */
 
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { TemplateSettingsScreen } from '../TemplateSettingsScreen';

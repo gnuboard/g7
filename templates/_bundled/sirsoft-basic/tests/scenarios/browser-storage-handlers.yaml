@@ -12,8 +12,10 @@ axes:
 
 effects:
   - cart_key_loaded_or_issued
+  - no_literal_null_cart_key_header                # 담기와 바로 구매는 키를 직접 싣지 않아, 키가 없으면 헤더를 싣지 않는다(globalHeaders 가 빈 값을 거름, #869)
   - storage_value_round_trips
   - guest_order_token_restored_or_preserved
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/handlers/__tests__/storageHandlers.test.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-cart-key-late.test.ts

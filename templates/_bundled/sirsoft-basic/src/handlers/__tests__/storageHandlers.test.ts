@@ -15,6 +15,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   initCartKeyHandler,
+  ensureCartKeyHandler,
   getCartKeyHandler,
   clearCartKeyHandler,
   regenerateCartKeyHandler,
@@ -215,7 +216,7 @@ describe('storageHandlers', () => {
     it('145 기존 cartKey가 있으면 API 호출 없이 로드한다', async () => {
       // Given
       mockG7Config.user = null;
-      mockLocalStorage.setItem('g7_cart_key', 'existing-cart-key');
+      mockLocalStorage.setItem('g7_cart_key', `ck_${'e'.repeat(32)}`);
       const fetchSpy = vi.spyOn(global, 'fetch');
 
       // When
@@ -223,7 +224,7 @@ describe('storageHandlers', () => {
 
       // Then
       expect(fetchSpy).not.toHaveBeenCalled();
-      expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: 'existing-cart-key' });
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: `ck_${'e'.repeat(32)}` });
     });
 
     // 146: 비로그인 — 기존 cartKey 없으면 백엔드 API 에서 발급
@@ -248,6 +249,99 @@ describe('storageHandlers', () => {
       );
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith('g7_cart_key', issuedKey);
       expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: issuedKey });
+    });
+
+    // 설계 확정 2026-11-10: 장바구니 키 발급 대기 상한(3초)을 걷어 출시본처럼 키가 올 때까지 기다린다
+    // @scenario storage=cart_key
+    // @effects cart_key_loaded_or_issued
+    it('발급 응답이 늦어도 올 때까지 기다린 뒤 그 키로 끝낸다(키 없이 먼저 끝내지 않는다)', async () => {
+      vi.useFakeTimers();
+      try {
+        let respond!: (value: any) => void;
+        vi.spyOn(global, 'fetch').mockImplementation(() => new Promise((resolve) => { respond = resolve; }) as any);
+
+        let done = false;
+        const run = initCartKeyHandler().then(() => { done = true; });
+        await vi.advanceTimersByTimeAsync(10_000);
+
+        expect(done).toBe(false);
+        expect(mockG7Core.state.set).not.toHaveBeenCalled();
+
+        const issued = `ck_${'w'.repeat(32)}`;
+        respond({ ok: true, json: async () => ({ data: { cart_key: issued } }) });
+        await run;
+
+        expect(mockLocalStorage.setItem).toHaveBeenCalledWith('g7_cart_key', issued);
+        expect(mockG7Core.state.set).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: issued });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_loaded_or_issued
+    it('ensureCartKey — 키가 없고 앞 발급이 실패했으면 다시 요청해 키를 싣는다', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch')
+        .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) } as any)
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { cart_key: 'ck_retry' } }) } as any);
+      fetchSpy.mockClear();
+
+      await initCartKeyHandler();
+      expect(mockG7Core.state.set).toHaveBeenLastCalledWith({ cartKey: null });
+
+      const key = await ensureCartKeyHandler();
+
+      expect(key).toBe('ck_retry');
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('g7_cart_key', 'ck_retry');
+      expect(mockG7Core.state.set).toHaveBeenLastCalledWith({ cartKey: 'ck_retry' });
+    });
+
+    // #869 ρ 8부 L1: 저장 키가 망가지면(서버 형식 ck_ + 영숫자 32자가 아님) 방문 내내 목록 조회가 형식 오류 400 을 받았다
+    // @scenario storage=cart_key
+    // @effects cart_key_loaded_or_issued
+    it('저장된 키가 서버 형식에 맞지 않으면 버리고 새로 발급받는다(initCartKey, ensureCartKey)', async () => {
+      const good = `ck_${'a'.repeat(32)}`;
+      const fresh = `ck_${'b'.repeat(32)}`;
+      mockLocalStorage.setItem('g7_cart_key', 'ck_broken');
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ data: { cart_key: good } }) } as any);
+      fetchSpy.mockClear();
+
+      await initCartKeyHandler();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(mockLocalStorage.setItem).toHaveBeenLastCalledWith('g7_cart_key', good);
+      expect(mockG7Core.state.set).toHaveBeenLastCalledWith({ cartKey: good });
+      expect(mockG7Core.state.set).not.toHaveBeenCalledWith({ cartKey: 'ck_broken' });
+
+      mockLocalStorage.setItem('g7_cart_key', 'not-a-key');
+      fetchSpy.mockResolvedValue({ ok: true, json: async () => ({ data: { cart_key: fresh } }) } as any);
+      const key = await ensureCartKeyHandler();
+
+      expect(key).toBe(fresh);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_loaded_or_issued
+    it('ensureCartKey — 저장된 키가 있으면 요청 없이 그 키를 싣는다', async () => {
+      mockLocalStorage.setItem('g7_cart_key', `ck_${'s'.repeat(32)}`);
+      const fetchSpy = vi.spyOn(global, 'fetch');
+      fetchSpy.mockClear();
+
+      const key = await ensureCartKeyHandler();
+
+      expect(key).toBe(`ck_${'s'.repeat(32)}`);
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: `ck_${'s'.repeat(32)}` });
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_loaded_or_issued
+    it('ensureCartKey 가 레이아웃에서 부를 이름으로 등록돼 있다', () => {
+      expect(typeof handlers.ensureCartKey).toBe('function');
+      expect(handlers.ensureCartKey).toBe(ensureCartKeyHandler);
     });
 
     // 147: 로그인 사용자도 cartKey 발급 경로는 동일 (API 헤더 포함 필요)

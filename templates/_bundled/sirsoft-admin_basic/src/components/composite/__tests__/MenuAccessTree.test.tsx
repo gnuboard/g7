@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
+import { describe, it, expect, vi, type Mock } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MenuAccessTree, MenuAccessNode } from '../MenuAccessTree';
 
@@ -48,17 +48,25 @@ const box = (label: string) => screen.getByRole('checkbox', { name: label }) as 
 
 const sorted = (ids: number[]) => [...ids].sort((a, b) => a - b);
 
+/** 관찰 함수가 마지막으로 받은 값 — 한 번도 불리지 않았으면 시험을 실패시킨다 */
+const lastValue = (fn: Mock<(v: number[]) => void>): number[] => {
+  const call = fn.mock.lastCall;
+  if (!call) throw new Error('onValue 가 한 번도 불리지 않았습니다');
+
+  return call[0];
+};
+
 describe('MenuAccessTree', () => {
   // @scenario entry=role_form_update, actor=super_admin, menu_shape=child_only
   // @effects parent_auto_included
   it('자식을 체크하면 부모도 체크되고 부모는 indeterminate 로 보인다', () => {
-    const onValue = vi.fn();
+    const onValue = vi.fn<(v: number[]) => void>();
     render(<Harness onValue={onValue} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'common.expand' }));
     fireEvent.click(box('회원 목록'));
 
-    expect(sorted(onValue.mock.calls.at(-1)[0])).toEqual([2, 3]);
+    expect(sorted(lastValue(onValue))).toEqual([2, 3]);
     expect(box('회원 관리').checked).toBe(true);
     expect(box('회원 관리').indeterminate).toBe(true);
     expect(screen.getByTestId('menu-access-count').textContent).toBe('2/5');
@@ -67,34 +75,34 @@ describe('MenuAccessTree', () => {
   // @scenario entry=role_form_update, actor=super_admin, menu_shape=parent_with_children
   // @effects children_auto_removed
   it('부모 체크는 자식 전체를, 부모 해제는 자식 전체를 함께 토글한다', () => {
-    const onValue = vi.fn();
+    const onValue = vi.fn<(v: number[]) => void>();
     render(<Harness onValue={onValue} />);
 
     fireEvent.click(box('회원 관리'));
-    expect(sorted(onValue.mock.calls.at(-1)[0])).toEqual([2, 3, 4]);
+    expect(sorted(lastValue(onValue))).toEqual([2, 3, 4]);
     expect(box('회원 관리').indeterminate).toBe(false);
 
     fireEvent.click(box('회원 관리'));
-    expect(onValue.mock.calls.at(-1)[0]).toEqual([]);
+    expect(lastValue(onValue)).toEqual([]);
   });
 
   // @scenario entry=role_form_update, actor=super_admin, menu_shape=inactive_extension
   // @effects invisible_assignment_preserved
   it('전체 선택·전체 해제는 트리 밖 ID(관리할 수 없는 메뉴)를 건드리지 않는다', () => {
-    const onValue = vi.fn();
+    const onValue = vi.fn<(v: number[]) => void>();
     render(<Harness initial={[99]} onValue={onValue} />);
 
     fireEvent.click(screen.getByText('admin.roles.form.menus_select_all'));
-    expect(sorted(onValue.mock.calls.at(-1)[0])).toEqual([1, 2, 3, 4, 5, 99]);
+    expect(sorted(lastValue(onValue))).toEqual([1, 2, 3, 4, 5, 99]);
 
     fireEvent.click(screen.getByText('admin.roles.form.menus_clear_all'));
-    expect(onValue.mock.calls.at(-1)[0]).toEqual([99]);
+    expect(lastValue(onValue)).toEqual([99]);
   });
 
   // @scenario entry=role_form_update, actor=super_admin, menu_shape=inactive_extension
   // @effects admin_role_locked
   it('lockedAll 이면 전부 체크된 읽기 전용이고 클릭해도 값이 바뀌지 않는다', () => {
-    const onValue = vi.fn();
+    const onValue = vi.fn<(v: number[]) => void>();
     render(<Harness lockedAll onValue={onValue} />);
 
     const boxes = screen.getAllByRole('checkbox') as HTMLInputElement[];

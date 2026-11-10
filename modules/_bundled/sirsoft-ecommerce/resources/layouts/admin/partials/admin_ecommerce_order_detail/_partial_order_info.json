@@ -406,6 +406,9 @@
                                                                 "if": "{{row.thumbnail_url}}",
                                                                 "props": {
                                                                     "src": "{{row.thumbnail_url}}",
+                                                                    "thumbPreset": "sm",
+                                                                    "loading": "lazy",
+                                                                    "decoding": "async",
                                                                     "alt": "{{row.product_name}}",
                                                                     "className": "ecommerce:w-14 ecommerce:h-14 ecommerce:object-cover ecommerce:rounded ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:border-blue-400 ecommerce:dark:hover:border-blue-500 ecommerce:transition-colors ecommerce:cursor-pointer"
                                                                 }
@@ -1373,8 +1376,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce-grid-2col-responsive"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                                     },
                                     "children": [
                                         {
@@ -1578,8 +1588,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce-grid-2col-responsive"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                                     },
                                     "children": [
                                         {
@@ -1754,8 +1771,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce-grid-2col-responsive"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                                     },
                                     "children": [
                                         {
@@ -1924,8 +1948,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce-grid-2col-responsive"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                                     },
                                     "children": [
                                         {

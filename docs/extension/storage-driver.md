@@ -30,6 +30,8 @@
 - [트러블슈팅](#트러블슈팅)
 - [S3 호환 스토리지 연결](#s3-호환-스토리지-연결)
 - [FAQ](#faq)
+- [썸네일 연동](#썸네일-연동)
+- [공개 자산 전용 디스크 분리](#공개-자산-전용-디스크-분리-직접-urlcdn-서빙)
 
 ---
 
@@ -336,7 +338,10 @@ $this->storage->put('backups', 'backup-2024-01-19.sql', $backupData);
 
 ## 예제 코드
 
-### 예제 1: 이미지 업로드 및 썸네일 생성
+### 예제 1: 이미지 업로드 (썸네일은 코어가 만든다)
+
+썸네일 파일을 확장이 직접 만들어 두지 않는다. 원본만 드라이버로 저장하면, 서빙 지점에 붙인 코어 썸네일 헬퍼가
+`?size=`·`?w=` 요청에 맞춰 만들고, 원본을 지우거나 덮어쓰면 파생본도 함께 지운다 — [썸네일 연동](#썸네일-연동).
 
 ```php
 <?php
@@ -344,46 +349,44 @@ $this->storage->put('backups', 'backup-2024-01-19.sql', $backupData);
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
-use Intervention\Image\Facades\Image;
+use Illuminate\Support\Str;
 
 class CategoryImageService
 {
     public function __construct(
         private CategoryImageRepositoryInterface $repository,
-        private StorageInterface $storage
+        private StorageInterface $storage,
+        private ImageResizer $imageResizer
     ) {}
 
     /**
-     * 이미지 업로드 및 썸네일 생성
+     * 이미지 업로드
      */
     public function upload(UploadedFile $file, int $categoryId): CategoryImage
     {
-        // 원본 이미지 저장
-        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-        $datePath = date('Y/m/d');
-        $path = "category/{$datePath}/{$storedFilename}";
+        // 환경설정 > 업로드의 최대 가로·세로를 적용한다 (엔진: 환경설정 > 드라이버 > 이미지 처리)
+        $this->imageResizer->resizeInPlace($file->getRealPath(), $file->getMimeType());
+        clearstatcache(true, $file->getRealPath());
+
+        $storedFilename = Str::uuid().'.'.strtolower($file->extension() ?: $file->getClientOriginalExtension());
+        $path = 'category/'.date('Y/m/d').'/'.$storedFilename;
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
-        // 썸네일 생성
-        $thumbnail = Image::make($file)->fit(300, 300)->encode('jpg', 80);
-        $thumbnailPath = "category/{$datePath}/thumb_{$storedFilename}";
-        $this->storage->put('images', $thumbnailPath, (string) $thumbnail);
-
-        // DB 레코드 생성
-        $disk = $this->storage->getDisk();
+        $size = @getimagesize($file->getRealPath()) ?: [null, null];
 
         return $this->repository->create([
             'category_id' => $categoryId,
             'path' => $path,
-            'thumbnail_path' => $thumbnailPath,
-            'disk' => $disk,
+            'disk' => $this->storage->getDisk(),
             // 브라우저가 바꿔 보낸 따옴표(%22)와 줄바꿈(%0D, %0A)을 되돌린 원래 이름
             'original_filename' => UploadedFileName::original($file),
-            'width' => getimagesize($file->getRealPath())[0],
-            'height' => getimagesize($file->getRealPath())[1],
+            'mime_type' => $file->getMimeType(),
+            'width' => $size[0],
+            'height' => $size[1],
         ]);
     }
 }
@@ -1685,6 +1688,26 @@ class AttachmentServiceTest extends TestCase
    ```
 
 ---
+
+## 썸네일 연동
+
+코어·모듈·플러그인 드라이버는 이미지 썸네일(코어 7.2.0)과 다음처럼 연동되어 있다. 계약 전체는 [이미지 썸네일](../backend/image-thumbnails.md).
+
+- **무효화는 저장소 계층이 자동으로 한다.** `put()` 이 이미 있는 래스터 이미지(jpg·jpeg·png·gif·webp·avif·bmp)를 덮어쓰거나
+  `delete()` 가 래스터 이미지를 지우면 그 원본의 파생본을 모든 썸네일 디스크에서 지운다. `deleteDirectory()`·`deleteAll()` 은
+  확장자와 무관하게 그 아래 파생본 전부를 지운다. 확장 코드가 할 일은 없다 — **드라이버를 거치기만 하면 된다.**
+  `Storage::disk()` 를 직접 쓰거나 `File::deleteDirectory()` 로 지우면 파생본이 남는다(드라이버 밖에서 확장 저장 디렉터리를 지울 때는
+  `app(\App\Thumbnails\ThumbnailStore::class)->purgeIdentifier($identifier)` 를 함께 부른다).
+- **원격 디스크 비용**: 래스터 이미지 `put()` 의 부가 원격 요청은 원격 썸네일 디스크가 하나일 때 많아야 2회다(있던 파생본의 삭제 요청은 뺀 수). 원본에 공개 주소(CDN)가 있으면 덮어쓰기 판정으로
+  파일 확인 요청(S3 `HeadObject`) 1회를 더하고, 썸네일 디스크가 원격(`s3`)이면 덮어쓸 때 파생본 디렉터리 조회 1회가 더 나간다.
+  원본에 공개 주소가 없으면 판정을 빼고 쓴 뒤 재확인만 한다 — 썸네일 디스크가 로컬이면 부가 원격 요청이 0, 원격이면 조회 1회다.
+  썸네일 기능을 끄면 put 의 파생본 연동을 건너뛴다(공개 주소가 있는 원본은 판정과 원본 CDN 무효화만). 끈 동안의 덮어쓰기로 남은
+  옛 파생본은 설정을 다시 켤 때 썸네일 디스크째 비운다. 삭제 연동은 꺼도 한다. 래스터가 아닌 원본(PDF 등)은 파생본 연동이 없고, 공개 주소가 있으면 덮어쓰기(판정 1회)·삭제 때 원본 주소 CDN 무효화만 한다. 자세한 표는 [이미지 썸네일](../backend/image-thumbnails.md#수명주기와-원본-변경-감지).
+- **원본 정보**: 세 드라이버는 `App\Contracts\Extension\ProvidesThumbnailSource` 를 구현한다. 서빙 지점은
+  `ThumbnailSource::fromStorage($storage->withDisk($row->disk), $category, $row->path, $row->mime_type, gated: …)` 로 원본을 만든다.
+  이 인터페이스가 없는 저장소(서드파티 구현)는 썸네일 없이 원본을 낸다.
+- **등록 시 미리 생성**: 규격에서 「등록 시 미리 생성」을 켜면, 드라이버 `put()` 직후 원본 제공자가 알아보는 경로의 이미지를 큐(sync 면 응답 뒤)로 만든다.
+- 파생본 키는 `thumbnails/{원본 disk}/{원본 전체 경로}/…` 라, 공개 썸네일 디스크로 `public`·`s3` 를 골라도 그 디스크의 원본 파일과 섞이지 않는다.
 
 ## 공개 자산 전용 디스크 분리 (직접 URL/CDN 서빙)
 

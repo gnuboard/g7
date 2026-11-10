@@ -15,7 +15,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import {
@@ -34,6 +33,8 @@ const autoBlock = {
 };
 
 describe('flatten/nest 직렬화', () => {
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_flatten_nested_to_dot_path_rows
   it('중첩 → 점 경로 평탄(@type/@context 제외)', () => {
     const flat = flattenStructured(autoBlock);
     const keys = flat.map((r) => r.key);
@@ -42,6 +43,8 @@ describe('flatten/nest 직렬화', () => {
     expect(keys).not.toContain('@type');
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_nest_dot_path_rows_back_to_object
   it('점 경로 평탄 + @type → 중첩 복원(offers.price → {offers:{price}})', () => {
     const nested = nestStructured('Product', [
       { key: 'name', value: 'X' },
@@ -53,6 +56,8 @@ describe('flatten/nest 직렬화', () => {
 });
 
 describe('SeoStructuredDataEditor — 4상태', () => {
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_off_shows_auto_block_readonly_with_warning
   it('① OFF(자동): 모듈 자동 블록 읽기전용 + 사전 경고', () => {
     render(<SeoStructuredDataEditor value={null} onChange={vi.fn()} autoBlock={autoBlock} pageType="product" t={t} />);
     expect(screen.getByTestId('g7le-seo-sd-auto-preview')).toBeInTheDocument();
@@ -63,6 +68,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
     expect(screen.getByTestId('g7le-seo-sd-mode')).toHaveAttribute('aria-checked', 'false');
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_on_seeds_module_auto_block
   it('② ON 전환(자동 블록 有, 레이아웃 선언 無): 모듈 자동값을 자동 시드', () => {
     const onChange = vi.fn();
     render(<SeoStructuredDataEditor value={null} onChange={onChange} autoBlock={autoBlock} t={t} />);
@@ -79,6 +86,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
     expect(onChange.mock.calls[onChange.mock.calls.length - 1][0]['@type']).toBe('Recipe');
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_on_without_auto_block_starts_empty_type
   it('② ON 전환(자동 블록 無): 빈 @type 블록(시드할 모듈값 없음)', () => {
     const onChange = vi.fn();
     render(<SeoStructuredDataEditor value={null} onChange={onChange} t={t} />);
@@ -86,6 +95,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
     expect(onChange).toHaveBeenLastCalledWith({ '@type': 'WebPage' });
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_add_dot_path_property_patches_nested
   it('② 점 경로 속성 추가 → 중첩 복원 onChange', () => {
     const onChange = vi.fn();
     render(<SeoStructuredDataEditor value={{ '@type': 'WebPage' }} onChange={onChange} t={t} />);
@@ -97,6 +108,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
     expect((last.breadcrumb as Record<string, unknown>)['0']).toBe('');
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_seed_from_module_copies_auto_block
   it('③ "모듈 자동값 불러와 시작" → 모듈 블록 복사 시드', () => {
     const onChange = vi.fn();
     render(<SeoStructuredDataEditor value={{ '@type': 'WebPage' }} onChange={onChange} autoBlock={autoBlock} t={t} />);
@@ -107,6 +120,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
     expect((last.offers as Record<string, unknown>).price).toBe('{{product.data.price}}');
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_existing_declaration_opens_toggle_on
   it('④ 진입 시 structured_data 선언 있으면 토글 ON', () => {
     render(<SeoStructuredDataEditor value={{ '@type': 'Article', headline: 'X' }} onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-seo-sd-mode')).toHaveAttribute('aria-checked', 'true');
@@ -114,6 +129,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
     expect((screen.getByTestId('g7le-seo-sd-type') as HTMLInputElement).value).toBe('Article');
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_filter_lock_hides_toggle_shows_filtered
   it('⑤ filter 잠김 → 토글 부재 + filteredBlock 읽기전용', () => {
     const filteredBlock = { '@type': 'Product', name: '{{product.data.name}}' };
     render(
@@ -126,6 +143,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
     expect(screen.queryByTestId('g7le-seo-sd-mode')).not.toBeInTheDocument();
   });
 
+  // @scenario area=seo_structured_data
+  // @effects seo_sd_empty_value_row_shows_not_rendered_note
   it('⑥ 빈 값 항목 → "노출 안 됨" 안내(빈 값 경고)', () => {
     render(<SeoStructuredDataEditor value={{ '@type': 'WebPage', name: '' }} onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-seo-sd-empty-note')).toBeInTheDocument();
@@ -138,6 +157,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
       'offers.price': { expr: '{{product.data.selling_price}}', label: '판매가' },
     };
 
+    // @scenario area=seo_structured_data
+    // @effects structured_auto_block_rows_render_link_chip_from_auto_meta
     it('OFF 자동 미리보기 — autoMeta 있는 속성은 평문 대신 "상품 이름" 연결 칩', () => {
       render(<SeoStructuredDataEditor value={null} onChange={vi.fn()} autoBlock={autoBlock} autoMeta={autoMeta} pageType="product" t={t} />);
       const nameChip = screen.getByTestId('g7le-seo-sd-auto-chip-name');
@@ -146,6 +167,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
       expect(screen.getByTestId('g7le-seo-sd-auto-chip-offers.price')).toHaveTextContent('판매가');
     });
 
+    // @scenario area=seo_structured_data
+    // @effects seo_sd_without_auto_meta_keeps_plain_auto_rows
     it('회귀: autoMeta 없으면 종전 평문 행 유지(칩 미노출)', () => {
       render(<SeoStructuredDataEditor value={null} onChange={vi.fn()} autoBlock={autoBlock} pageType="product" t={t} />);
       // autoMeta 미전달 → 칩 미노출, 자동 행은 평문으로 그대로.
@@ -155,6 +178,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
 
     // "직접 지정"으로 켜니 raw 평문이 나옴 → autoMeta 있는 키는 데이터 경로(expr)로 시드돼야.
     // autoBlock 은 resolve 된 평문(production 에서 모든 상품에 그 값이 박힘) — 시드값은 데이터 연결이어야 한다.
+    // @scenario area=seo_structured_data
+    // @effects seo_sd_on_seed_uses_auto_meta_expr_not_text
     it('ON 시드 — autoMeta 있는 키는 평문(autoBlock) 아닌 데이터 경로(expr)로 시드', () => {
       // autoBlock 은 resolve 된 평문, autoMeta 는 데이터 경로.
       const resolvedAutoBlock = { '@type': 'Product', name: '베이직 오버핏 티셔츠', offers: { price: '23200' } };
@@ -179,6 +204,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
       expect(seeded.name).not.toBe('베이직 오버핏 티셔츠');
     });
 
+    // @scenario area=seo_structured_data
+    // @effects seo_sd_on_seed_keeps_plain_for_keys_without_meta
     it('ON 시드 — autoMeta 없는 키는 종전대로 autoBlock 평문 시드(하위호환)', () => {
       // sku 는 autoMeta 에 없음 → autoBlock 평문 유지.
       const resolvedAutoBlock = { '@type': 'Product', name: '티셔츠', sku: 'TS-1001' };
@@ -193,6 +220,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
       expect(seeded.sku).toBe('TS-1001'); // 메타 없음 → 평문 유지.
     });
 
+    // @scenario area=seo_structured_data
+    // @effects seo_sd_seeded_meta_row_value_renders_as_chip
     it('ON 시드 후 그 행 값은 DataChipValueInput 으로 칩 렌더(데이터 경로라 칩)', () => {
       const resolvedAutoBlock = { '@type': 'Product', name: '베이직 티셔츠' };
       render(
@@ -203,6 +232,8 @@ describe('SeoStructuredDataEditor — 4상태', () => {
       expect(screen.getByTestId('g7le-seo-sd-manual')).toBeInTheDocument();
       // 행 값에 resolve 된 평문이 그대로 박혀 있지 않아야 한다(칩/경로로 전환).
       expect(screen.queryByDisplayValue('베이직 티셔츠')).not.toBeInTheDocument();
+      // 시험 이름의 본 단언: 시드된 데이터 경로 행은 값 입력기가 연결 칩(단일 바인딩 칩 필드)으로 그린다.
+      expect(screen.getAllByTestId(/^g7le-seo-sd-prop-value-.+-chip$/).length).toBeGreaterThan(0);
     });
   });
 });

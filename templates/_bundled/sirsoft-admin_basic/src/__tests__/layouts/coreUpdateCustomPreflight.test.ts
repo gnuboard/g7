@@ -20,7 +20,7 @@ describe('코어 업데이트 확인 결과 창 — custom 사전 검사 중단 
   it('영역은 custom_preflight 기록이 있을 때만 보인다', () => {
     const section = nodeById(modal, 'custom_preflight_section');
     expect(section, '영역 노드').toBeTruthy();
-    const cond = String(section?.if ?? '').replace(/^\{\{|\}\}$/g, '').replaceAll('$parent._local', 'parentLocal');
+    const cond = String(section?.if ?? '').replace(/^\{\{|\}\}$/g, '').replace(/\$parent\._local/g, 'parentLocal');
 
     expect(evaluateSafeExpression(cond, { parentLocal: { coreUpdateInfo: { custom_preflight: null } } })).toBe(false);
     expect(evaluateSafeExpression(cond, { parentLocal: { coreUpdateInfo: { custom_preflight: { conflicts: [] } } } })).toBe(true);
@@ -28,7 +28,7 @@ describe('코어 업데이트 확인 결과 창 — custom 사전 검사 중단 
 
     // 「개발자 패키지 N개가 맞지 않습니다」 안내는 충돌이 있을 때만 — 예약 자리 파일만으로 멈췄으면 0개 문장을 쓰지 않는다
     const desc = collectObjects(section).find((o) => typeof o.text === 'string' && String(o.text).startsWith('$t:admin.settings.info.custom_preflight_desc'));
-    const descCond = String(desc?.if ?? '').replace(/^\{\{|\}\}$/g, '').replaceAll('$parent._local', 'parentLocal');
+    const descCond = String(desc?.if ?? '').replace(/^\{\{|\}\}$/g, '').replace(/\$parent\._local/g, 'parentLocal');
     expect(evaluateSafeExpression(descCond, { parentLocal: { coreUpdateInfo: { custom_preflight: { conflicts: [], reserved_files: ['routes/custom.php'] } } } })).toBe(false);
     expect(evaluateSafeExpression(descCond, { parentLocal: { coreUpdateInfo: { custom_preflight: { conflicts: [{ package: 'a/b' }] } } } })).toBe(true);
   });

@@ -9,7 +9,97 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.claim.bulk.confirm_title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "id": "cbc_005_cancel_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isProcessing}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.claim.bulk.confirm_cancel"
+                    }
+                ]
+            },
+            {
+                "comment": "[변경] — 고른 신청서를 한꺼번에 전이한다. 부분 성공 계약이라 게이트에 막힌 건은 건너뛰고 성공·결제 요청으로 돌려진 건·건너뛴 건을 나눠 알린 뒤, 목록의 선택과 상태 셀렉트를 비우고 목록을 다시 부른다.",
+                "id": "cbc_006_apply_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isProcessing": true
+                                }
+                            },
+                            {
+                                "comment": "onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다.",
+                                "handler": "sirsoft-ecommerce.executeClaimBulkAction",
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": false
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isProcessing}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.claim.bulk.confirm_apply'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -241,103 +331,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "id": "cbc_005_cancel_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isProcessing}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.claim.bulk.confirm_cancel"
-                        }
-                    ]
-                },
-                {
-                    "comment": "[변경] — 고른 신청서를 한꺼번에 전이한다. 부분 성공 계약이라 게이트에 막힌 건은 건너뛰고 성공·결제 요청으로 돌려진 건·건너뛴 건을 나눠 알린 뒤, 목록의 선택과 상태 셀렉트를 비우고 목록을 다시 부른다.",
-                    "id": "cbc_006_apply_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isProcessing": true
-                                    }
-                                },
-                                {
-                                    "comment": "onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다.",
-                                    "handler": "sirsoft-ecommerce.executeClaimBulkAction",
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isProcessing": false
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isProcessing}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "ecommerce-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.claim.bulk.confirm_apply'}}"
                         }
                     ]
                 }

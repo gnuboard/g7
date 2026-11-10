@@ -25,7 +25,8 @@
     </div>
     <!-- 게시글 옵션 (공지사항/비밀글) — 공지는 게시판 관리 또는 공지 등록 권한, 비밀글은 게시판 비밀글 모드가 켜진 경우에만 카드가 생긴다 -->
     <div data-if="{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4">
+        <responsive on="768-" class="grid grid-cols-2 gap-4"/>
         <!-- 공지사항 카드 (게시판 관리 권한 또는 공지 등록 권한 보유자 전용 — 서버도 같은 권한으로 판정한다) -->
         <label data-if="{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) &amp;&amp; !_local.form?.parent_id}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <div class="flex items-start gap-3">
@@ -69,7 +70,8 @@
       </div>
     </div>
     <!-- 비회원 작성자 정보 입력 (이름/비밀번호) - 신규 작성 시에만 표시 (비로그인 + 수정모드가 아닐 때) -->
-    <div data-if="{{form_meta?.data &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div data-if="{{form_meta?.data &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" class="grid grid-cols-1 gap-4">
+      <responsive on="640-" class="grid grid-cols-2 gap-4"/>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:board.guest_author_name</span>
@@ -179,7 +181,11 @@
           <sequence>
             <set-state target="local" :isSaving="true" :errors="null"/>
             <emit-event event="upload:board_attachments"/>
-            <api-call target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
+            <set-state target="local" uploadFailedCount="{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
+            <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다. -->
+            <set-state if="{{(_local.uploadFailedCount ?? 0) > 0}}" target="local" :isSaving="false"/>
+            <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
+            <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
               <success>
                 <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
                 <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>

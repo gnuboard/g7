@@ -10,7 +10,7 @@
     <div class="gdpr-alert-danger">
       <p class="gdpr-text-error-soft">$t:sirsoft-gdpr.notification_definitions.reset_modal.warning_message</p>
     </div>
-    <div class="gdpr-modal-footer-buttons">
+    <footer>
       <button type="button" class="gdpr:px-4 gdpr:py-2 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded-lg gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <close-modal target="modal_gdpr_notification_definition_reset"/>
@@ -39,6 +39,6 @@
         <icon data-if="{{_global.isResettingNotification}}" name="spinner" class="gdpr-spinner-sm"/>
         <span>{{_global.isResettingNotification ? '$t:sirsoft-gdpr.notification_definitions.reset_modal.btn_confirming' : '$t:sirsoft-gdpr.notification_definitions.reset_modal.btn_confirm'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -139,7 +139,8 @@
         </button>
       </div>
       <div data-ref="lp_filter_group" class="flex-center gap-3 flex-wrap">
-      <select data-ref="lp_filter_scope" aria-label="$t:admin.language_packs.columns.scope" data-if="{{!_local.scopeLocked}}" value="{{query.scope ?? ''}}" class="w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
+      <select data-ref="lp_filter_scope" aria-label="$t:admin.language_packs.columns.scope" data-if="{{!_local.scopeLocked}}" value="{{query.scope ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
+        <responsive on="640-" class="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"/>
         <options>
           <option value="">$t:admin.language_packs.filter.all_scopes</option>
           <option value="core">$t:admin.language_packs.scope.core</option>
@@ -158,7 +159,8 @@
           </navigate>
         </on>
       </select>
-      <select data-ref="lp_filter_status" aria-label="$t:admin.language_packs.columns.status" value="{{query.status ?? ''}}" class="w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
+      <select data-ref="lp_filter_status" aria-label="$t:admin.language_packs.columns.status" value="{{query.status ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100">
+        <responsive on="640-" class="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"/>
         <options>
           <option value="">$t:admin.language_packs.filter.all_statuses</option>
           <option value="active">$t:admin.language_packs.status.active</option>

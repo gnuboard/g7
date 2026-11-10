@@ -51,7 +51,7 @@ function createCapturingCoreApi(sent: SentRequest[], body: Record<string, unknow
 
 const ORIGIN = 'http://localhost:3000';
 
-const mockUser: User = { name: 'John Doe', email: 'john@example.com', role: 'Administrator' };
+const mockUser: User = { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Administrator' };
 
 describe('UserProfile — 로그아웃 요청·이동 대상 출처', () => {
   const originalLocation = window.location;

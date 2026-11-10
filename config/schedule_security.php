@@ -113,6 +113,10 @@ return [
             'privacy:process-dormant' => ['options' => ['dry-run', 'scheduled']],
             // 비밀번호 만료(#736) — 토글은 커맨드가 재확인하고, 옵션은 건수 확인·기록용뿐이다.
             'auth:process-password-expiry' => ['options' => ['dry-run', 'scheduled']],
+            // 썸네일 정리(#869) — 지우는 것은 다시 만들 수 있는 파생본뿐이고 원본은 건드리지 않는다.
+            // 미리 만들기는 원본 수만큼 이미지 처리를 돌리는 무거운 작업이라 운영자가 고른 시각에만 돌도록 예약을 허용한다.
+            'thumbnails:prune' => ['options' => ['dry-run', 'days', 'scheduled']],
+            'thumbnails:pregenerate' => ['options' => ['source', 'preset', 'limit', 'dry-run']],
 
             // 방문자 통계 — 집계·정리·점검은 비파괴이거나 서비스가 하한을 소유한다.
             // 전체 삭제(analytics:purge)·소급 익명화(analytics:anonymize)·확장 통계 정리

@@ -272,7 +272,10 @@ describe('Exchange rate history controls', () => {
    * @effects admin_ui_contract */
   it('갱신 일정 블록이 전체 폭이고 공통 안내 상자에 실행 요일·시각의 분담과 스케줄 관리 링크를 담는다', () => {
     const block=nodes(form).find((n:any)=>n.id==='koreaexim_schedule_block');
-    expect(String(block.props?.className)).toMatch(/\bmd:col-span-2\b/);
+    // 768px 이상에서 두 칸을 차지한다 — 엔진 responsive 의 768 이상 구간 클래스로 적는다(Tailwind 반응형 접두를 쓰지 않는다).
+    expect(String(block.props?.className)).not.toMatch(/col-span-2/);
+    const wide=Object.entries(block.responsive??{}).find(([k])=>/^768-$/.test(k)) as [string, any]|undefined;
+    expect(String(wide?.[1]?.props?.className)).toMatch(/(^|\s)koreaexim:col-span-2(\s|$)/);
     const notice=nodes(block).find((n:any)=>n.id==='koreaexim_schedule_notice');
     expect(notice).toBeTruthy();
     expect(notice.props.className).toContain('alert-info');

@@ -102,8 +102,20 @@
             "type": "basic",
             "name": "Div",
             "if": "{{searchResults?.data?.products?.length > 0}}",
+            "responsive": {
+                "640-1023": {
+                    "props": {
+                        "className": "p-4 grid gap-3 grid-cols-3"
+                    }
+                },
+                "desktop": {
+                    "props": {
+                        "className": "p-4 grid gap-3 grid-cols-5"
+                    }
+                }
+            },
             "props": {
-                "className": "p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+                "className": "p-4 grid grid-cols-2 gap-3"
             },
             "children": [
                 {

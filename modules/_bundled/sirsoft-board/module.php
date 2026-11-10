@@ -31,6 +31,7 @@ use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardRegenerateListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
+use Modules\Sirsoft\Board\Listeners\ThumbnailServingListener;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
 use Modules\Sirsoft\Board\Listeners\UserReactionInfoListener;
 use Modules\Sirsoft\Board\Listeners\UserScrapInfoListener;
@@ -605,6 +606,8 @@ class Module extends AbstractModule
             ProvideNecessaryStorageKeysListener::class,
             // 스코프 강제 지점 원장 — 감사 전용(런타임 동작 무변경), #789
             BoardScopeLedgerListener::class,
+            // 첨부 미리보기를 코어 이미지 썸네일의 서빙 경로·원본 제공자로 등록 (#869)
+            ThumbnailServingListener::class,
         ];
     }
 

@@ -175,7 +175,13 @@ describe('순서 변경 모달 — 옮기기', () => {
         expect(row.props.className).toContain("row.is_active ? 'board:text-gray-900 board:dark:text-gray-100' : 'board:text-gray-400 board:dark:text-gray-500'");
 
         const handle = find(list, byTestId('board-reorder-drag-'))!;
-        expect(handle.props.className).toContain('board:hidden board-hidden board:md:flex');
+        // 좁은 화면(768 미만)은 숨기고, 768 이상은 엔진 responsive 로 보인다
+        expect(handle.props.className).toContain('board:hidden board-hidden');
+        expect(handle.props.className).not.toMatch(/(^|\s)board:(sm|md|lg|xl|2xl):/);
+        const wideHandle = String(handle.responsive?.['768-']?.props?.className).split(/\s+/);
+        expect(wideHandle).toContain('board:flex');
+        expect(wideHandle).not.toContain('board:hidden');
+        expect(wideHandle).not.toContain('board-hidden');
         expect(handle.props['aria-hidden']).toBe('true');
         // 이름은 `$t()` 식의 인자로 넘긴다 — `$t:키|name={{row.name}}` 꼴은 이름의 `&`(예: Q&A)에서 인자가 잘린다(실측 「Q 위로 옮기기」)
         const t = (key: string, params: Record<string, string>) => `${key}:${params.name}`;

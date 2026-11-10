@@ -203,6 +203,7 @@ return [
         'unregistered_handler' => '登録されていないハンドラーです: :handler — コア·テンプレート·拡張のどこにもありません。',
         'nesting_violation' => ':parent は子として :child を受け取るように宣言されていません。',
         'responsive_breakpoint_mix' => 'portable プリセットと mobile/tablet プリセットを一緒に使用しました — 範囲が重なっており予測が困難です。',
+        'responsive_open_range_overlap' => ':name の responsive 区間 :keys が同じ幅で同時に一致します — エンジンはそのうち一つだけを選び(カスタム区間がプリセットより、狭い区間が広い区間より優先され、上限のない区間同士では先に書いたもの)、そのキーの値だけを既定値の上に上書きするため、他のキーの値はその幅では使われません。重ならない閉じた区間に分け、上限のない区間は最上位の一つだけにしてください(例: 768-1023, 1024-)。',
         'standalone_missing_global_host' => '独立レイアウトが :handler を発火していますが、そのグローバル状態(:state)を受け取る場所がありません — 画面に表示されません。extends でベースレイアウトを継承するか、その状態を受け取るコンポーネントを配置してください。',
         'switch_value_not_consumed' => '<switch value="…"> はエンジンが読み込みません — 分岐対象は <switch on="…"> で記述する必要があり、params.value に渡されます。',
         'set_state_underscore_global_target' => 'setState の target="_global" はグローバルではなくローカル状態に書き込みます — グローバル状態には target="global" と記述してください。',

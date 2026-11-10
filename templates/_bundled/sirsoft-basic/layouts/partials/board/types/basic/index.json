@@ -65,8 +65,15 @@
             "comment": "필터 바 (카테고리 필터 + 검색)",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "flex flex-row items-center justify-between gap-3 mb-4"
+                    }
+                }
+            },
             "props": {
-                "className": "flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4"
+                "className": "flex flex-col items-stretch justify-between gap-3 mb-4"
             },
             "children": [
                 {
@@ -74,6 +81,13 @@
                     "type": "basic",
                     "name": "Select",
                     "if": "{{posts?.data?.board?.categories && posts?.data?.board?.categories.length > 0}}",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "w-auto min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"
+                            }
+                        }
+                    },
                     "actions": [
                         {
                             "type": "change",
@@ -91,7 +105,7 @@
                     "props": {
                         "aria-label": "$t:board.form.category",
                         "value": "{{query.category || 'all'}}",
-                        "className": "w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm",
+                        "className": "w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm",
                         "options": "{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}"
                     }
                 },
@@ -138,8 +152,15 @@
                     "comment": "검색 줄 (오른쪽 정렬) — 검색 대상 셀렉트 + 검색 바. 셀렉트는 담아만 두고(_local.boardSearchField) 제출 시 URL 의 search_field 로 옮긴다. URL 에 값이 있으면 그것이 초기값이라 뒤로가기·링크 공유에서 고른 대상이 그대로 살아난다",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "w-auto ml-auto flex gap-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "w-full sm:w-auto sm:ml-auto flex gap-2"
+                        "className": "w-full flex gap-2"
                     },
                     "children": [
                         {
@@ -184,6 +205,13 @@
                         {
                             "type": "composite",
                             "name": "SearchBar",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-64"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어와 검색 대상만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다.",
@@ -205,7 +233,7 @@
                                 "placeholder": "$t:board.search_placeholder",
                                 "value": "{{query.search || ''}}",
                                 "showButton": false,
-                                "className": "w-full sm:w-64"
+                                "className": "w-full"
                             }
                         }
                     ]
@@ -228,8 +256,15 @@
                             "comment": "테이블 헤더 (데스크톱)",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "grid {{posts?.data?.board?.settings?.show_view_count !== false ? 'grid-cols-[60px_minmax(300px,1fr)_160px_100px_70px]' : 'grid-cols-[60px_minmax(300px,1fr)_160px_100px]'}} gap-4 px-4 py-3 bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 font-medium text-sm text-gray-700 dark:text-gray-300"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "hidden lg:grid {{posts?.data?.board?.settings?.show_view_count !== false ? 'grid-cols-[60px_minmax(300px,1fr)_160px_100px_70px]' : 'grid-cols-[60px_minmax(300px,1fr)_160px_100px]'}} gap-4 px-4 py-3 bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 font-medium text-sm text-gray-700 dark:text-gray-300"
+                                "className": "hidden {{posts?.data?.board?.settings?.show_view_count !== false ? 'grid-cols-[60px_minmax(300px,1fr)_160px_100px_70px]' : 'grid-cols-[60px_minmax(300px,1fr)_160px_100px]'}} gap-4 px-4 py-3 bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 font-medium text-sm text-gray-700 dark:text-gray-300"
                             },
                             "children": [
                                 {
@@ -311,8 +346,15 @@
                                             "comment": "데스크톱: 테이블 행",
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "desktop": {
+                                                    "props": {
+                                                        "className": "grid {{posts?.data?.board?.settings?.show_view_count !== false ? 'grid-cols-[60px_minmax(300px,1fr)_160px_100px_70px]' : 'grid-cols-[60px_minmax(300px,1fr)_160px_100px]'}} gap-4 px-4 py-3 items-center"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "hidden lg:grid {{posts?.data?.board?.settings?.show_view_count !== false ? 'grid-cols-[60px_minmax(300px,1fr)_160px_100px_70px]' : 'grid-cols-[60px_minmax(300px,1fr)_160px_100px]'}} gap-4 px-4 py-3 items-center"
+                                                "className": "hidden {{posts?.data?.board?.settings?.show_view_count !== false ? 'grid-cols-[60px_minmax(300px,1fr)_160px_100px_70px]' : 'grid-cols-[60px_minmax(300px,1fr)_160px_100px]'}} gap-4 px-4 py-3 items-center"
                                             },
                                             "children": [
                                                 {
@@ -555,8 +597,15 @@
                                             "comment": "모바일: 카드 형태",
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "desktop": {
+                                                    "props": {
+                                                        "className": "flex-col gap-2 px-4 py-3 hidden"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "flex flex-col gap-2 px-4 py-3 lg:hidden"
+                                                "className": "flex flex-col gap-2 px-4 py-3"
                                             },
                                             "children": [
                                                 {

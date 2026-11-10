@@ -24,6 +24,7 @@
 
 import type { OverlayBox } from '../utils/overlayGeometry';
 import { detectContainerLayoutFlow, boxIntersectsFrame } from '../utils/overlayGeometry';
+import { EDITOR_PROP_SLOTS } from '../utils/layoutTreeUtils';
 
 /** 슬롯 id 인코딩: `slot:<containerPath>:<index>` (containerPath '' = 루트) */
 export type DropSlotKind = 'gap' | 'nest';
@@ -90,7 +91,8 @@ function directChildIndex(containerPath: string, path: string): number | null {
   if (containerPath === '') {
     return /^\d+$/.test(path) ? Number(path) : null;
   }
-  const prefix = `${containerPath}.children.`;
+  // prop 슬롯 가상 컨테이너(`{owner}.props.footer`)의 자식은 `children` 접두 없이 붙는다.
+  const prefix = isPropSlotContainer(containerPath) ? `${containerPath}.` : `${containerPath}.children.`;
   if (!path.startsWith(prefix)) return null;
   const rest = path.slice(prefix.length);
   return /^\d+$/.test(rest) ? Number(rest) : null;
@@ -158,7 +160,9 @@ export function buildDropSlots(params: BuildDropSlotsParams): DropSlot[] {
     const containerDomPath = isRoot ? null : (domPathOf.get(containerPath) ?? containerPath);
     const containerEl = isRoot
       ? frameEl
-      : frameEl.querySelector<HTMLElement>(`[data-editor-path="${cssEscape(containerDomPath!)}"]`);
+      : isPropSlotContainer(containerPath) || isResponsiveBranchContainer(containerPath)
+        ? propSlotContainerEl(frameEl, containerDomPath!)
+        : frameEl.querySelector<HTMLElement>(`[data-editor-path="${cssEscape(containerDomPath!)}"]`);
     if (!containerEl && !isRoot) continue;
 
     // 드래그 노드 자신/자손인 컨테이너는 제외(자기 안에 드롭 불가)
@@ -347,9 +351,40 @@ function toBox(r: DOMRect, frameRect: DOMRect): OverlayBox {
 /** path 의 부모. `0.children.2` → `0`, `0` → '', '' → null */
 function parentPathOf(path: string): string | null {
   if (path === '') return null;
+  // prop 슬롯 안 노드(`{owner}.props.footer.N`)의 부모는 가상 컨테이너 `{owner}.props.footer` 다.
+  // commit 이 이 컨테이너를 parseEditorPath 하면 `[..., {propSlot}]` 이 되어 insertNode 가 prop
+  // 배열에 넣는다.
+  const slotMatch = PROP_SLOT_CHILD_RE.exec(path);
+  if (slotMatch) return slotMatch[1]!;
   const idx = path.lastIndexOf('.children.');
   if (idx < 0) return '';
   return path.slice(0, idx);
+}
+
+/** `{owner}.props.{slot}.N` — 마지막 세그먼트가 prop 슬롯 인덱스인 path */
+const PROP_SLOT_CHILD_RE = new RegExp(String.raw`^(.*\.props\.(?:${EDITOR_PROP_SLOTS.join('|')}))\.\d+$`);
+
+/** 컨테이너 path 가 prop 슬롯 가상 컨테이너(`{owner}.props.{slot}`)인지 */
+function isPropSlotContainer(containerPath: string): boolean {
+  return EDITOR_PROP_SLOTS.some((slot) => containerPath.endsWith(`.props.${slot}`));
+}
+
+/**
+ * 컨테이너 path 가 디바이스 분기 가상 컨테이너(`{owner}.responsive.{key}`)인지 — 분기 자식 path
+ * `{owner}.responsive.{key}.children.N` 의 부모다. 이 path 를 단 DOM 요소는 없다(분기를 가진 노드 자신이 `{owner}`).
+ */
+function isResponsiveBranchContainer(containerPath: string): boolean {
+  return /\.responsive\.[^.]+$/.test(containerPath);
+}
+
+/**
+ * 가상 컨테이너의 DOM 요소 — prop 슬롯 배열·디바이스 분기 children 은 자기 노드가 없으므로 첫 항목 요소의
+ * 부모(컴포넌트가 그 배열을 그리는 자리)를 컨테이너로 본다. 분기 컨테이너를 못 찾아 건너뛰면 모바일 보기에서
+ * 분기 안 자식을 끌어도 같은 분기 안에 드롭 칸이 생기지 않았다(#869 λ 실측 C2, HEAD 에서도 재현).
+ */
+function propSlotContainerEl(frameEl: HTMLElement, containerDomPath: string): HTMLElement | null {
+  const first = frameEl.querySelector<HTMLElement>(`[data-editor-path^="${cssEscape(containerDomPath)}."]`);
+  return first?.parentElement ?? null;
 }
 
 /** slot id 파싱 → { containerPath, index } */

@@ -49,6 +49,10 @@ effects:
   - download_carries_row_meta_validators_and_keeps_attachment_disposition
   - download_returns_full_200_for_a_non_matching_validator
   - download_declares_compression_skip
+  # 다운로드는 글 상태와 무관하게 private, 미리보기는 글 상태 판정을 유지한다
+  - download_is_always_private_in_production
+  - download_cache_scope_read_from_service       # 사용자 다운로드 컨트롤러는 private 를 서비스 값에서 읽는다(빠지면 private)
+  - preview_cache_keeps_the_post_state_gate
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentPreviewCacheContractTest.php

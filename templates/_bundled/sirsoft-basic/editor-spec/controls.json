@@ -10506,6 +10506,14 @@
       "propKey": "alt"
     }
   },
+  "imgThumbPreset": {
+    "label": "$t:editor.control.img_thumb_preset.label",
+    "widget": "thumbnail-preset",
+    "apply": {
+      "type": "propValue",
+      "propKey": "thumbPreset"
+    }
+  },
   "linkHref": {
     "label": "$t:editor.control.link_href.label",
     "widget": "text",

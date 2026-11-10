@@ -9,7 +9,66 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.notice.modals.bulk_change.title",
-        "size": "medium"
+        "size": "medium",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "확정 — 창이 직접 폼을 고치지 못하므로(별도 컨텍스트) 채울 값을 실어 사건으로 넘기고 닫는다. 실제 반영은 고시 구획이 받아서 한다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "emitEvent",
+                                "params": {
+                                    "event": "notice:productBulkChangeConfirmed",
+                                    "data": {
+                                        "form": "{{_global.tempFormForBulkChange}}"
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.product.notice.modals.bulk_change.confirm"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -89,72 +148,6 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.modals.bulk_change.notice"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "확정 — 창이 직접 폼을 고치지 못하므로(별도 컨텍스트) 채울 값을 실어 사건으로 넘기고 닫는다. 실제 반영은 고시 구획이 받아서 한다",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "emitEvent",
-                                    "params": {
-                                        "event": "notice:productBulkChangeConfirmed",
-                                        "data": {
-                                            "form": "{{_global.tempFormForBulkChange}}"
-                                        }
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.product.notice.modals.bulk_change.confirm"
                         }
                     ]
                 }

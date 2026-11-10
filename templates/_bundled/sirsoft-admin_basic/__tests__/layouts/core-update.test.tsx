@@ -481,7 +481,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
     // @scenario surface=result_modal
     // @effects update_result_reflects_availability
     it('변경사항 보기 버튼에 changelog API 호출 액션이 있다 (closeModal 없이 직접 apiCall)', () => {
-      const buttons = findAllInTree(modal.children, (n: any) => n.name === 'Button');
+      const buttons = findAllInTree([...modal.children, ...(modal.props?.footer ?? [])], (n: any) => n.name === 'Button') /* 단추는 고정 하단(props.footer)에 있다(#869 C1) */;
       // 라벨은 버튼의 `text` 이거나, 스피너와 나란히 선 Span 의 `text` 다 — 진행 표시를
       // 넣으면서 children 으로 내려갔다. 라벨의 자리로 버튼을 찾으면 표시를 넣을 때마다
       // 이 테스트가 깨지므로, 라벨이 어디에 있든 같은 버튼을 집는다.
@@ -520,7 +520,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
     // @scenario surface=result_modal
     // @effects update_result_reflects_availability
     it('업데이트 방법 버튼에 openModal 액션이 있다 (closeModal 없이 직접 openModal)', () => {
-      const buttons = findAllInTree(modal.children, (n: any) => n.name === 'Button');
+      const buttons = findAllInTree([...modal.children, ...(modal.props?.footer ?? [])], (n: any) => n.name === 'Button') /* 단추는 고정 하단(props.footer)에 있다(#869 C1) */;
       const howToUpdateBtn = buttons.find((b: any) => b.text === '$t:admin.settings.info.how_to_update');
       expect(howToUpdateBtn).toBeDefined();
 

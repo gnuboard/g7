@@ -91,8 +91,20 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-1023": {
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"
+                            }
+                        },
+                        "desktop": {
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-3 ecommerce:gap-3"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:lg:grid-cols-3 ecommerce:gap-3"
+                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -224,8 +236,12 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "ecommerce:sm:col-span-2"
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "ecommerce:col-span-2"
+                                    }
+                                }
                             },
                             "children": [
                                 {

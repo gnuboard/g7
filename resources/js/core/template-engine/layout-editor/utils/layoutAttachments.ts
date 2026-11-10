@@ -15,11 +15,15 @@
  *
  * 응답 필드: `{ id, layout_name, original_name, mime_type, size, url, created_at }`.
  *
+ * `attachmentSquareThumbUrl`·`attachmentPreviewUrl` 은 **편집기 화면에 그릴 주소**다. 저장되는 값은 언제나 서버가 준
+ * `url` 원문이어야 한다 — `size` 가 저장되면 방문자 화면이 편집기 표시용 규격을 받는다.
+ *
  * @since engine-v1.50.0
  */
 
 import { buildAuthHeaders } from './authToken';
 import { withBasePrefix } from '../../../support/assetUrl';
+import { withThumbnailSize } from '../../../support/thumbnailUrl';
 
 /** 첨부 1건 — 백엔드 LayoutAttachmentResource 필드 */
 export interface LayoutAttachment {
@@ -37,6 +41,29 @@ export interface LayoutAttachment {
 export type AttachmentResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; message: string };
+
+/**
+ * 정사각 칸(cover)에 그릴 썸네일 주소 — `sm`(중앙 정사각 자르기)은 칸의 중앙 cover 와 같은 영역을 보인다.
+ *
+ * @param url 첨부 주소 원문
+ * @return 표시용 주소 (썸네일 대상이 아니면 원문)
+ */
+export function attachmentSquareThumbUrl(url: string): string {
+  return withThumbnailSize(url, 'sm');
+}
+
+/**
+ * 정사각이 아닌 칸에 그릴 썸네일 주소 — `md`(가로 맞춤, 자르지 않음).
+ *
+ * 정사각 `sm` 을 가로로 긴 칸에 cover 로 깔면 칸이 한 번 더 잘라 위아래가 사라지고 폭이 모자라 흐려진다.
+ * contain 은 이미지 전체 비율을 보이는 모드라 자른 파생본을 쓸 수 없다.
+ *
+ * @param url 첨부 주소 원문
+ * @return 표시용 주소 (썸네일 대상이 아니면 원문)
+ */
+export function attachmentPreviewUrl(url: string): string {
+  return withThumbnailSize(url, 'md');
+}
 
 function encodeId(value: string): string {
   return encodeURIComponent(value);

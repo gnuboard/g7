@@ -46,33 +46,32 @@ export type CorePropKey = 'id' | 'dataKey' | 'isolatedState' | 'isolatedScopeId'
  * 라벨은 코어 i18n `layout_editor.core_props.{key}.*`. 빈 값이면 노드 키 삭제(위젯 규약).
  */
 export const CORE_PROP_CONTROLS: Record<CorePropKey, EditorControlSpec> = {
-  // `apply` 는 런타임상 객체(`{type,propKey}`)지만 EditorControlSpec.apply 타입이
-  // 레거시로 string 이라 controls.json 과 동일하게 객체를 두고 캐스팅한다(recipeEngine
-  // 은 `typeof apply === 'object'` 로 객체를 읽음 — 타입과 무관하게 동작).
+  // `apply` 는 controls.json 과 같은 객체(`{type,propKey}` / `{type,nodeKey}`)다 — EditorControlSpec.apply 가
+  // RecipeApply 로 선언돼 캐스팅이 필요 없다(#869, 종전 string 선언 시절의 우회 캐스팅 제거).
   id: {
     label: '$t:layout_editor.core_props.id.label',
     // 전용 `core-id` 위젯 — 바인딩(`{{...}}`) 디그레이드 + HTML 안전 문자 sanitize.
     widget: 'core-id',
     placeholder: '$t:layout_editor.core_props.id.placeholder',
-    apply: { type: 'propValue', propKey: 'id' } as unknown as string,
+    apply: { type: 'propValue', propKey: 'id' },
   },
   dataKey: {
     label: '$t:layout_editor.core_props.dataKey.label',
     widget: 'core-datakey',
     placeholder: '$t:layout_editor.core_props.dataKey.placeholder',
     // 노드 최상위 패치 — props 오염 방지.
-    apply: { type: 'nodeKey', nodeKey: 'dataKey' } as unknown as string,
+    apply: { type: 'nodeKey', nodeKey: 'dataKey' },
   },
   isolatedState: {
     label: '$t:layout_editor.core_props.isolatedState.label',
     widget: 'toggle',
-    apply: { type: 'nodeKey', nodeKey: 'isolatedState' } as unknown as string,
+    apply: { type: 'nodeKey', nodeKey: 'isolatedState' },
   },
   isolatedScopeId: {
     label: '$t:layout_editor.core_props.isolatedScopeId.label',
     widget: 'core-scopeid',
     placeholder: '$t:layout_editor.core_props.isolatedScopeId.placeholder',
-    apply: { type: 'nodeKey', nodeKey: 'isolatedScopeId' } as unknown as string,
+    apply: { type: 'nodeKey', nodeKey: 'isolatedScopeId' },
   },
 };
 

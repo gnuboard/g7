@@ -545,9 +545,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
           "type": "layout",
           "name": "Container",
           "props": {
-            "layout": "flex",
-            "justify": "end",
-            "gap": "2"
+            "className": "flex justify-end gap-2"
           },
           "children": [
             {

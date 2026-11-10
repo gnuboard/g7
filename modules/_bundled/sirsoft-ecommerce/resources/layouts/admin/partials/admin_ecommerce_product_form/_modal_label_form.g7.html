@@ -50,21 +50,21 @@
           </div>
         </div>
       </div>
-      <div data-ref="modal_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
-        <button type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isSavingLabel}}">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:sirsoft-ecommerce.common.cancel
-        </button>
-        <button data-ref="label_form_save" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}">
-          <on type="click">
-            <action handler="sirsoft-ecommerce.saveLabelSettings"/>
-          </on>
-          <icon data-if="{{_global.isSavingLabel}}" name="spinner" class="ecommerce-spinner-sm ecommerce:mr-2"/>
-          <span>{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isSavingLabel}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button data-ref="label_form_save" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.saveLabelSettings"/>
+        </on>
+        <icon data-if="{{_global.isSavingLabel}}" name="spinner" class="ecommerce-spinner-sm ecommerce:mr-2"/>
+        <span>{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}</span>
+      </button>
+    </footer>
   </modal>
 </partial>

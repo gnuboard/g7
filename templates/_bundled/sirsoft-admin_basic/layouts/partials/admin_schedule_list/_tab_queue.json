@@ -76,7 +76,7 @@
                 }
             },
             "props": {
-                "className": "grid-2col md:grid-cols-4 mb-6"
+                "className": "grid-2col grid-cols-4 mb-6"
             },
             "children": [
                 {
@@ -455,12 +455,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "filter-row flex-col items-start"
+                                        "className": "flex gap-2 flex-col items-start"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "filter-row"
+                                "className": "flex flex-row gap-2 items-center"
                             },
                             "children": [
                                 {
@@ -487,8 +487,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "filter-label w-32"
+                                        "className": "filter-field-label w-32"
                                     },
                                     "text": "$t:admin.schedules.queue.filter.queue"
                                 },
@@ -598,12 +605,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "filter-row flex-col items-start"
+                                        "className": "flex gap-2 flex-col items-start"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "filter-row"
+                                "className": "flex flex-row gap-2 items-center"
                             },
                             "children": [
                                 {
@@ -630,8 +637,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "filter-label w-32"
+                                        "className": "filter-field-label w-32"
                                     },
                                     "text": "$t:admin.schedules.queue.filter.connection"
                                 },
@@ -687,12 +701,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "filter-row flex-col items-start"
+                                        "className": "flex gap-2 flex-col items-start"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "filter-row"
+                                "className": "flex flex-row gap-2 items-center"
                             },
                             "children": [
                                 {
@@ -719,8 +733,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "filter-label w-32"
+                                        "className": "filter-field-label w-32"
                                     },
                                     "text": "$t:admin.schedules.queue.filter.result"
                                 },
@@ -865,12 +886,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "filter-row flex-col items-start"
+                                        "className": "flex gap-2 flex-col items-start"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "filter-row"
+                                "className": "flex flex-row gap-2 items-center"
                             },
                             "children": [
                                 {
@@ -898,8 +919,15 @@
                                     "comment": "실패 하위 탭은 실패 일시, 처리 기록 하위 탭은 처리 일시다 — 같은 입력칸이 하위 탭에 따라 다른 조건 키로 나간다(searchQueue).",
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "filter-label w-32"
+                                        "className": "filter-field-label w-32"
                                     },
                                     "text": "{{query.view === 'logs' ? $t('admin.schedules.queue.filter.processed_at') : $t('admin.schedules.queue.filter.failed_at')}}"
                                 },

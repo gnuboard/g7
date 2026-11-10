@@ -32,7 +32,8 @@
           </input>
           <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.key}}" class="ecommerce-form-error">{{_global.identity_policy_form_modal?.errors?.errors?.key?.[0] ?? ''}}</span>
         </div>
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <label class="ecommerce-form-label">$t:admin.identity.policies.form.scope</label>
             <select value="{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}" disabled="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'ecommerce:border-red-500 ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : ' ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}">
@@ -59,7 +60,8 @@
             <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.target}}" class="ecommerce-form-error">{{_global.identity_policy_form_modal?.errors?.errors?.target?.[0] ?? ''}}</span>
           </div>
         </div>
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <label class="ecommerce-form-label">$t:admin.identity.policies.form.purpose</label>
             <select value="{{_global.identity_policy_form_modal?.form?.purpose ?? 'sensitive_action'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'ecommerce:border-red-500' : ''}}" options="{{(ecommerceIdentityPurposes?.data ?? []).map(function(p) { return {value: p.id, label: p.label ?? p.id}; })}}">
@@ -80,7 +82,8 @@
             </select>
           </div>
         </div>
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <label class="ecommerce-form-label">$t:admin.identity.policies.form.grace_minutes</label>
             <input type="number" value="{{_global.identity_policy_form_modal?.form?.grace_minutes ?? 0}}" :min="0" :max="1440" class="{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'ecommerce-input-error' : ''}}">
@@ -118,7 +121,8 @@
           <p class="ecommerce-text-hint ecommerce:mt-1">$t:admin.identity.policies.form.priority_desc</p>
           <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.priority}}" class="ecommerce-form-error">{{_global.identity_policy_form_modal?.errors?.errors?.priority?.[0] ?? ''}}</span>
         </div>
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <label class="ecommerce-form-label">$t:admin.identity.policies.form.fail_mode</label>
             <select value="{{_global.identity_policy_form_modal?.form?.fail_mode ?? 'block'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'ecommerce:border-red-500' : ''}}">
@@ -160,36 +164,36 @@
         </div>
         <div data-if="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="ecommerce-alert-warning ecommerce-tone-warning-soft ecommerce:text-xs">$t:admin.identity.policies.form.declared_policy_notice</div>
       </div>
-      <div data-ref="policy_form_footer" class="ecommerce-flex-center ecommerce:justify-end ecommerce:gap-2 ecommerce:px-4 ecommerce:py-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:flex-shrink-0 ecommerce:bg-white ecommerce:dark:bg-gray-800">
-        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
-          <on type="click">
-            <close-modal target="identity_policy_form_modal"/>
-          </on>
-          <span>$t:common.cancel</span>
-        </button>
-        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving || ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:dark:bg-indigo-500 ecommerce:hover:bg-indigo-700 ecommerce:dark:hover:bg-indigo-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:text-white ecommerce:rounded-lg">
-          <on type="click">
-            <!-- 저장. 만들기와 고치기가 같은 버튼을 쓰고 `isNew` 가 주소와 메서드를 가른다. 시작할 때 이전 오류를 함께 지우고, 성공하면 폼 자리를 통째로 비운 뒤 정책 목록을 다시 부른다. -->
-            <sequence>
-              <set-state target="global" :identity_policy_form_modal.isSaving="true" :identity_policy_form_modal.errors="null"/>
-              <api-call :auth_required="true" target="{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-ecommerce/admin/identity-policies' : '/api/modules/sirsoft-ecommerce/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}" method="{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}">
-                <success>
-                  <toast message="$t:admin.identity.policies.save_success" type="success"/>
-                  <close-modal target="identity_policy_form_modal"/>
-                  <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
-                  <set-state target="global" :identity_policy_form_modal="null"/>
-                </success>
-                <fail>
-                  <set-state target="global" :identity_policy_form_modal.isSaving="false" identity_policy_form_modal.errors="{{error}}"/>
-                </fail>
-                <body key="{{_global.identity_policy_form_modal?.form?.key}}" scope="{{_global.identity_policy_form_modal?.form?.scope}}" target="{{_global.identity_policy_form_modal?.form?.target}}" purpose="{{_global.identity_policy_form_modal?.form?.purpose}}" provider_id="{{_global.identity_policy_form_modal?.form?.provider_id || null}}" grace_minutes="{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}" applies_to="{{_global.identity_policy_form_modal?.form?.applies_to}}" fail_mode="{{_global.identity_policy_form_modal?.form?.fail_mode}}" enabled="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" priority="{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}" conditions="{{_global.identity_policy_form_modal?.form?.conditions ?? null}}" source_type="{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}" source_identifier="{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-ecommerce' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-ecommerce')}}"/>
-              </api-call>
-            </sequence>
-          </on>
-          <icon data-if="{{_global.identity_policy_form_modal?.isSaving}}" name="spinner" class="ecommerce:animate-spin" size="sm"/>
-          <span>{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal target="identity_policy_form_modal"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving || ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:dark:bg-indigo-500 ecommerce:hover:bg-indigo-700 ecommerce:dark:hover:bg-indigo-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:text-white ecommerce:rounded-lg">
+        <on type="click">
+          <!-- 저장. 만들기와 고치기가 같은 버튼을 쓰고 `isNew` 가 주소와 메서드를 가른다. 시작할 때 이전 오류를 함께 지우고, 성공하면 폼 자리를 통째로 비운 뒤 정책 목록을 다시 부른다. -->
+          <sequence>
+            <set-state target="global" :identity_policy_form_modal.isSaving="true" :identity_policy_form_modal.errors="null"/>
+            <api-call :auth_required="true" target="{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-ecommerce/admin/identity-policies' : '/api/modules/sirsoft-ecommerce/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}" method="{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}">
+              <success>
+                <toast message="$t:admin.identity.policies.save_success" type="success"/>
+                <close-modal target="identity_policy_form_modal"/>
+                <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
+                <set-state target="global" :identity_policy_form_modal="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :identity_policy_form_modal.isSaving="false" identity_policy_form_modal.errors="{{error}}"/>
+              </fail>
+              <body key="{{_global.identity_policy_form_modal?.form?.key}}" scope="{{_global.identity_policy_form_modal?.form?.scope}}" target="{{_global.identity_policy_form_modal?.form?.target}}" purpose="{{_global.identity_policy_form_modal?.form?.purpose}}" provider_id="{{_global.identity_policy_form_modal?.form?.provider_id || null}}" grace_minutes="{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}" applies_to="{{_global.identity_policy_form_modal?.form?.applies_to}}" fail_mode="{{_global.identity_policy_form_modal?.form?.fail_mode}}" enabled="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" priority="{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}" conditions="{{_global.identity_policy_form_modal?.form?.conditions ?? null}}" source_type="{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}" source_identifier="{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-ecommerce' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-ecommerce')}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.identity_policy_form_modal?.isSaving}}" name="spinner" class="ecommerce:animate-spin" size="sm"/>
+        <span>{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+      </button>
+    </footer>
   </modal>
 </partial>

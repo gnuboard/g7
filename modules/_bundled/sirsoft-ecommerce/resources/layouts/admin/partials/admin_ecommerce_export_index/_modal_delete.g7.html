@@ -16,7 +16,7 @@
         </div>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsDeleting}}">
         <on type="click">
           <close-modal/>
@@ -45,6 +45,6 @@
         <icon data-if="{{_global.ecommerceExportIsDeleting}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.ecommerceExportIsDeleting ? '$t:sirsoft-ecommerce.admin.export.common.deleting' : '$t:sirsoft-ecommerce.admin.export.common.delete'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

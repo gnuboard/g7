@@ -6,9 +6,9 @@
  * - 데스크톱 사이드바·모바일 헤더 두 곳이 같은 식을 쓴다 — 한쪽만 고치면 뷰포트에 따라 다른 로고가 보인다
  * - 로고가 둘 다 없을 때만 사이트 이름 글자를 보인다(보임 조건이 로고 조건의 정확한 부정)
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects template_settings_exposed_to_global, admin_logo_prefers_template_setting
+ * 효과: template_settings_exposed_to_global, admin_logo_prefers_template_setting
  */
 
 import fs from 'node:fs';

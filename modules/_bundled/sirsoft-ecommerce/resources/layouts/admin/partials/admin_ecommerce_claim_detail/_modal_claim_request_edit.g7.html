@@ -16,25 +16,25 @@
         </on>
       </textarea>
       <p data-ref="cre_004_fee_hint" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.request_edit.fee_hint</p>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2">
-        <button data-ref="cre_005_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:common.cancel
-        </button>
-        <button data-ref="cre_006_save" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isEditingClaimRequest === true || (_global.claimRequestEditReasonCode ?? '') === ''}}">
-          <on type="click">
-            <!-- 고객을 대신해 신청 사유를 저장한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
-            <action handler="sirsoft-ecommerce.updateClaimRequestOnBehalf" pathSegment="{{_global.claimRequestEditContext?.pathSegment ?? ''}}" claimId="{{_global.claimRequestEditContext?.claimId ?? null}}" reasonCode="{{_global.claimRequestEditReasonCode ?? ''}}" reasonDetail="{{_global.claimRequestEditReasonDetail ?? ''}}">
-              <fail>
-                <suppress/>
-              </fail>
-            </action>
-          </on>
-          $t:sirsoft-ecommerce.admin.claim.detail.request_edit.save
-        </button>
-      </div>
     </div>
+    <footer>
+      <button data-ref="cre_005_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button data-ref="cre_006_save" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isEditingClaimRequest === true || (_global.claimRequestEditReasonCode ?? '') === ''}}">
+        <on type="click">
+          <!-- 고객을 대신해 신청 사유를 저장한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
+          <action handler="sirsoft-ecommerce.updateClaimRequestOnBehalf" pathSegment="{{_global.claimRequestEditContext?.pathSegment ?? ''}}" claimId="{{_global.claimRequestEditContext?.claimId ?? null}}" reasonCode="{{_global.claimRequestEditReasonCode ?? ''}}" reasonDetail="{{_global.claimRequestEditReasonDetail ?? ''}}">
+            <fail>
+              <suppress/>
+            </fail>
+          </action>
+        </on>
+        $t:sirsoft-ecommerce.admin.claim.detail.request_edit.save
+      </button>
+    </footer>
   </modal>
 </partial>

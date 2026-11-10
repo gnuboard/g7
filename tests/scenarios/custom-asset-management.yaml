@@ -46,6 +46,7 @@ effects:
   - custom_asset_editor_renames_through_the_api
   - custom_asset_editor_shows_a_file_tree
   - custom_asset_manager_surfaces_permission_denial_as_guidance
+  - custom_asset_manager_lists_files_with_loaded_flag   # 목록 응답의 파일마다 행을 그리고, 화면에 실리는지(loaded)를 행에 표시한다
   - custom_asset_binary_file_offers_replace_not_text_edit
   - custom_asset_permission_reaches_existing_sites_via_core_sync
   - custom_assets_disabled_by_request_parameter

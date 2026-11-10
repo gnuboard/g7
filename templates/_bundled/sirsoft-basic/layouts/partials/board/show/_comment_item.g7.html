@@ -208,8 +208,8 @@
                 </case>
               </switch>
             </on>
-            <!-- 올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다 -->
-            <img data-if="{{!!commentReactionType.icon_url &amp;&amp; (_local?.commentReacting?.[comment?.id] ?? null) !== commentReactionType.id}}" src="{{commentReactionType.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
+            <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다. 올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다 -->
+            <img data-if="{{!!commentReactionType.icon_url &amp;&amp; (_local?.commentReacting?.[comment?.id] ?? null) !== commentReactionType.id}}" src="{{commentReactionType.icon_url}}" loading="lazy" decoding="async" alt="" class="w-4 h-4 object-contain"/>
             <icon data-if="{{!commentReactionType.icon_url || (_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id}}" name="{{(_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id ? 'fa-spinner' : (commentReactionType.icon_name ?? 'fa-thumbs-up')}}" spin="{{(_local?.commentReacting?.[comment?.id] ?? null) === commentReactionType.id}}" size="sm"/>
             <!-- 아이콘 이미지가 없는 유형은 기본 글리프로 떨어져 서로 구분되지 않는다 — 그때만 이름을 병기한다.
                  이미지가 있으면 좋은 화면을 위해 아이콘만 두고, 이름은 버튼 title 로만 안내한다 (결정 2026-09-16). -->

@@ -270,62 +270,60 @@
           </div>
         </div>
       </div>
-      <div data-ref="gdpr_template_modal_footer" class="gdpr-flex-between gdpr:pt-4 gdpr:pb-4 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:mt-4 gdpr:flex-shrink-0">
-        <div>
-          <!-- 미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다 -->
-          <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
-            <on type="click">
-              <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
-                <success>
-                  <set-state target="global" gdpr_notification_template_form_modal.preview="{{response.data}}"/>
-                  <open-modal target="modal_gdpr_notification_definition_preview"/>
-                </success>
-                <fail>
-                  <toast type="error" message="{{error.message}}"/>
-                </fail>
-                <body definition_id="{{_global.gdpr_notification_template_form_modal?.definition?.id}}" subject="{{_global.gdpr_notification_template_form_modal?.template?.subject}}" body="{{_global.gdpr_notification_template_form_modal?.template?.body}}" locale="{{_global.gdpr_notification_template_form_modal?.editLang ?? $locale}}"/>
-              </api-call>
-            </on>
-            $t:sirsoft-gdpr.notification_definitions.edit_modal.btn_preview
-          </button>
-        </div>
-        <div class="gdpr:flex gdpr:gap-2">
-          <!-- 취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다 -->
-          <button type="button" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
-            <on type="click">
-              <close-modal target="modal_gdpr_notification_template_edit"/>
-              <!-- 취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1) -->
-              <set-state target="global" :gdpr_notification_template_form_modal="null"/>
-            </on>
-            $t:common.cancel
-          </button>
-          <!-- 편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
-          <extension-point name="notification_template_form_footer_actions" data-ref="gdpr_template_form_footer_ext" definition="{{_global.gdpr_notification_template_form_modal?.definition}}" template="{{_global.gdpr_notification_template_form_modal?.template}}" channel="{{_global.gdpr_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_gdpr_notification_template_edit" stateKey="gdpr_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" refetchDataSourceId="gdprNotificationDefinitions"/>
-          <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="gdpr-flex-center gdpr:gap-2 gdpr:text-sm gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:bg-indigo-600 gdpr:text-white gdpr:hover:bg-indigo-700 gdpr:dark:bg-indigo-500 gdpr:dark:hover:bg-indigo-600 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
-            <on type="click">
-              <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다. -->
-              <sequence>
-                <set-state target="global" :gdpr_notification_template_form_modal.isSaving="true" :gdpr_notification_template_form_modal.errors="null"/>
-                <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" method="PUT">
-                  <success>
-                    <refetch-data-source dataSourceId="gdprNotificationDefinitions"/>
-                    <toast message="$t:sirsoft-gdpr.notification_definitions.save_success" type="success"/>
-                    <close-modal target="modal_gdpr_notification_template_edit"/>
-                    <set-state target="global" :gdpr_notification_template_form_modal="null"/>
-                  </success>
-                  <fail>
-                    <set-state target="global" :gdpr_notification_template_form_modal.isSaving="false" gdpr_notification_template_form_modal.errors="{{error.errors}}"/>
-                    <toast message="{{error.message ?? $t('sirsoft-gdpr.notification_definitions.save_error')}}" type="error"/>
-                  </fail>
-                  <body subject="{{_global.gdpr_notification_template_form_modal?.template?.subject}}" body="{{_global.gdpr_notification_template_form_modal?.template?.body}}" click_url="{{_global.gdpr_notification_template_form_modal?.template?.click_url ?? null}}" recipients="{{_global.gdpr_notification_template_form_modal?.recipients ?? []}}"/>
-                </api-call>
-              </sequence>
-            </on>
-            <icon data-if="{{_global.gdpr_notification_template_form_modal?.isSaving}}" name="spinner" class="gdpr:animate-spin" size="sm"/>
-            <span>{{_global.gdpr_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
-          </button>
-        </div>
-      </div>
     </div>
+    <footer>
+      <!-- 미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다 -->
+      <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors gdpr:mr-auto" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
+        <!-- 왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869) -->
+        <responsive on="-640" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors"/>
+        <on type="click">
+          <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">
+            <success>
+              <set-state target="global" gdpr_notification_template_form_modal.preview="{{response.data}}"/>
+              <open-modal target="modal_gdpr_notification_definition_preview"/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body definition_id="{{_global.gdpr_notification_template_form_modal?.definition?.id}}" subject="{{_global.gdpr_notification_template_form_modal?.template?.subject}}" body="{{_global.gdpr_notification_template_form_modal?.template?.body}}" locale="{{_global.gdpr_notification_template_form_modal?.editLang ?? $locale}}"/>
+          </api-call>
+        </on>
+        $t:sirsoft-gdpr.notification_definitions.edit_modal.btn_preview
+      </button>
+      <!-- 취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다 -->
+      <button type="button" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
+        <on type="click">
+          <close-modal target="modal_gdpr_notification_template_edit"/>
+          <!-- 취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1) -->
+          <set-state target="global" :gdpr_notification_template_form_modal="null"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <!-- 편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
+      <extension-point name="notification_template_form_footer_actions" data-ref="gdpr_template_form_footer_ext" definition="{{_global.gdpr_notification_template_form_modal?.definition}}" template="{{_global.gdpr_notification_template_form_modal?.template}}" channel="{{_global.gdpr_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_gdpr_notification_template_edit" stateKey="gdpr_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" refetchDataSourceId="gdprNotificationDefinitions"/>
+      <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="gdpr-flex-center gdpr:gap-2 gdpr:text-sm gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:bg-indigo-600 gdpr:text-white gdpr:hover:bg-indigo-700 gdpr:dark:bg-indigo-500 gdpr:dark:hover:bg-indigo-600 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
+        <on type="click">
+          <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다. -->
+          <sequence>
+            <set-state target="global" :gdpr_notification_template_form_modal.isSaving="true" :gdpr_notification_template_form_modal.errors="null"/>
+            <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" method="PUT">
+              <success>
+                <refetch-data-source dataSourceId="gdprNotificationDefinitions"/>
+                <toast message="$t:sirsoft-gdpr.notification_definitions.save_success" type="success"/>
+                <close-modal target="modal_gdpr_notification_template_edit"/>
+                <set-state target="global" :gdpr_notification_template_form_modal="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :gdpr_notification_template_form_modal.isSaving="false" gdpr_notification_template_form_modal.errors="{{error.errors}}"/>
+                <toast message="{{error.message ?? $t('sirsoft-gdpr.notification_definitions.save_error')}}" type="error"/>
+              </fail>
+              <body subject="{{_global.gdpr_notification_template_form_modal?.template?.subject}}" body="{{_global.gdpr_notification_template_form_modal?.template?.body}}" click_url="{{_global.gdpr_notification_template_form_modal?.template?.click_url ?? null}}" recipients="{{_global.gdpr_notification_template_form_modal?.recipients ?? []}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.gdpr_notification_template_form_modal?.isSaving}}" name="spinner" class="gdpr:animate-spin" size="sm"/>
+        <span>{{_global.gdpr_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+      </button>
+    </footer>
   </modal>
 </partial>

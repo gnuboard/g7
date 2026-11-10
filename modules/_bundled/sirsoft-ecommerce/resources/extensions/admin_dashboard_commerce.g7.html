@@ -12,9 +12,15 @@
   `date_basis=site` 는 목록에 그 날짜를 사이트 표준시의 하루로 거르라고 알린다 — 목록은 원래 보는 사람의 하루로 거르므로,
   빼면 계정 시간대가 사이트와 다른 관리자에게 배지 1건 → 목록 0건이 된다. -->
 <extension extension-point="admin_dashboard_commerce" mode="append" priority="100">
-  <div data-ref="commerce_section_wrapper" class="ecommerce:mb-4 ecommerce:md:mb-6 ecommerce:lg:mb-8">
-    <div data-ref="commerce_section_grid" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:lg:grid-cols-4 ecommerce:gap-3 ecommerce:md:gap-4 ecommerce:lg:gap-5">
-      <div data-ref="commerce_today_summary" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:md:col-span-2 ecommerce:lg:col-span-4">
+  <div data-ref="commerce_section_wrapper" class="ecommerce:mb-4">
+    <responsive on="tablet" class="ecommerce:mb-6"/>
+    <responsive on="desktop" class="ecommerce:mb-8"/>
+    <div data-ref="commerce_section_grid" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3">
+      <responsive on="tablet" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
+      <responsive on="desktop" class="ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-5"/>
+      <div data-ref="commerce_today_summary" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2">
+        <responsive on="tablet" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-2"/>
+        <responsive on="desktop" class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-4"/>
         <blur-until-loaded sources="commerce_overview"/>
         <span data-ref="commerce_today_label" class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-slate-500 ecommerce:dark:text-slate-400">$t:admin.dashboard.stats.today</span>
         <a href="/admin/ecommerce/orders?order_status[]=pending_payment&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_pending_payment_badge" class="ecommerce:px-2 ecommerce:py-1 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-full ecommerce:bg-slate-200 ecommerce:text-slate-700 ecommerce:dark:bg-slate-700 ecommerce:dark:text-slate-200 ecommerce:cursor-pointer ecommerce:hover:bg-slate-300 ecommerce:dark:hover:bg-slate-600 ecommerce:transition-colors">
@@ -61,11 +67,13 @@
         </a>
         <extension-badge data-type="composite" data-ref="commerce_section_badge" class="ecommerce:ml-auto" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
       </div>
-      <div data-ref="sales_graph_card" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:md:p-6 ecommerce:rounded-xl ecommerce:md:rounded-2xl ecommerce:md:col-span-2 ecommerce:h-full ecommerce:flex ecommerce:flex-col">
+      <div data-ref="sales_graph_card" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col">
+        <responsive on="768-" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-6 ecommerce:rounded-2xl ecommerce:col-span-2 ecommerce:h-full ecommerce:flex ecommerce:flex-col"/>
         <blur-until-loaded>
           <item>commerce_sales_graph</item>
         </blur-until-loaded>
-        <div data-ref="sales_graph_header" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center ecommerce:md:justify-between ecommerce:mb-4 ecommerce:md:mb-6">
+        <div data-ref="sales_graph_header" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:mb-4">
+          <responsive on="768-" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
           <h3 data-ref="sales_graph_title" class="ecommerce:text-lg ecommerce:font-semibold ecommerce:text-slate-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.dashboard.community.sales_graph</h3>
           <div data-ref="sales_graph_legend" class="ecommerce:flex ecommerce:items-center ecommerce:gap-4">
             <div data-ref="quantity_legend_item" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
@@ -78,18 +86,19 @@
             </div>
           </div>
         </div>
-        <div data-ref="sales_graph_stats" class="ecommerce:flex ecommerce:gap-4 ecommerce:md:gap-8 ecommerce:mb-4 ecommerce:md:mb-6">
+        <div data-ref="sales_graph_stats" class="ecommerce:flex ecommerce:gap-4 ecommerce:mb-4">
+          <responsive on="768-" class="ecommerce:flex ecommerce:gap-8 ecommerce:mb-6"/>
           <div data-ref="total_quantity_stat">
             <p data-ref="total_quantity_label" class="ecommerce:text-sm ecommerce:text-slate-600 ecommerce:dark:text-slate-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.dashboard.community.total_quantity</p>
             <div data-ref="total_quantity_value_wrapper" class="ecommerce:flex ecommerce:items-baseline ecommerce:gap-2">
-              <span data-ref="total_quantity_value" class="ecommerce:text-lg ecommerce:md:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white">{{commerce_sales_graph?.data?.total_quantity ?? 0 | number}}</span>
+              <span data-ref="total_quantity_value" class="ecommerce:text-lg ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"><responsive on="768-" class="ecommerce:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"/>{{commerce_sales_graph?.data?.total_quantity ?? 0 | number}}</span>
               <span data-ref="total_quantity_change" class="{{(commerce_sales_graph?.data?.quantity_change ?? null) === null ? 'ecommerce:text-xs ecommerce:font-medium ecommerce:text-slate-600 ecommerce:dark:text-slate-400' : ((commerce_sales_graph?.data?.quantity_change ?? 0) >= 0 ? 'ecommerce:text-xs ecommerce:font-medium ecommerce:text-emerald-700 ecommerce:dark:text-emerald-300' : 'ecommerce:text-xs ecommerce:font-medium ecommerce:text-rose-700 ecommerce:dark:text-rose-300')}}">{{(commerce_sales_graph?.data?.quantity_change ?? null) === null ? '—' : ((commerce_sales_graph?.data?.quantity_change >= 0 ? '+' : '') + commerce_sales_graph?.data?.quantity_change + '%')}}</span>
             </div>
           </div>
           <div data-ref="total_sales_stat">
             <p data-ref="total_sales_label" class="ecommerce:text-sm ecommerce:text-slate-600 ecommerce:dark:text-slate-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.dashboard.community.total_sales</p>
             <div data-ref="total_sales_value_wrapper" class="ecommerce:flex ecommerce:items-baseline ecommerce:gap-2">
-              <span data-ref="total_sales_value" class="ecommerce:text-lg ecommerce:md:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white">₩ {{commerce_sales_graph?.data?.total_sales ?? 0 | number}}</span>
+              <span data-ref="total_sales_value" class="ecommerce:text-lg ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"><responsive on="768-" class="ecommerce:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"/>₩ {{commerce_sales_graph?.data?.total_sales ?? 0 | number}}</span>
               <span data-ref="total_sales_change" class="{{(commerce_sales_graph?.data?.sales_change ?? null) === null ? 'ecommerce:text-xs ecommerce:font-medium ecommerce:text-slate-600 ecommerce:dark:text-slate-400' : ((commerce_sales_graph?.data?.sales_change ?? 0) >= 0 ? 'ecommerce:text-xs ecommerce:font-medium ecommerce:text-emerald-700 ecommerce:dark:text-emerald-300' : 'ecommerce:text-xs ecommerce:font-medium ecommerce:text-rose-700 ecommerce:dark:text-rose-300')}}">{{(commerce_sales_graph?.data?.sales_change ?? null) === null ? '—' : ((commerce_sales_graph?.data?.sales_change >= 0 ? '+' : '') + commerce_sales_graph?.data?.sales_change + '%')}}</span>
             </div>
           </div>
@@ -97,7 +106,8 @@
         <bar-chart data-type="composite" data-ref="sales_graph_chart" labels="{{(commerce_sales_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-ecommerce.admin.dashboard.community.quantity'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_quantity ?? 0), backgroundColor: '#7C3AED', yAxisID: 'y'}, {label: $t('sirsoft-ecommerce.admin.dashboard.community.sales_amount'), data: (commerce_sales_graph?.data?.days ?? []).map(d => d.sales_amount ?? 0), backgroundColor: '#DDD6FE', yAxisID: 'y1'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
         <p data-ref="sales_graph_updated_at_caption" data-if="{{!!commerce_sales_graph?.data?.updated_at_display}}" class="ecommerce:text-xs ecommerce:text-slate-600 ecommerce:dark:text-slate-400 ecommerce:mt-2 ecommerce:text-right">$t:sirsoft-ecommerce.admin.dashboard.community.updated_at|time={{commerce_sales_graph?.data?.updated_at_display ?? ''}}</p>
       </div>
-      <div data-ref="latest_reviews_card" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:md:p-6 ecommerce:rounded-xl ecommerce:md:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col">
+      <div data-ref="latest_reviews_card" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col">
+        <responsive on="768-" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-6 ecommerce:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"/>
         <blur-until-loaded sources="commerce_recent_reviews"/>
         <div data-ref="latest_reviews_header" class="ecommerce-flex-between ecommerce:mb-4">
           <h3 data-ref="latest_reviews_title" class="ecommerce:text-base ecommerce:font-semibold ecommerce:text-slate-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.dashboard.community.latest_reviews</h3>
@@ -122,7 +132,8 @@
       </div>
       <!-- 미답변 문의 카드 — 상품 문의는 게시판 글이라 게시판 모듈(선택 연동)이 꺼지면 카드째 숨긴다. 활성 목록이 없는 옛 코어는
         서버 응답의 board_active 로 가른다(꺼져 있으면 서버가 항목을 내지 않는다). -->
-      <div data-ref="pending_inquiries_card" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) &amp;&amp; commerce_pending_inquiries?.data?.board_active !== false}}" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:md:p-6 ecommerce:rounded-xl ecommerce:md:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col">
+      <div data-ref="pending_inquiries_card" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) &amp;&amp; commerce_pending_inquiries?.data?.board_active !== false}}" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col">
+        <responsive on="768-" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-6 ecommerce:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"/>
         <blur-until-loaded sources="commerce_pending_inquiries"/>
         <div data-ref="pending_inquiries_header" class="ecommerce-flex-between ecommerce:mb-4">
           <h3 data-ref="pending_inquiries_title_wrapper" class="ecommerce:flex ecommerce:items-center ecommerce:text-base ecommerce:font-semibold ecommerce:text-slate-900 ecommerce:dark:text-white ecommerce:gap-1">

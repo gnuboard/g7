@@ -54,7 +54,13 @@ vi.mock('../template-engine/helpers', () => ({
 
 function createMockDependencies(): G7CoreDependencies {
   return {
-    getState: vi.fn(() => ({ translationContext: { templateId: 'host', locale: 'ko' } })),
+    getState: vi.fn(() => ({
+      translationEngine: null,
+      translationContext: { templateId: 'host', locale: 'ko' },
+      bindingEngine: null,
+      actionDispatcher: null,
+      templateMetadata: null,
+    })),
     transitionManager: { getIsPending: vi.fn(() => false), subscribe: vi.fn(() => () => {}) },
     responsiveManager: {},
     webSocketManager: {

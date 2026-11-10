@@ -206,6 +206,9 @@
     "img_alt": {
       "label": "Alt text"
     },
+    "img_thumb_preset": {
+      "label": "Thumbnail Preset"
+    },
     "link_href": {
       "label": "Link URL"
     },

@@ -12,7 +12,8 @@
                 "content": "{{extensionPointProps.content ?? ''}}",
                 "isHtml": "{{extensionPointProps.isHtml ?? true}}",
                 "className": "{{(extensionPointProps.className ?? '') + ' ck-content'}}",
-                "purifyConfig": "{{extensionPointProps.purifyConfig ?? undefined}}"
+                "purifyConfig": "{{extensionPointProps.purifyConfig ?? undefined}}",
+                "imageSizes": "{{extensionPointProps.imageSizes ?? undefined}}"
             }
         },
         {

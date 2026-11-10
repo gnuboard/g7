@@ -12,6 +12,7 @@ use App\Support\Auth\SystemOperation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 훅 기반 IDV 정책 강제 Listener.
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Auth;
 class EnforceIdentityPolicyListener implements HookListenerInterface
 {
     /**
+     * EnforceIdentityPolicyListener 생성자
+     *
      * @param  IdentityPolicyService  $policyService  정책 유스케이스 Service
      * @param  IdentityPolicyRepositoryInterface  $policyRepository  정책 Repository
      */
@@ -36,7 +39,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     /**
      * 구독 훅 메타데이터 (scope=hook 정책 대상 before_* 훅 일괄 등록).
      *
-     * @return array<string, array<string, mixed>>
+     * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정(method·priority·sync)
      */
     public static function getSubscribedHooks(): array
     {
@@ -221,6 +224,12 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
             return;
         }
 
+        // 켜진 정책이 없는 훅은 캐시된 색인만 보고 지나간다 — 이미지처럼 한 화면에 수십 번 발화하는 훅(첨부 표시)이
+        // 발화마다 정책 표를 조회하지 않게 한다. 색인에 있으면 지금 행을 다시 읽어 판정한다(색인은 있음·없음만 쓴다).
+        if (! $this->mayHavePolicies($hookName)) {
+            return;
+        }
+
         $policies = $this->policyRepository->resolveByScopeTarget('hook', $hookName);
         if ($policies->isEmpty()) {
             return;
@@ -242,6 +251,26 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
         foreach ($policies as $policy) {
             $context['origin_policy_key'] = $policy->key;
             $this->policyService->enforce($policy, $this->resolveUser($args), $context);
+        }
+    }
+
+    /**
+     * 이 훅에 켜진 정책이 있을 수 있는지 — 캐시된 hook 색인으로 판정한다.
+     *
+     * 색인 조회가 실패하면(캐시 장애 등) 있을 수 있다고 보고 정책 표 판정으로 넘긴다. 색인 장애가 before_* 훅 전체의
+     * 오류로 번지거나, 정책을 건너뛰어 열린 채 통과하지 않게 한다.
+     *
+     * @param  string  $hookName  훅 이름
+     * @return bool 정책 표를 조회해야 하면 true
+     */
+    protected function mayHavePolicies(string $hookName): bool
+    {
+        try {
+            return isset($this->policyRepository->getHookScopeIndex()[$hookName]);
+        } catch (\Throwable $e) {
+            Log::warning('본인인증 hook 정책 색인을 읽지 못해 정책 표로 판정합니다', ['hook' => $hookName, 'error' => $e->getMessage()]);
+
+            return true;
         }
     }
 
@@ -312,7 +341,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      * 428 응답에 포함되어 IdentityGuardInterceptor 가 verify 성공 후 원 요청을 재실행할 때
      * 사용. CLI/큐 컨텍스트에서는 null.
      *
-     * @return array{method: string, url: string}|null
+     * @return array{method: string, url: string}|null 원 요청 정보 (CLI·큐 문맥이면 null)
      */
     protected function resolveReturnRequest(): ?array
     {

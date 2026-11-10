@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { G7DevToolsCore } from '../../G7DevToolsCore';
-import type { ModalStateScopeTrackingInfo, ModalStateInfo, ModalStateIssue } from '../../types';
+import type { ModalStateScopeTrackingInfo } from '../../types';
 
 export interface ModalScopeTabProps {
     devTools: G7DevToolsCore;

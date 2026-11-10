@@ -159,7 +159,8 @@
         <column field="reaction_type" :sortable="false" header="$t:sirsoft-board.admin.reactions.columns.reaction_type">
           <cell>
             <div class="board-flex-center board:gap-2">
-              <img data-if="{{!!row.reaction_type?.icon_url}}" src="{{row.reaction_type?.icon_url}}" alt="" class="board:w-5 board:h-5 board:object-contain"/>
+              <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+              <img data-if="{{!!row.reaction_type?.icon_url}}" src="{{row.reaction_type?.icon_url}}" loading="lazy" decoding="async" alt="" class="board:w-5 board:h-5 board:object-contain"/>
               <icon data-if="{{!row.reaction_type?.icon_url}}" name="{{row.reaction_type?.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
               <span class="board:text-sm">{{row.reaction_type?.name ?? ''}}</span>
               <badge data-type="composite" data-if="{{row.reaction_type &amp;&amp; row.reaction_type.is_active === false}}" color="gray" size="sm">$t:sirsoft-board.admin.reactions.badges.type_inactive</badge>
@@ -233,7 +234,7 @@
       <div class="board:py-2">
         <p class="board-text-body">$t:sirsoft-board.admin.reactions.modals.delete_confirm</p>
       </div>
-      <div class="board-modal-footer-buttons">
+      <footer>
         <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -268,7 +269,7 @@
             <span>$t:sirsoft-board.admin.reactions.modals.processing</span>
           </span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -278,7 +279,7 @@
       <div class="board:py-2">
         <p class="board-text-body">$t:sirsoft-board.admin.reactions.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
       </div>
-      <div class="board-modal-footer-buttons">
+      <footer>
         <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -312,7 +313,7 @@
             <span>$t:sirsoft-board.admin.reactions.modals.processing</span>
           </span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>

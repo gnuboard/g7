@@ -7,7 +7,6 @@
  * 키(`common.tag_input.*`)로 낸다.
  */
 
-import React from 'react';
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -47,7 +46,7 @@ describe('TagInput — 화면 읽기 안내문 다국어', () => {
   // @scenario control=tag_input
   // @effects tag_input_screen_reader_text_localized
   it('태그 지우기 버튼 이름이 화면 언어 문구다 (「Remove 매니저」 아님)', () => {
-    render(<TagInput value={['1']} options={options} />);
+    render(<TagInput value={['1']} options={options} onChange={() => {}} />);
 
     const remove = screen.getByRole('button', { name: koTranslate('common.tag_input.remove', { label: '매니저' }) });
     expect(remove).toBeTruthy();
@@ -58,7 +57,7 @@ describe('TagInput — 화면 읽기 안내문 다국어', () => {
   // @effects tag_input_screen_reader_text_localized
   it('검색 결과 수 안내가 화면 언어 문구다 (「1 result available」 아님)', async () => {
     const user = userEvent.setup();
-    const { container } = render(<TagInput value={[]} options={options} />);
+    const { container } = render(<TagInput value={[]} options={options} onChange={() => {}} />);
 
     await user.type(screen.getByRole('combobox'), '매니');
     await screen.findByText('매니저', { selector: '[class*="option"] *, [class*="option"]' }).catch(() => null);

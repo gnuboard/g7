@@ -218,6 +218,29 @@
       <set-state target="global" :queueStatusFailed="true"/>
     </fail>
   </data-source>
+  <!-- 썸네일 저장 위치별 사용량 (#869) — 업로드 탭에서만 받는다. 공개·권한 두 저장 위치마다 디스크·파일 수·용량을, 원격 디스크(S3·CDN)는
+       세지 않고 remote=true 로 돌려준다. 같은 응답의 presets(비우기 규격 선택지)·sources(「기존 이미지 썸네일 만들기」의 소스 선택지)도 쓴다.
+       비우기·만들기가 끝날 때와 업로드 탭 저장 성공 뒤 다시 받는다(디스크를 바꿔 저장하면 새 디스크 기준으로 다시 센다).
+       실패 표식은 큐 워커 상태와 같은 이유로 _global 에 둔다(데이터소스 핸들러가 세운 _local 키는 입력 변경 때 초기값으로 돌아간다).
+       디스크를 훑는 집계라 늦을 수 있어 background 로 받고 탭 전환 덮개(transition-overlay)의 기다림 목록에 넣지 않는다 — 종전
+       progressive 는 이 화면 규약(progressive 소스는 모두 wait-for 에 둔다, 이슈 #245 가드)상 덮개가 기다려, 업로드 탭 전체가 집계가
+       끝날 때까지 덮여 설정 칸을 고칠 수 없었다. background 도 받는 시점·성공/실패 처리는 progressive 와 같고 덮개만 기다리지 않는다.
+       사용량 줄은 응답 전까지 「-」로 그린다. -->
+  <data-source id="thumbnailStats" label_key="$t:editor.data_source.thumbnailStats" type="api" endpoint="/api/admin/thumbnails/stats" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'upload'}}" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="locations" :value="[]"/>
+        <field name="presets" :value="[]"/>
+        <field name="sources" :value="[]"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state target="global" :thumbnailStatsFailed="false"/>
+    </success>
+    <fail>
+      <set-state target="global" :thumbnailStatsFailed="true"/>
+    </fail>
+  </data-source>
   <!-- 리버스 프록시 진단 — 고급 탭과 보안 탭에서 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다.
        보안 탭의 접근 제한 카드는 이 값으로 현재 접속 IP 를 보여 주고 프록시 경고를 띄운다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와 같은 해석(신뢰 프록시 반영)이라, 화면에 보이는 IP 를 넣으면 그 검증을 통과한다. -->
   <data-source id="trustedProxy" label_key="$t:editor.data_source.trustedProxy" type="api" endpoint="/api/admin/settings/trusted-proxy" method="GET" if="{{['advanced', 'security'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
@@ -432,6 +455,7 @@
     <field name="policyErrors" :value="null"/>
     <field name="policyIsNew" :value="true"/>
     <field name="policyIsSaving" :value="false"/>
+    <field name="thumbnailPurgePreset" :value="{}"/>
   </init-local>
   <computed name="canReadLanguagePacks">{{current_user?.data ? (current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.read') : null}}</computed>
   <computed name="canReadIdentityProviders">{{current_user?.data ? (current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.admin.identity.providers.read') : null}}</computed>
@@ -453,6 +477,112 @@
   <computed name="coreUpdateManualSources">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.manual_sources ?? []}}</computed>
   <computed name="coreUpdateModified">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.modified_layouts ?? null}}</computed>
   <computed name="coreUpdatePreflight">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.preflight ?? null}}</computed>
+  <computed name="thumbnailLocations">{{(function() { const form = _local.form?.upload ?? {}; const saved = settings?.data?.upload ?? {}; const stats = thumbnailStats?.data?.locations ?? []; const fmt = (b) =&gt; (b === null || b === undefined) ? '' : (b &gt;= 1073741824 ? (b / 1073741824).toFixed(2) + ' GB' : (b &gt;= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : (b &gt;= 1024 ? (b / 1024).toFixed(1) + ' KB' : b + ' B'))); return ['public', 'gated'].map(kind =&gt; { const field = 'thumbnail_disk_' + kind; const current = form[field] ?? 'thumbnails'; const savedDisk = saved[field] ?? 'thumbnails'; const stat = stats.find(l =&gt; l.kind === kind) ?? null; return { kind: kind, field: field, current: current, saved: savedDisk, locked: current !== savedDisk, disk_label: stat?.disk_label ?? '', remote: stat?.remote === true, loaded: stat !== null, count: stat?.count ?? null, bytes: stat?.bytes ?? null, size: fmt(stat?.bytes), by_preset: stat?.by_preset ?? null }; }); })()}}</computed>
+  <computed name="thumbnailPresetErrors">{{(function() { const e = _local.errors; const rows = _local.form?.upload?.thumbnail_presets_rows ?? []; const empty = { root: [], rows: {} }; if (!e || typeof e !== 'object') return empty; const sent = rows.map((r, i) =&gt; ({ kind: r?.kind, i: i })).filter(x =&gt; x.kind !== 'og').map(x =&gt; x.i); const prefix = 'upload.thumbnail_presets.'; return Object.entries(e).reduce((out, [k, v]) =&gt; { const msgs = Array.isArray(v) ? v : [v]; if (k === 'upload.thumbnail_presets') return { ...out, root: [...out.root, ...msgs] }; if (!k.startsWith(prefix)) return out; const parts = k.slice(prefix.length).split('.'); const at = sent[Number(parts[0])]; if (at === undefined) return { ...out, root: [...out.root, ...msgs] }; const field = parts[1] ?? 'name'; const cell = out.rows[at] ?? {}; return { ...out, rows: { ...out.rows, [at]: { ...cell, [field]: [...(cell[field] ?? []), ...msgs] } } }; }, empty); })()}}</computed>
+  <!-- 기존 이미지 썸네일 만들기의 한 걸음 (#869) — 「기존 이미지 썸네일 만들기」 창의 시작 단추가 부르고, 응답에 다음 커서가 있으면
+       자기 자신을 다시 부른다(서버는 한 번에 설정 건수만 처리하고 next_cursor 를 돌려준다). 계속할지는 `switch` 의 값으로 가른다 —
+       값 식은 부르는 순간의 최신 `_global` 을 읽으므로, 요청이 도는 사이 누른 「멈춤」·창 닫기가 다음 걸음 전에 반영된다
+       (액션의 `if` 는 처음 누른 순간의 상태를 읽어 멈춤을 놓친다).
+       사슬이 둘로 겹치지 않게 두 겹으로 막는다. 첫째, 요청이 도는 동안(inflight) 창을 여는 버튼과 시작 단추를 잠근다 — 종전에는
+       진행 중에 창을 닫고 다시 열면 여는 버튼이 상태를 새로 깔며 inflight 를 false 로 되돌려, 앞 요청이 아직 도는데 시작을 또 누를 수
+       있었다. 둘째, 시작 단추가 실행 토큰(runId)을 새로 받고 걸음은 떠날 때 그 토큰을 요청 토큰(requestRun)으로 적는다. 응답이
+       돌아왔을 때 두 토큰이 다르면(창을 새로 열어 토큰이 비었거나 다른 실행이 시작됨) 그 응답은 지난 실행의 것이라 아무것도
+       쌓지 않고 버린다 — 처리 건수·inflight 는 지금 실행의 몫이다. 액션 정의는 호출마다 값을 담아 둘 자리가 없어 토큰을 전역에
+       두므로, 같은 순간 두 요청이 함께 도는 경우는 첫째 잠금이 막는다. -->
+  <action name="thumbnailPregenerateStep">
+    <sequence>
+      <set-state target="global" :thumbnailPregen.inflight="true" thumbnailPregen.requestRun="{{_global.thumbnailPregen?.runId ?? null}}"/>
+      <api-call :auth_required="true" target="/api/admin/thumbnails/pregenerate" method="POST">
+        <body cursor="{{_global.thumbnailPregen?.cursor ?? null}}" sources="{{_global.thumbnailPregen?.sources ?? []}}" presets="{{_global.thumbnailPregen?.presets ?? []}}"/>
+        <success>
+          <switch on="{{(_global.thumbnailPregen?.runId ?? null) !== null &amp;&amp; _global.thumbnailPregen?.requestRun === _global.thumbnailPregen?.runId ? 'current' : 'stale'}}">
+            <case when="current">
+              <sequence>
+                <set-state target="global" :thumbnailPregen.inflight="false" thumbnailPregen.cursor="{{response?.data?.next_cursor ?? null}}" thumbnailPregen.processed="{{(_global.thumbnailPregen?.processed ?? 0) + (response?.data?.processed ?? 0)}}" thumbnailPregen.generated="{{(_global.thumbnailPregen?.generated ?? 0) + (response?.data?.generated ?? 0)}}" thumbnailPregen.total="{{response?.data?.total ?? _global.thumbnailPregen?.total ?? null}}" thumbnailPregen.steps="{{(_global.thumbnailPregen?.steps ?? 0) + 1}}" thumbnailPregen.done="{{!response?.data?.next_cursor}}"/>
+                <switch on="{{(!!response?.data?.next_cursor &amp;&amp; _global.thumbnailPregen?.paused !== true) ? 'next' : (!response?.data?.next_cursor ? 'done' : 'paused')}}">
+                  <case when="next">
+                    <action-ref name="thumbnailPregenerateStep"/>
+                  </case>
+                  <case when="done">
+                    <sequence>
+                      <set-state target="global" :thumbnailPregen.running="false"/>
+                      <toast type="success" message="$t:admin.settings.upload.thumbnail.pregenerate_modal.done_toast|generated={{_global.thumbnailPregen?.generated ?? 0}}"/>
+                      <refetch-data-source dataSourceId="thumbnailStats"/>
+                    </sequence>
+                  </case>
+                  <case when="paused">
+                    <refetch-data-source dataSourceId="thumbnailStats"/>
+                  </case>
+                </switch>
+              </sequence>
+            </case>
+          </switch>
+        </success>
+        <fail>
+          <switch on="{{(_global.thumbnailPregen?.runId ?? null) !== null &amp;&amp; _global.thumbnailPregen?.requestRun === _global.thumbnailPregen?.runId ? 'current' : 'stale'}}">
+            <case when="current">
+              <sequence>
+                <set-state target="global" :thumbnailPregen.inflight="false" :thumbnailPregen.running="false" thumbnailPregen.error="{{error.message ?? $t('admin.settings.upload.thumbnail.pregenerate_modal.failed')}}"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.settings.upload.thumbnail.pregenerate_modal.failed'}}"/>
+              </sequence>
+            </case>
+          </switch>
+        </fail>
+      </api-call>
+    </sequence>
+  </action>
+  <!-- 썸네일 비우기의 한 걸음 (#869) — 업로드 탭 저장 위치 줄의 「비우기」(origin row)와 「두 곳 모두 비우기」 확인 창(origin all)이
+       `_global.thumbnailPurgeRun` 을 깔고 부른다. 같은 디스크를 나눠 쓰는 위치나 규격 하나만 지우면 서버가 파일마다 판정해야 해서,
+       한 요청이 파일 전체를 훑지 않게 시간 예산만큼만 걷고 next_cursor 를 돌려준다. 다음 커서가 있으면 자기 자신을 다시 부르고,
+       위치별 삭제 수는 deleted 에 쌓는다(디스크를 통째로 비운 -1 은 개수를 세지 않았다는 뜻이라 -1 로 남긴다).
+       진행 상태가 전역 하나라 도는 동안 두 단추가 모두 잠겨 사슬이 겹치지 않는다. 끝나면 부른 곳에 맞게 알린다 — 개수를 세지 않은
+       위치가 있으면 「-1개」 대신 서버 문구를 보인다. 확인 창은 아직 맨 위에 열려 있을 때만 닫는다(그 사이 연 다른 창을 닫지 않게). -->
+  <action name="thumbnailPurgeStep">
+    <api-call :auth_required="true" target="/api/admin/thumbnails/purge" method="POST">
+      <body location="{{_global.thumbnailPurgeRun?.location}}" preset="{{_global.thumbnailPurgeRun?.preset || undefined}}" cursor="{{_global.thumbnailPurgeRun?.cursor ?? null}}"/>
+      <success>
+        <sequence>
+          <set-state target="global" thumbnailPurgeRun.cursor="{{response?.data?.next_cursor ?? null}}" thumbnailPurgeRun.deleted="{{['public', 'gated'].filter(k =&gt; (_global.thumbnailPurgeRun?.deleted ?? {})[k] !== undefined || (response?.data?.deleted ?? {})[k] !== undefined).reduce((acc, k) =&gt; ({ ...acc, [k]: ((_global.thumbnailPurgeRun?.deleted ?? {})[k] === -1 || (response?.data?.deleted ?? {})[k] === -1) ? -1 : ((_global.thumbnailPurgeRun?.deleted ?? {})[k] ?? 0) + ((response?.data?.deleted ?? {})[k] ?? 0) }), {})}}"/>
+          <switch on="{{response?.data?.next_cursor ? 'next' : (_global.thumbnailPurgeRun?.origin === 'all' ? 'done_all' : 'done_row')}}">
+            <case when="next">
+              <action-ref name="thumbnailPurgeStep"/>
+            </case>
+            <case when="done_row">
+              <sequence>
+                <toast type="success" message="{{(_global.thumbnailPurgeRun?.deleted?.[_global.thumbnailPurgeRun?.location] ?? 0) === -1 ? (response?.message ?? '') : $t('admin.settings.upload.thumbnail.storage.purge_success', {count: _global.thumbnailPurgeRun?.deleted?.[_global.thumbnailPurgeRun?.location] ?? 0})}}"/>
+                <set-state target="global" :thumbnailPurgeRun="null"/>
+                <refetch-data-source dataSourceId="thumbnailStats"/>
+              </sequence>
+            </case>
+            <case when="done_all">
+              <sequence>
+                <toast type="success" message="{{Object.values(_global.thumbnailPurgeRun?.deleted ?? {}).includes(-1) ? (response?.message ?? '') : $t('admin.settings.upload.thumbnail.purge_all_modal.success', {public: _global.thumbnailPurgeRun?.deleted?.public ?? 0, gated: _global.thumbnailPurgeRun?.deleted?.gated ?? 0})}}"/>
+                <refetch-data-source dataSourceId="thumbnailStats"/>
+                <switch on="{{(_global.modalStack ?? []).slice(-1)[0] === 'settings_thumbnail_purge_all_modal' ? 'close' : 'keep'}}">
+                  <case when="close">
+                    <close-modal/>
+                  </case>
+                </switch>
+                <set-state target="global" :thumbnailPurgeRun="null" :thumbnailPurgeAll="null"/>
+              </sequence>
+            </case>
+          </switch>
+        </sequence>
+      </success>
+      <fail>
+        <sequence>
+          <toast type="error" message="{{error.message ?? '$t:admin.settings.upload.thumbnail.storage.purge_failed'}}"/>
+          <switch on="{{_global.thumbnailPurgeRun?.origin === 'all' &amp;&amp; (_global.modalStack ?? []).slice(-1)[0] === 'settings_thumbnail_purge_all_modal' ? 'close' : 'keep'}}">
+            <case when="close">
+              <close-modal/>
+            </case>
+          </switch>
+          <set-state target="global" :thumbnailPurgeRun="null" :thumbnailPurgeAll="null"/>
+          <refetch-data-source dataSourceId="thumbnailStats"/>
+        </sequence>
+      </fail>
+    </api-call>
+  </action>
   <permissions>
     <permission>core.settings.read</permission>
   </permissions>
@@ -515,7 +645,9 @@
     </sequence>
   </init>
   <slot name="content">
-    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.settings.page_title">
         <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
           <on type="click">
@@ -536,8 +668,12 @@
           <p class="text-info-soft">$t:admin.settings.env_locked_notice</p>
         </div>
       </div>
-      <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
-        <tab-navigation data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav-responsive" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
+      <div data-ref="sticky_header" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <tab-navigation data-type="composite" data-ref="tab_navigation" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
+          <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+          <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
           <prop name="tabs">
             <item id="general" href="/admin/settings?tab=general" label="$t:admin.settings.tabs.general"/>
             <item id="mail" href="/admin/settings?tab=mail" label="$t:admin.settings.tabs.mail"/>
@@ -578,7 +714,9 @@
             </conditions>
           </on>
         </tab-navigation>
-        <tab-navigation-scroll data-type="composite" data-ref="identity_sub_tab_navigation" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}" class="sub-tab-nav" sectionIdPrefix="identity_section_" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+        <tab-navigation-scroll data-type="composite" data-ref="identity_sub_tab_navigation" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}" class="bg-white dark:bg-gray-800 flex gap-1 px-6" sectionIdPrefix="identity_section_" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+          <responsive on="640-1023" class="bg-white dark:bg-gray-800 flex gap-1 px-8"/>
+          <responsive on="1024-" class="bg-white dark:bg-gray-800 flex gap-1 px-10"/>
           <prop name="tabs">
             <item id="basic" label="$t:admin.settings.identity.sub_tabs.basic"/>
             <item id="providers" label="$t:admin.settings.identity.sub_tabs.providers"/>
@@ -644,7 +782,10 @@
                  알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —
                  본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).
                  창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.
-                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736). -->
+                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).
+                 업로드 탭은 썸네일 규격 표(화면용 행 `thumbnail_presets_rows`, 행마다 kind·defaults)를 저장 키 `thumbnail_presets` 로 바꿔 보낸다 —
+                 표시용 칸은 빼고 og 행도 뺀다(크기를 SEO 탭이 소유하고 서버도 저장하지 않는다). 고정 슬롯 보충은 서버(mergeForSave) 몫이다.
+                 저장 뒤 썸네일 사용량도 다시 받는다 — 저장 위치를 바꿨다면 새 디스크 기준으로 세고 그 줄의 비우기 잠금이 풀린다(#869). -->
             <switch on="{{((_global.activeSettingsTab || query.tab) === 'notification_definitions' &amp;&amp; (settings?.data?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active !== false &amp;&amp; (_local.form?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active === false) ? 'confirm_mail_off' : 'save'}}">
               <case when="confirm_mail_off">
                 <sequence>
@@ -660,10 +801,16 @@
               <case when="save">
                 <sequence>
                   <emit-event event="upload:site_logo"/>
+                  <set-state target="local" uploadFailedCount="{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
                   <emit-event event="upload:site_favicon"/>
+                  <set-state target="local" uploadFailedCount="{{(_local.uploadFailedCount ?? 0) + [].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
                   <emit-event event="upload:og_image_default"/>
-                  <set-state target="local" :isSaving="true" :errors="null"/>
-                  <api-call :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}">
+                  <set-state target="local" uploadFailedCount="{{(_local.uploadFailedCount ?? 0) + [].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
+                  <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다. -->
+                  <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
+                  <set-state if="{{(_local.uploadFailedCount ?? 0) === 0}}" target="local" :isSaving="true" :errors="null"/>
+                  <!-- 본문에서 .env 로 잠긴 칸(`_computed.envLocked` 의 출처 `_meta.env_locked` 의 `{탭}.{키}`)을 뺀다 — 바꿀 수 없는 값을 보내지 않는다(#869 ζ). -->
+                  <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; const locked = form._meta?.env_locked || {}; const unlocked = (t, o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => locked[t + '.' + k] !== true)); if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'upload') { const upload = Object.fromEntries(Object.entries(unlocked('upload', form.upload)).filter(([k]) => k !== 'thumbnail_presets_rows')); const rows = form.upload?.thumbnail_presets_rows; return { _tab: 'upload', upload: Array.isArray(rows) ? { ...upload, thumbnail_presets: rows.filter(r => r?.kind !== 'og').map(r => ({ name: r.name, source: r.source, width: r.width, height: r.height, fit: r.fit, anchor: r.anchor, quality: r.quality, format: r.format, upscale: r.upscale === true, pregenerate: r.pregenerate === true, numeric: r.numeric === true, enabled: r.enabled !== false })) } : upload }; } return { _tab: tab, [tab]: unlocked(tab, form[tab]) }; })()}}">
                     <success>
                       <set-state target="local" :isSaving="false" :hasChanges="false"/>
                       <set-state target="global" settings="{{result.data.frontend_settings ?? result.data.settings}}" uploadSettings="{{(result.data.frontend_settings ?? result.data.settings).upload}}"/>
@@ -672,6 +819,7 @@
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" dataSourceId="privacyPreview"/>
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'security'}}" dataSourceId="passwordExpiryPreview"/>
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}" dataSourceId="queueStatus"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'upload'}}" dataSourceId="thumbnailStats"/>
                     </success>
                     <fail>
                       <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
@@ -747,6 +895,10 @@
   <modal src="partials/admin_settings/_modal_privacy_run.g7.html"/>
   <!-- 비밀번호 만료 직권 실행 확인 창(보안 탭) — 사전 안내·만료 처리 두 단계가 함께 쓴다. 명단 창은 위 개인정보 명단 창을 돌려 쓴다. -->
   <modal src="partials/admin_settings/_modal_password_expiry_run.g7.html"/>
+  <!-- 썸네일 두 곳 모두 비우기 확인 창(업로드 탭, #869) — 공개·권한 두 저장 위치의 요약을 나눠 보이고 한 번 묻는다. -->
+  <modal src="partials/admin_settings/_modal_thumbnail_purge_all.g7.html"/>
+  <!-- 기존 이미지 썸네일 만들기 창(업로드 탭, #869) — 소스·규격을 고르고 명명 액션 thumbnailPregenerateStep 으로 끝까지 이어 만든다. -->
+  <modal src="partials/admin_settings/_modal_thumbnail_pregenerate.g7.html"/>
   <!-- 저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다 -->
   <modal src="partials/admin_settings/_modal_unsaved_tab_switch.g7.html"/>
   <!-- 확장 작업이 「완료했지만 일부 항목이 실패」했을 때의 노란 경고 결과 창 — 성공 갈래가 응답 data.warnings 로 연다(코어 7.1.3). -->

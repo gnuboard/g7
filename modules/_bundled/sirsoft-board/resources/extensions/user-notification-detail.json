@@ -85,8 +85,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "board:grid board:grid-cols-2 board:gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "board-grid-2col-responsive"
+                                        "className": "board:grid board:grid-cols-1 board:gap-4"
                                     },
                                     "children": [
                                         {

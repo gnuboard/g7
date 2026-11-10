@@ -19,7 +19,8 @@
     <!-- IdP 추가 칸 -->
     <div data-ref="idp_add_form" data-if="{{_local.showAddIdp}}" data-key="newIdp" class="sso-admin-card sso:space-y-4">
       <h2 class="sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.settings.idp.add_title</h2>
-      <div class="sso-grid-2col-responsive">
+      <div class="sso:grid sso:grid-cols-1 sso:gap-4">
+        <responsive on="768-" class="sso:grid sso:grid-cols-2 sso:gap-4"/>
         <div>
           <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.protocol</label>
           <select name="protocol" class="sso:w-full">

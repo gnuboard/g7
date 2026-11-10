@@ -10,7 +10,6 @@
  *  ④ 권한 TagInput — 후보 칩 추가/제거 → permissions 패치(빈 배열=키 제거)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
@@ -60,6 +59,10 @@ beforeEach(() => {
 });
 
 describe('MetaForm', () => {
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_renders_and_patches_fields
+   */
   it('제목/설명/트리라벨을 렌더하고 meta 필드를 패치한다', () => {
     const store = makeStore({ meta: { title: '홈', description: '설명' } });
     render(<MetaForm getValue={store.getValue} patch={store.patch} t={t} />);
@@ -73,6 +76,10 @@ describe('MetaForm', () => {
     expect(store.patch).toHaveBeenLastCalledWith('meta', { title: '새 제목', description: '설명' });
   });
 
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_empty_value_removes_key
+   */
   it('빈 값 입력 시 meta 키를 제거한다(비파괴)', () => {
     const store = makeStore({ meta: { title: '홈', editor_label: '라벨' } });
     render(<MetaForm getValue={store.getValue} patch={store.patch} t={t} />);
@@ -83,6 +90,10 @@ describe('MetaForm', () => {
     expect(store.patch).toHaveBeenLastCalledWith('meta', { title: '홈' });
   });
 
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_expression_title_uses_i18n_field
+   */
   it('표현식 제목도 I18nTextField 로 위임한다', () => {
     // 표현식+다국어 분해 트리는 I18nTextField(여기선 mock) 소관 — MetaForm 은 더는 raw 고급 배지로
     // 가로채지 않고 값을 그대로 위임한다. mock 이 값을 받았는지(=고급 배지 미렌더)로 검증.
@@ -96,6 +107,10 @@ describe('MetaForm', () => {
   // 회귀 — 값 필드(제목/설명/트리라벨)는
   // 런타임 앱 lang 키(`board.edit_post`)를 해석하는 fieldT 를 받아야 한다(편집기 전용 t 는 못 풀어
   // 칩화 시 텍스트 빈 base 로 소실). fieldT 미전달 시 t 폴백.
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_value_fields_get_field_t
+   */
   it('값 필드는 fieldT(앱 키 해석)를 받는다 — 분기 칩 텍스트 소실 회귀 가드', () => {
     const editorT = (k: string) => (k === 'board.edit_post' ? k : `editor:${k}`); // 앱 키 못 풂.
     const appFieldT = (k: string) => (k === 'board.edit_post' ? '게시글 수정' : `editor:${k}`); // 앱 키 해석.
@@ -107,6 +122,10 @@ describe('MetaForm', () => {
     expect(screen.getByTestId('g7le-meta-editor-label-mock')).toHaveAttribute('data-resolved-board', '게시글 수정');
   });
 
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_field_t_falls_back_to_t
+   */
   it('fieldT 미전달 시 t 폴백(기존 동작 보존)', () => {
     const editorT = (k: string) => (k === 'board.edit_post' ? '게시글 수정(fallback)' : `editor:${k}`);
     const store = makeStore({ meta: { title: '홈' } });
@@ -114,6 +133,10 @@ describe('MetaForm', () => {
     expect(screen.getByTestId('g7le-meta-title-mock')).toHaveAttribute('data-resolved-board', '게시글 수정(fallback)');
   });
 
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_icon_free_input_fallback
+   */
   it('icon-picker 미등록 시 자유 입력으로 폴백한다', () => {
     const store = makeStore({ meta: { icon: 'home' } });
     render(<MetaForm getValue={store.getValue} patch={store.patch} t={t} />);
@@ -122,6 +145,10 @@ describe('MetaForm', () => {
     expect(iconInput).toHaveValue('home');
   });
 
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_icon_picker_collapsed_toggle
+   */
   it('icon-picker 등록 시 그리드 기본 닫힘 + 토글로 위젯 렌더(S5 합의 — 다 펼치지 않음)', () => {
     registerWidget('icon-picker', ({ value }) => (
       <div data-testid="icon-widget">{String(value)}</div>
@@ -137,6 +164,10 @@ describe('MetaForm', () => {
     expect(screen.getByTestId('icon-widget')).toHaveTextContent('star');
   });
 
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_permissions_tag_input_patches
+   */
   it('권한 TagInput — 후보 추가/제거가 permissions 를 패치한다', () => {
     const store = makeStore({ permissions: ['board.manage'] });
     render(
@@ -160,6 +191,10 @@ describe('MetaForm', () => {
     expect(store.patch).toHaveBeenLastCalledWith('permissions', ['board.manage', 'shop.order.view']);
   });
 
+  /**
+   * @scenario subject=meta_form
+   * @effects meta_form_last_permission_removes_key
+   */
   it('마지막 권한 제거 시 permissions 키를 제거한다(제약 없음)', () => {
     const store = makeStore({ permissions: ['board.manage'] });
     render(

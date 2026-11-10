@@ -31,6 +31,7 @@ effects:
   - flush_runs_pending_trailing_immediately
   - flush_clears_timer_so_it_does_not_run_twice
   - flush_runs_every_pending_action
+  - inner_flush_does_not_rerun_items_it_already_ran  # flush 한 항목(다른 화면 navigate)이 부른 안쪽 flush 가 먼저 실행한 남은 항목을 바깥 flush 가 다시 실행하지 않는다
   - flush_handles_leading_plus_trailing_mode
   - repeated_input_flushes_with_the_last_value
   # 타이머·flusher 정리

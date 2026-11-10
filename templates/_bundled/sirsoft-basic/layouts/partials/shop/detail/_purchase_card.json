@@ -607,8 +607,15 @@
                     "comment": "=== 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) ===",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid md:grid-cols-2 gap-2"
+                        "className": "grid gap-2"
                     },
                     "children": [
                         {
@@ -684,16 +691,17 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "장바구니 키를 갖춘다 — 첫 방문 비회원의 키 발급이 init 상한(3초)을 넘겨 아직 없으면 그 발급을 기다리거나 다시 요청한다",
+                                                        "handler": "ensureCartKey"
+                                                    },
+                                                    {
                                                         "comment": "바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음)",
                                                         "handler": "apiCall",
                                                         "target": "/api/modules/sirsoft-ecommerce/checkout",
                                                         "auth_mode": "optional",
                                                         "params": {
                                                             "method": "POST",
-                                                            "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}",
-                                                            "headers": {
-                                                                "X-Cart-Key": "{{_global.cartKey}}"
-                                                            }
+                                                            "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}"
                                                         },
                                                         "onSuccess": {
                                                             "comment": "로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨",
@@ -849,15 +857,16 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "장바구니 키를 갖춘다 — 첫 방문 비회원의 키 발급이 init 상한(3초)을 넘겨 아직 없으면 그 발급을 기다리거나 다시 요청한다",
+                                                        "handler": "ensureCartKey"
+                                                    },
+                                                    {
                                                         "handler": "apiCall",
                                                         "target": "/api/modules/sirsoft-ecommerce/cart",
                                                         "auth_mode": "optional",
                                                         "params": {
                                                             "method": "POST",
-                                                            "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}",
-                                                            "headers": {
-                                                                "X-Cart-Key": "{{_global.cartKey}}"
-                                                            }
+                                                            "body": "{{product.data?.has_options && (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}"
                                                         },
                                                         "onSuccess": [
                                                             {

@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 분할 13블록 · 팔레트 44 · 스타일 컨트롤 173 · 편집 역량 50 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 47 · 액션 레시피 21
+> 분할 13블록 · 팔레트 44 · 스타일 컨트롤 174 · 편집 역량 50 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 47 · 액션 레시피 21
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -32,7 +32,7 @@
 |---|---|---|---|
 | `componentPalette.entries` | 편집기 "요소 추가" 팔레트에 나타나는 항목 | 44 | `editor-spec/componentPalette.json` |
 | `componentPalette.groups` | 팔레트 좌측 목록의 묶음 | 2 | `editor-spec/componentPalette.json` |
-| `controls` | 재사용 스타일 컨트롤 정의 | 173 | `editor-spec/controls.json` |
+| `controls` | 재사용 스타일 컨트롤 정의 | 174 | `editor-spec/controls.json` |
 | `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 50 | `editor-spec/componentCapabilities.json` |
 | `nesting.draggable` | 캔버스에서 끌어 옮길 수 있는 컴포넌트 | 44 | `editor-spec/nesting.json` |
 | `nesting.containers` | 자식을 담을 수 있는 컴포넌트와 그 허용 규칙 | 14 | `editor-spec/nesting.json` |

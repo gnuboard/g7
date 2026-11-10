@@ -7,7 +7,7 @@ description: |
   수정 이력: 이커머스 전수 실측 S5 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
 
 axes:
-  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39]
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41]
   # c01: 모든 탭을 렌더링해야 함
   # c02: div 요소로 렌더링되어야 함
   # c03: 첫 번째 탭이 기본 활성화되어야 함
@@ -47,9 +47,13 @@ axes:
   # c37: 모바일 전환 시에는 tablist/tab 을 두지 않는다
   # c38: 데스크톱: if 가 false 인 탭은 그리지 않고 나머지는 그린다
   # c39: 모바일 선택 목록에도 if 가 false 인 탭은 없다
+  # c40: 모바일 모양도 레이아웃이 준 className 의 좌우 여백을 따른다(게시판 설정 하위 탭 막대 24px, #869 P2)
+  # c41: 모바일 판정은 렌더 폭(useRenderWidth)으로 한다 — 767 모바일, 768 데스크톱
 
 effects:
   - tab_navigation_scrolls
+  - tab_nav_mobile_select_fallback
+  - tab_nav_mobile_keeps_layout_padding   # 640 이하 선택 상자 모양에서도 레이아웃 className 여백을 쓴다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigationScroll.test.tsx

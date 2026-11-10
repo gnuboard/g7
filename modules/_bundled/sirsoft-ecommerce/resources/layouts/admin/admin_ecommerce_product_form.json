@@ -699,8 +699,15 @@
                                 "id": "page_header",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "641-": {
+                                        "props": {
+                                            "className": "ecommerce:mb-6 ecommerce:px-6 ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:gap-3"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-page-header-padded ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:gap-3"
+                                    "className": "ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4 ecommerce:flex ecommerce:justify-between"
                                 },
                                 "children": [
                                     {
@@ -710,8 +717,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H1",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce-page-title"
+                                                    "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                                 },
                                                 "text": "{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}"
                                             },
@@ -1052,6 +1066,9 @@
                                                         "if": "{{copy_source?.data?.thumbnail_url}}",
                                                         "props": {
                                                             "src": "{{copy_source?.data?.thumbnail_url}}",
+                                                            "thumbPreset": "sm",
+                                                            "loading": "lazy",
+                                                            "decoding": "async",
                                                             "alt": "{{$localized(copy_source?.data?.name)}}",
                                                             "className": "ecommerce:w-16 ecommerce:h-16 ecommerce:object-cover ecommerce:rounded-lg ecommerce:flex-shrink-0"
                                                         }
@@ -1327,6 +1344,30 @@
                                                     },
                                                     {
                                                         "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "uploadFailedCount": "{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다.",
+                                                        "handler": "setState",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:attachment.upload_failed_save_stopped"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
                                                         "if": "{{!!route.itemCode && Array.isArray(_local._eventResult?.data?.allFiles)}}",
                                                         "params": {
                                                             "target": "local",
@@ -1336,6 +1377,7 @@
                                                     {
                                                         "handler": "apiCall",
                                                         "target": "{{route.itemCode ? '/api/modules/sirsoft-ecommerce/admin/products/' + route.itemCode : '/api/modules/sirsoft-ecommerce/admin/products'}}",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) === 0}}",
                                                         "auth_required": true,
                                                         "params": {
                                                             "method": "{{route.itemCode ? 'PUT' : 'POST'}}",

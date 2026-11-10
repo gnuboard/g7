@@ -35,5 +35,11 @@
     "reason_not_installed": "Not installed",
     "reason_inactive": "Disabled",
     "reason_version_mismatch": "Version too low {{installed}} → {{required}}"
+  },
+  "default": {
+    "title": "We could not process your request",
+    "description": "This may be a temporary problem. Refresh the page or try again later.",
+    "refresh": "Refresh",
+    "back_to_home": "Back to Home"
   }
 }

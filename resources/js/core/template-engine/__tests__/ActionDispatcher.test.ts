@@ -4,7 +4,7 @@
  * 이벤트 핸들러 생성 및 액션 실행 테스트
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher, ActionDefinition } from '../ActionDispatcher';
 import { Logger } from '../../utils/Logger';
 
@@ -28,7 +28,7 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('ActionDispatcher', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
 
   beforeEach(() => {
     mockNavigate = vi.fn();
@@ -4630,13 +4630,11 @@ describe('ActionDispatcher', () => {
 
   describe('loadScript handler', () => {
     let originalCreateElement: typeof document.createElement;
-    let originalHead: HTMLHeadElement;
     let appendedScripts: HTMLScriptElement[];
 
     beforeEach(() => {
       appendedScripts = [];
       originalCreateElement = document.createElement.bind(document);
-      originalHead = document.head;
 
       // Mock document.createElement for script
       vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
@@ -4769,7 +4767,7 @@ describe('ActionDispatcher', () => {
 
     describe('출처 게이트 (KVE-2026-1915 B-2 후속)', () => {
       const dispatch = (params: Record<string, any>) =>
-        dispatcher.executeAction(
+        dispatcher['executeAction'](
           { type: 'click', handler: 'loadScript', params } as ActionDefinition,
           {} as any
         );
@@ -4847,7 +4845,7 @@ describe('ActionDispatcher', () => {
 
         // appendChild mock 이 10ms 뒤 onload 를 부른다 (beforeEach)
         const p1 = dispatcher
-          .executeAction(
+          ['executeAction'](
             {
               type: 'click',
               handler: 'loadScript',
@@ -4857,7 +4855,7 @@ describe('ActionDispatcher', () => {
             {} as any
           );
         const p2 = dispatcher
-          .executeAction(
+          ['executeAction'](
             {
               type: 'click',
               handler: 'loadScript',
@@ -4915,7 +4913,7 @@ describe('ActionDispatcher', () => {
           onLoad: { type: 'click', handler: 'setState', params: { loaded: true } },
         } as ActionDefinition;
 
-        const result = await dispatcher.executeAction(action, {
+        const result = await dispatcher['executeAction'](action, {
           setState: mockSetState,
         } as any);
 
@@ -4967,7 +4965,7 @@ describe('ActionDispatcher', () => {
 
     describe('임의 코드 실행 seam 차단 (심층 방어)', () => {
       const dispatch = (handler: string, params: Record<string, any>, context: any = {}) =>
-        dispatcher.executeAction(
+        dispatcher['executeAction'](
           { type: 'click', handler, params } as ActionDefinition,
           context
         );
@@ -5054,7 +5052,7 @@ describe('ActionDispatcher', () => {
           },
         } as ActionDefinition;
 
-        await dispatcher.executeAction(action, { setState: mockSetState, state: {} } as any);
+        await dispatcher['executeAction'](action, { setState: mockSetState, state: {} } as any);
         await new Promise(resolve => setTimeout(resolve, 30));
 
         return mockSetState;
@@ -5721,6 +5719,7 @@ describe('ActionDispatcher', () => {
         handler: 'sequence',
         actions: [
           {
+            type: 'click',
             handler: 'setState',
             params: {
               target: 'local',
@@ -5729,6 +5728,7 @@ describe('ActionDispatcher', () => {
             },
           },
           {
+            type: 'click',
             handler: 'setState',
             params: {
               target: 'local',
@@ -5799,6 +5799,7 @@ describe('ActionDispatcher', () => {
         actions: [
           {
             // 저장 시작: errors 클리어, isSaving true
+            type: 'click',
             handler: 'setState',
             params: {
               target: 'local',
@@ -5808,6 +5809,7 @@ describe('ActionDispatcher', () => {
           },
           {
             // 저장 성공 후: isSaving false, hasChanges false (errors는 명시하지 않음)
+            type: 'click',
             handler: 'setState',
             params: {
               target: 'local',
@@ -5863,6 +5865,7 @@ describe('ActionDispatcher', () => {
         handler: 'sequence',
         actions: [
           {
+            type: 'click',
             handler: 'setState',
             params: {
               target: 'local',
@@ -5870,6 +5873,7 @@ describe('ActionDispatcher', () => {
             },
           },
           {
+            type: 'click',
             handler: 'setState',
             params: {
               target: 'local',
@@ -5877,6 +5881,7 @@ describe('ActionDispatcher', () => {
             },
           },
           {
+            type: 'click',
             handler: 'setState',
             params: {
               target: 'local',
@@ -7004,6 +7009,7 @@ describe('ActionDispatcher', () => {
         });
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'apiCall',
           params: {
             target: '/api/items',
@@ -7044,6 +7050,7 @@ describe('ActionDispatcher', () => {
         });
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'apiCall',
           params: {
             target: '/api/items',
@@ -7087,6 +7094,7 @@ describe('ActionDispatcher', () => {
         });
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'apiCall',
           params: {
             target: '/api/user',
@@ -7123,6 +7131,7 @@ describe('ActionDispatcher', () => {
         };
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'setState',
           params: {
             target: 'isolated',
@@ -7149,6 +7158,7 @@ describe('ActionDispatcher', () => {
         const mockSetState = vi.fn();
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'setState',
           params: {
             target: 'isolated',
@@ -7192,13 +7202,16 @@ describe('ActionDispatcher', () => {
         };
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'sequence',
           actions: [
             {
+              type: 'click',
               handler: 'setState',
               params: { target: 'isolated', step: 2 },
             },
             {
+              type: 'click',
               handler: 'setState',
               params: { target: 'isolated', items: [1, 2, 3] },
             },
@@ -7234,13 +7247,16 @@ describe('ActionDispatcher', () => {
         };
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'sequence',
           actions: [
             {
+              type: 'click',
               handler: 'setState',
               params: { target: 'isolated', count: 5 },
             },
             {
+              type: 'click',
               handler: 'setState',
               params: { target: 'isolated', doubled: '{{_isolated.count * 2}}' },
             },
@@ -7286,11 +7302,12 @@ describe('ActionDispatcher', () => {
         });
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'parallel',
           actions: [
-            { handler: 'setState', params: { target: 'isolated', a: 1 } },
-            { handler: 'setState', params: { target: 'isolated', b: 2 } },
-            { handler: 'setState', params: { target: 'isolated', c: 3 } },
+            { type: 'click', handler: 'setState', params: { target: 'isolated', a: 1 } },
+            { type: 'click', handler: 'setState', params: { target: 'isolated', b: 2 } },
+            { type: 'click', handler: 'setState', params: { target: 'isolated', c: 3 } },
           ],
         };
 
@@ -7322,10 +7339,11 @@ describe('ActionDispatcher', () => {
         };
 
         const action: ActionDefinition = {
+          type: 'click',
           handler: 'parallel',
           actions: [
-            { handler: 'setState', params: { target: 'isolated', first: true } },
-            { handler: 'setState', params: { target: 'isolated', second: true } },
+            { type: 'click', handler: 'setState', params: { target: 'isolated', first: true } },
+            { type: 'click', handler: 'setState', params: { target: 'isolated', second: true } },
           ],
         };
 

@@ -7,7 +7,7 @@
       <!-- 상품 정보 -->
       <div class="flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-          <img data-if="{{$parent._local.reviewTarget?.thumbnail_url}}" src="{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}" alt="{{$parent._local.reviewTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
+          <img data-if="{{$parent._local.reviewTarget?.thumbnail_url}}" src="{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$parent._local.reviewTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
           <div data-if="{{!$parent._local.reviewTarget?.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
             <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
           </div>

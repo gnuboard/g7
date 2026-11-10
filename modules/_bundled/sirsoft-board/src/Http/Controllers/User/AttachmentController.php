@@ -1,14 +1,11 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 미리보기 서빙을 로컬 절대 경로에서 디스크 인지 스트림으로
-// 옮긴 내부 변경 — URL·파라미터·상태코드 계약 불변. 응답 헤더 중 Content-Disposition 의 파일
-// 이름만 저장 UUID 에서 원본 이름으로 바뀌며(8차 G3 라운드 C-3), 그 값은 API 문서가 기술하는
-// 요청 파라미터·응답 필드 표면이 아니다.
-
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Thumbnails\ThumbnailQuery;
+use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -20,6 +17,7 @@ use Modules\Sirsoft\Board\Http\Requests\ReorderAttachmentsRequest;
 use Modules\Sirsoft\Board\Http\Requests\UploadAttachmentRequest;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -36,10 +34,12 @@ class AttachmentController extends PublicBaseController
      *
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
      * @param  BoardService  $boardService  게시판 서비스
+     * @param  ThumbnailResponder  $thumbnails  썸네일 헬퍼
      */
     public function __construct(
         private AttachmentService $attachmentService,
-        private BoardService $boardService
+        private BoardService $boardService,
+        private ThumbnailResponder $thumbnails
     ) {
         parent::__construct();
     }
@@ -49,6 +49,7 @@ class AttachmentController extends PublicBaseController
      *
      * 모든 파일(이미지 포함)을 다운로드 방식(Content-Disposition: attachment)으로 제공합니다.
      * 이미지 미리보기는 별도의 preview() 메서드를 사용합니다.
+     * 응답은 글 상태와 무관하게 항상 `private` 캐시로 냅니다(공유 캐시 저장 금지).
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $hash  첨부파일 해시 (12자)
@@ -86,7 +87,11 @@ class AttachmentController extends PublicBaseController
                 immutable: false,
                 skipCompression: true,
                 logContext: ['board_slug' => $slug, 'hash' => $hash],
-                errorMessageKey: 'sirsoft-board::messages.attachment.download_failed'
+                errorMessageKey: 'sirsoft-board::messages.attachment.download_failed',
+                // 공유 캐시 여부는 서비스가 판정한다(`getDownloadInfo()` 의 private — 지금은 글 상태와 무관하게 늘 true).
+                // 다운로드 권한은 요청자마다 갈려, 공개 캐시로 나가면 앞단 CDN 사본을 권한 없는 방문자가 받고 기록 훅도
+                // 건너뛴다. 서비스가 값을 빠뜨리면 private 쪽으로 판정한다.
+                private: (bool) ($info['private'] ?? true)
             );
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
@@ -109,13 +114,21 @@ class AttachmentController extends PublicBaseController
      * 응답 직렬화(PostResource)가 발급한 한시 서명 URL 은 동등한 자격으로 허용한다 —
      * <img> 는 Authorization 헤더를 실을 수 없는 렌더 경로이기 때문이다.
      *
-     * @param  Request  $request  HTTP 요청 객체 (한시 서명 검증용)
+     * `?size={규격}`·`?w={숫자}` 가 붙으면 콘텐츠 상태 게이트(`getFileInfo()`)를 지난 뒤 썸네일로 낸다.
+     * 게시판 첨부는 게이트 원본이라 썸네일은 비공개 디스크·`private` 캐시다. 낼 수 없으면 원본에
+     * `X-G7-Thumbnail: bypass:{사유}` 를 붙인다. 서명은 `size`·`w` 를 빼고 검증한다 — 화면이 서명
+     * 주소 뒤에 `size` 를 덧붙여도 서명이 깨지지 않게(썸네일은 같은 게이트를 지난 뒤 크기만 바꾼다).
+     *
+     * 비밀글·삭제글·블라인드 글 첨부와 서명으로 연 원본은 `private` 캐시로 낸다 — 공유 캐시에 남으면
+     * 다음 방문자가 게이트 없이 받는다.
+     *
+     * @param  Request  $request  HTTP 요청 객체 (한시 서명 검증·썸네일 파라미터용)
      * @param  string  $slug  게시판 슬러그
      * @param  string  $hash  첨부파일 해시 (12자)
-     * @return StreamedResponse|Response|JsonResponse 이미지 응답 또는 에러 응답
+     * @return SymfonyResponse|JsonResponse 이미지·썸네일 응답(200·304) 또는 에러 응답
      */
-    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 요청 URL 의 한시 서명 검증(hasValidSignature)만 수행. 검증할 body 없음(slug/hash 는 라우트 파라미터)
-    public function preview(Request $request, string $slug, string $hash): StreamedResponse|Response|JsonResponse
+    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 요청 URL 의 한시 서명 검증과 썸네일 쿼리(size·w) 판독만 수행. 검증할 body 없음(slug/hash 는 라우트 파라미터)
+    public function preview(Request $request, string $slug, string $hash): SymfonyResponse|JsonResponse
     {
         try {
             // 게시판 존재 여부 확인
@@ -134,15 +147,21 @@ class AttachmentController extends PublicBaseController
                 return $this->error('sirsoft-board::messages.attachment.not_image', 400);
             }
 
-            // 파일 정보 조회 (유효 서명은 콘텐츠 상태 게이트 통과 자격의 위임)
+            // 파일 정보 조회 (유효 서명은 콘텐츠 상태 게이트 통과 자격의 위임).
+            // 서명은 썸네일 파라미터(size·w)를 빼고 검증한다 — 서명 주소에 size 를 덧붙인 <img> 가 403 이 되지 않게.
             $fileInfo = $this->attachmentService->getFileInfo(
                 $slug,
                 $attachment->id,
-                signatureVerified: $request->hasValidSignature(absolute: false)
+                signatureVerified: $request->hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure())
             );
 
             if (! $fileInfo) {
                 return $this->notFound('sirsoft-board::messages.attachment.not_found');
+            }
+
+            // 게이트(삭제글·비밀글·블라인드 글)를 지난 뒤, 원본 응답 바로 앞
+            if ($thumbnail = $this->thumbnails->respond($request, $fileInfo['thumbnail_source'] ?? null)) {
+                return $thumbnail;
             }
 
             // 캐싱 헤더와 함께 응답 (환경설정 레이아웃 캐시 TTL 사용, 기본 24시간).
@@ -178,17 +197,22 @@ class AttachmentController extends PublicBaseController
             // 같은 값(행 메타)을 넘기고, 압축은 선언으로 제외한다 — 사용자 업로드물은 크기·건수가
             // 유계가 아니라 압축 경로의 전체 적재가 동시 요청 수만큼 증폭된다 (형제
             // `PublicStorageController` 와 같은 선언 · 14차 G3 라운드).
+            //
+            // 비밀글·삭제글·블라인드 글 첨부와 서명으로 연 원본은 `private` 다 — 요청자마다 볼 수 있는지가
+            // 갈리는 응답이 공유 캐시(CDN·프록시)에 남으면 다음 방문자가 게이트 없이 받는다.
             $response = $this->streamedFileResponseFromMeta(
                 ['response' => $stream, ...$fileInfo],
                 (int) g7_core_settings('cache.layout_ttl', 86400),
                 immutable: false,
                 skipCompression: true,
                 logContext: ['board_slug' => $slug, 'hash' => $hash],
-                errorMessageKey: 'sirsoft-board::messages.attachment.preview_failed'
+                errorMessageKey: 'sirsoft-board::messages.attachment.preview_failed',
+                private: (bool) ($fileInfo['private'] ?? false)
             );
 
-            // 인라인 표시는 래스터 이미지만 — SVG 는 is_image 에서 이미 걸러지고, 응답에는 nosniff (KVE-2026-2366)
-            return InlineMediaPolicy::harden($response, $fileInfo['mime_type']);
+            // 인라인 표시는 래스터 이미지만 — SVG 는 is_image 에서 이미 걸러지고, 응답에는 nosniff (KVE-2026-2366).
+            // 썸네일을 요청했는데 원본을 내면 사유를 붙인다(X-G7-Thumbnail: bypass:{사유}).
+            return ThumbnailResponder::markBypass(InlineMediaPolicy::harden($response, $fileInfo['mime_type']), $request);
         } catch (AccessDeniedHttpException $e) {
             // 삭제글 첨부 등 권한 차단은 403 으로 응답
             return $this->error('auth.scope_denied', 403);

@@ -8,14 +8,14 @@
  * - 기본값으로는 POST reset → 다시 받기, 저장하지 않은 변경을 버린 탭 이동은 다시 받기 (확인 창은 부품 몫)
  * - 목록 두 탭 더보기 메뉴에 「설정」이 있고 설정 화면이 없으면 흐리다
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects settings_layout_saves_template_settings
- * @effects list_exposes_settings_route
- * @effects read_only_without_settings_permission
- * @effects settings_reset_to_defaults
- * @effects settings_tabs_per_section
- * @effects no_supplied_screen_means_no_route
+ * 효과: settings_layout_saves_template_settings
+ * 효과: list_exposes_settings_route
+ * 효과: read_only_without_settings_permission
+ * 효과: settings_reset_to_defaults
+ * 효과: settings_tabs_per_section
+ * 효과: no_supplied_screen_means_no_route
  */
 
 import fs from 'node:fs';

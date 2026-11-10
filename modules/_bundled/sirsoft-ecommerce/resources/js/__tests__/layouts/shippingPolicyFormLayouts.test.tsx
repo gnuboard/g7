@@ -32,7 +32,7 @@ function findById(node: any, id: string): any {
     if (!node) return null;
     if (node.id === id) return node;
     if (Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             const found = findById(child, id);
             if (found) return found;
         }
@@ -1441,8 +1441,9 @@ describe('shippingPolicyFormLayouts', () => {
          * @effects shipping_policy_form_extra_fee_template_modal_crud
          */
         it('닫기 버튼 (footer)', () => {
-            const footer = findById(extraFeeTemplateModal, 'modal_footer');
-            expect(footer).toBeDefined();
+            // 닫기 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+            const footer = (extraFeeTemplateModal as any).props?.footer;
+            expect(footer?.length ?? 0).toBeGreaterThan(0);
             const json = JSON.stringify(footer);
             expect(json).toContain('"handler":"closeModal"');
         });

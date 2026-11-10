@@ -1,0 +1,25 @@
+feature: 셀 정의(컴포넌트가 직접 그리는 키) 안의 responsive 가 폭을 구독하지 않는 복합 컴포넌트에서도 구간 경계에서 다시 그려진다 (engine-v1.89.0)
+
+description: |
+  셀은 복합 컴포넌트가 렌더 중에 renderItemChildren 으로 그리고 그 순간의 폭으로 분기를 고른다. 번들 DataGrid·CardGrid 는
+  스스로 useResponsive 를 구독하지만, 구독하지 않는 서드파티 컴포넌트는 props 가 같으면 엔진이 같은 요소를 돌려줘 셀이 이전
+  구간 값에 머물렀다. 엔진이 cellChildren·expandChildren·expandContext·render·메타데이터 skipBindingKeys 아래 정의의 responsive
+  분기 판정을 문자열로 묶어 composite 에 __responsiveBand prop 으로 넘긴다(레지스트리가 모든 컴포넌트를 React.memo 로 감싸므로
+  prop 이 바뀌어야 다시 그려진다). 폭 없는 메모로 셀을 만드는 컴포넌트와 basic·layout 타입 컴포넌트는 여전히 스스로 구독해야
+  한다(docs/frontend/responsive-layout.md). 축 case 는 셀 위치와 폭 변경 모양이다.
+
+axes:
+  case: [top_level_cell, nested_cell, same_band, no_cell_responsive]
+
+effects:
+  - cell_responsive_follows_band_without_subscription  # 구독하지 않는 컴포넌트의 셀도 구간 경계를 넘으면 새 분기를 쓴다
+  - cell_band_rerender_only_on_boundary                # 같은 구간 안 폭 변경이나 셀 responsive 가 없을 때는 다시 그리지 않는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.cellResponsiveBand.test.tsx
+
+validation:
+  browser_check: 번들 DataGrid·CardGrid 목록(관리자 회원 목록, 게시판 목록)을 1280→500→1280 으로 바꿔 셀 분기가 종전과 같이 따라가는지(회귀 없음)
+  note: |
+    fail-first: 수정 전 코드에서 top_level_cell·nested_cell red, same_band·no_cell_responsive green(수정 뒤에도 green 이어야 하는 잠금).
+    그리드는 registerComponent(memo 감쌈)로 등록한다. 의존성만 넣은 1차 수정은 감싸지 않은 등록에서 green, memo 등록에서 red 였다.

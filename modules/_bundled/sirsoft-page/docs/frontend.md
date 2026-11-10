@@ -106,6 +106,8 @@ JS 번들 `dist/js/module.iife.js` 는 액션 핸들러만 담은 경량 IIFE �
 `php artisan module:build sirsoft-page --production` 으로 CSS 를 다시 만듭니다(규약: 코어 문서
 `docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」).
 
+폭 미디어를 품은 의미 클래스 사본(`page-grid-3col-responsive`·`page-grid-2col-responsive`·`page-page-title`·`page-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="page:grid page:grid-cols-1 page:gap-4 page:items-start"` 에 `<responsive on="1024-" class="page:grid page:grid-cols-3 page:gap-4 page:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`page:mb-4` 등)을 직접 줍니다.
+
 소스는 `resources/js/` 이고 `php artisan module:build sirsoft-page --production` 으로 굽습니다
 (소스맵을 남기지 않는 배포용 빌드). 굽고 나면 `dist/`(`dist/css/` 포함)를 함께 커밋합니다.
 

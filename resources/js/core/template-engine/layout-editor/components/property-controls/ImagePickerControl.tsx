@@ -16,6 +16,10 @@
  * 받던 결함을 공용 `layoutAttachments` 클라이언트로 교체해 근본 차단. 현재 레이아웃
  * 첨부 썸네일 가로 스트립(인라인 미니 갤러리) + "이미지 관리" 링크 추가.
  *
+ * 미리보기·스트립의 `backgroundImage` 만 썸네일 주소를 쓴다. `onChange`·URL 입력칸은 주소 원문이다(저장값에
+ * `size` 금지). 타일(`background-size: auto`) 미리보기는 원본을 받는다 — 타일 한 칸의 크기가 이미지 실제 크기라
+ * 줄인 파생본을 쓰면 거짓 미리보기가 된다.
+ *
  * @since engine-v1.50.0
  * @since engine-v1.50.0
  */
@@ -29,6 +33,8 @@ import {
   listLayoutAttachments,
   uploadLayoutAttachment,
   deleteLayoutAttachment,
+  attachmentPreviewUrl,
+  attachmentSquareThumbUrl,
   type LayoutAttachment,
 } from '../../utils/layoutAttachments';
 import { useEditorModal } from '../../EditorModalContext';
@@ -160,6 +166,9 @@ export function ImagePickerControl({ control, value, onChange, t }: WidgetProps)
     onChange({ url: current.url, size: mode.size, repeat: mode.repeat, position: current.position ?? 'center' });
   };
 
+  /** 미리보기의 표시 방식 — 단일 슬롯은 저장값이 없으므로 contain 고정이다(아래 주석) */
+  const previewSize = singleSlot ? 'contain' : current.size ?? 'cover';
+
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -223,11 +232,11 @@ export function ImagePickerControl({ control, value, onChange, t }: WidgetProps)
             data-testid="g7le-image-preview"
             style={{
               ...preview,
-              backgroundImage: `url(${current.url})`,
+              backgroundImage: `url(${previewSize === 'auto' ? current.url : attachmentPreviewUrl(current.url)})`,
               // 단일 슬롯에서는 size/repeat/position 이 저장되지 않는다. 저장되지도 않는
               // current.size 를 미리보기에 반영하면 거짓 미리보기가 된다 — 실제 표시 방식은
               // 소비 컴포넌트(<Img>)의 클래스가 정하므로 편집기가 흉내낼 수 없다.
-              backgroundSize: singleSlot ? 'contain' : current.size ?? 'cover',
+              backgroundSize: previewSize,
               backgroundRepeat: singleSlot ? 'no-repeat' : current.repeat ?? 'no-repeat',
               backgroundPosition: singleSlot ? 'center' : current.position ?? 'center',
             }}
@@ -339,7 +348,7 @@ export function ImagePickerControl({ control, value, onChange, t }: WidgetProps)
                   onClick={() => setUrl(att.url)}
                   style={{
                     ...thumbBtn,
-                    backgroundImage: `url(${att.url})`,
+                    backgroundImage: `url(${attachmentSquareThumbUrl(att.url)})`,
                     ...(bound ? disabledBtn : null),
                   }}
                   data-testid={`g7le-image-thumb-use-${att.id}`}

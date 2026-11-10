@@ -70,7 +70,7 @@
               <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-3">
                 <!-- PC 표의 썸네일 자리와 같은 규칙 — 이미지가 없어도 자리는 남는다. -->
                 <div data-ref="claim_history_card_item_thumb_{{claim.claim_number}}_{{cardItemIndex}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:overflow-hidden ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
-                  <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
+                  <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product_name ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
                   <icon data-if="{{!item.thumbnail_url}}" name="image" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400" data-thumb-placeholder="true"/>
                 </div>
                 <div class="ecommerce:min-w-0 ecommerce:flex-1 ecommerce:space-y-0.5">
@@ -139,7 +139,7 @@
                 <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-3">
                   <!-- 이미지가 없는 상품도 같은 크기의 자리를 차지한다 — 자리표시 없이 Img 만 조건부로 두면 이미지 유무에 따라 줄의 시작점이 흔들린다(구매자 신청내역 카드와 같은 규칙). -->
                   <div data-ref="claim_history_item_thumb_{{claim.claim_number}}_{{itemIndex}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:overflow-hidden ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
-                    <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
+                    <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product_name ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
                     <icon data-if="{{!item.thumbnail_url}}" name="image" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-400" data-thumb-placeholder="true"/>
                   </div>
                   <div class="ecommerce:min-w-0 ecommerce:space-y-0.5">

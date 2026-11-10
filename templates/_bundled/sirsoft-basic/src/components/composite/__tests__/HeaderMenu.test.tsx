@@ -7,7 +7,6 @@
  * - 게시판 전체: 상위에서는 「게시판 메뉴 개수」만큼 + 더보기, 하위에서는 펼침 안에 전부(더보기 없음).
  */
 
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Header, { DEFAULT_HEADER_MENU, HeaderMenuItem } from '../Header';

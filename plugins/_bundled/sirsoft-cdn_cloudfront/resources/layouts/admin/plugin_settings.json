@@ -1,0 +1,1297 @@
+{
+    "comment": "CloudFront CDN 플러그인 환경설정 화면 — 배포 주소·무효화 자격을 저장하고, 저장된 값으로 연결을 시험하며, 실패한 무효화가 밀려 있는지 본다. 모양은 템플릿 CSS 가 아니라 이 플러그인의 순수 CSS(resources/css/main.css, cdncf-*)가 싣는다",
+    "version": "1.0.0",
+    "layout_name": "plugin_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
+        "title": "$t:sirsoft-cdn_cloudfront.settings.title",
+        "description": "$t:sirsoft-cdn_cloudfront.settings.description"
+    },
+    "data_sources": [
+        {
+            "id": "settings",
+            "label_key": "$t:sirsoft-cdn_cloudfront.editor.data_source.settings",
+            "type": "api",
+            "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(저장 뒤 갱신 등) 실패는 받아 둔 값을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form). 자격 증명 두 칸은 서버가 가려서 내려주고, 가린 값이 그대로 돌아오면 저장값을 유지한다"
+        },
+        {
+            "id": "cdncfPurgeStatus",
+            "label_key": "$t:sirsoft-cdn_cloudfront.editor.data_source.purge_status",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-cdn_cloudfront/admin/purge-status",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "loading_strategy": "progressive",
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "purgeStatusForbidden": true
+                    }
+                },
+                "default": {
+                    "handler": "toast",
+                    "params": {
+                        "type": "error",
+                        "message": "$t:core.errors.refresh_failed"
+                    }
+                }
+            },
+            "comment": "무효화 대기 현황(재시도 대기·멈춤 건수, 마지막 오류·성공 시각). 설정 화면 조회 권한과 같은 축이라 보통 403 이 나지 않지만, 나면 현황 카드에만 안내를 띄우고 설정 폼은 그대로 둔다"
+        }
+    ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.read"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "plugin_settings_content",
+                "type": "basic",
+                "name": "Div",
+                "dataKey": "form",
+                "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "cdncf-settings cdncf-settings--md"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "cdncf-settings cdncf-settings--lg"
+                        }
+                    }
+                },
+                "props": {
+                    "className": "cdncf-settings"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-cdn_cloudfront.settings.title",
+                            "description": "$t:sirsoft-cdn_cloudfront.settings.description",
+                            "backPath": "/admin/plugins",
+                            "backLabel": "$t:admin.plugins.back_to_list"
+                        }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "cdncf-alert"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "cdncf-alert__icon"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "cdncf-alert__text"
+                                },
+                                "text": "$t:sirsoft-cdn_cloudfront.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "notice_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "cdncf-alert cdncf-alert--info"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "circle-info",
+                                    "className": "cdncf-alert__icon"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "cdncf-alert__text"
+                                },
+                                "text": "$t:sirsoft-cdn_cloudfront.settings.notice"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "validation_error",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.errors}}",
+                        "props": {
+                            "role": "alert",
+                            "className": "cdncf-alert cdncf-alert--danger"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "cdncf-alert__icon"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "cdncf-alert__title"
+                                        },
+                                        "text": "$t:admin.plugins.settings.validation_error"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Ul",
+                                        "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                        "iteration": {
+                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                            "item_var": "message"
+                                        },
+                                        "props": {
+                                            "className": "cdncf-alert__list"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "props": {
+                                                    "className": "cdncf-alert__text"
+                                                },
+                                                "text": "{{message}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "배포 — CDN 주소와 배포 ID. 저장 디스크(버킷·자격)는 코어 S3 설정을 그대로 쓰므로 여기서 받지 않는다",
+                        "id": "section_basic_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "cdncf-card"
+                        },
+                        "children": [
+                            {
+                                "id": "section_basic_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__header"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "cdncf-card__title"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.section_basic"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "section_basic_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__body"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_cdn_base_url",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "cdncf-field-row cdncf-field-row--wide"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "cdncf-field-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__meta"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "cdncf-label",
+                                                            "htmlFor": "cdncf_cdn_base_url"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.cdn_base_url.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "cdncf-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.cdn_base_url.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__control"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "id": "cdncf_cdn_base_url",
+                                                            "type": "url",
+                                                            "name": "cdn_base_url",
+                                                            "autoComplete": "off",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.['cdn_base_url']}}",
+                                                        "props": {
+                                                            "className": "cdncf-error"
+                                                        },
+                                                        "text": "{{_local.errors?.['cdn_base_url']?.[0] ?? ''}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_distribution_id",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "cdncf-field-row cdncf-field-row--wide"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "cdncf-field-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__meta"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "cdncf-label",
+                                                            "htmlFor": "cdncf_distribution_id"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.distribution_id.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "cdncf-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.distribution_id.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__control"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "id": "cdncf_distribution_id",
+                                                            "type": "text",
+                                                            "name": "distribution_id",
+                                                            "autoComplete": "off",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.['distribution_id']}}",
+                                                        "props": {
+                                                            "className": "cdncf-error"
+                                                        },
+                                                        "text": "{{_local.errors?.['distribution_id']?.[0] ?? ''}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "캐시 무효화 — 자격 증명은 S3 키와 따로 받는다(비면 무효화를 보내지 않는다). 비밀 칸은 password 형식이라 화면에 드러나지 않는다",
+                        "id": "section_purge_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "cdncf-card"
+                        },
+                        "children": [
+                            {
+                                "id": "section_purge_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__header"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "cdncf-card__title"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.section_purge"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "section_purge_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__body"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_purge_enabled",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "cdncf-field-row cdncf-field-row--wide"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "cdncf-field-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__meta"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "cdncf-label",
+                                                            "htmlFor": "cdncf_purge_enabled"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.purge_enabled.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "cdncf-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.purge_enabled.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__control"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Toggle",
+                                                        "props": {
+                                                            "id": "cdncf_purge_enabled",
+                                                            "name": "purge_enabled",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_access_key",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "cdncf-field-row cdncf-field-row--wide"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "cdncf-field-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__meta"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "cdncf-label",
+                                                            "htmlFor": "cdncf_access_key"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.access_key.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "cdncf-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.access_key.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__control"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "id": "cdncf_access_key",
+                                                            "type": "password",
+                                                            "name": "access_key",
+                                                            "autoComplete": "new-password",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.['access_key']}}",
+                                                        "props": {
+                                                            "className": "cdncf-error"
+                                                        },
+                                                        "text": "{{_local.errors?.['access_key']?.[0] ?? ''}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_secret_key",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "cdncf-field-row cdncf-field-row--wide"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "cdncf-field-row"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__meta"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "cdncf-label",
+                                                            "htmlFor": "cdncf_secret_key"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.secret_key.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "cdncf-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.fields.secret_key.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-field__control"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "id": "cdncf_secret_key",
+                                                            "type": "password",
+                                                            "name": "secret_key",
+                                                            "autoComplete": "new-password",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.['secret_key']}}",
+                                                        "props": {
+                                                            "className": "cdncf-error"
+                                                        },
+                                                        "text": "{{_local.errors?.['secret_key']?.[0] ?? ''}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "연결 시험 — 저장된 값으로 배포를 조회한다(폼의 고친 값은 보내지 않는다). 결과는 이 화면 안에서만 쓰는 상태(_local.connectionResult)에 두고, 실패 사유는 응답 문구로 알린다",
+                        "id": "section_connection_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "cdncf-card"
+                        },
+                        "children": [
+                            {
+                                "id": "section_connection_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__header"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "cdncf-card__title"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "cdncf-hint"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.hint"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "section_connection_body",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__body"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "cdncf-actions"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "test_connection_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "연결 시험 요청 — 시험 중 플래그로 버튼을 잠그고 직전 결과를 지운 뒤 보낸다. 성공하면 배포 상태·도메인을, 실패하면 서버 사유를 토스트로 보인다",
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isTesting": true,
+                                                                    "connectionResult": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-cdn_cloudfront/admin/test-connection",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "POST"
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "isTesting": false,
+                                                                            "connectionResult": "{{response.data}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "{{response.message}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "isTesting": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "disabled": "{{_computed.isPluginReadOnly || _local.isTesting}}",
+                                                    "className": "cdncf-button cdncf-button--secondary"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "if": "{{_local.isTesting}}",
+                                                        "props": {
+                                                            "name": "spinner",
+                                                            "className": "cdncf-spin"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!_local.isTesting}}",
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.button"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.isTesting}}",
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.testing"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "connection_result",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!_local.connectionResult}}",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "cdncf-stat-grid cdncf-stat-grid--wide"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "role": "status",
+                                            "className": "cdncf-stat-grid"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-stat"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__label"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.status"
+                                                    },
+                                                    {
+                                                        "id": "connection_status",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__value"
+                                                        },
+                                                        "text": "{{_local.connectionResult?.status === 'Deployed' ? '$t:sirsoft-cdn_cloudfront.settings.connection.status_deployed' : (_local.connectionResult?.status === 'InProgress' ? '$t:sirsoft-cdn_cloudfront.settings.connection.status_in_progress' : (_local.connectionResult?.status ?? '-'))}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-stat"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__label"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.domain"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__value cdncf-break"
+                                                        },
+                                                        "text": "{{_local.connectionResult?.domain_name ?? '-'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "connection_disabled",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.connectionResult?.enabled === false}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "cdncf-alert cdncf-alert--warning-inline"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.disabled"
+                                    },
+                                    {
+                                        "id": "connection_host_mismatch",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.connectionResult?.cdn_host_matches === false}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "cdncf-alert cdncf-alert--warning-inline"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.connection.host_mismatch"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "무효화 대기 현황 — 실패한 무효화의 재시도 대기·멈춤 건수와 마지막 오류. 새로 고침은 현황만 다시 받는다",
+                        "id": "section_purge_status_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "cdncf-card"
+                        },
+                        "children": [
+                            {
+                                "id": "section_purge_status_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__header cdncf-card__header--split"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "cdncf-card__title"
+                                                },
+                                                "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "cdncf-hint"
+                                                },
+                                                "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.hint"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "purge_status_refresh",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "현황만 다시 받는다 — 설정 폼의 고친 값은 그대로 둔다",
+                                                "type": "click",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "cdncfPurgeStatus"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "cdncf-button cdncf-button--secondary"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "rotate",
+                                                    "className": "cdncf-button__icon"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.refresh"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "section_purge_status_body",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "cdncf-card__body"
+                                },
+                                "children": [
+                                    {
+                                        "id": "purge_status_forbidden",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.purgeStatusForbidden === true}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "cdncf-hint"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.forbidden"
+                                    },
+                                    {
+                                        "id": "purge_status_not_ready",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{cdncfPurgeStatus?.data?.purge_ready === false}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "cdncf-alert cdncf-alert--warning-inline"
+                                        },
+                                        "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.not_ready"
+                                    },
+                                    {
+                                        "id": "purge_status_stats",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.purgeStatusForbidden !== true}}",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "cdncf-stat-grid cdncf-stat-grid--wide"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "cdncf-stat-grid"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-stat"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__label"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.pending"
+                                                    },
+                                                    {
+                                                        "id": "purge_status_pending",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__value"
+                                                        },
+                                                        "text": "{{cdncfPurgeStatus?.data?.pending ?? 0}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-stat"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__label"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.abandoned"
+                                                    },
+                                                    {
+                                                        "id": "purge_status_abandoned",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__value"
+                                                        },
+                                                        "text": "{{cdncfPurgeStatus?.data?.abandoned ?? 0}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-stat"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__label"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.last_success_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__value"
+                                                        },
+                                                        "text": "{{cdncfPurgeStatus?.data?.last_success_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "cdncf-stat"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__label"
+                                                        },
+                                                        "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.last_failed_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "cdncf-stat__value"
+                                                        },
+                                                        "text": "{{cdncfPurgeStatus?.data?.last_failed_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "purge_status_last_error",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!cdncfPurgeStatus?.data?.last_error}}",
+                                        "props": {
+                                            "className": "cdncf-error-box"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "cdncf-stat__label"
+                                                },
+                                                "text": "$t:sirsoft-cdn_cloudfront.settings.purge_status.last_error"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "cdncf-error-box__text cdncf-break"
+                                                },
+                                                "text": "{{cdncfPurgeStatus?.data?.last_error ?? ''}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "cdncf-footer"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "A",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "bypassLeaveGuard": true
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "href": "/admin/plugins",
+                                    "className": "cdncf-button cdncf-button--secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 연결 시험 결과·현황 같은 화면 상태는 폼(_local.form) 밖에 두므로 body 에 섞이지 않는다. 성공하면 설정과 현황(무효화 가능 여부가 바뀔 수 있다)을 다시 받는다",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PUT",
+                                                    "body": "{{_local.form}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.plugins.settings.save_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "settings"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "cdncfPurgeStatus"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "errors": "{{error.errors}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "cdncf-button cdncf-button--primary cdncf-footer__save"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_local.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "cdncf-spin"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

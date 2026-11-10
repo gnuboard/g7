@@ -8,7 +8,6 @@
  *  - 대화면 전용 최소 너비(좁은 창에서 압착 대신 가로 스크롤)
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { LayoutEditorChrome, EDITOR_MIN_WIDTH } from '../../LayoutEditorChrome';
@@ -28,6 +27,10 @@ function renderShell(): ReturnType<typeof render> {
 }
 
 describe('LayoutEditorChrome', () => {
+  /**
+   * @scenario subject=layout_editor_chrome
+   * @effects chrome_mounts_shell_toolbars_tree_and_canvas
+   */
   it('셸 + 툴바 + 디바이스 미리보기 툴바 + 라우트 트리 + 프리뷰 캔버스 모두 마운트', () => {
     renderShell();
     expect(screen.getByTestId('g7le-chrome')).toBeTruthy();
@@ -39,6 +42,10 @@ describe('LayoutEditorChrome', () => {
     expect(screen.getByTestId('g7le-preview-empty')).toBeTruthy();
   });
 
+  /**
+   * @scenario subject=layout_editor_chrome
+   * @effects chrome_shell_classes_use_g7le_prefix
+   */
   it('셸 클래스에 g7le- 프리픽스 강제 (CSS 격리 — 19.3)', () => {
     renderShell();
     const chrome = screen.getByTestId('g7le-chrome');
@@ -49,6 +56,10 @@ describe('LayoutEditorChrome', () => {
     expect(panel.className).toContain('g7le-');
   });
 
+  /**
+   * @scenario subject=layout_editor_chrome
+   * @effects chrome_toolbar_receives_t_via_use_translation
+   */
   it('툴바가 useTranslation 훅을 통해 $t: 키를 전달받음 (자동 해석 통합 경로)', () => {
     // 본 단위 테스트에서는 translation dictionary 가 비어있어 키가 fallback 으로
     // 그대로 반환되지만, 그 자체가 useTranslation 훅을 통해 t() 함수로 흐른
@@ -59,6 +70,10 @@ describe('LayoutEditorChrome', () => {
     expect(toolbar.innerHTML).toContain('layout_editor.chrome.toolbar.');
   });
 
+  /**
+   * @scenario subject=layout_editor_chrome
+   * @effects chrome_shows_template_identifier_label
+   */
   it('템플릿 식별자 라벨 표시', () => {
     renderShell();
     expect(screen.getByTestId('g7le-toolbar-template-label').textContent).toBe('sirsoft-admin_basic');
@@ -70,12 +85,20 @@ describe('LayoutEditorChrome — 대화면 전용 최소 너비 (좁은 창 압�
   // 라벨이 글자 단위로 줄바꿈됐다("요 소 추 가"). 편집기는 대화면 전용 도구이므로
   // 반응형 재배치 대신 최소 너비를 유지하고 모자란 폭은 브라우저 가로 스크롤로 흡수한다.
 
+  /**
+   * @scenario subject=layout_editor_chrome
+   * @effects chrome_shell_has_editor_min_width
+   */
   it('셸이 EDITOR_MIN_WIDTH 최소 너비를 갖는다 (압착 대신 가로 스크롤)', () => {
     renderShell();
     const chrome = screen.getByTestId('g7le-chrome') as HTMLElement;
     expect(chrome.style.minWidth).toBe(`${EDITOR_MIN_WIDTH}px`);
   });
 
+  /**
+   * @scenario subject=layout_editor_chrome
+   * @effects chrome_toolbar_children_do_not_shrink_or_wrap
+   */
   it('툴바 직접 자식 전체가 축소·줄바꿈되지 않는다 (flex-shrink:0 + nowrap)', () => {
     // 버튼마다 인라인 style 로 붙이면 자체 style 을 가진 하위 컴포넌트
     // (TemplateSwitcher/LocaleSwitcher)와 이후 추가 항목이 빠져 결함이 재발한다.
@@ -116,6 +139,10 @@ describe('LayoutEditorChrome — 템플릿 메타 fetch 인증 헤더', () => {
     vi.restoreAllMocks();
   });
 
+  /**
+   * @scenario subject=layout_editor_chrome
+   * @effects chrome_meta_fetch_sends_bearer_and_shows_version
+   */
   it('메타 fetch 는 Bearer 토큰 첨부 + name/version 을 툴바에 반영', async () => {
     const calls: Array<{ url: string; auth: string | null }> = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

@@ -56,6 +56,11 @@ function flatten(node: unknown): LayoutNode[] {
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode | undefined) => (typeof n?.props?.className === 'string' ? n.props.className : '');
 const tokens = (n: LayoutNode | undefined) => cls(n).replace(/[{}'?:]/g, ' ').split(/\s+/).filter(Boolean);
+/** 기본 className 과 엔진 responsive 구간 값 className 의 토큰 전부 — 폭에 따라 붙는 클래스는 구간 값에만 있다 */
+const tokensAtAnyWidth = (n: LayoutNode | undefined) => [
+    ...tokens(n),
+    ...Object.values(((n as { responsive?: Record<string, LayoutNode> } | undefined)?.responsive) ?? {}).flatMap((r) => tokens(r)),
+];
 
 /**
  * 글자가 주어진 조건을 만족하는 노드 전부.
@@ -193,12 +198,12 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
         expect(arbitrary).toEqual([]);
 
         const callbackLabel = byText((t) => t.endsWith('.settings.cbt_callback_app_url_label'))[0];
-        expect(tokens(parentOf(callbackLabel!))).toContain(`${PREFIX}callback-grid`);
+        expect(tokens(parentOf(callbackLabel!))).toContain(`${PREFIX}callback-table`);
 
         const egressLabel = byText((t) => t.endsWith('.settings.cbt_connectivity_egress_ip_label'))[0];
-        expect(tokens(egressLabel)).toContain(`${PREFIX}label-wide`);
+        expect(tokensAtAnyWidth(egressLabel)).toContain(`${PREFIX}label-col`);
         const egressHint = byText((t) => t.endsWith('.settings.cbt_connectivity_hint_egress'))[0];
-        expect(tokens(egressHint)).toContain(`${PREFIX}indent-wide`);
+        expect(tokensAtAnyWidth(egressHint)).toContain(`${PREFIX}label-indent`);
         const dnsLabel = byText((t) => t.endsWith('.settings.cbt_connectivity_dns_label'))[0];
         expect(tokens(dnsLabel)).toContain(`${PREFIX}label-narrow`);
 

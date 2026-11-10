@@ -1,0 +1,33 @@
+# π3 (#869) 레이아웃 편집기 시험 표식 부채 채우기 — 이 매니페스트는 아래 test_files 의 각 시험이 재는 효과를
+# 시험 단위로 선언한다. 축 surface 은 시험 대상 단위이다.
+
+feature: 레이아웃 편집기 번역 필드와 인라인 바인딩 — 키 값 저장, 자리표시 보존, 로케일별 독립
+
+description: |
+  TranslationField 의 저장과 충돌 처리, 인라인 바인딩 칩 추가와 이동이 로케일별 키 값과 node.text param 을
+  정합하게 유지하는지 잰다.
+
+axes:
+  surface: [translation_field, inline_binding_matrix]
+
+effects:
+  - translation_field_409_shows_conflict
+  - translation_field_chip_atomic_keeps_placeholder
+  - translation_field_param_key_buffers_exact_value
+  - translation_field_param_key_uses_chip_widget
+  - translation_field_blocks_save_on_token_removal
+  - translation_field_keeps_tokens_and_saves
+  - translation_field_plain_node_shows_not_key_notice
+  - translation_field_blur_puts_values_with_lock_version
+  - translation_field_custom_key_form_with_untranslated_mark
+  - inline_matrix_param_set_matches_locale_placeholders
+  - inline_matrix_move_add_move_stays_consistent
+  - inline_matrix_chip_move_only_edit_locale
+  - inline_matrix_more_chips_seed_all_locales_positioned
+  - inline_matrix_first_chip_seeds_all_locales
+  - inline_matrix_edit_writes_only_edit_locale
+  - inline_matrix_plain_keyify_single_param
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/property-controls/TranslationField.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/inlineBindingScenarioMatrix.test.ts

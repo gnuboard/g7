@@ -35,10 +35,10 @@ const videoBanner = (id: number, mobile = false): HeroBanner => banner(id, {
 
 const youtubeBanner = (id: number): HeroBanner => banner(id, { media_type: 'youtube', youtube_id: YT });
 
-/** 화면 조건(움직임 줄이기·휴대폰 폭)을 흉내 낸다. */
-const mockMedia = ({ reduce = false, narrow = false } = {}) => {
+/** 화면 조건(움직임 줄이기)을 흉내 낸다. */
+const mockMedia = ({ reduce = false } = {}) => {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches: (reduce && query.includes('prefers-reduced-motion')) || (narrow && query.includes('max-width: 767px')),
+    matches: reduce && query.includes('prefers-reduced-motion'),
     media: query,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -60,6 +60,11 @@ const mockConsent = (snapshot: Record<string, unknown> | null) => {
     current = next;
     act(() => listeners.forEach((listener) => listener()));
   };
+};
+
+/** 휴대폰 폭을 흉내 낸다 — 기기는 엔진 반응형 폭(`G7Core.useResponsive`)으로 판정한다. */
+const mockPhoneWidth = () => {
+  (window as any).G7Core.useResponsive = () => ({ width: 390 });
 };
 
 const ready = (marketing: boolean) => ({ status: 'ready', categories: { necessary: true, marketing } });
@@ -85,6 +90,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_plays_muted_inline
+  // @effects video_plays_muted_with_device_source
   it('영상 파일 배너는 대표 이미지 위에 소리 없는 화면 안 재생 영상을 두고, 대표 이미지를 첫 화면으로 쓴다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} />);
     const video = container.querySelector('[data-banner-id="1"] video.hs-slider__video') as HTMLVideoElement;
@@ -114,28 +120,35 @@ describe('HeroSlider 영상 배너', () => {
       const { container } = render(<HeroSlider banners={[image, video]} />);
       const first = container.querySelector('[data-banner-id="1"]')!;
       expect(first.querySelector('img.hs-slider__image')?.getAttribute('src')).toBe(`/g7${api}/pc1`);
-      expect(first.querySelector('source')?.getAttribute('srcset')).toBe(`/g7${api}/m1`);
       const second = container.querySelector('[data-banner-id="2"]')!;
       expect(second.querySelector('img.hs-slider__image')?.getAttribute('src')).toBe(`/g7${api}/pc2`);
       const player = second.querySelector('video.hs-slider__video') as HTMLVideoElement;
       expect(player.getAttribute('src')).toBe(`/g7${api}/v2`);
       expect(player.getAttribute('poster')).toBe(`/g7${api}/pc2`);
+
+      // 휴대폰 화면의 주 이미지(모바일 이미지)에도 접두사를 붙인다
+      cleanup();
+      mockPhoneWidth();
+      const phone = render(<HeroSlider banners={[image]} />);
+      expect(phone.container.querySelector('img.hs-slider__image')?.getAttribute('src')).toBe(`/g7${api}/m1`);
     } finally {
       delete (window as any).G7Config;
     }
   });
 
   // @scenario surface=video_device_source
+  // @effects video_plays_muted_with_device_source
   it('휴대폰 폭이면 모바일 영상, 없으면 PC 영상을 재생한다', () => {
-    mockMedia({ narrow: true });
+    mockPhoneWidth();
     const { container } = render(<HeroSlider banners={[videoBanner(1, true), videoBanner(2, false)]} />);
     expect(container.querySelector('[data-banner-id="1"] video')?.getAttribute('src')).toBe('/vid/m-1.mp4');
     expect(container.querySelector('[data-banner-id="2"] video')?.getAttribute('src')).toBe('/vid/pc-2.mp4');
   });
 
   // @scenario surface=video_poster_matches_device
+  // @effects video_plays_muted_with_device_source
   it('휴대폰 폭이면 영상 대표 이미지도 모바일 이미지로 두고, 먼 장의 대표 이미지는 차례가 다가올 때 받는다', () => {
-    mockMedia({ narrow: true });
+    mockPhoneWidth();
     const withMobile = { ...videoBanner(1), images: { pc: { url: '/img/pc-1.jpg', width: 1920, height: 640 }, mobile: { url: '/img/m-1.jpg', width: 750, height: 1000 } } };
     const { container } = render(<HeroSlider banners={[withMobile, videoBanner(2), videoBanner(3)]} />);
     const poster = (id: number) => container.querySelector(`[data-banner-id="${id}"] video`)?.getAttribute('poster');
@@ -149,6 +162,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_ends_then_next
+  // @effects video_drives_slide_advance
   it('활성 장이 영상이면 간격 넘김을 멈추고, 영상이 끝나면 다음 장으로 넘긴다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     expect(swiperState.instance!.autoplay.stop).toHaveBeenCalled();
@@ -160,6 +174,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_ends_while_hovered
+  // @effects video_drives_slide_advance
   it('마우스가 올라가 있는 동안 영상이 끝나면 넘기지 않고, 나가면 간격 넘김으로 돌아간다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
     const region = container.querySelector('section.hs-slider')!;
@@ -171,6 +186,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=single_video_loops
+  // @effects video_drives_slide_advance
   it('영상 배너 한 장이면 반복 재생하고, 일시정지 단추를 둔다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1)]} />);
     expect((container.querySelector('video') as HTMLVideoElement).loop).toBe(true);
@@ -182,6 +198,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=pause_stops_video
+  // @effects pause_controls_video_playback
   it('일시정지 단추가 영상도 멈추고, 다시 누르면 재생한다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} />);
     play.mockClear();
@@ -192,6 +209,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=pause_keeps_video_position
+  // @effects pause_controls_video_playback
   it('일시정지는 그 자리에서 멈추고(다시 재생하면 이어서 본다), 다른 장으로 넘어가면 처음으로 돌린다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} />);
     const video = container.querySelector('[data-banner-id="1"] video') as HTMLVideoElement;
@@ -204,6 +222,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_play_abort_is_not_failure
+  // @effects video_drives_slide_advance
   it('[case:components-misc-video-play-abort-treated-as-failure] 재생 시작 전에 멈추거나 넘겨 재생 요청이 취소(AbortError)돼도 실패로 보지 않고, 다시 재생할 수 있다', async () => {
     play.mockImplementationOnce(() => Promise.reject(new DOMException('The play() request was interrupted by a call to pause().', 'AbortError')));
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
@@ -219,6 +238,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_error_falls_back_to_interval
+  // @effects video_drives_slide_advance
   it('자동 재생이 막히면(NotAllowedError) 그 장은 이미지처럼 간격으로 넘긴다', async () => {
     play.mockImplementationOnce(() => Promise.reject(new DOMException('play() failed because the user didn\'t interact', 'NotAllowedError')));
     render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
@@ -229,6 +249,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=reduced_motion_starts_paused
+  // @effects pause_controls_video_playback
   it('움직임 줄이기를 켠 방문자는 영상이 멈춘 채 시작하고 단추로 재생한다', () => {
     mockMedia({ reduce: true });
     const { container } = render(<HeroSlider banners={[videoBanner(1)]} />);
@@ -241,6 +262,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=reduced_motion_starts_paused
+  // @effects pause_controls_video_playback
   it('받는 중(배너 없음)으로 먼저 그려진 뒤 영상 배너가 와도, 움직임 줄이기면 멈춘 채 시작한다', () => {
     mockMedia({ reduce: true });
     const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" />);
@@ -250,6 +272,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_error_falls_back_to_interval
+  // @effects video_drives_slide_advance
   it('영상을 재생할 수 없으면 그 장은 이미지처럼 간격으로 넘긴다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
     expect(swiperState.instance!.autoplay.running).toBe(false);
@@ -258,6 +281,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_only_when_media_type_video
+  // @effects video_plays_muted_with_device_source
   it('미디어 종류가 이미지면 영상 정보가 있어도 이미지로 그린다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { media_type: 'image', videos: { pc: { url: '/vid/x.mp4' } } })]} />);
     expect(container.querySelector('video')).toBeNull();
@@ -266,6 +290,7 @@ describe('HeroSlider 영상 배너', () => {
 
   describe('유튜브', () => {
     // @scenario surface=youtube_gate_before_consent
+    // @effects youtube_waits_for_marketing_consent
     it('마케팅 동의 전에는 대표 이미지와 재생 단추만 두고 YouTube 를 부르지 않는다', () => {
       mockConsent(ready(false));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
@@ -278,6 +303,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_loads_with_consent
+    // @effects youtube_waits_for_marketing_consent
     it('마케팅에 동의했거나 동의 관리가 없는 사이트면 youtube-nocookie 플레이어를 소리 없이 띄운다', () => {
       for (const snapshot of [ready(true), { status: 'none', categories: {} }]) {
         mockConsent(snapshot);
@@ -297,6 +323,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_consent_change_applies
+    // @effects youtube_waits_for_marketing_consent
     it('동의 배너에서 동의하면 새로 고치지 않아도 플레이어로 바뀐다', () => {
       const grant = mockConsent(ready(false));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1)]} />);
@@ -306,6 +333,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_play_button_loads
+    // @effects youtube_waits_for_marketing_consent
     it('동의 전이라도 재생 단추를 누르면 그 배너만 불러온다', () => {
       mockConsent(ready(false));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), youtubeBanner(2)]} />);
@@ -315,6 +343,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_no_consent_runtime
+    // @effects youtube_waits_for_marketing_consent
     it('동의 런타임이 없는 화면(관리자 미리보기)은 동의 전으로 본다', () => {
       const { container } = render(<HeroSlider banners={[youtubeBanner(1)]} />);
       expect(container.querySelector('iframe')).toBeNull();
@@ -322,6 +351,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_ended_message
+    // @effects video_drives_slide_advance
     it('플레이어가 「끝남」을 알리면 다음 장으로 넘기고, 다른 출처의 메시지는 무시한다', () => {
       mockConsent(ready(true));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
@@ -338,6 +368,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_loads_only_near_active
+    // @effects youtube_player_loaded_near_active
     it('마케팅에 동의했어도 유튜브 플레이어는 지금 장과 다음 장만 불러오고, 그 차례가 다가오면 불러온다', () => {
       mockConsent(ready(true));
       const { container } = render(<HeroSlider banners={[banner(1), youtubeBanner(2), banner(3), youtubeBanner(4)]} settings={{ autoplay: false }} />);
@@ -356,6 +387,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=pause_keeps_video_position
+    // @effects pause_controls_video_playback
     it('유튜브도 일시정지는 그 자리에서 멈추고, 다른 장으로 넘어가면 처음으로 돌린다', () => {
       mockConsent(ready(true));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
@@ -372,6 +404,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_reveal_after_player_overlay
+    // @effects youtube_player_revealed_on_play_start
     it('[case:components-misc-youtube-start-overlay-cannot-be-disabled] 재생 시작 알림을 받으면 기다리지 않고 바로 드러낸다(가운데 재생 표시는 보여도 빨리 보이는 쪽을 택했다)', () => {
       mockConsent(ready(true));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
@@ -385,6 +418,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_timeout_falls_back
+    // @effects video_drives_slide_advance
     it('플레이어가 10초 안에 재생을 알리지 않으면 간격 넘김으로 돌린다', () => {
       mockConsent(ready(true));
       render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
@@ -396,6 +430,7 @@ describe('HeroSlider 영상 배너', () => {
     });
 
     // @scenario surface=youtube_invalid_id_is_image
+    // @effects youtube_url_validated
     it('영상 ID 모양이 아니면 유튜브로 그리지 않는다', () => {
       mockConsent(ready(true));
       const { container } = render(<HeroSlider banners={[banner(1, { media_type: 'youtube', youtube_id: 'x" onload="' })]} />);
@@ -407,6 +442,7 @@ describe('HeroSlider 영상 배너', () => {
 
 describe('유튜브 주소·동의 판정', () => {
   // @scenario surface=youtube_url_parsing
+  // @effects youtube_url_validated
   it('주소창·공유·쇼츠·임베드 주소와 영상 ID 를 받고, 다른 호스트·모양은 거른다', () => {
     const cases: Array<[string, string | null]> = [
       [`https://www.youtube.com/watch?v=${YT}&t=10s`, YT],
@@ -430,6 +466,7 @@ describe('유튜브 주소·동의 판정', () => {
   });
 
   // @scenario surface=marketing_consent_rules
+  // @effects youtube_waits_for_marketing_consent
   it('동의 관리 없음·마케팅 동의만 바로 불러오고, 모름·미동의·런타임 없음은 막는다', () => {
     expect(marketingAllowed({ status: 'none' })).toBe(true);
     expect(marketingAllowed(ready(true))).toBe(true);

@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Ckeditor5;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use Plugins\Sirsoft\Ckeditor5\Listeners\ThumbnailRegistrationListener;
 
 /**
  * CKEditor 5 WYSIWYG 에디터 플러그인
@@ -179,6 +180,20 @@ class Plugin extends AbstractPlugin
                     'sources' => 'array - list<array{table: string, columns: list<string>}>',
                 ],
             ],
+        ];
+    }
+
+    /**
+     * 훅 리스너 목록 반환
+     *
+     * 본문 이미지를 코어 이미지 썸네일(서빙 경로 패턴·원본 제공자)에 등록한다.
+     *
+     * @return array<int, class-string> 리스너 클래스 목록
+     */
+    public function getHookListeners(): array
+    {
+        return [
+            ThumbnailRegistrationListener::class,
         ];
     }
 

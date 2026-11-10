@@ -165,9 +165,13 @@
     </sequence>
   </init>
   <slot name="content">
-    <div data-ref="user_form_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="user_form_content" data-key="form" data-track-changes class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
-      <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
+      <div data-ref="sticky_header" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
         <tab-navigation-scroll data-type="composite" data-ref="user_form_tabs" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="" class="tab-nav-default">
           <prop name="tabs">
             <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
@@ -217,7 +221,8 @@
             <!-- 이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면
                  상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라
                  잠긴다(종전과 같다). -->
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_name">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.name</span>
@@ -308,7 +313,8 @@
             <div data-ref="password_unsettable_notice" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status?.can_set === false}}" class="alert-warning" role="status">
               <p class="text-warning-soft">{{user?.data?.password_status?.set_blocked_message ?? ''}}</p>
             </div>
-            <div class="grid-2col-responsive" data-ref="field_password_group" data-if="{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}">
+            <div class="grid grid-cols-1 gap-4" data-ref="field_password_group" data-if="{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_password">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.password</span>
@@ -416,7 +422,8 @@
         <div data-ref="section_contact_info" id="contact_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.form.sections.contact_info</h3>
           <div class="row-stack">
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_email">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.email</span>
@@ -432,7 +439,8 @@
                 <input type="url" name="homepage" placeholder="https://" class=""/>
               </div>
             </div>
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_mobile">
                 <label class="form-label">$t:admin.users.form.fields.mobile</label>
                 <input type="tel" name="mobile" placeholder="$t:admin.users.form.fields.mobile" disabled="{{!!route?.id &amp;&amp; (user?.data?.locked_fields ?? []).includes('mobile')}}" class=""/>
@@ -459,7 +467,8 @@
                 </on>
               </searchable-dropdown>
             </div>
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_language">
                 <label class="form-label">$t:admin.users.form.fields.language</label>
                 <select name="language" class="w-full" disabled="{{!!route?.id &amp;&amp; (user?.data?.locked_fields ?? []).includes('language')}}" defaultValue="{{$locale}}" options="{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"/>
@@ -560,7 +569,8 @@
              고칠 수 있는 것은 만료 개별 설정 하나다 — 등록 모드에서도 보인다. -->
         <div data-ref="section_password_info" id="password_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.detail.password.title</h3>
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_password_changed_at" data-if="{{!!route?.id}}">
               <label class="form-label">$t:admin.users.detail.password.changed_at</label>
               <div class="text-primary text-sm">{{user?.data?.password_status?.changed_at ?? '-'}}</div>
@@ -608,7 +618,8 @@
         <div data-ref="section_consent_info" data-if="{{route?.id}}" id="consent_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.detail.consent_history</h3>
           <div class="row-stack">
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_terms_consent">
                 <label class="form-label">$t:admin.users.detail.consent_type.terms</label>
                 <input type="text" value="{{user?.data?.terms_consent?.agreed_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
@@ -624,7 +635,8 @@
         <div data-ref="section_notifications_info" data-if="{{route?.id}}" id="notifications_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.detail.tabs.notifications_info</h3>
           <div class="row-stack">
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_notifications_total">
                 <label class="form-label">$t:admin.users.detail.notifications.total</label>
                 <input type="text" value="{{user?.data?.notifications_summary?.total ?? 0}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
@@ -722,7 +734,7 @@
           <li class="list-disc list-inside">$t:admin.users.modals.withdraw_confirm_effect_linked</li>
         </ul>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button data-ref="withdraw_confirm_cancel_button" type="button" class="btn btn-secondary">
           <on type="click">
             <!-- 탈퇴 확인 취소. 확인 문구만 접고 폼은 그대로 둔다 -->
@@ -769,7 +781,7 @@
           </on>
           <span>$t:admin.users.modals.withdraw_confirm_submit</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </slot>
 </layout>

@@ -108,6 +108,26 @@ return [
             'report' => false,
         ],
 
+        // 이미지 썸네일(파생본) 비공개 기본 디스크. 루트를 `storage/app` 으로 두고 키는 항상 `thumbnails/…` 로
+        // 시작한다(ThumbnailStore::ROOT) — 공개·CDN 디스크를 썸네일 디스크로 골랐을 때와 같은 키 모양이라
+        // 「전체 비우기」가 `thumbnails/` 하나만 지운다. 권한이 걸린 이미지의 썸네일은 이 디스크에서 스트림으로만 낸다.
+        //
+        // `permissions` 를 명시하는 이유는 `ext-bundles` 와 같다 — 선언이 없으면 먼저 쓴 프로세스(SSH 의 root 로 돌린
+        // `thumbnails:pregenerate` 등)가 0700 디렉터리를 만들어, 이후 php-fpm 이 그 원본의 다른 규격을 쓰지도 원본 삭제 때
+        // 지우지도 못한다.
+        'thumbnails' => [
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
+            'root' => storage_path('app'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+            'permissions' => [
+                'file' => ['public' => 0664, 'private' => 0664],
+                'dir' => ['public' => 0775, 'private' => 0775],
+            ],
+        ],
+
         'settings' => [
             'driver' => 'local',
             'root' => storage_path('app/settings'),

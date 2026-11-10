@@ -10,7 +10,144 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-gdpr.annual_notice.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 통지를 접수하지 않고 닫는다. 창이 쓰던 `_global.privacyRun`(대상 키·통지 대상 수)을 실행 성공 때와 같이 비운다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "privacyRun": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal",
+                                "target": "privacy_run_modal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "gdpr-btn gdpr-btn-secondary",
+                    "disabled": "{{_global.privacyRun?.submitting}}"
+                },
+                "text": "$t:sirsoft-gdpr.annual_notice.manual_run.cancel"
+            },
+            {
+                "id": "privacy_run_execute",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로\n               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가\n               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을\n               알리고 상태를 다시 받는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "privacyRun.submitting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "privacyRun": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "privacy_run_modal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-gdpr.annual_notice.manual_run.queued_toast"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "privacyManualRuns"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "gdprAnnualNoticePreview"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "privacyRun.submitting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:sirsoft-gdpr.annual_notice.manual_run.queue_failed'}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "privacyManualRuns"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "lockRepeatClick": true,
+                    "className": "gdpr-btn gdpr-btn-danger gdpr-flex-center gdpr:gap-2",
+                    "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.privacyRun?.submitting}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "gdpr-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.privacyRun?.submitting ? '$t:sirsoft-gdpr.annual_notice.manual_run.executing' : '$t:sirsoft-gdpr.annual_notice.manual_run.execute'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -101,150 +238,6 @@
                         "className": "gdpr-text-hint"
                     },
                     "text": "$t:sirsoft-gdpr.annual_notice.manual_run.queue_hint"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "gdpr-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 — 통지를 접수하지 않고 닫는다. 창이 쓰던 `_global.privacyRun`(대상 키·통지 대상 수)을 실행 성공 때와 같이 비운다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "privacyRun": null
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal",
-                                    "target": "privacy_run_modal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "gdpr-btn gdpr-btn-secondary",
-                        "disabled": "{{_global.privacyRun?.submitting}}"
-                    },
-                    "text": "$t:sirsoft-gdpr.annual_notice.manual_run.cancel"
-                },
-                {
-                    "id": "privacy_run_execute",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로\n               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가\n               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을\n               알리고 상태를 다시 받는다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "privacyRun.submitting": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "privacyRun": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal",
-                                            "target": "privacy_run_modal"
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-gdpr.annual_notice.manual_run.queued_toast"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "privacyManualRuns"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "gdprAnnualNoticePreview"
-                                            }
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "privacyRun.submitting": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:sirsoft-gdpr.annual_notice.manual_run.queue_failed'}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "privacyManualRuns"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "lockRepeatClick": true,
-                        "className": "gdpr-btn gdpr-btn-danger gdpr-flex-center gdpr:gap-2",
-                        "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.privacyRun?.submitting}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "gdpr-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.privacyRun?.submitting ? '$t:sirsoft-gdpr.annual_notice.manual_run.executing' : '$t:sirsoft-gdpr.annual_notice.manual_run.execute'}}"
-                        }
-                    ]
                 }
             ]
         }

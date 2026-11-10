@@ -13,7 +13,134 @@
         "title": "$t:mypage.board_activities.reactions.bulk_delete_title",
         "icon": "trash",
         "iconClassName": "text-red-500",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "선택 반응 일괄 해제 — 선택 ID 배열을 본문에 싣고, 성공하면 선택을 비운 뒤 목록·통계를 다시 받는다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "reactionBulkDeleteSubmitting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-board/me/reactions",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE",
+                                    "body": {
+                                        "ids": "{{_global.myReactionsSelectedIds ?? []}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "comment": "처리 중 표시는 이 창의 값이고 선택 배열은 목록과 함께 쓰는 전역 값이라\n                  스코프가 갈린다 — 한 set-state 로 묶으면 둘 중 하나가 엉뚱한 자리에 쓰인다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "reactionBulkDeleteSubmitting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "myReactionsSelectedIds": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{result.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "myReactions"
+                                        }
+                                    },
+                                    {
+                                        "comment": "위쪽 통계 카드의 「남긴 반응」 숫자도 같이 줄어야 한다",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "myActivityStats"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "reactionBulkDeleteSubmitting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "reaction-bulk-delete-confirm",
+                    "disabled": "{{_local.reactionBulkDeleteSubmitting || (_global.myReactionsSelectedIds ?? []).length === 0}}",
+                    "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_local.reactionBulkDeleteSubmitting}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "className": "animate-spin mr-2"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:mypage.board_activities.reactions.delete_confirm_button"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -39,140 +166,6 @@
                         "className": "text-sm text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:mypage.board_activities.reactions.delete_notice"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex justify-end gap-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "선택 반응 일괄 해제 — 선택 ID 배열을 본문에 싣고, 성공하면 선택을 비운 뒤 목록·통계를 다시 받는다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "reactionBulkDeleteSubmitting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-board/me/reactions",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE",
-                                                "body": {
-                                                    "ids": "{{_global.myReactionsSelectedIds ?? []}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "comment": "처리 중 표시는 이 창의 값이고 선택 배열은 목록과 함께 쓰는 전역 값이라\n                    스코프가 갈린다 — 한 set-state 로 묶으면 둘 중 하나가 엉뚱한 자리에 쓰인다",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "reactionBulkDeleteSubmitting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "myReactionsSelectedIds": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{result.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "myReactions"
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "위쪽 통계 카드의 「남긴 반응」 숫자도 같이 줄어야 한다",
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "myActivityStats"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "reactionBulkDeleteSubmitting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "data-testid": "reaction-bulk-delete-confirm",
-                                "disabled": "{{_local.reactionBulkDeleteSubmitting || (_global.myReactionsSelectedIds ?? []).length === 0}}",
-                                "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_local.reactionBulkDeleteSubmitting}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "size": "sm",
-                                        "className": "animate-spin mr-2"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:mypage.board_activities.reactions.delete_confirm_button"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         }

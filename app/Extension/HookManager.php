@@ -320,6 +320,19 @@ class HookManager implements HookManagerInterface
     }
 
     /**
+     * 훅에 권한이 매핑돼 있는지 판정합니다.
+     *
+     * 권한 검사를 지난 응답을 공유 캐시에 남겨도 되는지처럼, 검사 결과가 아니라 게이트의 존재만 알면 되는 자리가 쓴다.
+     *
+     * @param  string  $hookName  훅 이름
+     * @return bool 권한이 매핑돼 있으면 true
+     */
+    public static function hasPermissionGate(string $hookName): bool
+    {
+        return PermissionHook::hasPermissionMapping($hookName);
+    }
+
+    /**
      * 훅 실행 전 권한 체크
      *
      * permission_hooks 테이블에 해당 훅이 매핑되어 있으면

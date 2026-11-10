@@ -87,4 +87,24 @@ interface PopupImageRepositoryInterface
      * @return Collection<int, PopupImage> 고아 임시 이미지
      */
     public function staleTempImages(CarbonInterface $before, int $limit): Collection;
+
+    /**
+     * 팝업에 붙은 이미지 중 주어진 MIME 의 수를 셉니다 — 썸네일 「기존 이미지 썸네일 만들기」 집계용.
+     *
+     * 임시 업로드는 세지 않는다 — 저장하지 않은 이미지까지 미리 만들면 정리 작업이 지울 파일에 CPU 를 쓴다.
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록 (래스터 이미지)
+     * @return int 개수
+     */
+    public function countAttachedImages(array $mimeTypes): int;
+
+    /**
+     * 팝업에 붙은 이미지를 id 순으로 나눠 읽습니다 — 썸네일 「기존 이미지 썸네일 만들기」 커서 순회용.
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록 (래스터 이미지)
+     * @param  int  $afterId  이 id 다음부터 (처음이면 0)
+     * @param  int  $limit  최대 건수 (1 미만이면 1)
+     * @return Collection<int, PopupImage> 이미지 목록
+     */
+    public function chunkAttachedImages(array $mimeTypes, int $afterId, int $limit): Collection;
 }

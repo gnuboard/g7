@@ -420,6 +420,14 @@
                     "comment": "하단 버튼",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "-640": {
+                            "comment": "640px 이하에서는 단추를 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계, #869 P1)",
+                            "props": {
+                                "className": "flex flex-col mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 gap-2"
+                            }
+                        }
+                    },
                     "props": {
                         "className": "flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
                     },
@@ -938,8 +946,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-2"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-2"
+                                        "className": "grid grid-cols-1 gap-2"
                                     },
                                     "children": [
                                         {
@@ -1109,6 +1124,14 @@
                             "comment": "하단 버튼",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "-640": {
+                                    "comment": "640px 이하에서는 단추를 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계, #869 P1)",
+                                    "props": {
+                                        "className": "flex flex-col mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 gap-2"
+                                    }
+                                }
+                            },
                             "props": {
                                 "className": "flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
                             },

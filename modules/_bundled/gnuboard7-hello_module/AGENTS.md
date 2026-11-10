@@ -21,7 +21,8 @@
 도메인은 메모(Memo) 하나이고 필드는 셋뿐입니다. 그 위에 Model · Migration · Factory ·
 Seeder · Repository(인터페이스 + 구현) · Service · FormRequest · Resource · Controller ·
 Listener · Layout · 컴포넌트 · 스타일시트(순수 CSS) · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1개씩
-있습니다. 실제 모듈은 이 계층을 엔티티 수만큼 늘린 것입니다.
+있습니다(리스너만 둘 — 자기 훅을 받는 액션 리스너와, 코어 필터 `core.thumbnail.filter_presets` 에 썸네일
+규격 하나를 더하는 필터 리스너). 실제 모듈은 이 계층을 엔티티 수만큼 늘린 것입니다.
 
 화면 모양은 모듈이 자기 CSS 로 싣습니다. 스타일시트는 빌드 도구 없이 손으로 쓴 순수 CSS 한 장이며,
 템플릿 CSS 뒤에 선언되는 기본값 칸(`@layer g7-extension` — 템플릿의 층 없는 규칙·덮기 파일만 이를 이긴다)과 층 없는 일반 칸을 함께 보여 줍니다
@@ -99,8 +100,8 @@ Listener · Layout · 컴포넌트 · 스타일시트(순수 CSS) · Test · 다
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 1개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 2개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 2개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 0개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -165,10 +166,10 @@ Listener · Layout · 컴포넌트 · 스타일시트(순수 CSS) · Test · 다
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
+| PHPUnit | 8개 | `modules/_bundled/gnuboard7-hello_module/tests` |
 | Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

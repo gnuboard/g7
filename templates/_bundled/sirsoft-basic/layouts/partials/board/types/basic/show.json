@@ -42,8 +42,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "inline"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "hidden sm:inline"
+                                "className": "hidden"
                             },
                             "text": "$t:board.admin_links.posts"
                         }
@@ -71,8 +78,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "inline"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "hidden sm:inline"
+                                "className": "hidden"
                             },
                             "text": "$t:board.admin_links.manage"
                         }
@@ -472,7 +486,7 @@
                                     "text": "$t:board.posts.detail.reply_secret_content"
                                 },
                                 {
-                                    "comment": "일반 글인 경우 - 내용",
+                                    "comment": "일반 글인 경우 - 내용 (접힘 상태의 이미지·표 숨김은 !hidden — _reply_section 과 같은 이유)",
                                     "id": "parent_post_html_content",
                                     "type": "extension_point",
                                     "name": "html_content",
@@ -480,7 +494,7 @@
                                     "props": {
                                         "content": "{{post?.data?.parent?.content ?? ''}}",
                                         "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
-                                        "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                                        "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:!hidden [&_table]:!hidden'}}"
                                     },
                                     "default": [
                                         {
@@ -489,7 +503,7 @@
                                             "props": {
                                                 "content": "{{post?.data?.parent?.content ?? ''}}",
                                                 "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
-                                                "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                                                "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:!hidden [&_table]:!hidden'}}"
                                             }
                                         }
                                     ]
@@ -1028,8 +1042,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "flex flex-row gap-2"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "flex flex-col sm:flex-row gap-2"
+                                                "className": "flex flex-col gap-2"
                                             },
                                             "children": [
                                                 {
@@ -1265,13 +1286,15 @@
                                             },
                                             "children": [
                                                 {
-                                                    "comment": "올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다",
+                                                    "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다. 올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다",
                                                     "type": "basic",
                                                     "name": "Img",
                                                     "if": "{{!!reactionType.icon_url && (_local?.reactingTypeId ?? null) !== reactionType.id}}",
                                                     "props": {
                                                         "data-testid": "post-react-icon-{{reactionType.id}}",
                                                         "src": "{{reactionType.icon_url}}",
+                                                        "loading": "lazy",
+                                                        "decoding": "async",
                                                         "alt": "",
                                                         "className": "w-5 h-5 object-contain"
                                                     }

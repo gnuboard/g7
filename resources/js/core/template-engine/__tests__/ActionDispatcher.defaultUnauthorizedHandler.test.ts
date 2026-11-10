@@ -14,7 +14,7 @@
  * @since engine-v1.78.2
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { getErrorHandlingResolver } from '../../error/ErrorHandlingResolver';
 import { DEFAULT_ERROR_HANDLING } from '../../types/ErrorHandling';
@@ -40,7 +40,7 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('[case:network-5] 기본 401 처리 · 세션 만료 이동 중 오류 처리', () => {
   let dispatcher: ActionDispatcher;
-  let navigate: ReturnType<typeof vi.fn>;
+  let navigate: Mock;
   let globalUpdates: any[];
 
   beforeEach(() => {
@@ -109,7 +109,7 @@ describe('[case:network-5] 기본 401 처리 · 세션 만료 이동 중 오류 
   // @scenario path=action_error, state=no_redirect_pending
   // @effects default_unauthorized_navigates_to_login_path
   it('빈 경로로 이동하라는 액션은 조용히 건너뛴다 (TypeError → 「네트워크 실패」 오분류 없음)', async () => {
-    await dispatcher.executeAction({ type: 'click', handler: 'navigate', params: { path: '' } } as any, {} as any);
+    await dispatcher['executeAction']({ type: 'click', handler: 'navigate', params: { path: '' } } as any, {} as any);
 
     expect(navigate).not.toHaveBeenCalled();
     expect(toasts()).toEqual([]);

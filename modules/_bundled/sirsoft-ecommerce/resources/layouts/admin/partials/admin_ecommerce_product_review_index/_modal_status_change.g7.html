@@ -11,7 +11,7 @@
         <p class="ecommerce-text-primary ecommerce:text-base">$t:sirsoft-ecommerce.admin.product_review.modal.status_change.message|count={{(_global.reviewBatchIds ?? []).length}}|status={{_global.reviewBatchAction === 'visible' ? $t('sirsoft-ecommerce.admin.product_review.filter.visible') : $t('sirsoft-ecommerce.admin.product_review.filter.hidden')}}</p>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <!-- 취소 — 창을 닫고 목록 쪽 일괄 작업 선택도 비운다. 비우지 않으면 확인을 거부했는데 선택칸에 그 작업이 남는다. -->
@@ -43,6 +43,6 @@
         <span data-if="{{!(_local.isBatchProcessing ?? false)}}">$t:sirsoft-ecommerce.admin.product_review.modal.status_change.confirm</span>
         <span data-if="{{_local.isBatchProcessing ?? false}}">$t:common.loading</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

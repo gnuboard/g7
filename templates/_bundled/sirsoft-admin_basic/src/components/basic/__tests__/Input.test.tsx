@@ -1,7 +1,6 @@
 // e2e:allow 단위 테스트 보강 (composeSemanticClassName 머지 회귀) — 동작 무변, 컴포넌트 소스의 e2e:allow 와 동일 사이클에서 E2E spec 일괄 작성 예정.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { Input } from '../Input';
 
 describe('Input 컴포넌트', () => {

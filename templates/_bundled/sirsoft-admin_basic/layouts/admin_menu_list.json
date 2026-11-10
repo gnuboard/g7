@@ -109,8 +109,20 @@
                 "id": "menu_list_content",
                 "type": "basic",
                 "name": "Div",
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "p-4 min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -246,8 +258,15 @@
                         "type": "basic",
                         "name": "Div",
                         "blur_until_loaded": true,
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "mt-6 grid grid-cols-2 gap-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6"
+                            "className": "mt-6 grid grid-cols-1 gap-6"
                         },
                         "children": [
                             {

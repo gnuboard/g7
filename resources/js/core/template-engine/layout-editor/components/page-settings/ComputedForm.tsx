@@ -25,7 +25,7 @@ import {
 } from '../../spec/computedRecipeEngine';
 import type { ComputedRecipeSpec, ConditionParamSpec } from '../../spec/specTypes';
 import type { RecipeSource } from '../../spec/editorSpecLoader';
-import type { BindingContext } from '../../DataBindingEngine';
+import type { BindingContext } from '../../../DataBindingEngine';
 import { getWidget } from '../../spec/widgetRegistry';
 import { ComputedPreview } from './ComputedPreview';
 import { CustomComputedBuilder, modelToExpr } from './CustomComputedBuilder';
@@ -248,7 +248,6 @@ function ComputedCard({
   computedKey,
   expr,
   recipes,
-  rawRecipes,
   t,
   sampleContext,
   dataSourceCandidates,
@@ -454,7 +453,6 @@ const editBody: React.CSSProperties = { display: 'flex', flexDirection: 'column'
 const overrideNotice: React.CSSProperties = { margin: 0, fontSize: 11, color: '#b45309', background: '#fef3c7', padding: '6px 8px', borderRadius: 6 };
 const paramRow: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 };
 const paramLabelStyle: React.CSSProperties = { fontSize: 11, color: '#64748b', minWidth: 90 };
-const paramInput: React.CSSProperties = { width: '100%', padding: '5px 8px', fontSize: 12, border: '1px solid #cbd5e1', borderRadius: 6, boxSizing: 'border-box' };
 const addBtn: React.CSSProperties = { padding: '6px 12px', fontSize: 12, border: '1px dashed #94a3b8', borderRadius: 6, background: '#fff', color: '#475569', cursor: 'pointer' };
 const addBox: React.CSSProperties = { marginTop: 6, border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', padding: 8, maxHeight: 380, overflowY: 'auto' };
 const groupTitle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#94a3b8', padding: '6px 4px 2px' };

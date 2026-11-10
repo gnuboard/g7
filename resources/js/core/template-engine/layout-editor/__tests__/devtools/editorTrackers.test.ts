@@ -23,6 +23,18 @@ const baseState: LayoutEditorState = {
   previewDevice: 'desktop',
   previewZoom: 1,
   history: { canUndo: false, canRedo: false },
+  routesError: null,
+  returnEditMode: null,
+  previewCustomWidth: 1024,
+  previewColorScheme: 'light',
+  isPaletteOpen: false,
+  availableStates: [],
+  activeStateId: null,
+  lastActiveStateId: null,
+  activeStateScopeKey: null,
+  lastActiveStateScopeKey: null,
+  layoutVersions: {},
+  extensionVersions: {},
 };
 
 describe('editorTrackers — devtools 비활성', () => {
@@ -30,10 +42,14 @@ describe('editorTrackers — devtools 비활성', () => {
     (window as any).__g7Devtools = undefined;
   });
 
+  // @scenario area=devtools_tracker
+  // @effects editor_tracker_noop_without_devtools
   it('trackEditorState — no-op (에러 없음)', () => {
     expect(() => trackEditorState(baseState)).not.toThrow();
   });
 
+  // @scenario area=devtools_tracker
+  // @effects editor_tracker_noop_without_devtools
   it('clearEditorStateData — no-op', () => {
     expect(() => clearEditorStateData()).not.toThrow();
   });
@@ -56,6 +72,8 @@ describe('editorTrackers — devtools 활성', () => {
     (window as any).__g7Devtools = undefined;
   });
 
+  // @scenario area=devtools_tracker
+  // @effects editor_tracker_forwards_state_snapshot
   it('trackEditorState — devtools.trackEditorState 호출', () => {
     trackEditorState(baseState, 'TOGGLE_ROUTE_TREE');
     expect(trackSpy).toHaveBeenCalledOnce();
@@ -66,6 +84,8 @@ describe('editorTrackers — devtools 활성', () => {
     expect(snap.timestamp).toBeTypeOf('number');
   });
 
+  // @scenario area=devtools_tracker
+  // @effects editor_tracker_snapshot_excludes_node_payload
   it('trackEditorState — 노드 메타(편집 중 내용물) 미적재 (누수 가드)', () => {
     // routeTree 에 가상 내용물을 가득 채워도 적재되는 건 size 만
     const stateWithTree: LayoutEditorState = {
@@ -99,6 +119,8 @@ describe('editorTrackers — devtools 활성', () => {
     expect(JSON.stringify(snap)).not.toContain('children');
   });
 
+  // @scenario area=devtools_tracker
+  // @effects editor_tracker_null_route_fields_when_unselected
   it('selectedRoute 가 null 일 때 selectedRoutePath/selectedLayoutName 도 null', () => {
     trackEditorState(baseState);
     const snap = trackSpy.mock.calls[0][0];
@@ -106,11 +128,15 @@ describe('editorTrackers — devtools 활성', () => {
     expect(snap.selectedLayoutName).toBeNull();
   });
 
+  // @scenario area=devtools_tracker
+  // @effects editor_tracker_clear_forwards_to_devtools
   it('clearEditorStateData — devtools.clearEditorStateData 호출', () => {
     clearEditorStateData();
     expect(clearSpy).toHaveBeenCalledOnce();
   });
 
+  // @scenario area=devtools_tracker
+  // @effects editor_tracker_swallows_devtools_errors
   it('devtools 적재 함수가 throw 해도 본 흐름은 영향 없음', () => {
     trackSpy.mockImplementation(() => {
       throw new Error('boom');

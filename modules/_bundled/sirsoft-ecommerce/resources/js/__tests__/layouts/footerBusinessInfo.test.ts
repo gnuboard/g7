@@ -7,9 +7,9 @@
  * - 빈 항목은 줄을 만들지 않고, 사업자번호가 있으면 공정위 조회를 새 창(opener 차단)으로 연다
  * - 스타일은 모듈 앞글자(ecommerce:) 클래스만 쓴다
  *
- * @scenario case=fragment
+ * 시나리오: case=fragment
  *
- * @effects footer_business_info_rendered_when_enabled
+ * 효과: footer_business_info_rendered_when_enabled
  */
 
 import fs from 'node:fs';

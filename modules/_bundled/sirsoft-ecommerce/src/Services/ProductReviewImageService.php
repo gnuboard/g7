@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ReviewImageUploadLimitException;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\BuildsRowThumbnailSource;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
@@ -28,6 +30,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ProductReviewImageService
 {
+    use BuildsRowThumbnailSource;
     use ResolvesRowStorage;
     use ResolvesStoredExtension;
     use ServesImageWithRowValidators;
@@ -191,7 +194,7 @@ class ProductReviewImageService
      *
      * @param  string  $hash  이미지 해시
      * @param  bool  $signatureVerified  유효 서명 URL 로 접근했는가 (숨김 리뷰 이미지의 한시 허용)
-     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int}|null 서빙 정보 또는 null
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int, thumbnail_source: ThumbnailSource|null, private: bool}|null 서빙 정보 또는 null
      */
     public function getFileInfo(string $hash, bool $signatureVerified = false): ?array
     {
@@ -231,6 +234,29 @@ class ProductReviewImageService
         // 캐시 계약을 더해 내보낸다.
         InlineMediaPolicy::harden($info['response'], $image->mime_type, $image->original_filename);
 
+        // 썸네일 헬퍼가 쓸 원본 — 위 상태 게이트를 지난 행에서만 만든다. 컨트롤러가 원본 응답 바로 앞에서
+        // `ThumbnailResponder::respond()` 에 넘긴다.
+        $info['thumbnail_source'] = $this->thumbnailSourceFor($image);
+
+        // 서명으로 연 응답과 노출 상태가 아닌 리뷰의 원본은 공유 캐시(CDN·프록시)에 남기지 않는다 — 다음 방문자가
+        // 게이트 없이 받는다. 노출 리뷰 원본은 종전처럼 public 이다.
+        $info['private'] = $signatureVerified || $image->review?->status !== ReviewStatus::VISIBLE;
+
         return $info;
+    }
+
+    /**
+     * 리뷰 이미지 행의 썸네일 원본 (게이트)
+     *
+     * 리뷰 이미지는 숨김(HIDDEN) 상태 게이트와 한시 서명이 걸린 원본이라 **원본이 공개 자산 디스크(CDN)에
+     * 있어도** 파생본은 비공개 썸네일 디스크에 두고 `private` 캐시로 낸다(설계 결정 D25). 공개 위치에 두면
+     * 리뷰를 숨긴 뒤에도 파생본 주소만으로 계속 열리고, 공유 캐시가 숨김 리뷰의 서명 응답을 남긴다.
+     *
+     * @param  ProductReviewImage  $image  리뷰 이미지 행
+     * @return ThumbnailSource|null 원본 (래스터가 아니면 null)
+     */
+    public function thumbnailSourceFor(ProductReviewImage $image): ?ThumbnailSource
+    {
+        return $this->rowThumbnailSource($image, gated: true);
     }
 }

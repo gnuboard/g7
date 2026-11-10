@@ -20,7 +20,7 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isModuleIntegrationDeactivating}}">
         <on type="click">
           <!-- 취소 — 스위치는 여는 쪽이 이미 서버 값으로 되돌려 두었으므로 창만 닫는다. -->
@@ -73,6 +73,6 @@
         <icon data-if="{{_global.isModuleIntegrationDeactivating}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isModuleIntegrationDeactivating ? '$t:admin.modules.deactivating' : '$t:admin.extension_integrations.deactivate_confirm'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -536,6 +536,28 @@
             "required": false,
             "description": "대체 텍스트"
           },
+          "thumbPreset": {
+            "type": "string",
+            "required": false,
+            "description": "썸네일 규격 이름(xs·sm·md·lg·xl·운영자 규격). 서빙 경로 이미지에 size 를 붙이고 srcSet 이 없으면 1x·2x srcset 을 만든다. 외부·정적·data: 주소는 그대로. DOM 속성으로 나가지 않는다"
+          },
+          "srcSet": {
+            "type": "string",
+            "required": false,
+            "description": "srcset 직접 지정 (thumbPreset 이 만드는 srcset 보다 우선)"
+          },
+          "loading": {
+            "type": "string",
+            "required": false,
+            "default": "lazy",
+            "description": "지연 로딩 (lazy|eager). 첫 화면 이미지(로고·상세 메인·배너)는 eager 로 명시"
+          },
+          "decoding": {
+            "type": "string",
+            "required": false,
+            "default": "async",
+            "description": "디코딩 방식 (async|sync|auto)"
+          },
           "className": {
             "type": "string",
             "required": false,
@@ -1308,6 +1330,12 @@
             "default": true,
             "description": "HTML 렌더링 여부"
           },
+          "imageSizes": {
+            "type": "string",
+            "required": false,
+            "default": "(min-width: 1024px) 768px, 100vw",
+            "description": "본문 이미지 srcset 의 sizes 값 (isHtml=true). 서빙 경로 본문 이미지는 본문 이미지 규격·srcset·지연 로딩으로 표시되고, 링크 밖 이미지는 눌러서 원본 확대 보기"
+          },
           "purifyConfig": {
             "type": "object",
             "required": false,
@@ -1396,6 +1424,7 @@
         "type": "composite",
         "description": "모달 다이얼로그 (ESC 키 닫기, 포커스 트랩, 오버레이 클릭 닫기)",
         "path": "src/components/composite/Modal.tsx",
+        "skipBindingKeys": ["footer"],
         "props": {
           "closeOnBackdropClick": {
             "type": "boolean",
@@ -1472,6 +1501,11 @@
             "type": "ReactNode",
             "required": false,
             "description": "모달 내용"
+          },
+          "footer": {
+            "type": "array",
+            "required": false,
+            "description": "본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 배열 (확인/취소 버튼). 640px 이하에서는 세로로 쌓는다"
           }
         }
       },

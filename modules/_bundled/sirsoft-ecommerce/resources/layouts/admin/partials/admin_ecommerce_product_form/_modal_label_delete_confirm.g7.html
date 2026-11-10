@@ -17,21 +17,21 @@
           <p class="ecommerce-text-label-subtle ecommerce:mt-1">$t:sirsoft-ecommerce.admin.product.labels.delete_modal.description</p>
         </div>
       </div>
-      <div data-ref="delete_modal_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
-        <button type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isDeletingLabel}}">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:sirsoft-ecommerce.common.cancel
-        </button>
-        <button type="button" class="ecommerce-btn ecommerce-btn-danger" disabled="{{_global.isDeletingLabel}}">
-          <on type="click">
-            <action handler="sirsoft-ecommerce.deleteLabel"/>
-          </on>
-          <icon data-if="{{_global.isDeletingLabel}}" name="spinner" class="ecommerce-spinner-sm ecommerce:mr-2"/>
-          <span>{{_global.isDeletingLabel ? '$t:sirsoft-ecommerce.admin.product.labels.delete_modal.deleting' : '$t:sirsoft-ecommerce.admin.product.labels.remove'}}</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isDeletingLabel}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button type="button" class="ecommerce-btn ecommerce-btn-danger" disabled="{{_global.isDeletingLabel}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.deleteLabel"/>
+        </on>
+        <icon data-if="{{_global.isDeletingLabel}}" name="spinner" class="ecommerce-spinner-sm ecommerce:mr-2"/>
+        <span>{{_global.isDeletingLabel ? '$t:sirsoft-ecommerce.admin.product.labels.delete_modal.deleting' : '$t:sirsoft-ecommerce.admin.product.labels.remove'}}</span>
+      </button>
+    </footer>
   </modal>
 </partial>

@@ -25,7 +25,7 @@
         <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.export.modal_retry.reason_hint</p>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
         <on type="click">
           <close-modal/>
@@ -55,6 +55,6 @@
         <icon data-if="{{_global.ecommerceExportIsRetrying}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.ecommerceExportIsRetrying ? '$t:sirsoft-ecommerce.admin.export.common.processing' : '$t:sirsoft-ecommerce.admin.export.common.confirm'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

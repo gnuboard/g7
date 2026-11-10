@@ -30,7 +30,8 @@
         <div data-ref="privacy_retention_target_list" data-if="{{(ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined) || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}" class="ecommerce:space-y-2">
           <div class="ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
             <div data-ref="privacy_retention_target_row" class="ecommerce:px-4 ecommerce:py-3">
-              <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-center ecommerce:sm:justify-between">
+              <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+                <responsive on="640-" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between"/>
                 <div class="ecommerce-flex-wrap-center ecommerce:gap-2 ecommerce:min-w-0">
                   <span class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.row_label</span>
                   <span data-if="{{ecommercePrivacyRetentionPreview?.data?.orders !== null &amp;&amp; ecommercePrivacyRetentionPreview?.data?.orders !== undefined}}" class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.settings.privacy_retention.target_count|count={{ecommercePrivacyRetentionPreview?.data?.orders ?? 0}}</span>

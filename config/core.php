@@ -3,6 +3,25 @@
 use App\Jobs\GenerateSitemapJob;
 use App\Notifications\Identity\IdentityNotificationType;
 
+/*
+| 이미지 썸네일 서버 보호 값 — `.env` 의 G7_THUMBNAIL_* 가 있으면 그 값, 없거나 비었거나 숫자가 아니면 기본값.
+| `thumbnail` 배열과 `thumbnail_server_defaults` 가 같은 값을 갖는다(아래 「이미지 썸네일」 절).
+*/
+$thumbnailEnvInt = static function (string $name, int $default): int {
+    $value = env($name);
+
+    return is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $default;
+};
+
+$thumbnailServerDefaults = [
+    'generate_per_minute' => $thumbnailEnvInt('G7_THUMBNAIL_GENERATE_PER_MINUTE', 120),
+    'lock_wait_seconds' => $thumbnailEnvInt('G7_THUMBNAIL_LOCK_WAIT_SECONDS', 10),
+    'max_source_pixels' => $thumbnailEnvInt('G7_THUMBNAIL_MAX_SOURCE_PIXELS', 16000000),
+    'pregenerate_batch' => $thumbnailEnvInt('G7_THUMBNAIL_PREGENERATE_BATCH', 20),
+    'pregenerate_time_budget' => $thumbnailEnvInt('G7_THUMBNAIL_PREGENERATE_TIME_BUDGET', 15),
+    'purge_time_budget' => $thumbnailEnvInt('G7_THUMBNAIL_PURGE_TIME_BUDGET', 10),
+];
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -30,6 +49,25 @@ return [
         'upload_image_quality_max' => 100,
         'upload_orphan_retention_days_min' => 1,
         'upload_orphan_retention_days_max' => 3650,
+        // 썸네일 규격 — 가로·세로(px)와 표 전체 행 수(고정 5행·og·확장 규격 포함)
+        'upload_thumbnail_width_min' => 16,
+        'upload_thumbnail_width_max' => 4096,
+        'upload_thumbnail_height_min' => 16,
+        'upload_thumbnail_height_max' => 4096,
+        'upload_thumbnail_presets_max' => 30,
+        // 썸네일 서버 보호 값 (업로드 탭 「고급」, .env G7_THUMBNAIL_*) — 근거는 아래 「이미지 썸네일」 절
+        'upload_thumbnail_generate_per_minute_min' => 1,
+        'upload_thumbnail_generate_per_minute_max' => 10000,
+        'upload_thumbnail_lock_wait_seconds_min' => 1,
+        'upload_thumbnail_lock_wait_seconds_max' => 30,
+        'upload_thumbnail_max_source_pixels_min' => 1000000,
+        'upload_thumbnail_max_source_pixels_max' => 100000000,
+        'upload_thumbnail_pregenerate_batch_min' => 1,
+        'upload_thumbnail_pregenerate_batch_max' => 500,
+        'upload_thumbnail_pregenerate_time_budget_min' => 1,
+        'upload_thumbnail_pregenerate_time_budget_max' => 60,
+        'upload_thumbnail_purge_time_budget_min' => 1,
+        'upload_thumbnail_purge_time_budget_max' => 60,
 
         // SEO
         'seo_og_image_default_width_min' => 0,
@@ -333,6 +371,63 @@ return [
     'storage' => [
         'public_asset_disk' => '',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 이미지 처리 엔진 (환경설정 > 드라이버 > 이미지 처리)
+    |--------------------------------------------------------------------------
+    | 업로드 축소와 썸네일 생성이 쓰는 엔진입니다(gd·imagick·플러그인). 값은
+    | 관리자 환경설정(drivers.image_driver)에서 SettingsServiceProvider 가 주입합니다.
+    */
+    'image' => [
+        'driver' => 'gd',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 이미지 썸네일
+    |--------------------------------------------------------------------------
+    | 모든 값은 관리자 환경설정(업로드 탭)에서 SettingsServiceProvider 가 주입합니다. 아래 다섯은 서버 보호 값으로,
+    | `.env` 의 G7_THUMBNAIL_* 로도 정하고 업로드 탭 「고급」 칸으로도 정합니다. 우선순위는 다른 `.env` 대응
+    | 설정과 같습니다(EnvPriority, docs/backend/admin-settings-access.md) — `.env` 우선 모드(G7_ENV_PRIORITY=true)에서
+    | `.env` 에 값이 있으면 그 값이 이기고 화면 칸은 잠깁니다. 그렇지 않으면 화면에 저장한 값이 이기고, 칸을 비우면
+    | 여기 값(`.env` 가 있으면 그 값, 없으면 기본값)을 씁니다. 화면 칸의 입력 범위는 위 settings_limits 입니다.
+    | `thumbnail_server_defaults` 는 칸을 비웠을 때 쓸 값이라 주입으로 덮이지 않습니다(화면의 placeholder).
+    |  - generate_per_minute: IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수(초과분은 원본). 범위 1~10000 —
+    |    0 은 생성을 끄는 뜻이 되는데 그것은 「썸네일 사용」이 맡고, 1분에 1만(초당 약 170)을 넘으면 보호 값의 뜻이 없다
+    |  - lock_wait_seconds: 같은 원본·같은 규격을 다른 요청이 만들고 있을 때 기다리는 시간(초). 넘으면 원본을 낸다
+    |    (`X-G7-Thumbnail: bypass:error`, 캐시하지 않음). 1~30 으로 묶는다 — 생성 잠금은 30초 뒤 저절로 풀리므로 그보다
+    |    오래 기다리지 않는다. 느린 서버에서 큰 원본이 자주 원본으로 나가면 늘리고, 요청이 오래 붙잡히면 줄인다
+    |  - max_source_pixels: 이 픽셀 수를 넘는 원본은 줄이지 않고 원본을 냄(메모리 보호). GD 는 픽셀당 약 4~5바이트를
+    |    써서 1600만 픽셀(4000×4000)에 약 70MB 가 든다. memory_limit 이 작으면 그 절반 안으로 더 줄여 쓴다.
+    |    범위 100만~1억 — 100만(1000×1000)보다 낮으면 보통 사진이 거의 다 원본으로 나가고, 상한 1억은 업로드 축소
+    |    한계(settings_limits upload_image_max_width/height_max 10000)의 10000×10000 이다
+    |  - pregenerate_batch: 「기존 이미지 썸네일 만들기」 한 번 호출이 처리하는 원본 수. 범위 1~500 — 관리 화면은
+    |    시간 예산이 먼저 끊지만 명령(thumbnails:pregenerate)은 예산 없이 이 수만큼 한 번에 읽는다
+    |  - pregenerate_time_budget: 관리 화면 한 번 호출의 시간 예산(초). 넘으면 처리한 자리의 커서를 돌려주고 화면이 이어
+    |    부른다. 기본값은 공유 호스팅 기본 max_execution_time 30초의 절반이다 — 2000×2000 원본 하나에 규격 5개가 약
+    |    1.5초라 20건이면 30초에 닿고, 예산은 원본 하나를 끝낸 뒤에 재므로 큰 원본 하나분의 여유를 남긴다.
+    |    서버 값이 더 짧으면 그 절반을 쓴다. 명령(thumbnails:pregenerate)에는 적용하지 않는다. 범위 1~60 — 웹 서버·
+    |    프록시의 흔한 응답 대기 한도(nginx fastcgi_read_timeout 기본 60초)를 넘기면 응답 전에 요청이 끊긴다
+    |  - purge_time_budget: 관리 화면 「비우기」 한 번 호출의 시간 예산(초). 같은 디스크를 나눠 쓰는 위치·규격 하나·원격
+    |    디스크 통째 비우기는 썸네일 트리를 걸어 지우므로 넘으면 마지막으로 본 자리의 커서를 돌려주고 화면이 이어 부른다.
+    |    기본 10초는 원격(S3) 삭제 한 건 약 30ms 기준 300건 안팎으로, 공유 호스팅 실행 한도 30초의 절반보다 짧다.
+    |    서버 값이 더 짧으면 그 절반을 쓴다. 범위 1~60 — 근거는 위 pregenerate_time_budget 과 같다
+    */
+    'thumbnail' => [
+        'enabled' => true,
+        'presets' => null,
+        'content_preset' => 'lg',
+        'disk_public' => 'thumbnails',
+        'disk_gated' => 'thumbnails',
+        'prune_enabled' => true,
+        // 움직이는 이미지(GIF·WebP·APNG)는 썸네일 대신 원본 (끄면 첫 프레임 썸네일, 확장 필터 core.thumbnail.filter_animated_original)
+        'animated_original' => true,
+        ...$thumbnailServerDefaults,
+    ],
+
+    // 업로드 탭 「고급」 칸을 비웠을 때 쓸 서버 보호 값 (.env 또는 기본값) — 설정 주입이 덮지 않는다
+    'thumbnail_server_defaults' => $thumbnailServerDefaults,
 
     /*
     |--------------------------------------------------------------------------
@@ -1184,6 +1279,15 @@ return [
             'description' => ['ko' => '보존 기간이 지난 방문·액션 원장을 지웁니다(집계 숫자는 유지).', 'en' => 'Deletes visit and action ledgers past retention (aggregates are kept).'],
             'command' => 'analytics:prune',
             'expression' => '10 5 * * *',
+        ],
+        // 규격이 바뀌었거나 원본이 없어진 썸네일 파생본 정리 (7.2.0, #869) — 다시 만들 수 있는 캐시라 기본 켬.
+        // 커맨드가 `--scheduled` 에서 upload.thumbnail_prune_enabled 를 재확인한다. 04:00~05:15 칸이 차 있어 05:20.
+        'thumbnails-prune' => [
+            'group' => 'gc',
+            'label' => ['ko' => '썸네일 정리', 'en' => 'Prune thumbnails'],
+            'description' => ['ko' => '규격이 바뀌었거나 원본이 없어진 이미지 썸네일 파일을 지웁니다(설정에서 끈 경우 건너뜀).', 'en' => 'Deletes image thumbnail files whose preset changed or whose original is gone (skipped when turned off in settings).'],
+            'command' => 'thumbnails:prune --scheduled',
+            'expression' => '20 5 * * *',
         ],
 
         // ── 대시보드 ──────────────────────────────────────────────────────

@@ -15,7 +15,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
@@ -49,14 +48,23 @@ const cands: SeoVarCandidate[] = [
 ];
 
 describe('SeoVarsEditor — 3그룹/게이팅', () => {
+  // @scenario area=seo_vars
+  // @effects seo_vars_auto_source_rows_readonly_without_input
   it('① 자동 채움 vars 는 🔒 읽기전용 + 출처 배지(편집 칸 없음)', () => {
     render(<SeoVarsEditor vars={{}} onChange={vi.fn()} varCandidates={cands} gatingMet t={t} />);
     expect(screen.getByTestId('g7le-seo-var-auto-site_name')).toBeInTheDocument();
     expect(screen.getByTestId('g7le-seo-var-auto-keyword_name')).toBeInTheDocument();
+    // 시험 이름의 🔒 표시와 출처 배지(source 이름)가 행에 실제로 있다.
+    const autoRow = screen.getByTestId('g7le-seo-var-auto-site_name');
+    expect(autoRow.textContent).toContain('🔒');
+    expect(autoRow.textContent).toContain('core_setting');
+    expect(screen.getByTestId('g7le-seo-var-auto-keyword_name').textContent).toContain('query');
     // 자동 vars 는 값 입력칸(mock) 없음.
     expect(screen.queryByTestId('g7le-seo-var-data-field-site_name-mock')).not.toBeInTheDocument();
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_data_row_value_input_patches_vars
   it('② 값 채우기(data) vars 는 값 입력칸 노출 + 값 패치', () => {
     const onChange = vi.fn();
     render(<SeoVarsEditor vars={{}} onChange={onChange} varCandidates={cands} gatingMet t={t} />);
@@ -66,6 +74,8 @@ describe('SeoVarsEditor — 3그룹/게이팅', () => {
     expect(onChange).toHaveBeenLastCalledWith({ product_description: '{{product.data.description}}' });
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_required_data_var_warned_not_removable
   it('④ required data var 는 * 표시 + 빈 값 경고 + 삭제 버튼 없음', () => {
     render(<SeoVarsEditor vars={{}} onChange={vi.fn()} varCandidates={cands} gatingMet t={t} />);
     expect(screen.getByTestId('g7le-seo-var-required-product_name')).toBeInTheDocument();
@@ -74,6 +84,8 @@ describe('SeoVarsEditor — 3그룹/게이팅', () => {
     expect(screen.queryByTestId('g7le-seo-var-custom-remove-product_name')).not.toBeInTheDocument();
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_custom_add_blocks_reserved_auto_name
   it('③ 직접 추가 — 자동 vars 동일 이름 차단(경고 + 추가 비활성)', () => {
     const onChange = vi.fn();
     render(<SeoVarsEditor vars={{}} onChange={onChange} varCandidates={cands} gatingMet t={t} />);
@@ -82,6 +94,8 @@ describe('SeoVarsEditor — 3그룹/게이팅', () => {
     expect((screen.getByTestId('g7le-seo-var-add-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_custom_add_creates_empty_key
   it('③ 직접 추가 — 새 이름 추가 시 vars 에 빈 값 키 생성', () => {
     const onChange = vi.fn();
     render(<SeoVarsEditor vars={{}} onChange={onChange} varCandidates={cands} gatingMet t={t} />);
@@ -90,6 +104,8 @@ describe('SeoVarsEditor — 3그룹/게이팅', () => {
     expect(onChange).toHaveBeenLastCalledWith({ promo_label: '' });
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_unlisted_name_shows_not_provided_hint
   it('⑦ 목록 밖 이름 — "어떤 확장도 제공 안 함" 안내(정보성, 거부 아님: 추가 버튼 활성)', () => {
     const onChange = vi.fn();
     render(<SeoVarsEditor vars={{}} onChange={onChange} varCandidates={cands} gatingMet t={t} />);
@@ -102,6 +118,8 @@ describe('SeoVarsEditor — 3그룹/게이팅', () => {
     expect(screen.queryByTestId('g7le-seo-var-add-reserved-warn')).not.toBeInTheDocument();
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_unlisted_name_shows_not_provided_hint
   it('⑦ data 후보 이름(목록 안)은 not-provided 안내 미표시', () => {
     render(<SeoVarsEditor vars={{}} onChange={vi.fn()} varCandidates={cands} gatingMet t={t} />);
     // 'product_name' = 확장 제공 data var → 목록 안 → 안내 미표시.
@@ -109,6 +127,8 @@ describe('SeoVarsEditor — 3그룹/게이팅', () => {
     expect(screen.queryByTestId('g7le-seo-var-add-not-provided-hint')).not.toBeInTheDocument();
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_custom_var_remove_deletes_key
   it('직접 추가 vars 는 ✕ 삭제 가능(키 제거)', () => {
     const onChange = vi.fn();
     render(<SeoVarsEditor vars={{ promo_label: '$t:custom.promo' }} onChange={onChange} varCandidates={cands} gatingMet t={t} />);
@@ -117,6 +137,8 @@ describe('SeoVarsEditor — 3그룹/게이팅', () => {
     expect(onChange).toHaveBeenLastCalledWith({});
   });
 
+  // @scenario area=seo_vars
+  // @effects seo_vars_gating_unmet_hides_auto_and_data_rows
   it('⑥ 게이팅 미충족 → 자동/data vars 0 + 전제 배너', () => {
     render(<SeoVarsEditor vars={{}} onChange={vi.fn()} varCandidates={cands} gatingMet={false} t={t} />);
     expect(screen.getByTestId('g7le-seo-vars-precondition')).toBeInTheDocument();

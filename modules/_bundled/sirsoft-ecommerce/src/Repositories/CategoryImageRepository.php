@@ -11,6 +11,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInte
  */
 class CategoryImageRepository implements CategoryImageRepositoryInterface
 {
+    /**
+     * @param  CategoryImage  $model  카테고리 이미지 모델
+     */
     public function __construct(
         protected CategoryImage $model
     ) {}
@@ -145,5 +148,30 @@ class CategoryImageRepository implements CategoryImageRepositoryInterface
         }
 
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->model->newQuery()
+            ->whereNotNull('category_id')
+            ->whereIn('mime_type', $mimeTypes)
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->whereNotNull('category_id')
+            ->whereIn('mime_type', $mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'disk', 'path', 'mime_type', 'width', 'height']);
     }
 }

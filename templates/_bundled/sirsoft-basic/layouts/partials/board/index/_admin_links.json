@@ -33,8 +33,15 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "inline"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "hidden sm:inline"
+                        "className": "hidden"
                     },
                     "text": "$t:board.admin_links.posts"
                 }
@@ -62,8 +69,15 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "inline"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "hidden sm:inline"
+                        "className": "hidden"
                     },
                     "text": "$t:board.admin_links.manage"
                 }

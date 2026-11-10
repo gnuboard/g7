@@ -156,8 +156,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "ckeditor:text-2xl ckeditor:font-semibold ckeditor:text-gray-900 ckeditor:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ckeditor-page-title"
+                                            "className": "ckeditor:text-xl ckeditor:font-semibold ckeditor:text-gray-900 ckeditor:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.admin.uploads.title"
                                     },
@@ -622,6 +629,8 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{row.download_url}}",
+                                                "thumbPreset": "sm",
+                                                "decoding": "async",
                                                 "alt": "{{row.original_name ?? ''}}",
                                                 "loading": "lazy",
                                                 "className": "ckeditor:w-16 ckeditor:h-16 ckeditor:object-cover ckeditor:rounded-lg ckeditor:border ckeditor:border-gray-200 ckeditor:dark:border-gray-700"
@@ -748,7 +757,133 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "ckeditor-btn ckeditor-btn-secondary",
+                            "disabled": "{{_global.isDeletingUpload}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "진행 플래그를 먼저 세워 두 버튼을 잠근다 — 삭제는 되돌릴 수 없어 연타로 같은 요청이 두 번 나가는 것을 막아야 한다. 성공·실패·403 세 갈래 모두에서 플래그를 반드시 되돌린다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeletingUpload": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/{{_global.modal_data.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingUpload": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "ckeditor5Uploads"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-ckeditor5.admin.uploads.delete.success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingUpload": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
+                                                }
+                                            }
+                                        ],
+                                        "errorHandling": {
+                                            "403": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingUpload": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:auth.permission_denied"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "ckeditor-flex-center ckeditor:gap-2 ckeditor:px-4 ckeditor:py-2 ckeditor:bg-red-600 ckeditor:dark:bg-red-700 ckeditor:text-white ckeditor:rounded-lg ckeditor:hover:bg-red-700 ckeditor:dark:hover:bg-red-800 ckeditor:disabled:opacity-50 ckeditor:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.isDeletingUpload}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -767,139 +902,6 @@
                             "text": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_message"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ckeditor-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ckeditor-btn ckeditor-btn-secondary",
-                                "disabled": "{{_global.isDeletingUpload}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "진행 플래그를 먼저 세워 두 버튼을 잠근다 — 삭제는 되돌릴 수 없어 연타로 같은 요청이 두 번 나가는 것을 막아야 한다. 성공·실패·403 세 갈래 모두에서 플래그를 반드시 되돌린다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeletingUpload": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/{{_global.modal_data.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingUpload": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "ckeditor5Uploads"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-ckeditor5.admin.uploads.delete.success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingUpload": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
-                                                    }
-                                                }
-                                            ],
-                                            "errorHandling": {
-                                                "403": {
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "isDeletingUpload": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "$t:auth.permission_denied"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ckeditor-flex-center ckeditor:gap-2 ckeditor:px-4 ckeditor:py-2 ckeditor:bg-red-600 ckeditor:dark:bg-red-700 ckeditor:text-white ckeditor:rounded-lg ckeditor:hover:bg-red-700 ckeditor:dark:hover:bg-red-800 ckeditor:disabled:opacity-50 ckeditor:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeletingUpload}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -913,7 +915,137 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "ckeditor-btn ckeditor-btn-secondary",
+                            "disabled": "{{_global.isDeletingUpload}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "성공하면 선택 목록도 함께 비운다 — 지워진 행의 id 가 선택에 남아 있으면 다음 일괄 처리가 이미 없는 대상을 싣는다. 서버가 건별 결과를 요약해 주므로 안내 문구는 응답 것을 그대로 쓴다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeletingUpload": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/bulk-delete",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_ckeditor5_uploads ?? []}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingUpload": false,
+                                                    "selectedIds_ckeditor5_uploads": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "ckeditor5Uploads"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingUpload": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
+                                                }
+                                            }
+                                        ],
+                                        "errorHandling": {
+                                            "403": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingUpload": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:auth.permission_denied"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "ckeditor-flex-center ckeditor:gap-2 ckeditor:px-4 ckeditor:py-2 ckeditor:bg-red-600 ckeditor:dark:bg-red-700 ckeditor:text-white ckeditor:rounded-lg ckeditor:hover:bg-red-700 ckeditor:dark:hover:bg-red-800 ckeditor:disabled:opacity-50 ckeditor:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.isDeletingUpload}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -930,143 +1062,6 @@
                                 "className": "ckeditor:text-gray-700 ckeditor:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_message|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ckeditor-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ckeditor-btn ckeditor-btn-secondary",
-                                "disabled": "{{_global.isDeletingUpload}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "성공하면 선택 목록도 함께 비운다 — 지워진 행의 id 가 선택에 남아 있으면 다음 일괄 처리가 이미 없는 대상을 싣는다. 서버가 건별 결과를 요약해 주므로 안내 문구는 응답 것을 그대로 쓴다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeletingUpload": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-ckeditor5/admin/uploads/bulk-delete",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_ckeditor5_uploads ?? []}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingUpload": false,
-                                                        "selectedIds_ckeditor5_uploads": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "ckeditor5Uploads"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{response.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingUpload": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:sirsoft-ckeditor5.admin.uploads.delete.failed'}}"
-                                                    }
-                                                }
-                                            ],
-                                            "errorHandling": {
-                                                "403": {
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "isDeletingUpload": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "$t:auth.permission_denied"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ckeditor-flex-center ckeditor:gap-2 ckeditor:px-4 ckeditor:py-2 ckeditor:bg-red-600 ckeditor:dark:bg-red-700 ckeditor:text-white ckeditor:rounded-lg ckeditor:hover:bg-red-700 ckeditor:dark:hover:bg-red-800 ckeditor:disabled:opacity-50 ckeditor:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeletingUpload}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
                         }
                     ]
                 }

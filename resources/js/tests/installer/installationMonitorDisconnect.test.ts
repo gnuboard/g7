@@ -24,7 +24,7 @@
  */
 import { readFileSync } from 'fs';
 import path from 'path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 type Listener = (e: { data?: string }) => void;
 
@@ -83,21 +83,23 @@ function jsonResponse(body: unknown) {
 }
 
 describe('SseMonitor 연결 끊김 뒤 결말 판정', () => {
-    let callbacks: Record<string, ReturnType<typeof vi.fn>>;
+    /** SseMonitor 가 받는 콜백 시그니처 */
+    type MonitorCallback = (...args: unknown[]) => void;
+    let callbacks: Record<string, Mock<MonitorCallback>>;
     let fetchMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         vi.useFakeTimers();
         FakeEventSource.instances = [];
         callbacks = {
-            onConnected: vi.fn(),
-            onTaskStart: vi.fn(),
-            onTaskComplete: vi.fn(),
-            onLog: vi.fn(),
-            onError: vi.fn(),
-            onAbort: vi.fn(),
-            onComplete: vi.fn(),
-            onConnectionTimeout: vi.fn(),
+            onConnected: vi.fn<MonitorCallback>(),
+            onTaskStart: vi.fn<MonitorCallback>(),
+            onTaskComplete: vi.fn<MonitorCallback>(),
+            onLog: vi.fn<MonitorCallback>(),
+            onError: vi.fn<MonitorCallback>(),
+            onAbort: vi.fn<MonitorCallback>(),
+            onComplete: vi.fn<MonitorCallback>(),
+            onConnectionTimeout: vi.fn<MonitorCallback>(),
         };
         fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);

@@ -10,7 +10,7 @@
       <p class="ecommerce-text-primary ecommerce:text-base">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.message|name={{_global.cancelIssueTarget?.user_name}}</p>
       <p class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium ecommerce:mt-2">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.warning</p>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting}}">
         <on type="click">
           <close-modal/>
@@ -40,6 +40,6 @@
         <icon data-if="{{_global.cancelIssueSubmitting}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.confirm_btn</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

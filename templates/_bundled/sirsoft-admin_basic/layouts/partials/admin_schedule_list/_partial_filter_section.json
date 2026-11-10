@@ -30,12 +30,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -62,8 +62,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.owner"
                         },
@@ -369,12 +376,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -401,8 +408,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.type"
                         },
@@ -626,12 +640,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -658,8 +672,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.status"
                         },
@@ -803,12 +824,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -835,8 +856,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.last_result"
                         },
@@ -1060,12 +1088,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -1092,8 +1120,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.frequency"
                         },
@@ -1437,12 +1472,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -1469,8 +1504,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.dispatch_mode"
                         },
@@ -1614,12 +1656,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -1646,8 +1688,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.without_overlapping"
                         },
@@ -1791,12 +1840,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -1823,8 +1872,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.history_mode"
                         },
@@ -1968,12 +2024,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "filter-row flex-col items-start"
+                                "className": "flex gap-2 flex-col items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-row gap-2 items-center"
                     },
                     "children": [
                         {
@@ -2000,8 +2056,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.schedules.filter.created_at"
                         },

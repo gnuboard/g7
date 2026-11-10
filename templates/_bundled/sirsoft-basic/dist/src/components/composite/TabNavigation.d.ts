@@ -46,7 +46,7 @@ export interface TabNavigationProps {
  *
  * 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여
  * mobileBreakpoint(기본 768px) 미만일 때 Select 드롭다운으로 자동 전환됩니다.
- * Tailwind hidden md:flex 분기를 사용하지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
+ * Tailwind 반응형 접두로 숨기고 보이는 분기를 쓰지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
  *
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.

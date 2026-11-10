@@ -12,8 +12,7 @@
  * 데이터: 클레임은 주문·결제·클레임 상태 기계를 거쳐야 생겨 시드 비용이 커서, 활성 설치본에 이미 있는
  * 클레임 중 주문번호가 서로 다른 두 건을 읽기만 한다(쓰기 없음). 두 건이 없으면 건너뛴다.
  *
- * @scenario surface=cache
- * @effects route_query_bindings_follow_current_screen
+ * 재는 조합: 바인딩 캐시 축(surface=cache), 효과는 화면 전환 뒤 route·query 바인딩이 새 화면 값을 따름 — 표식은 각 test 앞에 있다.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { request as pwRequest, type Page, type Response } from '@playwright/test';

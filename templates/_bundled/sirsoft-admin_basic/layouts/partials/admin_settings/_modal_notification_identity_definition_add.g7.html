@@ -97,50 +97,50 @@
           </div>
         </div>
       </div>
-      <div data-ref="identity_notification_add_footer" class="flex justify-end gap-2 pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
-        <button type="button" class="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.identity_notification_add_modal?.isSaving ?? false}}">
-          <on type="click">
-            <close-modal target="modal_notification_identity_definition_add"/>
-          </on>
-          $t:common.cancel
-        </button>
-        <!-- 저장은 고를 수 있는 정책을 골랐을 때만 열린다. 연달아 누르면 마지막 한 번만 보낸다(debounce) — 잠금(isSaving)은 첫 클릭의 상태 반영보다 두 번째 클릭이 빠르면 못 막는다(실측: 더블클릭 POST 2회 → 201·422). -->
-        <button data-ref="identity_notification_add_save_button" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.identity_notification_add_modal?.isSaving ?? false) || !(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).some(p =&gt; p.key === (_global.identity_notification_add_modal?.form?.policy_key ?? ''))}}">
-          <on type="click">
-            <!-- 저장. 성공하면 목록·선택지를 다시 받고 창 상태를 통째로 비운다(다음에 열면 빈 폼이다).
-                 실패는 필드 오류를 상단 상자에 남기고 창을 닫지 않는다(예: 중복 422). -->
-            <sequence :debounce="400">
-              <set-state target="global" :identity_notification_add_modal.isSaving="true" :identity_notification_add_modal.errors="null"/>
-              <api-call :auth_required="true" target="/api/admin/notification-definitions" method="POST">
-                <success>
-                  <refetch-data-source dataSourceId="notificationDefinitions"/>
-                  <refetch-data-source dataSourceId="identityPolicyDefinitions"/>
-                  <toast message="$t:admin.settings.notification_definitions.identity_add.save_success" type="success"/>
-                  <close-modal target="modal_notification_identity_definition_add"/>
-                  <set-state target="global" :identity_notification_add_modal="null"/>
-                </success>
-                <fail>
-                  <set-state target="global" :identity_notification_add_modal.isSaving="false" identity_notification_add_modal.errors="{{error.errors}}"/>
-                  <toast message="{{error.message ?? '$t:admin.settings.notification_definitions.identity_add.save_failed'}}" type="error"/>
-                </fail>
-                <field name="body">
-                  <field name="category" value="identity"/>
-                  <field name="policy_key" value="{{_global.identity_notification_add_modal?.form?.policy_key ?? ''}}"/>
-                  <field name="name" value="{{_global.identity_notification_add_modal?.form?.name ?? null}}"/>
-                  <field name="templates">
-                    <field name="mail">
-                      <field name="subject" value="{{_global.identity_notification_add_modal?.form?.subject ?? null}}"/>
-                      <field name="body" value="{{_global.identity_notification_add_modal?.form?.body ?? null}}"/>
-                    </field>
+    </div>
+    <footer>
+      <button type="button" class="text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.identity_notification_add_modal?.isSaving ?? false}}">
+        <on type="click">
+          <close-modal target="modal_notification_identity_definition_add"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <!-- 저장은 고를 수 있는 정책을 골랐을 때만 열린다. 연달아 누르면 마지막 한 번만 보낸다(debounce) — 잠금(isSaving)은 첫 클릭의 상태 반영보다 두 번째 클릭이 빠르면 못 막는다(실측: 더블클릭 POST 2회 → 201·422). -->
+      <button data-ref="identity_notification_add_save_button" type="button" class="flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.identity_notification_add_modal?.isSaving ?? false) || !(adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).some(p =&gt; p.key === (_global.identity_notification_add_modal?.form?.policy_key ?? ''))}}">
+        <on type="click">
+          <!-- 저장. 성공하면 목록·선택지를 다시 받고 창 상태를 통째로 비운다(다음에 열면 빈 폼이다).
+               실패는 필드 오류를 상단 상자에 남기고 창을 닫지 않는다(예: 중복 422). -->
+          <sequence :debounce="400">
+            <set-state target="global" :identity_notification_add_modal.isSaving="true" :identity_notification_add_modal.errors="null"/>
+            <api-call :auth_required="true" target="/api/admin/notification-definitions" method="POST">
+              <success>
+                <refetch-data-source dataSourceId="notificationDefinitions"/>
+                <refetch-data-source dataSourceId="identityPolicyDefinitions"/>
+                <toast message="$t:admin.settings.notification_definitions.identity_add.save_success" type="success"/>
+                <close-modal target="modal_notification_identity_definition_add"/>
+                <set-state target="global" :identity_notification_add_modal="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :identity_notification_add_modal.isSaving="false" identity_notification_add_modal.errors="{{error.errors}}"/>
+                <toast message="{{error.message ?? '$t:admin.settings.notification_definitions.identity_add.save_failed'}}" type="error"/>
+              </fail>
+              <field name="body">
+                <field name="category" value="identity"/>
+                <field name="policy_key" value="{{_global.identity_notification_add_modal?.form?.policy_key ?? ''}}"/>
+                <field name="name" value="{{_global.identity_notification_add_modal?.form?.name ?? null}}"/>
+                <field name="templates">
+                  <field name="mail">
+                    <field name="subject" value="{{_global.identity_notification_add_modal?.form?.subject ?? null}}"/>
+                    <field name="body" value="{{_global.identity_notification_add_modal?.form?.body ?? null}}"/>
                   </field>
                 </field>
-              </api-call>
-            </sequence>
-          </on>
-          <icon data-if="{{_global.identity_notification_add_modal?.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
-          <span>{{_global.identity_notification_add_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
-        </button>
-      </div>
-    </div>
+              </field>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.identity_notification_add_modal?.isSaving}}" name="spinner" class="animate-spin" size="sm"/>
+        <span>{{_global.identity_notification_add_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+      </button>
+    </footer>
   </modal>
 </partial>

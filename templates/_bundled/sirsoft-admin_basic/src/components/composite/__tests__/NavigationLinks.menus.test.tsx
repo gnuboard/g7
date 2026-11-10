@@ -277,7 +277,10 @@ describe('L4 DropdownMenuItem — href 항목', () => {
     expect(item.tagName).toBe('A');
     expect(item).toHaveAttribute('href', '/admin/users/5/edit');
     expect(item).toHaveClass('flex', 'items-center', 'px-4', 'py-3', 'cursor-pointer');
-    expect(screen.queryByRole('menuitem', { name: '삭제' })).toBeNull();
+    // 링크가 없는 항목도 키보드로 닿는 메뉴 항목이지만 링크는 아니다(#869 키보드 접근 — 종전에는 role 없는 div)
+    const plain = screen.getByRole('menuitem', { name: '삭제' });
+    expect(plain.tagName).not.toBe('A');
+    expect(plain.tabIndex).toBe(0);
     expect(screen.queryAllByRole('link')).toHaveLength(0);
   });
 

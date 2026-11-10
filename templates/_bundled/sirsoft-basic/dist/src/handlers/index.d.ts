@@ -1,7 +1,7 @@
 import { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler } from './productOptions';
 import { toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler } from './cartHandlers';
 import { findMatchingOptionHandler, initCartOptionSelectionHandler } from './cartOptionChange';
-import { initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler } from './storageHandlers';
+import { initCartKeyHandler, ensureCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler } from './storageHandlers';
 import { getDisplayPriceHandler } from './getDisplayPrice';
 import { formatCurrencyHandler, getCurrencySymbol } from './formatCurrency';
 import { loadPreferredCurrencyHandler, savePreferredCurrencyHandler } from './loadPreferredCurrency';
@@ -49,6 +49,7 @@ export declare const handlers: {
     findMatchingOption: typeof findMatchingOptionHandler;
     initCartOptionSelection: typeof initCartOptionSelectionHandler;
     initCartKey: typeof initCartKeyHandler;
+    ensureCartKey: typeof ensureCartKeyHandler;
     getCartKey: typeof getCartKeyHandler;
     clearCartKey: typeof clearCartKeyHandler;
     regenerateCartKey: typeof regenerateCartKeyHandler;
@@ -93,6 +94,7 @@ export declare const handlerMap: {
     findMatchingOption: typeof findMatchingOptionHandler;
     initCartOptionSelection: typeof initCartOptionSelectionHandler;
     initCartKey: typeof initCartKeyHandler;
+    ensureCartKey: typeof ensureCartKeyHandler;
     getCartKey: typeof getCartKeyHandler;
     clearCartKey: typeof clearCartKeyHandler;
     regenerateCartKey: typeof regenerateCartKeyHandler;
@@ -110,4 +112,4 @@ export declare const handlerMap: {
  * 핸들러 타입 정의 (TypeScript 자동완성용)
  */
 export type SirsoftBasicHandlers = typeof handlers;
-export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, markLocalOnceHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler, };
+export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, markLocalOnceHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, ensureCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler, };

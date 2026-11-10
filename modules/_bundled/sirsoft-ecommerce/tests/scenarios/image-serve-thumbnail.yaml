@@ -1,0 +1,84 @@
+feature: 이커머스 이미지 서빙의 썸네일 (`?size=` · `?w=`, #869)
+
+description: |
+  상품·카테고리·리뷰·클레임 이미지 서빙 4곳이 코어 `ThumbnailResponder` 를 게이트 바로 뒤·원본 응답 바로 앞에서
+  부른다. 낼 수 없으면 원본에 `X-G7-Thumbnail: bypass:{사유}` 를 붙인다.
+
+  - 공개(상품·카테고리): 행 확인이 게이트다. 파생본은 공개 썸네일 저장 위치, 그 위치가 공개 자산 디스크면 302.
+  - 게이트(리뷰 — 노출 상태·한시 서명, 클레임 — 한시 서명·본인·운영자): 게이트를 지난 뒤에만 썸네일.
+    파생본은 원본 디스크와 무관하게 비공개 썸네일 디스크, `private` 캐시(D25). 서명은 `size`·`w` 를 빼고 검증한다
+    — 응답이 준 서명 주소 뒤에 `&size=sm` 을 덧붙여도 서명이 깨지지 않게.
+
+  리스너(`ThumbnailSourcesListener`)가 서빙 경로 패턴 4개와 원본 제공자 4개를 코어 목록에 더한다. 패턴이 빠지면
+  화면·SEO 가 이 주소에 규격을 붙이지 않아 오류 없이 원본만 나간다.
+
+  회귀 불변식:
+    1. 파라미터 없는 요청은 이전과 같은 원본 바이트·헤더이고 썸네일 헤더·파생본이 생기지 않는다.
+    2. `?size=sm` 은 160×160 파생본(첫 요청 miss, 다음 hit) + nosniff. 키는 `thumbnails/{원본 디스크}/sirsoft-ecommerce/images/{행 path}/sm_…`.
+    3. `?w=300` 은 숫자 요청 대상 중 가로 ≥ 300 최소(md 640)로 올려 맞춘다.
+    4. 미정의 규격·배열 키(`size[]`)·원본보다 큰 규격(확대 끔)은 원본 + `bypass:{사유}`.
+    5. 운영 환경에서 공개 원본 썸네일은 `public`, 게이트 원본 썸네일은 `private`.
+    6. 공개 썸네일 저장 위치가 공개 자산 디스크(public)면 공개 원본은 302, 비공개 디스크에는 쓰지 않는다.
+    7. 리뷰 원본이 공개 자산 디스크에 있고 공개 썸네일 위치가 공개 자산 디스크여도 리뷰 파생본은 비공개 썸네일 디스크.
+    8. 게이트를 지나지 못하면(숨김 리뷰 무서명, 클레임 제3자·비로그인) 썸네일 요청도 원본과 같은 404 이고 파생본을 만들지 않는다.
+    9. 서명 + `size` 는 통과, 서명 변조·만료는 404.
+    10. 리스너가 경로 패턴과 제공자를 등록하고, 제공자는 임시 업로드(`products/temp/`)·다른 카테고리·다른 확장 경로를 원본으로 분류하지 않는다.
+    11. 서명은 `size`·`w` 만 빼고 검증한다 — 서명 + `w` 는 통과, 그 밖의 파라미터(`&foo=1`)가 붙으면 원본·썸네일 모두 404.
+    12. 원본 파일만 사라진 행은 파생본이 남아 있어도 `?size=`·`?w=` 가 무파라미터와 같은 404 다(원본 확인이 썸네일 호출보다 앞).
+    13. 클레임 첨부 썸네일은 원본 통로의 캐시 상한(`private, max-age=300`)을 넘지 않는다. 운영자(`claims.read`)는 서명 없이 썸네일을 받는다.
+    14. 제공자 목록·경로 분류는 서비스를 만들지 않고(세고 읽을 때 처음 해석), `chunk` 는 id 커서로 빠짐·겹침 없이 이어 읽는다.
+    15. 카테고리 공유 카드의 og:image 는 끝에 `size=og` 가 붙는다.
+    16. 카테고리 이미지 서빙의 예상 밖 오류는 500 이다.
+
+axes:
+  surface: [product_image, category_image, review_image, claim_image, registration]
+  thumbnail_query: [none, size, w, bypass, size_production_cache, size_public_disk, size_gate_denied, signed_size, signed_foreign_param, original_missing, og_card, registration]
+
+# 축 둘은 직교가 아니다 — 서빙 지점마다 성립하는 요청 모양이 다르다. 성립하지 않는 칸과, 같은 respond 호출을 다른 지점이
+# 대표하는 칸을 아래에 사유와 함께 뺀다. 네 서빙 지점은 모두 게이트 뒤·원본 응답 앞에서 같은 모양으로 ThumbnailResponder 를 부른다.
+exclusions:
+  - { surface: registration, thumbnail_query: [none, size, w, bypass, size_production_cache, size_public_disk, size_gate_denied, signed_size, signed_foreign_param, original_missing, og_card], reason: "등록 면은 HTTP 요청이 아니라 리스너가 패턴과 제공자를 코어 목록에 더하는지를 본다 — 요청 파라미터 축이 없다" }
+  - { surface: [product_image, category_image, review_image, claim_image], thumbnail_query: registration, reason: "registration 값은 등록 면 전용이다" }
+  - { surface: [product_image, category_image], thumbnail_query: [size_gate_denied, signed_size, signed_foreign_param], reason: "상품·카테고리 이미지는 공개 원본이라 행 확인 말고는 게이트도 한시 서명도 없다" }
+  - { surface: category_image, thumbnail_query: [w, bypass, size_production_cache], reason: "카테고리 이미지는 상품 이미지와 같은 공개 분류·같은 respond 호출이다 — 숫자 요청·bypass·운영 캐시는 상품 이미지 칸이 대표한다" }
+  - { surface: [product_image, review_image, claim_image], thumbnail_query: og_card, reason: "og_card 는 모듈 선언을 거치는 카테고리 공유 카드를 잰다. 상품은 코어 SeoMetaResolverTest 와 봇 실측이 맡고, 리뷰·클레임은 공유 카드에 나가지 않는다" }
+  - { surface: review_image, thumbnail_query: size, reason: "노출 리뷰의 size 요청은 size_production_cache 칸이 같은 요청을 운영 캐시 헤더까지 함께 잰다" }
+  - { surface: claim_image, thumbnail_query: size_public_disk, reason: "원본 디스크 무관 비공개 파생본(D25)은 같은 게이트 분류의 리뷰 이미지 칸이 대표한다" }
+
+effects:
+  - ecommerce_product_image_without_size_returns_original_unchanged
+  - ecommerce_product_image_size_returns_preset_dimensions
+  - ecommerce_image_thumbnail_is_hardened
+  - ecommerce_product_image_w_rounds_up_to_numeric_preset
+  - ecommerce_image_bypass_marks_original
+  - ecommerce_image_bypass_original_uses_thumbnail_ttl
+  - ecommerce_public_image_thumbnail_cache_is_public
+  - ecommerce_public_image_thumbnail_disk_redirects
+  - ecommerce_category_image_size_returns_preset_dimensions
+  - ecommerce_category_image_unexpected_error_is_500
+  - ecommerce_category_og_image_uses_og_preset
+  - ecommerce_gated_image_thumbnail_cache_is_private
+  - ecommerce_gated_original_cache_follows_gate
+  - ecommerce_review_image_without_size_returns_original_unchanged
+  - ecommerce_gate_applies_to_thumbnail
+  - ecommerce_signed_image_size_passes_signature
+  - ecommerce_signed_image_tampered_or_expired_denied
+  - ecommerce_review_thumbnail_stays_on_gated_disk
+  - ecommerce_claim_image_without_size_returns_original_unchanged
+  - ecommerce_thumbnail_listener_registers_url_patterns_and_providers
+  - ecommerce_signed_image_foreign_param_denied
+  - ecommerce_thumbnail_requires_existing_original
+  - ecommerce_gated_thumbnail_not_cached_longer_than_original
+  - ecommerce_claim_operator_receives_thumbnail
+  - ecommerce_source_provider_chunk_cursor_advances
+  - ecommerce_source_providers_resolve_dependencies_lazily
+  # 브라우저 E2E (Playwright)
+  - screen_img_requests_thumbnail_only
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Thumbnails/EcommerceImageThumbnailTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/product-image-thumbnails.spec.ts
+
+notes: |
+  조건부 요청(304)·원본 캐시 계약은 기존 이미지 서빙 시나리오(product-image-service · category-image-service ·
+  mp11-review-image-policy)가 소유한다 — 이 매니페스트의 변경 뒤에도 그 시나리오가 green 이어야 한다.

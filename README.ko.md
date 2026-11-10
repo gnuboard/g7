@@ -468,6 +468,7 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 | **sirsoft-marketing** | 마케팅 도구 |
 | **sirsoft-koreaexim** | 수출입은행 환율 자동 갱신·갱신 이력 |
 | **sirsoft-ckeditor5** | CKEditor 5 에디터 |
+| **sirsoft-cdn_cloudfront** | 공개 이미지 썸네일·공개 자산의 Amazon CloudFront CDN 서빙과 캐시 무효화 |
 | **sirsoft-gdpr** | 개인정보 보호(GDPR) |
 | **sirsoft-popup** | 공지·프로모션 팝업 레이어 |
 | **sirsoft-message_bizppurio** | 비즈뿌리오 메시지 발송 (문자·카카오 알림톡) |
@@ -490,6 +491,7 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 | **g7-module-sirsoft-board-ja** | 게시판 모듈 일본어 |
 | **g7-module-sirsoft-ecommerce-ja** | 이커머스 모듈 일본어 |
 | **g7-module-sirsoft-page-ja** | 페이지 모듈 일본어 |
+| **g7-plugin-sirsoft-cdn_cloudfront-ja** | CloudFront CDN 플러그인 일본어 |
 | **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor5 플러그인 일본어 |
 | **g7-plugin-sirsoft-daum_postcode-ja** | 다음 우편번호 플러그인 일본어 |
 | **g7-plugin-sirsoft-gdpr-ja** | 개인정보 보호(GDPR) 플러그인 일본어 |

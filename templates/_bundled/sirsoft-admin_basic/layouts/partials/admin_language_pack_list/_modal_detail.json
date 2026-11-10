@@ -148,6 +148,7 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다)",
                                                                     "type": "basic",
                                                                     "name": "Img",
                                                                     "if": "{{language_pack_detail?.data?.icon_url && !(_local.detailIconBroken ?? []).includes(language_pack_detail?.data?.identifier)}}",

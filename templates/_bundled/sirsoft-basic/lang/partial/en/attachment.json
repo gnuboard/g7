@@ -20,6 +20,8 @@
   "primary_image": "Primary image",
   "set_as_primary": "Set as primary image",
   "empty_file": "[{{name}}] Empty (0-byte) files cannot be uploaded.",
+  "compression_failed": "[{{name}}] The image could not be compressed.",
+  "upload_failed_save_stopped": "Some attachments failed to upload, so nothing was saved. Retry or remove the failed files, then save again.",
   "invalid_file_type": "This file type is not allowed.",
   "delete_failed": "Failed to delete the file."
 }

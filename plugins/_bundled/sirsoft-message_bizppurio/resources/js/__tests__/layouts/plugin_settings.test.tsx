@@ -9,7 +9,7 @@
  * 크리덴셜(password/api_key/sender_key)은 type=password 로 마스킹, 저장은
  * 자동바인딩(_local.form) → 코어 /api/admin/plugins/{id}/settings PUT.
  *
- * @scenario field_kind=credential
+ * 조합 요약(마커 아님, 평문): field_kind=credential 은 아래 크리덴셜 마스킹 시험이 단다.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
@@ -30,6 +30,19 @@ import {
 import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const root = layout as unknown as AnyNode;
+
+/**
+ * 노드의 className 토큰 — 기본(props) 또는 responsive 키(on) 갈래. 화면 폭 분기는 엔진 responsive 로 쓴다.
+ *
+ * @param node 레이아웃 노드
+ * @param on responsive 키(없으면 기본 props)
+ * @returns 클래스 토큰 목록
+ */
+function classTokens(node: AnyNode | null | undefined, on?: string): string[] {
+    const branch = on ? (node?.responsive as Record<string, AnyNode> | undefined)?.[on] : node;
+    const c = branch?.props?.className;
+    return typeof c === 'string' ? c.split(' ') : [];
+}
 
 describe('plugin_settings.json — 레이아웃 메타/권한', () => {
     /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */
@@ -95,13 +108,12 @@ describe('plugin_settings.json — 섹션', () => {
 
     /** @effects info_panel_test_mode_api_sending_report_sections_present */
     it('채널별 준비 목록은 PC(lg 이상) 2단, 모바일 1단 그리드로 배치된다', () => {
-        // 문자·카카오 블록을 감싼 컨테이너가 grid grid-cols-1 lg:grid-cols-2 여야 한다.
-        // sms_label 을 담은 블록의 부모(구분선 아래 컨테이너)에서 grid 클래스를 확인.
+        // 문자·카카오 블록을 감싼 컨테이너(구분선 아래)가 기본 grid-cols-1, 1024px 이상(responsive desktop) grid-cols-2 여야 한다.
+        // 세로 1단 고정(flex-col) 이 아니라 폭에 따라 단이 바뀌는 grid 여야 한다.
         const notice = findById(root, 'preparation_notice');
-        const raw = JSON.stringify(notice);
-        // 세로 1단 고정(flex-col) 이 아니라 반응형 grid 여야 한다.
-        expect(raw).toContain('grid-cols-1');
-        expect(raw).toContain('lg:grid-cols-2');
+        const grid = (notice?.children ?? []).find((c) => classTokens(c, 'desktop').length > 0);
+        expect(classTokens(grid)).toContain('bizppurio:grid-cols-1');
+        expect(classTokens(grid, 'desktop')).toContain('bizppurio:grid-cols-2');
     });
 
     /** @effects info_panel_test_mode_api_sending_report_sections_present */
@@ -155,7 +167,10 @@ describe('plugin_settings.json — 입력 필드 6종', () => {
         expect(findInputByName(root, name)).toBeTruthy();
     });
 
-    /** @effects credential_fields_masked_as_password */
+    /**
+     * @scenario field_kind=credential
+     * @effects credential_fields_masked_as_password
+     */
     it('크리덴셜(password/api_key/sender_key)은 type=password 로 마스킹된다', () => {
         for (const cred of ['password', 'api_key', 'sender_key']) {
             const input = findInputByName(root, cred);
@@ -184,12 +199,13 @@ describe('plugin_settings.json — 연결 확인 (§529)', () => {
     /** @effects connection_check_field_is_separate_node_from_password_field */
     it('연결 확인 버튼이 설정 행과 동일한 grid-cols-12(4/8) + 우측 정렬 패턴을 따른다', () => {
         const field = findById(root, 'field_connection_check');
-        const raw = JSON.stringify(field);
-        expect(raw).toContain('grid-cols-1');
-        expect(raw).toContain('lg:grid-cols-12');
-        expect(raw).toContain('lg:col-span-4');
-        expect(raw).toContain('lg:col-span-8');
-        expect(raw).toContain('lg:justify-end');
+        // 1024px 이상(responsive desktop)에서 12칸 그리드에 라벨 4칸, 버튼 8칸 우측 정렬
+        const [labelCol, buttonCol] = field?.children ?? [];
+        expect(classTokens(field)).toContain('bizppurio:grid-cols-1');
+        expect(classTokens(field, 'desktop')).toContain('bizppurio:grid-cols-12');
+        expect(classTokens(labelCol, 'desktop')).toContain('bizppurio:col-span-4');
+        expect(classTokens(buttonCol, 'desktop')).toContain('bizppurio:col-span-8');
+        expect(classTokens(buttonCol, 'desktop')).toContain('bizppurio:justify-end');
     });
 
     /** @effects connection_check_button_shows_plug_icon_idle_spinner_icon_loading */

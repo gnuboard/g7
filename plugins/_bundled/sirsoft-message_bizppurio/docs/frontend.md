@@ -55,6 +55,10 @@
 `bz_tpl_modal.errors` 를 채워 항목 목록으로 그리고, 목록 행의 [검수 신청]은 항목 문구를 이어 붙여 알립니다.
 삭제 완료 안내는 응답의 `kakao_deleted`·`kakao_skip_reason` 으로 가릅니다 — `not_registered`(카카오에 등록 안 됨),
 `state_not_deletable`(상태 제약), 그 밖(카카오 사유·서버 연결 실패 문구)은 그 사유를 안내 뒤에 붙입니다.
+
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`bizppurio-grid-3col-responsive`·`bizppurio-grid-2col-responsive`·`bizppurio-page-title`·`bizppurio-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"` 에 `<responsive on="1024-" class="bizppurio:grid bizppurio:grid-cols-3 bizppurio:gap-4 bizppurio:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`bizppurio:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

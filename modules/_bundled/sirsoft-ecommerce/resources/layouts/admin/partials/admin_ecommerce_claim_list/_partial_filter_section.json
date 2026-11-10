@@ -62,12 +62,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -95,8 +95,15 @@
                             "id": "f_010_date_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.date"
                         },
@@ -398,12 +405,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -431,8 +438,15 @@
                             "id": "f_440_claimStatus_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.claim_status"
                         },
@@ -1313,12 +1327,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -1346,8 +1360,15 @@
                             "id": "f_450_faultType_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.fault_type"
                         },
@@ -1484,12 +1505,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -1517,8 +1538,15 @@
                             "id": "f_490_chargeMethod_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.charge_method"
                         },
@@ -1654,12 +1682,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -1687,8 +1715,15 @@
                             "id": "f_530_reasonCode_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.reason"
                         },
@@ -1709,6 +1744,7 @@
                             ],
                             "props": {
                                 "name": "reasonCode",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.reason",
                                 "className": "ecommerce:!w-48",
                                 "value": "{{_local.filter.reasonCode || ''}}",
                                 "options": "{{_computed.claimReasonOptions ?? []}}"
@@ -1726,12 +1762,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -1759,8 +1795,15 @@
                             "id": "f_550_requesterType_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.requester_type"
                         },
@@ -1781,6 +1824,7 @@
                             ],
                             "props": {
                                 "name": "requesterType",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.requester_type",
                                 "className": "ecommerce:w-32",
                                 "value": "{{_local.filter.requesterType || ''}}",
                                 "options": [
@@ -1811,12 +1855,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -1844,8 +1888,15 @@
                             "id": "f_570_amount_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.amount"
                         },
@@ -1950,12 +2001,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -1983,8 +2034,15 @@
                             "id": "f_610_chargePaymentMethod_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method"
                         },
@@ -2056,12 +2114,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -2089,8 +2147,15 @@
                             "id": "f_620_claimFlags_label",
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-20"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.filter.claim_flags"
                         },
@@ -2351,12 +2416,19 @@
             ]
         },
         {
-            "comment": "검색 영역 — 검색 필드와 버튼 영역 분리 (D21 ②). `flex flex-col` 은 기준 display 다 — 빼면 md:flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다.",
+            "comment": "검색 영역 — 검색 필드와 버튼 영역 분리 (D21 ②). `flex flex-col` 은 기준 display 다 — 768px 이상 구간 값에도 `flex` 를 함께 적는다(구간 값은 className 을 통째로 바꾼다). 빼면 flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다.",
             "id": "search_row_wrapper",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:items-center ecommerce:gap-3"
+                    }
+                }
+            },
             "props": {
-                "className": "ecommerce:flex ecommerce:flex-col ecommerce:md:flex-row ecommerce:md:items-center ecommerce:gap-3"
+                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-3"
             },
             "children": [
                 {

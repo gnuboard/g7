@@ -1,0 +1,29 @@
+<!-- 코드별 오류 레이아웃이 없는 오류 코드(400·422·429·502·504 등)를 그리는 공통 오류 화면.
+  엔진은 `error_config.layouts` 에 그 코드가 없으면 `default` 로 이 화면을 그리고, 받은 코드를 데이터 문맥 `errorCode` 로 넘긴다.
+  코드와 문구를 박지 않는다 — 코드는 받은 값만 보이고 문구는 어느 코드에도 맞는 일반 안내다(박으면 다른 코드를 잘못 알린다).
+  일시적인 실패(429·502·504)가 많아 새로고침을 먼저 두고, 홈으로 가는 길을 함께 둔다. -->
+<layout name="errors/default" version="1.0.0" extends="_admin_base">
+  <meta title="$t:errors.default.title" :is_error_layout="true"/>
+  <slot name="content">
+    <div data-ref="error_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
+      <icon data-ref="error_icon" name="circle-exclamation" class="text-8xl text-gray-500 dark:text-gray-500 mb-6"/>
+      <h1 data-ref="error_code" data-if="{{errorCode}}" class="text-primary text-6xl font-bold mb-4">{{errorCode}}</h1>
+      <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.default.title</h2>
+      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-8 max-w-md">$t:errors.default.message</p>
+      <div data-ref="error_actions" class="flex flex-wrap items-center justify-center gap-3">
+        <button data-ref="refresh_button" type="button" class="button px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">
+          <on type="click">
+            <refresh/>
+          </on>
+          $t:errors.default.refresh
+        </button>
+        <a data-ref="back_button" href="/admin" class="button px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white dark:text-white font-medium rounded-lg transition-colors">
+          <on type="click">
+            <navigate/>
+          </on>
+          $t:errors.back_home
+        </a>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -82,7 +82,7 @@
     <div data-ref="hero_list_content" class="hs-admin-page-content">
       <div data-ref="page_header" class="hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-6">
         <div>
-          <h1 class="hs-page-title">$t:sirsoft-hero_section.admin.title</h1>
+          <h1 class="hs:text-xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"><responsive on="640-" class="hs:text-2xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"/>$t:sirsoft-hero_section.admin.title</h1>
           <p class="hs-text-label-subtle hs:mt-1">$t:sirsoft-hero_section.admin.description</p>
         </div>
         <a data-ref="create_button" data-if="{{banners?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}" :mergeQuery="true" class="hs-button hs-btn hs-btn-primary">
@@ -127,9 +127,11 @@
         <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
         <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.list.slot_missing</p>
       </div>
-      <div data-ref="top_cards" class="hs:grid hs:grid-cols-1 hs:lg:grid-cols-3 hs:gap-4 hs:mb-6">
+      <div data-ref="top_cards" class="hs:grid hs:grid-cols-1 hs:gap-4 hs:mb-6">
+        <responsive on="desktop" class="hs:grid hs:grid-cols-3 hs:gap-4 hs:mb-6"/>
         <!-- 미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다) -->
-        <section data-ref="preview_card" aria-labelledby="hero_preview_heading" class="hs:lg:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
+        <section data-ref="preview_card" aria-labelledby="hero_preview_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
+          <responsive on="desktop" class="hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"/>
           <div class="hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3">
             <div class="hs:flex hs:flex-wrap hs:items-center hs:gap-x-3 hs:gap-y-1">
               <h2 id="hero_preview_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.preview.title|count={{(preview?.data?.data ?? []).length}}</h2>
@@ -431,7 +433,8 @@
         <blur-until-loaded sources="banners"/>
         <column field="thumbnail" header="$t:sirsoft-hero_section.admin.list.column.image" width="120px">
           <cell>
-            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="hs:w-24 hs:h-8 hs:object-cover hs:rounded hs:border hs:border-gray-200 hs:dark:border-gray-700" loading="lazy"/>
+            <!-- 배너는 가로로 긴 이미지(3:1 안팎) — 이 플러그인 확장 규격 sirsoft-hero_section.list(가로 240, 가로만 맞춤) 한 장. 정사각 자르기(sm)는 배너 가운데 1/3 만 남긴다 -->
+            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url | thumb('sirsoft-hero_section.list')}}" decoding="async" alt="" class="hs:w-24 hs:h-8 hs:object-cover hs:rounded hs:border hs:border-gray-200 hs:dark:border-gray-700" loading="lazy"/>
             <span data-if="{{!row.thumbnail}}" class="hs:text-xs hs:text-gray-400 hs:dark:text-gray-500">-</span>
           </cell>
         </column>
@@ -516,7 +519,7 @@
           <p class="hs:text-xs hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
         </div>
       </div>
-      <div class="hs-modal-footer-buttons">
+      <footer>
         <button type="button" class="hs-btn hs-btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
@@ -546,7 +549,7 @@
           <icon data-if="{{_global.isDeleting}}" name="spinner" class="hs-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -559,7 +562,7 @@
           <p class="hs:text-xs hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
         </div>
       </div>
-      <div class="hs-modal-footer-buttons">
+      <footer>
         <button type="button" class="hs-btn hs-btn-secondary" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <close-modal/>
@@ -590,7 +593,7 @@
           <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="hs-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -609,11 +612,13 @@
             <sortable source="{{(_global.reorderItems ?? []).map((r, i) =&gt; ({...r, _idx: i}))}}" item-var="row" item-key="id" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]"/>
             <item-template>
               <div data-testid="hero-reorder-row-{{row.id}}" class="hs:flex hs:items-center hs:gap-3 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-800">
-                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-hero_section.admin.reorder.drag_handle', { name: row.title })}}" class="hs:hidden hs-hidden hs:md:flex hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300">
+                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-hero_section.admin.reorder.drag_handle', { name: row.title })}}" class="hs:hidden hs-hidden hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300">
+                  <responsive on="768-" class="hs:flex hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300"/>
                   <icon name="fa-solid fa-grip-vertical" class="hs:text-sm"/>
                 </div>
                 <span class="hs:w-6 hs:text-right hs:text-sm hs:tabular-nums hs:text-gray-500 hs:dark:text-gray-400">{{row._idx + 1}}</span>
-                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="hs:w-16 hs:h-6 hs:object-cover hs:rounded"/>
+                <!-- 배너는 가로로 긴 이미지(3:1 안팎) — 이 플러그인 확장 규격 sirsoft-hero_section.list(가로 240, 가로만 맞춤) 한 장. 정사각 자르기(sm)는 배너 가운데 1/3 만 남긴다 -->
+                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail | thumb('sirsoft-hero_section.list')}}" loading="lazy" decoding="async" alt="" class="hs:w-16 hs:h-6 hs:object-cover hs:rounded"/>
                 <span class="hs:truncate hs:flex-1 hs:font-medium hs:text-gray-900 hs:dark:text-gray-100">{{row.title}}</span>
                 <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-hero_section.admin.status.' + row.status)}}" :showIcon="false"/>
                 <button data-testid="hero-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}" class="hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
@@ -639,50 +644,50 @@
           </div>
         </div>
         <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="hs:rounded-lg hs:border hs:border-red-200 hs:dark:border-red-800 hs:bg-red-50 hs:dark:bg-red-900/20 hs:px-4 hs:py-3 hs:text-sm hs:text-red-700 hs:dark:text-red-300">{{_global.reorderError}}</div>
-        <div class="hs-modal-footer-buttons">
-          <button type="button" class="hs-btn hs-btn-secondary" disabled="{{_global.reorderSaving}}">
-            <on type="click">
-              <!-- 취소 — 창을 닫고 순서 작업본·원본·오류를 비운다(저장하지 않음) -->
-              <sequence>
-                <close-modal target="hero_reorder_modal"/>
-                <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
-              </sequence>
-            </on>
-            <span>$t:common.cancel</span>
-          </button>
-          <button data-testid="hero-reorder-save" type="button" :lockRepeatClick="true" class="hs-btn hs-btn-primary hs-flex-center hs:gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
-            <on type="click">
-              <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
-              <sequence>
-                <set-state target="global" :reorderSaving="true" :reorderError="null"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/order" method="PUT">
-                  <success>
-                    <set-state target="global" :reorderSaving="false" :reorderItems="null" :reorderOriginal="null"/>
-                    <close-modal target="hero_reorder_modal"/>
-                    <toast type="success" message="{{response.message}}"/>
-                    <refetch-data-source dataSourceId="banners"/>
-                    <refetch-data-source dataSourceId="preview"/>
-                  </success>
-                  <fail>
-                    <conditions>
-                      <when if="{{error.status === 422}}">
-                        <set-state target="global" :reorderSaving="false" reorderError="{{error.errors?.ids?.[0] ?? error.message}}"/>
-                      </when>
-                      <else>
-                        <set-state target="global" :reorderSaving="false"/>
-                        <toast type="error" message="{{error.message}}"/>
-                      </else>
-                    </conditions>
-                  </fail>
-                  <body position="{{_computed.currentPosition}}" ids="{{(_global.reorderItems ?? []).map(i =&gt; i.id)}}"/>
-                </api-call>
-              </sequence>
-            </on>
-            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="hs-spinner-sm"/>
-            <span>$t:sirsoft-hero_section.admin.reorder.save</span>
-          </button>
-        </div>
       </div>
+      <footer>
+        <button type="button" class="hs-btn hs-btn-secondary" disabled="{{_global.reorderSaving}}">
+          <on type="click">
+            <!-- 취소 — 창을 닫고 순서 작업본·원본·오류를 비운다(저장하지 않음) -->
+            <sequence>
+              <close-modal target="hero_reorder_modal"/>
+              <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+            </sequence>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-testid="hero-reorder-save" type="button" :lockRepeatClick="true" class="hs-btn hs-btn-primary hs-flex-center hs:gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
+          <on type="click">
+            <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
+            <sequence>
+              <set-state target="global" :reorderSaving="true" :reorderError="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/order" method="PUT">
+                <success>
+                  <set-state target="global" :reorderSaving="false" :reorderItems="null" :reorderOriginal="null"/>
+                  <close-modal target="hero_reorder_modal"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <refetch-data-source dataSourceId="banners"/>
+                  <refetch-data-source dataSourceId="preview"/>
+                </success>
+                <fail>
+                  <conditions>
+                    <when if="{{error.status === 422}}">
+                      <set-state target="global" :reorderSaving="false" reorderError="{{error.errors?.ids?.[0] ?? error.message}}"/>
+                    </when>
+                    <else>
+                      <set-state target="global" :reorderSaving="false"/>
+                      <toast type="error" message="{{error.message}}"/>
+                    </else>
+                  </conditions>
+                </fail>
+                <body position="{{_computed.currentPosition}}" ids="{{(_global.reorderItems ?? []).map(i =&gt; i.id)}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.reorderSaving}}" name="spinner" class="hs-spinner-sm"/>
+          <span>$t:sirsoft-hero_section.admin.reorder.save</span>
+        </button>
+      </footer>
     </modal>
   </modal>
 </layout>

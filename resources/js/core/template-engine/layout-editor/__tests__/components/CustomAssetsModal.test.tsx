@@ -114,7 +114,8 @@ describe('CustomAssetsModal', () => {
     expect(screen.queryByTestId('g7le-custom-assets-error')).toBeNull();
   });
 
-  // @scenario branch=extension, buffer_state=clean, leave=file_switch
+  // @scenario manage_actor=with_permission, manage_action=list
+  // @effects custom_asset_manager_lists_files_with_loaded_flag
   it('목록을 읽어 파일 행을 그린다', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, listBody));
 
@@ -153,7 +154,7 @@ describe('CustomAssetsModal', () => {
 
   /** @effects custom_asset_editor_save_invalidates_published_copy */
   it('저장은 PUT content 로 나가고 성공 후 목록을 다시 읽는다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
         return Promise.resolve(jsonResponse(200, { data: { path: 'new.css', size: 5 } }));
       }
@@ -203,7 +204,7 @@ describe('CustomAssetsModal', () => {
    * @effects custom_asset_editor_keeps_typing_for_a_new_path
    */
   it('[case:wysiwyg-3] 새 경로의 본문은 입력한 대로 보이고 다음 입력이 이어진다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
         return Promise.resolve(jsonResponse(200, { data: { path: 'new.css', size: 9 } }));
       }
@@ -241,7 +242,7 @@ describe('CustomAssetsModal', () => {
    * @effects custom_asset_editor_keeps_typing_for_a_new_path
    */
   it('새 파일 본문을 쓴 뒤 경로를 고쳐도 본문이 남고 고친 경로로 저장된다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
         return Promise.resolve(jsonResponse(200, { data: { path: 'fixed.css', size: 6 } }));
       }
@@ -278,7 +279,7 @@ describe('CustomAssetsModal', () => {
    * @effects custom_asset_editor_keeps_typing_for_a_new_path
    */
   it('경로보다 본문을 먼저 써도 입력이 남고 경로를 넣으면 저장된다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
         return Promise.resolve(jsonResponse(200, { data: { path: 'later.css', size: 6 } }));
       }
@@ -402,6 +403,50 @@ describe('CustomAssetsModal', () => {
     await waitFor(() => {
       expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('MY EDIT');
     });
+  });
+
+  /**
+   * D2 의 반대 갈래 — 고치지 않은(clean) 파일은 다시 열 때 서버 최신본을 받는다.
+   *
+   * 미저장 버퍼만 서버 본문을 무시해야 한다. 깨끗한 버퍼까지 남겨 두면 다른 사람이 그 사이 저장한
+   * 본문 대신 처음 읽은 낡은 본문이 편집기에 남고, 그대로 저장하면 남의 변경을 덮는다.
+   *
+   * @effects custom_asset_editor_refreshes_clean_file_from_server
+   */
+  // @scenario branch=extension, buffer_state=clean, leave=file_switch
+  it('고치지 않은 파일은 다른 파일에 갔다 돌아오면 서버 최신본으로 바뀐다', async () => {
+    let serverBody = 'SERVER BODY v1';
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/content?')) {
+        return Promise.resolve(jsonResponse(200, { data: { content: serverBody } }));
+      }
+
+      return Promise.resolve(jsonResponse(200, listBody));
+    });
+
+    render(<CustomAssetsModal templateIdentifier="sirsoft-basic" t={t} onClose={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css')).toBeTruthy();
+    });
+
+    // A 를 열고 고치지 않는다.
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+    await waitFor(() => {
+      expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('SERVER BODY v1');
+    });
+    expect(screen.getByTestId('g7le-custom-asset-row-10-overrides.css').getAttribute('data-dirty')).toBe('false');
+
+    // 그 사이 서버 본문이 바뀐다. B 로 갔다가 A 로 돌아온다.
+    serverBody = 'SERVER BODY v2';
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-fonts/brand.woff2'));
+    fireEvent.click(screen.getByTestId('g7le-custom-asset-row-10-overrides.css'));
+
+    await waitFor(() => {
+      expect((screen.getByTestId('g7le-custom-assets-content') as HTMLTextAreaElement).value).toBe('SERVER BODY v2');
+    });
+    const reads = fetchMock.mock.calls.filter(([url]) => String(url).includes('/content?') && String(url).includes('10-overrides.css'));
+    expect(reads).toHaveLength(2);
   });
 
   /**
@@ -572,7 +617,7 @@ describe('CustomAssetsModal', () => {
 
   /** @effects custom_asset_editor_renames_through_the_api */
   it('이름변경은 rename API 로 나가고 성공 후 목록을 다시 읽는다', async () => {
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    fetchMock.mockImplementation((url: string) => {
       if (String(url).includes('/rename')) {
         return Promise.resolve(jsonResponse(200, { data: { path: 'renamed.css' } }));
       }

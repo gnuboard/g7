@@ -113,6 +113,17 @@ function collectSetStateEmptyObjectNullTree(target: unknown, payload: Record<str
 const TOAST_DEDUPE_WINDOW_MS = 3000;
 
 /**
+ * 오류 처리기 실행 깊이 상한 (engine-v1.89.0).
+ *
+ * 실패한 동작의 오류 처리기(errorHandling·onError·레이아웃/템플릿/시스템 기본값)는 `executeAction` 으로 실행되고, 그 처리기의
+ * 실패는 같은 catch 갈래에서 다시 오류 처리기를 고른다. 처리기에 자기 정의가 없으면 시스템 기본(`toast`)이 다시 골라지므로, 그
+ * `toast` 가 같은 이유로 실패하면(전역 갱신기가 던짐) 끝이 없었다 — 비동기 재귀라 마이크로태스크만 돌아 타이머가 실행되지 않고
+ * 메모리만 늘었다. 깊이 2 = 원래 동작의 오류 처리기, 그리고 그 처리기 실패의 오류 처리기까지(onError 안 apiCall 실패의 기본
+ * toast 같은 종전 동작은 그대로다). 그보다 깊은 실패는 기록만 하고 실패로 끝낸다.
+ */
+const MAX_ERROR_HANDLER_DEPTH = 2;
+
+/**
  * params 의 `$t:키|이름={{값}}` 문구를 받자마자 번역 엔진으로 번역하는 핸들러 — 이 핸들러의 인자만 바인딩 값을
  * 보호 표식으로 감싼다(값의 `&`·`|`·`=` 가 인자 구분자로 읽히지 않게). 다른 핸들러(setState·apiCall 등)의 인자는
  * 상태·요청 본문으로 나가므로 표식을 넣지 않는다.
@@ -156,7 +167,7 @@ export const SCRIPT_DEFERRED_ATTRIBUTE = 'data-g7-script-deferred';
  */
 export function resolveActionFailureMessage(
     originalError: unknown,
-    handler: string,
+    handler: string | undefined,
     serverMessage?: string,
     fallbackMessage?: string
 ): string {
@@ -404,16 +415,23 @@ export type EventType =
   // sortable 이벤트 (@dnd-kit 기반)
   | 'onSortStart'
   | 'onSortEnd'
-  | 'onSortOver';
+  | 'onSortOver'
+  // 사용자 정의 이벤트 — `event` 에 적은 컴포넌트 콜백 이름(예: onUploadComplete)으로 묶는다. 실제 레이아웃이 쓴다
+  | 'custom';
 
 /**
  * 액션 정의
  */
 export interface ActionDefinition {
-  /** 이벤트 타입 */
-  type: EventType;
-  /** 액션 핸들러 이름 */
-  handler: ActionType | string;
+  /**
+   * 이벤트 타입 — 컴포넌트 이벤트에 묶는 진입점 액션에만 있다.
+   * onSuccess·onError·sequence·switch·conditions 안의 하위 액션과 init_actions 는 type 없이 쓴다.
+   */
+  type?: EventType;
+  /**
+   * 액션 핸들러 이름 — `actionRef` 만 적은 액션은 비어 있고, resolveActionRef 가 named_actions 정의로 채운다.
+   */
+  handler?: ActionType | string;
   /** 커스텀 이벤트 핸들러 이름 (예: "onNavigate") - 지정 시 type 대신 사용됨 */
   event?: string;
   /** 액션 타겟 (URL, API 엔드포인트 등) */
@@ -727,6 +745,12 @@ export interface ActionContext {
    */
   failures?: Error[];
   /**
+   * 오류 처리기 실행 깊이 — 실패한 동작의 오류 처리기를 실행할 때 1 씩 늘려 싣는다. 하위 동작은 컨텍스트를 펼쳐 받으므로
+   * 오류 처리기 안쪽 동작(sequence·onSuccess)도 같은 깊이다. {@link MAX_ERROR_HANDLER_DEPTH} 에 닿은 실패는 오류 처리기를
+   * 다시 고르지 않는다(engine-v1.89.0).
+   */
+  errorHandlerDepth?: number;
+  /**
    * 진입점 이벤트의 currentTarget 이 `<a href>` 일 때 그 href 속성 값.
    *
    * path 를 생략한 navigate 가 이 주소로 이동한다. currentTarget 은 디스패치 중에만 채워지므로
@@ -741,6 +765,13 @@ export interface ActionContext {
    * setState 가 `startStateChange` 의 연관 키로 넘긴다. 엔진 안에서 채우는 곳은 없고 호출자가 줄 때만 실린다.
    */
   actionId?: string;
+  /**
+   * 컴포넌트 setState 가 아니라 전역 폴백(setGlobalState)을 setState 자리에 실은 컨텍스트인지 (engine-v1.17.2)
+   *
+   * G7Core.dispatch 와 웹소켓 수신 액션처럼 컴포넌트 밖에서 디스패치할 때 채운다. true 면 handleSetState 가
+   * context.setState 대신 globalStateUpdater({ _local }) 경로로 `_local` 을 갱신한다.
+   */
+  _isDispatchFallbackContext?: boolean;
 }
 
 /**
@@ -751,11 +782,13 @@ export type LoadingActionsMap = Record<string, boolean>;
 
 /**
  * 액션 핸들러 함수 타입
+ *
+ * 반환값은 handleCustomAction 이 그대로 실행 결과로 돌려준다(sequence 의 `$prev` 등). 돌려주지 않아도 된다.
  */
 export type ActionHandler = (
   action: ActionDefinition,
   context: ActionContext
-) => void | Promise<void>;
+) => unknown;
 
 /**
  * 액션 실행 결과
@@ -2881,7 +2914,7 @@ export class ActionDispatcher {
       const resolvedParams = this.resolveParams(
         action.params,
         context.data,
-        TRANSLATED_PARAM_HANDLERS.has(action.handler)
+        action.handler !== undefined && TRANSLATED_PARAM_HANDLERS.has(action.handler)
       );
 
       // DevTools: 해석된 params 저장
@@ -2891,7 +2924,7 @@ export class ActionDispatcher {
 
       // 타겟 바인딩
       const resolvedTarget = action.target
-        ? this.resolveValue(action.target, context.data, TRANSLATED_TARGET_HANDLERS.has(action.handler))
+        ? this.resolveValue(action.target, context.data, action.handler !== undefined && TRANSLATED_TARGET_HANDLERS.has(action.handler))
         : undefined;
 
       // API 호출 시 로딩 상태 시작 (컴포넌트별 개별 관리)
@@ -2912,7 +2945,7 @@ export class ActionDispatcher {
       // 프리뷰 모드 억제 체크 (switch 진입 전)
       // PREVIEW_SUPPRESSED_HANDLERS에 정의된 핸들러는 프리뷰 모드에서 실행하지 않음
       // @since engine-v1.26.1
-      if (this.previewMode && PREVIEW_SUPPRESSED_HANDLERS.has(action.handler)) {
+      if (this.previewMode && action.handler !== undefined && PREVIEW_SUPPRESSED_HANDLERS.has(action.handler)) {
         logger.warn(`Preview mode: "${action.handler}" suppressed`, resolvedTarget || resolvedParams);
 
         // DevTools: 억제 로그
@@ -3383,6 +3416,17 @@ export class ActionDispatcher {
         return { success: false, error: actionError };
       }
 
+      // 오류 처리기 안에서 다시 실패한 것이 상한에 닿았으면 오류 처리기를 다시 고르지 않는다 (engine-v1.89.0,
+      // MAX_ERROR_HANDLER_DEPTH) — 처리기가 매번 같은 이유로 실패하면 기본 처리기를 끝없이 다시 실행했다
+      const errorHandlerDepth = context.errorHandlerDepth ?? 0;
+      if (errorHandlerDepth >= MAX_ERROR_HANDLER_DEPTH) {
+        logger.error(
+          `Error handler for "${action.handler}" failed at depth ${errorHandlerDepth} — not handled again:`,
+          actionError
+        );
+        return { success: false, error: actionError };
+      }
+
       // ErrorHandlingResolver를 통해 핸들러 결정
       const resolver = getErrorHandlingResolver();
       const result = resolver.resolve(errorStatus, {
@@ -3419,6 +3463,7 @@ export class ActionDispatcher {
             ...context.data,
             error: errorContextData,
           },
+          errorHandlerDepth: errorHandlerDepth + 1,
         };
 
         try {
@@ -5299,10 +5344,10 @@ export class ActionDispatcher {
       // 이 경우 context.setState를 호출하면 _global이 업데이트되므로,
       // globalStateUpdater({ _local: ... }) 경로를 사용해야 _local이 올바르게 업데이트됨
       // (비동기 콜백에서 G7Core.dispatch 호출 시 발생하는 문제 해결)
-      const isRealComponentContext = context.setState && !(context as any)._isDispatchFallbackContext;
+      const isRealComponentContext = context.setState && !context._isDispatchFallbackContext;
       logger.log('[handleSetState] isRealComponentContext:', isRealComponentContext,
         'context.setState:', !!context.setState,
-        '_isDispatchFallbackContext:', (context as any)._isDispatchFallbackContext);
+        '_isDispatchFallbackContext:', context._isDispatchFallbackContext);
       if (isRealComponentContext) {
         // 컴포넌트 컨텍스트가 있으면 직접 setState 호출
         logger.log('[handleSetState] Using COMPONENT setState path');
@@ -8276,7 +8321,7 @@ export class ActionDispatcher {
     action: ActionDefinition,
     context: ActionContext
   ): Promise<any> {
-    const handler = this.customHandlers.get(action.handler);
+    const handler = action.handler === undefined ? undefined : this.customHandlers.get(action.handler);
 
     if (!handler) {
       // 프리뷰 모드에서는 미등록 핸들러를 throw 하지 않고 silent skip.
@@ -9356,9 +9401,11 @@ export class ActionDispatcher {
       for (const rawAction of props.actions) {
         // actionRef 해석 - named_actions 참조를 실제 액션 정의로 변환
         const action = this.resolveActionRef(rawAction);
+        // 컴포넌트 actions 는 type 이나 event 를 반드시 적는 진입점 액션이다(번들 레이아웃 4755건 전수 확인, #869).
+        // 둘 다 없으면 종전처럼 getEventHandlerName 이 던진다 — 하위 액션용으로 선택이 된 type 을 여기서만 단언한다.
         const eventName = action.event
           ? this.normalizeEventPropName(action.event)
-          : this.getEventHandlerName(action.type);
+          : this.getEventHandlerName(action.type!);
         if (!actionsByEvent.has(eventName)) {
           actionsByEvent.set(eventName, []);
         }

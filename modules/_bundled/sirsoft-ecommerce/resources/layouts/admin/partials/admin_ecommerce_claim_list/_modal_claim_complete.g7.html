@@ -111,7 +111,7 @@
         <span data-ref="cc_018_summary_shipping" data-if="{{(_global.claimCompletePreview?.totals?.deducted_shipping_fee_total ?? 0) > 0 &amp;&amp; (_global.claimCompletePreview?.totals?.deducted_shipping_fee_total_formatted ?? null) == null}}">$t:sirsoft-ecommerce.admin.claim.complete.summary_shipping</span>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <!-- 취소는 아무것도 실행하지 않는다 — 미리보기는 DB 를 바꾸지 않으므로 상태가 그대로 남는다 (D26). 다만 대기 중인 미리보기 재조회는 정리한다 — 닫힌 모달의 응답이 전역 상태를 늦게 덮으면 다음 진입이 앞 선택을 물려받는다 (형제 취소 모달과 같은 규율). -->
       <button data-ref="cc_021_cancel_button" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
         <on type="click">
@@ -141,6 +141,6 @@
         <span>{{_global.isProcessing ? '$t:common.processing' : ''}}</span>
         <span data-if="{{!_global.isProcessing}}">$t:sirsoft-ecommerce.admin.claim.complete.submit|count={{(_global.claimCompleteRows ?? []).length}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

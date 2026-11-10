@@ -13,15 +13,15 @@
 <partial description="Schedule List - Filter Section with Slot System">
   <div data-ref="filter_card" data-key="filter" class="admin-card">
     <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
-      <div data-ref="owner_filter_row" data-slot="{{(_local.visibleFilters || []).includes('owner') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="owner_filter_row" data-slot="{{(_local.visibleFilters || []).includes('owner') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('owner')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.owner">
           <on type="change">
             <!-- 소유 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 브라우저에 남긴다 — 여기서는 상태만 바꾸고 저장은 필터 표시 선택기가 한다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('owner') ? (_local.visibleFilters || []).filter(f => f !== 'owner') : [...(_local.visibleFilters || []), 'owner']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.owner</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.owner</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="ownerType" value="all" checked="{{(_local.filter.ownerType || 'all') === 'all'}}" class="radio">
@@ -88,15 +88,15 @@
           </div>
         </div>
       </div>
-      <div data-ref="type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('type') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('type') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('type')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.type">
           <on type="change">
             <!-- 작업 유형 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('type') ? (_local.visibleFilters || []).filter(f => f !== 'type') : [...(_local.visibleFilters || []), 'type']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.type</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.type</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="type" value="all" checked="{{(_local.filter.type || 'all') === 'all'}}" class="radio">
@@ -145,15 +145,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('status')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.status">
           <on type="change">
             <!-- 상태 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('status') ? (_local.visibleFilters || []).filter(f => f !== 'status') : [...(_local.visibleFilters || []), 'status']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.status</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.status</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="status" value="all" checked="{{(_local.filter.status || 'all') === 'all'}}" class="radio">
@@ -184,15 +184,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="last_result_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lastResult') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="last_result_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lastResult') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lastResult')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.last_result">
           <on type="change">
             <!-- 최근 결과 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lastResult') ? (_local.visibleFilters || []).filter(f => f !== 'lastResult') : [...(_local.visibleFilters || []), 'lastResult']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.last_result</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.last_result</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="lastResult" value="all" checked="{{(_local.filter.lastResult || 'all') === 'all'}}" class="radio">
@@ -241,15 +241,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="frequency_filter_row" data-slot="{{(_local.visibleFilters || []).includes('frequency') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="frequency_filter_row" data-slot="{{(_local.visibleFilters || []).includes('frequency') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('frequency')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.frequency">
           <on type="change">
             <!-- 실행 주기 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('frequency') ? (_local.visibleFilters || []).filter(f => f !== 'frequency') : [...(_local.visibleFilters || []), 'frequency']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.frequency</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.frequency</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="frequency" value="all" checked="{{(_local.filter.frequency || 'all') === 'all'}}" class="radio">
@@ -325,15 +325,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="dispatch_mode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('dispatchMode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="dispatch_mode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('dispatchMode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('dispatchMode')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.dispatch_mode">
           <on type="change">
             <!-- 실행 방식 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('dispatchMode') ? (_local.visibleFilters || []).filter(f => f !== 'dispatchMode') : [...(_local.visibleFilters || []), 'dispatchMode']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.dispatch_mode</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.dispatch_mode</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="dispatchMode" value="all" checked="{{(_local.filter.dispatchMode || 'all') === 'all'}}" class="radio">
@@ -364,15 +364,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="overlap_filter_row" data-slot="{{(_local.visibleFilters || []).includes('overlap') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="overlap_filter_row" data-slot="{{(_local.visibleFilters || []).includes('overlap') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('overlap')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.without_overlapping">
           <on type="change">
             <!-- 중복 실행 방지 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('overlap') ? (_local.visibleFilters || []).filter(f => f !== 'overlap') : [...(_local.visibleFilters || []), 'overlap']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.without_overlapping</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.without_overlapping</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="overlap" value="all" checked="{{(_local.filter.overlap || 'all') === 'all'}}" class="radio">
@@ -403,15 +403,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="history_mode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('historyMode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="history_mode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('historyMode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('historyMode')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.history_mode">
           <on type="change">
             <!-- 실행 이력 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('historyMode') ? (_local.visibleFilters || []).filter(f => f !== 'historyMode') : [...(_local.visibleFilters || []), 'historyMode']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.history_mode</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.history_mode</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="historyMode" value="" checked="{{(_local.filter.historyMode || '') === ''}}" class="radio">
@@ -442,15 +442,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}" aria-label="$t:admin.schedules.filter.show_in_basic|label=$t:admin.schedules.filter.created_at">
           <on type="change">
             <!-- 등록일 필터 노출 스위치. 빠른 기간 버튼이 붙어 자리를 많이 먹는다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.schedules.filter.created_at</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.schedules.filter.created_at</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>

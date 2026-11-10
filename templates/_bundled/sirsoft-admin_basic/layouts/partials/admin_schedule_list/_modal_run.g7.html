@@ -57,7 +57,7 @@
         <pre data-ref="run_error_output" class="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-3 rounded-lg">{{_global.runResult?.error_output}}</pre>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button data-ref="run_cancel_button" type="button" class="btn btn-secondary" disabled="{{_global.isRunning}}">
         <on type="click">
           <!-- 닫으면서 결과를 비운다 — 남겨 두면 다음에 다른 작업으로 이 창을 열었을 때 지난 실행 결과가 그 작업의 것처럼 보인다.
@@ -92,6 +92,6 @@
         <icon data-if="{{!_global.isRunning}}" name="play" class="text-base"/>
         <span>{{_global.isRunning ? '$t:admin.schedules.modals.running' : '$t:admin.schedules.action.run'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

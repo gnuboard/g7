@@ -10,7 +10,128 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.schedules.modals.duplicate_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "schedule_duplicate_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isDuplicating}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "id": "schedule_duplicate_submit",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "삭제 창과 달리 고른 작업을 비우지 않는다 — 복사한 뒤에도 원본이 목록에 그대로 있고, 이어서 실행이나 이력 창을 열 수 있다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isDuplicating": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/duplicate",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDuplicating": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.schedules.messages.duplicate_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "schedules"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "schedule_duplicate_modal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDuplicating": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.schedules.errors.duplicate_failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "debounce": 300
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary flex-center gap-2",
+                    "disabled": "{{_global.isDuplicating}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isDuplicating}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{!_global.isDuplicating}}",
+                        "props": {
+                            "name": "copy",
+                            "className": "text-base"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.action.duplicate'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -97,134 +218,6 @@
                 "className": "mt-1 text-label-subtle"
             },
             "text": "$t:admin.schedules.modals.duplicate_owned_note"
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "schedule_duplicate_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isDuplicating}}"
-                    },
-                    "text": "$t:common.cancel"
-                },
-                {
-                    "id": "schedule_duplicate_submit",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "삭제 창과 달리 고른 작업을 비우지 않는다 — 복사한 뒤에도 원본이 목록에 그대로 있고, 이어서 실행이나 이력 창을 열 수 있다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isDuplicating": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/duplicate",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDuplicating": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.schedules.messages.duplicate_success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "schedules"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal",
-                                            "target": "schedule_duplicate_modal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDuplicating": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.schedules.errors.duplicate_failed'}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "debounce": 300
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-primary flex-center gap-2",
-                        "disabled": "{{_global.isDuplicating}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isDuplicating}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{!_global.isDuplicating}}",
-                            "props": {
-                                "name": "copy",
-                                "className": "text-base"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.action.duplicate'}}"
-                        }
-                    ]
-                }
-            ]
         }
     ]
 }

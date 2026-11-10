@@ -201,11 +201,6 @@
     }
   }
 
-  .board-btn-sm {
-    padding-inline: calc(.25rem * 3);
-    padding-block: calc(.25rem * 1.5);
-  }
-
   .board-button {
     cursor: pointer;
     justify-content: center;
@@ -242,6 +237,11 @@
   .board-btn[aria-disabled=true] {
     cursor: not-allowed;
     opacity: .5;
+  }
+
+  .board-btn-sm {
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 1.5);
   }
 
   .board-btn-primary {
@@ -2523,6 +2523,6 @@
 }
 
 /* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
-i:is(.board\:leading-5, .board\:md\:text-xl, .board\:text-4xl, .board\:text-5xl, .board\:text-base, .board\:text-lg, .board\:text-sm, .board\:text-xl, .board\:text-xs) {
+i:is(.board\:leading-5, .board\:text-4xl, .board\:text-5xl, .board\:text-base, .board\:text-lg, .board\:text-sm, .board\:text-xl, .board\:text-xs) {
   line-height: 1;
 }

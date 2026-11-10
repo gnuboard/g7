@@ -72,7 +72,7 @@
           <!-- 상품정보 -->
           <div class="ecommerce:col-span-5 ecommerce-flex-center ecommerce:gap-2">
             <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2"/>
-            <img data-if="{{cancelItem.thumbnail_url}}" src="{{cancelItem.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0"/>
+            <img data-if="{{cancelItem.thumbnail_url}}" src="{{cancelItem.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0"/>
             <div data-if="{{!cancelItem.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
               <icon name="image" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
             </div>
@@ -420,8 +420,7 @@
         </div>
       </div>
     </div>
-    <!-- 액션 버튼 (하단 고정) -->
-    <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:pt-4 ecommerce:pb-1 ecommerce:sticky ecommerce:bottom-0 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:-mx-6 ecommerce:px-6 ecommerce:-mb-4">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isCancelling}}">
         <on type="click">
           <!-- 닫기 — 타이머 정리가 창 닫기보다 **먼저**다. 수량 입력에 걸린 지연 재조회가 창이 사라진 뒤 도착하면 없는 화면의 상태를 건드린다. -->
@@ -440,6 +439,6 @@
         <icon data-if="{{_local.isCancelling}}" name="spinner" class="ecommerce:animate-spin" size="sm"/>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_btn</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

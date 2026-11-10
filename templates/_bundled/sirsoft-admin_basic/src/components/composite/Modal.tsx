@@ -1,6 +1,8 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { isWidthAtMost } from '../layout/widthBreakpoints';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -73,6 +75,14 @@ export interface ModalProps {
         isEditMode?: boolean;
       } | null;
     };
+    /** Modal 노드의 확장 데이터 컨텍스트 — 본문 자식이 받는 dataContext 와 같은 객체 */
+    parentDataContext?: Record<string, any>;
+    /**
+     * Modal 노드의 편집기 경로(레이아웃 편집기 미리보기에서만 값이 있다). footer 단추마다
+     * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(#141).
+     */
+    componentPath?: string;
+    [key: string]: any;
   };
 }
 
@@ -115,6 +125,9 @@ export const MODAL_SIZE_WIDTHS: Record<string, string> = {
 /** 열린 모달 순서(맨 뒤가 맨 위) — Esc 는 맨 위 창만 처리한다. */
 const openModalStack: symbol[] = [];
 
+/** 좁은 화면 상한(px, 포함) — 이 폭 이하에서는 바닥 단추를 세로로 쌓고 폭을 채운다 */
+const NARROW_FOOTER_MAX_WIDTH = 640;
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -135,6 +148,8 @@ export const Modal: React.FC<ModalProps> = ({
   __translationContext,
   __componentContext,
 }) => {
+  // 바닥 단추 줄 배치를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
   // closeOnOverlayClick 별칭 지원 (레이아웃 JSON 호환)
   // 너비 결정 순서: 명시 width > size 단계 > 종전 기본값.
   // size 를 모르는 값으로 적어도 기본값으로 떨어져 화면이 깨지지 않는다.
@@ -261,7 +276,7 @@ export const Modal: React.FC<ModalProps> = ({
   const zIndex = style?.zIndex ?? 50;
 
   // titlePrefix/titleSuffix/footer 렌더링 헬퍼 (레이아웃 JSON 컴포넌트 배열 → DynamicRenderer)
-  const renderLayoutComponents = (components: any[] | undefined, keyPrefix: string) => {
+  const renderLayoutComponents = (components: any[] | undefined, keyPrefix: string, editorSlot?: 'footer') => {
     if (!components || components.length === 0) return null;
 
     const g7Core = (window as any).G7Core;
@@ -271,14 +286,23 @@ export const Modal: React.FC<ModalProps> = ({
     if (!DynamicRenderer) return null;
 
     // 렌더 환경(이 Modal 을 그린 렌더러) > 호스트 값. 편집 모드면 액션을 바인딩하지 않는다.
-    // componentPath 는 넘기지 않는다 — `footer` 배열은 편집기 경로 문법(children/iteration/responsive) 밖이다(#141).
     const env = __componentContext?.renderEnvRef?.current ?? null;
+    // 편집기 경로 — footer 만 넘긴다. 엔진이 실어 준 Modal 노드 경로 뒤에 `.props.footer.{index}` 를
+    // 붙이면 편집기가 `props.footer` 배열 항목으로 읽어 children 과 같게 고르고 고친다(#141).
+    // titlePrefix/titleSuffix 는 편집기 경로 문법(EDITOR_PROP_SLOTS)에 없어 넘기지 않는다.
+    const ownerPath = editorSlot ? __componentContext?.componentPath : undefined;
+    // 데이터 컨텍스트와 상태 범위는 엔진이 본문 자식을 그릴 때와 같게 준다 — Modal 노드의 확장 컨텍스트와
+    // 컴포넌트 컨텍스트. 빈 객체로 그리면 `{{_global.isDeleting}}`·`{{_local.form.x}}` 가 늘 비어
+    // 지우는 중 비활성·진행 표시와 방금 친 값을 읽는 단추가 고정 하단에서 동작하지 않았다(#869 P1).
+    const footerDataContext = __dataContext ?? __componentContext?.parentDataContext ?? {};
 
     return components.map((componentDef, index) => (
       <DynamicRenderer
         key={`${keyPrefix}-${index}`}
         componentDef={componentDef}
-        dataContext={__dataContext || {}}
+        {...(ownerPath ? { componentPath: `${ownerPath}.props.${editorSlot}.${index}` } : {})}
+        dataContext={footerDataContext}
+        parentComponentContext={__componentContext}
         translationContext={__translationContext}
         registry={env?.componentRegistry ?? g7Core.getComponentRegistry()}
         bindingEngine={env?.bindingEngine ?? g7Core.getDataBindingEngine()}
@@ -358,10 +382,12 @@ export const Modal: React.FC<ModalProps> = ({
           {children}
         </Div>
 
-        {/* Footer — 본문 스크롤 영역 밖이라 내용이 길어도 액션 버튼이 항상 보인다 */}
+        {/* Footer — 본문 스크롤 영역 밖이라 내용이 길어도 액션 버튼이 항상 보인다.
+            640 이하에서는 단추를 세로로 쌓고 폭을 채운다 — 폭 미디어가 없는 바탕(`modal-footer-bar`)에 렌더 폭으로 더한다.
+            단추가 각자 `if` 로 모두 빠지면 줄이 비므로 `empty:hidden` 으로 테두리와 여백까지 숨긴다(#869 C1) */}
         {footer && footer.length > 0 && (
-          <Div className="modal-footer-row">
-            {renderLayoutComponents(footer, 'footer')}
+          <Div className={isWidthAtMost(renderWidth, NARROW_FOOTER_MAX_WIDTH) ? 'modal-footer-bar empty:hidden flex-col gap-2 [&_.btn]:w-full' : 'modal-footer-bar empty:hidden'}>
+            {renderLayoutComponents(footer, 'footer', 'footer')}
           </Div>
         )}
       </Div>

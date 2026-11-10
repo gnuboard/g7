@@ -14,7 +14,8 @@
     <div data-ref="view_content" class="ecommerce-divider-list ecommerce:p-4">
       <div data-ref="section_basic_info" class="ecommerce:py-4 ecommerce:first:pt-0">
         <h4 class="ecommerce-text-table-header ecommerce:mb-3">$t:sirsoft-ecommerce.admin.category.info.basic</h4>
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <span class="ecommerce-form-sub-label">$t:sirsoft-ecommerce.admin.category.info.slug</span>
             <span class="ecommerce-text-primary ecommerce:block ecommerce:text-sm ecommerce:font-mono">{{_global.selectedCategory?.slug}}</span>
@@ -27,7 +28,8 @@
             </div>
           </div>
         </div>
-        <div class="ecommerce-grid-2col-responsive ecommerce:mt-4">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4 ecommerce:mt-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mt-4"/>
           <div>
             <span class="ecommerce-form-sub-label">$t:sirsoft-ecommerce.admin.category.info.name</span>
             <div data-each="nameEntry in {{Object.entries(_global.selectedCategory?.name || {})}}">
@@ -70,7 +72,7 @@
                         <open-modal target="modal_image_preview"/>
                       </sequence>
                     </on>
-                    <img src="{{image?.download_url}}" alt="{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}" class="ecommerce:w-full ecommerce:max-h-56 ecommerce:py-2 ecommerce:object-contain ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-75 ecommerce:hover:shadow-md ecommerce:transition-all ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"/>
+                    <img src="{{image?.download_url}}" thumbPreset="md" loading="lazy" decoding="async" alt="{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}" class="ecommerce:w-full ecommerce:max-h-56 ecommerce:py-2 ecommerce:object-contain ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-75 ecommerce:hover:shadow-md ecommerce:transition-all ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"/>
                   </button>
                 </div>
               </div>
@@ -84,7 +86,8 @@
       </div>
       <div data-ref="section_hierarchy" class="ecommerce:py-4">
         <h4 class="ecommerce-text-table-header ecommerce:mb-3">$t:sirsoft-ecommerce.admin.category.info.hierarchy_info</h4>
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <div class="ecommerce-text-tertiary">$t:sirsoft-ecommerce.admin.category.info.parent_category</div>
             <div class="ecommerce-text-primary ecommerce:text-sm">
@@ -140,7 +143,8 @@
       </div>
       <div data-ref="section_system_info" class="ecommerce:py-4 ecommerce:last:pb-0">
         <h4 class="ecommerce-text-table-header ecommerce:mb-3">$t:sirsoft-ecommerce.admin.category.info.system</h4>
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <div class="ecommerce-text-tertiary">$t:sirsoft-ecommerce.common.created_at</div>
             <div class="ecommerce-flex-center ecommerce-text-primary ecommerce:gap-1.5 ecommerce:text-sm">

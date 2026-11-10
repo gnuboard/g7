@@ -9,7 +9,7 @@
         <set-state target="global" editingPresetName="{{$event.target.value}}"/>
       </on>
     </input>
-    <div data-ref="preset_edit_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4">
+    <footer>
       <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
@@ -33,6 +33,6 @@
         </on>
         $t:common.save
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -94,8 +94,20 @@
                 "id": "analytics_visitor_detail_content",
                 "type": "basic",
                 "name": "Div",
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive-fluid"
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -152,8 +164,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H1",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "page-title"
+                                                    "className": "text-xl font-semibold text-gray-900 dark:text-white"
                                                 },
                                                 "text": "$t:admin.analytics.visitor_detail.title"
                                             },
@@ -317,8 +336,15 @@
                             "enabled": true,
                             "data_sources": "analytics_visitor"
                         },
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "grid grid-cols-3 gap-4"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4"
+                            "className": "grid grid-cols-1 gap-4"
                         },
                         "children": [
                             {
@@ -781,8 +807,15 @@
                                 "id": "visits_column",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "col-span-2 space-y-3"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "lg:col-span-2 space-y-3"
+                                    "className": "space-y-3"
                                 },
                                 "children": [
                                     {
@@ -909,8 +942,15 @@
                                                         "id": "visit_info_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "kv-list grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)] text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "kv-list-2 text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700"
+                                                            "className": "kv-list text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700"
                                                         },
                                                         "children": [
                                                             {

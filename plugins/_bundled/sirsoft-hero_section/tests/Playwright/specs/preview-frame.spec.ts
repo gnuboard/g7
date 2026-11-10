@@ -1,7 +1,7 @@
 /**
  * #810 후속 — 편집 미리보기의 구좌가 실제 사이트(사이트 홈·쇼핑몰 메인)의 히어로 구좌와 같은 폭·높이·글자 크기·줄바꿈인지.
  * @scenario-manifest tests/scenarios/preview-frame-and-conflict.yaml
- * @effects preview_matches_site_slot
+ * 효과 요약(마커 아님, 평문): 미리보기 구좌가 실제 사이트 구좌와 같다. 효과 표식은 아래 시험에 있다.
  *
  * 미리보기는 기기 viewport(PC 1366·모바일 390)를 유지하고 그 안에 활성 사용자 템플릿의 본문 상자를 템플릿 CSS 로 그린다.
  * 값은 하드코딩하지 않고 같은 브라우저에서 실제 사이트를 재어 비교한다. 사양이 만든 배너는 fixture 가 지운다.
@@ -40,10 +40,15 @@ async function previewSlot(page: Page, id: number, device: 'pc' | 'mobile', titl
   await page.goto(`${ADMIN_LIST}/${id}/edit`);
   await expect(page.locator('#footer_save_button')).toBeEnabled({ timeout: 30_000 });
   await page.locator(`#preview_device_${device}`).click();
-  await expect.poll(() => page.evaluate(() => document.querySelector('.hs-editor-preview .hs-preview__viewport iframe')?.getAttribute('width'))).toBe(device === 'pc' ? '1366' : '390');
-  await expect.poll(() => page.evaluate(() => (document.querySelector('.hs-editor-preview .hs-preview__viewport iframe') as HTMLIFrameElement)?.contentDocument?.querySelectorAll('link[data-hs-template-css]').length ?? 0)).toBeGreaterThan(0);
-  await page.waitForTimeout(800);
-  return page.evaluate(`(() => { const f = document.querySelector('.hs-editor-preview .hs-preview__viewport iframe'); return { ...(${measure.toString()})(f.contentDocument, ${JSON.stringify(title)}), viewport: Number(f.getAttribute('width')) }; })()`) as Promise<Slot & { viewport: number }>;
+  await expect.poll(() => page.evaluate(() => document.querySelector('#hero_form_preview .hs-preview__viewport iframe')?.getAttribute('width')), { timeout: 30_000 }).toBe(device === 'pc' ? '1366' : '390');
+  // 템플릿 CSS 링크는 위치 설정 응답(틀)이 와야 붙는다 — 서버가 느리면 5초(기본)를 넘긴다(실측 4회).
+  await expect.poll(() => page.evaluate(() => (document.querySelector('#hero_form_preview .hs-preview__viewport iframe') as HTMLIFrameElement)?.contentDocument?.querySelectorAll('link[data-hs-template-css]').length ?? 0), { timeout: 30_000 }).toBeGreaterThan(0);
+  // 템플릿 CSS 링크가 붙은 것만으로는 부족하다 — 미리보기가 iframe 안 stylesheet 를 모두 받은 뒤 다는 표식을 기다려 잰다
+  // (서버가 CSS 를 늦게 주면 적재 전 폭 390 을 읽던 간헐 실패). 표식이 달려야 관리자에게도 미리보기가 보인다.
+  await expect(page.locator('#hero_form_preview .hs-preview__viewport[data-hs-styles-ready]')).toBeAttached({ timeout: 30_000 });
+  await expect(page.locator('#hero_form_preview .hs-preview__viewport iframe')).toHaveCSS('visibility', 'visible');
+  await page.waitForTimeout(300);
+  return page.evaluate(`(() => { const f = document.querySelector('#hero_form_preview .hs-preview__viewport iframe'); return { ...(${measure.toString()})(f.contentDocument, ${JSON.stringify(title)}), viewport: Number(f.getAttribute('width')) }; })()`) as Promise<Slot & { viewport: number }>;
 }
 
 for (const [position, path] of [['home_hero', '/'], ['shop_hero', '/shop/products']] as const) {

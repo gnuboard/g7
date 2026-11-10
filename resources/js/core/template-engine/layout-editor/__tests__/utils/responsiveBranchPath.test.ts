@@ -33,7 +33,6 @@ import {
   separateBranch,
   mergeBranch,
   type EditorNode,
-  type ComponentPath,
 } from '../../utils/layoutTreeUtils';
 
 // 분기 children 교체형 트리:
@@ -59,11 +58,19 @@ function makeBranchTree(): EditorNode {
 }
 
 describe('parseEditorPath ↔ serializeEditorPath round-trip', () => {
+  /**
+   * @scenario behavior=path_roundtrip_keeps_segments
+   * @effects branch_path_roundtrip_keeps_segments
+   */
   it('number-only path 는 동작 불변(무손실 회귀)', () => {
     expect(parseEditorPath('0.children.2')).toEqual([0, 2]);
     expect(serializeEditorPath([0, 2])).toBe('0.children.2');
   });
 
+  /**
+   * @scenario behavior=path_roundtrip_keeps_segments
+   * @effects branch_path_roundtrip_keeps_segments
+   */
   it('responsive 세그먼트 보존 — 산출 ↔ 해석 왕복', () => {
     const dom = '0.responsive.portable.children.1';
     const parsed = parseEditorPath(dom);
@@ -71,6 +78,10 @@ describe('parseEditorPath ↔ serializeEditorPath round-trip', () => {
     expect(serializeEditorPath(parsed)).toBe(dom);
   });
 
+  /**
+   * @scenario behavior=path_roundtrip_keeps_segments
+   * @effects branch_path_roundtrip_keeps_segments
+   */
   it('responsive + iteration 공존 — 가상 인덱스 제외, 분기 보존 (G-2)', () => {
     // 분기 안 iteration 인스턴스 #3 의 첫 자식. iteration.3 은 가상 → 제외,
     // responsive.portable 는 실 위치 → 보존.
@@ -81,6 +92,10 @@ describe('parseEditorPath ↔ serializeEditorPath round-trip', () => {
     expect(serializeEditorPath(parsed)).toBe('0.responsive.portable.children.0.children.0');
   });
 
+  /**
+   * @scenario behavior=path_roundtrip_keeps_segments
+   * @effects branch_path_roundtrip_keeps_segments
+   */
   it('커스텀 범위 키도 보존', () => {
     const parsed = parseEditorPath('1.responsive.600-900.children.0');
     expect(parsed).toEqual([1, { responsive: '600-900' }, 0]);
@@ -89,16 +104,32 @@ describe('parseEditorPath ↔ serializeEditorPath round-trip', () => {
 });
 
 describe('segEqual (G-1 — 객체 세그먼트 참조비교 금지)', () => {
+  /**
+   * @scenario behavior=segment_equality_by_value
+   * @effects branch_segment_equality_by_value
+   */
   it('의미상 같은 responsive 세그먼트는 같음(별개 객체여도)', () => {
     expect(segEqual({ responsive: 'portable' }, { responsive: 'portable' })).toBe(true);
   });
+  /**
+   * @scenario behavior=segment_equality_by_value
+   * @effects branch_segment_equality_by_value
+   */
   it('다른 분기 키는 다름', () => {
     expect(segEqual({ responsive: 'portable' }, { responsive: 'mobile' })).toBe(false);
   });
+  /**
+   * @scenario behavior=segment_equality_by_value
+   * @effects branch_segment_equality_by_value
+   */
   it('number vs responsive 는 다름', () => {
     expect(segEqual(0, { responsive: 'portable' })).toBe(false);
     expect(segEqual(0, 0)).toBe(true);
   });
+  /**
+   * @scenario behavior=segment_equality_by_value
+   * @effects branch_segment_equality_by_value
+   */
   it('isResponsiveSegment 판정', () => {
     expect(isResponsiveSegment({ responsive: 'portable' })).toBe(true);
     expect(isResponsiveSegment(0)).toBe(false);
@@ -106,16 +137,28 @@ describe('segEqual (G-1 — 객체 세그먼트 참조비교 금지)', () => {
 });
 
 describe('findNodeByPath — 분기 children 하강', () => {
+  /**
+   * @scenario behavior=find_descends_branch_children
+   * @effects branch_find_descends_branch_children
+   */
   it('responsive 세그먼트로 분기 children 노드 조회', () => {
     const root = makeBranchTree();
     const node = findNodeByPath(root, [0, { responsive: 'portable' }, 1]);
     expect(node?.text).toBe('mobile-1');
   });
+  /**
+   * @scenario behavior=find_descends_branch_children
+   * @effects branch_find_descends_branch_children
+   */
   it('number-only 는 base children 조회(불변)', () => {
     const root = makeBranchTree();
     const node = findNodeByPath(root, [0, 0]);
     expect(node?.text).toBe('base-A');
   });
+  /**
+   * @scenario behavior=find_descends_branch_children
+   * @effects branch_find_descends_branch_children
+   */
   it('findParentByPath — 분기 노드의 부모는 분기 소유 노드', () => {
     const root = makeBranchTree();
     const parent = findParentByPath(root, [0, { responsive: 'portable' }, 1]);
@@ -124,6 +167,10 @@ describe('findNodeByPath — 분기 children 하강', () => {
 });
 
 describe('patchNode — 분기 노드만 변경, base 불변', () => {
+  /**
+   * @scenario behavior=mutation_leaves_base_intact
+   * @effects branch_mutation_leaves_base_intact
+   */
   it('분기 노드 text 패치 → base children 원본 유지', () => {
     const root = makeBranchTree();
     const next = patchNode(root, [0, { responsive: 'portable' }, 0], (n) => ({
@@ -140,6 +187,10 @@ describe('patchNode — 분기 노드만 변경, base 불변', () => {
 });
 
 describe('removeNode / insertNode — 분기 children 대상', () => {
+  /**
+   * @scenario behavior=mutation_leaves_base_intact
+   * @effects branch_mutation_leaves_base_intact
+   */
   it('분기 노드 삭제 → 분기 children 에서만 제거, base 불변', () => {
     const root = makeBranchTree();
     const next = removeNode(root, [0, { responsive: 'portable' }, 0]);
@@ -150,6 +201,10 @@ describe('removeNode / insertNode — 분기 children 대상', () => {
     expect(findNodeByPath(next, [0, 0])?.text).toBe('base-A');
   });
 
+  /**
+   * @scenario behavior=mutation_leaves_base_intact
+   * @effects branch_mutation_leaves_base_intact
+   */
   it('분기 children 에 삽입 → 그 분기에만, base 불변', () => {
     const root = makeBranchTree();
     const next = insertNode(
@@ -165,6 +220,10 @@ describe('removeNode / insertNode — 분기 children 대상', () => {
 });
 
 describe('moveNode — 분기 내 정렬(G-1 rebase) + base 불변', () => {
+  /**
+   * @scenario behavior=mutation_leaves_base_intact
+   * @effects branch_mutation_leaves_base_intact
+   */
   it('분기 children 0↔끝 순서 이동', () => {
     const root = makeBranchTree();
     // mobile-0(index 0) 을 index 2(끝) 로 이동
@@ -177,9 +236,17 @@ describe('moveNode — 분기 내 정렬(G-1 rebase) + base 불변', () => {
 });
 
 describe('sameBranchContext — 분기 경계 가드(DnD 거부 판정)', () => {
+  /**
+   * @scenario behavior=context_guard_for_dnd
+   * @effects branch_context_guard_for_dnd
+   */
   it('base ↔ base 는 같은 컨텍스트(이동 허용)', () => {
     expect(sameBranchContext([0], [0, 1])).toBe(true);
   });
+  /**
+   * @scenario behavior=context_guard_for_dnd
+   * @effects branch_context_guard_for_dnd
+   */
   it('같은 분기 안끼리는 같은 컨텍스트', () => {
     expect(
       sameBranchContext(
@@ -188,9 +255,17 @@ describe('sameBranchContext — 분기 경계 가드(DnD 거부 판정)', () => 
       ),
     ).toBe(true);
   });
+  /**
+   * @scenario behavior=context_guard_for_dnd
+   * @effects branch_context_guard_for_dnd
+   */
   it('base ↔ 분기 는 다른 컨텍스트(이동 거부)', () => {
     expect(sameBranchContext([0], [0, { responsive: 'portable' }])).toBe(false);
   });
+  /**
+   * @scenario behavior=context_guard_for_dnd
+   * @effects branch_context_guard_for_dnd
+   */
   it('서로 다른 분기는 다른 컨텍스트', () => {
     expect(
       sameBranchContext(
@@ -208,6 +283,10 @@ describe('resolveGlobalInsertionTarget — 분기 세그먼트 보존(결함② 
     containers: { Div: { accepts: ['Span', 'Div'] } },
   } as unknown as NestingSpec;
 
+  /**
+   * @scenario behavior=insert_target_keeps_branch_segment
+   * @effects branch_insert_target_keeps_branch_segment
+   */
   it('분기 안 leaf 선택 → 그 형제 다음(분기 세그먼트 보존)', () => {
     // 선택: [0, {responsive:'portable'}, 0] (분기 안 Span — leaf)
     // 기대: parentPath = [0, {responsive:'portable'}], index = 1 (형제 다음)
@@ -222,6 +301,10 @@ describe('resolveGlobalInsertionTarget — 분기 세그먼트 보존(결함② 
     expect(target.index).toBe(1);
   });
 
+  /**
+   * @scenario behavior=insert_target_keeps_branch_segment
+   * @effects branch_insert_target_keeps_branch_segment
+   */
   it('분기 안 컨테이너 선택 → 그 children 끝(분기 세그먼트 보존)', () => {
     // 선택: [0, {responsive:'portable'}, 1] (분기 안 Div — 컨테이너, 자식 2개)
     // 기대: parentPath = 그 노드 자신(분기 세그먼트 보존), index = 2 (children 끝)
@@ -236,6 +319,10 @@ describe('resolveGlobalInsertionTarget — 분기 세그먼트 보존(결함② 
     expect(target.index).toBe(2);
   });
 
+  /**
+   * @scenario behavior=insert_target_keeps_branch_segment
+   * @effects branch_insert_target_keeps_branch_segment
+   */
   it('number-only(base) 선택 — 동작 불변(무손실 회귀)', () => {
     const leaf = resolveGlobalInsertionTarget('Span', 0, [0, 2], nesting, 5);
     expect(leaf.parentPath).toEqual([0]);
@@ -245,6 +332,10 @@ describe('resolveGlobalInsertionTarget — 분기 세그먼트 보존(결함② 
     expect(container.index).toBe(4);
   });
 
+  /**
+   * @scenario behavior=insert_target_keeps_branch_segment
+   * @effects branch_insert_target_keeps_branch_segment
+   */
   it('선택 없음 → 루트 끝(폴백 불변)', () => {
     const target = resolveGlobalInsertionTarget(undefined, 0, null, nesting, 7);
     expect(target.parentPath).toEqual([]);
@@ -255,6 +346,10 @@ describe('resolveGlobalInsertionTarget — 분기 세그먼트 보존(결함② 
 describe('insertNode — 분기 안 컨테이너 자식 삽입(결함② 분기 라우팅)', () => {
   // 분기 안 컨테이너에 자식이 삽입되면 그 컨테이너의 children(분기 안)만 늘고
   // base 분기는 불변이어야 한다(라이브에서 base 로 새던 결함의 단위 잠금).
+  /**
+   * @scenario behavior=mutation_leaves_base_intact
+   * @effects branch_mutation_leaves_base_intact
+   */
   it('분기 안 노드(leaf)의 형제로 삽입 → 분기 children 만 증가', () => {
     const root = makeBranchTree();
     // [0, {responsive:'portable'}, 0] 의 형제 다음 = parentPath [0,{responsive:'portable'}], index 1
@@ -277,6 +372,10 @@ describe('deepCloneTree 스냅샷 격리 — 분기 children 참조 비공유(un
   // 분기 안 노드 이동/추가 후 undo 시 원복 안 되고 "복사(중복)"됨.
   // 근본: insertNode/removeNode/moveNode 가 만든 새 트리가 원본과 responsive 분기 배열을
   // 참조 공유하면, history 스냅샷 사이에 분기 substructure 가 번진다.
+  /**
+   * @scenario behavior=snapshot_isolated_from_input
+   * @effects branch_snapshot_isolated_from_input
+   */
   it('insertNode 결과 트리가 원본 분기 children 배열을 공유하지 않는다', () => {
     const root = makeBranchTree();
     const originalBranch = (root.children as EditorNode[])[0]!.responsive!.portable!
@@ -296,6 +395,10 @@ describe('deepCloneTree 스냅샷 격리 — 분기 children 참조 비공유(un
     expect(nextBranch).toHaveLength(3);
   });
 
+  /**
+   * @scenario behavior=snapshot_isolated_from_input
+   * @effects branch_snapshot_isolated_from_input
+   */
   it('한 분기 변형이 다른 스냅샷의 동일 분기를 오염시키지 않는다(undo 복사 방지)', () => {
     // 두 분기를 가진 트리: 노드 A(portable 2개) + 노드 B(portable 2개).
     const root: EditorNode = {
@@ -337,6 +440,10 @@ describe('deepCloneTree 스냅샷 격리 — 분기 children 참조 비공유(un
     expect(s1BranchA.map((c) => c.text)).toEqual(['a0', 'a1']);
   });
 
+  /**
+   * @scenario behavior=snapshot_isolated_from_input
+   * @effects branch_snapshot_isolated_from_input
+   */
   it('moveNode(분기 내) 결과가 원본 분기를 공유하지 않는다(이동→undo 중복 방지)', () => {
     const root = makeBranchTree(); // portable: [mobile-0, mobile-1]
     const originalBranch = (root.children as EditorNode[])[0]!.responsive!.portable!
@@ -370,6 +477,10 @@ describe('moveNode 노드 격리 — 이동 노드 참조 비공유(이동→und
     } as EditorNode;
   }
 
+  /**
+   * @scenario behavior=snapshot_isolated_from_input
+   * @effects branch_snapshot_isolated_from_input
+   */
   it('이동된 노드와 그 자손이 입력 트리와 참조 공유되지 않는다(base)', () => {
     const root = tree();
     const inputA = (root.children as EditorNode[])[0]!;
@@ -386,6 +497,10 @@ describe('moveNode 노드 격리 — 이동 노드 참조 비공유(이동→und
     expect(after.map((c) => c.name)).toEqual(['B', 'A', 'C']);
   });
 
+  /**
+   * @scenario behavior=snapshot_isolated_from_input
+   * @effects branch_snapshot_isolated_from_input
+   */
   it('컨테이너 간 이동 후 입력 스냅샷에 이동 노드가 중복 잔존하지 않는다', () => {
     const root = tree();
     // A 를 B(index 1) 의 children 안으로 이동.
@@ -410,12 +525,20 @@ describe('number-only 트리 — 동작 불변(무손실 회귀)', () => {
       ],
     } as EditorNode;
   }
+  /**
+   * @scenario behavior=number_only_tree_unchanged
+   * @effects branch_number_only_tree_unchanged
+   */
   it('moveNode 정렬 — 분기 무관 동작 동일', () => {
     const root = plainTree();
     const next = moveNode(root, [0, 0], [0], 3);
     const children = findNodeByPath(next, [0])?.children as EditorNode[];
     expect(children.map((c) => c.name)).toEqual(['B', 'C', 'A']);
   });
+  /**
+   * @scenario behavior=number_only_tree_unchanged
+   * @effects branch_number_only_tree_unchanged
+   */
   it('patchNode — base children 동작 동일', () => {
     const root = plainTree();
     const next = patchNode(root, [0, 1], (n) => ({ ...n, name: 'B2' }));
@@ -435,6 +558,10 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
     } as EditorNode;
   }
 
+  /**
+   * @scenario behavior=separate_creates_deep_copy
+   * @effects branch_separate_creates_deep_copy
+   */
   it('base children 을 깊은 사본으로 responsive[key].children 에 신설', () => {
     const root = container();
     const next = separateBranch(root, [0], 'mobile');
@@ -446,6 +573,10 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
     expect((node.children as EditorNode[]).map((c) => c.name)).toEqual(['A', 'B']);
   });
 
+  /**
+   * @scenario behavior=separate_creates_deep_copy
+   * @effects branch_separate_creates_deep_copy
+   */
   it('분기 children 은 base children 과 참조 비공유(깊은 사본)', () => {
     const root = container();
     const next = separateBranch(root, [0], 'mobile');
@@ -458,6 +589,10 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
     expect(baseFirst.name).toBe('A');
   });
 
+  /**
+   * @scenario behavior=separate_idempotent_or_no_op
+   * @effects branch_separate_idempotent_or_no_op
+   */
   it('이미 그 키 분기가 있으면 멱등(중복 분리 차단)', () => {
     const root = container();
     const once = separateBranch(root, [0], 'mobile');
@@ -469,12 +604,20 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
     expect(branch.map((c) => c.name)).toEqual(['A', 'B', 'X']);
   });
 
+  /**
+   * @scenario behavior=separate_idempotent_or_no_op
+   * @effects branch_separate_idempotent_or_no_op
+   */
   it('분기 세그먼트로 끝나는 path 는 대상 아님(no-op)', () => {
     const root = container();
     const next = separateBranch(root, [0, { responsive: 'mobile' }], 'mobile');
     expect(next).toBe(root);
   });
 
+  /**
+   * @scenario behavior=separate_idempotent_or_no_op
+   * @effects branch_separate_idempotent_or_no_op
+   */
   it('빈 key 는 no-op', () => {
     const root = container();
     expect(separateBranch(root, [0], '')).toBe(root);
@@ -482,6 +625,10 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
 
   //  회귀: props-only 분기가 있어도 children 분리는 신설돼야 한다(props/children 독립).
   // 결함: 과거 가드가 `responsive[key]` 키 존재만 보고 no-op → props-only 노드는 분리 불가.
+  /**
+   * @scenario behavior=separate_creates_deep_copy
+   * @effects branch_separate_creates_deep_copy
+   */
   it('props-only 분기가 이미 있어도 children 을 신설하고 props 는 보존', () => {
     const root: EditorNode = {
       children: [
@@ -503,6 +650,10 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
     expect((root.children as EditorNode[])[0].responsive!.mobile!.children).toBeUndefined();
   });
 
+  /**
+   * @scenario behavior=separate_idempotent_or_no_op
+   * @effects branch_separate_idempotent_or_no_op
+   */
   it('children 이 이미 있는 분기는 멱등(props-only 아님 → 덮어쓰지 않음)', () => {
     const root: EditorNode = {
       children: [
@@ -520,6 +671,10 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
 
   // 포괄 분기(portable)에 children 이 있으면, mobile 전용 분리 생성 시
   // base 가 아니라 그 포괄 분기 children 을 복제 원본으로 쓴다(화면에 보이는 구성 이어받기).
+  /**
+   * @scenario behavior=separate_uses_source_key
+   * @effects branch_separate_uses_source_key
+   */
   it('sourceKey 지정 시 그 포괄 분기 children 을 복제 원본으로 사용', () => {
     const root: EditorNode = {
       children: [
@@ -536,7 +691,7 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
     expect(mobileChildren.map((c) => c.name)).toEqual(['PORT_X', 'PORT_Y']);
     // 깊은 복제(원본과 다른 인스턴스)
     expect(mobileChildren[0]).not.toBe(
-      (root.children as EditorNode[])[0].responsive!.portable!.children![0],
+      ((root.children as EditorNode[])[0].responsive!.portable!.children as EditorNode[])[0],
     );
     // 포괄 분기(portable)는 그대로 보존
     expect(
@@ -544,6 +699,10 @@ describe('separateBranch — 디바이스 전용 분리 생성(신규 ③)', () 
     ).toEqual(['PORT_X', 'PORT_Y']);
   });
 
+  /**
+   * @scenario behavior=separate_uses_source_key
+   * @effects branch_separate_uses_source_key
+   */
   it('sourceKey 분기에 children 이 없으면 base children 복제로 폴백', () => {
     const root: EditorNode = {
       children: [
@@ -573,6 +732,10 @@ describe('mergeBranch — 분리 제거(되돌림 신규 ④)', () => {
     } as EditorNode;
   }
 
+  /**
+   * @scenario behavior=merge_removes_branch_children
+   * @effects branch_merge_removes_branch_children
+   */
   it('responsive[key] 제거 → 그 키 분기 사라짐, base 불변', () => {
     const root = branched();
     const next = mergeBranch(root, [0], 'mobile');
@@ -581,6 +744,10 @@ describe('mergeBranch — 분리 제거(되돌림 신규 ④)', () => {
     expect((node.children as EditorNode[]).map((c) => c.name)).toEqual(['A']);
   });
 
+  /**
+   * @scenario behavior=merge_removes_branch_children
+   * @effects branch_merge_removes_branch_children
+   */
   it('responsive 에 다른 키가 남으면 그 키만 제거', () => {
     const root: EditorNode = {
       children: [
@@ -600,13 +767,22 @@ describe('mergeBranch — 분리 제거(되돌림 신규 ④)', () => {
     expect(node.responsive?.tablet?.children).toBeTruthy();
   });
 
+  /**
+   * @scenario behavior=merge_missing_key_no_op
+   * @effects branch_merge_missing_key_no_op
+   */
   it('없는 키는 no-op(트리 보존)', () => {
     const root = branched();
     const next = mergeBranch(root, [0], 'desktop');
-    // 변형 없음 — mobile 분기 그대로
+    // 변형 없음 — 트리 전체가 원본과 같아야 한다(mobile 분기 존재만 보면 다른 훼손을 놓친다).
+    expect(next).toEqual(branched());
     expect(findNodeByPath(next, [0])!.responsive?.mobile?.children).toBeTruthy();
   });
 
+  /**
+   * @scenario behavior=merge_roundtrip_restores
+   * @effects branch_merge_roundtrip_restores
+   */
   it('separateBranch ↔ mergeBranch 왕복 — 원상 복구', () => {
     const root: EditorNode = {
       children: [{ name: 'Div', children: [{ name: 'A' }, { name: 'B' }] } as EditorNode],
@@ -620,6 +796,10 @@ describe('mergeBranch — 분리 제거(되돌림 신규 ④)', () => {
 
   //  회귀: props + children 둘 다 가진 분기를 merge 하면 children 만 제거하고 props 는 보존.
   // 결함: 과거 분기 통째 삭제 → props-only 였던 원본 스타일 오버라이드까지 사라짐(V3 실측 발견).
+  /**
+   * @scenario behavior=merge_removes_branch_children
+   * @effects branch_merge_removes_branch_children
+   */
   it('props + children 분기 merge → children 만 제거, props 보존', () => {
     const root: EditorNode = {
       children: [
@@ -637,6 +817,10 @@ describe('mergeBranch — 분리 제거(되돌림 신규 ④)', () => {
   });
 
   // separate(props-only 분기에 children 추가) → merge 왕복 시 props-only 상태로 정확히 복귀.
+  /**
+   * @scenario behavior=merge_roundtrip_restores
+   * @effects branch_merge_roundtrip_restores
+   */
   it('props-only → separate → merge 왕복 시 props-only 로 복귀(분기 통째 삭제 아님)', () => {
     const root: EditorNode = {
       children: [
@@ -655,6 +839,10 @@ describe('mergeBranch — 분리 제거(되돌림 신규 ④)', () => {
     expect((branch.props as Record<string, unknown>).className).toBe('p-4'); // 원본 props-only 복귀
   });
 
+  /**
+   * @scenario behavior=merge_missing_key_no_op
+   * @effects branch_merge_missing_key_no_op
+   */
   it('children 없는 props-only 분기 merge → no-op(제거할 children 없음)', () => {
     const root: EditorNode = {
       children: [

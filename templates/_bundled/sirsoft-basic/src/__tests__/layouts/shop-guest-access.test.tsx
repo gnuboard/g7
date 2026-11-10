@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createLayoutTest,
   screen,
@@ -269,6 +269,8 @@ describe('비회원(Guest) 상품 조회 접근 (Issue #21)', () => {
   });
 
   describe('상품 목록 페이지 (shop/index)', () => {
+    // @scenario page=shop_index
+    // @effects guest_no_permission_banner_on_401
     it('비회원일 때 current_user 401이 발생해도 권한 없음 배너가 표시되지 않는다', async () => {
       // Given: current_user는 401, products는 200 (비회원이지만 상품 조회 권한 있음)
       const testUtils = createLayoutTest(shopIndexFixture, {
@@ -299,6 +301,8 @@ describe('비회원(Guest) 상품 조회 접근 (Issue #21)', () => {
       testUtils.cleanup();
     });
 
+    // @scenario page=shop_index
+    // @effects guest_product_list_renders_on_401
     it('비회원일 때 current_user 401이 발생해도 상품 목록이 정상 렌더링된다', async () => {
       // Given: current_user는 401, products는 200
       const testUtils = createLayoutTest(shopIndexFixture, {
@@ -333,6 +337,8 @@ describe('비회원(Guest) 상품 조회 접근 (Issue #21)', () => {
   });
 
   describe('상품 상세 페이지 (shop/show)', () => {
+    // @scenario page=shop_show
+    // @effects guest_product_detail_renders_on_401
     it('비회원일 때 current_user 401이 발생해도 상품 상세가 정상 렌더링된다', async () => {
       // Given: current_user는 401, product는 200
       const testUtils = createLayoutTest(shopShowFixture, {

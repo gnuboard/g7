@@ -87,7 +87,9 @@
     <set-state target="local" filterScope="{{route.path &amp;&amp; route.path.indexOf('/admin/modules/') === 0 ? 'module' : (route.path &amp;&amp; route.path.indexOf('/admin/plugins/') === 0 ? 'plugin' : (route.path &amp;&amp; route.path.indexOf('/admin/templates/') === 0 ? 'template' : (query.scope || '')))}}" filterTarget="{{route.identifier ?? ''}}" scopeLocked="{{route.identifier ? true : false}}" filterSearch="{{query.search || ''}}" filterStatus="{{query.status || ''}}" filterLocale="{{query.locale || ''}}"/>
   </init>
   <slot name="content">
-    <div data-ref="lang_pack_page_wrapper" class="admin-page-content-responsive-fluid">
+    <div data-ref="lang_pack_page_wrapper" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <include src="partials/admin_extension_language_packs/_content.g7.html"/>
     </div>
   </slot>

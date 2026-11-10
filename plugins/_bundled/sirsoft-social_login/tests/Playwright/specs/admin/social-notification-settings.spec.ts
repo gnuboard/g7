@@ -269,7 +269,7 @@ test('mail template is edited, previewed, saved and reset to default', async ({ 
   await expect(editModal).toHaveCount(0);
   await mailRow.getByRole('button', { name: '템플릿 편집' }).click();
   await expect(editModal.getByRole('textbox', { name: '제목' })).toHaveValue('[{app_name}] {provider_label} 가입 급증 확인 필요');
-  await editModal.locator('#sl_template_modal_footer').getByRole('button', { name: '취소', exact: true }).click();
+  await editModal.locator('.modal-footer-bar') /* 고정 하단(#869) */.getByRole('button', { name: '취소', exact: true }).click();
   await expect(editModal).toHaveCount(0);
 
   await card.getByRole('button', { name: '기본값으로 되돌리기' }).click();

@@ -86,6 +86,13 @@
                                 "item_var": "idp"
                             },
                             "dataKey": "{{idp.key}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sso:w-full sso:inline-flex sso:items-center sso:justify-center sso:gap-3 sso:px-4 sso:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:cursor-pointer {{idp.button_style?.bg ? '' : 'sso:bg-white sso:dark:bg-gray-800 sso:text-gray-900 sso:dark:text-white sso:border-gray-300 sso:dark:border-gray-600 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700'}}"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "관리자 경로 왕복 시작 — 시작 주소에 guard=admin 이 실려 있다",
@@ -98,7 +105,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "sso:w-full sso:inline-flex sso:items-center sso:justify-center sso:gap-3 sso:px-4 sso:py-3 sso:sm:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:cursor-pointer {{idp.button_style?.bg ? '' : 'sso:bg-white sso:dark:bg-gray-800 sso:text-gray-900 sso:dark:text-white sso:border-gray-300 sso:dark:border-gray-600 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700'}}",
+                                "className": "sso:w-full sso:inline-flex sso:items-center sso:justify-center sso:gap-3 sso:px-4 sso:py-3 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:cursor-pointer {{idp.button_style?.bg ? '' : 'sso:bg-white sso:dark:bg-gray-800 sso:text-gray-900 sso:dark:text-white sso:border-gray-300 sso:dark:border-gray-600 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700'}}",
                                 "style": "{{idp.button_style?.bg ? 'background-color:' + idp.button_style.bg + ';color:' + (idp.button_style.fg ?? '#ffffff') + ';border-color:' + (idp.button_style.border ?? idp.button_style.bg) : ''}}",
                                 "aria-label": "$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}"
                             },

@@ -14,7 +14,6 @@
  * 기본값을 부유로 뒤집어 어느 진입점이든 토글 기준으로 떠서 행/패널을 밀어내지 않게 한다.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { InlineBindingScalarPicker } from '../../../components/property-controls/InlineBindingScalarPicker';
@@ -25,13 +24,15 @@ beforeEach(() => cleanup());
 const t = (key: string): string => key; // 식별 패스스루(키 그대로) — 라벨 해석은 fallback 경로 검증.
 
 const CANDIDATES: BindingCandidate[] = [
-  { expression: '{{user.name}}', sourceId: 'user', path: 'name', shape: 'scalar', preview: '홍길동' },
-  { expression: '{{user.email}}', sourceId: 'user', path: 'email', shape: 'scalar', preview: 'a@b.c' },
+  { expression: '{{user.name}}', source: 'data_source', sourceId: 'user', path: 'name', shape: 'scalar', preview: '홍길동' },
+  { expression: '{{user.email}}', source: 'data_source', sourceId: 'user', path: 'email', shape: 'scalar', preview: 'a@b.c' },
   // array shape — scalar 필터로 노출 제외되어야(피커는 scalar 만).
-  { expression: '{{products.data}}', sourceId: 'products', path: 'data', shape: 'array', preview: '[3]' },
+  { expression: '{{products.data}}', source: 'data_source', sourceId: 'products', path: 'data', shape: 'array', preview: '[3]' },
 ];
 
 describe('InlineBindingScalarPicker', () => {
+  // @scenario area=scalar_picker
+  // @effects scalar_picker_defaults_to_floating_dialog
   it('① floating 기본값(미지정) → 토글 펼침 시 부유(FloatingDropdown, role=dialog)', () => {
     render(
       <InlineBindingScalarPicker candidates={CANDIDATES} t={t} onSelect={vi.fn()} testIdSuffix="default" />,
@@ -45,6 +46,8 @@ describe('InlineBindingScalarPicker', () => {
     expect(within(panel).getByTestId('g7le-inline-binding-search-input-default')).toBeInTheDocument();
   });
 
+  // @scenario area=scalar_picker
+  // @effects scalar_picker_inline_mode_renders_in_flow
   it('② floating={false} → 인라인 펼침(role=dialog 아님)', () => {
     render(
       <InlineBindingScalarPicker candidates={CANDIDATES} t={t} onSelect={vi.fn()} testIdSuffix="inline" floating={false} />,
@@ -56,6 +59,8 @@ describe('InlineBindingScalarPicker', () => {
     expect(within(panel).getByTestId('g7le-inline-binding-search-input-inline')).toBeInTheDocument();
   });
 
+  // @scenario area=scalar_picker
+  // @effects scalar_picker_default_open_lists_scalar_only
   it('③ defaultOpen → 마운트 즉시 검색창/후보 노출(외부 토글 패턴)', () => {
     render(
       <InlineBindingScalarPicker candidates={CANDIDATES} t={t} onSelect={vi.fn()} testIdSuffix="open" defaultOpen floating={false} />,
@@ -67,6 +72,8 @@ describe('InlineBindingScalarPicker', () => {
     expect(screen.queryByTestId('g7le-inline-binding-candidate-{{products.data}}')).toBeNull();
   });
 
+  // @scenario area=scalar_picker
+  // @effects scalar_picker_select_calls_on_select
   it('④ 부유 모드 후보 선택 → onSelect 호출', () => {
     const onSelect = vi.fn();
     render(
@@ -80,6 +87,8 @@ describe('InlineBindingScalarPicker', () => {
     expect(screen.queryByTestId('g7le-inline-binding-picker-pick')).toBeNull();
   });
 
+  // @scenario area=scalar_picker
+  // @effects scalar_picker_select_calls_on_select
   it('④ 인라인 모드 후보 선택 → onSelect 호출', () => {
     const onSelect = vi.fn();
     render(
@@ -91,6 +100,8 @@ describe('InlineBindingScalarPicker', () => {
     expect(onSelect.mock.calls[0][0]).toMatchObject({ expression: '{{user.name}}' });
   });
 
+  // @scenario area=scalar_picker
+  // @effects scalar_picker_search_filters_candidates
   it('검색어 필터 — 키워드로 후보 좁힘', () => {
     render(
       <InlineBindingScalarPicker candidates={CANDIDATES} t={t} onSelect={vi.fn()} testIdSuffix="search" defaultOpen floating={false} />,

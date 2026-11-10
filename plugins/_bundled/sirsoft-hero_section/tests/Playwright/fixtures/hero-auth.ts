@@ -36,8 +36,47 @@ export const test = base.extend<HeroFixtures>({
     const ids: number[] = [];
     await use(ids);
     await deleteBanners(request, managerToken, ids);
+    // 배너에 붙지 않고 남은 임시 이미지(행과 파일)도 지운다 — 배너에 붙은 것은 서버가 422 로 막고 배너와 함께 지워진다
+    await deleteTempImages(request, managerToken);
   },
 });
+
+/** 이 실행에서 올린 임시 이미지 id — `created` 정리 단계가 지운다 */
+const uploadedImages: number[] = [];
+
+/**
+ * 배너 이미지를 임시로 올린다(저장 전 업로드). 올린 id 는 정리 단계가 지우도록 기록한다.
+ *
+ * @param request API 요청 컨텍스트
+ * @param token 관리자 토큰
+ * @param file 올릴 파일
+ * @param tempKey 임시 업로드 키
+ * @param device 기기 (pc·mobile)
+ * @returns 올린 이미지 id
+ */
+export async function uploadBannerImage(request: APIRequestContext, token: string, file: { name: string; mimeType: string; buffer: Buffer }, tempKey: string, device: 'pc' | 'mobile' = 'pc'): Promise<number> {
+  const upload = await request.post(`${API}/admin/banner-images`, {
+    headers: auth(token),
+    multipart: { file, device, temp_key: tempKey },
+  });
+  expect(upload.status(), await upload.text()).toBe(201);
+  const id = (await upload.json()).data.id as number;
+  uploadedImages.push(id);
+
+  return id;
+}
+
+/**
+ * 이 실행에서 올린 임시 이미지 중 배너에 붙지 않은 것을 지운다(붙은 것은 422, 이미 지워진 것은 404 라 그대로 둔다).
+ *
+ * @param request API 요청 컨텍스트
+ * @param token 관리자 토큰
+ */
+export async function deleteTempImages(request: APIRequestContext, token: string): Promise<void> {
+  for (const id of uploadedImages.splice(0)) {
+    await request.delete(`${API}/admin/banner-images/${id}`, { headers: auth(token) });
+  }
+}
 
 /** 인증 헤더 */
 export const auth = (token: string) => ({ Authorization: `Bearer ${token}`, Accept: 'application/json' });
@@ -59,12 +98,11 @@ export const uniqueTitle = (label: string): string => `E2E ${label} ${Date.now()
  * @returns 만든 배너 id
  */
 export async function createBanner(request: APIRequestContext, token: string, overrides: Record<string, unknown> = {}): Promise<number> {
-  const tempKey = `e2e-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-  const upload = await request.post(`${API}/admin/banner-images`, {
-    headers: auth(token),
-    multipart: { file: { name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 }, device: 'pc', temp_key: tempKey },
-  });
-  expect(upload.status(), await upload.text()).toBe(201);
+  // 호출자가 자기 이미지를 올린 임시 키를 주면 기본 1x1 이미지를 올리지 않는다 — 올리면 배너에 붙지 않는 고아가 남는다
+  const tempKey = typeof overrides.temp_key === 'string' ? overrides.temp_key : `e2e-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  if (typeof overrides.temp_key !== 'string') {
+    await uploadBannerImage(request, token, { name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 }, tempKey);
+  }
 
   const response = await request.post(`${API}/admin/banners`, {
     headers: auth(token),

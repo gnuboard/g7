@@ -96,6 +96,11 @@ function buildDocCtx(initialComponents: EditorNode[]): {
     error: null,
     isDirty: false,
     saveSuccessCounter: 0,
+    patchDocumentRaw: () => {},
+    dirtyKeys: new Set<string>(),
+    dirtyLayoutNames: new Set<string>(),
+    invalidateCurrentCache: () => {},
+    reloadCounter: 0,
     reload: async () => {},
     patchLayout: (patcher) => {
       patchSpy(patcher);
@@ -146,7 +151,7 @@ function mount(components: EditorNode[]) {
         <EditorModalProvider>
           <LayoutDocumentProvider value={ctx}>
             <RouteSeeder>
-              <EditorCanvasOverlay frameEl={frame} spec={{ components: {} } as any} />
+              <EditorCanvasOverlay frameEl={frame} manifest={null} nesting={null} spec={{ components: {} } as any} />
             </RouteSeeder>
           </LayoutDocumentProvider>
         </EditorModalProvider>

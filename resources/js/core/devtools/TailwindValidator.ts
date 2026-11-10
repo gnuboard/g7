@@ -23,6 +23,8 @@ export interface TailwindValidationResult {
   dynamicClasses: string[];
   /** 알 수 없는 클래스 */
   unknownClasses: string[];
+  /** 금지된 폭 접두 클래스 (CSS 에 규칙이 있어도 경고한다) */
+  breakpointVariants: BreakpointVariantInfo[];
   /** 검증 시간 */
   timestamp: number;
 }
@@ -39,6 +41,18 @@ export interface PurgedClassInfo {
   reason: 'not-in-css' | 'dynamic-value' | 'custom-class';
   /** 권장 사항 */
   suggestion?: string;
+}
+
+/**
+ * 금지된 폭 접두 클래스 정보
+ */
+export interface BreakpointVariantInfo {
+  /** 클래스명 */
+  className: string;
+  /** 폭 접두 (예: `md`, `max-[600px]`) */
+  variant: string;
+  /** 권장 사항 — 엔진 responsive 의 대응 구간 */
+  suggestion: string;
 }
 
 /**
@@ -91,17 +105,93 @@ const VARIANTS = [
   'group-hover',
   'peer-hover',
   'dark',
-  'sm',
-  'md',
-  'lg',
-  'xl',
-  '2xl',
-  'portable',
-  'desktop',
   'print',
   'motion-safe',
   'motion-reduce',
 ];
+
+/**
+ * 폭 접두 — Tailwind 기본 경계·max 짝·임의 값 경계(감사 규칙 layout-no-tailwind-breakpoint-variant 와 같은 집합)와,
+ * 엔진 responsive 프리셋 이름을 Tailwind 변형처럼 쓴 `portable`·`desktop`(이 프로젝트에 정의된 변형이 아니다).
+ *
+ * 레이아웃과 부품의 폭 판정은 엔진 responsive 하나로 모은다 — 폭 접두를 쓰면 클래스는 CSS 경계로, 속성(썸네일 규격 등)은 엔진
+ * 경계로 바뀌어 갈라진다(docs/frontend/responsive-layout.md 2절).
+ */
+const BREAKPOINT_VARIANT = /^(?:sm|md|lg|xl|2xl|max-(?:sm|md|lg|xl|2xl)|min-\[[^\]\s]+\]|max-\[[^\]\s]+\]|portable|desktop)$/;
+
+/** Tailwind 폭 접두 → 경계가 하나일 때의 엔진 responsive 키 (responsive-layout.md 「접두 → responsive 구간 대응표」) */
+const BREAKPOINT_TO_RESPONSIVE: Record<string, string> = {
+  sm: '640-',
+  md: '768-',
+  lg: 'desktop',
+  xl: '1280-',
+  '2xl': '1536-',
+  'max-sm': '-639',
+  'max-md': 'mobile',
+  'max-lg': 'portable',
+  'max-xl': '-1279',
+  'max-2xl': '-1535',
+  portable: 'portable',
+  desktop: 'desktop',
+};
+
+/**
+ * 클래스를 변형 조각으로 나눕니다 — 임의 값 대괄호 안의 `:` 는 나누지 않습니다.
+ *
+ * @param className 클래스명
+ * @returns 조각 (마지막이 유틸리티)
+ */
+function splitVariants(className: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const char of className) {
+    if (char === '[') depth++;
+    if (char === ']') depth = Math.max(0, depth - 1);
+    if (char === ':' && depth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  parts.push(current);
+  return parts;
+}
+
+/**
+ * 클래스에 든 폭 접두를 찾습니다 — 확장 접두·상태 변형이 몇 개 앞에 오든(`ecommerce:dark:md:`), v3 식 `!` 가 앞에 붙든.
+ *
+ * @param className 클래스명
+ * @returns 폭 접두 (없으면 null)
+ */
+export function breakpointVariantOf(className: string): string | null {
+  const parts = splitVariants(className);
+  for (const part of parts.slice(0, -1)) {
+    const variant = part.replace(/^!/, '');
+    if (BREAKPOINT_VARIANT.test(variant)) {
+      return variant;
+    }
+  }
+  return null;
+}
+
+/**
+ * 폭 접두에 대응하는 엔진 responsive 구간을 권합니다.
+ *
+ * @param variant 폭 접두
+ * @returns 권장 문구
+ */
+function breakpointSuggestion(variant: string): string {
+  let key = BREAKPOINT_TO_RESPONSIVE[variant];
+  const min = /^min-\[(\d+)px\]$/.exec(variant);
+  const max = /^max-\[(\d+)px\]$/.exec(variant);
+  if (!key && min) key = `${min[1]}-`;
+  // Tailwind 의 max-[N] 은 N 미만이다
+  if (!key && max) key = `-${Number(max[1]) - 1}`;
+  const on = key ?? '시작-끝';
+  return `Tailwind 폭 접두 '${variant}:' 는 쓰지 않습니다 — 엔진 responsive(<responsive on="${on}" class="…"/>)로 그 구간의 className 을 통째로 바꾸세요(docs/frontend/responsive-layout.md)`;
+}
 
 /**
  * Tailwind 빌드 검증기
@@ -288,9 +378,17 @@ export class TailwindValidator {
     const potentiallyPurged: PurgedClassInfo[] = [];
     const dynamicClasses: string[] = [];
     const unknownClasses: string[] = [];
+    const breakpointVariants: BreakpointVariantInfo[] = [];
     let validCount = 0;
 
     for (const className of classes) {
+      // 폭 접두는 금지 규정 — CSS 에 규칙이 있어도 유효로 세지 않고 엔진 responsive 를 권한다
+      const variant = breakpointVariantOf(className);
+      if (variant) {
+        breakpointVariants.push({ className, variant, suggestion: breakpointSuggestion(variant) });
+        continue;
+      }
+
       // 동적 클래스는 스킵
       if (this.isDynamicClass(className)) {
         dynamicClasses.push(className);
@@ -319,12 +417,13 @@ export class TailwindValidator {
     }
 
     return {
-      valid: potentiallyPurged.length === 0,
+      valid: potentiallyPurged.length === 0 && breakpointVariants.length === 0,
       totalClasses: classes.length,
       validClasses: validCount,
       potentiallyPurged,
       dynamicClasses,
       unknownClasses,
+      breakpointVariants,
       timestamp: Date.now(),
     };
   }
@@ -347,11 +446,16 @@ export class TailwindValidator {
   /**
    * 빠른 검증 (주요 클래스만)
    */
-  quickValidate(classes: string[]): { purged: string[]; valid: string[] } {
+  quickValidate(classes: string[]): { purged: string[]; valid: string[]; breakpoint: string[] } {
     const purged: string[] = [];
     const valid: string[] = [];
+    const breakpoint: string[] = [];
 
     for (const className of classes) {
+      if (breakpointVariantOf(className)) {
+        breakpoint.push(className);
+        continue;
+      }
       if (this.isDynamicClass(className)) continue;
 
       if (this.loadedCssRules.has(className)) {
@@ -361,7 +465,7 @@ export class TailwindValidator {
       }
     }
 
-    return { purged, valid };
+    return { purged, valid, breakpoint };
   }
 
   /**

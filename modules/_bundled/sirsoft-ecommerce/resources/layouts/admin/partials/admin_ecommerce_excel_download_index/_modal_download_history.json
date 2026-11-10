@@ -9,7 +9,24 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.title",
-        "size": "lg"
+        "size": "lg",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.confirm"
+            }
+        ]
     },
     "children": [
         {
@@ -364,31 +381,6 @@
                             ]
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "modal_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-primary"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.confirm"
                 }
             ]
         }

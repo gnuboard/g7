@@ -259,9 +259,9 @@ SKILL.md 자동 선택 표의 카테고리 처리 방법이다. engine·plan·ha
 
 ## frontend
 
-`validate frontend` 의 0·3단계에서 쓴다. 대상: `resources/layouts/**/*.{json,g7.html}`, `templates/**/layouts/**/*.{json,g7.html}`, `{modules,plugins}/**/resources/layouts/**/*.{json,g7.html}`, `(templates|modules|plugins)/**/extensions/**/*.{json,g7.html}`(확장 주입 fragment), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, 엔진 범위(`resources/js/core/template-engine/**` · `resources/js/core/{TemplateApp,template-engine}.ts` · `resources/js/core/{auth,identity,support}/**`). 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md(태그·속성 3분할·구조 태그·액션 top-level)가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다(역방향 `layout:compile` 은 `.json` → `.g7.html`). 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
+`validate frontend` 의 0·3단계에서 쓴다. 대상: 코어·템플릿·모듈·플러그인의 레이아웃과 확장 주입 fragment(`**/{layouts,extensions}/**/*.{json,g7.html}`), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, 엔진 범위(`resources/js/core/template-engine/**` · `resources/js/core/{TemplateApp,template-engine}.ts` · `resources/js/core/{auth,identity,support}/**`). 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다. 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
 
-규정: layout-json.md · layout-json-features.md · layout-json-components.md · layout-json-inheritance.md · data-binding.md · data-binding-i18n.md · data-sources.md · actions.md · actions-handlers.md · state-management.md · components.md(인덱스: types/patterns/advanced) · component-props-composite.md · dark-mode.md · responsive-layout.md · modal-usage.md · layout-json-features-error.md · security.md · editors.md.
+규정: layout-json.md · layout-json-features.md · layout-json-components.md · layout-json-inheritance.md · data-binding.md · data-binding-i18n.md · data-sources.md · actions.md · actions-handlers.md · state-management.md · components.md · component-props-composite.md · dark-mode.md · responsive-layout.md · modal-usage.md · layout-json-features-error.md · security.md · editors.md.
 
 ### 자동 검출 룰 (`--tag frontend`)
 
@@ -279,7 +279,7 @@ SKILL.md 자동 선택 표의 카테고리 처리 방법이다. engine·plan·ha
 | 상태 경로 | `_local` 은 저장소 A(React `localDynamicState`)와 B(`_global._local`)에 이중 저장되고 B 가 정본이다. 한쪽만 갱신하는 경로는 예외도 콘솔 에러도 없이 화면과 요청이 다른 값을 보게 만든다 — 아래 절 참조. `await` 뒤에는 `G7Core.state.getLocal()` 로 재조회한다(stale) |
 | 레이아웃 상속 | 부모·자식 `data_sources` ID 중복 금지, Partial 은 컴포넌트 치환만. 대상 레이아웃은 partial 을 따라가지 않는다(partial) · 서빙 경로가 DB 확장과 파일 플러그인 둘이다(두 경로) |
 | 다국어 | 하드코딩 라벨·placeholder, 모듈 접두사 누락은 i18n.md(아래 「i18n」 절) |
-| 다크모드·반응형 | 색상 클래스에 `dark:` 동반(warn 룰). show/hide·그리드 전환은 Tailwind 반응형 클래스보다 `responsive` 속성. iteration 노드의 responsive override 는 내부 wrapper 로 간다(override) |
+| 다크모드·반응형 | 색상 클래스에 `dark:` 동반(warn 룰). 화면 폭 분기는 `responsive` 로만 한다(Tailwind 접두는 error 룰이 레이아웃, PHP 노드, 부품까지 막는다 — 규정). 사람이 볼 것: 구간 값에 `dark:` 짝을 다시 적었는가(구간 값은 `className` 을 통째로 바꾼다), 한 노드에 열린 구간(`768-` 등)과 프리셋을 섞거나 열린 구간을 둘 이상 두지 않았는가(닫힌 구간으로 나눈다, 함정). 반복(iteration) 노드 자신에 `responsive` 를 둬도 된다(engine-v1.89.0, 내부 wrapper 는 선택 — override) |
 | 화면 패리티 | 같은 도메인의 목록↔상세↔폼, 유저↔관리자, 모바일↔PC 가 함께 고쳐졌는가(목록 패리티 · 모바일) |
 | Font Awesome | 아래 절 |
 | TSX 등록 | 새 컴포넌트는 `index.ts` export · `components.json` 등록 · 테스트 파일 존재(매니페스트) |

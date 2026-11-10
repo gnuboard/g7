@@ -111,13 +111,15 @@
   </init>
   <slot name="content">
     <div data-ref="mileage_transactions_content" class="ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen">
-      <div data-ref="page_header" class="ecommerce-page-header">
+      <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+        <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div data-ref="page_header_left">
-          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
           <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.mileage_transactions.description</p>
         </div>
-        <div data-ref="page_header_actions" class="ecommerce-page-actions">
-          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+        <div data-ref="page_header_actions" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
+          <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
+          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap">
             <on type="click">
               <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).
                    모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다 -->

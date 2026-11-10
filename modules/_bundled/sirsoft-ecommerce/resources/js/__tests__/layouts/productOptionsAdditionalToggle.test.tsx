@@ -36,29 +36,38 @@ const findInChildren = (root: any, pred: (n: any) => boolean): any => {
         if (node && typeof node === 'object') {
             if (pred(node)) return node;
             if (Array.isArray(node.children)) stack.push(...node.children);
+            if (Array.isArray(node.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
         }
     }
     return null;
 };
+
+/** 640px 이상 구간(엔진 responsive `640-`)에서 쓰이는 className. 그 구간 덮어쓰기가 없으면 기본 className. */
+const wideClass = (node: any): string =>
+    String(node?.responsive?.['640-']?.props?.className ?? node?.props?.className ?? '');
 
 /** Button 노드를 children 트리에서 텍스트로 찾는다. */
 const findButtonByText = (root: any, text: string): any =>
     findInChildren(root, (n) => n.name === 'Button' && n.text === text);
 
 describe('A23 — 추가옵션 토글 파생화', () => {
+    /** @effects has_additional_options_serialized_zero */
     it('명령형 has_additional_options 가 옵션 partial 직렬화에서 0회 등장', () => {
         expect(serialize(productOptionsPartial)).not.toContain('has_additional_options');
     });
 
+    /** @effects has_additional_options_serialized_zero */
     it('루트 폼 init 기본값에서 has_additional_options 가 제거됨', () => {
         expect(serialize(productForm)).not.toContain('has_additional_options');
     });
 
+    /** @effects section_visible_when_length_gt_zero */
     it('섹션 if 가 additional_options.length 파생식을 사용', () => {
         const flat = serialize(productOptionsPartial);
         expect(flat).toContain('(_local.form.additional_options ?? []).length > 0');
     });
 
+    /** @effects use_seeds_first_row_only_when_empty */
     it('"사용" 버튼은 addAdditionalOption 을 condition(length===0) 으로 호출', () => {
         const flat = serialize(productOptionsPartial);
         expect(flat).toContain('sirsoft-ecommerce.addAdditionalOption');
@@ -83,6 +92,7 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
         return null;
     };
 
+    /** @effects not_use_with_rows_opens_clear_modal */
     it('"미사용" 버튼은 행이 있을 때 openModal(additional_options_clear_modal) 을 호출', () => {
         const btn = findNotUseButton();
         expect(btn).not.toBeNull();
@@ -95,31 +105,33 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
         expect(openAction.if).toContain('(_local.form.additional_options ?? []).length > 0');
     });
 
+    /** @effects not_use_with_rows_opens_clear_modal */
     it('"미사용" 버튼은 setState ui.showAdditionalOptionsClearModal 플래그를 더이상 쓰지 않는다', () => {
         const flat = serialize(productOptionsPartial);
         expect(flat).not.toContain('showAdditionalOptionsClearModal');
     });
 
+    /** @effects not_use_with_rows_opens_clear_modal */
     it('확인 모달은 `show` prop 을 갖지 않는다 (엔진이 isOpen=modalStack 으로 제어)', () => {
         expect((clearModal as any).props.show).toBeUndefined();
     });
 
+    /** @effects not_use_with_rows_opens_clear_modal */
     it('확인 모달은 slots/slots.footer 를 쓰지 않는다 (Modal 컴포넌트 미렌더 — §13-D-FAIL)', () => {
         expect((clearModal as any).slots).toBeUndefined();
     });
 
-    it('확인 모달 footer 버튼은 children 말미 flex-justify-end Div 안에 있다', () => {
-        const footerDiv = findInChildren(
-            clearModal,
-            (n) => n.name === 'Div' && typeof n.props?.className === 'string' && /flex/.test(n.props.className) && /justify-end/.test(n.props.className),
-        );
-        expect(footerDiv).not.toBeNull();
-        const btnTexts = asArray(footerDiv?.children).filter((c: any) => c.name === 'Button').map((b: any) => b.text);
+    /** @effects not_use_with_rows_opens_clear_modal */
+    it('확인 모달 취소·확인 버튼은 Modal 고정 하단(props.footer)에 있다 (#869 P1 — 640px 이하 세로 쌓기)', () => {
+        const footer = asArray((clearModal as any).props?.footer);
+        expect(footer.length).toBeGreaterThan(0);
+        const btnTexts = footer.filter((c: any) => c.name === 'Button').map((b: any) => b.text);
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.common.cancel');
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.common.confirm');
     });
 
-    it('확인 모달 취소 버튼은 closeModal 로 닫는다 (children 트리)', () => {
+    /** @effects clear_modal_empties_additional_options */
+    it('확인 모달 취소 버튼은 closeModal 로 닫는다 (고정 하단)', () => {
         const cancelBtn = findButtonByText(clearModal, '$t:sirsoft-ecommerce.common.cancel');
         expect(cancelBtn).not.toBeNull();
         const handlers = asArray(cancelBtn?.actions).map((a: any) => a.handler);
@@ -127,7 +139,8 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
         expect(handlers).not.toContain('setState');
     });
 
-    it('확인 모달 확정 버튼은 clearAdditionalOptions 핸들러로 비우고 closeModal 로 닫는다 (children 트리)', () => {
+    /** @effects clear_modal_empties_additional_options */
+    it('확인 모달 확정 버튼은 clearAdditionalOptions 핸들러로 비우고 closeModal 로 닫는다 (고정 하단)', () => {
         const confirmBtn = findButtonByText(clearModal, '$t:sirsoft-ecommerce.common.confirm');
         expect(confirmBtn).not.toBeNull();
         const handlers = asArray(confirmBtn?.actions).map((a: any) => a.handler);
@@ -138,10 +151,12 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
         expect(handlers).toContain('closeModal');
     });
 
+    /** @effects not_use_with_rows_opens_clear_modal */
     it('확인 모달은 showAdditionalOptionsClearModal 플래그를 더이상 쓰지 않는다', () => {
         expect(serialize(clearModal)).not.toContain('showAdditionalOptionsClearModal');
     });
 
+    /** @effects not_use_with_rows_opens_clear_modal */
     it('루트 폼 modals 에 clear 모달이 등록됨', () => {
         const modals = (productForm as any).modals;
         const registered = modals.some((m: any) =>
@@ -150,6 +165,7 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
         expect(registered).toBe(true);
     });
 
+    /** @effects not_use_with_rows_opens_clear_modal */
     it('루트 폼 init 에서 showAdditionalOptionsClearModal seed 가 제거됨', () => {
         expect(serialize(productForm)).not.toContain('showAdditionalOptionsClearModal');
     });
@@ -172,6 +188,7 @@ describe('추가옵션명 입력 디바운스 + 필수 토글 UI', () => {
         return null;
     };
 
+    /** @effects additional_option_name_input_debounced */
     it('추가옵션명 MultilingualInput 의 change 액션에 debounce(300) 가 적용됨 (타이핑 지연 방지)', () => {
         // additional_options_{{addIdx}}_name 입력
         const nameInput = findAdditionalOptionNode(
@@ -185,6 +202,7 @@ describe('추가옵션명 입력 디바운스 + 필수 토글 UI', () => {
         expect(changeAction.debounce).toBe(300);
     });
 
+    /** @effects additional_option_required_uses_toggle */
     it('추가옵션 필수 여부는 raw checkbox Input 이 아니라 Toggle 컴포넌트를 사용', () => {
         // is_required 를 다루는 change 액션을 가진 노드
         const requiredControl = findAdditionalOptionNode(
@@ -205,6 +223,7 @@ describe('추가옵션명 입력 디바운스 + 필수 토글 UI', () => {
         expect(changeAction.params.value).toContain('$event.target.checked');
     });
 
+    /** @effects additional_option_required_uses_toggle */
     it('추가옵션 영역에 raw "type":"checkbox" Input 이 남아있지 않다', () => {
         // additional_options_sortable 하위에서 checkbox Input 부재 확인
         const sortable = findAdditionalOptionNode((n) => n.id === 'additional_options_sortable');
@@ -247,6 +266,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
 
     const flat = serialize(productOptionsPartial);
 
+    /** @effects additional_option_values_editor_controls */
     it('그룹 itemTemplate 안에 values iteration(addVal/addValIdx)이 존재한다', () => {
         const iter = findAll(productOptionsPartial, (n) =>
             n.iteration && n.iteration.item_var === 'addVal' && n.iteration.index_var === 'addValIdx',
@@ -256,6 +276,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(iter[0].iteration.source).toContain('addOpt.values');
     });
 
+    /** @effects additional_option_values_editor_controls */
     it('선택지명은 MultilingualInput + updateAdditionalOptionValue(field=name, debounce 300)', () => {
         const nameInputs = findAll(productOptionsPartial, (n) =>
             n.name === 'MultilingualInput' &&
@@ -272,6 +293,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(changeAction.params.valueIndex).toBe('{{addValIdx}}');
     });
 
+    /** @effects additional_option_values_editor_controls */
     it('추가금 입력은 number Input + min:0 + updateAdditionalOptionValue(field=price_adjustment)', () => {
         const priceInputs = findAll(productOptionsPartial, (n) =>
             n.name === 'Input' && n.props?.type === 'number' &&
@@ -282,6 +304,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(priceInputs[0].props.min).toBe('0');
     });
 
+    /** @effects additional_option_values_editor_controls */
     it('기본 선택지는 radio Input (그룹당 1개) — field=is_default', () => {
         const radios = findAll(productOptionsPartial, (n) =>
             n.name === 'Input' && n.props?.type === 'radio' &&
@@ -293,6 +316,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(radios[0].props.name).toContain('_default');
     });
 
+    /** @effects additional_option_values_editor_controls */
     it('활성 토글은 Toggle 컴포넌트 — field=is_active', () => {
         const toggles = findAll(productOptionsPartial, (n) =>
             n.name === 'Toggle' &&
@@ -302,6 +326,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(toggles.length).toBeGreaterThan(0);
     });
 
+    /** @effects additional_option_values_editor_controls */
     it('선택지 추가 버튼은 addAdditionalOptionValue(groupIndex) — max 20 가드', () => {
         expect(flat).toContain('sirsoft-ecommerce.addAdditionalOptionValue');
         const addBtns = findAll(productOptionsPartial, (n) =>
@@ -313,6 +338,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(addBtns[0].if).toContain('< 20');
     });
 
+    /** @effects additional_option_values_editor_controls */
     it('선택지 삭제 버튼은 removeAdditionalOptionValue(groupIndex, valueIndex)', () => {
         const delBtns = findAll(productOptionsPartial, (n) =>
             n.name === 'Button' &&
@@ -325,9 +351,10 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(action.params.valueIndex).toBe('{{addValIdx}}');
     });
 
+    /** @effects additional_option_values_currency_preview_always */
     it('다통화 환산 표시는 추가금 0원(초기 상태)에서도 환율통화만 있으면 항상 노출(일반 옵션 패턴 일치, 레이아웃 정렬 보존)', () => {
         // 회귀: 과거엔 (addVal.price_adjustment ?? 0) > 0 가드로 0원이면 환산행이 사라져
-        // row 높이가 들쭉날쭉 → sm:items-end 정렬이 어긋났다. 일반 상품옵션(currencyColumns.length>0)처럼
+        // row 높이가 들쭉날쭉 → 640px 이상 구간의 items-end 정렬이 어긋났다. 일반 상품옵션(currencyColumns.length>0)처럼
         // 가격과 무관하게 환율통화 유무로만 노출하도록 가드를 제거한다.
         const valueRow = findAll(productOptionsPartial, (n) =>
             n.iteration && n.iteration.item_var === 'addVal',
@@ -349,25 +376,27 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(span.text).toContain('(addVal.price_adjustment ?? 0)');
     });
 
-    it('선택지 row 컨테이너는 sm:items-start 로 인풋박스를 상단(라벨+인풋 baseline) 정렬한다', () => {
-        // 회귀: sm:items-end 는 추가금 블럭(다통화 줄)이 길어지면 인풋을 하단으로 밀어
+    /** @effects additional_option_values_row_aligned_by_width */
+    it('선택지 row 컨테이너는 640px 이상에서 items-start 로 인풋박스를 상단(라벨+인풋 baseline) 정렬한다', () => {
+        // 회귀: items-end 는 추가금 블럭(다통화 줄)이 길어지면 인풋을 하단으로 밀어
         // 선택지명 인풋과 세로 위치가 어긋났다. 상단 정렬로 인풋이 같은 라인에 나란히 오게 한다.
+        // 폭 분기는 엔진 responsive 의 640px 이상 구간(`640-`) className 이 맡는다.
         const valueRow = findAll(productOptionsPartial, (n) =>
-            n.iteration && n.iteration.item_var === 'addVal' &&
-            typeof n.props?.className === 'string' && n.props.className.includes('sm:flex-row'),
+            n.iteration && n.iteration.item_var === 'addVal' && wideClass(n).includes('ecommerce:flex-row'),
         )[0];
         expect(valueRow).toBeDefined();
-        expect(valueRow.props.className).toContain('sm:items-start');
-        expect(valueRow.props.className).not.toContain('sm:items-end');
+        expect(wideClass(valueRow)).toContain('ecommerce:items-start');
+        expect(wideClass(valueRow)).not.toContain('items-end');
+        expect(valueRow.props.className).not.toContain('sm:');
     });
 
-    it('라벨 없는 컨트롤(기본/활성/삭제)은 sm:mt-6 으로 인풋 baseline 에 맞춰진다', () => {
+    /** @effects additional_option_values_row_aligned_by_width */
+    it('라벨 없는 컨트롤(기본/활성/삭제)은 640px 이상에서 mt-6 으로 인풋 baseline 에 맞춰진다', () => {
         const valueRow = findAll(productOptionsPartial, (n) =>
-            n.iteration && n.iteration.item_var === 'addVal' &&
-            typeof n.props?.className === 'string' && n.props.className.includes('sm:flex-row'),
+            n.iteration && n.iteration.item_var === 'addVal' && wideClass(n).includes('ecommerce:flex-row'),
         )[0];
         expect(valueRow).toBeDefined();
-        // 기본(radio is_default) 컨트롤 래퍼에 sm:mt-6
+        // 기본(radio is_default) 컨트롤 래퍼에 640px 이상 mt-6
         const defaultRadio = findAll(valueRow, (n) =>
             n.name === 'Input' && n.props?.type === 'radio',
         )[0];
@@ -375,8 +404,9 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         const defaultWrapper = findAll(valueRow, (n) =>
             Array.isArray(n.children) && n.children.includes(defaultRadio),
         )[0];
-        expect(defaultWrapper.props.className).toContain('sm:mt-6');
-        // 활성 Toggle 래퍼에 sm:mt-6
+        expect(wideClass(defaultWrapper)).toContain('ecommerce:mt-6');
+        expect(defaultWrapper.props.className).not.toContain('mt-6');
+        // 활성 Toggle 래퍼에 640px 이상 mt-6
         const activeToggle = findAll(valueRow, (n) =>
             n.name === 'Toggle' &&
             asArray(n?.actions).length > 0 &&
@@ -385,14 +415,16 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         const activeWrapper = findAll(valueRow, (n) =>
             Array.isArray(n.children) && n.children.includes(activeToggle),
         )[0];
-        expect(activeWrapper.props.className).toContain('sm:mt-6');
-        // 삭제 버튼에 sm:mt-6
+        expect(wideClass(activeWrapper)).toContain('ecommerce:mt-6');
+        expect(activeWrapper.props.className).not.toContain('mt-6');
+        // 삭제 버튼에 640px 이상 mt-6
         const delBtn = findAll(valueRow, (n) =>
             n.name === 'Button' &&
             asArray(n?.actions).length > 0 &&
             asArray(n?.actions).some((a: any) => a.handler === 'sirsoft-ecommerce.removeAdditionalOptionValue'),
         )[0];
-        expect(delBtn.props.className).toContain('sm:mt-6');
+        expect(wideClass(delBtn)).toContain('ecommerce:mt-6');
+        expect(delBtn.props.className).not.toContain('mt-6');
     });
 });
 
@@ -412,6 +444,7 @@ describe('저장 sequence — emitEvent 후 form.images 갱신', () => {
         return null;
     };
 
+    /** @effects product_save_sequence_syncs_images */
     it('저장 sequence 가 emitEvent → setState(form.images) → apiCall 순서를 갖는다', () => {
         const saveBtn = findSaveButton();
         expect(saveBtn).not.toBeNull();
@@ -428,6 +461,7 @@ describe('저장 sequence — emitEvent 후 form.images 갱신', () => {
         expect(apiIdx).toBeGreaterThan(imgSetStateIdx);
     });
 
+    /** @effects product_save_sequence_syncs_images */
     it('form.images setState 는 수정 모드에서만(if route.itemCode) allFiles 를 반영한다', () => {
         const saveBtn = findSaveButton();
         const seq = asArray(saveBtn?.actions).find((a: any) => a.handler === 'sequence');
@@ -439,22 +473,22 @@ describe('저장 sequence — emitEvent 후 form.images 갱신', () => {
     });
 });
 
-describe('§13-D-FAIL — save_template 모달도 slots.footer 미사용 (children 배치)', () => {
+describe('§13-D-FAIL — save_template 모달도 slots.footer 미사용 (버튼은 props.footer)', () => {
+    /** @effects save_template_modal_footer_in_children */
     it('save_template 모달은 slots/slots.footer 를 쓰지 않는다', () => {
         expect((saveTemplateModal as any).slots).toBeUndefined();
     });
 
-    it('save_template footer 버튼은 children 말미 flex-justify-end Div 안에 있다', () => {
-        const footerDiv = findInChildren(
-            saveTemplateModal,
-            (n) => n.name === 'Div' && typeof n.props?.className === 'string' && /flex/.test(n.props.className) && /justify-end/.test(n.props.className),
-        );
-        expect(footerDiv).not.toBeNull();
-        const btnTexts = asArray(footerDiv?.children).filter((c: any) => c.name === 'Button').map((b: any) => b.text);
+    /** @effects save_template_modal_footer_in_children */
+    it('save_template 취소·저장 버튼은 Modal 고정 하단(props.footer)에 있다 (#869 P1 — 640px 이하 세로 쌓기)', () => {
+        const footer = asArray((saveTemplateModal as any).props?.footer);
+        expect(footer.length).toBeGreaterThan(0);
+        const btnTexts = footer.filter((c: any) => c.name === 'Button').map((b: any) => b.text);
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.common.cancel');
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button');
     });
 
+    /** @effects save_template_modal_footer_in_children */
     it('save_template 취소 버튼은 closeModal, 저장 버튼은 confirmSaveNoticeTemplate 핸들러를 호출', () => {
         const cancelBtn = findButtonByText(saveTemplateModal, '$t:sirsoft-ecommerce.common.cancel');
         const saveBtn = findButtonByText(saveTemplateModal, '$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button');
@@ -482,6 +516,7 @@ describe('회귀: 상품 생성/저장 후 navigate 는 id 기반 (product_code 
         return out;
     };
 
+    /** @effects product_create_navigates_by_id */
     it('저장 onSuccess 의 생성모드 navigate path 는 result.data.id 를 사용한다', () => {
         const navs = collectAll(
             productForm,
@@ -514,6 +549,7 @@ describe('직접입력(allow_custom_text) 토글 — 선택지 단위', () => {
         return out;
     };
 
+    /** @effects additional_option_value_allow_custom_text_toggle */
     it('선택지 카드에 allow_custom_text Toggle 이 존재하고 updateAdditionalOptionValue 를 호출한다', () => {
         const toggles = collectAll(
             productOptionsPartial,
@@ -531,6 +567,7 @@ describe('직접입력(allow_custom_text) 토글 — 선택지 단위', () => {
         expect(changeAction.params.field).toBe('allow_custom_text');
     });
 
+    /** @effects additional_option_value_allow_custom_text_toggle */
     it('직접입력 토글에 i18n 라벨이 붙는다 (키 노출 0)', () => {
         const labels = collectAll(
             productOptionsPartial,
@@ -558,6 +595,7 @@ describe('빈 선택지 그룹 에러 — 강조 + 영역 하단 메시지', () 
 
     const serializeAll = JSON.stringify(productOptionsPartial);
 
+    /** @effects additional_option_empty_values_error_shown */
     it('그룹 카드 className 이 values 에러일 때 강조 테두리(border-red)를 적용한다', () => {
         // 그룹 카드 루트의 className 표현식에 errors[additional_options.N.values] 분기 + border-red
         const cards = collectAll(
@@ -570,6 +608,7 @@ describe('빈 선택지 그룹 에러 — 강조 + 영역 하단 메시지', () 
         expect(cards.length).toBeGreaterThan(0);
     });
 
+    /** @effects additional_option_empty_values_error_shown */
     it('선택지 영역 하단에 values 에러 인라인 메시지 노드가 있다', () => {
         const errNodes = collectAll(
             productOptionsPartial,

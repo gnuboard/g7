@@ -8,7 +8,8 @@
 <partial description="큐 작업 상세 모달" editor_label="$t:admin.modal_label.admin_schedule_list.queue_job_detail_modal">
   <modal data-type="composite" data-ref="queue_job_detail_modal" title="$t:admin.schedules.queue.detail.title" size="lg">
     <div class="space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 gap-3">
+        <responsive on="768-" class="grid grid-cols-2 gap-3"/>
         <div>
           <span class="text-label-subtle">$t:admin.schedules.queue.columns.job</span>
           <p class="text-body font-medium break-all">{{_global.queueJobDetail?.display_name ?? '-'}}</p>
@@ -64,7 +65,7 @@
         <pre data-ref="queue_job_detail_payload" class="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg">{{JSON.stringify(_global.queueJobDetail?.payload_meta ?? {}, null, 2)}}</pre>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary">
         <on type="click">
           <close-modal target="queue_job_detail_modal"/>
@@ -107,6 +108,6 @@
         </on>
         $t:admin.schedules.queue.action.retry
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

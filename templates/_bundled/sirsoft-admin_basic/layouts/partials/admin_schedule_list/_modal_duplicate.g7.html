@@ -18,7 +18,7 @@
     </div>
     <p class="mt-4 text-label-subtle">$t:admin.schedules.modals.duplicate_note</p>
     <p data-if="{{_global.selectedSchedule?.is_owned}}" class="mt-1 text-label-subtle">$t:admin.schedules.modals.duplicate_owned_note</p>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isDuplicating}}">
         <on type="click">
           <close-modal target="schedule_duplicate_modal"/>
@@ -48,6 +48,6 @@
         <icon data-if="{{!_global.isDuplicating}}" name="copy" class="text-base"/>
         <span>{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.action.duplicate'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

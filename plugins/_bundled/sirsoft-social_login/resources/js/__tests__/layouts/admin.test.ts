@@ -809,3 +809,23 @@ describe('문구 키', () => {
     }
   });
 });
+
+describe('관리자 설정 화면 — 화면 폭에 따라 바뀌는 칸', () => {
+  /**
+   * @scenario surface=provider_card, tab=providers
+   * @effects provider_copy_labels_shown_from_640
+   */
+  it('제공자 카드의 주소 복사 단추 「복사」 글자는 휴대폰 폭에서 숨고 640px 이상에서 보인다', () => {
+    const tokens = (cls: unknown): string[] => (typeof cls === 'string' ? cls.split(/\s+/).filter(Boolean) : []);
+    const labels = flatten(read('resources/layouts/admin/plugin_settings.json')).filter(
+      (n) => n?.name === 'Span' && n?.text === '$t:sirsoft-social_login.admin.providers.copy',
+    );
+    expect(labels).toHaveLength(2);
+    for (const label of labels) {
+      expect(tokens(label.props?.className)).toContain('sl:hidden');
+      const wide = tokens(label.responsive?.['640-']?.props?.className);
+      expect(wide).toContain('sl:inline');
+      expect(wide).not.toContain('sl:hidden');
+    }
+  });
+});

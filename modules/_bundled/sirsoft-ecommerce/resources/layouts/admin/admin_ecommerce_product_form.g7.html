@@ -324,9 +324,10 @@
   <slot name="content">
     <div data-ref="product_form_content" data-key="form" data-track-changes data-debounce="300" class="ecommerce-admin-page-content">
       <div data-ref="page_header_section" class="ecommerce:mb-6">
-        <div data-ref="page_header" class="ecommerce-page-header-padded ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:gap-3">
+        <div data-ref="page_header" class="ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4 ecommerce:flex ecommerce:justify-between">
+          <responsive on="641-" class="ecommerce:mb-6 ecommerce:px-6 ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:gap-3"/>
           <div>
-            <h1 class="ecommerce-page-title">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}</h1>
+            <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}</h1>
             <p class="ecommerce-page-description">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}</p>
           </div>
           <a data-ref="view_user_page_link" data-if="{{!!route.itemCode}}" href="{{(_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))) + '/products/' + route.itemCode}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-ecommerce.admin.product.action.view_user_page" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded-lg ecommerce:hover:bg-gray-200 ecommerce:dark:hover:bg-gray-600 ecommerce:transition-colors ecommerce:no-underline">
@@ -388,7 +389,7 @@
             </div>
             <div class="ecommerce-flex-start ecommerce:gap-4">
               <responsive on="portable" class="ecommerce-flex-center ecommerce:flex-col ecommerce:gap-3"/>
-              <img data-if="{{copy_source?.data?.thumbnail_url}}" src="{{copy_source?.data?.thumbnail_url}}" alt="{{$localized(copy_source?.data?.name)}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:object-cover ecommerce:rounded-lg ecommerce:flex-shrink-0"/>
+              <img data-if="{{copy_source?.data?.thumbnail_url}}" src="{{copy_source?.data?.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$localized(copy_source?.data?.name)}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:object-cover ecommerce:rounded-lg ecommerce:flex-shrink-0"/>
               <div data-if="{{!copy_source?.data?.thumbnail_url}}" class="ecommerce-flex-center ecommerce:w-16 ecommerce:h-16 ecommerce:rounded-lg ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0">
                 <icon name="image" class="ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
               </div>
@@ -469,8 +470,12 @@
               <sequence>
                 <set-state target="local" :isSaving="true" :errors="null"/>
                 <emit-event event="upload:product_images"/>
+                <set-state target="local" uploadFailedCount="{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
+                <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다. -->
+                <set-state if="{{(_local.uploadFailedCount ?? 0) > 0}}" target="local" :isSaving="false"/>
+                <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
                 <set-state if="{{!!route.itemCode &amp;&amp; Array.isArray(_local._eventResult?.data?.allFiles)}}" target="local" form.images="{{_local._eventResult?.data?.allFiles ?? (_local.form?.images ?? [])}}"/>
-                <api-call :auth_required="true" target="{{route.itemCode ? '/api/modules/sirsoft-ecommerce/admin/products/' + route.itemCode : '/api/modules/sirsoft-ecommerce/admin/products'}}" method="{{route.itemCode ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {})}}">
+                <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" :auth_required="true" target="{{route.itemCode ? '/api/modules/sirsoft-ecommerce/admin/products/' + route.itemCode : '/api/modules/sirsoft-ecommerce/admin/products'}}" method="{{route.itemCode ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {})}}">
                   <success>
                     <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
                     <toast type="success" message="{{route.itemCode ? '$t:sirsoft-ecommerce.messages.product_updated' : '$t:sirsoft-ecommerce.messages.product_created'}}"/>

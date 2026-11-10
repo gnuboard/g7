@@ -880,6 +880,8 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 | twitter_default_card | string | "summary_large_image" | twitter:card 기본 (summary/summary_large_image/app/player) |
 | twitter_default_site | string | "" | twitter:site 핸들 (예: @gnuboard). 비면 출력 생략 |
 
+`og_image_default_width/height` 는 이미지 썸네일의 코어 규격 `og`(자르기) 크기이기도 하다. `og:image`·`og:image:secure_url`·`twitter:image` 는 렌더 마지막(`SeoMetaResolver::renderOgHtml`·`renderTwitterHtml`)에서 등록된 서빙 경로의 주소면 `?size=og` 가 붙는다 — 선언한 `og:image:width/height` 와 실제 이미지 크기가 맞는다. 레이아웃이 `og.image_width`·`image_height` 를 직접 선언했으면 바꾸지 않고, 외부·정적 주소도 그대로다. 봇 화면의 본문 이미지(`HtmlSanitizer`)와 `Img` 의 `thumbPreset` 도 같은 규칙으로 `srcset`·`sizes`·`loading` 을 싣는다. 업로드 탭의 썸네일 설정을 바꾸거나 확장을 켜고 끄면 SEO 캐시를 비운다(봇 첫 요청이 잠시 느려진다). 자세한 계약은 [이미지 썸네일](image-thumbnails.md).
+
 ### 사이트맵 생성 주기 (7.2.0~)
 
 사이트맵 정기 생성 주기·시각은 SEO 설정이 아니라 **관리자 > 스케줄 관리**의 코어 행 `sitemap-generate` 가 정합니다([scheduling.md](scheduling.md)). 7.1.x 의 `seo.sitemap_schedule`(hourly/daily/weekly)·`seo.sitemap_schedule_time`(HH:mm)은 더 이상 예약에 쓰이지 않습니다.

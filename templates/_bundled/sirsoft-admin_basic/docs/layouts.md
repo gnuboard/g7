@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 203개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 206개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 42개 |
 | `auth` | 1개 |
-| `errors` | 6개 |
-| `partials` | 154개 |
+| `errors` | 7개 |
+| `partials` | 156개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -63,6 +63,7 @@
 | `404` | `errors` | 화면 | `_admin_base` |
 | `500` | `errors` | 화면 | `_admin_base` |
 | `503` | `errors` | 화면 | `_admin_base` |
+| `default` | `errors` | 화면 | `_admin_base` |
 | `maintenance` | `errors` | 화면 | `_admin_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_changelog` | `partials` | partial | - |
@@ -171,6 +172,8 @@
 | `_modal_privacy_run` | `partials` | partial | - |
 | `_modal_privacy_targets` | `partials` | partial | - |
 | `_modal_static_cache_republish` | `partials` | partial | - |
+| `_modal_thumbnail_pregenerate` | `partials` | partial | - |
+| `_modal_thumbnail_purge_all` | `partials` | partial | - |
 | `_modal_unsaved_tab_switch` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
 | `_tab_drivers` | `partials` | partial | - |
@@ -276,10 +279,11 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
 
 **본인인증 정책 목록의 검색·필터·쪽 넘김**(7.1.0~): `_tab_identity_policies` 의 목록 조작은 모두 `navigate`(replace)에 `refetch_data_sources="policies"` 를 붙여 정책 목록 소스만 다시 받습니다. 붙이지 않으면 쿼리 갱신이 설정 본체(`settings`, initLocal)까지 다시 받아 같은 탭 위쪽에서 고친 칸이 저장된 값으로 돌아가고 「변경 있음」이 풀립니다. 새 목록 조작을 더할 때도 같은 속성을 붙이고, 레이아웃 테스트 `admin-settings-unsaved-tab-confirm.test.ts` 가 이를 잠급니다.
 
-**에러 화면**(`errors/*.json`): `extends` 없는 독립 레이아웃. `Div`(중앙 정렬) 안에
-`Icon`+`H1`(코드)+`P`(메시지)+`Button`(홈 이동). 독립 레이아웃이므로 `Toast`/`Modal` 같은
-전역 호스트 컴포넌트가 필요하면 직접 마운트해야 합니다(§코어 AGENTS.md "독립 레이아웃의 글로벌
-호스트 컴포넌트").
+**에러 화면**(`errors/*.json`): `_admin_base` 를 extends 하고 content 슬롯만 채운다(사이드바·머리글은 베이스가 그린다).
+`Div`(중앙 정렬) 안에 `Icon`+`H1`(코드)+`H2`(제목)+`P`(메시지)+`A`(홈 이동). `errors/default` 는 코드별 레이아웃이 없는
+코드(400·422·429·502·504 등)를 맡는 공통 오류 화면으로 `template.json` 의 `error_config.layouts.default` 에 등록돼 있다 —
+코드를 박지 않고 엔진이 넘기는 `{{errorCode}}` 를 보이며 새로고침(`refresh`) 단추를 홈 단추 앞에 둔다. 이 등록이 없으면 엔진 내장
+오류 화면이 사이드바와 머리글까지 덮는다.
 
 ### `_admin_base.g7.html` 에 대한 정정
 
@@ -573,7 +577,7 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 > **요약**(현행 디스크 실측 — 총 149개):
 > 1. 베이스: `_admin_base.g7.html` (사이드바 + 헤더 + 콘텐츠 슬롯)
 > 2. 코어 페이지 26개(layouts 직속, `_admin_base` 제외): 대시보드, 사용자, 역할, 설정, 확장 관리, 언어팩, 로그, 2단계 인증 등
-> 3. `auth/` 1개 · `errors/` 6개
+> 3. `auth/` 1개 · `errors/` 7개(코드 6종 + 공통 `default`)
 > 4. Partial 115개: 탭, 모달, 패널, 필터, 드로어 등
 
 ### 페이지 맵 (트리 구조)
@@ -655,7 +659,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
 │           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
 │           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)
-│           ├── _tab_upload.g7.html (업로드)
+│           ├── _tab_upload.g7.html (업로드 — 썸네일 규격 표의 확장 행은 등록 이름 `label`(로케일 맵, `$localized`)을 위에, 식별자를 아래 작게. 본문·비우기 규격 select 도 같은 이름, 없으면 식별자. 썸네일 카드 끝 「고급 — 서버 보호 값」 숫자 칸 여섯(`upload.thumbnail_{generate_per_minute, lock_wait_seconds, max_source_pixels, pregenerate_batch, pregenerate_time_budget, purge_time_budget}`)은 비우면 `_meta.thumbnail_server_defaults` 를 placeholder 로 보이고, `.env` 가 정한 칸은 다른 탭과 같이 `_computed.envLocked` 로 배지·잠금)
+│           ├── _modal_thumbnail_pregenerate.g7.html (업로드 — 기존 이미지 썸네일 만들기 창, 걸음 액션 thumbnailPregenerateStep 이 다음 커서가 없을 때까지 이어 부르고 멈춤·다시 시작·닫으면 멈춤)
+│           ├── _modal_thumbnail_purge_all.g7.html (업로드 — 썸네일 두 저장 위치 모두 비우기 확인 창, 위치별 디스크·파일 수·용량, 공개 위치는 CDN 무효화까지)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_advanced.g7.html (고급)
@@ -804,7 +810,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │       ├── 404.g7.html (페이지 없음)
 │       ├── 500.g7.html (서버 오류)
 │       ├── 503.g7.html (서비스 불가)
-│       └── maintenance.g7.html (점검 중)
+│       ├── maintenance.g7.html (점검 중)
+│       └── default.g7.html (공통 오류 화면 — 코드별 레이아웃이 없는 코드, `{{errorCode}}` 표시)
 │
 └── 테스트
     └── template_partial_test.g7.html
@@ -1057,17 +1064,19 @@ modals:
 
 **구성**:
 ```text
-(extends 없음 — 독립 레이아웃)
-components:
-  └── Div (전체 화면 중앙 정렬)
+extends: _admin_base (content 슬롯만 채운다 — 사이드바·머리글은 베이스가 그린다)
+slots.content:
+  └── Div (본문 중앙 정렬)
       ├── Icon (에러 아이콘)
-      ├── H1 (에러 코드)
+      ├── H1 (에러 코드 — 코드 레이아웃은 숫자를 박고, default 는 {{errorCode}})
+      ├── H2 (제목)
       ├── P (에러 메시지)
-      └── Button (홈으로 이동)
+      └── A (홈으로 이동 — default 는 새로고침 Button 을 앞에 둔다)
 ```
 
 **핸들러 패턴**:
 - `navigate` — 대시보드/홈으로 이동
+- `refresh` — 새로고침 (`errors/default`)
 
 ---
 

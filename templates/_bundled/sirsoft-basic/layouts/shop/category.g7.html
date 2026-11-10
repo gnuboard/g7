@@ -72,7 +72,7 @@
       </div>
       <!-- 카테고리 배너 이미지 -->
       <div data-if="{{(category?.data?.images ?? []).length > 0}}" class="mb-6 rounded-lg overflow-hidden">
-        <img src="{{category?.data?.images?.[0]?.download_url ?? ''}}" alt="{{category?.data?.images?.[0]?.alt_text ?? category?.data?.name_localized ?? ''}}" class="w-full h-auto object-cover max-h-64"/>
+        <img src="{{category?.data?.images?.[0]?.download_url ?? ''}}" thumbPreset="lg" loading="eager" alt="{{category?.data?.images?.[0]?.alt_text ?? category?.data?.name_localized ?? ''}}" class="w-full h-auto object-cover max-h-64"/>
       </div>
       <!-- 검색 바 -->
       <div class="flex gap-2 mb-4">

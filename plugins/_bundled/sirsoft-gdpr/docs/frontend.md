@@ -33,10 +33,15 @@
 확장점 문서를 봐야 합니다.
 
 화면 모양은 이 플러그인 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `gdpr`)가 싣습니다. 레이아웃은
-접두 유틸리티(`gdpr:flex` 등)와 관리자 템플릿 의미 클래스의 플러그인 판본(`gdpr-row-stack`·`gdpr-kv-list-2`·`gdpr-kv-row`
+접두 유틸리티(`gdpr:flex` 등)와 관리자 템플릿 의미 클래스의 플러그인 판본(`gdpr-row-stack`·`gdpr-kv-row`
 등, 생성 파일 `resources/css/g7-extension.generated.css`)만 씁니다 — 템플릿이 그 규칙을 만들었는지와 무관하게 보입니다.
-「라벨 값」 목록처럼 모양을 맞춰야 하는 자리는 의미 클래스 판본을 씁니다(정책 버전 스냅샷 창의 메타 목록이
-`gdpr-kv-list-2`). 새 클래스를 쓰면 `php artisan plugin:build sirsoft-gdpr --production` 으로 CSS 를 다시 만듭니다.
+「라벨 값」 목록처럼 모양을 맞춰야 하는 자리는 의미 클래스 판본을 씁니다(`gdpr-kv-row` 등). 폭에 따라 칸 수가 바뀌던
+`gdpr-kv-list-2`(정책 버전 스냅샷 창의 메타 목록)는 접두 유틸과 `responsive` 구간(`640-` 에서 4칸)으로 펼쳤습니다. 새 클래스를 쓰면 `php artisan plugin:build sirsoft-gdpr --production` 으로 CSS 를 다시 만듭니다.
+화면 폭에 따라 클래스가 달라지는 자리는 Tailwind 반응형 접두(`gdpr:sm:flex-row` 같은 꼴)를 쓰지 않고, 노드의
+`<responsive on="…">` 구간(`desktop`, `640-` 등)에 그 폭에서 쓸 className 전체를 둡니다(예: 환경설정 입력 줄의 라벨·입력
+칸 나눔은 `desktop` 구간의 `gdpr:col-span-1`·`gdpr:col-span-2`).
+
+폭 미디어를 품은 의미 클래스 사본(`gdpr-grid-3col-responsive`·`gdpr-grid-2col-responsive`·`gdpr-page-title`·`gdpr-admin-page-content-responsive`·`gdpr-filter-label` 등)도 쓰지 않습니다. 이 사본들의 정의는 사이트에서 직접 고친 레이아웃의 호환을 위해 폭 부분까지 폐지 예정으로 남아 있고 다음 출시 이후 제거됩니다 — 새 레이아웃은 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start"` 에 `<responsive on="1024-" class="gdpr:grid gdpr:grid-cols-3 gdpr:gap-4 gdpr:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`gdpr:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

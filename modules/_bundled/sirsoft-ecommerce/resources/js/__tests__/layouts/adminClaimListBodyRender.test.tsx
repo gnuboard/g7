@@ -26,6 +26,7 @@ import {
 import bulkSection from '../../../layouts/admin/partials/admin_ecommerce_claim_list/_partial_bulk_action_section.json';
 import datagrid from '../../../layouts/admin/partials/admin_ecommerce_claim_list/_partial_claim_datagrid.json';
 import completeModal from '../../../layouts/admin/partials/admin_ecommerce_claim_list/_modal_claim_complete.json';
+import { Modal as AdminModal } from '../../../../../../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal';
 
 type Node = Record<string, any>;
 
@@ -143,9 +144,19 @@ beforeEach(() => {
     )
   );
 
-  registry.register('composite', 'Modal', ({ title, children }: any) =>
-    React.createElement('div', { 'data-testid': 'claim-modal', 'data-title': title }, children)
-  );
+  // 진짜 관리자 Modal — 실행·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다(#869 P1).
+  // 하네스 G7Core 에 없는 엔진 렌더러 접근자만 잇는다(운영 G7CoreGlobals.initSlotAPI 와 같은 값)
+  registry.register('composite', 'Modal', (props: any) => {
+    const g7 = (window as any).G7Core;
+    if (g7 && typeof g7.getDynamicRenderer !== 'function') {
+      g7.getDynamicRenderer = () => (window as any).__DynamicRenderer ?? null;
+    }
+    return React.createElement(
+      'div',
+      { 'data-testid': 'claim-modal', 'data-title': props.title },
+      React.createElement(AdminModal, { ...props, isOpen: true, onClose: props.onClose ?? (() => {}) })
+    );
+  });
 });
 
 afterEach(() => {
@@ -180,6 +191,7 @@ function renderCell(column: any, row: any): string {
       if (resolved) texts.push(resolved);
     }
     (node.children ?? []).forEach(visit);
+    (node.props?.footer ?? []).forEach(visit); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
   };
 
   (column.cellChildren ?? []).forEach(visit);

@@ -9,7 +9,114 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "id": "crm_007_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다)",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "claimRefundExecuteContext": null,
+                                    "claimRefundExecuteBankCode": null,
+                                    "claimRefundExecuteBankAccount": null,
+                                    "claimRefundExecuteBankHolder": null,
+                                    "claimRefundExecuteForce": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline",
+                    "disabled": "{{_global.isProcessing}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "comment": "이 창에서 실제로 환불을 일으키는 유일한 버튼이다 — 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 버튼 비활성으로 막는다(서버의 409 는 그다음 방어선이다).",
+                "id": "crm_008_confirm",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isProcessing": true
+                                }
+                            },
+                            {
+                                "comment": "onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. 모달은 닫지 않는다: 409(더블클릭)·422(상한 초과)는 운영자가 그 자리에서 확인해야 할 사유다.",
+                                "handler": "sirsoft-ecommerce.executeClaimRefund",
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": false
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary",
+                    "disabled": "{{!_global.claimRefundExecuteContext || _global.isProcessing || (_global.claimRefundExecuteContext?.refundAccountRequired === true && _global.claimRefundExecuteForce !== true && !((_global.claimRefundExecuteBankCode ?? '').trim() && (_global.claimRefundExecuteBankAccount ?? '').trim() && (_global.claimRefundExecuteBankHolder ?? '').trim()))}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isProcessing}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isProcessing ? '$t:common.processing' : ''}}"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!_global.isProcessing}}",
+                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.confirm"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -455,120 +562,6 @@
                         "className": "ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-yellow-50 ecommerce:dark:bg-yellow-900/20 ecommerce:text-sm ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.warning"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2"
-                    },
-                    "children": [
-                        {
-                            "id": "crm_007_cancel",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다)",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "claimRefundExecuteContext": null,
-                                                "claimRefundExecuteBankCode": null,
-                                                "claimRefundExecuteBankAccount": null,
-                                                "claimRefundExecuteBankHolder": null,
-                                                "claimRefundExecuteForce": null
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline",
-                                "disabled": "{{_global.isProcessing}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "comment": "이 창에서 실제로 환불을 일으키는 유일한 버튼이다 — 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 버튼 비활성으로 막는다(서버의 409 는 그다음 방어선이다).",
-                            "id": "crm_008_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": true
-                                            }
-                                        },
-                                        {
-                                            "comment": "onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. 모달은 닫지 않는다: 409(더블클릭)·422(상한 초과)는 운영자가 그 자리에서 확인해야 할 사유다.",
-                                            "handler": "sirsoft-ecommerce.executeClaimRefund",
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isProcessing": false
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-primary",
-                                "disabled": "{{!_global.claimRefundExecuteContext || _global.isProcessing || (_global.claimRefundExecuteContext?.refundAccountRequired === true && _global.claimRefundExecuteForce !== true && !((_global.claimRefundExecuteBankCode ?? '').trim() && (_global.claimRefundExecuteBankAccount ?? '').trim() && (_global.claimRefundExecuteBankHolder ?? '').trim()))}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isProcessing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "ecommerce-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isProcessing ? '$t:common.processing' : ''}}"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_global.isProcessing}}",
-                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.confirm"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         }

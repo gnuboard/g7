@@ -162,7 +162,8 @@ test.describe('사용자 홈 — 하위 폴더 설치의 히어로 미디어 주
     await expect.poll(async () => (await attrs()).images.length, { message: '슬라이드 이미지가 그려진다', timeout: 30_000 }).toBeGreaterThan(1);
     await expect.poll(async () => (await attrs()).videos.length, { message: '첫 장 영상이 붙는다', timeout: 30_000 }).toBeGreaterThan(0);
     console.log(`[site-media-prefix] 그려진 직후 ${JSON.stringify(await attrs())}`);
-    await expect.poll(async () => (await attrs()).loaded.filter(([src, w]) => src?.endsWith('e2e-h-pc') && w > 0).length, { message: '첫 장 대표 이미지가 실제로 받아졌다(naturalWidth>0)', timeout: 30_000 }).toBeGreaterThan(0);
+    // srcset(1920w 후보) 이 붙어 시험용 1×1 PNG 응답에서는 naturalWidth 가 0 일 수 있다 — 받았는지는 사이트 안 주소로 그 미디어를 요청했는지로 본다.
+    await expect.poll(() => media.inside.some((p) => p.endsWith('e2e-h-pc') || p.includes('e2e-h-pc?')), { message: '첫 장 대표 이미지를 사이트 안 주소로 받았다', timeout: 30_000 }).toBe(true);
     const seen = await attrs();
     console.log(`[site-media-prefix] ${JSON.stringify({ ...seen, inside: [...new Set(media.inside)], outside: [...new Set(media.outside)] })}`);
 
@@ -173,7 +174,16 @@ test.describe('사용자 홈 — 하위 폴더 설치의 히어로 미디어 주
     }
     expect(seen.images, 'PC 이미지(접두사 없이 온 값)').toContain(`${MOUNT}${MEDIA}/e2e-h-pc`);
     expect(seen.images, 'PC 이미지(이미 접두사 붙은 값)').toContain(`${MOUNT}${MEDIA}/e2e-h-pc2`);
-    expect(seen.sources, '모바일 이미지 source').toContain(`${MOUNT}${MEDIA}/e2e-h-mo`);
+    // 주 이미지는 창 폭 미디어(<picture><source media>)가 아니라 엔진 폭으로 고른다 — PC 폭에서는 <source> 가 없고,
+    // 휴대폰 폭(767 이하)에서 img 가 모바일 이미지를 받는다.
+    expect(seen.sources, 'PC 폭에서 창 폭 미디어 <source> 없음').toEqual([]);
+    await page.setViewportSize({ width: 375, height: 800 });
+    await expect.poll(async () => (await attrs()).images, { message: '휴대폰 폭에서 모바일 이미지', timeout: 30_000 }).toContain(`${MOUNT}${MEDIA}/e2e-h-mo`);
+    const mobile = await attrs();
+    for (const url of mobile.images) {
+      expect(url, `휴대폰 폭 미디어 주소에 사이트 마운트 접두사: ${url}`).toMatch(/^\/g7\/api\/plugins\/sirsoft-hero_section\/images\//);
+    }
+    await page.setViewportSize({ width: 1366, height: 900 });
     expect(seen.videos, '영상').toContain(`${MOUNT}${MEDIA}/e2e-h-vid`);
     if (seen.posters.length) expect(seen.posters.every((p) => p.startsWith(`${MOUNT}${MEDIA}/`)), '영상 대표 이미지').toBe(true);
     expect([...new Set(media.outside)], '사이트 밖(접두사 없는) 히어로 미디어 요청 0').toEqual([]);

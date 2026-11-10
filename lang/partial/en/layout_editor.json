@@ -74,6 +74,12 @@
       },
       "empty": "No routes to display"
     },
+    "spec_load_error": {
+      "title": "Could not load editor information.",
+      "message": "The component palette, style controls and state switcher are unavailable. Please try again.",
+      "retry": "Try again",
+      "retrying": "Reloading…"
+    },
     "fab": {
       "label": "Edit layout",
       "tooltip": "Open this screen in the layout editor"
@@ -220,7 +226,9 @@
   },
   "zoom": {
     "label": "Zoom",
-    "aria_label": "Canvas zoom slider"
+    "aria_label": "Canvas zoom slider",
+    "actual_size": "Actual size",
+    "actual_size_hint": "Show the preview at 1:1 without shrinking it. If it is wider than the canvas, the page scrolls horizontally."
   },
   "palette": {
     "title": "Add element",
@@ -385,6 +393,14 @@
       "restore": "Restore the data binding",
       "template_settings_notice": "Linked to the template settings — change it under Admin > Templates > Settings of this template.",
       "open_template_settings": "Open settings"
+    },
+    "thumbnail_preset": {
+      "original": "Original",
+      "fit_cover": "Crop",
+      "fit_contain": "Fit",
+      "fit_width": "Width only",
+      "option_label": "{name} ({size} · {fit})",
+      "unknown": "{name} (not in use)"
     }
   },
   "recipe": {

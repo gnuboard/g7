@@ -1,0 +1,19 @@
+feature: 라우트 해석기(RouteResolver) 단위 검사
+
+description: |
+  RouteResolver 는 라우트 목록을 읽고 현재 경로를 해석해 콜백으로 알리며, navigate 와 브라우저 뒤로 가기(popstate)
+  때 다시 해석한다. destroy 는 리스너를 떼고 다시 초기화할 수 있게 한다. 이 매니페스트는 그 단위 시험 파일을
+  영역별로 소유한다(#869 표식 소급).
+
+axes:
+  area: [init, resolve, navigate, popstate, destroy]
+
+effects:
+  - route_resolver_init
+  - route_resolved_to_callback
+  - route_navigate_pushes_history
+  - route_popstate_resolves
+  - route_resolver_destroy_cleans_up
+
+test_files:
+  - resources/js/core/routing/__tests__/RouteResolver.test.ts

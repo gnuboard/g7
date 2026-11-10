@@ -30,7 +30,8 @@
         <p class="ecommerce-form-hint ecommerce:mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_mode_hint</p>
         <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']}}" class="ecommerce-form-error-xs ecommerce:mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.claim_fee_mode']?.[0]}}</span>
       </div>
-      <div data-ref="claim_fixed_fee_fields" data-if="{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}" class="ecommerce-grid-2col-responsive">
+      <div data-ref="claim_fixed_fee_fields" data-if="{{(_computed.activeCountrySetting?.claim_fee_mode ?? 'fixed') === 'fixed'}}" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+        <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
         <div data-ref="field_return_fixed_fee">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.return_fixed_fee</label>
           <!-- 반품 고정 배송비(편도 1회분) — 적은 값이 그대로 청구액이 된다. 판매자·배송사 귀책 반품은 이 값과 무관하게 0원이고, 칸을 비우면 0 으로 들어간다. -->

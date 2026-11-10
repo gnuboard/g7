@@ -83,16 +83,18 @@
   </transition-overlay>
   <slot name="content">
     <div data-ref="order_content" class="ecommerce-admin-page-content">
-      <div data-ref="page_header" class="ecommerce-page-header">
+      <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+        <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div class="ecommerce-flex-center ecommerce:gap-3">
           <icon name="shopping-cart" class="ecommerce:text-2xl ecommerce:text-gray-700 ecommerce:dark:text-gray-300"/>
           <div>
-            <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.order.title</h1>
+            <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.order.title</h1>
             <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.order.description</p>
           </div>
         </div>
-        <div class="ecommerce-page-actions">
-          <a href="/admin/ecommerce/orders" :mergeQuery="true" aria-label="$t:common.refresh" title="$t:common.refresh" class="ecommerce-btn ecommerce-btn-icon">
+        <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
+          <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
+          <a href="/admin/ecommerce/orders" :mergeQuery="true" aria-label="$t:common.refresh" title="$t:common.refresh" class="ecommerce-btn ecommerce-btn-icon ecommerce:shrink-0 ecommerce:whitespace-nowrap">
             <on type="click">
               <!-- 지금 검색 조건 그대로 목록을 다시 불러온다 -->
               <navigate :mergeQuery="true">

@@ -239,6 +239,8 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 이름의 모든 자리를 채운다. 목록도 세 유형 파일이 한 화면에 함께 있으므로 행에는 `board_post_row_badges` 를 쓴다.
 목록 검색 줄의 `board_search_field_select` 도 세 유형 파일에 같은 이름으로 있어, 이를 겨냥한 overlay 는 basic 목록에만 들어간다.
 
+**찾는 범위**: overlay 는 레이아웃 `components` 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창을 찾는다. 두 트리 모두 노드의 `children` 과 Modal 의 고정 하단(`props.footer`), 제목 앞뒤 붙임(`titlePrefix`, `titleSuffix`)까지 걷는다. 같은 `id` 가 두 트리에 함께 있으면 `components` 쪽 첫 노드 하나에만 들어간다.
+
 반복 행이나 여러 자리에 들어가는 조각에 **고정 `data-ref` 를 쓰지 않는다.** 자리 수(행 수 × 갈래 수)만큼 같은 DOM id 가 생긴다.
 id 가 필요하면 반복 문맥 값을 보간한다(예: `my_badge_{{extensionPointProps.context}}_{{extensionPointProps.postId}}`).
 basic 목록과 마이페이지 스크랩은 PC·모바일 두 자리라 조각이 행마다 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다.
@@ -737,11 +739,15 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 ```html
 <extension extension-point="admin_user_list_filters" mode="append" priority="200">
-  <div data-ref="ext_vendor_point_filter_row" class="flex flex-col gap-2 md:flex-row md:items-center">
+  <div data-ref="ext_vendor_point_filter_row" class="flex flex-col gap-2">
+    <responsive on="768-" class="flex flex-row items-center gap-2"/>
     <permissions>
       <permission>vendor-module.points.read</permission>
     </permissions>
-    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0">$t:vendor-module.admin.user_filter.points</span>
+    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 shrink-0">
+      <responsive on="768-" class="block mb-0 w-32 text-sm text-gray-600 dark:text-gray-400 shrink-0"/>
+      $t:vendor-module.admin.user_filter.points
+    </span>
     <input type="number" name="vendorPointMin" class="input w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
       <on type="change">
         <!-- 값은 URL 에 직접 싣지 않는다 — 이 모듈의 핸들러가 확장 값 배열을 갱신하고, 확장점을 연 관리자 템플릿의 검색 버튼이 ext_filters[] 로 보낸다. -->
@@ -755,7 +761,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 </extension>
 ```
 
-- 행은 평범한 유틸 클래스로 편다. 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
+- 행은 평범한 유틸 클래스로 편다. 화면 폭에 따른 배치는 Tailwind 반응형 접두(`md:flex-row` 등) 대신 `<responsive on="768-">` 구간에 그 폭의 클래스 전체를 둔다([반응형 레이아웃](../frontend/responsive-layout.md)). 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-field-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
 - 값 조립 핸들러는 모듈이 자기 네임스페이스로 등록한다(`vendor-module.setUserFilterExt` — 같은 키 교체, 빈 값 제거, `{확장id}.{키}={값}` 원소). 관리자 템플릿의 `setUserFilterExt` 는 그 템플릿 화면용이라 다른 관리자 템플릿에는 없다 — 조각이 부르면 그 템플릿에서 값이 검색에 실리지 않는다. 구현 예: `modules/_bundled/sirsoft-ecommerce/resources/js/handlers/userListFilterExtHandlers.ts`.
 - 표시값은 같은 배열(`_local.userFilterExtraQuery`)에서 되읽는다 — 새로고침·뒤로가기에서 URL 의 `ext_filters[]` 로 복원된다.
 - 코어의 필터 초기화는 이 배열을 비운다.

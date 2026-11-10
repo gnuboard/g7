@@ -346,6 +346,13 @@
                                                     "id": "social_signup_request_code",
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                            }
+                                                        }
+                                                    },
                                                     "actions": [
                                                         {
                                                             "comment": "인증번호 받기 — 진행 표시를 켜고 입력 이메일로 코어 본인인증 메일을 보낸다(이미 가입된 이메일이면 서버가 거절)",
@@ -405,7 +412,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                         "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified || !_global.socialLoginForm?.email}}"
                                                     },
                                                     "children": [
@@ -463,6 +470,13 @@
                                                     "id": "social_signup_verify_code",
                                                     "type": "basic",
                                                     "name": "Button",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                            }
+                                                        }
+                                                    },
                                                     "actions": [
                                                         {
                                                             "comment": "인증번호 확인 — 맞으면 이 이메일로만 가입할 수 있다",
@@ -511,7 +525,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                         "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.code}}"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.verify_code"
@@ -882,6 +896,13 @@
                                             "id": "social_existing_password_submit",
                                             "type": "basic",
                                             "name": "Button",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                    }
+                                                }
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "비밀번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다",
@@ -942,7 +963,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.password}}"
                                             },
                                             "text": "$t:sirsoft-social_login.existing.confirm"
@@ -972,6 +993,13 @@
                                     "id": "social_existing_request_code",
                                     "type": "basic",
                                     "name": "Button",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "인증번호 받기 — 기존 계정 이메일로 보낸다",
@@ -1029,7 +1057,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "sl:w-full sl:px-3 sl:py-3 sl:sm:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                        "className": "sl:w-full sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                         "disabled": "{{_global.socialLoginBusy}}"
                                     },
                                     "children": [
@@ -1085,6 +1113,13 @@
                                             "id": "social_existing_verify_code",
                                             "type": "basic",
                                             "name": "Button",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                    }
+                                                }
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "인증번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다",
@@ -1144,7 +1179,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.existing_code}}"
                                             },
                                             "text": "$t:sirsoft-social_login.existing.confirm"
@@ -1167,14 +1202,28 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sl:flex sl:flex-row sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl:flex sl:flex-col sl:sm:flex-row sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
+                                "className": "sl:flex sl:flex-col sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
                             },
                             "children": [
                                 {
                                     "id": "social_existing_new_account",
                                     "type": "basic",
                                     "name": "Button",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "새 계정으로 가입 — 이 이메일은 쓸 수 없으니 다른 이메일을 받는 가입 모달로 바꾼다",
@@ -1233,7 +1282,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:sm:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50",
+                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50",
                                         "disabled": "{{_global.socialLoginBusy}}"
                                     },
                                     "text": "$t:sirsoft-social_login.existing.new_account"
@@ -1241,6 +1290,13 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "연결을 그만두고 로그인 화면으로 — 가입 창과 연결 창을 모두 닫는다",
@@ -1261,7 +1317,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:sm:py-2 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
+                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
                                     },
                                     "text": "$t:common.cancel"
                                 }

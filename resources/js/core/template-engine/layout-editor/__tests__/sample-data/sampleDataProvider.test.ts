@@ -27,6 +27,10 @@ const makeSource = (overrides: Partial<DataSource>): DataSource => ({
 
 describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
   describe('1. byDataSourceId — 최우선', () => {
+    /**
+     * @scenario behavior=by_id_returns_mapped_response
+     * @effects sample_by_id_returns_mapped_response
+     */
     it('명시 매핑된 id 응답을 그대로 반환', () => {
       const customResponse = { data: [{ id: 7, title: '템플릿 명시 응답' }] };
       const { value, match } = resolveSampleData(
@@ -40,6 +44,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(match.resolvedBy).toBe<SampleMatchSource>('spec_byId');
     });
 
+    /**
+     * @scenario behavior=by_id_wins_over_endpoint_pattern
+     * @effects sample_by_id_wins_over_endpoint_pattern
+     */
     it('byEndpointPattern 동시 매칭 시에도 byDataSourceId 우선', () => {
       const idResponse = { data: ['id-source'] };
       const endpointResponse = { data: ['endpoint-source'] };
@@ -57,6 +65,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
   });
 
   describe('2. byEndpointPattern — 두 번째', () => {
+    /**
+     * @scenario behavior=endpoint_exact_match
+     * @effects sample_endpoint_exact_match
+     */
     it('정확한 endpoint 매칭', () => {
       const customResponse = { data: ['endpoint-match'] };
       const { value, match } = resolveSampleData(
@@ -70,6 +82,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(match.resolvedBy).toBe<SampleMatchSource>('spec_byEndpoint');
     });
 
+    /**
+     * @scenario behavior=endpoint_wildcard_match
+     * @effects sample_endpoint_wildcard_match
+     */
     it('와일드카드 패턴 매칭 (`*`)', () => {
       const customResponse = { data: ['wildcard'] };
       const { value, match } = resolveSampleData(
@@ -89,6 +105,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
     // 도메인-중립 빈 응답(`{}`)으로 디그레이드. (회귀 가드 — 키워드 프리셋 부활 방지)
     const keywordSources = ['recent-posts', 'main-menu', 'post-comments', 'user-list'];
     for (const id of keywordSources) {
+      /**
+       * @scenario behavior=no_spec_degrades_empty
+       * @effects sample_no_spec_degrades_empty
+       */
       it(`"${id}" 는 spec 없으면 빈 응답으로 디그레이드 (도메인 프리셋 미부활)`, () => {
         const { value, match } = resolveSampleData(makeSource({ id }));
         expect(value).toEqual({});
@@ -98,6 +118,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       });
     }
 
+    /**
+     * @scenario behavior=no_spec_degrades_empty
+     * @effects sample_no_spec_degrades_empty
+     */
     it('endpoint 키워드(board 등) 도 spec 없으면 빈 응답', () => {
       const { value, match } = resolveSampleData(
         makeSource({ id: 'list-items', endpoint: '/api/boards' }),
@@ -108,13 +132,16 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
   });
 
   describe('4. fallback — 데이터소스 자체의 fallback.data', () => {
+    /**
+     * @scenario behavior=fallback_data_wrapped
+     * @effects sample_fallback_data_wrapped
+     */
     it('fallback.data 가 있으면 그 값을 data 배열로 감싸 반환', () => {
       const fallbackArr = [{ id: 1, label: 'fallback item' }];
       const { value, match } = resolveSampleData(
         makeSource({
           id: 'no-keyword-match',
           endpoint: '/api/nothing-recognizable',
-          // @ts-expect-error — 런타임에 fallback 필드 존재
           fallback: { data: fallbackArr },
         }),
       );
@@ -125,6 +152,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
   });
 
   describe('5. inferred — 마지막 도메인-중립 빈 응답', () => {
+    /**
+     * @scenario behavior=no_match_returns_empty_object
+     * @effects sample_no_match_returns_empty_object
+     */
     it('아무 것도 매칭되지 않으면 빈 객체(`{}`) 반환', () => {
       const { value, match } = resolveSampleData(
         makeSource({ id: 'completely-unknown', endpoint: '/api/xyz' }),
@@ -146,6 +177,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       byDataSourceId: { settings: { data: { flat: 'fallback' } } },
     };
 
+    /**
+     * @scenario behavior=source_scoped_resolution
+     * @effects sample_source_scoped_resolution
+     */
     it('__source(plugin) 데이터소스는 자기 출처 샘플로 해소', () => {
       const { value, match } = resolveSampleData(
         makeSource({ id: 'settings', __source: { kind: 'plugin', identifier: 'sirsoft-gdpr' } } as Partial<DataSource>),
@@ -156,6 +191,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(match.sourceKey).toBe('plugin:sirsoft-gdpr');
     });
 
+    /**
+     * @scenario behavior=source_scoped_resolution
+     * @effects sample_source_scoped_resolution
+     */
     it('__source(module) 데이터소스는 자기 출처 샘플로 해소', () => {
       const { value, match } = resolveSampleData(
         makeSource({ id: 'settings', __source: { kind: 'module', identifier: 'sirsoft-ecommerce' } } as Partial<DataSource>),
@@ -165,6 +204,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(match.sourceKey).toBe('module:sirsoft-ecommerce');
     });
 
+    /**
+     * @scenario behavior=source_scoped_resolution
+     * @effects sample_source_scoped_resolution
+     */
     it('__source(template) 은 template 키로 해소', () => {
       const { value, match } = resolveSampleData(
         makeSource({ id: 'settings', __source: { kind: 'template', identifier: 'sirsoft-admin_basic' } } as Partial<DataSource>),
@@ -174,12 +217,20 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(match.sourceKey).toBe('template');
     });
 
+    /**
+     * @scenario behavior=source_missing_defaults_to_template
+     * @effects sample_source_missing_defaults_to_template
+     */
     it('__source 부재 시 template 키로 귀속 → bySource.template 해소', () => {
       const { value, match } = resolveSampleData(makeSource({ id: 'settings' }), spec);
       expect(match.sourceKey).toBe('template');
       expect(value).toEqual({ data: { site_name: '코어' } });
     });
 
+    /**
+     * @scenario behavior=source_missing_entry_falls_back_flat
+     * @effects sample_source_missing_entry_falls_back_flat
+     */
     it('bySource 에 해당 출처/id 가 없으면 평탄 byDataSourceId 로 폴백 (sourceKey 미설정)', () => {
       const { value, match } = resolveSampleData(
         makeSource({ id: 'settings', __source: { kind: 'plugin', identifier: 'unknown-plugin' } } as Partial<DataSource>),
@@ -192,12 +243,20 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
   });
 
   describe('createSampleDataProvider — DataSourceManager 인터페이스 호환', () => {
+    /**
+     * @scenario behavior=has_always_true
+     * @effects sample_has_always_true
+     */
     it('has() 는 항상 true 반환 (빈 응답 폴백 보장)', () => {
       const provider = createSampleDataProvider({});
       expect(provider.has('any-id')).toBe(true);
       expect(provider.has('')).toBe(true);
     });
 
+    /**
+     * @scenario behavior=on_match_called_with_meta
+     * @effects sample_on_match_called_with_meta
+     */
     it('resolve() 호출 시 onMatch 콜백이 매칭 메타와 함께 호출됨', () => {
       const onMatch = vi.fn();
       const provider = createSampleDataProvider({ onMatch });
@@ -210,6 +269,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       });
     });
 
+    /**
+     * @scenario behavior=on_match_throw_degrades_safely
+     * @effects sample_on_match_throw_degrades_safely
+     */
     it('onMatch 가 throw 해도 resolve 는 정상 값을 반환 (degrade safety)', () => {
       const provider = createSampleDataProvider({
         onMatch: () => {
@@ -223,6 +286,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
   });
 
   describe('페이지 상태 sampleData 오버라이드 ', () => {
+    /**
+     * @scenario behavior=override_spec_replaces_base
+     * @effects sample_override_spec_replaces_base
+     */
     it('overrideSpec 매칭 시 base spec 보다 우선해 통째 교체한다', () => {
       const provider = createSampleDataProvider({
         spec: { byDataSourceId: { me: { data: { name: '기본 사용자' } } } },
@@ -231,6 +298,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(provider.resolve(makeSource({ id: 'me' }))).toEqual({ data: null });
     });
 
+    /**
+     * @scenario behavior=override_unmatched_falls_back_base
+     * @effects sample_override_unmatched_falls_back_base
+     */
     it('overrideSpec 미매칭 데이터소스는 base spec 으로 폴백한다', () => {
       const provider = createSampleDataProvider({
         spec: { byDataSourceId: { me: { data: { name: '기본' } }, posts: { data: [1, 2] } } },
@@ -240,6 +311,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(provider.resolve(makeSource({ id: 'posts' }))).toEqual({ data: [1, 2] });
     });
 
+    /**
+     * @scenario behavior=override_explicit_stages_only
+     * @effects sample_override_explicit_stages_only
+     */
     it('overrideSpec 은 명시 단계(0/1/2)만 — 미매칭이면 base 의 inferred 빈 응답으로 폴백', () => {
       const provider = createSampleDataProvider({
         spec: undefined,
@@ -248,6 +323,10 @@ describe('sampleDataProvider — 우선순위 매트릭스 ', () => {
       expect(provider.resolve(makeSource({ id: 'other' }))).toEqual({});
     });
 
+    /**
+     * @scenario behavior=override_absent_keeps_behavior
+     * @effects sample_override_absent_keeps_behavior
+     */
     it('overrideSpec 미전달 시 기존 동작과 동일 (회귀 가드)', () => {
       const provider = createSampleDataProvider({
         spec: { byDataSourceId: { me: { data: { name: '기본' } } } },

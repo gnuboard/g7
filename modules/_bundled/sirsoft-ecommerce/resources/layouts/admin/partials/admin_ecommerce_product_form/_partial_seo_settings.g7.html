@@ -84,7 +84,7 @@
           <span class="ecommerce-text-body ecommerce:font-medium">$t:sirsoft-ecommerce.admin.product.seo.preview</span>
         </div>
         <div class="ecommerce:p-4 ecommerce:bg-white ecommerce:dark:bg-gray-900 ecommerce:flex ecommerce:gap-4">
-          <img data-ref="seo_preview_image" data-if="{{!!_local.form.images?.[0]?.download_url}}" src="{{_local.form.images?.[0]?.download_url}}" alt="OG Image" class="ecommerce:w-20 ecommerce:h-20 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0"/>
+          <img data-ref="seo_preview_image" data-if="{{!!_local.form.images?.[0]?.download_url}}" src="{{_local.form.images?.[0]?.download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="$t:sirsoft-ecommerce.admin.product.seo.preview_image_alt" class="ecommerce:w-20 ecommerce:h-20 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0"/>
           <div class="ecommerce:flex-1 ecommerce:min-w-0">
             <div class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:text-lg ecommerce:hover:underline ecommerce:cursor-pointer ecommerce:truncate">{{$localized(_local.form.meta_title) || $localized(_local.form.name) || '$t:sirsoft-ecommerce.admin.product.seo.untitled'}}</div>
             <div class="ecommerce:text-green-700 ecommerce:dark:text-green-500 ecommerce:text-sm ecommerce:mt-1 ecommerce:truncate">{{_global.site_url ?? 'https://example.com'}}/products/{{_local.form.product_code || 'product-code'}}</div>

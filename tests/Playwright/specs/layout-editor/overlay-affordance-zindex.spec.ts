@@ -13,11 +13,14 @@
  * ⓘ 메뉴 오픈·드래그 시작 보존을 검증한다.
  *
  * 효과 요약(마커 아님 — 평문): overlay_affordance_above_drag_handle_zindex, overlay_affordance_click_not_intercepted_by_drag_handle, drag_handle_depth_clamped_below_affordance_band, drag_initiation_preserved_on_element_body_after_affordance_zindex_fix.
- *
- * @scenario insertion_path=context_plus_button, selected_node_state=basic_selected
+ * 조합(insertion_path=context_plus_button, selected_node_state=basic_selected) 표식은 ⓘ 메뉴 시험 앞에 있다.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
+
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+test.describe.configure({ timeout: 90_000 });
 
 /** 어포던스 밴드 z-index (overlayZIndex.OVERLAY_AFFORDANCE 와 동기). */
 const OVERLAY_AFFORDANCE = 120;
@@ -26,7 +29,8 @@ const OVERLAY_AFFORDANCE = 120;
 async function openEditor(page: Page): Promise<void> {
   await page.goto('/admin/layout-editor/sirsoft-basic?route=%2F');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForSelector('[data-testid^="g7le-dnd-handle-"]', { timeout: 30_000 });
+  await page.waitForSelector('[data-testid^="g7le-dnd-handle-"]', { timeout: 60_000 });
+  await waitForEditorScrollSettled(page);
 }
 
 /**
@@ -34,35 +38,35 @@ async function openEditor(page: Page): Promise<void> {
  * @return 선택된 노드 path
  */
 async function selectModerateElement(page: Page): Promise<string> {
+  // 후보는 미리보기 frame 안 노드에서 크기로만 고른다(화면 안 여부는 보지 않는다). 종전에는 「지금 화면 안」 노드만
+  // 찾고 없으면 `els[5]` 로 떨어졌는데, 편집기를 열자마자 문서가 움직이면(미리보기 자동 포커스, #869 λ) 화면 안에
+  // 조건 맞는 노드가 없어 크기 0 인 숨은 노드를 클릭해 선택이 되지 않았다(C4). 고른 뒤 화면 가운데로 즉시 스크롤한다 —
+  // 오버레이 어포던스(박스 ±30px)가 화면 안에 들어오도록 크기 상한은 화면보다 작게 둔다.
   const path = await page.evaluate(() => {
-    const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const els = Array.from(document.querySelectorAll('[data-editor-path]')) as HTMLElement[];
-    // 적당한 크기 + **뷰포트 안에 여유 있게** 들어오는 요소만 선택. 오버레이 어포던스 버튼은
-    // 박스 가장자리(±12~20px) 에 배치되므로, 박스가 뷰포트 경계에 너무 붙으면 버튼 좌표가
-    // 화면 밖으로 나가 elementFromPoint 가 null 을 반환한다(드래그 핸들 가로채기와 무관한
-    // 좌표 artifact). 가장자리 여유(margin 32px)를 둬 모든 +/ⓘ 버튼 좌표가 뷰포트 안에 오게 한다.
-    const M = 32;
-    const target =
-      els.find((e) => {
-        const r = e.getBoundingClientRect();
-        return (
-          r.width > 150 &&
-          r.width < 500 &&
-          r.height > 80 &&
-          r.height < 400 &&
-          r.left > M &&
-          r.top > M &&
-          r.right < vw - M &&
-          r.bottom < vh - M
-        );
-      }) || els[5];
-    target?.scrollIntoView({ block: 'center', inline: 'center' });
-    target?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    return target?.getAttribute('data-editor-path') ?? '';
+    const els = Array.from(
+      document.querySelectorAll('[data-testid="g7le-preview-frame"] [data-editor-path]'),
+    ) as HTMLElement[];
+    const target = els.find((e) => {
+      const r = e.getBoundingClientRect();
+      return r.width > 150 && r.width < 500 && r.height > 80 && r.height < Math.min(400, vh - 160);
+    });
+    if (!target) return '';
+    target.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior });
+    return target.getAttribute('data-editor-path') ?? '';
   });
+  expect(path, '크기 조건에 맞는 미리보기 노드를 찾아야 함').not.toBe('');
+  await waitForEditorScrollSettled(page);
+  await page.evaluate((p) => {
+    document
+      .querySelector(`[data-editor-path="${p}"]`)
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  }, path);
   await page.waitForSelector('[data-testid="g7le-overlay-selected"]', { timeout: 5_000 });
   await page.waitForSelector('[data-testid="g7le-overlay-info-button"]', { timeout: 5_000 });
+  // scrollIntoView 가 부드러운 스크롤이면 ⓘ 좌표가 한동안 움직인다 — 멈춘 뒤 재야 클릭이 ⓘ 에 닿고, 열린 메뉴가
+  // 포인터 밑을 지나가며 mouseleave 로 닫히지 않는다(λ 실측 C4).
+  await waitForEditorScrollSettled(page);
   return path;
 }
 

@@ -433,6 +433,8 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{_global.settings?.general?.site_logo_url}}",
+                                                "thumbPreset": "md",
+                                                "loading": "eager",
                                                 "alt": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                                                 "className": "h-8 w-auto max-w-full object-contain object-left"
                                             }
@@ -462,6 +464,8 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{_global.templateSettings?.branding?.logo_dark_url}}",
+                                                "thumbPreset": "md",
+                                                "loading": "eager",
                                                 "alt": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                                                 "className": "h-8 w-auto max-w-full object-contain object-left"
                                             }
@@ -2892,7 +2896,7 @@
                     ],
                     "props": {
                         "registrationEnabled": "{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}",
-                        "logo": "{{_global.settings?.general?.site_logo_url}}",
+                        "logo": "{{_global.settings?.general?.site_logo_url | thumb('md')}}",
                         "logoDark": "{{_global.templateSettings?.branding?.logo_dark_url ?? ''}}",
                         "showThemeToggle": "{{_global.templateSettings?.header?.show_theme_toggle ?? true}}",
                         "menu": "{{_computed.siteMenu}}",

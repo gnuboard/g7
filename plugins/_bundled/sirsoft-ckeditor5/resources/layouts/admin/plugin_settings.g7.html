@@ -23,7 +23,9 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="ckeditor-admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="ckeditor:p-4 ckeditor:min-h-screen ckeditor:bg-gray-50 ckeditor:dark:bg-gray-900">
+      <responsive on="640-1023" class="ckeditor:p-6 ckeditor:min-h-screen ckeditor:bg-gray-50 ckeditor:dark:bg-gray-900"/>
+      <responsive on="1024-" class="ckeditor:p-8 ckeditor:min-h-screen ckeditor:bg-gray-50 ckeditor:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="ckeditor-alert-warning ckeditor:mt-6">
         <icon name="lock" class="ckeditor:text-xl ckeditor:leading-none ckeditor:text-amber-600 ckeditor:dark:text-amber-400 ckeditor:flex-shrink-0"/>
@@ -51,12 +53,15 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
           <h3 class="ckeditor-section-heading-md">$t:sirsoft-ckeditor5.settings.section_toolbar</h3>
         </div>
         <div data-ref="section_toolbar_fields" class="ckeditor:p-6 ckeditor:space-y-6">
-          <div data-ref="field_toolbar" class="ckeditor-grid-3col-responsive">
-            <div class="ckeditor:lg:col-span-1">
+          <div data-ref="field_toolbar" class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start">
+            <responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-1"/>
               <label class="ckeditor-form-label">$t:sirsoft-ckeditor5.settings.fields.toolbar.label</label>
               <p class="ckeditor-form-hint">$t:sirsoft-ckeditor5.settings.fields.toolbar.hint</p>
             </div>
-            <div class="ckeditor:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-2"/>
               <select name="toolbar" aria-label="$t:sirsoft-ckeditor5.settings.fields.toolbar.label" class="ckeditor:w-full" disabled="{{_computed.isPluginReadOnly}}">
                 <options>
                   <option value="minimal">$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal</option>
@@ -66,12 +71,15 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               </select>
             </div>
           </div>
-          <div data-ref="field_editor_height" class="ckeditor-grid-3col-responsive">
-            <div class="ckeditor:lg:col-span-1">
+          <div data-ref="field_editor_height" class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start">
+            <responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-1"/>
               <label class="ckeditor-form-label">$t:sirsoft-ckeditor5.settings.fields.editor_height.label</label>
               <p class="ckeditor-form-hint">$t:sirsoft-ckeditor5.settings.fields.editor_height.hint</p>
             </div>
-            <div class="ckeditor:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-2"/>
               <input type="number" name="editorHeight" class="ckeditor:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -82,30 +90,39 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
           <h3 class="ckeditor-section-heading-md">$t:sirsoft-ckeditor5.settings.section_image</h3>
         </div>
         <div data-ref="section_image_fields" class="ckeditor:p-6 ckeditor:space-y-6">
-          <div data-ref="field_image_upload" class="ckeditor-grid-3col-responsive">
-            <div class="ckeditor:lg:col-span-1">
+          <div data-ref="field_image_upload" class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start">
+            <responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-1"/>
               <label class="ckeditor-form-label">$t:sirsoft-ckeditor5.settings.fields.image_upload.label</label>
               <p class="ckeditor-form-hint">$t:sirsoft-ckeditor5.settings.fields.image_upload.hint</p>
             </div>
-            <div class="ckeditor:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-2"/>
               <toggle data-type="composite" name="imageUpload" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_image_max_size" class="ckeditor-grid-3col-responsive">
-            <div class="ckeditor:lg:col-span-1">
+          <div data-ref="field_image_max_size" class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start">
+            <responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-1"/>
               <label class="ckeditor-form-label">$t:sirsoft-ckeditor5.settings.fields.image_max_size.label</label>
               <p class="ckeditor-form-hint">$t:sirsoft-ckeditor5.settings.fields.image_max_size.hint</p>
             </div>
-            <div class="ckeditor:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-2"/>
               <input type="number" name="imageMaxSizeMb" class="ckeditor:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_public_asset_disk" class="ckeditor-grid-3col-responsive">
-            <div class="ckeditor:lg:col-span-1">
+          <div data-ref="field_public_asset_disk" class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start">
+            <responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-1"/>
               <label class="ckeditor-form-label">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.label</label>
               <p class="ckeditor-form-hint">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.hint</p>
             </div>
-            <div class="ckeditor:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-2"/>
               <select name="public_asset_disk" class="ckeditor:w-full" options="{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}" disabled="{{_computed.isPluginReadOnly}}"/>
               <!-- 쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다 -->
               <p data-if="{{!!_local.form?.public_asset_disk_unavailable}}" role="status" class="ckeditor:text-xs ckeditor:text-yellow-700 ckeditor:dark:text-yellow-300 ckeditor:mt-2">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}</p>
@@ -118,21 +135,27 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
           <h3 class="ckeditor-section-heading-md">$t:sirsoft-ckeditor5.settings.section_cleanup</h3>
         </div>
         <div data-ref="section_cleanup_fields" class="ckeditor:p-6 ckeditor:space-y-6">
-          <div data-ref="field_unused_image_cleanup" class="ckeditor-grid-3col-responsive">
-            <div class="ckeditor:lg:col-span-1">
+          <div data-ref="field_unused_image_cleanup" class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start">
+            <responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-1"/>
               <label class="ckeditor-form-label">$t:sirsoft-ckeditor5.settings.cleanup.toggle_label</label>
               <p class="ckeditor-form-hint">$t:sirsoft-ckeditor5.settings.cleanup.toggle_hint</p>
             </div>
-            <div class="ckeditor:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-2"/>
               <toggle data-type="composite" name="unusedImageCleanup" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_unused_image_retention_days" class="ckeditor-grid-3col-responsive">
-            <div class="ckeditor:lg:col-span-1">
+          <div data-ref="field_unused_image_retention_days" class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start">
+            <responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-1"/>
               <label class="ckeditor-form-label">$t:sirsoft-ckeditor5.settings.cleanup.retention_label</label>
               <p class="ckeditor-form-hint">$t:sirsoft-ckeditor5.settings.cleanup.retention_hint</p>
             </div>
-            <div class="ckeditor:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="ckeditor:col-span-2"/>
               <input type="number" name="unusedImageRetentionDays" :min="1" class="ckeditor:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>

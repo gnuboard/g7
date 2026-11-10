@@ -1844,6 +1844,52 @@ return [
             'done' => '배송정책 더미 데이터 :count건이 성공적으로 생성되었습니다.',
             'purged' => '기존 배송정책 :count건을 삭제했습니다.',
         ],
+        // 이미지 썸네일 실측 시더 (Sample\ThumbnailMeasureSeeder·ThumbnailMeasureCleanupSeeder)
+        'thumbnail_measure' => [
+            'start' => '이커머스 썸네일 실측 데이터 생성을 시작합니다.',
+            'done' => '이커머스 썸네일 실측 데이터 생성을 마쳤습니다.',
+            'cleanup_start' => '이커머스 썸네일 실측 데이터 정리를 시작합니다.',
+            'cleanup_done' => '이커머스 썸네일 실측 데이터 정리를 마쳤습니다.',
+            'previous_removed' => '이전 실행의 이커머스 실측 데이터를 지웠습니다: :counts',
+            'order_calculation_dropped' => '주문 금액 계산 결과에서 실측 상품 옵션이 빠졌습니다.',
+            'data_title' => '이커머스 실측 데이터',
+            'data_headers' => [
+                'kind' => '구분',
+                'owner_id' => '소유 ID',
+                'record' => '이미지 ID / 번호',
+                'hash' => '해시',
+                'mime' => 'MIME',
+                'size' => '크기',
+                'url' => '주소',
+            ],
+            'kinds' => [
+                'category_banner' => '카테고리 배너',
+                'product_a_image' => '상품 A 이미지',
+                'product_b_image' => '상품 B 이미지',
+                'order_confirmed' => '주문 (구매확정)',
+                'review_visible_image' => '노출 리뷰 이미지',
+                'review_hidden_image' => '숨김 리뷰 이미지',
+                'order_delivered' => '주문 (배송완료)',
+                'return_claim' => '반품 신청',
+                'claim_image' => '클레임 이미지',
+            ],
+            'category' => '카테고리: :path (ID :id, 배너 이미지 해시 :hash)',
+            'products' => '상품: :a_path (A, ID :a_id), :b_path (B, ID :b_id)',
+            'cleanup_title' => '이커머스 실측 데이터 정리',
+            'cleanup_headers' => [
+                'orders' => '주문',
+                'reviews' => '리뷰',
+                'review_images' => '리뷰 이미지',
+                'claims' => '클레임',
+                'claim_images' => '클레임 이미지',
+                'products' => '상품',
+                'product_images' => '상품 이미지',
+                'categories' => '카테고리',
+                'category_images' => '카테고리 이미지',
+                'shipping_policies' => '배송정책',
+                'activity_logs' => '활동 로그',
+            ],
+        ],
     ],
     // 내보내기(#787)
     'export' => [
@@ -1860,5 +1906,12 @@ return [
     ],
     'lifecycle' => [
         'purge_failed' => '내보낸 파일을 지우지 못해 제거를 멈췄습니다. 저장소의 권한·상태를 확인한 뒤 다시 제거해 주세요(개인정보가 담길 수 있는 파일이라 남긴 채 제거하지 않습니다).',
+    ],
+    // 환경설정 > 업로드 「기존 이미지 썸네일 만들기」의 원본 종류 이름
+    'thumbnail_sources' => [
+        'product_image' => '상품 이미지',
+        'category_image' => '카테고리 이미지',
+        'review_image' => '리뷰 이미지',
+        'claim_image' => '교환/반품/환불 첨부 이미지',
     ],
 ];

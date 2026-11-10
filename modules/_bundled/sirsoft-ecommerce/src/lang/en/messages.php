@@ -1855,6 +1855,52 @@ return [
             'done' => 'Created :count shipping policy dummy records successfully.',
             'purged' => 'Deleted :count existing shipping policies.',
         ],
+        // Image thumbnail measure seeders (Sample\ThumbnailMeasureSeeder, ThumbnailMeasureCleanupSeeder)
+        'thumbnail_measure' => [
+            'start' => 'Creating ecommerce thumbnail measure data.',
+            'done' => 'Ecommerce thumbnail measure data created.',
+            'cleanup_start' => 'Cleaning up ecommerce thumbnail measure data.',
+            'cleanup_done' => 'Ecommerce thumbnail measure data cleaned up.',
+            'previous_removed' => 'Removed ecommerce measure data from the previous run: :counts',
+            'order_calculation_dropped' => 'The order calculation dropped a measure product option.',
+            'data_title' => 'Ecommerce measure data',
+            'data_headers' => [
+                'kind' => 'Kind',
+                'owner_id' => 'Owner ID',
+                'record' => 'Image ID / number',
+                'hash' => 'Hash',
+                'mime' => 'MIME',
+                'size' => 'Size',
+                'url' => 'URL',
+            ],
+            'kinds' => [
+                'category_banner' => 'Category banner',
+                'product_a_image' => 'Product A image',
+                'product_b_image' => 'Product B image',
+                'order_confirmed' => 'Order (purchase confirmed)',
+                'review_visible_image' => 'Visible review image',
+                'review_hidden_image' => 'Hidden review image',
+                'order_delivered' => 'Order (delivered)',
+                'return_claim' => 'Return request',
+                'claim_image' => 'Claim image',
+            ],
+            'category' => 'Category: :path (ID :id, banner image hash :hash)',
+            'products' => 'Products: :a_path (A, ID :a_id), :b_path (B, ID :b_id)',
+            'cleanup_title' => 'Ecommerce measure data cleanup',
+            'cleanup_headers' => [
+                'orders' => 'Orders',
+                'reviews' => 'Reviews',
+                'review_images' => 'Review images',
+                'claims' => 'Claims',
+                'claim_images' => 'Claim images',
+                'products' => 'Products',
+                'product_images' => 'Product images',
+                'categories' => 'Categories',
+                'category_images' => 'Category images',
+                'shipping_policies' => 'Shipping policies',
+                'activity_logs' => 'Activity logs',
+            ],
+        ],
     ],
     // 내보내기(#787)
     'export' => [
@@ -1871,5 +1917,12 @@ return [
     ],
     'lifecycle' => [
         'purge_failed' => 'Removal stopped because the exported files could not be deleted. Check the storage permissions and status, then remove the module again (files that may hold personal data are not left behind).',
+    ],
+    // Source names in Settings > Upload "Create thumbnails for existing images"
+    'thumbnail_sources' => [
+        'product_image' => 'Product images',
+        'category_image' => 'Category images',
+        'review_image' => 'Review images',
+        'claim_image' => 'Exchange/return/refund attachments',
     ],
 ];

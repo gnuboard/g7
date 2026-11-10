@@ -193,7 +193,7 @@
                     "forceDevice": {
                         "type": "'pc' | 'mobile'",
                         "required": false,
-                        "description": "미리보기용 기기 고정 — 지정하면 화면 폭과 관계없이 그 기기 이미지를 쓴다"
+                        "description": "미리보기용 기기 고정 — 지정하면 화면 폭과 관계없이 그 기기 이미지·영상·모양을 쓴다(mobile 이면 루트에 `hs-slider--mobile`· `hs-slider--portable`, pc 면 둘 다 없음). 없으면 엔진 반응형 폭으로 판정한다."
                     },
                     "contentClass": {
                         "type": "string",

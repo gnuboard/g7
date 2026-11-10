@@ -91,6 +91,56 @@ const positionClassMap: Record<ToastPosition, string> = {
 const HIDE_ANIMATION_MS = 300;
 
 /**
+ * 알림을 닫은 뒤 포커스를 돌릴 본문 시작점 — 두 기반 레이아웃은 본문 칸을 `#main_content` 로 그린다.
+ * 앞의 표지(main, role=main)가 있으면 그것이 먼저다.
+ */
+const FOCUS_LANDMARK_SELECTORS = ['main', '[role="main"]', '#main_content', 'h1'];
+
+/** 알림 뿌리 요소 표지 — 포커스가 알림 안에 있는지 가를 때 쓴다 */
+const TOAST_ROOT_ATTR = 'data-g7-toast-id';
+
+/**
+ * 요소가 지금 포커스를 받을 수 있는 자리에 있는가 — 문서에 붙어 있고, 잠기지 않았고, 숨김이나 비활성 조상 아래가 아니다.
+ *
+ * @param el 검사할 요소
+ * @returns 받을 수 있으면 true
+ */
+const canReceiveFocus = (el: HTMLElement | null | undefined): el is HTMLElement => {
+  if (!el || !el.isConnected || (el as HTMLButtonElement).disabled) return false;
+  if (el.closest(`[${TOAST_ROOT_ATTR}]`)) return false;
+  for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+    if (node.hidden || node.hasAttribute('inert') || node.getAttribute('aria-hidden') === 'true') return false;
+    const style = window.getComputedStyle(node);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+  }
+  return true;
+};
+
+/**
+ * 알림을 닫은 뒤 포커스를 돌린다 — 알림 직전 요소가 쓸 수 있으면 그리로, 아니면 본문 시작점으로(#869 키보드 접근).
+ * 본문 시작점이 원래 포커스를 받지 않는 요소면 `tabIndex=-1` 을 잠시 주고, 포커스가 떠나면 거둔다.
+ *
+ * @param previous 알림이 뜨기 직전에 포커스가 있던 요소
+ */
+const returnFocusAfterToast = (previous: HTMLElement | undefined): void => {
+  if (canReceiveFocus(previous)) {
+    previous.focus();
+    return;
+  }
+  for (const selector of FOCUS_LANDMARK_SELECTORS) {
+    const landmark = document.querySelector<HTMLElement>(selector);
+    if (!landmark || !canReceiveFocus(landmark)) continue;
+    if (landmark.tabIndex < 0 && !landmark.hasAttribute('tabindex')) {
+      landmark.setAttribute('tabindex', '-1');
+      landmark.addEventListener('blur', () => landmark.removeAttribute('tabindex'), { once: true });
+    }
+    landmark.focus();
+    return;
+  }
+};
+
+
+/**
  * 항목이 숨기 시작할 시각을 구한다.
  *
  * 만든 시각(`createdAt`)이 있으면 그 시각부터 센다. 로그인 화면처럼 베이스 레이아웃이 다른 화면으로 넘어가면 Toast 가
@@ -161,6 +211,9 @@ export const Toast: React.FC<ToastProps> = ({
   const trackedRef = useRef<Map<string | number, { hideAt: number; timer: ReturnType<typeof setTimeout> | null }>>(new Map());
   // 숨기기를 시작했거나(닫기·시간 만료) 표시 시간이 이미 지나 상태에서 빼기를 요청한 항목
   const removedRef = useRef<Set<string | number>>(new Set());
+  // 알림마다 뜨기 직전에 포커스가 있던 요소와 그 알림의 뿌리 요소 — 닫을 때 포커스를 돌린다(#869 키보드 접근)
+  const previousFocusRef = useRef<Map<string | number, HTMLElement>>(new Map());
+  const itemRootsRef = useRef<Map<string | number, HTMLElement | null>>(new Map());
 
   // 전역 상태에서 항목 제거
   const removeFromState = useCallback((id: string | number) => {
@@ -190,6 +243,14 @@ export const Toast: React.FC<ToastProps> = ({
     if (removedRef.current.has(id)) return;
     removedRef.current.add(id);
 
+    // 닫는 순간 포커스가 이 알림 안에 있을 때만 돌린다 — 사용자가 이미 다른 곳으로 옮겼으면 그대로 둔다
+    const root = itemRootsRef.current.get(id);
+    const active = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+    if (root && active && root.contains(active)) {
+      returnFocusAfterToast(previousFocusRef.current.get(id));
+    }
+    previousFocusRef.current.delete(id);
+
     // 먼저 숨김 애니메이션 시작
     setVisibleToasts(prev => {
       const next = new Map(prev);
@@ -211,6 +272,8 @@ export const Toast: React.FC<ToastProps> = ({
       if (present.has(id)) return;
       if (entry.timer) clearTimeout(entry.timer);
       trackedRef.current.delete(id);
+      previousFocusRef.current.delete(id);
+      itemRootsRef.current.delete(id);
     });
     removedRef.current.forEach(id => {
       if (!present.has(id)) removedRef.current.delete(id);
@@ -236,6 +299,14 @@ export const Toast: React.FC<ToastProps> = ({
         : null;
       trackedRef.current.set(toast.id, { hideAt, timer });
       shown.push(toast.id);
+
+      // 뜨기 직전 포커스를 기억한다 — 다른 알림 안에 있었으면 그 알림이 기억한 자리를 이어받는다
+      const active = document.activeElement as HTMLElement | null;
+      const inToast = active?.closest(`[${TOAST_ROOT_ATTR}]`)?.getAttribute(TOAST_ROOT_ATTR);
+      const previous = inToast !== undefined && inToast !== null
+        ? [...previousFocusRef.current.entries()].find(([key]) => String(key) === inToast)?.[1]
+        : active && active !== document.body ? active : undefined;
+      if (previous) previousFocusRef.current.set(toast.id, previous);
     });
 
     if (shown.length > 0) {
@@ -289,6 +360,9 @@ export const Toast: React.FC<ToastProps> = ({
           position={position}
           isVisible={visibleToasts.get(toast.id) ?? true}
           onClose={() => handleRemove(toast.id)}
+          rootRef={(el: HTMLElement | null) => {
+            itemRootsRef.current.set(toast.id, el);
+          }}
         />
       ))}
     </Div>
@@ -300,9 +374,11 @@ interface ToastItemComponentProps {
   position: ToastPosition;
   isVisible: boolean;
   onClose: () => void;
+  /** 알림 뿌리 요소를 받는 자리 — 포커스가 이 알림 안에 있는지 가른다 */
+  rootRef?: (el: HTMLElement | null) => void;
 }
 
-const ToastItemComponent: React.FC<ToastItemComponentProps> = ({ toast, position, isVisible, onClose }) => {
+const ToastItemComponent: React.FC<ToastItemComponentProps> = ({ toast, position, isVisible, onClose, rootRef }) => {
   const typeStyle = typeStyleMap[toast.type] || typeStyleMap.info;
 
   // 아이콘 결정: 커스텀 아이콘 > 타입별 기본 아이콘
@@ -323,6 +399,8 @@ const ToastItemComponent: React.FC<ToastItemComponentProps> = ({ toast, position
         ${isVisible ? 'opacity-100 translate-y-0' : `opacity-0 ${hideTranslate}`}
       `}
       role="alert"
+      ref={rootRef}
+      {...{ [TOAST_ROOT_ATTR]: String(toast.id) }}
     >
       <Icon
         name={iconName}

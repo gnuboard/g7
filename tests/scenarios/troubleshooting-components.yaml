@@ -1,0 +1,57 @@
+feature: 트러블슈팅 회귀 — 컴포넌트(responsive 스코프, DataGrid, Form, Select, Icon, iteration, isolated 스코프, bindingType, 렌더 구조, 슬롯 hook 순서, cellChildren 번역과 파이프)
+
+description: |
+  troubleshooting-components.test.ts 의 해결된 트러블슈팅 사례를 잠그는 회귀 시험이다.
+  사례마다 원인이 달라 사례끼리 곱할 입력 축이 없다. 축 case 는 문서의 사례(시험 파일의 가장 안쪽 describe) 하나씩이고,
+  효과는 그 사례가 지키는 해결 성질 하나씩이다(같은 사례의 시험 여럿은 같은 칸과 같은 효과를 서로 다른 각도로 잠근다).
+
+axes:
+  case: [responsive_scope_boundary, datagrid_response_path, expand_children_row_context, datagrid_event_handler, expand_context_object_fallback, dynamic_column_uncheck, column_width, form_track_changes, form_input_lag, sortable_form_binding, datakey_radio_checkbox_value, error_data_empty, form_button_submit, parent_click_checkbox_lag, partial_props_binding, route_identifier, select_value_type, select_initial_all, icon_size_class, iteration_item_var, iteration_dynamic_child_key, modals_object_format, handler_as_function_call, isolated_scope_fallback, isolated_scope_id_collision, binding_type_checked, binding_type_checkable, binding_type_unset, board_checkbox_input, non_boolean_saved_value, deep_merge_null_default, auto_binding_boolean_stringify, render_tree_consistency, spa_datagrid_remount_key, extends_base_remount, slot_hook_order, cellchildren_translation_token, file_uploader_blob_stale, cellchildren_pipe_routing]
+
+effects:
+  - responsive_scope_matches_width_range
+  - datagrid_data_uses_nested_response_path
+  - expand_children_reads_row_context
+  - datagrid_events_use_actions_array
+  - object_fallback_breaks_single_binding_match
+  - visible_columns_change_applies_immediately
+  - column_width_needs_min_max
+  - track_changes_sets_has_changes
+  - debounce_limits_state_updates
+  - sortable_clears_parent_form_context
+  - explicit_setstate_disables_auto_binding
+  - api_error_lives_in_error_errors
+  - form_button_declares_type_button
+  - checkbox_toggle_uses_label_and_change
+  - partial_references_data_source_directly
+  - route_exposes_dynamic_params
+  - select_value_type_matches_options
+  - select_matches_null_and_empty_string
+  - icon_uses_size_prop_or_text_class
+  - iteration_item_var_resolves_item
+  - iteration_items_have_unique_keys
+  - modals_must_be_array
+  - handlers_defined_as_actions_array
+  - isolated_state_requires_scope_id
+  - isolated_scope_id_globally_unique
+  - checked_binding_type_binds_boolean
+  - checkable_binding_depends_on_input_type
+  - unset_binding_type_uses_value_binding
+  - board_checkbox_keeps_checked_binding
+  - non_boolean_value_falls_to_value_binding
+  - deep_merge_null_overrides_default
+  - radio_boolean_cast_round_trips
+  - render_and_update_share_provider_tree
+  - layout_name_key_forces_slot_remount
+  - from_base_components_keep_stable_key
+  - slot_hook_count_stays_constant
+  - cell_expression_translation_tokens_resolved
+  - file_uploader_blob_cache_stays_fresh
+  - cell_pipe_expressions_route_to_resolve_bindings
+
+test_files:
+  - resources/js/core/template-engine/__tests__/troubleshooting-components.test.ts
+
+notes: |
+  2026-11-09(#869) tsc 오류를 정리하며 이 파일을 손대자 audit `test-scenario-reverse-mapping` 의 선행 부채(시험별 매핑 누락)가
+  드러나 이 매니페스트로 해소했다. 시험 동작은 바꾸지 않았다(마킹 주석만). 선례는 troubleshooting-state-advanced.yaml(#757).

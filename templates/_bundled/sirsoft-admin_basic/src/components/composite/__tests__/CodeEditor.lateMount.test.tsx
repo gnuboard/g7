@@ -1,4 +1,3 @@
-import React from 'react';
 import { act, render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { CodeEditor } from '../CodeEditor';

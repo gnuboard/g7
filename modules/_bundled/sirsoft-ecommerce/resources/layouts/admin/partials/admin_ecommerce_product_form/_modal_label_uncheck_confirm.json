@@ -9,7 +9,39 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.confirmUncheckLabel"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-warning"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm"
+            }
+        ]
     },
     "children": [
         {
@@ -84,45 +116,6 @@
                                     "text": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at ?? ''}} ~ {{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at ?? ''}}"
                                 }
                             ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline"
-                            },
-                            "text": "$t:sirsoft-ecommerce.common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sirsoft-ecommerce.confirmUncheckLabel"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-warning"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm"
                         }
                     ]
                 }

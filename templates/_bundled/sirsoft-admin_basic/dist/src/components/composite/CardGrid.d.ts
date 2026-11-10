@@ -59,7 +59,19 @@ export interface CardGridProps {
     pageSize?: number;
     serverSidePagination?: boolean;
     serverCurrentPage?: number;
-    serverTotalPages?: number;
+    /**
+     * 서버가 알려준 마지막 페이지 번호
+     *
+     * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
+     * 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하므로 null 을 그대로 흘려보낸다(DataGrid 와 같다).
+     */
+    serverTotalPages?: number | null;
+    /**
+     * 다음 페이지 존재 여부 (마지막 페이지를 모르는 목록에서 사용)
+     *
+     * 마지막 페이지를 알면 그 값이 먼저다. 모를 때만 이 값으로 "다음" 이동을 열어 둔다(DataGrid 와 같다).
+     */
+    serverHasMorePages?: boolean;
     alwaysShowPagination?: boolean;
     onPageChange?: (page: number) => void;
     /**
@@ -113,7 +125,7 @@ export interface CardGridProps {
  *   "name": "CardGrid",
  *   "props": {
  *     "data": "{{boards.data.data}}",
- *     "columns": 3,
+ *     "gridColumns": 3,
  *     "gap": 4,
  *     "pagination": true,
  *     "pageSize": 12,

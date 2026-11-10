@@ -48,8 +48,20 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-1023": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-3"
+                            }
+                        },
+                        "desktop": {
+                            "props": {
+                                "className": "grid grid-cols-3 gap-3"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                        "className": "grid grid-cols-1 gap-3"
                     },
                     "children": [
                         {
@@ -192,8 +204,15 @@
                     "id": "notif_category_bar",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "flex gap-2 pt-3 flex-row items-center justify-between"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between"
+                        "className": "flex flex-col gap-2 pt-3"
                     },
                     "children": [
                         {
@@ -250,6 +269,13 @@
                             "type": "basic",
                             "name": "Button",
                             "if": "{{(query.category ?? '') === 'identity' && notificationDefinitions?.data?.abilities?.can_create === true}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "정책별 문구 추가 창 — 창은 이 화면 상태를 못 읽으므로 빈 폼을 전역에 마련한 뒤 연다.\n                 「문구가 이미 있는 정책」 목록은 열 때마다 다시 받는다 — 다른 창·다른 관리자가 그사이 추가했으면\n                 옛 목록으로는 그 정책이 선택지에 남아 저장이 중복(422)으로 거절된다.",
@@ -289,7 +315,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "w-full sm:w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "w-full text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "text": "$t:admin.settings.notification_definitions.btn_add_identity"
                         }
@@ -444,8 +470,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "flex gap-2 flex-row items-start justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                                                        "className": "flex flex-col gap-2"
                                                     },
                                                     "children": [
                                                         {

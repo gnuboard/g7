@@ -2,7 +2,6 @@
  * E2E: 환경설정 > 정보 — OPcache 상태 행 및 성능 저하 경고
  *
  * @scenario admin_settings_info_opcache
- * @effects opcache_row_mounted, opcache_warning_conditional
  *
  * 배경: OPcache 는 코어 어디에서도 상태를 조회하지 않아, 비활성 환경에서 성능이
  * 떨어져도 운영자가 인지할 경로가 없었다. 정보 탭에 상태를 노출하고, 비활성일 때만
@@ -108,7 +107,7 @@ test('- 경고 블록이 정보 탭 최상단에 놓이고 아래 카드와 간�
 
   // 경고는 카드 그리드보다 위에 있어야 한다. 그리드 안(세 번째 셀)에 들어가면
   // 카드 사이에 끼어 배너로 읽히지 않는다 — 그 회귀를 좌표로 고정한다.
-  const grid = page.locator('#tab_content_info > .grid-2col-responsive').first();
+  const grid = page.locator('#tab_content_info > .grid').first();
   await expect(grid).toBeVisible();
 
   const warningBox = await warning.boundingBox();

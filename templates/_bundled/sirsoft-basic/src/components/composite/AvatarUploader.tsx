@@ -421,6 +421,7 @@ export function AvatarUploader({
           <Img
             src={previewUrl}
             alt={t('mypage.profile.avatar_preview')}
+            thumbPreset="sm"
             className={`rounded-full object-cover ${
               size === 'sm' ? 'w-10 h-10' :
               size === 'md' ? 'w-12 h-12' :

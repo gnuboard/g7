@@ -180,8 +180,15 @@
                                 "id": "cd_page_header",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "641-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-page-header-padded"
+                                    "className": "ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4"
                                 },
                                 "children": [
                                     {
@@ -192,8 +199,15 @@
                                                 "id": "cd_001_page_title",
                                                 "type": "basic",
                                                 "name": "H1",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce-page-title"
+                                                    "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.detail.title"
                                             },
@@ -404,8 +418,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "641-": {
+                                                "props": {
+                                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-page-actions"
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full"
                                         },
                                         "children": [
                                             {
@@ -426,7 +447,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "ecommerce-btn ecommerce-btn-outline"
+                                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.button"
                                             },
@@ -440,7 +461,7 @@
                                                     "href": "/admin/ecommerce/orders/{{claim.data.claim.order_number}}",
                                                     "target": "_blank",
                                                     "rel": "noopener noreferrer",
-                                                    "className": "ecommerce-btn ecommerce-btn-outline"
+                                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.detail.view_order"
                                             },
@@ -462,7 +483,7 @@
                                                 "props": {
                                                     "href": "/admin/ecommerce/claims",
                                                     "mergeQuery": true,
-                                                    "className": "ecommerce-btn ecommerce-btn-outline"
+                                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.common.list"
                                             }

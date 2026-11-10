@@ -14,15 +14,17 @@
 <partial description="Product Index - Filter Section with Slot System">
   <div data-ref="filter_card" data-key="filter" class="ecommerce-admin-card">
     <div data-ref="slot_registration_area" class="ecommerce:hidden ecommerce-hidden ecommerce-filter-grid" aria-hidden="true">
-      <div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.category" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
           <on type="change">
             <!-- 분류 필터 노출 스위치. 분류는 4단계라 자리를 많이 먹어, 안 쓰는 몰은 접어 두는 일이 많다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.category</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.category</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-2 ecommerce:w-full"/>
           <select name="category1" aria-label="$t:sirsoft-ecommerce.admin.product.filter.category_step|n=1" class="ecommerce:h-9 ecommerce:w-36" value="{{_local.filter.category1}}" options="{{_computed.category1Options ?? []}}">
@@ -64,14 +66,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce-filter-row">
+      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.date" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
           <on type="change">
             <!-- 일자 필터 노출 스위치. 어느 날짜(등록·수정)를 기준으로 볼지까지 이 행 안에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.date</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.date</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.product.filter.date_type_select" class="ecommerce:w-28" value="{{_local.filter.dateType || 'created_at'}}">
             <options>
@@ -163,14 +168,17 @@
           </div>
         </div>
       </div>
-      <div data-ref="sales_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('salesStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce-filter-row">
+      <div data-ref="sales_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('salesStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.sales_status" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('salesStatus')}}">
           <on type="change">
             <!-- 판매상태 필터 노출 스위치. 네 상태를 겹쳐 고를 수 있어 배열로 담긴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('salesStatus') ? (_local.visibleFilters || []).filter(f => f !== 'salesStatus') : [...(_local.visibleFilters || []), 'salesStatus']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.sales_status</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.sales_status</span>
         <div class="ecommerce-filter-buttons">
           <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
             <input type="checkbox" class="ecommerce-checkbox" checked="{{!_local.filter.salesStatus || (_local.filter.salesStatus || []).length === 0}}">
@@ -219,14 +227,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="display_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('displayStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="ecommerce-filter-row">
+      <div data-ref="display_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('displayStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.display_status" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('displayStatus')}}">
           <on type="change">
             <!-- 전시상태 필터 노출 스위치. 판매상태와 달리 하나만 고르는 값이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('displayStatus') ? (_local.visibleFilters || []).filter(f => f !== 'displayStatus') : [...(_local.visibleFilters || []), 'displayStatus']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.display_status</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.display_status</span>
         <div class="ecommerce-filter-buttons">
           <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
             <input type="radio" :autoBinding="false" value="all" name="display_status" class="ecommerce-radio" checked="{{(_local.filter.displayStatus || 'all') === 'all'}}">
@@ -257,14 +268,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="brand_filter_row" data-slot="{{(_local.visibleFilters || []).includes('brand') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="ecommerce-filter-row">
+      <div data-ref="brand_filter_row" data-slot="{{(_local.visibleFilters || []).includes('brand') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.brand" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('brand')}}">
           <on type="change">
             <!-- 브랜드 필터 노출 스위치. 브랜드를 안 쓰는 몰에서는 늘 비어 있는 행이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('brand') ? (_local.visibleFilters || []).filter(f => f !== 'brand') : [...(_local.visibleFilters || []), 'brand']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.brand</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.brand</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <select name="brandId" class="ecommerce:w-48 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg" value="{{_local.filter.brandId || ''}}" options="{{_computed.brandOptions ?? []}}" placeholder="$t:common.select_placeholder">
             <on type="change">
@@ -283,14 +297,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="tax_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('taxStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce-filter-row">
+      <div data-ref="tax_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('taxStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.tax_status" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('taxStatus')}}">
           <on type="change">
             <!-- 과세구분 필터 노출 스위치. 면세 상품을 따로 쓰는 몰에서만 의미가 있다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('taxStatus') ? (_local.visibleFilters || []).filter(f => f !== 'taxStatus') : [...(_local.visibleFilters || []), 'taxStatus']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.tax_status</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.tax_status</span>
         <div class="ecommerce-filter-buttons">
           <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
             <input type="radio" :autoBinding="false" value="all" name="tax_status" class="ecommerce-radio" checked="{{(_local.filter.taxStatus || 'all') === 'all'}}">
@@ -330,16 +347,21 @@
           </label>
         </div>
       </div>
-      <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce-filter-row">
+      <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.price" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('price')}}">
           <on type="change">
             <!-- 가격 필터 노출 스위치. 정가·판매가 중 무엇을 기준으로 볼지까지 이 행에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.price</span>
-        <div class="ecommerce:md:flex-row ecommerce:md:items-center">
-          <select name="priceType" aria-label="$t:sirsoft-ecommerce.admin.product.filter.price_type_select" class="ecommerce:w-full ecommerce:md:w-28" value="{{_local.filter.priceType || 'selling_price'}}">
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.price</span>
+        <div>
+          <responsive on="768-" class="ecommerce:flex-row ecommerce:items-center"/>
+          <select name="priceType" aria-label="$t:sirsoft-ecommerce.admin.product.filter.price_type_select" class="ecommerce:w-full" value="{{_local.filter.priceType || 'selling_price'}}">
+            <responsive on="768-" class="ecommerce:w-28"/>
             <options>
               <option value="selling_price">$t:sirsoft-ecommerce.admin.product.filter.price_type.selling_price</option>
               <option value="original_price">$t:sirsoft-ecommerce.admin.product.filter.price_type.original_price</option>
@@ -366,23 +388,28 @@
           </div>
         </div>
       </div>
-      <div data-ref="stock_filter_row" data-slot="{{(_local.visibleFilters || []).includes('stock') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce-filter-row">
+      <div data-ref="stock_filter_row" data-slot="{{(_local.visibleFilters || []).includes('stock') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.stock" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('stock')}}">
           <on type="change">
             <!-- 재고 필터 노출 스위치. 재고는 옵션 단위라 여기 범위는 상품 기준 합계에 걸린다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('stock') ? (_local.visibleFilters || []).filter(f => f !== 'stock') : [...(_local.visibleFilters || []), 'stock']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.stock</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.stock</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
-          <input type="text" value="{{_local.filter?.minStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.min" class="ecommerce-input ecommerce:md:w-28">
+          <input type="text" value="{{_local.filter?.minStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.min" class="ecommerce-input">
+            <responsive on="768-" class="ecommerce-input ecommerce:w-28"/>
             <on type="change">
               <!-- 재고는 옵션 단위로 잡히므로 이 범위는 상품 기준 합계에 걸린다. 가격 칸과 달리 `type="text"` 라 숫자 아닌 입력도 들어올 수 있고 판정은 서버가 한다. -->
               <set-state :debounce="300" target="_local" filter.minStock="{{$event.target.value}}"/>
             </on>
           </input>
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0">~</span>
-          <input type="text" value="{{_local.filter?.maxStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max" class="ecommerce-input ecommerce:md:w-28">
+          <input type="text" value="{{_local.filter?.maxStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max" class="ecommerce-input">
+            <responsive on="768-" class="ecommerce-input ecommerce:w-28"/>
             <on type="change">
               <!-- 최소 재고와 같은 이유로 묶는다. 0 을 넣으면 품절만 보는 것과 비슷하지만 품절 상태와 재고 0 이 항상 같지는 않다. -->
               <set-state :debounce="300" target="_local" filter.maxStock="{{$event.target.value}}"/>
@@ -391,16 +418,19 @@
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.product.filter.stock_unit</span>
         </div>
       </div>
-      <div data-ref="shipping_policy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="ecommerce-filter-row">
+      <div data-ref="shipping_policy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.product.filter.shipping_policy" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingPolicy')}}">
           <on type="change">
             <!-- 배송정책 필터 노출 스위치. 정책을 여러 개 쓰는 몰에서 정책별로 상품을 훑을 때 쓴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
-          <select name="shippingPolicy" class="ecommerce:!w-48" value="{{_local.filter.shippingPolicy || ''}}" options="{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}">
+          <select name="shippingPolicy" aria-label="$t:sirsoft-ecommerce.admin.product.filter.shipping_policy" class="ecommerce:!w-48" value="{{_local.filter.shippingPolicy || ''}}" options="{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}">
             <on type="change">
               <!-- 배송정책 선택지는 쇼핑몰 설정에서 온다. 정책을 지정하지 않은 상품은 빈 값으로 잡힌다. -->
               <set-state target="_local" filter.shippingPolicy="{{$event.target.value}}"/>

@@ -60,6 +60,7 @@ class PublicStorageController extends PublicBaseController
      * @param  ServePublicStorageFileRequest  $request  검증된 요청 (path)
      * @return BinaryFileResponse|JsonResponse|Response 파일 스트리밍 또는 오류 응답
      */
+    // thumbnail-exempt: 링크가 되는 서버의 정적 /storage 서빙을 대신하는 통로다. 썸네일은 등록된 서빙 경로(/api/…)에만 붙는다(정적 경로는 대상 아님)
     public function serve(ServePublicStorageFileRequest $request): BinaryFileResponse|JsonResponse|Response
     {
         $path = (string) $request->validated('path');

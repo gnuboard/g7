@@ -60,7 +60,9 @@
     <wait-for>analytics_visitor</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="analytics_visitor_detail_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="analytics_visitor_detail_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
         <div class="flex-center gap-3">
           <a data-ref="back_button" href="/admin/analytics/visitors" :mergeQuery="true" class="button btn-icon" aria-label="$t:admin.analytics.visitor_detail.back">
@@ -71,7 +73,7 @@
             <icon name="arrow-left" class="text-xl"/>
           </a>
           <div>
-            <h1 class="page-title">$t:admin.analytics.visitor_detail.title</h1>
+            <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.visitor_detail.title</h1>
             <p class="text-label-subtle mt-1 font-mono break-all">{{route?.key ?? ''}}</p>
           </div>
         </div>
@@ -114,7 +116,8 @@
           <p class="text-info-soft">{{analytics_visitor?.data?.mode_notice ?? $t('admin.analytics.alerts.anonymous_mode')}}</p>
         </div>
       </div>
-      <div data-ref="detail_grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div data-ref="detail_grid" class="grid grid-cols-1 gap-4">
+        <responsive on="desktop" class="grid grid-cols-3 gap-4"/>
         <blur-until-loaded sources="analytics_visitor"/>
         <div data-ref="visitor_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.visitor_detail.card.title</h2>
@@ -197,7 +200,8 @@
             </div>
           </div>
         </div>
-        <div data-ref="visits_column" class="lg:col-span-2 space-y-3">
+        <div data-ref="visits_column" class="space-y-3">
+          <responsive on="desktop" class="col-span-2 space-y-3"/>
           <h2 class="section-heading">$t:admin.analytics.visitor_detail.visits_title</h2>
           <empty-state data-type="composite" data-ref="visits_empty" data-if="{{analytics_visitor !== undefined &amp;&amp; (analytics_visitor?.data?.visits ?? []).length === 0}}" iconName="clock-rotate-left" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-10"/>
           <div data-ref="visit_item_{{$idx}}" data-each="visit, $idx in {{analytics_visitor?.data?.visits ?? []}}" class="admin-card">
@@ -222,7 +226,8 @@
             </button>
             <div data-ref="visit_timeline_{{$idx}}" data-if="{{(_local.openVisits ?? {})[visit.visit_id] === true}}" class="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3 space-y-2">
               <!-- 이 방문의 부수정보 — 원장이 아는 환경·지역·언어·유입 값 전부(#682 S4 라운드 8). -->
-              <div data-ref="visit_info_{{$idx}}" class="kv-list-2 text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700">
+              <div data-ref="visit_info_{{$idx}}" class="kv-list text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700">
+                <responsive on="640-" class="kv-list grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)] text-sm pb-2 border-b border-dashed border-gray-200 dark:border-gray-700"/>
                 <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.type</span><span class="text-body break-all">{{$t('admin.analytics.visitors.types.' + (visit.visitor_type ?? 'guest'))}}</span></div>
                 <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.card.ip</span><div class="flex-center flex-wrap gap-1"><span class="text-body break-all">{{visit.ip ?? '-'}}</span><badge data-type="composite" data-if="{{visit.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/></div></div>
                 <div class="kv-row"><span class="text-hint whitespace-nowrap">$t:admin.analytics.visitor_detail.visit_info.last_action</span><span class="text-body break-all">{{visit.last_action_at | datetime | default('-')}}</span></div>

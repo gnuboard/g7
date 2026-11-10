@@ -94,7 +94,7 @@ _단건 응답: `data` 객체의 필드._
 | general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고·사이트 파비콘 첨부). site_logo·site_favicon 은 SettingsService 가 별도 주입한 첨부 정보(업로더 초기 파일). 공개 계산 필드 `site_logo_url`·`site_favicon_url` 은 이 관리자 응답에는 없고 저장 응답 `frontend_settings`·셸 `G7Config.settings` 에 있다 |
 | security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, #158)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
-| upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
+| upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질). `thumbnail_presets` 와 `thumbnail_presets_rows` 는 저장 행이 아니라 레지스트리가 합친 썸네일 규격 표(고정 5행, og, 켜진 확장 규격, 운영자 규격 — 행마다 `kind` fixed/og/extension/custom, 확장 행 `defaults`, og 행 `size_readonly`)다 (#869). 행마다 `label` 은 확장이 등록한 표시 이름의 로케일 맵(`{"ko":"배너 목록","en":"Banner list"}`)이고, 이름을 등록하지 않은 확장 행과 고정·og·운영자 행은 null 이다(화면은 null 이면 `name` 을 보인다). 표시 전용이라 저장하지 않는다. `thumbnail_presets_rows` 는 응답 전용이라 저장 요청에 실려 와도 버린다 |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
 | advanced | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 고급 탭 설정 그룹 (캐시·디버그·코어 업데이트·GeoIP 설정을 한 탭으로 합친 병합 뷰). cache/debug 카테고리 값이 함께 노출됨 |
 | cache | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 캐시 원본 카테고리 (전역 캐시 사용·기본 TTL·레이아웃/통계/SEO 캐시 사용 및 TTL). advanced 탭에 병합되면서 개별 접근용으로 별도 노출된 파생 뷰 |
@@ -108,7 +108,7 @@ _단건 응답: `data` 객체의 필드._
 | system | object | `{"execution_mode":"auto","cron_mode":"auto","cron_allowed…` | 실행 방식·예약 작업 카테고리 — 커맨드 실행 모드와 웹 크론 설정. 호출 번호(토큰)는 이 응답에 실리지 않는다 |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 일곱 필드로 구성 |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 열 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
@@ -117,6 +117,9 @@ _단건 응답: `data` 객체의 필드._
 | _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
 | _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.daumcdn.net"]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트 |
 | _meta.favicon | object\|null | `{"user":{"source":"template","template_identifier":"sirsoft-basic","template_name":"Basic","settings_route":"/admin/templates/sirsoft-basic/settings"},"admin":{…}}` | 화면 종류별(사용자·관리자) 현재 파비콘 계층(`template`·`core`·`custom_ico`·`bundled`)과 활성 템플릿·설정 화면 경로 — 일반 탭 파비콘 칸 아래 「○○ 템플릿 설정의 파비콘이 우선 적용됩니다」 안내용 (#434). 해석 실패 시 null |
+| _meta.thumbnail_engine_available | boolean | `true` | 이 서버에 쓸 수 있는 이미지 처리 엔진(`drivers.image_driver` 가 고른 엔진, 쓸 수 없으면 gd)이 있는지 (#869). false 면 썸네일 없이 원본을 내고 업로드 축소도 하지 않는다. 업로드 탭은 이 값으로 「엔진 없음」 안내를 띄운다 |
+| _meta.thumbnail_disk_options | object | `{"public":[{"id":"thumbnails","label":{"ko":"서버 비공개 저장소 (기본)",…}},{"id":"public",…}],"gated":[{"id":"thumbnails",…},{"id":"s3",…}]}` | 업로드 탭 썸네일 「저장 위치」 선택지 (#869). `public` 은 `thumbnails` 와 공개 자산 디스크 카탈로그(`available_drivers.public_asset` 에서 `none` 제외), `gated` 는 `thumbnails` 와 `s3`(이 서버에서 S3 어댑터를 쓸 수 있을 때만). `label` 은 `available_drivers` 와 같은 로케일 맵. 저장 검증(`upload.thumbnail_disk_public`/`_gated`)이 같은 목록을 쓴다 |
+| _meta.thumbnail_server_defaults | object | `{"generate_per_minute":120,"lock_wait_seconds":10,"max_source_pixels":16000000,"pregenerate_batch":20,"pregenerate_time_budget":15,"purge_time_budget":10}` | 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓰는 값 — `.env` 의 `G7_THUMBNAIL_*` 가 있으면 그 값, 없으면 기본값 (`config('core.thumbnail_server_defaults')`). 화면은 칸의 placeholder 로 보인다 (#869) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -261,6 +264,31 @@ HTTP/1.1 200
 | upload.image_quality | body | integer | 아니오 | min 1, max 100 | 이미지 리사이즈 시 압축 품질 (1~100) |
 | upload.orphan_cleanup_enabled | body | boolean | 아니오 | — | 고아 첨부(소유자 없이 남은 첨부) 자동 정리 활성화 여부. **기본 false** — 사용자 파일을 실제로 파기하므로 운영자가 직접 켜야 동작하며, 예약 작업(`attachments:prune-orphans --scheduled`)이 이 값을 false 폴백으로 재확인한다 |
 | upload.orphan_retention_days | body | integer | 아니오 | min 1, max 3650 | 고아 첨부 보존기간(일, 기본 30). 폼 작성 중 이탈을 감안한 유예 기간이다. 하한·상한은 `config('core.settings_limits.upload_orphan_retention_days_*')` 가 정하며 화면 입력도 같은 값을 읽는다 |
+| upload.thumbnail_enabled | body | boolean | 아니오 | — | 이미지 썸네일 사용 여부 (기본 true). 끄면 모든 이미지를 원본으로 낸다 (#869) |
+| upload.thumbnail_presets | body | array | 아니오 | 최대 `settings_limits.upload_thumbnail_presets_max`(30) 행, 표 전체 기준 | 썸네일 규격 표. 조회 응답의 `upload.thumbnail_presets` 를 고쳐 그대로 보낸다. 저장 때 `ThumbnailPresetSettings::mergeForSave` 가 고정 슬롯 5행을 늘 보충하고, og 행은 저장하지 않으며(크기는 SEO 탭), 지금 꺼진 확장의 수정값은 기존 저장본에서 이어 붙인다. 오류 키는 `upload.thumbnail_presets.{i}.{칸}` |
+| upload.thumbnail_presets.*.name | body | string | 예 | 중복 불가. 운영자 행 `^[a-z][a-z0-9_]{1,31}$`, 예약어(xs/sm/md/lg/xl/og) 불가. `true`/`false`/`null`/`undefined` 는 행 종류와 무관하게 불가(레이아웃 파이프가 리터럴로 읽는다). 고정 행(`source=core`)과 확장 행(`source`=확장 식별자)은 이름 변경 불가, 확장 형식 이름은 켜진 확장이 등록한 것만 | 규격 이름 (`?size=` 값) |
+| upload.thumbnail_presets.*.source | body | string | 아니오 | max 100 | 규격 출처 (core/custom/확장 식별자). 행 종류 판정에 쓰고 저장값은 서버가 다시 정한다 |
+| upload.thumbnail_presets.*.width | body | integer | 예(og 행 제외) | min 16, max 4096 | 가로 (px) |
+| upload.thumbnail_presets.*.height | body | integer | fit 이 width 가 아니면 예(og 행 제외) | min 16, max 4096 | 세로 (px) |
+| upload.thumbnail_presets.*.fit | body | string | 예 | cover/contain/width | 맞춤 방식 |
+| upload.thumbnail_presets.*.anchor | body | string | 아니오 | center/top/bottom/left/right | 자르기 기준점 |
+| upload.thumbnail_presets.*.quality | body | integer | 아니오 | min 1, max 100 | 인코딩 품질. 비우면 업로드 탭 이미지 품질 |
+| upload.thumbnail_presets.*.format | body | string | 아니오 | original/webp/avif | 출력 형식 (엔진이 못 쓰는 형식이면 원본 형식) |
+| upload.thumbnail_presets.*.upscale | body | boolean | 아니오 | — | 원본이 규격보다 작을 때 확대 여부 |
+| upload.thumbnail_presets.*.pregenerate | body | boolean | 아니오 | — | 원본 등록 직후 미리 만들지 |
+| upload.thumbnail_presets.*.numeric | body | boolean | 아니오 | — | `?w=` 숫자 요청의 후보인지 |
+| upload.thumbnail_presets.*.enabled | body | boolean | 아니오 | — | 규격 사용 여부 |
+| upload.thumbnail_content_preset | body | string | 아니오 | 저장 뒤 켜져 있을 규격 이름 (같은 요청의 표 기준) | 본문 이미지에 쓸 규격 (기본 lg) |
+| upload.thumbnail_disk_public | body | string | 아니오 | `_meta.thumbnail_disk_options.public` 의 id | 공개 이미지 썸네일 저장 디스크 (기본 thumbnails). 공개 자산 디스크를 고르면 302 로 직접 URL 을 낸다 |
+| upload.thumbnail_disk_gated | body | string | 아니오 | `_meta.thumbnail_disk_options.gated` 의 id (thumbnails/s3) | 권한이 걸린 이미지 썸네일 저장 디스크 (기본 thumbnails). 늘 서버를 거쳐 스트림으로 낸다 |
+| upload.thumbnail_prune_enabled | body | boolean | 아니오 | — | 썸네일 정리 스케줄(`thumbnails:prune --scheduled`, 매일 05:20) 사용 여부 (기본 true) |
+| upload.thumbnail_animated_original | body | boolean | 아니오 | — | 움직이는 이미지(GIF·WebP·APNG)를 썸네일 대신 원본으로 낼지 (기본 true, 끄면 첫 프레임 썸네일. 확장 필터 `core.thumbnail.filter_animated_original` 가 바꿀 수 있다) |
+| upload.thumbnail_generate_per_minute | body | integer | 아니오 | min 1, max 10000 | IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수. 비우면(null) `.env` 의 `G7_THUMBNAIL_GENERATE_PER_MINUTE` 또는 120. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
+| upload.thumbnail_lock_wait_seconds | body | integer | 아니오 | min 1, max 30 | 같은 썸네일을 다른 요청이 만들고 있을 때 기다리는 시간(초). 비우면 `G7_THUMBNAIL_LOCK_WAIT_SECONDS` 또는 10. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
+| upload.thumbnail_max_source_pixels | body | integer | 아니오 | min 1000000, max 100000000 | 썸네일을 만들 원본의 픽셀 수 상한(넘으면 원본, `memory_limit` 으로 한 번 더 줄인다). 비우면 `G7_THUMBNAIL_MAX_SOURCE_PIXELS` 또는 16000000. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
+| upload.thumbnail_pregenerate_batch | body | integer | 아니오 | min 1, max 500 | 「기존 이미지 썸네일 만들기」와 `thumbnails:pregenerate` 가 한 번에 처리하는 원본 수. 비우면 `G7_THUMBNAIL_PREGENERATE_BATCH` 또는 20. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
+| upload.thumbnail_pregenerate_time_budget | body | integer | 아니오 | min 1, max 60 | 「기존 이미지 썸네일 만들기」 한 번 호출의 시간 예산(초). 비우면 `G7_THUMBNAIL_PREGENERATE_TIME_BUDGET` 또는 15. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
+| upload.thumbnail_purge_time_budget | body | integer | 아니오 | min 1, max 60 | 썸네일 「비우기」 한 번 호출의 시간 예산(초). 비우면 `G7_THUMBNAIL_PURGE_TIME_BUDGET` 또는 10. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
 | seo.meta_title_suffix | body | string | 아니오 | max 100 | 모든 페이지 SEO 제목 뒤에 붙는 접미 문구 |
 | seo.meta_description | body | string | 아니오 | max 160 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
 | seo.meta_keywords | body | string | 아니오 | max 255 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
@@ -381,6 +409,7 @@ HTTP/1.1 200
 | drivers.websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 (서버측 발행 대상) |
 | drivers.websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https — 서버측 발행 대상) |
 | drivers.search_engine_driver | body | string | 아니오 | — | 검색 엔진 드라이버 (Scout 엔진 선택) |
+| drivers.image_driver | body | string | 아니오 | max 100, 코어 엔진은 이 서버에서 쓸 수 있어야 함, 그 밖은 `available_drivers.image` 에 있어야 함 | 이미지 처리 엔진 (gd/imagick + 플러그인 등록 엔진, 기본 gd, #869). `available_drivers.image` 는 이 서버에서 쓸 수 없는 코어 엔진을 빼고 낸다(imagick 확장이 없으면 gd 만). 쓸 수 없는 엔진을 직접 보내면 422 와 사유(`settings.driver_unusable_*_extension`) |
 | drivers.log_driver | body | string | 아니오 | — | 로그 드라이버 (single/daily/stack) |
 | drivers.log_level | body | string | 아니오 | — | 로그 레벨 (debug/info/warning/error 등) |
 | drivers.log_days | body | integer | 아니오 | min 1, max 365 | 로그 파일 보관 일수 |
@@ -484,6 +513,21 @@ Content-Type: application/json
     "upload.image_quality": 1,
     "upload.orphan_cleanup_enabled": true,
     "upload.orphan_retention_days": 1,
+    "upload.thumbnail_enabled": true,
+    "upload.thumbnail_presets": [
+        {"name": "xs", "source": "core", "width": 64, "height": 64, "fit": "cover", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": false, "enabled": true}
+    ],
+    "upload.thumbnail_content_preset": "lg",
+    "upload.thumbnail_disk_public": "thumbnails",
+    "upload.thumbnail_disk_gated": "thumbnails",
+    "upload.thumbnail_prune_enabled": true,
+    "upload.thumbnail_animated_original": true,
+    "upload.thumbnail_generate_per_minute": 120,
+    "upload.thumbnail_lock_wait_seconds": 10,
+    "upload.thumbnail_max_source_pixels": null,
+    "upload.thumbnail_pregenerate_batch": 20,
+    "upload.thumbnail_pregenerate_time_budget": 15,
+    "upload.thumbnail_purge_time_budget": null,
     "seo.meta_title_suffix": "예시 제목",
     "seo.meta_description": "예시 내용입니다.",
     "seo.meta_keywords": "예시값",
@@ -586,6 +630,7 @@ Content-Type: application/json
     "drivers.websocket_server_port": 1,
     "drivers.websocket_server_scheme": "예시값",
     "drivers.search_engine_driver": "예시값",
+    "drivers.image_driver": "gd",
     "drivers.log_driver": "예시값",
     "drivers.log_level": "예시값",
     "drivers.log_days": 1,

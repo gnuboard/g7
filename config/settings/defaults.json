@@ -77,7 +77,26 @@
             "image_max_height": 2000,
             "image_quality": 85,
             "orphan_cleanup_enabled": false,
-            "orphan_retention_days": 30
+            "orphan_retention_days": 30,
+            "thumbnail_enabled": true,
+            "thumbnail_presets": [
+                { "name": "xs", "width": 64, "height": 64, "fit": "cover", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": false, "enabled": true },
+                { "name": "sm", "width": 160, "height": 160, "fit": "cover", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": false, "enabled": true },
+                { "name": "md", "width": 640, "height": null, "fit": "width", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": true, "enabled": true },
+                { "name": "lg", "width": 1280, "height": null, "fit": "width", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": true, "enabled": true },
+                { "name": "xl", "width": 1920, "height": null, "fit": "width", "anchor": "center", "quality": null, "format": "original", "upscale": false, "pregenerate": false, "numeric": true, "enabled": true }
+            ],
+            "thumbnail_content_preset": "lg",
+            "thumbnail_disk_public": "thumbnails",
+            "thumbnail_disk_gated": "thumbnails",
+            "thumbnail_prune_enabled": true,
+            "thumbnail_animated_original": true,
+            "thumbnail_generate_per_minute": null,
+            "thumbnail_lock_wait_seconds": null,
+            "thumbnail_max_source_pixels": null,
+            "thumbnail_pregenerate_batch": null,
+            "thumbnail_pregenerate_time_budget": null,
+            "thumbnail_purge_time_budget": null
         },
         "seo": {
             "meta_title_suffix": "",
@@ -184,7 +203,8 @@
             "websocket_server_host": "127.0.0.1",
             "websocket_server_port": 8080,
             "websocket_server_scheme": "http",
-            "search_engine_driver": "mysql-fulltext"
+            "search_engine_driver": "mysql-fulltext",
+            "image_driver": "gd"
         },
         "notifications": {
             "channels": [
@@ -319,7 +339,22 @@
                 "image_max_height": { "type": "integer", "sensitive": false },
                 "image_quality": { "type": "integer", "sensitive": false, "expose": false },
                 "orphan_cleanup_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "orphan_retention_days": { "type": "integer", "sensitive": false, "expose": false }
+                "orphan_retention_days": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_enabled": { "type": "boolean", "sensitive": false },
+                "thumbnail_presets": { "type": "array", "sensitive": false, "expose": false },
+                "thumbnail_content_preset": { "type": "string", "sensitive": false },
+                "thumbnail_disk_public": { "type": "string", "sensitive": false, "expose": false },
+                "thumbnail_disk_gated": { "type": "string", "sensitive": false, "expose": false },
+                "thumbnail_prune_enabled": { "type": "boolean", "sensitive": false, "expose": false },
+                "thumbnail_animated_original": { "type": "boolean", "sensitive": false, "expose": false },
+                "thumbnail_generate_per_minute": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_lock_wait_seconds": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_max_source_pixels": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_pregenerate_batch": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_pregenerate_time_budget": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_purge_time_budget": { "type": "integer", "sensitive": false, "expose": false },
+                "thumbnail_presets_public": { "type": "array", "sensitive": false, "computed": true, "source": "thumbnail_presets", "transform": "thumbnail_presets" },
+                "thumbnail_url_patterns": { "type": "array", "sensitive": false, "computed": true, "source": "thumbnail_enabled", "transform": "thumbnail_url_patterns" }
             }
         },
         "seo": {
@@ -459,7 +494,8 @@
                 "websocket_server_host": { "type": "string", "sensitive": false },
                 "websocket_server_port": { "type": "integer", "sensitive": false },
                 "websocket_server_scheme": { "type": "string", "sensitive": false },
-                "search_engine_driver": { "type": "string", "sensitive": false }
+                "search_engine_driver": { "type": "string", "sensitive": false },
+                "image_driver": { "type": "string", "sensitive": false, "expose": false }
             }
         },
         "notifications": {

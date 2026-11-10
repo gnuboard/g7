@@ -457,6 +457,25 @@ public static function getSubscribedHooks(): array
 
 `core.queue_job.after_prune` 의 두 번째 인자는 다른 보존 기간 파기 훅(`(보존일, 삭제건수)`)과 달리 결과 배열입니다 —
 처리 기록과 실패 작업 두 대상을 한 번에 정리하기 때문입니다.
+### 이미지 썸네일 훅 (7.2.0)
+
+이미지 썸네일(`?size=`·`?w=`)의 규격·서빙 경로·원본 제공자·주소·엔진을 확장이 더하거나 바꾸는 지점과, 파생본을 지운 뒤의
+알림입니다. 계약 전체와 예제는 [이미지 썸네일](../backend/image-thumbnails.md) 을 보십시오.
+
+| 훅 | 종류 | 값·인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.thumbnail.filter_presets` | filter | `(array $presets)` — 규격 행 목록. 이름은 `{확장 식별자}.{키}` 만 받는다. 행의 `label`(선택)은 관리자 표에 보일 이름의 다국어 키(`{확장 식별자}::messages.…`)로, 코어가 로케일 맵으로 풀어 싣고 생략하면 식별자를 보인다 | 확장 규격 등록 |
+| `core.thumbnail.filter_url_patterns` | filter | `(array $patterns)` — `/api/…` 고정 접두 + `*` 한 조각 와일드카드 | 화면·SEO 가 `size` 를 붙여도 되는 자기 서빙 경로 |
+| `core.thumbnail.filter_source_providers` | filter | `(array $providers)` — `App\Thumbnails\Contracts\ThumbnailSourceProvider` 구현체 목록 | 원본의 게이트 여부·소속 경로 판정, 기존 이미지 순회 |
+| `core.thumbnail.filter_url` | filter | `(string $url, string $originalUrl, string $preset)` | 봇 화면과 `og:image` 의 썸네일 주소를 이미지 변환 서비스 주소로 바꾸기. 사람 화면 주소는 바뀌지 않는다 |
+| `core.thumbnail.filter_processors` | filter | `(array $processors)` — `[엔진 id => ImageProcessorInterface]` | 이미지 처리 엔진 추가(드라이버 카탈로그 `core.settings.available_image_drivers` 와 짝). 배열이 아니면 코어 엔진만 쓰고, 엔진이 아닌 항목은 버리며, 비거나 빠진 코어 id(`gd`·`imagick`) 자리는 코어 엔진이다 |
+| `core.thumbnail.filter_animated_original` | filter | `(bool $serveOriginal, string $format, ThumbnailSource $source, ThumbnailSpec $spec)` — 형식 `gif`·`webp`·`png`, 기본값은 설정 `upload.thumbnail_animated_original` | 움직이는 이미지를 원본으로 낼지(`true`) 첫 프레임 썸네일로 만들지(`false`) 형식·원본·규격별로 바꾸기 |
+| `core.thumbnail.before_purge` | action | `(string $location, ?string $preset)` | 관리자 「비우기」 직전 |
+| `core.thumbnail.before_pregenerate` / `after_pregenerate` | action | `(?string $cursor, array $sources, array $presets)` / `(array $result, array $sources, array $presets)` | 「기존 이미지 썸네일 만들기」 한 번분 앞뒤 |
+| `core.thumbnail.after_purge` | action | `(array $items)` — `[{source_disk, prefix, thumbnail_disk, public_url_prefix, original_public_url, original_is_directory}]` | 원본 삭제·덮어쓰기·「비우기」로 지운 접두. 요청 하나(큐 작업 하나) 동안 모아 한 번 발행 — CDN 무효화용 |
+
+`after_purge` 의 `public_url_prefix` 는 썸네일 디스크가 직접 URL 을 내는 공개 자산 디스크일 때만 값이 있고,
+`original_public_url` 은 원본이 공개 자산 디스크에 있을 때만 값이 있습니다(그 밖에는 `null`).
 
 ### 1. Action Hooks (액션 훅)
 
@@ -536,6 +555,12 @@ sirsoft-ecommerce.product.calculate_price
 core.attachment.download
 core.attachment.update
 core.attachment.delete
+
+# 이미지 썸네일 (7.2.0) — 아래 「이미지 썸네일 훅」 표 참조
+core.thumbnail.filter_presets           core.thumbnail.filter_url_patterns
+core.thumbnail.filter_source_providers  core.thumbnail.filter_url
+core.thumbnail.filter_processors        core.thumbnail.after_purge
+core.thumbnail.filter_animated_original
 
 # 스토리지 공개 URL 훅 (Filter) — StorageInterface::url() 결과 공급/수정/차단 (공개#100)
 # 컨텍스트 6키는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
@@ -638,6 +663,7 @@ core.layout.search_validation_rules
 # 항목 3키 구조는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.settings.available_storage_drivers
 core.settings.available_public_asset_drivers   # 공개 자산 직접 URL 서빙 디스크 (공개#100)
+core.settings.available_image_drivers          # 이미지 처리 엔진 (구현체는 core.thumbnail.filter_processors)
 core.settings.available_cache_drivers
 core.settings.available_session_drivers
 core.settings.available_queue_drivers
@@ -1591,6 +1617,7 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 - `$info` 는 확장 정보 배열이며 정보를 구할 수 없으면 빈 배열이다(템플릿 활성화는 `['identifier' => ...]`). 리스너는 `$info['version'] ?? null` 처럼 키 부재를 전제로 읽는다.
 - 모듈·플러그인 `$info['permissions']` 는 권한 분류 목록(분류마다 `identifier`·`name`·`permissions[]`)이다. 플러그인은 7.1.0 부터 이 모양이며, 종전에는 권한 선언 전체(`{name, description, categories}`)였다 — 그때 `$info['permissions']['categories']` 를 읽던 리스너는 `$info['permissions']` 를 그대로 읽는다.
 - 직전 훅도 Manager 가 CLI·어드민 UI 공통으로 한 번 발화한다(7.1.0~). 인자는 종전 Service 발화와 같다 — 모듈 `before_install(id)`·`before_activate(id, force)`·`before_deactivate(id, force)`·`before_update(id)`·`before_uninstall(id, deleteData)`, 플러그인 `before_install|activate|deactivate|update(id)`·`before_uninstall(id, deleteData)`, 템플릿 `before_install|activate|deactivate|version_update(id)`·`before_uninstall(id, deleteData)`.
+- **켜진 확장의 제거는 비활성화를 먼저 거친다(7.2.0).** 순서는 `before_uninstall` → 진행 중 상태 가드 → 의존 확장 검사(모듈·플러그인. 템플릿은 어드민 UI 의 「유형의 마지막 활성 템플릿」 거절이 그보다 먼저) → `before_deactivate` → `after_deactivate` → 제거 → `after_uninstall` 이다. 가드나 검사에 막히면 끄지 않는다. 비활성화는 제거 트랜잭션 밖에서 끝나므로 제거가 실패해 롤백되면 확장은 꺼진 채 남는다. 종전에는 켜진 확장을 바로 지워 비활성화 훅이 돌지 않았다 — 끌 때 하던 정리를 제거 훅에 따로 두던 리스너는 비활성화 훅 하나로 합칠 수 있다(이미 꺼진 확장의 제거는 비활성화 훅이 다시 돌지 않는다).
 - 직전 훅은 "시도" 시점에 발화하므로 없는 식별자처럼 실패할 호출에서도 발화한다. 직전 훅 리스너가 예외를 던지면 그 작업이 멈춘다 — 이제 CLI 설치·업데이트에도 똑같이 적용된다.
 
 **구훅 (deprecated)** — `core.{modules,plugins,templates}.installed` · `activated` · `updated` 9개는 식별자 1개만 넘기는 이전 이름이다. 코어·번들 확장은 모두 정규 훅으로 옮겼고, 사외 확장 호환을 위해 성공 시 계속 발화하지만 다음 메이저에서 제거할 예정이다. 새 구독은 위 정규 훅을 쓴다(구훅 목록은 아래 「사용 중단 훅」). 구훅은 "업데이트할 것 없음" 에서는 발화하지 않는다.

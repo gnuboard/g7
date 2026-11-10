@@ -35,6 +35,7 @@ import { OptionsListControl } from '../components/property-controls/OptionsListC
 import { CoreIdControl } from '../components/property-controls/CoreIdControl';
 import { CoreDataKeyControl } from '../components/property-controls/CoreDataKeyControl';
 import { ComponentTargetPicker } from '../components/property-controls/ComponentTargetPicker';
+import { ThumbnailPresetControl } from '../components/property-controls/ThumbnailPresetControl';
 
 let registered = false;
 
@@ -93,6 +94,10 @@ export function registerCoreWidgets(): void {
   // fallback_target·navigate transition_overlay_target·향후 "요소 ID 참조" param 공용.
   // editor-spec param `widget:'component-target-picker'` 선언만으로 어느 폼에서나 동작.
   registerWidget('component-target-picker', ComponentTargetPicker);
+  // 이미지 「썸네일 규격」 picker (engine-v1.89.0). 목록이 서버 규격(고정·확장·운영자 추가)이라
+  // 정적 options 만 읽는 select 로는 줄 수 없다 — 캔버스 store/G7Config 의
+  // `settings.upload.thumbnail_presets_public` 을 읽는다. Img `thumbPreset`(propValue) 전용.
+  registerWidget('thumbnail-preset', ThumbnailPresetControl);
   registered = true;
 }
 

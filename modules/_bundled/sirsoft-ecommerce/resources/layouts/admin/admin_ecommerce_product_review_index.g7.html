@@ -83,13 +83,15 @@
   </init>
   <slot name="content">
     <div data-ref="product_review_content" class="ecommerce-admin-page-content">
-      <div data-ref="page_header" class="ecommerce-page-header">
+      <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+        <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div data-ref="page_header_left">
-          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.product_review.title</h1>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.product_review.title</h1>
           <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.product_review.description</p>
         </div>
-        <div data-ref="page_header_actions" class="ecommerce-page-actions">
-          <button data-ref="refresh_button" type="button" class="ecommerce-btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+        <div data-ref="page_header_actions" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
+          <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
+          <button data-ref="refresh_button" type="button" class="ecommerce-btn-icon ecommerce:shrink-0 ecommerce:whitespace-nowrap" aria-label="$t:sirsoft-ecommerce.common.refresh">
             <on type="click">
               <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
               <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true">
@@ -554,7 +556,7 @@
           <column field="product_name" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.product_name" :sortable="false" :required="true">
             <cell>
               <div class="ecommerce-flex-center ecommerce:gap-2">
-                <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:shrink-0 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
+                <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.product?.name ?? ''}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:shrink-0 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
                 <div data-if="{{!row.product?.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:shrink-0 ecommerce:rounded ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                   <icon name="image" class="ecommerce:text-lg ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                 </div>
@@ -620,7 +622,8 @@
           </column>
           <expand>
             <div class="ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:p-6">
-              <div class="ecommerce-grid-cols-1-lg-3">
+              <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-6">
+                <responsive on="1024-" class="ecommerce:grid ecommerce:gap-6 ecommerce:grid-cols-3"/>
                 <div data-ref="purchase_info" class="ecommerce-admin-card">
                   <!-- 카드 헤더: 구매 정보 제목 -->
                   <div class="ecommerce:px-4 ecommerce-panel-header">
@@ -630,7 +633,7 @@
                   <div class="ecommerce:px-4 ecommerce:py-4">
                     <!-- 상품 이미지 + 상품명/옵션 2단 배치 -->
                     <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:mb-4">
-                      <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:shrink-0 ecommerce:rounded-md ecommerce:object-cover ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
+                      <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.product?.name ?? ''}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:shrink-0 ecommerce:rounded-md ecommerce:object-cover ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
                       <div data-if="{{!row.product?.thumbnail_url}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:shrink-0 ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                         <icon name="image" class="ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                       </div>
@@ -664,7 +667,8 @@
                     </div>
                   </div>
                 </div>
-                <div data-ref="review_reply_section" class="ecommerce-col-span-2-lg ecommerce:space-y-6">
+                <div data-ref="review_reply_section" class="ecommerce:col-span-1 ecommerce:space-y-6">
+                  <responsive on="1024-" class="ecommerce:col-span-2 ecommerce:space-y-6"/>
                   <div data-ref="customer_review" class="ecommerce-admin-card">
                     <!-- 카드 헤더: 제목 + 별점 + 상태 뱃지 -->
                     <div class="ecommerce-flex-between ecommerce:px-4 ecommerce-panel-header">
@@ -699,7 +703,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[0].download_url}}" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[0].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- 이미지 2 -->
                         <button data-if="{{(rowImages ?? []).length > 1}}" type="button" class="ecommerce:shrink-0 ecommerce:rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -716,7 +720,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[1].download_url}}" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[1].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- 이미지 3 -->
                         <button data-if="{{(rowImages ?? []).length > 2}}" type="button" class="ecommerce:shrink-0 ecommerce:rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -733,7 +737,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[2].download_url}}" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[2].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- 이미지 4 (4장 정확히일 때 일반 이미지) -->
                         <button data-if="{{(rowImages ?? []).length == 4}}" type="button" class="ecommerce:shrink-0 ecommerce:rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -750,7 +754,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[3].download_url}}" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- +N 오버레이 (5장 이상일 때 4번째 자리) -->
                         <button type="button" data-if="{{(rowImages ?? []).length >= 5}}" class="ecommerce:relative ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:cursor-pointer ecommerce:rounded-md ecommerce:overflow-hidden" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -767,7 +771,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[3].download_url}}" alt="" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
+                          <img src="{{rowImages[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
                           <span class="ecommerce:absolute ecommerce:inset-0 ecommerce:bg-black/50 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                             <span class="ecommerce:text-white ecommerce:font-semibold ecommerce:text-sm">+{{(rowImages ?? []).length - 3}}</span>
                           </span>

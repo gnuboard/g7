@@ -43,8 +43,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "grid grid-cols-1 gap-4"
                             },
                             "children": [
                                 {
@@ -650,8 +657,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "grid grid-cols-1 gap-4"
                             },
                             "children": [
                                 {

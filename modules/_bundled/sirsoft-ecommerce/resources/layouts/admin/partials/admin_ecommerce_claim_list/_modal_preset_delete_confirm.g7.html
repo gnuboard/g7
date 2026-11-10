@@ -2,7 +2,7 @@
 <partial description="Claim List - Preset Delete Confirm Modal">
   <modal data-type="composite" data-ref="modal_claim_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.title" size="sm">
     <p class="ecommerce-text-body">$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
           <close-modal/>
@@ -29,6 +29,6 @@
         <icon data-if="{{_global.isDeleting}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

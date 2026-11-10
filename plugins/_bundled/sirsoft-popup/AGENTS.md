@@ -74,8 +74,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 27개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 21개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 5개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 23개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -119,7 +119,7 @@
 
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
-| 레이어 폭 판정에 `window.matchMedia`·`<picture media>` | `G7Core.useResponsive()` 폭(없을 때만 `window.innerWidth`), 이미지는 레이어가 판정한 기기로 `src` 를 고른다 | 경계 폭 1px 어긋남과 편집기·관리자 미리보기(창이 넓다)에서 기기가 갈린다 |
+| 레이어 폭 판정에 `window.matchMedia`·`<picture media>`, 부품(TSX) 배치에 Tailwind 폭 접두(`gpp:sm:` 등) | `resources/js/support/viewportWidth.ts` 의 `useViewportWidth()` — `G7Core.useResponsive()` 폭(없을 때만 `window.innerWidth`). 이미지는 레이어가 판정한 기기로 `src` 를 고르고, 편집기 칸 배치도 이 폭으로 클래스를 고른다(`SM_MIN_WIDTH` 640) | 경계 폭 1px 어긋남과 편집기·관리자 미리보기(창이 넓다)에서 기기가 갈린다 |
 | `PopupLayer`·`PopupPreview` 를 템플릿 basic 컴포넌트(`Div`·`Button`)로 옮김 | 이 두 컴포넌트와 이미지 프레임(`lib/ImageFrame`), 편집기 캔버스(`PopupOverlayEditor` 의 `.g7pp-ov-editor__canvas` 안)만 HTML 태그 + `g7pp-` 소유 CSS(**예외**). 관리 화면 조각(`PopupConflictResolver`·`PopupPeriodHint`·편집기 옆 패널)은 basic 컴포넌트 | 레이어는 어떤 사용자 템플릿에 붙어도 같은 모양·같은 접근성 구조(dialog·포커스 가둠)여야 하고, 템플릿마다 basic 컴포넌트의 클래스·마크업이 다르다 |
 | 미리보기 틀 안 높이를 `100%`·`vh` 로 잼 | 틀이 넘긴 `--g7pp-frame-h` 로 잰다(`.g7pp-root--preview` 규칙) | 대화상자 높이가 정해져 있지 않아 `100%` 는 풀리지 않고 본문이 0px 로 접힌다. `vh` 는 관리자 창 기준이다 |
 | 레이어 문구에 한국어 대체 문구를 박음 | `resources/js/support/editor.ts` 의 `translate()`(전체 키) — 번역이 없으면 키가 보인다 | 번역 누락이 한국어로 가려지면 다른 언어 방문자에게만 드러난다 |
@@ -133,6 +133,8 @@
 | 이미지 주소(`/api/plugins/…/images/{hash}`)를 접두사 없이 조립하거나 응답 값을 그대로 `src` 에 넣기 | 서버는 `PopupImage::publicUrl()` 이 `AssetUrl::sitePath()` 로 붙이고, `ImageFrame` 은 받은 주소를 `sitePath()` 로 한 번 더 맞춘다(멱등) | 하위 폴더 설치에서 팝업 이미지가 사이트 밖을 불러 깨진다. 접두사 없이 담긴 공개 캐시도 화면에서 맞춰진다 |
 | 공개 이미지 응답을 서비스가 만든 스트림 그대로 돌려주기 | 서비스는 서빙 정보만 주고 컨트롤러가 코어 헬퍼(`streamedFileResponseFromMeta`)로 낸다 | ETag·304 재검증·캐시 정책·nosniff 가 코어와 갈린다(`FileServingHelperSourceContractTest`) |
 | `ini_get`·`glob` 처럼 호스팅이 막을 수 있는 함수를 바로 부르기 | `ExecutionEnvironment::hasFunction()` 으로 먼저 판정하고 대체 경로를 둔다(`UploadLimit::iniSettingBytes()`, 대장 나열은 `scandir`) | PHP 8 은 막힌 함수를 함수 표에서 지워 호출이 `Error` 다. 매일 정리 작업이 막힌 서버에서 죽는다 |
+| 팝업 이미지 주소에 `?size=` 를 손으로 붙이거나, 원본보다 큰 규격을 srcset 후보로 넣기 | 사용자 레이어는 `ImageFrame` 에 `sizes`(`lib/thumbnail.ts::popupImageSizes()` — 레이어 배치)를 주고 `responsiveSrcset()`(코어 `G7Core.thumbnail.contentSrcsetWithin(…, { includeOriginal: true })` — 원본보다 작은 후보 + 원본, PC·모바일 각자. 그 함수가 없으면 srcset 없음 — 후보를 직접 거르지 않는다)을 쓴다. 관리 목록은 `thumbPreset="sm"` | 서버는 원본보다 큰 규격을 키우지 않고 원본을 보내는데 브라우저는 후보 폭을 믿고 고른다. 코어 판정(같은 출처 + 등록 경로)을 건너뛰면 외부 주소에 `size` 가 붙는다 |
+| 공개 이미지 썸네일 판정을 서비스 `publicServing()` 안에 넣거나 원본 존재 확인 뒤로 미루기 | 컨트롤러가 해시 조회(게이트) → `?size=` 면 원본 존재 확인 → `ThumbnailResponder::respond()` → 원본 응답 + `markBypass()` 순서로 부른다. 원본 응답은 무파라미터 주소와 같게(1년·`immutable`) 만들고, 썸네일을 요청했는데 원본을 낼 때의 캐시(`immutable` 해제, 유지 시간을 썸네일 응답과 같은 코어 `cache.layout_ttl` 로)는 `markBypass()` 가 맞춘다(컨트롤러에서 따로 줄이지 않는다) | 원본 304 판정이 컨트롤러에 있어 서비스가 썸네일을 돌려주면 원본 검증자로 다시 싸인다. 원본만 지워진 행이 남은 파생본으로 200 이 된다. 유지 시간을 1년으로 두면 규격을 바꿔도 그 `?size=` 주소가 브라우저·CDN 에 1년 동안 원본으로 남는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -140,10 +142,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 20개 | `plugins/_bundled/sirsoft-popup/tests` |
-| Vitest | 13개 | `vitest.config.ts` |
+| PHPUnit | 21개 | `plugins/_bundled/sirsoft-popup/tests` |
+| Vitest | 14개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

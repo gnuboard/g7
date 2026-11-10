@@ -81,6 +81,8 @@ describe('CardGrid', () => {
     (window as any).G7Core = mockG7Core;
   });
 
+  // @scenario area=render
+  // @effects card_grid_renders_states
   it('컴포넌트가 렌더링됨', () => {
     const { container } = render(
       <CardGrid data={mockData} cardColumns={[{ id: 'test', cellChildren: mockCardChildren }]} />
@@ -88,6 +90,8 @@ describe('CardGrid', () => {
     expect(container.firstChild).toBeInTheDocument();
   });
 
+  // @scenario area=render
+  // @effects card_grid_renders_states
   it('데이터가 undefined일 때 Skeleton이 표시됨', () => {
     const { container } = render(
       <CardGrid data={undefined} cardColumns={[{ id: 'test', cellChildren: mockCardChildren }]} gridColumns={3} />
@@ -99,12 +103,16 @@ describe('CardGrid', () => {
     expect(skeletonCards).toHaveLength(3);
   });
 
+  // @scenario area=render
+  // @effects card_grid_renders_states
   it('데이터가 빈 배열일 때 Empty State가 표시됨', () => {
     render(<CardGrid data={[]} cardColumns={[{ id: 'test', cellChildren: mockCardChildren }]} emptyMessage="데이터가 없습니다." />);
 
     expect(screen.getByText('데이터가 없습니다.')).toBeInTheDocument();
   });
 
+  // @scenario area=render
+  // @effects card_grid_renders_states
   it('카드 그리드가 렌더링됨', () => {
     render(<CardGrid data={mockData} cardColumns={[{ id: 'test', cellChildren: mockCardChildren }]} />);
 
@@ -112,15 +120,21 @@ describe('CardGrid', () => {
     expect(mockG7Core.renderItemChildren).toHaveBeenCalledTimes(mockData.length);
   });
 
+  // @scenario area=classes
+  // @effects card_grid_layout_props_to_classes
   it('columns prop이 적용됨', () => {
     const { container } = render(
       <CardGrid data={mockData} cardColumns={[{ id: 'test', cellChildren: mockCardChildren }]} gridColumns={2} />
     );
 
     const gridElement = container.querySelector('.grid');
-    expect(gridElement).toHaveClass('lg:grid-cols-2');
+    // 렌더 폭(jsdom 창 1024px)으로 열 수를 골라 접두 없는 클래스 하나만 낸다
+    expect(gridElement).toHaveClass('grid-cols-2');
+    expect(gridElement?.className).not.toMatch(/(^|\s)(sm|md|lg|xl):/);
   });
 
+  // @scenario area=classes
+  // @effects card_grid_layout_props_to_classes
   it('gap prop이 적용됨', () => {
     const { container } = render(
       <CardGrid data={mockData} cardColumns={[{ id: 'test', cellChildren: mockCardChildren }]} gap={6} />
@@ -130,6 +144,8 @@ describe('CardGrid', () => {
     expect(gridElement).toHaveClass('gap-6');
   });
 
+  // @scenario area=classes
+  // @effects card_grid_layout_props_to_classes
   it('반응형 columns 설정이 적용됨', () => {
     const { container } = render(
       <CardGrid
@@ -141,12 +157,13 @@ describe('CardGrid', () => {
     );
 
     const gridElement = container.querySelector('.grid');
-    expect(gridElement).toHaveClass('grid-cols-1');
-    expect(gridElement).toHaveClass('md:grid-cols-2');
-    expect(gridElement).toHaveClass('lg:grid-cols-3');
-    expect(gridElement).toHaveClass('xl:grid-cols-4');
+    // 렌더 폭(jsdom 창 1024px) → lg 구간 값 하나. 폭별 값은 ComponentWidthClasses.test.tsx 가 잰다
+    expect(gridElement?.className.split(/\s+/).filter((token) => /^grid-cols-\d+$/.test(token))).toEqual(['grid-cols-3']);
+    expect(gridElement?.className).not.toMatch(/(^|\s)(sm|md|lg|xl):/);
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('페이지네이션이 활성화되면 페이지 버튼이 표시됨', () => {
     const manyData = Array.from({ length: 25 }, (_, i) => ({
       id: i + 1,
@@ -170,6 +187,8 @@ describe('CardGrid', () => {
     expect(screen.getByText('1')).toBeInTheDocument();
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('페이지네이션이 비활성화되면 모든 데이터가 표시됨', () => {
     const manyData = Array.from({ length: 25 }, (_, i) => ({
       id: i + 1,
@@ -193,6 +212,8 @@ describe('CardGrid', () => {
     expect(screen.queryByLabelText('다음 페이지')).not.toBeInTheDocument();
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('다음 버튼 클릭 시 다음 페이지로 이동함', async () => {
     const user = userEvent.setup();
     const manyData = Array.from({ length: 25 }, (_, i) => ({
@@ -218,6 +239,8 @@ describe('CardGrid', () => {
     expect(page2Button).toHaveAttribute('aria-current', 'page');
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('이전 버튼 클릭 시 이전 페이지로 이동함', async () => {
     const user = userEvent.setup();
     const manyData = Array.from({ length: 25 }, (_, i) => ({
@@ -249,6 +272,8 @@ describe('CardGrid', () => {
     expect(screen.getByLabelText('페이지 2')).toHaveAttribute('aria-current', 'page');
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('첫 페이지에서 이전 버튼이 비활성화됨', () => {
     const manyData = Array.from({ length: 25 }, (_, i) => ({
       id: i + 1,
@@ -269,6 +294,8 @@ describe('CardGrid', () => {
     expect(prevButton).toBeDisabled();
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('마지막 페이지에서 다음 버튼이 비활성화됨', async () => {
     const user = userEvent.setup();
     const manyData = Array.from({ length: 25 }, (_, i) => ({
@@ -295,6 +322,8 @@ describe('CardGrid', () => {
     expect(nextButton).toBeDisabled();
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('서버 사이드 페이지네이션이 작동함', () => {
     const onPageChange = vi.fn();
 
@@ -316,6 +345,8 @@ describe('CardGrid', () => {
     expect(screen.getByText('5')).toBeInTheDocument();
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('서버 사이드 페이지네이션 다음 버튼 클릭 시 onPageChange 호출됨', async () => {
     const user = userEvent.setup();
     const onPageChange = vi.fn();
@@ -338,6 +369,8 @@ describe('CardGrid', () => {
     expect(onPageChange).toHaveBeenCalledWith(2);
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('alwaysShowPagination이 true면 1페이지여도 페이지네이션이 표시됨', () => {
     render(
       <CardGrid
@@ -353,6 +386,8 @@ describe('CardGrid', () => {
     expect(screen.getByLabelText('다음 페이지')).toBeInTheDocument();
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('alwaysShowPagination이 false면 1페이지일 때 페이지네이션이 숨겨짐', () => {
     render(
       <CardGrid
@@ -368,6 +403,8 @@ describe('CardGrid', () => {
     expect(screen.queryByLabelText('다음 페이지')).not.toBeInTheDocument();
   });
 
+  // @scenario area=classes
+  // @effects card_grid_layout_props_to_classes
   it('className prop이 적용됨', () => {
     const { container } = render(
       <CardGrid
@@ -379,6 +416,8 @@ describe('CardGrid', () => {
     expect(container.firstChild).toHaveClass('custom-grid');
   });
 
+  // @scenario area=classes
+  // @effects card_grid_layout_props_to_classes
   it('cardClassName prop이 각 카드에 적용됨', () => {
     const { container } = render(
       <CardGrid
@@ -392,6 +431,8 @@ describe('CardGrid', () => {
     expect(cards).toHaveLength(mockData.length);
   });
 
+  // @scenario area=pagination
+  // @effects card_grid_pagination_controls
   it('prevText와 nextText 커스터마이징이 적용됨', () => {
     const manyData = Array.from({ length: 25 }, (_, i) => ({
       id: i + 1,
@@ -414,6 +455,8 @@ describe('CardGrid', () => {
     expect(screen.getByText('Next')).toBeInTheDocument();
   });
 
+  // @scenario area=render
+  // @effects card_grid_renders_states
   it('emptyMessage 커스터마이징이 적용됨', () => {
     render(
       <CardGrid
@@ -427,6 +470,8 @@ describe('CardGrid', () => {
   });
 
   describe('스켈레톤 자동 생성', () => {
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('cellChildren 기반으로 스켈레톤이 자동 생성됨', () => {
       const { container } = render(
         <CardGrid
@@ -451,6 +496,8 @@ describe('CardGrid', () => {
       expect(skeletonBars.length).toBeGreaterThan(0);
     });
 
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('skeletonCellChildren으로 커스텀 스켈레톤 사용 가능', () => {
       // 커스텀 스켈레톤을 Div 구조로 정의 (Div는 className이 유지됨)
       const customSkeleton: CardGridCellChild[] = [
@@ -478,6 +525,8 @@ describe('CardGrid', () => {
       expect(customWrapper).toHaveLength(1);
     });
 
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('showSkeleton={false}면 스켈레톤이 표시되지 않음', () => {
       const { container } = render(
         <CardGrid
@@ -495,6 +544,8 @@ describe('CardGrid', () => {
       expect(container.firstChild).toBeNull();
     });
 
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('skeletonCount로 스켈레톤 개수 제어 가능', () => {
       const { container } = render(
         <CardGrid
@@ -510,6 +561,8 @@ describe('CardGrid', () => {
       expect(skeletonCards).toHaveLength(5);
     });
 
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('iteration이 있는 요소는 1개만 표시됨', () => {
       const iterationChildren: CardGridCellChild[] = [
         {
@@ -538,6 +591,8 @@ describe('CardGrid', () => {
       expect(skeletonCards).toHaveLength(1);
     });
 
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('condition이 있는 요소는 스켈레톤에서 제외됨', () => {
       const conditionalChildren: CardGridCellChild[] = [
         { type: 'basic', name: 'H3', text: '항상 표시' },
@@ -558,6 +613,8 @@ describe('CardGrid', () => {
       expect(skeletonBars).toHaveLength(1);
     });
 
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('Div는 구조를 유지하며 자식을 재귀적으로 처리함', () => {
       // 중첩된 Div 구조 (자식이 없는 Div는 기본 스켈레톤으로 변환됨)
       const nestedChildren: CardGridCellChild[] = [
@@ -605,6 +662,8 @@ describe('CardGrid', () => {
       expect(nestedChild2).toBeInTheDocument();
     });
 
+    // @scenario area=skeleton
+    // @effects card_grid_skeleton_from_cell_children
     it('cellChildren이 비어있으면 null을 반환함', () => {
       const { container } = render(
         <CardGrid
@@ -630,6 +689,8 @@ describe('CardGrid', () => {
       { type: 'basic', name: 'Span', id: 'conditional', text: '조건부', condition },
     ];
 
+    // @scenario area=condition_delegation
+    // @effects card_grid_condition_delegated_to_engine
     it('조건 판정을 G7Core.evaluateCondition 에 위임한다 (자체 평가기 없음)', () => {
       render(
         <CardGrid data={[mockData[0]]} cardColumns={[{ id: 'c', cellChildren: withCondition('{{row.id === 1}}') }]} />
@@ -644,6 +705,8 @@ describe('CardGrid', () => {
       expect(context.$item).toEqual(mockData[0]);
     });
 
+    // @scenario area=condition_delegation
+    // @effects card_grid_condition_delegated_to_engine
     it('엔진이 false 를 돌려주면 그 자식은 렌더 대상에서 빠진다', () => {
       mockEvaluateCondition.mockImplementation(() => false);
 
@@ -655,6 +718,8 @@ describe('CardGrid', () => {
       expect(passedChildren).toHaveLength(0);
     });
 
+    // @scenario area=condition_delegation
+    // @effects card_grid_condition_delegated_to_engine
     it('_local 참조 조건도 예외 없이 엔진이 처리한다', () => {
       // 종전 자체 평가기는 `new Function('row', ...)` 이라 `_local` 이 스코프에 없어
       // ReferenceError 가 났고, catch 가 false 를 돌려줘 자식이 조용히 사라졌다.
@@ -670,6 +735,8 @@ describe('CardGrid', () => {
       expect(mockRenderItemChildren.mock.calls[0]?.[0]).toHaveLength(1);
     });
 
+    // @scenario area=condition_delegation
+    // @effects card_grid_condition_delegated_to_engine
     it('엔진 API 가 없으면 조건을 감춤이 아니라 표시로 처리한다', () => {
       // 평가 수단이 없다는 이유로 내용을 지우면 화면이 통째로 비어 원인 파악이 불가능하다.
       (window as any).G7Core = { ...mockG7Core, evaluateCondition: undefined };

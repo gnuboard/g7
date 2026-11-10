@@ -141,6 +141,8 @@ return [
         'template:refresh-layout' => 'Refresh the template layouts (sync only the layouts to the DB without building)',
         'template:uninstall' => 'Delete a template',
         'template:update' => 'Update a template to the latest version',
+        'thumbnails:pregenerate' => 'Generate thumbnails for images that are already uploaded (existing thumbnails are skipped)',
+        'thumbnails:prune' => 'Clean up thumbnail files whose preset changed or whose original is gone',
         'trusted-proxy:status' => 'Check the reverse proxy trust settings (TRUSTED_PROXIES)',
         'user:reset-password' => 'Reset a member password from the server terminal (admin account recovery without mail)',
         'vendor-bundle:build-all' => 'Build the vendor bundles of the core and every _bundled module and plugin at once',

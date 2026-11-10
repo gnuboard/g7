@@ -10,7 +10,57 @@
     "name": "Modal",
     "props": {
         "title": "{{_global.editingLabelId ? $t('sirsoft-ecommerce.admin.product.labels.modal_title_edit') : $t('sirsoft-ecommerce.admin.product.labels.modal_title_create')}}",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline",
+                    "disabled": "{{_global.isSavingLabel}}"
+                },
+                "text": "$t:sirsoft-ecommerce.common.cancel"
+            },
+            {
+                "id": "label_form_save",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.saveLabelSettings"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary",
+                    "disabled": "{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isSavingLabel}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm ecommerce:mr-2"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -188,64 +238,6 @@
                                             "text": "$t:sirsoft-ecommerce.admin.product.labels.color_reset"
                                         }
                                     ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "modal_footer",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline",
-                                "disabled": "{{_global.isSavingLabel}}"
-                            },
-                            "text": "$t:sirsoft-ecommerce.common.cancel"
-                        },
-                        {
-                            "id": "label_form_save",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sirsoft-ecommerce.saveLabelSettings"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-primary",
-                                "disabled": "{{_global.isSavingLabel || !_global.labelFormData?.name?.ko || (_global.editingLabelId ? product_labels?.data?.abilities?.can_update : product_labels?.data?.abilities?.can_create) !== true}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isSavingLabel}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "ecommerce-spinner-sm ecommerce:mr-2"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isSavingLabel ? $t('sirsoft-ecommerce.common.saving') : $t('sirsoft-ecommerce.common.confirm')}}"
                                 }
                             ]
                         }

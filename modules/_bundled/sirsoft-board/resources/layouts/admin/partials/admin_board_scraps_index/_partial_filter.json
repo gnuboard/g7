@@ -1,5 +1,5 @@
 {
-    "comment": "스크랩 목록 — 검색·필터 영역. 저장소의 관리자 목록 관례를 그대로 따른다(알림 로그·회원 알림함·\n  본인인증 로그·배송 정책 등 17개 화면이 같은 짜임이다).\n\n  ⓐ **층을 나눈다** — 자유 입력인 「검색어」와 값을 고르는 「필터」는 성격이 달라 같은 줄에 두지\n     않는다. 한 줄에 몰면 좁은 화면에서 서로 폭을 빼앗아 입력칸이 사라진다(2026-09-16 실측:\n     반응 관리와 같은 원인으로 검색어 입력이 눌려 있었다).\n  ⓑ 필터 한 줄은 `.filter-row` + 왼쪽 `.filter-label` — 이 자산이 이 용도로 만들어져 있다\n     (`main.css` 의 `.filter-grid`/`.filter-row`/`.filter-label`).\n  ⓒ 초기화·검색은 **자기 줄**에 가운데로 둔다. 좁은 화면에서는 둘이 반씩 나눠 차지한다.\n  ⓓ 상세검색 접힘 상태는 `_local` 에 둔다 — 전역 키로 두면 형제 화면(반응·게시글·신고)과\n     상태가 섞인다.\n\n  검색 조립은 명명 액션 `searchBoardScraps` 한 자리에 있고, 엔터·검색 버튼이 그것을 부른다.",
+    "comment": "스크랩 목록 — 검색·필터 영역. 저장소의 관리자 목록 관례를 그대로 따른다(알림 로그·회원 알림함·\n  본인인증 로그·배송 정책 등 17개 화면이 같은 짜임이다).\n\n  ⓐ **층을 나눈다** — 자유 입력인 「검색어」와 값을 고르는 「필터」는 성격이 달라 같은 줄에 두지\n     않는다. 한 줄에 몰면 좁은 화면에서 서로 폭을 빼앗아 입력칸이 사라진다(2026-09-16 실측:\n     반응 관리와 같은 원인으로 검색어 입력이 눌려 있었다).\n  ⓑ 필터 한 줄은 유틸(세로 쌓기) + `768-` 구간 값(가로 한 줄)으로 쓴다 — 폭 미디어를 품은 의미 클래스\n     (`.filter-row`·`.filter-label`, 폐지 예정)는 쓰지 않는다. 바깥 묶음 `.filter-grid` 는 폭과 무관하다.\n  ⓒ 초기화·검색은 **자기 줄**에 가운데로 둔다. 좁은 화면에서는 둘이 반씩 나눠 차지한다.\n  ⓓ 상세검색 접힘 상태는 `_local` 에 둔다 — 전역 키로 두면 형제 화면(반응·게시글·신고)과\n     상태가 섞인다.\n\n  검색 조립은 명명 액션 `searchBoardScraps` 한 자리에 있고, 엔터·검색 버튼이 그것을 부른다.",
     "meta": {
         "is_partial": true,
         "description": "Board Scraps List - Filter Section"
@@ -149,15 +149,29 @@
                     "id": "board_filter_row",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "board:flex board:flex-row board:gap-2 board:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "board-filter-row"
+                        "className": "board:flex board:flex-col board:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:text-sm board:text-gray-600 board:dark:text-gray-400 board:mb-0 board:shrink-0 board:flex board:items-center board:w-24"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "board-filter-label board:w-24"
+                                "className": "board:text-sm board:text-gray-600 board:block board:mb-2 board:dark:text-gray-400 board:w-24"
                             },
                             "text": "$t:sirsoft-board.admin.scraps.filters.board_label"
                         },
@@ -196,15 +210,29 @@
                     "id": "date_filter_row",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "board:flex board:flex-row board:gap-2 board:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "board-filter-row"
+                        "className": "board:flex board:flex-col board:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:text-sm board:text-gray-600 board:dark:text-gray-400 board:mb-0 board:shrink-0 board:flex board:items-center board:w-24"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "board-filter-label board:w-24"
+                                "className": "board:text-sm board:text-gray-600 board:block board:mb-2 board:dark:text-gray-400 board:w-24"
                             },
                             "text": "$t:sirsoft-board.admin.scraps.filters.scrapped_at_label"
                         },

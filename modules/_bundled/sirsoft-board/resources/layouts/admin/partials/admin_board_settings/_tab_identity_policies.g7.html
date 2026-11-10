@@ -15,7 +15,8 @@
         <span class="board:text-xs board-tone-warning">$t:sirsoft-board.admin.settings.identity.read_only_notice</span>
       </div>
       <div class="board-card-description">$t:sirsoft-board.admin.settings.identity.purposes_section_description</div>
-      <div data-ref="page_header" class="board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center board:md:justify-between board:mb-6">
+      <div data-ref="page_header" class="board:flex board:flex-col board:gap-2 board:mb-6">
+        <responsive on="768-" class="board:flex board:gap-2 board:flex-row board:items-center board:justify-between board:mb-6"/>
         <div>
           <h3 class="board-section-title">$t:admin.identity.policies.page_title</h3>
           <p class="board-text-label-subtle">$t:admin.identity.policies.page_description</p>
@@ -70,9 +71,11 @@
           <span data-if="{{boardIdentityPurposes !== undefined &amp;&amp; ((boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board').length === 0)}}" class="board-text-tertiary board:italic">$t:sirsoft-board.admin.settings.identity.purposes_empty</span>
         </div>
       </div>
-      <div data-ref="filter_card" class="board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-4 board:mb-6 board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center">
+      <div data-ref="filter_card" class="board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-4 board:mb-6 board:flex board:flex-col board:gap-2">
+        <responsive on="768-" class="board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-4 board:mb-6 board:flex board:gap-2 board:flex-row board:items-center"/>
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다. -->
-        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="board:text-gray-700 board:dark:text-gray-200 board:w-full board:md:w-40 board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:text-sm">
+        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="board:text-gray-700 board:dark:text-gray-200 board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:text-sm">
+          <responsive on="768-" class="board:text-gray-700 board:dark:text-gray-200 board:w-40 board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:text-sm"/>
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -93,7 +96,8 @@
           </on>
         </select>
         <!-- 검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식. -->
-        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="board-input board:md:flex-1 board:md:min-w-[200px]">
+        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="board-input">
+          <responsive on="768-" class="board-input board:flex-1 board:min-w-[200px]"/>
           <on type="change">
             <!-- 입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다 -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>

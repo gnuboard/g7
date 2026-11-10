@@ -929,8 +929,15 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
+                                                                    "responsive": {
+                                                                        "640-": {
+                                                                            "props": {
+                                                                                "className": "w-auto flex-1 min-w-0"
+                                                                            }
+                                                                        }
+                                                                    },
                                                                     "props": {
-                                                                        "className": "w-full sm:w-auto sm:flex-1 min-w-0"
+                                                                        "className": "w-full min-w-0"
                                                                     },
                                                                     "children": [
                                                                         {

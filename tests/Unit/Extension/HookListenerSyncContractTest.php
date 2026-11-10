@@ -36,8 +36,9 @@ class HookListenerSyncContractTest extends TestCase
             'core BroadcastNotificationListener' => ['App\\Listeners\\BroadcastNotificationListener', [
                 'core.notification.after_channel_send',
             ]],
+            // before_save 는 업로드 탭 썸네일 값의 저장 전 사본을 뜬다 — 큐로 가면 after_save 보다 늦게 떠 비교가 어긋난다 (#869)
             'core SeoSettingsCacheListener' => ['App\\Listeners\\SeoSettingsCacheListener', [
-                'core.settings.after_save', 'core.settings.after_set',
+                'core.settings.before_save', 'core.settings.after_save', 'core.settings.after_set',
             ]],
             'ecommerce ShippingPolicyCacheListener' => ['Modules\\Sirsoft\\Ecommerce\\Listeners\\ShippingPolicyCacheListener', $shippingPolicy],
             'ecommerce CategoryTreeCacheListener' => ['Modules\\Sirsoft\\Ecommerce\\Listeners\\CategoryTreeCacheListener', [

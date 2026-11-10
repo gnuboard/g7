@@ -1,0 +1,21 @@
+feature: 주문 목록 프리셋 저장 창 — 바닥 단추가 Modal 고정 하단에서 본문 입력을 따라간다
+
+description: |
+  저장·취소 단추를 본문 안 `ecommerce-modal-footer-buttons` 줄로 그려 640px 이하에서 세로로 쌓이지 않았다(#869 P1).
+  단추를 Modal 고정 하단(`<footer>` → props.footer)으로 옮겼다. 고정 하단은 Modal 이 본문 자식과 같은 데이터
+  컨텍스트·상태 범위로 그리므로, 본문 입력이 쓰는 창의 `_local.presetName` 을 저장 단추가 읽어 이름을 치면 풀린다.
+  진짜 관리자 Modal 과 엔진으로 그려 잰다.
+
+# axis 의미:
+#   modal — 대상 창. footer — 바닥 단추 자리(props.footer). typed_name — 본문에 이름을 쳤는가.
+axes:
+  modal: [order_list_preset_save]
+  footer: [props_footer]
+  typed_name: [yes, no]
+
+effects:
+  - preset_save_footer_follows_body_input   # 이름을 치기 전에는 저장 단추가 잠기고, 치면 고정 하단 저장 단추가 풀린다
+  - preset_save_footer_closes_modal         # 고정 하단 취소 단추가 창을 닫는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderListPresetSaveFooter.test.tsx

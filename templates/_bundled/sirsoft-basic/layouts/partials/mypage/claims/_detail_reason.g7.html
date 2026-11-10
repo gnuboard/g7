@@ -50,7 +50,7 @@
             </set-state>
             <open-modal target="modal_claim_image_viewer"/>
           </on>
-          <img src="{{claimImage.download_url ?? ''}}" alt="{{claimImage.original_name ?? ''}}" class="w-full h-full object-cover"/>
+          <img src="{{claimImage.download_url ?? ''}}" thumbPreset="md" loading="lazy" decoding="async" alt="{{claimImage.original_name ?? ''}}" class="w-full h-full object-cover"/>
         </button>
       </div>
     </div>

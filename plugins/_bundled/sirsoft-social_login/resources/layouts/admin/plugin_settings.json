@@ -221,8 +221,20 @@
                 "id": "plugin_settings_content",
                 "type": "basic",
                 "name": "Div",
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "sl:p-6 sl:min-h-screen sl:bg-gray-50 sl:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "sl:p-8 sl:min-h-screen sl:bg-gray-50 sl:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "sl-admin-page-content-responsive"
+                    "className": "sl:p-4 sl:min-h-screen sl:bg-gray-50 sl:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -339,8 +351,15 @@
                                         "id": "provider_card_header_{{provider.key}}",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-3 sl:px-6 sl:pt-5"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-3 sl:px-4 sl:sm:px-6 sl:pt-5"
+                                            "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-3 sl:px-4 sl:pt-5"
                                         },
                                         "children": [
                                             {
@@ -510,8 +529,15 @@
                                         "id": "provider_card_body_{{provider.key}}",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sl:px-6 sl:py-4 sl:space-y-3"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "sl:px-4 sl:sm:px-6 sl:py-4 sl:space-y-3"
+                                            "className": "sl:px-4 sl:py-4 sl:space-y-3"
                                         },
                                         "children": [
                                             {
@@ -556,15 +582,29 @@
                                                 "id": "redirect_uri_row_{{provider.key}}",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "sl:flex sl:flex-row sl:items-center sl:gap-2"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-center sl:gap-2"
+                                                    "className": "sl:flex sl:flex-col sl:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:w-40 sl:flex-shrink-0"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:sm:w-40 sl:flex-shrink-0"
+                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:flex-shrink-0"
                                                         },
                                                         "text": "$t:sirsoft-social_login.admin.providers.redirect_uri"
                                                     },
@@ -609,8 +649,15 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "sl:inline"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "sl:hidden sl-hidden sl:sm:inline"
+                                                                    "className": "sl:hidden"
                                                                 },
                                                                 "text": "$t:sirsoft-social_login.admin.providers.copy"
                                                             }
@@ -626,15 +673,29 @@
                                                     "source": "Object.keys(provider.webhook_urls ?? {}).map((kind) => ({ kind: kind, url: provider.webhook_urls[kind] }))",
                                                     "item_var": "hook"
                                                 },
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "sl:flex sl:flex-row sl:items-center sl:gap-2"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-center sl:gap-2"
+                                                    "className": "sl:flex sl:flex-col sl:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:w-40 sl:flex-shrink-0"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:sm:w-40 sl:flex-shrink-0"
+                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:flex-shrink-0"
                                                         },
                                                         "text": "{{$t('sirsoft-social_login.admin.providers.webhook_kinds.' + hook.kind)}}"
                                                     },
@@ -677,8 +738,15 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "sl:inline"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "sl:hidden sl-hidden sl:sm:inline"
+                                                                    "className": "sl:hidden"
                                                                 },
                                                                 "text": "$t:sirsoft-social_login.admin.providers.copy"
                                                             }

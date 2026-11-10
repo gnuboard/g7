@@ -144,7 +144,9 @@ if (! function_exists('installer_cli_reinstall_targets')) {
         }
 
         if (! empty($opts['delete_uploads'])) {
-            $uploads = [$base.'/storage/app/attachments', $base.'/storage/app/public'];
+            // 썸네일(storage/app/thumbnails)은 업로드 원본에서 만든 파생본이다 — 원본을 지우면 함께 지운다(남기면 다음 설치의
+            // 같은 경로 원본에 옛 그림이 붙어 나간다).
+            $uploads = [$base.'/storage/app/attachments', $base.'/storage/app/public', $base.'/storage/app/thumbnails'];
             foreach (['modules', 'plugins'] as $kind) {
                 foreach ($children($base.'/storage/app/'.$kind) as $extensionStorage) {
                     foreach ($children($extensionStorage) as $entry) {

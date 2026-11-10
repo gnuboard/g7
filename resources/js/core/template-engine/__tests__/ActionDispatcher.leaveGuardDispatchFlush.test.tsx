@@ -18,12 +18,7 @@ import { ActionDispatcher } from '../ActionDispatcher';
 import { initializeG7CoreGlobals } from '../G7CoreGlobals';
 import { Router } from '../../routing/Router';
 import { resetLeaveGuardForTests } from '../../routing/LeaveGuard';
-import {
-  installUnloadGuard,
-  isDocumentUnloading,
-  markDocumentLeaving,
-  resetUnloadGuardForTesting,
-} from '../networkResilience';
+import { resetUnloadGuardForTesting } from '../networkResilience';
 
 vi.mock('../ResponsiveManager', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../ResponsiveManager')>();
@@ -76,39 +71,6 @@ const setStateA = (updates: any): void => {
   const next = typeof updates === 'function' ? updates(storeA) : updates;
   const { __mergeMode: _m, __setStateId: _s, ...clean } = next || {};
   storeA = { ...storeA, ...clean };
-};
-
-/** 액션 하나를 실제 createHandler 로 실행한다 */
-const run = async (action: any): Promise<void> => {
-  const handler = dispatcher.createHandler(
-    action,
-    { _local: globalState._local, _global: globalState },
-    { state: storeA, setState: setStateA }
-  );
-  await handler(new Event('click'));
-  await flush();
-};
-
-/** 상태 경로 전부의 사본 — 판정 전후 비교용 */
-const snapshotStateStores = (): string => JSON.stringify({
-  globalState,
-  storeA,
-  pending: (window as any).__g7PendingLocalState ?? null,
-  forced: (window as any).__g7ForcedLocalFields ?? null,
-  override: (() => {
-    const keys = (window as any).__g7SetLocalOverrideKeys;
-
-    return keys instanceof Set ? [...keys] : keys ?? null;
-  })(),
-  lastSnapshot: (window as any).__g7LastSetLocalSnapshot ?? null,
-  sequenceSync: (window as any).__g7SequenceLocalSync ?? null,
-});
-
-const fireUnload = (): Event => {
-  const event = new Event('beforeunload', { cancelable: true });
-  window.dispatchEvent(event);
-
-  return event;
 };
 
 beforeEach(() => {
@@ -184,6 +146,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // 사례가 남긴 300ms 디바운스 예약(4-0·4-c 의 검색어 입력)을 지운다 — 남기면 아래에서 `__templateApp` 을 지운 뒤 터져 실패하고,
+  // 그 실패의 기본 오류 처리(toast)도 같은 이유로 실패했다(engine-v1.89.0 전에는 끝없이 되풀이해 작업 프로세스가 힙 한도로 죽었다)
+  dispatcher.clearDebounceTimers();
   window.removeEventListener('popstate', (router as any).handlePopState);
   cleanup();
   vi.restoreAllMocks();

@@ -150,7 +150,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
           {/* 이름이 길면 이 칸이 줄어들고 이름은 한 줄 … — 닫기 단추는 제자리를 지킨다(#143). */}
           <LinkButton href={'/'} onNavigate={() => { onClose(); navigate('/'); }} className="justify-start flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
             {logo ? (
-              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
+              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" thumbPreset="md" loading="eager" />
             ) : (
               <Span className="text-xl font-bold text-gray-900 dark:text-white truncate">{siteName}</Span>
             )}
@@ -169,7 +169,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
           <Div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <Div className="flex items-center gap-3">
               {user.avatar ? (
-                <Img src={user.avatar} alt={user.name} className="w-12 h-12 shrink-0 rounded-full" />
+                <Img src={user.avatar} alt={user.name} className="w-12 h-12 shrink-0 rounded-full" thumbPreset="sm" />
               ) : (
                 <Div className="w-12 h-12 shrink-0 rounded-full bg-blue-600 dark:bg-blue-600 flex items-center justify-center text-white text-lg font-medium">
                   {(user.name || 'U').charAt(0).toUpperCase()}

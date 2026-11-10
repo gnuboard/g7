@@ -19,7 +19,9 @@
       </div>
     </div>
     <div data-if="{{_local.isAddingReturnReason}}" class="ecommerce:p-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800/50">
-      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:lg:grid-cols-4 ecommerce:gap-3">
+      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3">
+        <responsive on="640-1023" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"/>
+        <responsive on="desktop" class="ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-3"/>
         <div>
           <label class="ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1">$t:sirsoft-ecommerce.admin.settings.claim.return_reasons.form.code</label>
           <!-- 새 반품 사유의 코드. 접수된 반품 건이 사유를 이 코드로만 가리키므로 목록에 붙고 나면 표에서는 고칠 수 없고, 사용 중인 사유라면 서버도 코드 변경을 거절한다. -->

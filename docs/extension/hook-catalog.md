@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (661)
+- [코어](#코어) (674)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -631,6 +631,19 @@
 | `core.templates.filter_update_data` | filter | 2 |  |
 | `core.templates.installed` | action | 1 |  |
 | `core.templates.updated` | action | 1 |  |
+| `core.thumbnail.after_pregenerate` | action | 3 |  |
+| `core.thumbnail.after_purge` | action | 1 |  |
+| `core.thumbnail.before_pregenerate` | action | 3 |  |
+| `core.thumbnail.before_purge` | action | 2 |  |
+| `core.thumbnail.filter_animated_original` | filter | 4 |  |
+| `core.thumbnail.filter_presets` | filter | 1 |  |
+| `core.thumbnail.filter_processors` | filter | 1 |  |
+| `core.thumbnail.filter_source_providers` | filter | 1 |  |
+| `core.thumbnail.filter_url` | filter | 3 |  |
+| `core.thumbnail.filter_url_patterns` | filter | 1 |  |
+| `core.thumbnail.pregenerate_validation_rules` | filter | 2 |  |
+| `core.thumbnail.purge_validation_rules` | filter | 2 |  |
+| `core.thumbnail.stats_validation_rules` | filter | 2 |  |
 | `core.unique_id.after_generate` | action | 2 |  |
 | `core.unique_id.before_generate` | action | 1 |  |
 | `core.user.after_block` | action | 2 |  |

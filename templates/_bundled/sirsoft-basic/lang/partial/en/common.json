@@ -1,4 +1,6 @@
 {
+  "zoom_image": "View larger image",
+  "zoom_image_named": "View larger: {{name}}",
   "loading": "Loading...",
   "error": "An error occurred",
   "retry": "Retry",

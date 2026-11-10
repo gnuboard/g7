@@ -11,18 +11,18 @@
  * 핵심은 "코어 ApiClient(api.get)를 통해 요청해야 토큰이 실린다" 이므로
  * 실제 호출 인자를 단언한다(거짓 통과 방지).
  *
- * @scenario card=user_post
- * @effects download_via_api_client_with_token,filename_preserved,download_failure_shows_error_toast,download_carries_secret_view_token
+ * 조합 요약(마커 아님, 평문): card=user_post 는 아래 ApiClient 요청 시험이 단다(사용자 게시글 카드의 다운로드 경로).
+ * 효과 요약(마커 아님, 평문): download_via_api_client_with_token,filename_preserved,download_failure_shows_error_toast,download_carries_secret_view_token
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { downloadAttachmentHandler } from '../downloadAttachment';
 
 describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이슈 #413 item 58b)', () => {
   let apiGetSpy: ReturnType<typeof vi.fn>;
   let createObjectURLSpy: ReturnType<typeof vi.fn>;
   let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
-  let clickSpy: ReturnType<typeof vi.fn>;
+  let clickSpy: Mock<() => void>;
 
   beforeEach(() => {
     apiGetSpy = vi.fn().mockResolvedValue(new Blob(['file-content']));
@@ -38,7 +38,7 @@ describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이�
     (URL as any).revokeObjectURL = revokeObjectURLSpy;
 
     // <a> 클릭이 jsdom 에서 네비게이션을 시도하지 않도록 click 만 가로챈다.
-    clickSpy = vi.fn();
+    clickSpy = vi.fn<() => void>();
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(clickSpy);
   });
 
@@ -47,6 +47,11 @@ describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이�
     vi.restoreAllMocks();
   });
 
+  // @scenario card=user_post
+  /**
+   * @scenario download_case=token_absent
+   * @effects download_via_api_client_with_token
+   */
   it('코어 ApiClient(api.get)로 responseType:blob 요청을 보낸다 (토큰 경로 보장)', async () => {
     await downloadAttachmentHandler({
       params: {
@@ -62,6 +67,10 @@ describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이�
     );
   });
 
+  /**
+   * @scenario download_case=token_present
+   * @effects download_carries_secret_view_token
+   */
   it('비밀글 열람 확인 토큰이 있으면 요청 헤더에 실어 보낸다', async () => {
     (window as any).G7Core.state = {
       get: (key: string) => (key === '_global' ? { secretViewToken: 'tok-secret-view-40' } : undefined),
@@ -80,6 +89,10 @@ describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이�
     );
   });
 
+  /**
+   * @scenario download_case=token_absent
+   * @effects download_without_token_sends_no_secret_header
+   */
   it('토큰이 없으면 헤더를 만들지 않는다 (빈 값 전송 금지)', async () => {
     (window as any).G7Core.state = { get: () => ({}) };
 
@@ -88,6 +101,10 @@ describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이�
     expect(apiGetSpy).toHaveBeenCalledWith('/d/x', { responseType: 'blob', headers: {} });
   });
 
+  /**
+   * @scenario download_case=token_absent
+   * @effects filename_preserved
+   */
   it('받은 blob 을 objectURL 로 변환해 filename 으로 다운로드하고 revoke 한다', async () => {
     await downloadAttachmentHandler({
       params: { url: '/d/x', filename: '보고서.pdf' },
@@ -98,12 +115,20 @@ describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이�
     expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-object-url');
   });
 
+  /**
+   * @scenario download_case=no_url
+   * @effects download_without_url_skips_request
+   */
   it('url 이 없으면 api 호출 없이 조용히 반환한다', async () => {
     await downloadAttachmentHandler({ params: { filename: 'x.pdf' } });
 
     expect(apiGetSpy).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario download_case=request_failure
+   * @effects download_failure_shows_error_toast
+   */
   it('다운로드 실패 시 throw 하지 않고 에러 토스트를 띄운다', async () => {
     apiGetSpy.mockRejectedValueOnce(new Error('network'));
 

@@ -37,7 +37,7 @@ import {
   type OverlayBox,
 } from '../utils/overlayGeometry';
 import { isDraggableNode } from '../dnd/nestingRules';
-import { collectAncestors, findNodeByPath, isInsideIterationInstance, serializeEditorPath, type EditorNode } from '../utils/layoutTreeUtils';
+import { collectAncestors, findNodeByPath, isInsideIterationInstance, serializeEditorPath, type EditorNode, type ComponentPath } from '../utils/layoutTreeUtils';
 import {
   classifyLockKind,
   isEditableLockKind,
@@ -58,7 +58,7 @@ export interface DndCanvasLayerProps {
    * 이 모드에서는 그 iteration 의 **인스턴스 내부 노드에 개별 드래그/선택 핸들**을 만들어
    * 항목 템플릿 내부 요소를 개별 편집할 수 있게 한다(route 모드의 "묶음 단위 1핸들" 정반대).
    */
-  editableRootPath?: number[] | null;
+  editableRootPath?: ComponentPath | null;
   components: EditorNode[];
   patchLayout: UseCanvasDndParams['patchLayout'];
   pushHistory: UseCanvasDndParams['pushHistory'];

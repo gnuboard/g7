@@ -1966,6 +1966,141 @@
       "image_max_height": "최대 높이",
       "image_quality": "이미지 품질",
       "image_quality_hint": "1~100 사이의 값을 입력하세요. 높을수록 품질이 좋습니다.",
+      "thumbnail": {
+        "title": "썸네일",
+        "desc": "이미지 주소에 규격(?size=sm 등)을 붙이면 아래 「썸네일 규격」대로 줄인 파일을 만들어 두고 내보냅니다.",
+        "engine_missing": "이 서버에는 이미지 처리 엔진(GD 또는 Imagick)이 없어 썸네일을 만들 수 없습니다. 이미지는 원본 그대로 전송됩니다.",
+        "enabled": "썸네일 사용",
+        "enabled_hint": "끄면 규격을 붙인 주소도 원본을 그대로 보냅니다. 이미 만든 썸네일 파일은 지우지 않습니다.",
+        "content_preset": "본문 이미지 규격",
+        "content_preset_hint": "게시글과 페이지 본문의 이미지를 표시할 때 쓸 규격입니다. 저장된 본문 HTML 은 바뀌지 않습니다.",
+        "prune_enabled": "썸네일 자동 정리",
+        "prune_enabled_hint": "규격이 바뀌어 쓰이지 않거나 원본이 없어진 썸네일 파일을 정리 스케줄이 지웁니다.",
+        "animated_original": "움직이는 이미지는 원본 사용",
+        "animated_original_hint": "움직이는 GIF·WebP·PNG 는 썸네일로 바꾸지 않고 원본을 그대로 보냅니다. 끄면 첫 장면으로 썸네일을 만들어 움직이지 않습니다. GD 엔진은 움직이는 WebP 를 읽지 못해 꺼도 원본을 보냅니다.",
+        "prune_schedule_notice": "썸네일 정리는 썸네일 정리 스케줄이 실행합니다.",
+        "server_limits": {
+          "title": "고급 — 서버 보호 값",
+          "desc": "썸네일을 만드느라 서버가 붙잡히지 않게 하는 값입니다. 칸을 비우면 서버 기본값(.env 의 G7_THUMBNAIL_* 가 있으면 그 값)을 쓰고, 칸에 보이는 흐린 숫자가 지금 그 값입니다. .env 우선 모드에서 .env 에 값을 적은 칸은 「.env 고정」으로 잠깁니다.",
+          "generate_per_minute": "1분에 새로 만드는 썸네일 수 (IP 하나)",
+          "generate_per_minute_hint": "아직 없는 썸네일을 IP 하나가 1분에 이만큼까지 만들게 합니다. 넘으면 원본을 보냅니다. 1~10000",
+          "lock_wait_seconds": "생성 대기 시간",
+          "lock_wait_seconds_hint": "같은 썸네일을 다른 요청이 만들고 있을 때 기다리는 시간입니다. 넘으면 원본을 보내고 캐시하지 않습니다. 1~30초",
+          "max_source_pixels": "원본 최대 픽셀 수",
+          "max_source_pixels_hint": "이보다 큰 원본은 줄이지 않고 원본을 보냅니다(메모리 보호). 서버 메모리 한도가 작으면 더 낮춰 씁니다. 1000000~100000000",
+          "pregenerate_batch": "한 번에 만드는 원본 수",
+          "pregenerate_batch_hint": "「기존 이미지 썸네일 만들기」와 명령 thumbnails:pregenerate 가 한 번에 처리하는 원본 수입니다. 1~500",
+          "pregenerate_time_budget": "한 번 호출의 시간 예산",
+          "pregenerate_time_budget_hint": "「기존 이미지 썸네일 만들기」 한 번 호출이 쓰는 최대 시간입니다. 넘으면 그 자리에서 이어 부릅니다. 서버 실행 시간 한도가 더 짧으면 그 절반을 씁니다. 1~60초",
+          "purge_time_budget": "비우기 한 번 호출의 시간 예산",
+          "purge_time_budget_hint": "썸네일 「비우기」 한 번 호출이 쓰는 최대 시간입니다. 같은 저장소를 두 위치가 함께 쓰거나 규격 하나만 지우거나 원격 저장소를 비울 때 넘으면 그 자리에서 이어 부릅니다. 서버 실행 시간 한도가 더 짧으면 그 절반을 씁니다. 1~60초",
+          "unit_count": "개",
+          "unit_seconds": "초",
+          "unit_pixels": "픽셀"
+        },
+        "storage": {
+          "title": "저장 위치 · 캐시",
+          "desc": "썸네일 파일을 원본의 공개 여부에 따라 두 곳에 나눠 저장합니다. 저장 위치는 「저장」을 눌러야 바뀌고, 비우기는 누르는 즉시 실행됩니다.",
+          "kinds": {
+            "public": "공개 이미지 썸네일",
+            "gated": "권한이 걸린 이미지 썸네일"
+          },
+          "kind_hints": {
+            "public": "레이아웃 첨부, 상품, 카테고리처럼 누구나 볼 수 있는 이미지입니다. 공개 저장소(CDN)를 고를 수 있습니다.",
+            "gated": "첨부파일, 비밀글, 리뷰처럼 권한을 확인하고 보내는 이미지입니다. 비공개 저장소만 고를 수 있습니다."
+          },
+          "disk": "저장 디스크",
+          "private_disk": "비공개 썸네일 저장소",
+          "usage": "파일 {{count}}개, {{size}}",
+          "not_counted": "집계 안 함(원격 저장소)",
+          "after_save": "저장 후 집계",
+          "load_failed": "썸네일 사용량을 불러오지 못했습니다. 잠시 뒤 다시 시도하세요.",
+          "locked_hint": "저장 위치를 바꾼 줄은 「저장」 전까지 비우기를 할 수 없습니다. 저장하면 새 위치 기준으로 다시 집계합니다.",
+          "purge_preset": "비울 규격",
+          "all_presets": "모든 규격",
+          "purge": "비우기",
+          "purge_success": "썸네일 {{count}}개를 지웠습니다.",
+          "purge_failed": "썸네일을 비우지 못했습니다.",
+          "purge_all": "두 곳 모두 비우기",
+          "pregenerate": "기존 이미지 썸네일 만들기",
+          "cdn_purge_notice": "공개 썸네일을 공개 저장소(CDN)에 두면, 비우기와 원본 삭제 때 CDN 캐시 무효화는 CDN 플러그인이 처리합니다. 플러그인이 없으면 CDN 에 남은 사본이 만료될 때까지 보일 수 있습니다."
+        },
+        "purge_all_modal": {
+          "title": "썸네일 모두 비우기",
+          "body": "아래 두 저장 위치의 썸네일 파일을 모두 지웁니다.",
+          "disk": "디스크: {{disk}}",
+          "warning": "원본 이미지는 그대로입니다. 지운 썸네일은 다음 요청 때 다시 만들어집니다.",
+          "confirm": "모두 비우기",
+          "success": "썸네일을 지웠습니다. 공개 {{public}}개, 권한 {{gated}}개"
+        },
+        "pregenerate_modal": {
+          "title": "기존 이미지 썸네일 만들기",
+          "body": "이미 올라와 있는 이미지의 썸네일을 미리 만듭니다. 이미 만든 썸네일은 건너뜁니다.",
+          "sources": "대상 이미지",
+          "no_sources": "썸네일을 만들 수 있는 이미지 소스가 없습니다.",
+          "presets": "만들 규격",
+          "counts": "처리 {{processed}} / {{total}}, 생성 {{generated}}",
+          "running": "만드는 중…",
+          "paused": "멈춤",
+          "done": "완료",
+          "done_toast": "썸네일 만들기를 마쳤습니다. 새로 만든 파일 {{generated}}개",
+          "failed": "썸네일을 만들지 못했습니다.",
+          "start": "시작",
+          "restart": "다시 시작",
+          "pause": "멈춤"
+        },
+        "presets": {
+          "title": "썸네일 규격",
+          "desc": "규격마다 크기, 맞춤, 형식을 정합니다. 코어 규격과 확장 규격은 이름을 바꿀 수 없고 값만 고칠 수 있습니다.",
+          "col": {
+            "name": "이름",
+            "source": "출처",
+            "width": "가로",
+            "height": "세로",
+            "fit": "맞춤",
+            "anchor": "기준점",
+            "format": "형식",
+            "quality": "품질",
+            "upscale": "확대",
+            "pregenerate": "등록 시 생성",
+            "numeric": "숫자 요청",
+            "enabled": "사용",
+            "actions": "관리"
+          },
+          "kinds": {
+            "fixed": "코어",
+            "og": "코어(SEO)",
+            "extension": "확장",
+            "custom": "운영자"
+          },
+          "fit": {
+            "cover": "자르기",
+            "contain": "맞추기",
+            "width": "가로만"
+          },
+          "anchor": {
+            "center": "가운데",
+            "top": "위",
+            "bottom": "아래",
+            "left": "왼쪽",
+            "right": "오른쪽"
+          },
+          "format": {
+            "original": "원본 형식",
+            "webp": "WebP",
+            "avif": "AVIF"
+          },
+          "og_size_notice": "SEO 탭에서 설정",
+          "reset": "기본값으로",
+          "remove": "삭제",
+          "add": "규격 추가",
+          "name_rule": "규격 이름은 영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄로 2~32자입니다(^[a-z][a-z0-9_]{1,31}$). xs, sm, md, lg, xl, og 는 쓸 수 없습니다. 세로를 비우면 가로만 맞추고, 품질을 비우면 이미지 품질 설정을 따릅니다.",
+          "placeholder": {
+            "name": "예: banner_wide",
+            "height": "자동"
+          }
+        }
+      },
       "orphan_cleanup": "고아 첨부 정리",
       "orphan_cleanup_desc": "폼을 저장하지 않고 나가서 소유자 없이 남은 첨부파일을 정리합니다.",
       "orphan_cleanup_enabled": "고아 첨부 자동 정리",
@@ -2485,6 +2620,13 @@
         "driver": "검색엔진 드라이버",
         "driver_desc": "기본 제공되는 MySQL FULLTEXT(ngram) 엔진은 별도 설정 없이 한국어 검색을 지원합니다.",
         "plugin_notice": "검색엔진 플러그인(Meilisearch, Elasticsearch 등)을 설치하면 추가 드라이버가 표시됩니다."
+      },
+      "image": {
+        "title": "이미지 처리",
+        "desc": "업로드 이미지 축소와 썸네일 생성에 쓸 이미지 처리 엔진을 설정합니다.",
+        "driver": "이미지 처리 엔진",
+        "driver_desc": "GD 는 대부분의 서버에 기본으로 있습니다. Imagick 은 PHP imagick 확장이 설치된 서버에서만 표시됩니다.",
+        "plugin_notice": "이미지 처리 플러그인을 설치하면 추가 엔진이 표시됩니다. 고른 엔진을 쓸 수 없게 되면 GD 로 처리합니다."
       },
       "test_connection": "연결 테스트",
       "testing": "테스트 중...",
@@ -4753,7 +4895,9 @@
       "core_changelog_modal": "코어 변경 이력",
       "core_update_guide_modal": "코어 업데이트 안내",
       "core_update_result_modal": "코어 업데이트 확인 결과",
-      "cron_token_rotate_modal": "웹 크론 호출 번호 재발급 모달"
+      "cron_token_rotate_modal": "웹 크론 호출 번호 재발급 모달",
+      "settings_thumbnail_purge_all_modal": "썸네일 모두 비우기 확인",
+      "settings_thumbnail_pregenerate_modal": "기존 이미지 썸네일 만들기"
     },
     "admin_template_list": {
       "template_activate_modal": "템플릿 활성화 확인",

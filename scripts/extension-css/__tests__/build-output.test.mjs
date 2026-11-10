@@ -60,6 +60,9 @@ describe('변환 산출 Tailwind 빌드', () => {
     expect(css).toContain('.paydemo\\:dark\\:hover\\:bg-gray-100:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"])');
     expect(css).toContain('.paydemo\\:prose {');
     expect(css).toContain('.paydemo\\:rounded-full {'); // @source "../js"
+    // 시험 디렉터리 문자열은 훑지 않는다(#869 S7) — resources/js/__tests__/probe.test.ts 의 이름이 실리면 안 된다
+    expect(css).not.toContain('tracking-widest');
+    expect(css).not.toContain('md\\:flex-row');
     expect(css).toContain('.paydemo\\:inline-flex {'); // @source "../../src" (PHP)
     expect(css).toContain('@layer g7-extension');
     expect(css).toContain('.pay-demo-input');

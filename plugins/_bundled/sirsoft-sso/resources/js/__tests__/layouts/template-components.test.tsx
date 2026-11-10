@@ -78,7 +78,8 @@ describe('대상 템플릿 컴포넌트', () => {
       [diag, ['admin.settings.idp.last_success', 'admin.settings.idp.last_error', 'admin.settings.idp.periodic_checked_at', 'admin.settings.idp.cert_expires_at']],
     ] as const) {
       // 클래스는 이 플러그인 자기 CSS 의 앞글자 이름이다(sso: 접두 유틸리티)
-      const grid = nodes.find((n) => typeof n?.props?.className === 'string' && n.props.className.startsWith('sso:grid sso:grid-cols-3'));
+      // 화면 폭 덮어쓰기(responsive 구간 값)에도 같은 클래스가 있을 수 있으니 이름 있는 노드만 본다
+      const grid = nodes.find((n) => typeof n?.name === 'string' && typeof n?.props?.className === 'string' && n.props.className.startsWith('sso:grid sso:grid-cols-3'));
       expect(grid?.name).toBe('Div');
       const cells = grid.children as any[];
       expect(cells.map((c) => c.text).filter((t: string) => t?.startsWith('$t:'))).toEqual(labels.map((l) => `$t:sirsoft-sso.${l}`));

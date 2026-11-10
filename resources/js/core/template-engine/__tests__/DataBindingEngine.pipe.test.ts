@@ -4,7 +4,7 @@
  * resolveBindings 메서드에서 파이프 함수가 올바르게 처리되는지 테스트
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DataBindingEngine } from '../DataBindingEngine';
 import { pipeRegistry } from '../PipeRegistry';
 
@@ -73,8 +73,9 @@ describe('DataBindingEngine - Pipe Integration', () => {
         '{{post.created_at_formatted ?? (post.created_at | date)}}',
         context
       );
-      // 이 케이스는 JavaScript 표현식 내에서 파이프가 있으므로 특수 처리 필요
-      // 현재 구현에서는 표현식 전체를 파이프로 분리하지 않음
+      // 괄호 안 파이프는 평가기가 거부하는 문법이라 식이 원본 그대로 흘러간다
+      // (docs/frontend/data-binding.md 「평가기가 거부하는 문법」 — 파이프는 식 최상위에 둔다)
+      expect(result).toBe('{{post.created_at_formatted ?? (post.created_at | date)}}');
     });
 
     /** @effects pipes_apply_in_bindings */
@@ -175,8 +176,9 @@ describe('DataBindingEngine - Pipe Integration', () => {
         '{{post.created_at_formatted ?? (post.created_at | date)}}',
         context1
       );
-      // 이 패턴은 JavaScript 표현식 내부의 파이프이므로 현재 구현에서는 지원하지 않을 수 있음
-      // 향후 개선 필요
+      // 앞 값이 있어도 식 전체가 거부돼 원본 그대로다 — 레이아웃은 `{{post.created_at_formatted ?? post.created_at}}` 처럼
+      // 파이프 없이 쓰거나 파이프를 식 최상위에 둔다(docs/frontend/data-binding.md 「평가기가 거부하는 문법」)
+      expect(result1).toBe('{{post.created_at_formatted ?? (post.created_at | date)}}');
     });
   });
 
@@ -321,6 +323,48 @@ describe('DataBindingEngine - Pipe Integration', () => {
       );
       expect(out.broken).toBeUndefined();
       expect(out.intact).toEqual({ a: 1 });
+    });
+  });
+
+  describe('썸네일 파이프 바인딩 (engine-v1.89.0)', () => {
+    beforeEach(() => {
+      (window as any).G7Config = {
+        settings: {
+          upload: {
+            thumbnail_presets_public: [
+              { name: 'md', width: 640, height: null, fit: 'width', numeric: true },
+              { name: 'lg', width: 1280, height: null, fit: 'width', numeric: true },
+            ],
+            thumbnail_url_patterns: ['/api/attachment/*'],
+          },
+        },
+      };
+    });
+
+    afterEach(() => {
+      delete (window as any).G7Config;
+    });
+
+    /** @effects pipes_apply_in_bindings */
+    it("{{url | thumb('md')}} 는 서명 쿼리를 보존한 채 size 를 덧붙인다", () => {
+      const context = { product: { thumbnail_url: '/api/attachment/abc?expires=1&signature=a%2Fb' } };
+      expect(engine.resolveBindings("{{product.thumbnail_url | thumb('md')}}", context)).toBe(
+        '/api/attachment/abc?expires=1&signature=a%2Fb&size=md',
+      );
+    });
+
+    /** @effects pipes_apply_in_bindings */
+    it("{{url | thumbSrcset('md')}} 는 2x 후보를 붙인다", () => {
+      const context = { product: { thumbnail_url: '/api/attachment/abc' } };
+      expect(engine.resolveBindings("{{product.thumbnail_url | thumbSrcset('md')}}", context)).toBe(
+        '/api/attachment/abc?size=md 1x, /api/attachment/abc?size=lg 2x',
+      );
+    });
+
+    /** @effects pipes_apply_in_bindings */
+    it('값이 없으면 단일 바인딩은 원래 값(null)을 보존한다', () => {
+      const out: any = engine.resolveObject({ src: "{{product.thumbnail_url | thumb('md')}}" }, { product: { thumbnail_url: null } });
+      expect(out.src).toBeNull();
     });
   });
 

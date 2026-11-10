@@ -146,8 +146,20 @@
                 "id": "plugin_settings_page",
                 "type": "basic",
                 "name": "Div",
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "bizppurio:p-6 bizppurio:min-h-screen bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "bizppurio:p-8 bizppurio:min-h-screen bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "bizppurio-admin-page-content-responsive"
+                    "className": "bizppurio:p-4 bizppurio:min-h-screen bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -351,8 +363,15 @@
                                         "comment": "구분선 아래 — 문자·카카오 채널별 사전 준비 목록 (PC lg 이상 2단, 모바일 1단)",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "bizppurio:mt-3 bizppurio:pt-3 bizppurio:border-t bizppurio:border-blue-100 bizppurio:dark:border-blue-900 bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "bizppurio:mt-3 bizppurio:pt-3 bizppurio:border-t bizppurio:border-blue-100 bizppurio:dark:border-blue-900 bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-2 bizppurio:gap-4"
+                                            "className": "bizppurio:mt-3 bizppurio:pt-3 bizppurio:border-t bizppurio:border-blue-100 bizppurio:dark:border-blue-900 bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4"
                                         },
                                         "children": [
                                             {
@@ -743,15 +762,26 @@
                                                 "id": "field_bizppurio_id",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-4"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-4"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -775,8 +805,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-8"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-8"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -808,15 +842,26 @@
                                                 "id": "field_password",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-4"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-4"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -840,8 +885,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-8"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-8"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -874,15 +923,26 @@
                                                 "id": "field_connection_check",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-4"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-4"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -906,8 +966,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-8 bizppurio:flex bizppurio:justify-end"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "bizppurio:lg:col-span-8 bizppurio:flex bizppurio:lg:justify-end"
+                                                            "className": "bizppurio:flex"
                                                         },
                                                         "children": [
                                                             {
@@ -1026,15 +1093,26 @@
                                                 "id": "field_api_key",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-4"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-4"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -1058,8 +1136,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-8"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-8"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -1136,15 +1218,26 @@
                                                 "id": "field_sender_number",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-4"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-4"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -1168,8 +1261,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-8"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-8"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -1201,15 +1298,26 @@
                                                 "id": "field_sender_key",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"
+                                                    "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-4"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-4"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -1233,8 +1341,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "bizppurio:lg:col-span-8"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "bizppurio:col-span-8"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -2797,7 +2909,378 @@
             "props": {
                 "title": "$t:sirsoft-message_bizppurio.template.form.modal_title|name={{_global.bz_tpl_modal?.notification_name ?? ''}}",
                 "size": "xl",
-                "closeOnOverlayClick": false
+                "closeOnOverlayClick": false,
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal",
+                                "target": "modal_bizppurio_template"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "disabled": "{{_global.bz_tpl_modal?.isSaving ?? false}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "if": "{{!(_global.bz_tpl_modal?.id)}}",
+                        "actions": [
+                            {
+                                "comment": "임시 저장(신규) — DB 에 초안 행만 만든다. 검수 신청은 하지 않는다. draft 표시를 실어 쓰다 만 내용(본문·카테고리·유형별 필수값 미입력)도 남기고, 필수값은 검수 신청 때 서버가 확인한다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bz_tpl_modal.isSaving": true,
+                                            "bz_tpl_modal.error": null,
+                                            "bz_tpl_modal.errors": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "alimtalk_enabled": true,
+                                                "draft": true,
+                                                "content": "{{_global.bz_tpl_modal?.content}}",
+                                                "notification_type": "{{_global.bz_tpl_modal?.notification_type}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "bizppurio_templates_list"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "$t:sirsoft-message_bizppurio.template.form.saved_toast",
+                                                    "type": "success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "target": "modal_bizppurio_template"
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_tpl_modal.isSaving": false
+                                                }
+                                            }
+                                        ],
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bz_tpl_modal.isSaving": false,
+                                                "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
+                        },
+                        "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "if": "{{_global.bz_tpl_modal?.id}}",
+                        "actions": [
+                            {
+                                "comment": "임시 저장(기존) — 초안 내용만 갱신한다. 검수 신청은 하지 않는다. 신규와 같이 draft 표시를 실어 미완성 내용도 받는다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bz_tpl_modal.isSaving": true,
+                                            "bz_tpl_modal.error": null,
+                                            "bz_tpl_modal.errors": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PUT",
+                                            "body": {
+                                                "alimtalk_enabled": true,
+                                                "draft": true,
+                                                "content": "{{_global.bz_tpl_modal?.content}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "bizppurio_templates_list"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "$t:sirsoft-message_bizppurio.template.form.saved_toast",
+                                                    "type": "success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "target": "modal_bizppurio_template"
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_tpl_modal.isSaving": false
+                                                }
+                                            }
+                                        ],
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bz_tpl_modal.isSaving": false,
+                                                "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
+                        },
+                        "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "if": "{{!(_global.bz_tpl_modal?.id)}}",
+                        "actions": [
+                            {
+                                "comment": "저장 후 검수 신청(신규) — 생성 응답의 id 로 검수 신청을 이어 붙인다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bz_tpl_modal.isSaving": true,
+                                            "bz_tpl_modal.error": null,
+                                            "bz_tpl_modal.errors": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "alimtalk_enabled": true,
+                                                "content": "{{_global.bz_tpl_modal?.content}}",
+                                                "notification_type": "{{_global.bz_tpl_modal?.notification_type}}"
+                                            }
+                                        },
+                                        "onSuccess": {
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{response.data?.template?.id}}/request",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "bizppurio_templates_list"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
+                                                        "type": "success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "modal_bizppurio_template"
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bz_tpl_modal.isSaving": false
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_tpl_modal.isSaving": false,
+                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                                }
+                                            }
+                                        },
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bz_tpl_modal.isSaving": false,
+                                                "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50",
+                            "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
+                        },
+                        "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "if": "{{_global.bz_tpl_modal?.id}}",
+                        "actions": [
+                            {
+                                "comment": "저장 후 검수 신청(기존) — 내용을 갱신한 뒤 같은 id 로 검수를 신청한다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bz_tpl_modal.isSaving": true,
+                                            "bz_tpl_modal.error": null,
+                                            "bz_tpl_modal.errors": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PUT",
+                                            "body": {
+                                                "alimtalk_enabled": true,
+                                                "content": "{{_global.bz_tpl_modal?.content}}"
+                                            }
+                                        },
+                                        "onSuccess": {
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}/request",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "bizppurio_templates_list"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
+                                                        "type": "success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "modal_bizppurio_template"
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "bz_tpl_modal.isSaving": false
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_tpl_modal.isSaving": false,
+                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                                }
+                                            }
+                                        },
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bz_tpl_modal.isSaving": false,
+                                                "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50",
+                            "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
+                        },
+                        "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request"
+                    }
+                ]
             },
             "children": [
                 {
@@ -2918,8 +3401,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-3"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-3"
+                                "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-3"
                             },
                             "children": [
                                 {
@@ -4028,8 +4518,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5"
+                                                "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -4320,8 +4817,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5"
+                                                "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -4534,384 +5038,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal",
-                                    "target": "modal_bizppurio_template"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
-                                "disabled": "{{_global.bz_tpl_modal?.isSaving ?? false}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{!(_global.bz_tpl_modal?.id)}}",
-                            "actions": [
-                                {
-                                    "comment": "임시 저장(신규) — DB 에 초안 행만 만든다. 검수 신청은 하지 않는다. draft 표시를 실어 쓰다 만 내용(본문·카테고리·유형별 필수값 미입력)도 남기고, 필수값은 검수 신청 때 서버가 확인한다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null,
-                                                "bz_tpl_modal.errors": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "alimtalk_enabled": true,
-                                                    "draft": true,
-                                                    "content": "{{_global.bz_tpl_modal?.content}}",
-                                                    "notification_type": "{{_global.bz_tpl_modal?.notification_type}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "bizppurio_templates_list"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "$t:sirsoft-message_bizppurio.template.form.saved_toast",
-                                                        "type": "success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_bizppurio_template"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_tpl_modal.isSaving": false
-                                                    }
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
-                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
-                            },
-                            "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{_global.bz_tpl_modal?.id}}",
-                            "actions": [
-                                {
-                                    "comment": "임시 저장(기존) — 초안 내용만 갱신한다. 검수 신청은 하지 않는다. 신규와 같이 draft 표시를 실어 미완성 내용도 받는다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null,
-                                                "bz_tpl_modal.errors": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PUT",
-                                                "body": {
-                                                    "alimtalk_enabled": true,
-                                                    "draft": true,
-                                                    "content": "{{_global.bz_tpl_modal?.content}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "bizppurio_templates_list"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "$t:sirsoft-message_bizppurio.template.form.saved_toast",
-                                                        "type": "success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_bizppurio_template"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_tpl_modal.isSaving": false
-                                                    }
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
-                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
-                            },
-                            "text": "$t:sirsoft-message_bizppurio.template.form.btn_save"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{!(_global.bz_tpl_modal?.id)}}",
-                            "actions": [
-                                {
-                                    "comment": "저장 후 검수 신청(신규) — 생성 응답의 id 로 검수 신청을 이어 붙인다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null,
-                                                "bz_tpl_modal.errors": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "alimtalk_enabled": true,
-                                                    "content": "{{_global.bz_tpl_modal?.content}}",
-                                                    "notification_type": "{{_global.bz_tpl_modal?.notification_type}}"
-                                                }
-                                            },
-                                            "onSuccess": {
-                                                "handler": "apiCall",
-                                                "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{response.data?.template?.id}}/request",
-                                                "auth_required": true,
-                                                "params": {
-                                                    "method": "POST",
-                                                    "body": {
-                                                        "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "bizppurio_templates_list"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
-                                                            "type": "success"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "closeModal",
-                                                        "target": "modal_bizppurio_template"
-                                                    },
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "bz_tpl_modal.isSaving": false
-                                                        }
-                                                    }
-                                                ],
-                                                "onError": {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_tpl_modal.isSaving": false,
-                                                        "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                        "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
-                                                    }
-                                                }
-                                            },
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50",
-                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
-                            },
-                            "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{_global.bz_tpl_modal?.id}}",
-                            "actions": [
-                                {
-                                    "comment": "저장 후 검수 신청(기존) — 내용을 갱신한 뒤 같은 id 로 검수를 신청한다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "if": "{{!(_global.bz_tpl_modal?.isSaving ?? false)}}",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bz_tpl_modal.isSaving": true,
-                                                "bz_tpl_modal.error": null,
-                                                "bz_tpl_modal.errors": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PUT",
-                                                "body": {
-                                                    "alimtalk_enabled": true,
-                                                    "content": "{{_global.bz_tpl_modal?.content}}"
-                                                }
-                                            },
-                                            "onSuccess": {
-                                                "handler": "apiCall",
-                                                "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}/request",
-                                                "auth_required": true,
-                                                "params": {
-                                                    "method": "POST",
-                                                    "body": {
-                                                        "comment": "{{_global.bz_tpl_modal?.request_comment ?? ''}}"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "bizppurio_templates_list"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "message": "$t:sirsoft-message_bizppurio.template.form.requested_toast",
-                                                            "type": "success"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "closeModal",
-                                                        "target": "modal_bizppurio_template"
-                                                    },
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "bz_tpl_modal.isSaving": false
-                                                        }
-                                                    }
-                                                ],
-                                                "onError": {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_tpl_modal.isSaving": false,
-                                                        "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                        "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
-                                                    }
-                                                }
-                                            },
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "bz_tpl_modal.isSaving": false,
-                                                    "bz_tpl_modal.error": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                    "bz_tpl_modal.errors": "{{(error.errors && typeof error.errors === 'object' && !error.errors.bizppurio_message) ? error.errors : null}}"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50",
-                                "disabled": "{{_computed.isMessagingReadOnly || ((_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false))}}"
-                            },
-                            "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request"
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -4926,7 +5052,105 @@
             "props": {
                 "title": "$t:sirsoft-message_bizppurio.template.sms.modal_title|name={{_global.bz_sms_modal?.notification_name ?? ''}}",
                 "size": "md",
-                "closeOnOverlayClick": false
+                "closeOnOverlayClick": false,
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal",
+                                "target": "modal_bizppurio_sms"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "disabled": "{{_global.bz_sms_modal?.isSaving ?? false}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "SMS 본문 저장 — 로케일 맵을 delivery upsert 로 보낸다. 알림톡 행이 없으면 서버가 초안 행을 함께 만든다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bz_sms_modal.isSaving": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/delivery/{{_global.bz_sms_modal?.notification_type}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PUT",
+                                            "body": {
+                                                "sms_body": "{{Object.assign({}, _global.bz_sms_modal?.body)}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "bizppurio_templates_list"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "$t:sirsoft-message_bizppurio.template.sms.saved_toast",
+                                                    "type": "success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "target": "modal_bizppurio_sms"
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_sms_modal.isSaving": false
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_sms_modal.isSaving": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "type": "error"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50",
+                            "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_sms_modal?.isSaving ?? false)}}"
+                        },
+                        "text": "$t:sirsoft-message_bizppurio.template.sms.btn_save"
+                    }
+                ]
             },
             "children": [
                 {
@@ -5058,111 +5282,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal",
-                                    "target": "modal_bizppurio_sms"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
-                                "disabled": "{{_global.bz_sms_modal?.isSaving ?? false}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "SMS 본문 저장 — 로케일 맵을 delivery upsert 로 보낸다. 알림톡 행이 없으면 서버가 초안 행을 함께 만든다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bz_sms_modal.isSaving": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/delivery/{{_global.bz_sms_modal?.notification_type}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PUT",
-                                                "body": {
-                                                    "sms_body": "{{Object.assign({}, _global.bz_sms_modal?.body)}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "bizppurio_templates_list"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "$t:sirsoft-message_bizppurio.template.sms.saved_toast",
-                                                        "type": "success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_bizppurio_sms"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_sms_modal.isSaving": false
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_sms_modal.isSaving": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                        "type": "error"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50",
-                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_sms_modal?.isSaving ?? false)}}"
-                            },
-                            "text": "$t:sirsoft-message_bizppurio.template.sms.btn_save"
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -5177,7 +5296,102 @@
             "props": {
                 "title": "$t:sirsoft-message_bizppurio.template.cancel_approval.modal_title",
                 "size": "sm",
-                "closeOnOverlayClick": false
+                "closeOnOverlayClick": false,
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal",
+                                "target": "modal_bizppurio_cancel_approval"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "disabled": "{{_global.bz_cancel_approval?.isSaving ?? false}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "승인 취소 확정 — 카카오에 승인 취소를 보내고 행을 초안으로 되돌린다. 그 순간부터 알림톡 발송이 막힌다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bz_cancel_approval.isSaving": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_cancel_approval?.id}}/cancel-approval",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "bizppurio_templates_list"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "$t:sirsoft-message_bizppurio.template.cancel_approval.done_toast",
+                                                    "type": "info"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "target": "modal_bizppurio_cancel_approval"
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_cancel_approval.isSaving": false
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_cancel_approval.isSaving": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "type": "error"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-amber-700 bizppurio:text-white bizppurio:dark:bg-amber-700 bizppurio-btn-amber-solid bizppurio:disabled:opacity-50",
+                            "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_cancel_approval?.isSaving ?? false)}}"
+                        },
+                        "text": "$t:sirsoft-message_bizppurio.template.cancel_approval.btn_confirm"
+                    }
+                ]
             },
             "children": [
                 {
@@ -5202,108 +5416,6 @@
                                 "className": "bizppurio:text-sm bizppurio:text-gray-700 bizppurio:dark:text-gray-200"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.cancel_approval.warning|name={{_global.bz_cancel_approval?.notification_name ?? ''}}"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal",
-                                    "target": "modal_bizppurio_cancel_approval"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
-                                "disabled": "{{_global.bz_cancel_approval?.isSaving ?? false}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "승인 취소 확정 — 카카오에 승인 취소를 보내고 행을 초안으로 되돌린다. 그 순간부터 알림톡 발송이 막힌다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bz_cancel_approval.isSaving": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_cancel_approval?.id}}/cancel-approval",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "bizppurio_templates_list"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "$t:sirsoft-message_bizppurio.template.cancel_approval.done_toast",
-                                                        "type": "info"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_bizppurio_cancel_approval"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_cancel_approval.isSaving": false
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_cancel_approval.isSaving": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                        "type": "error"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-amber-700 bizppurio:text-white bizppurio:dark:bg-amber-700 bizppurio-btn-amber-solid bizppurio:disabled:opacity-50",
-                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_cancel_approval?.isSaving ?? false)}}"
-                            },
-                            "text": "$t:sirsoft-message_bizppurio.template.cancel_approval.btn_confirm"
                         }
                     ]
                 }
@@ -5395,7 +5507,103 @@
             "props": {
                 "title": "$t:sirsoft-message_bizppurio.manage.delete.modal_title",
                 "size": "sm",
-                "closeOnOverlayClick": false
+                "closeOnOverlayClick": false,
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal",
+                                "target": "modal_bizppurio_delete"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
+                            "disabled": "{{_global.bz_delete_modal?.isSaving ?? false}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "템플릿 삭제 — 카카오 쪽 템플릿까지 지워졌는지 응답(kakao_deleted)으로 갈라 안내한다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bz_delete_modal.isSaving": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_delete_modal?.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "bizppurio_templates_list"
+                                                }
+                                            },
+                                            {
+                                                "comment": "카카오측을 못 지운 사유(kakao_skip_reason)로 안내를 가른다 — 미등록 행은 카카오에 지울 것이 없고, 상태 제약만 「상태 제약」이며, 그 밖(카카오 사유·서버 연결 실패)은 서버가 준 사유를 붙인다",
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "{{response.data?.kakao_deleted ? $t('sirsoft-message_bizppurio.manage.delete.done_with_kakao') : (response.data?.kakao_skip_reason === 'not_registered' ? $t('sirsoft-message_bizppurio.manage.delete.done_not_registered') : ((!response.data?.kakao_skip_reason || response.data?.kakao_skip_reason === 'state_not_deletable') ? $t('sirsoft-message_bizppurio.manage.delete.done_db_only') : $t('sirsoft-message_bizppurio.manage.delete.done_kakao_failed') + ' ' + response.data.kakao_skip_reason))}}",
+                                                    "type": "success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "target": "modal_bizppurio_delete"
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_delete_modal.isSaving": false
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bz_delete_modal.isSaving": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "message": "{{error.errors?.bizppurio_message ?? error.message}}",
+                                                    "type": "error"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-red-600 bizppurio:text-white bizppurio:hover:bg-red-700 bizppurio:dark:bg-red-600 bizppurio:dark:hover:bg-red-700 bizppurio:disabled:opacity-50",
+                            "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_delete_modal?.isSaving ?? false)}}"
+                        },
+                        "text": "$t:sirsoft-message_bizppurio.manage.delete.btn_confirm"
+                    }
+                ]
             },
             "children": [
                 {
@@ -5405,109 +5613,6 @@
                         "className": "bizppurio:text-sm bizppurio:text-gray-700 bizppurio:dark:text-gray-200"
                     },
                     "text": "$t:sirsoft-message_bizppurio.manage.delete.warning|name={{_global.bz_delete_modal?.notification_name ?? ''}}"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal",
-                                    "target": "modal_bizppurio_delete"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50",
-                                "disabled": "{{_global.bz_delete_modal?.isSaving ?? false}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "템플릿 삭제 — 카카오 쪽 템플릿까지 지워졌는지 응답(kakao_deleted)으로 갈라 안내한다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bz_delete_modal.isSaving": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_delete_modal?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "bizppurio_templates_list"
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "카카오측을 못 지운 사유(kakao_skip_reason)로 안내를 가른다 — 미등록 행은 카카오에 지울 것이 없고, 상태 제약만 「상태 제약」이며, 그 밖(카카오 사유·서버 연결 실패)은 서버가 준 사유를 붙인다",
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "{{response.data?.kakao_deleted ? $t('sirsoft-message_bizppurio.manage.delete.done_with_kakao') : (response.data?.kakao_skip_reason === 'not_registered' ? $t('sirsoft-message_bizppurio.manage.delete.done_not_registered') : ((!response.data?.kakao_skip_reason || response.data?.kakao_skip_reason === 'state_not_deletable') ? $t('sirsoft-message_bizppurio.manage.delete.done_db_only') : $t('sirsoft-message_bizppurio.manage.delete.done_kakao_failed') + ' ' + response.data.kakao_skip_reason))}}",
-                                                        "type": "success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_bizppurio_delete"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_delete_modal.isSaving": false
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bz_delete_modal.isSaving": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "{{error.errors?.bizppurio_message ?? error.message}}",
-                                                        "type": "error"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-red-600 bizppurio:text-white bizppurio:hover:bg-red-700 bizppurio:dark:bg-red-600 bizppurio:dark:hover:bg-red-700 bizppurio:disabled:opacity-50",
-                                "disabled": "{{_computed.isMessagingReadOnly || (_global.bz_delete_modal?.isSaving ?? false)}}"
-                            },
-                            "text": "$t:sirsoft-message_bizppurio.manage.delete.btn_confirm"
-                        }
-                    ]
                 }
             ]
         }

@@ -64,6 +64,8 @@ const PAGE: Node[] = [
     button('tab', [{ type: 'click', handler: 'setState', params: { target: 'local', tab: 'b' } }]),
     show('filters', 'JSON.stringify(_local.filters ?? null)'),
     show('keep', 'JSON.stringify(_local.keep ?? null)'),
+    // 루트 다시 그리기 표지 — 전역 쓰기를 실은 렌더가 커밋됐는지 이 값으로 본다
+    show('tick', 'String(_global.__tick ?? 0)'),
 ];
 
 interface Mounted {
@@ -132,6 +134,15 @@ async function click(label: string): Promise<void> {
 }
 const liveB = (app: any): Record<string, any> => app.getGlobalState()._local;
 
+/**
+ * 하위 필터를 고르고 그 값이 화면에 커밋될 때까지 기다린다 — 뒤따르는 단언과 쓰기가 고른 뒤의 화면 문맥을 전제로 한다.
+ * 종전에는 클릭 뒤 40ms 만 기다려, 부하에서는 커밋 전 화면을 읽을 수 있었다.
+ */
+async function pickFilters(): Promise<void> {
+    await click('pick');
+    await waitFor(() => expect(JSON.parse(text('filters'))).toEqual({ status: 'paid', method: 'card' }), { timeout: 5_000 });
+}
+
 describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화면·B 에서 그 의미대로 남는다 (engine-v1.81.2, 7.1.1)', () => {
     let m: Mounted | null = null;
 
@@ -146,14 +157,14 @@ describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화�
      */
     it('액션 밖 shallow `{}` 로 비운 필터가 화면에도 빈 값이다 (setState 동작이 저장소 A 에 쓴 하위 키가 되살아나지 않음)', async () => {
         m = await mount();
-        await click('pick');
+        await pickFilters();
         expect(JSON.parse(text('filters'))).toEqual({ status: 'paid', method: 'card' });
 
         (window as any).G7Core.state.setLocal({ filters: {} }, { merge: 'shallow' });
-        await settle(120);
+        // 고정 120ms 대신 다시 그리기의 커밋을 기다린다 — 부하에서는 120ms 안에 커밋되지 않아 앞 렌더를 읽었다
+        await waitFor(() => expect(text('filters')).toBe('{}'), { timeout: 5_000 });
 
         expect(liveB(m.app).filters).toEqual({});
-        expect(text('filters')).toBe('{}');
     });
 
     /**
@@ -162,9 +173,10 @@ describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화�
      */
     it('비운 뒤 동작이 읽는 `_local` 도 빈 값이고, 잎 키 보충이 있는 다음 setLocal 이 B 에 하위 키를 되쓰지 않는다', async () => {
         m = await mount();
-        await click('pick');
+        await pickFilters();
         (window as any).G7Core.state.setLocal({ filters: {} }, { merge: 'shallow' });
-        await settle(120);
+        // 다음 동작은 커밋된 화면 문맥을 읽는다 — 고정 120ms 대신 그 커밋을 기다린다(부하에서는 앞 렌더 문맥을 읽었다)
+        await waitFor(() => expect(text('filters')).toBe('{}'), { timeout: 5_000 });
 
         await click('peek');
         expect(captured[0]?.filters).toBe('{}');
@@ -182,15 +194,14 @@ describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화�
      */
     it('액션 밖 replace 는 화면도 B 와 같다 — 저장소 A 에만 남은 키가 보이지 않는다', async () => {
         m = await mount();
-        await click('pick');
+        await pickFilters();
         expect(text('keep')).toBe('"x"');
 
         (window as any).G7Core.state.setLocal({ filters: {} }, { merge: 'replace' });
-        await settle(120);
+        await waitFor(() => expect(text('keep')).toBe('null'), { timeout: 5_000 });
 
         expect(liveB(m.app)).toEqual({ filters: {} });
         expect(text('filters')).toBe('{}');
-        expect(text('keep')).toBe('null');
     });
 
     /**
@@ -199,19 +210,19 @@ describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화�
      */
     it('render:false 로 비운 뒤 다른 전역 쓰기로 루트가 다시 그려지면 그때 화면이 빈 값이고, 표지는 사본이 따라온 뒤 지워진다', async () => {
         m = await mount();
-        await click('pick');
+        await pickFilters();
 
         (window as any).G7Core.state.setLocal({ filters: {} }, { merge: 'shallow', render: false });
         expect((window as any).__g7SetLocalReplacedKeys?.keys).toEqual(['filters']);
         m.app.setGlobalState({ __tick: 1 });
-        await settle(120);
+        // 고정 120ms 대신 그 전역 쓰기를 실은 루트 다시 그리기의 커밋을 기다린다(동적 import 뒤 startTransition 이라 부하에서 늦다)
+        await waitFor(() => expect(text('tick')).toBe('1'), { timeout: 5_000 });
 
         expect(text('filters')).toBe('{}');
-        expect((window as any).__g7SetLocalReplacedKeys, '사본이 정본을 따라온 뒤 표지를 비운다').toBeUndefined();
+        await waitFor(() => expect((window as any).__g7SetLocalReplacedKeys, '사본이 정본을 따라온 뒤 표지를 비운다').toBeUndefined(), { timeout: 5_000 });
 
         // 정리 뒤 다시 고른 하위 키는 종전처럼 보인다(저장소 A 정리가 이후 쓰기를 막지 않음)
-        await click('pick');
-        expect(JSON.parse(text('filters'))).toEqual({ status: 'paid', method: 'card' });
+        await pickFilters();
     });
 
     /**
@@ -222,7 +233,7 @@ describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화�
      */
     it('render:false 로 비운 뒤 다른 키만 쓰는 setState 동작으로 다시 그려져도 필터가 빈 값이고, 다음 setLocal 이 하위 키를 되쓰지 않는다', async () => {
         m = await mount();
-        await click('pick');
+        await pickFilters();
 
         (window as any).G7Core.state.setLocal({ filters: {} }, { merge: 'shallow', render: false });
         // 루트 다시 그리기(B 사본 갱신)보다 먼저 오는 저장소 A 쓰기 렌더 — 그 렌더의 화면·다음 동작 입력이 정본 값이어야 한다
@@ -244,13 +255,12 @@ describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화�
      */
     it('대조군: 액션 안 shallow 는 표지 없이 종전 경로(4단계 저장소 A 갱신)로 비운다', async () => {
         m = await mount();
-        await click('pick');
+        await pickFilters();
         await click('clear-in-action');
-        await settle(80);
+        await waitFor(() => expect(text('filters')).toBe('{}'), { timeout: 5_000 });
 
         expect((window as any).__g7SetLocalReplacedKeys).toBeUndefined();
         expect(liveB(m.app).filters).toEqual({});
-        expect(text('filters')).toBe('{}');
     });
 
     /**
@@ -259,14 +269,13 @@ describe('[case:state-setstate-52] 액션 밖 shallow·replace setLocal 이 화�
      */
     it('대조군: 액션 밖 deep(기본) setLocal 은 표지를 만들지 않고 종전처럼 깊게 병합한다', async () => {
         m = await mount();
-        await click('pick');
+        await pickFilters();
 
         (window as any).G7Core.state.setLocal({ filters: { status: 'ready' } });
-        await settle(120);
+        await waitFor(() => expect(JSON.parse(text('filters'))).toEqual({ status: 'ready', method: 'card' }), { timeout: 5_000 });
 
         expect((window as any).__g7SetLocalReplacedKeys).toBeUndefined();
         expect(liveB(m.app).filters).toEqual({ status: 'ready', method: 'card' });
-        expect(JSON.parse(text('filters'))).toEqual({ status: 'ready', method: 'card' });
     });
 });
 

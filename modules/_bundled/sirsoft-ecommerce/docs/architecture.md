@@ -113,6 +113,12 @@ Listeners 33종은 이 흐름과 **별도 레인**입니다. Service 가 발행�
 
 서버가 만드는 이커머스 화면 주소(주문·클레임·문의·마일리지 알림, 결제 완료 복귀, 상품 검색·사이트맵)는 `Support/EcommerceScreenUrl` 이 화면 키(`ecommerce.product`·`mypage.order.detail`·`mypage.claim.detail`·`ecommerce.guest.claim.detail` 등)로 코어 `ScreenUrl` 을 거쳐 만든다. 상점 주소 설정·「사용자 화면 URL」·필터 훅 `core.screen_url.filter_path` 를 따른다. 기본 경로의 자리 이름은 snake_case(`{order_number}`·`{claim_number}`)로 하나다 — 필터는 이 이름으로 값을 받는다. `ClaimUrl` 의 경로 상수도 같은 이름을 쓰고, 메서드는 `EcommerceScreenUrl` 에 위임한다.
 
+## 이미지 썸네일 (7.2.0)
+
+상품, 카테고리, 리뷰, 클레임 이미지 서빙 4곳은 게이트와 원본 확인을 지난 뒤 원본 응답 바로 앞에서 코어 `ThumbnailResponder` 를 부릅니다. 원본 확인이 썸네일 호출보다 뒤에 있으면 원격 저장소에서 원본만 지워진 행이 `?size=` 를 붙였을 때만 남은 파생본으로 열립니다. 클레임 첨부는 원본 통로의 캐시 상한(`ClaimAttachmentService::CACHE_MAX_AGE`, 300초)을 `ThumbnailSource` 의 `maxAge` 로 넘겨 썸네일도 그보다 오래 캐시되지 않게 합니다.
+
+원본 제공자 4종(`src/Thumbnails/*SourceProvider`)은 `ThumbnailSourcesListener` 가 의존 없이 만들고, 리포지토리와 서비스는 행을 세거나 읽을 때(`count`, `chunk`) 처음 해석합니다. 코어는 저장소 쓰기마다 제공자 목록으로 경로를 분류하므로, 컨테이너로 만들면 분류 한 번에 이미지 서비스 4개와 그 의존이 매번 만들어집니다.
+
 ## 디렉토리
 
 <!-- @generated:directory-map START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

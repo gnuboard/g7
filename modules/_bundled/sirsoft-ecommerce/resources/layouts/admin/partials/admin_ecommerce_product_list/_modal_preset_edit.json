@@ -9,7 +9,74 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_edit.title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-secondary"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "저장. 공백만 남은 이름은 버튼 잠금이 먼저 막는다. 성공하면 프리셋 목록만 다시 부른다(상품 목록은 무관하다).",
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}",
+                        "auth_required": true,
+                        "params": {
+                            "method": "PUT",
+                            "body": {
+                                "name": "{{_global.editingPresetName}}"
+                            }
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "presets"
+                                }
+                            },
+                            {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "success",
+                                    "message": "$t:sirsoft-ecommerce.messages.presets.updated"
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "onError": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary",
+                    "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}"
+                },
+                "text": "$t:common.save"
+            }
+        ]
     },
     "children": [
         {
@@ -33,81 +100,6 @@
                 "className": "ecommerce-input",
                 "value": "{{_global.editingPresetName}}"
             }
-        },
-        {
-            "id": "preset_edit_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-secondary"
-                    },
-                    "text": "$t:common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "저장. 공백만 남은 이름은 버튼 잠금이 먼저 막는다. 성공하면 프리셋 목록만 다시 부른다(상품 목록은 무관하다).",
-                            "type": "click",
-                            "handler": "apiCall",
-                            "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}",
-                            "auth_required": true,
-                            "params": {
-                                "method": "PUT",
-                                "body": {
-                                    "name": "{{_global.editingPresetName}}"
-                                }
-                            },
-                            "onSuccess": [
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": {
-                                        "dataSourceId": "presets"
-                                    }
-                                },
-                                {
-                                    "handler": "toast",
-                                    "params": {
-                                        "type": "success",
-                                        "message": "$t:sirsoft-ecommerce.messages.presets.updated"
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "onError": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "{{error.message}}"
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-primary",
-                        "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}"
-                    },
-                    "text": "$t:common.save"
-                }
-            ]
         }
     ]
 }

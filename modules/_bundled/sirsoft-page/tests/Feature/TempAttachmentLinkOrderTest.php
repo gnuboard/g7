@@ -26,7 +26,12 @@ use Modules\Sirsoft\Page\Tests\FeatureTestCase;
 class TempAttachmentLinkOrderTest extends FeatureTestCase
 {
     /**
-     * 저장소 대역 — 파일 내용이 없으면 서비스는 이동을 건너뛰고 DB 만 갱신한다.
+     * 저장소 대역 — 임시 파일을 읽으면 내용이 돌아와야 서비스가 이동·DB 갱신까지 간다.
+     *
+     * 서비스는 임시 파일을 읽지 못하면(null) 첨부 유실을 막으려고 그 행을 건너뛴다. 이 테스트는
+     * 연결 순서를 재므로 모든 파일이 읽히는 정상 경로를 대역으로 만든다. 모듈 서비스 프로바이더가
+     * StorageInterface 를 contextual binding 으로 주입하므로 대역도 같은 방식으로 꽂는다
+     * (`instance()` 전역 바인딩은 서비스에 닿지 않는다).
      *
      * @return void 반환값 없음
      */
@@ -35,10 +40,12 @@ class TempAttachmentLinkOrderTest extends FeatureTestCase
         parent::setUp();
 
         $storage = Mockery::mock(StorageInterface::class);
-        $storage->shouldReceive('get')->andReturn(null);
+        $storage->shouldReceive('get')->andReturn('file-content');
+        $storage->shouldReceive('put')->andReturn(true);
+        $storage->shouldReceive('delete')->andReturn(true);
         $storage->shouldReceive('deleteDirectory')->andReturn(true);
         $storage->shouldReceive('getDisk')->andReturn('local');
-        $this->app->instance(StorageInterface::class, $storage);
+        $this->app->when(PageAttachmentService::class)->needs(StorageInterface::class)->give(fn () => $storage);
     }
 
     /**

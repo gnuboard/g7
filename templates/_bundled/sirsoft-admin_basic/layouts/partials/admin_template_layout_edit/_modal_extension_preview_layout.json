@@ -10,7 +10,89 @@
     "name": "Modal",
     "props": {
         "size": "small",
-        "title": "$t:admin.templates.layout_edit.preview_layout_select_title"
+        "title": "$t:admin.templates.layout_edit.preview_layout_select_title",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "창을 먼저 닫고 새 창을 연다 — 미리보기가 뜨는 동안 이 창이 뒤에 남아 있지 않게 한다. 실패 문구는 서버 사유가 아니라 정해진 안내 하나다.",
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview",
+                        "auth_required": true,
+                        "params": {
+                            "method": "POST",
+                            "body": {
+                                "content": "{{_global.editorContent}}",
+                                "preview_layout": "{{_global.previewLayoutSelection}}"
+                            }
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "comment": "서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0).",
+                                "handler": "openWindow",
+                                "params": {
+                                    "path": "{{response.data?.preview_url ?? '/preview/' + response.data.token}}"
+                                }
+                            }
+                        ],
+                        "onError": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50",
+                    "disabled": "{{!_global.previewLayoutSelection}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "fa-regular fa-eye",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.templates.layout_edit.preview_layout_confirm"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -41,95 +123,6 @@
                 "options": "{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}",
                 "placeholder": "$t:admin.templates.layout_edit.preview_layout_select_placeholder"
             }
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "mt-6 flex items-center justify-end gap-2"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "창을 먼저 닫고 새 창을 연다 — 미리보기가 뜨는 동안 이 창이 뒤에 남아 있지 않게 한다. 실패 문구는 서버 사유가 아니라 정해진 안내 하나다.",
-                            "type": "click",
-                            "handler": "apiCall",
-                            "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview",
-                            "auth_required": true,
-                            "params": {
-                                "method": "POST",
-                                "body": {
-                                    "content": "{{_global.editorContent}}",
-                                    "preview_layout": "{{_global.previewLayoutSelection}}"
-                                }
-                            },
-                            "onSuccess": [
-                                {
-                                    "handler": "closeModal"
-                                },
-                                {
-                                    "comment": "서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0).",
-                                    "handler": "openWindow",
-                                    "params": {
-                                        "path": "{{response.data?.preview_url ?? '/preview/' + response.data.token}}"
-                                    }
-                                }
-                            ],
-                            "onError": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50",
-                        "disabled": "{{!_global.previewLayoutSelection}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "fa-regular fa-eye",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.templates.layout_edit.preview_layout_confirm"
-                        }
-                    ]
-                }
-            ]
         }
     ]
 }

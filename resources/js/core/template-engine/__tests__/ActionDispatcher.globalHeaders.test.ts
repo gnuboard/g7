@@ -4,7 +4,7 @@
  * apiCall 핸들러에서 globalHeaders 적용 검증
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher, ActionDefinition } from '../ActionDispatcher';
 import { GlobalHeaderRule } from '../LayoutLoader';
 import { Logger } from '../../utils/Logger';
@@ -32,7 +32,7 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('ActionDispatcher - globalHeaders', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
   let mockFetch: ReturnType<typeof vi.fn>;
   let originalFetch: typeof fetch;
 
@@ -79,6 +79,11 @@ describe('ActionDispatcher - globalHeaders', () => {
   } as unknown as Event);
 
   describe('setGlobalHeaders', () => {
+    /**
+     * @scenario case=set_rules
+     *
+     * @effects global_headers_rules_stored
+     */
     it('globalHeaders를 설정할 수 있어야 함', () => {
       const headers: GlobalHeaderRule[] = [
         { pattern: '*', headers: { 'X-Custom': 'value' } },
@@ -90,6 +95,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(true).toBe(true);
     });
 
+    /**
+     * @scenario case=set_null
+     *
+     * @effects global_headers_null_normalized_to_empty
+     */
     it('null/undefined를 빈 배열로 처리해야 함', () => {
       dispatcher.setGlobalHeaders(null as any);
       dispatcher.setGlobalHeaders(undefined as any);
@@ -100,6 +110,11 @@ describe('ActionDispatcher - globalHeaders', () => {
   });
 
   describe('apiCall 핸들러 - globalHeaders 적용', () => {
+    /**
+     * @scenario case=api_wildcard_all
+     *
+     * @effects wildcard_pattern_applies_to_every_api_call
+     */
     it('* 패턴은 모든 apiCall에 헤더를 적용해야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '*', headers: { 'X-Global': 'all-apis' } },
@@ -125,6 +140,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(headers['X-Global']).toBe('all-apis');
     });
 
+    /**
+     * @scenario case=api_path_match
+     *
+     * @effects matching_path_pattern_applies_headers
+     */
     it('경로 패턴이 매칭되면 헤더를 적용해야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/shop/*', headers: { 'X-Shop': 'true' } },
@@ -150,6 +170,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(headers['X-Shop']).toBe('true');
     });
 
+    /**
+     * @scenario case=api_path_no_match
+     *
+     * @effects non_matching_path_pattern_skips_headers
+     */
     it('경로 패턴이 매칭되지 않으면 헤더를 적용하지 않아야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/shop/*', headers: { 'X-Shop': 'true' } },
@@ -175,6 +200,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(headers['X-Shop']).toBeUndefined();
     });
 
+    /**
+     * @scenario case=api_params_override
+     *
+     * @effects params_headers_override_global_headers
+     */
     it('params.headers가 globalHeaders를 덮어써야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '*', headers: { 'X-Custom': 'global-value' } },
@@ -202,6 +232,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(headers['X-Custom']).toBe('param-value');
     });
 
+    /**
+     * @scenario case=api_multiple_match
+     *
+     * @effects multiple_matching_rules_merged
+     */
     it('여러 패턴이 매칭되면 모든 헤더가 병합되어야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '*', headers: { 'X-Global': 'all' } },
@@ -229,6 +264,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(headers['X-Shop']).toBe('true');
     });
 
+    /**
+     * @scenario case=api_module_pattern
+     *
+     * @effects matching_path_pattern_applies_headers
+     */
     it('ecommerce 모듈 패턴 매칭 테스트', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/modules/sirsoft-ecommerce/*', headers: { 'X-Cart-Key': 'ck_test123' } },
@@ -256,6 +296,11 @@ describe('ActionDispatcher - globalHeaders', () => {
   });
 
   describe('globalHeaders 없는 경우', () => {
+    /**
+     * @scenario case=api_no_rules
+     *
+     * @effects api_call_unchanged_without_global_headers
+     */
     it('globalHeaders가 설정되지 않으면 기존 동작과 동일해야 함', async () => {
       // setGlobalHeaders 호출하지 않음
 
@@ -279,6 +324,11 @@ describe('ActionDispatcher - globalHeaders', () => {
   });
 
   describe('패턴 매칭 검증', () => {
+    /**
+     * @scenario case=pattern_exact
+     *
+     * @effects exact_path_pattern_matches_only_that_path
+     */
     it('정확한 경로 매칭', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/exact/path', headers: { 'X-Exact': 'true' } },
@@ -319,6 +369,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(headers['X-Exact']).toBeUndefined();
     });
 
+    /**
+     * @scenario case=pattern_nested_wildcard
+     *
+     * @effects wildcard_path_pattern_matches_nested_paths
+     */
     it('와일드카드 경로 매칭 (중첩 경로)', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/modules/sirsoft-ecommerce/*', headers: { 'X-Ecommerce': 'true' } },
@@ -371,6 +426,11 @@ describe('ActionDispatcher - globalHeaders', () => {
   });
 
   describe('login 핸들러 - globalHeaders 적용', () => {
+    /**
+     * @scenario case=login_user_match
+     *
+     * @effects login_request_receives_matching_headers
+     */
     it('/api/auth/* 패턴이 user 로그인에 헤더를 적용해야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/auth/*', headers: { 'X-Cart-Key': 'ck_test123' } },
@@ -400,6 +460,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       );
     });
 
+    /**
+     * @scenario case=login_admin_match
+     *
+     * @effects login_request_receives_matching_headers
+     */
     it('/api/auth/* 패턴이 admin 로그인에 헤더를 적용해야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/auth/*', headers: { 'X-Cart-Key': 'ck_admin456' } },
@@ -429,6 +494,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       );
     });
 
+    /**
+     * @scenario case=login_global_expression
+     *
+     * @effects login_header_global_expression_evaluated
+     */
     it('_global 표현식이 login 헤더에서 평가되어야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/auth/*', headers: { 'X-Cart-Key': '{{_global.cartKey}}' } },
@@ -461,6 +531,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       );
     });
 
+    /**
+     * @scenario case=login_no_match
+     *
+     * @effects login_without_matching_rule_sends_no_header_option
+     */
     it('패턴이 매칭되지 않으면 헤더 옵션 없이 호출되어야 함', async () => {
       dispatcher.setGlobalHeaders([
         { pattern: '/api/modules/*', headers: { 'X-Module': 'true' } },
@@ -490,6 +565,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       );
     });
 
+    /**
+     * @scenario case=login_no_rules
+     *
+     * @effects login_without_matching_rule_sends_no_header_option
+     */
     it('globalHeaders가 설정되지 않으면 헤더 옵션 없이 호출되어야 함', async () => {
       // setGlobalHeaders 호출하지 않음
 
@@ -524,6 +604,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       Storage.prototype.getItem = originalGetItem;
     });
 
+    /**
+     * @scenario case=locale_present
+     *
+     * @effects g7_locale_sent_as_accept_language
+     */
     it('g7_locale이 설정되어 있으면 Accept-Language 헤더로 전송해야 함', async () => {
       Storage.prototype.getItem = vi.fn((key: string) => {
         if (key === 'g7_locale') return 'ko';
@@ -546,6 +631,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(requestHeaders['Accept-Language']).toBe('ko');
     });
 
+    /**
+     * @scenario case=locale_absent
+     *
+     * @effects accept_language_omitted_without_g7_locale
+     */
     it('g7_locale이 없으면 Accept-Language 헤더를 포함하지 않아야 함', async () => {
       Storage.prototype.getItem = vi.fn(() => null);
 
@@ -565,6 +655,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(requestHeaders['Accept-Language']).toBeUndefined();
     });
 
+    /**
+     * @scenario case=locale_vs_global_headers
+     *
+     * @effects global_headers_accept_language_beats_g7_locale
+     */
     it('globalHeaders의 Accept-Language가 g7_locale보다 우선해야 함', async () => {
       Storage.prototype.getItem = vi.fn((key: string) => {
         if (key === 'g7_locale') return 'ko';
@@ -592,6 +687,11 @@ describe('ActionDispatcher - globalHeaders', () => {
       expect(requestHeaders['Accept-Language']).toBe('en');
     });
 
+    /**
+     * @scenario case=locale_vs_custom_headers
+     *
+     * @effects custom_headers_accept_language_wins
+     */
     it('커스텀 headers의 Accept-Language가 최우선이어야 함', async () => {
       Storage.prototype.getItem = vi.fn((key: string) => {
         if (key === 'g7_locale') return 'ko';

@@ -1,0 +1,18 @@
+feature: 비회원 상품 조회 접근 (Issue #21)
+
+description: |
+  비회원이 상품 목록과 상세를 열면 current_user 가 401 을 돌려준다. 이 401 때문에 권한 없음 배너를 띄우거나 상품을
+  가리지 않고 목록과 상세를 그대로 그린다.
+
+# axis 의미:
+#   page — 상품 목록(shop/index) / 상품 상세(shop/show)
+axes:
+  page: [shop_index, shop_show]
+
+effects:
+  - guest_no_permission_banner_on_401      # current_user 401 에도 권한 없음 배너가 없다
+  - guest_product_list_renders_on_401      # current_user 401 에도 상품 목록이 그려진다
+  - guest_product_detail_renders_on_401    # current_user 401 에도 상품 상세가 그려진다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-guest-access.test.tsx

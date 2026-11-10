@@ -18,6 +18,10 @@ return [
         'attached_not_deletable' => '배너에 붙은 이미지는 여기서 지울 수 없습니다. 배너 수정 화면에서 바꾸고 저장하세요.',
         'not_found' => '이미지를 찾을 수 없습니다.',
     ],
+    'thumbnail' => [
+        'source_label' => '히어로섹션 배너 이미지',
+        'list_preset_label' => '배너 목록',
+    ],
     'position' => [
         'fetched' => '노출 위치 설정을 불러왔습니다.',
         'updated' => '슬라이더 설정을 저장했습니다.',

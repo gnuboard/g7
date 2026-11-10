@@ -23,7 +23,7 @@
       <p class="board-text-error-soft">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.irreversible</p>
       <p class="board-text-hint">$t:sirsoft-board.admin.settings.privacy_retention.manual_run.queue_hint</p>
     </div>
-    <div class="board-modal-footer-buttons">
+    <footer>
       <button type="button" class="board-btn board-btn-secondary" disabled="{{_global.privacyRun?.submitting}}">
         <on type="click">
           <!-- 취소 — 아무것도 접수하지 않고 닫는다. 작성 IP·비회원 두 축이 이 창을 함께 쓰므로 창이 들고 있던
@@ -62,6 +62,6 @@
         <icon data-if="{{_global.privacyRun?.submitting}}" name="spinner" class="board-spinner-sm"/>
         <span>{{_global.privacyRun?.submitting ? '$t:sirsoft-board.admin.settings.privacy_retention.manual_run.executing' : '$t:sirsoft-board.admin.settings.privacy_retention.manual_run.execute'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

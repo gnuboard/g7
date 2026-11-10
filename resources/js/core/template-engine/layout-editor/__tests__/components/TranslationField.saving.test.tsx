@@ -11,7 +11,6 @@
  * 후 짧은 "저장됨" 피드백을 준다.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import {
@@ -76,6 +75,8 @@ function renderField() {
 }
 
 describe('TranslationField — param 키 저장 시 상태 표시', () => {
+  // @scenario area=translation_field
+  // @effects translation_field_param_save_shows_saving_then_saved
   it('param 키 [저장] 클릭 → "저장 중" 1프레임 렌더(동기 완료 회귀 차단) 후 "저장됨" 피드백', async () => {
     stub();
     renderField();
@@ -103,21 +104,31 @@ describe('TranslationField — param 키 저장 시 상태 표시', () => {
 });
 
 describe('isChipStructureChange — 칩 구조(순서/구성) 변경 판정', () => {
+  // @scenario area=translation_field
+  // @effects translation_field_chip_structure_change_detection
   it('순서 변경(칩 이동) → true', () => {
     expect(isChipStructureChange('{p0} 작성 {p1}', '{p1} 작성 {p0}')).toBe(true);
   });
+  // @scenario area=translation_field
+  // @effects translation_field_chip_structure_change_detection
   it('칩 제거 → true', () => {
     expect(isChipStructureChange('{p0} 작성 {p1}', '작성 {p1}')).toBe(true);
   });
+  // @scenario area=translation_field
+  // @effects translation_field_chip_structure_change_detection
   it('평문만 변경(자리표시 순서/구성 불변) → false', () => {
     expect(isChipStructureChange('{p0} 작성 {p1}', '{p0} 수정함 {p1}')).toBe(false);
   });
+  // @scenario area=translation_field
+  // @effects translation_field_chip_structure_change_detection
   it('동일 → false', () => {
     expect(isChipStructureChange('{p0}{p1}', '{p0}{p1}')).toBe(false);
   });
 });
 
 describe('TranslationField — 펼침→칸자리 즉시 동기화 + 칩 X 해제 배선', () => {
+  // @scenario area=translation_field
+  // @effects translation_field_chip_structure_change_syncs_pending
   it('(b) 칩 구조 변경 시 pending 즉시 기록 + REFRESHED 이벤트 발화(저장 대기 없이)', async () => {
     stub();
     renderField();
@@ -130,19 +141,32 @@ describe('TranslationField — 펼침→칸자리 즉시 동기화 + 칩 X 해�
     // ko 행 칩 위젯의 onChange 를 칩 구조 변경(순서 뒤집기)으로 직접 발화 — 칩 드래그의 결과값.
     // (jsdom 에서 실제 드래그는 불가하므로 PlaceholderChipInput.onChange 계약을 직접 행사.)
     const koText = screen.getByTestId('g7le-chip-text-ko-0'); // ko 칩필드 첫 평문 슬롯
-    // 칩필드 루트에서 onChange 를 트리거하려면 평문 입력(handleInput) → recompose. 순서 변경은
-    // recompose 가 DOM 순서를 읽으므로, 여기선 계약 검증을 위해 컴포넌트 내부 대신 pending 결과로 확인.
-    // 대안: ko 행 텍스트를 평문만 바꾸면 구조 불변(false) → pending 미기록. 구조 변경은 칩 DOM 재배치가
-    // 필요하므로, 본 통합 테스트는 "구조 불변 평문 편집은 즉시 동기화하지 않음"을 음성 대조로 검증한다.
+    // 칩필드 루트에서 onChange 를 트리거하려면 평문 입력(handleInput) → recompose. recompose 는
+    // `[data-seg]` 요소를 DOM 순서대로 읽어 칩은 data-param 으로 `{pN}` 을 만든다.
+    // 1단계(음성 대조): ko 행 텍스트를 평문만 바꾸면 구조 불변(false) → pending 미기록.
     fireEvent.input(koText, { target: { textContent: '바뀐평문 ' } });
     await act(async () => { await Promise.resolve(); });
     // 평문만 변경 → 즉시 동기화(이벤트/ pending) 미발생(draft 유지, 저장 시 flush).
     expect(getPendingValue('custom._user_base.10', 'ko')).toBeUndefined();
     expect(fired).toHaveLength(0);
 
+    // 2단계(시험 이름의 본 단언): 칩 드래그가 남기는 결과(두 칩의 순서 뒤바뀜)를 DOM 에 그대로 만든다.
+    // 두 칩 요소의 data-param 을 맞바꾸면 recompose 가 `{p1} … {p0}` 순서를 읽는다 → 구조 변경(true).
+    const chip0 = screen.getByTestId('g7le-chip-ko-p0');
+    const chip1 = screen.getByTestId('g7le-chip-ko-p1');
+    chip0.setAttribute('data-param', 'p1');
+    chip1.setAttribute('data-param', 'p0');
+    fireEvent.input(screen.getByTestId('g7le-chip-text-ko-0'));
+    await act(async () => { await Promise.resolve(); });
+    // [저장] 없이 pending 에 즉시 기록되고 동기화 이벤트가 ko 로케일로 발화한다.
+    expect(getPendingValue('custom._user_base.10', 'ko')).toBe('바뀐평문 {p1} 남은 시도: {p0}회');
+    expect(fired).toContain('ko');
+
     window.removeEventListener(EDITOR_TRANSLATIONS_REFRESHED_EVENT, onEvt);
   });
 
+  // @scenario area=translation_field
+  // @effects translation_field_chip_remove_calls_on_remove_param
   it('onRemoveParam 전달 시 칩 X 노출 + 클릭 시 해당 param 으로 콜백', async () => {
     stub();
     const onRemoveParam = vi.fn();

@@ -15,8 +15,7 @@
  * 데이터는 이 파일이 관리자 API 로 게시판 둘(A: 읽기만 허용, B: 읽기·쓰기 허용)과 글을 만들고,
  * 끝나면 게시판째 지운다. 회원은 admin 역할 없이 A 읽기 · B 읽기·쓰기 권한만 가진 계정이다.
  *
- * @scenario surface=cache
- * @effects route_query_bindings_follow_current_screen
+ * 재는 조합: 바인딩 캐시 축(surface=cache), 효과는 화면 전환 뒤 route·query 바인딩이 새 화면 값을 따름 — 표식은 각 test 앞에 있다.
  */
 import { test as base, expect, request as pwRequest, type APIRequestContext, type Page, type Request, type Response } from '@playwright/test';
 import { issueToken, issueScopedToken, authenticatePage } from '../fixtures/auth';

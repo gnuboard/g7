@@ -33,6 +33,7 @@ import {
   measureOverlay,
   subscribeOverlayTracking,
   boxIntersectsFrame,
+  resolveAffordanceBounds,
   type OverlayBox,
 } from '../utils/overlayGeometry';
 import {
@@ -44,10 +45,14 @@ import {
   mergeBranch,
   serializeEditorPath,
   isResponsiveSegment,
+  EDITOR_PROP_SLOTS,
   type EditorNode,
   type NodeSource,
   type ComponentPath,
 } from '../utils/layoutTreeUtils';
+
+/** `{owner}.props.{slot}.N` — 컴포넌트 배열 prop 안 노드 path 에서 소유 노드 path 를 뗀다(#141). */
+const PROP_SLOT_PARENT_RE = new RegExp(String.raw`^(.*)\.props\.(?:${EDITOR_PROP_SLOTS.join('|')})\.\d+$`);
 import { ElementOverlay } from './ElementOverlay';
 import { InsertionAffordances } from './InsertionAffordances';
 import { DndCanvasLayer } from './DndCanvasLayer';
@@ -192,7 +197,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
   // SourceLockDimLayer 가 이 노드 박스만 구멍으로 노출하고 나머지 호스트를 음영으로 덮는다.
   //  - iteration_item: 호스트 트리의 iteration 원본 노드(iterationContext.sourceIndexPath).
   //  - modal: 호스트 components 트리에 인플레이스로 렌더된 모달 노드 경로(modalContext.editIndexPath).
-  const editableRootPath = useMemo<number[] | null>(() => {
+  const editableRootPath = useMemo<ComponentPath | null>(() => {
     if (state.editMode === 'iteration_item') {
       const p = docCtx?.document?.iterationContext?.sourceIndexPath;
       return Array.isArray(p) && p.length > 0 ? p : null;
@@ -345,7 +350,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
         chipParamLabels: cls.chipParamLabels,
         mirrorClassName: typeof nodeProps.className === 'string' ? (nodeProps.className as string) : undefined,
         mirrorStyle: (nodeProps.style as React.CSSProperties | undefined) ?? undefined,
-        nodeEffectiveColor,
+        nodeEffectiveColor: nodeEffectiveColor ?? undefined,
       });
       trackEditorI18n({
         op: 'inline_edit_enter',
@@ -561,7 +566,9 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       requestInlineEditAt(pathStr);
     };
 
-    // 리스너 등록 대상 = frame 의 부모 래퍼(`g7le-preview-frame-wrapper`).
+    // 리스너 등록 대상 = frame 과 오버레이 레이어의 공통 조상인 미리보기 무대(`g7le-preview-stage`).
+    // 오버레이 레이어는 축소 배율(transform) 밖에 있도록 frame 래퍼의 형제로 옮겼다(PreviewCanvas
+    // PreviewStage). 무대가 없는 구성(단위 시험의 손 조립 DOM)은 종전대로 frame 의 부모 래퍼에 단다.
     //
     // 종전엔 frameEl(`g7le-preview-frame`, 콘텐츠 트리)에만 등록했으나, dnd 핸들/딤은 **형제
     // 레이어**(`g7le-editor-canvas-overlay`) 에 렌더돼 frame 의 자손이 아니다. 따라서 핸들 위에서
@@ -569,7 +576,8 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
     // 막혔다(개별 핸들이 텍스트를 덮는 반복 항목 편집 모드에서 특히). 공통 조상인 wrapper 에
     // 등록하면 frame 콘텐츠 직접 클릭과 오버레이(핸들) 클릭을 모두 capture 단계에서 잡고,
     // findEditorElement 의 좌표 폴백이 frame 안의 실제 노드로 위임한다.
-    const listenerTarget: HTMLElement = frameEl.parentElement ?? frameEl;
+    const listenerTarget: HTMLElement =
+      frameEl.closest<HTMLElement>('[data-g7le-preview-stage]') ?? frameEl.parentElement ?? frameEl;
     listenerTarget.addEventListener('click', onClick, true);
     listenerTarget.addEventListener('mousemove', onMouseMove, true);
     listenerTarget.addEventListener('mouseleave', onMouseLeave, true);
@@ -590,8 +598,9 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
   const parentPathStr = useMemo<string | null>(() => {
     const p = selection.selectedPath;
     if (!p) return null;
-    // DOM path 형식: `2`(루트 직계) / `2.children.5.children.0`(중첩). 마지막 `.children.N` 제거.
-    const m = p.match(/^(.*)\.children\.\d+$/);
+    // DOM path 형식: `2`(루트 직계) / `2.children.5.children.0`(중첩) / `2.props.footer.1`(컴포넌트
+    // 배열 prop 안). 마지막 `.children.N` 또는 `.props.{slot}.N` 을 떼면 소유 노드다.
+    const m = p.match(/^(.*)\.children\.\d+$/) ?? p.match(PROP_SLOT_PARENT_RE);
     return m ? m[1]! : null;
   }, [selection.selectedPath]);
 
@@ -800,7 +809,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       if (!anchor || anchor.length === 0) {
         return { parentPath: [] as number[], index: components.length };
       }
-      return { parentPath: anchor.slice(0, -1), index: (anchor[anchor.length - 1] ?? 0) + 1 };
+      return { parentPath: anchor.slice(0, -1), index: lastNodeIndex(anchor) + 1 };
     }
     // 컨테이너 여부는 nesting.containers 정의 기준(빈 컨테이너도 포함) — 드롭 경로의
     // isContainerComponent 와 동일 기준. children 배열 존재 여부로 판정하면 빈
@@ -1019,7 +1028,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
     docCtx.patchLayout((current) => {
       const root: EditorNode = { children: current };
       const parentPath = selectedPathIndexes.slice(0, -1);
-      const idx = selectedPathIndexes[selectedPathIndexes.length - 1] ?? 0;
+      const idx = lastNodeIndex(selectedPathIndexes);
       const next = insertNode(root, parentPath, idx + 1, dup);
       const nextComponents = (next.children as EditorNode[]) ?? [];
       nextComponentsCaptured = nextComponents;
@@ -1185,7 +1194,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
     const fresh = duplicateNodeUtil(buf); // 새 노드로 취급(id 재생성 등)
     if (selectedPathIndexes && selectedPathIndexes.length > 0) {
       const parentPath = selectedPathIndexes.slice(0, -1);
-      const idx = (selectedPathIndexes[selectedPathIndexes.length - 1] ?? 0) + 1;
+      const idx = lastNodeIndex(selectedPathIndexes) + 1;
       handleInsert(fresh, parentPath, idx);
     } else {
       // 선택 없음 — 루트 끝에 추가.
@@ -1255,7 +1264,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
   // 패치마다 같은 id 로 content 를 재오픈(idempotent)해 최신 노드를 반영한다.
   // 패치 대상 노드 path 는 모달 열 때 캡처(드래그/삭제로 path 가 바뀌면 닫고 다시 열기).
   const propertyModalIdRef = useRef<string | null>(null);
-  const propertyModalPathRef = useRef<number[] | null>(null);
+  const propertyModalPathRef = useRef<ComponentPath | null>(null);
   // 외부(캔버스 인플레이스/DnD 등) patchLayout 으로 노드가 바뀌면 열려 있는 속성 모달도
   // 최신 노드로 재오픈하기 위한 콜백(openPropertyModalFor 가 자기 renderContent 로 채운다).
   // 양방향 일관성(속성 모달 ↔ 캔버스 동시 열림 시 캔버스 조작이 모달
@@ -1333,7 +1342,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
   });
 
   const openPropertyModalFor = useCallback(
-    (path: number[], initialTab?: 'settings' | 'style' | 'action' | 'visibility' | 'translation' | 'advanced'): void => {
+    (path: ComponentPath, initialTab?: 'settings' | 'style' | 'action' | 'visibility' | 'translation' | 'advanced'): void => {
       if (!docCtx) return;
       const root: EditorNode = { children: liveDataRef.current.components };
       const node = findNodeByPath(root, path);
@@ -1374,10 +1383,10 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       // 반복 목록 안의 노드면 iteration 조상의 인덱스/행 변수를 데이터 칩 후보로 보강한다.
       // id 등 식별자 칸에서 `{{$idx}}`/`{{row.id}}` 를 골라 항목별 고유 식별자를 만들 수 있게 한다.
       // 노드별로 달라지므로 전역 bindingCandidates 와 분리해 모달 단위로 합친다(전역 풀 불변).
-      const numericPath = path.filter((seg): seg is number => typeof seg === 'number');
+      // 분기·footer 세그먼트를 그대로 넘긴다 — 숫자만 남기면 다른 노드의 반복 변수를 모은다(#869).
       const iterationVars = collectIterationVars(
         { children: liveDataRef.current.components },
-        numericPath,
+        path,
         buildArrayItemFieldsLookup(bindingCandidates),
       );
       const modalBindingCandidates =
@@ -2086,7 +2095,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
     let p: string | null = selPath;
     while (p) {
       candidates.push(p);
-      const m = p.match(/^(.*)\.children\.\d+$/);
+      const m: RegExpMatchArray | null = p.match(/^(.*)\.children\.\d+$/);
       p = m ? m[1]! : null;
     }
     for (const cand of candidates) {
@@ -2132,7 +2141,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       const rel = full.slice(base.length + 1); // `children.a.children.b...`
       const b = measureOverlay(el, frameEl);
       if (!b) return;
-      out.push({ path: rel, top: b.top, left: b.left, width: b.width, height: b.height });
+      out.push({ path: rel, top: b.top, left: b.left, width: b.width, height: b.height, scale: b.scale });
     });
     // (2) 배열 prop 항목(ARRAY-PROP 인플레이스 — TabNavigation tabs 등). 항목은 자식
     // 노드가 아니라 `node.props[arrayProp]` 라 `data-editor-path` 가 없다. 컴포넌트가 편집
@@ -2146,7 +2155,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       const rel = full.slice(base.length + 1); // `props.tabs.0` 등
       const b = measureOverlay(el, frameEl);
       if (!b) return;
-      out.push({ path: rel, top: b.top, left: b.left, width: b.width, height: b.height });
+      out.push({ path: rel, top: b.top, left: b.left, width: b.width, height: b.height, scale: b.scale });
     });
     return out;
     // selectedBox/components 를 dep 에 두어 트리 변경(행/열/병합/항목추가) 후 재측정.
@@ -2451,6 +2460,9 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
         selectedBox={insertionAnchorBox}
         points={insertion.points}
         onAddRequest={handleAddRequest}
+        // 캔버스 밖(창 밖·헤더 밑)으로 나가는 + 단추는 캔버스 안으로 접는다(#869 8차). 박스가 다시 재질 때
+        // (스크롤·크기·DOM 변경) 렌더되므로 그때 경계도 다시 잰다.
+        bounds={resolveAffordanceBounds(frameEl)}
       />
       )}
 
@@ -2467,7 +2479,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
           colorScheme={state.previewColorScheme === 'dark' ? 'dark' : 'light'}
           t={editorAwareT}
           onPatchNode={patchOverlayNode}
-          onInsertChild={handleInsert}
+          onInsertChild={adaptInsertChild(handleInsert)}
           onRemoveChild={(path) => {
             const idx = parseEditorPath(path);
             if (!docCtx || !idx) return;
@@ -2518,6 +2530,33 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
 /**
  * componentPath 부모 컨테이너의 컴포넌트 이름을 트리에서 탐색.
  */
+/**
+ * 노드 path 의 마지막 인덱스(형제 위치). 노드 path 는 늘 number 로 끝난다 — 배열 전환 세그먼트(분기·prop 슬롯)로
+ * 끝나는 것은 컨테이너 path 다. 그런 path 나 빈 path 면 0(종전 `?? 0` 과 같음).
+ *
+ * @param path 노드 path
+ * @returns 마지막 인덱스
+ */
+export function lastNodeIndex(path: ComponentPath): number {
+  const last = path[path.length - 1];
+  return typeof last === 'number' ? last : 0;
+}
+
+/**
+ * 인플레이스 오버레이 계약 `onInsertChild(newNode, parentPath: string, index)` 을 코어 삽입(`handleInsert`,
+ * ComponentPath)에 잇는다. 오버레이는 DOM path 문자열(`0.children.2`, `0.props.footer` 등)을 넘기므로
+ * `onRemoveChild` 와 같게 parseEditorPath 로 바꾼다. 종전에는 문자열을 그대로 넘겨 배열로 다뤘다(호출처는
+ * 아직 없음 — 타입 불일치로 드러남, #869).
+ *
+ * @param insert 코어 삽입 함수
+ * @returns 오버레이 계약 모양의 삽입 함수
+ */
+export function adaptInsertChild(
+  insert: (newNode: EditorNode, parentPath: ComponentPath, index: number) => void,
+): (newNode: EditorNode, parentPath: string, index: number) => void {
+  return (newNode, parentPath, index) => insert(newNode, parseEditorPath(parentPath), index);
+}
+
 function resolveContainerNameAt(components: EditorNode[], parentPath: ComponentPath): string | null {
   if (parentPath.length === 0) return null; // 루트 삽입
   const root: EditorNode = { children: components };

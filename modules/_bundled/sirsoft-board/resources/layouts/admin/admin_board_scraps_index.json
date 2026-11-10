@@ -722,7 +722,138 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-board.admin.scraps.modals.delete_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다",
+                                "type": "click",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "scrapDeleteLoading": true
+                                }
+                            },
+                            {
+                                "comment": "스크랩 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다",
+                                "type": "click",
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-board/admin/scraps/{{_global.deleteTarget?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "scrapDeleteLoading": false
+                                        }
+                                    },
+                                    {
+                                        "comment": "지운 행이 선택 목록에 남아 있으면 다음 일괄 삭제가 없는 ID 를 싣는다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds": "{{(_global.selectedIds || []).filter(v => v !== _global.deleteTarget?.id)}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "scraps"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{result.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "scrapDeleteLoading": false,
+                                            "errorMessage": "{{error.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "error_modal"
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.scrapDeleteLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!_global.scrapDeleteLoading}}",
+                                "text": "$t:common.confirm"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{_global.scrapDeleteLoading}}",
+                                "props": {
+                                    "className": "board-flex-center board:gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "board-spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.scraps.modals.processing"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -741,144 +872,6 @@
                             "text": "$t:sirsoft-board.admin.scraps.modals.delete_confirm"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다",
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "scrapDeleteLoading": true
-                                    }
-                                },
-                                {
-                                    "comment": "스크랩 단건 삭제 — 성공하면 선택 목록에서 그 ID 를 빼고 목록을 다시 받는다. 실패 사유는 오류 모달에 싣는다",
-                                    "type": "click",
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-board/admin/scraps/{{_global.deleteTarget?.id}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "DELETE"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "scrapDeleteLoading": false
-                                            }
-                                        },
-                                        {
-                                            "comment": "지운 행이 선택 목록에 남아 있으면 다음 일괄 삭제가 없는 ID 를 싣는다",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedIds": "{{(_global.selectedIds || []).filter(v => v !== _global.deleteTarget?.id)}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "scraps"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "{{result.message}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "scrapDeleteLoading": false,
-                                                "errorMessage": "{{error.message}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "error_modal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.scrapDeleteLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_global.scrapDeleteLoading}}",
-                                    "text": "$t:common.confirm"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_global.scrapDeleteLoading}}",
-                                    "props": {
-                                        "className": "board-flex-center board:gap-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "board-spinner-sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-board.admin.scraps.modals.processing"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -893,7 +886,135 @@
             "props": {
                 "data-testid": "admin-scrap-bulk-delete-modal",
                 "title": "$t:sirsoft-board.admin.scraps.modals.bulk_delete_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 지우므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다",
+                                "type": "click",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "scrapBulkDeleteLoading": true
+                                }
+                            },
+                            {
+                                "comment": "실행 ②  DELETE 본문에 ID 목록을 싣는다. 실패는 토스트가 아니라 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
+                                "type": "click",
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-board/admin/scraps/bulk",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE",
+                                    "body": {
+                                        "ids": "{{_global.selectedIds}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "scrapBulkDeleteLoading": false,
+                                            "selectedIds": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "scraps"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{result.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "scrapBulkDeleteLoading": false,
+                                            "errorMessage": "{{error.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "error_modal"
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "data-testid": "admin-scrap-bulk-delete-confirm",
+                            "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.scrapBulkDeleteLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!_global.scrapBulkDeleteLoading}}",
+                                "text": "$t:common.confirm"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{_global.scrapBulkDeleteLoading}}",
+                                "props": {
+                                    "className": "board-flex-center board:gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "board-spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.scraps.modals.processing"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -910,141 +1031,6 @@
                                 "className": "board-text-body"
                             },
                             "text": "$t:sirsoft-board.admin.scraps.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 지우므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다",
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "scrapBulkDeleteLoading": true
-                                    }
-                                },
-                                {
-                                    "comment": "실행 ②  DELETE 본문에 ID 목록을 싣는다. 실패는 토스트가 아니라 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
-                                    "type": "click",
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-board/admin/scraps/bulk",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "DELETE",
-                                        "body": {
-                                            "ids": "{{_global.selectedIds}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "scrapBulkDeleteLoading": false,
-                                                "selectedIds": []
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "scraps"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "{{result.message}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "scrapBulkDeleteLoading": false,
-                                                "errorMessage": "{{error.message}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "error_modal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "data-testid": "admin-scrap-bulk-delete-confirm",
-                                "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.scrapBulkDeleteLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_global.scrapBulkDeleteLoading}}",
-                                    "text": "$t:common.confirm"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_global.scrapBulkDeleteLoading}}",
-                                    "props": {
-                                        "className": "board-flex-center board:gap-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "board-spinner-sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-board.admin.scraps.modals.processing"
-                                        }
-                                    ]
-                                }
-                            ]
                         }
                     ]
                 }

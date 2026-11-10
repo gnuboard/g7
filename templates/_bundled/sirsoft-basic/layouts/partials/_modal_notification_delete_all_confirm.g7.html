@@ -2,7 +2,7 @@
 <partial description="알림 전체 삭제 확인 모달 (User)" editor_label="$t:user.modal_label.notification_delete_all_confirm_modal">
   <modal data-type="composite" data-ref="notification_delete_all_confirm_modal" title="$t:mypage.notifications.delete_all_title" size="sm">
     <p class="text-gray-700 dark:text-gray-300">$t:mypage.notifications.delete_all_confirm</p>
-    <div class="flex justify-end gap-3 mt-6">
+    <footer>
       <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingAllNotifications}}" type="button">
         <on type="click">
           <close-modal target="notification_delete_all_confirm_modal"/>
@@ -33,6 +33,6 @@
         <icon data-if="{{_global.isDeletingAllNotifications}}" name="spinner" class="text-base animate-spin"/>
         <span>{{_global.isDeletingAllNotifications ? $t:common.deleting : $t:common.delete}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

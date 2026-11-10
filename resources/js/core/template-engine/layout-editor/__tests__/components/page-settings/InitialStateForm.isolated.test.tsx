@@ -10,7 +10,6 @@
  *  ⑤ 값 삭제 강제 안 함(경고만)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { InitialStateForm } from '../../../components/page-settings/InitialStateForm';
@@ -20,6 +19,10 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('InitialStateForm — 격리 섹션', () => {
+  /**
+   * @scenario subject=initial_state_form_isolated
+   * @effects init_state_form_isolated_section_recursive_edit
+   */
   it('격리 섹션 렌더 + initIsolated 재귀 편집', () => {
     render(<InitialStateForm raw={{ initIsolated: { scrollIdx: 0 } }} patch={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-initstate-section-isolated')).toBeInTheDocument();
@@ -28,6 +31,10 @@ describe('InitialStateForm — 격리 섹션', () => {
     expect((screen.getByTestId('g7le-initstate-type-scrollIdx') as HTMLSelectElement).value).toBe('number');
   });
 
+  /**
+   * @scenario subject=initial_state_form_isolated
+   * @effects init_state_form_isolated_orphan_warning
+   */
   it('orphan 경고 — isolatedState 노드 0개 → ⚠ 키별', () => {
     render(
       <InitialStateForm
@@ -41,6 +48,10 @@ describe('InitialStateForm — 격리 섹션', () => {
     expect(screen.getByTestId('g7le-initstate-isolated-orphan-step')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_form_isolated
+   * @effects init_state_form_isolated_orphan_cleared_with_node
+   */
   it('isolatedState 노드 존재 시 경고 해소(orphan=false)', () => {
     render(
       <InitialStateForm
@@ -55,6 +66,10 @@ describe('InitialStateForm — 격리 섹션', () => {
     expect(screen.getByTestId('g7le-initstate-isolated-item-scrollIdx')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_form_isolated
+   * @effects init_state_form_isolated_nested_recursive_edit
+   */
   it('중첩 격리 시작값 재귀 편집', () => {
     render(<InitialStateForm raw={{ initIsolated: { state: { step: 1, selectedId: null } } }} patch={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-initstate-type-state.step')).toBeInTheDocument();

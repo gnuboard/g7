@@ -9,7 +9,76 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.copy.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "modal_copy_product"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isCopyingProduct}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "복사 실행. 처리중 표시만 `_global` 에 두는데, 위 선택값들과 달리 이 플래그는 창의 두 버튼만 읽기 때문이다. 실제 복사는 핸들러가 서버에 맡긴다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isCopyingProduct": true
+                                }
+                            },
+                            {
+                                "handler": "sirsoft-ecommerce.copyProduct"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isCopyingProduct}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isCopyingProduct}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isCopyingProduct ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.copy.submit'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -44,6 +113,9 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{$parent._local.productList.copyTargetProduct?.thumbnail_url}}",
+                                                "thumbPreset": "sm",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "alt": "{{$localized($parent._local.productList.copyTargetProduct?.name)}}",
                                                 "className": "ecommerce:w-full ecommerce:h-full ecommerce:object-cover"
                                             }
@@ -549,82 +621,6 @@
                                         "className": "ecommerce-tone-info-soft ecommerce:text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.note"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal",
-                                    "target": "modal_copy_product"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isCopyingProduct}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-ecommerce.common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "복사 실행. 처리중 표시만 `_global` 에 두는데, 위 선택값들과 달리 이 플래그는 창의 두 버튼만 읽기 때문이다. 실제 복사는 핸들러가 서버에 맡긴다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isCopyingProduct": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "sirsoft-ecommerce.copyProduct"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isCopyingProduct}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isCopyingProduct}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "ecommerce-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isCopyingProduct ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.copy.submit'}}"
                                 }
                             ]
                         }

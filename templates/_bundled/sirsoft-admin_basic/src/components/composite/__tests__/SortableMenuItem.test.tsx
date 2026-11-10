@@ -54,34 +54,45 @@ describe('SortableMenuItem', () => {
     vi.clearAllMocks();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('컴포넌트가 렌더링됨', () => {
     renderWithDndContext(<SortableMenuItem item={sampleMenuItem} />);
 
     expect(screen.getByText('대시보드')).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('메뉴 이름이 표시됨', () => {
     renderWithDndContext(<SortableMenuItem item={sampleMenuItem} />);
 
     expect(screen.getByText('대시보드')).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('아이콘이 표시됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} />
     );
 
     // 아이콘 컴포넌트가 렌더링됨
-    const icon = container.querySelector('svg') || container.querySelector('[class*="icon"]');
-    expect(container).toBeInTheDocument();
+    // Icon 은 <i class="fa-{이름}"> 로 그린다 — 항목의 icon('home') 글리프가 보여야 한다
+    const icon = container.querySelector('i.fa-home');
+    expect(icon).not.toBeNull();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('URL이 표시됨', () => {
     renderWithDndContext(<SortableMenuItem item={sampleMenuItem} />);
 
     expect(screen.getByText('/admin/dashboard')).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('클릭 시 onClick이 호출됨', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
@@ -95,6 +106,8 @@ describe('SortableMenuItem', () => {
     expect(onClick).toHaveBeenCalled();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('isSelected prop이 true일 때 하이라이트 스타일이 적용됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} isSelected={true} />
@@ -105,6 +118,8 @@ describe('SortableMenuItem', () => {
     expect(selectedElement).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('비활성 메뉴일 때 토글이 꺼져있음', () => {
     const inactiveItem: MenuItemData = { ...sampleMenuItem, isActive: false };
     const { container } = renderWithDndContext(
@@ -118,6 +133,8 @@ describe('SortableMenuItem', () => {
     }
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('하위 메뉴가 있을 때 확장 버튼이 표시됨', () => {
     renderWithDndContext(
       <SortableMenuItem item={menuItemWithChildren} />
@@ -128,6 +145,8 @@ describe('SortableMenuItem', () => {
     expect(buttons.length).toBeGreaterThan(0);
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('확장 버튼 클릭 시 onExpandToggle이 호출됨', async () => {
     const user = userEvent.setup();
     const onExpandToggle = vi.fn();
@@ -147,6 +166,8 @@ describe('SortableMenuItem', () => {
     }
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('level prop에 따라 들여쓰기가 적용됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} level={2} />
@@ -156,6 +177,8 @@ describe('SortableMenuItem', () => {
     expect(container).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('토글 스위치가 표시됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} />
@@ -166,6 +189,8 @@ describe('SortableMenuItem', () => {
     expect(toggle).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('토글 스위치 변경 시 onToggle이 호출됨', async () => {
     const user = userEvent.setup();
     const onToggle = vi.fn();
@@ -185,6 +210,8 @@ describe('SortableMenuItem', () => {
     expect(container).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('editable이 true일 때 액션 버튼이 표시됨', () => {
     // 현재 구현에서는 editable prop이 없으므로 기본 렌더링 확인
     renderWithDndContext(
@@ -195,6 +222,8 @@ describe('SortableMenuItem', () => {
     expect(buttons.length).toBeGreaterThan(0);
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('수정 버튼 클릭 시 onEdit이 호출됨', async () => {
     // 현재 구현에서는 onEdit prop이 없으므로 스킵
     const { container } = renderWithDndContext(
@@ -203,6 +232,8 @@ describe('SortableMenuItem', () => {
     expect(container).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('삭제 버튼 클릭 시 onDelete가 호출됨', async () => {
     // 현재 구현에서는 onDelete prop이 없으므로 스킵
     const { container } = renderWithDndContext(
@@ -211,6 +242,8 @@ describe('SortableMenuItem', () => {
     expect(container).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_drag_handle_visibility
   it('드래그 핸들이 렌더링됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} />
@@ -221,6 +254,8 @@ describe('SortableMenuItem', () => {
     expect(dragHandle).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('모듈 메뉴일 때 모듈 아이콘이 표시됨', () => {
     renderWithDndContext(
       <SortableMenuItem item={moduleMenuItem} />
@@ -230,6 +265,8 @@ describe('SortableMenuItem', () => {
     expect(screen.getByText('게시판')).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('disabled prop이 true일 때 상호작용이 비활성화됨', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
@@ -243,6 +280,8 @@ describe('SortableMenuItem', () => {
     expect(onClick).toHaveBeenCalled();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_renders_menu_fields
   it('isExpanded가 true일 때 chevron-down 아이콘이 표시됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={menuItemWithChildren} isExpanded={true} />
@@ -251,6 +290,8 @@ describe('SortableMenuItem', () => {
     expect(container).toBeInTheDocument();
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('toggleDisabled가 true일 때 토글이 비활성화됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} toggleDisabled={true} />
@@ -261,6 +302,8 @@ describe('SortableMenuItem', () => {
     expect(checkbox.disabled).toBe(true);
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_callbacks_and_toggle
   it('toggleDisabled가 false(기본값)일 때 토글이 활성화됨', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} />
@@ -271,6 +314,8 @@ describe('SortableMenuItem', () => {
     expect(checkbox.disabled).toBe(false);
   });
 
+  // @scenario component=sortable_menu_item
+  // @effects sortable_menu_item_drag_handle_visibility
   it('enableDrag가 false일 때 드래그 핸들이 숨겨짐', () => {
     const { container } = renderWithDndContext(
       <SortableMenuItem item={sampleMenuItem} enableDrag={false} />

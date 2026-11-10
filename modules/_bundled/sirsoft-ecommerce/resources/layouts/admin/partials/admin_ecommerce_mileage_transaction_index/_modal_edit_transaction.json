@@ -10,7 +10,117 @@
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.title",
         "size": "md",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.mileageEdit?.isSaving ?? false}}",
+                    "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "edit_submit_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "저장. 만료일을 고칠 수 없는 적립건이면 본문에서 그 키를 통째로 빼고 사유만 보낸다 —\n            빈 값으로라도 실어 보내면 서버가 \"만료일을 지워 달라\" 로 읽는다.\n            성공 갈래에서 `mileageEdit` 를 통째로 비우는 것이 중요하다. 다음에 다른 적립건으로\n            이 창을 열 때 이전 값이 잠깐 비쳐 보이는 것을 막는다.\n            실패 갈래는 서버 응답을 통째로 담아 두고(`errors`) 창을 닫지 않는다 — 위 배너와 각\n            입력칸 아래 문구가 그 안의 필드별 오류를 나눠 읽는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "mileageEdit.isSaving": true,
+                                    "mileageEdit.errors": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions/{{_global.mileageEdit?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PATCH",
+                                    "body": "{{(_global.mileageEdit?.canEditExpiry === true ? { memo: _global.mileageEdit?.memo ?? '', expires_at: (_global.mileageEdit?.expiresAt || null) } : { memo: _global.mileageEdit?.memo ?? '' })}}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "transactions"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.edit_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "mileageEdit": null
+                                        }
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "mileageEdit.isSaving": false,
+                                        "mileageEdit.errors": "{{error}}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.mileageEdit?.isSaving ?? false}}",
+                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.mileageEdit?.isSaving}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "className": "ecommerce:animate-spin"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.mileageEdit?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submit')}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -304,123 +414,6 @@
                                 "className": "ecommerce-form-error"
                             },
                             "text": "{{_global.mileageEdit?.errors?.errors?.expires_at?.[0] ?? ''}}"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "disabled": "{{_global.mileageEdit?.isSaving ?? false}}",
-                        "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.cancel"
-                        }
-                    ]
-                },
-                {
-                    "id": "edit_submit_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "저장. 만료일을 고칠 수 없는 적립건이면 본문에서 그 키를 통째로 빼고 사유만 보낸다 —\n            빈 값으로라도 실어 보내면 서버가 \"만료일을 지워 달라\" 로 읽는다.\n            성공 갈래에서 `mileageEdit` 를 통째로 비우는 것이 중요하다. 다음에 다른 적립건으로\n            이 창을 열 때 이전 값이 잠깐 비쳐 보이는 것을 막는다.\n            실패 갈래는 서버 응답을 통째로 담아 두고(`errors`) 창을 닫지 않는다 — 위 배너와 각\n            입력칸 아래 문구가 그 안의 필드별 오류를 나눠 읽는다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "mileageEdit.isSaving": true,
-                                        "mileageEdit.errors": null
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions/{{_global.mileageEdit?.id}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "PATCH",
-                                        "body": "{{(_global.mileageEdit?.canEditExpiry === true ? { memo: _global.mileageEdit?.memo ?? '', expires_at: (_global.mileageEdit?.expiresAt || null) } : { memo: _global.mileageEdit?.memo ?? '' })}}"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "transactions"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.edit_success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "mileageEdit": null
-                                            }
-                                        }
-                                    ],
-                                    "onError": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "mileageEdit.isSaving": false,
-                                            "mileageEdit.errors": "{{error}}"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "disabled": "{{_global.mileageEdit?.isSaving ?? false}}",
-                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.mileageEdit?.isSaving}}",
-                            "props": {
-                                "name": "spinner",
-                                "size": "sm",
-                                "className": "ecommerce:animate-spin"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.mileageEdit?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submit')}}"
                         }
                     ]
                 }

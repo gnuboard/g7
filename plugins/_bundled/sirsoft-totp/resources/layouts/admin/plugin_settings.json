@@ -111,16 +111,30 @@
                         "id": "totp_security_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "641-": {
+                                "props": {
+                                    "className": "totp:flex totp:items-center totp:justify-between totp:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "totp-page-header"
+                            "className": "totp:flex totp:justify-between totp:mb-6 totp:flex-col totp:items-start totp:gap-4"
                         },
                         "children": [
                             {
                                 "id": "totp_security_title",
                                 "type": "basic",
                                 "name": "H1",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "totp:text-2xl totp:font-semibold totp:text-gray-900 totp:dark:text-white"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "totp-page-title"
+                                    "className": "totp:text-xl totp:font-semibold totp:text-gray-900 totp:dark:text-white"
                                 },
                                 "text": "$t:sirsoft-totp.admin.security.title"
                             },
@@ -265,8 +279,15 @@
                                 "id": "totp_security_enrolled_actions",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "totp:flex totp:flex-row totp:gap-2 totp:mt-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "totp:flex totp:flex-col totp:sm:flex-row totp:gap-2 totp:mt-4"
+                                    "className": "totp:flex totp:flex-col totp:gap-2 totp:mt-4"
                                 },
                                 "children": [
                                     {
@@ -714,8 +735,15 @@
                                                 "id": "totp_security_enroll_actions",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "totp:flex totp:flex-row totp:gap-2 totp:mt-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "totp:flex totp:flex-col totp:sm:flex-row totp:gap-2 totp:mt-4"
+                                                    "className": "totp:flex totp:flex-col totp:gap-2 totp:mt-4"
                                                 },
                                                 "children": [
                                                     {
@@ -911,8 +939,15 @@
                                 "id": "totp_security_backup_actions",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "totp:flex totp:flex-row totp:gap-2 totp:mt-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "totp:flex totp:flex-col totp:sm:flex-row totp:gap-2 totp:mt-4"
+                                    "className": "totp:flex totp:flex-col totp:gap-2 totp:mt-4"
                                 },
                                 "children": [
                                     {

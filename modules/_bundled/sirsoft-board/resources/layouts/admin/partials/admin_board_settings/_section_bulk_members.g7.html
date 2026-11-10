@@ -24,7 +24,8 @@
         <icon name="triangle-exclamation" size="sm" class="board:mt-0.5 board:flex-shrink-0"/>
         <span>$t:sirsoft-board.admin.settings.bulk_members.load_failed</span>
       </div>
-      <div class="board:grid board:grid-cols-1 board:lg:grid-cols-2 board:gap-6 board:mt-4">
+      <div class="board:grid board:grid-cols-1 board:gap-6 board:mt-4">
+        <responsive on="desktop" class="board:grid board:grid-cols-2 board:gap-6 board:mt-4"/>
         <div data-ref="bulk_members_target">
           <label class="board-form-label">$t:sirsoft-board.admin.settings.bulk_members.target_label</label>
           <radio-group data-type="composite" name="board_bulk_members_target" :autoBinding="false" value="{{_global.boardBulkMembers?.all === false ? 'selected' : 'all'}}" :inline="true" disabled="{{_computed.bulkMembersLocked}}">

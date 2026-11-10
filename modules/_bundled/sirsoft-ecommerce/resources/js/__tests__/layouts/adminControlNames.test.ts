@@ -20,8 +20,8 @@
  * 이름(「{행 이름} {열 이름}」·「{행 이름} 선택」)을 단다. 셀·펼침은 DataGrid 의 props 라 DynamicRenderer 가 행 문맥 없이
  * 먼저 번역하므로, 행 값을 넘기는 이름은 `$t:defer:` 로 쓴다(행마다 그릴 때 번역).
  *
- * @scenario surface=admin_layout
- * @effects controls_have_accessible_name
+ * 조합 요약(마커 아님, 평문): surface=admin_layout
+ * 효과 요약(마커 아님, 평문): controls_have_accessible_name
  *
  * @vitest-environment node
  */
@@ -99,7 +99,7 @@ const classOf = (n: any): string => String(n?.props?.className ?? '');
 const isControl = (n: any): boolean =>
     isNode(n) && CONTROLS.has(n.name) && n.props?.type !== 'hidden' && !/\bsr-only\b/.test(classOf(n));
 const isLabelEl = (n: any): boolean =>
-    isNode(n) && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(classOf(n)));
+    isNode(n) && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(classOf(n)));
 const kids = (n: any): any[] => (Array.isArray(n?.children) ? n.children.filter(isNode) : []);
 const deep = (n: any, pred: (x: any) => boolean): boolean => isNode(n) && (pred(n) || kids(n).some((c) => deep(c, pred)));
 const hasText = (n: any): boolean =>

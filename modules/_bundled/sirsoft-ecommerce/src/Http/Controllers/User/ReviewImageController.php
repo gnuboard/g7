@@ -4,10 +4,11 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\User;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AuthBaseController;
+use App\Thumbnails\ThumbnailQuery;
+use App\Thumbnails\ThumbnailResponder;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Exceptions\ReviewImageUploadLimitException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UploadReviewImageRequest;
@@ -15,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewImageResource;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * 리뷰 이미지 컨트롤러 (사용자)
@@ -28,9 +29,11 @@ class ReviewImageController extends AuthBaseController
      * ReviewImageController 생성자
      *
      * @param  ProductReviewImageService  $imageService  리뷰 이미지 서비스
+     * @param  ThumbnailResponder  $thumbnails  썸네일 헬퍼 (게이트 뒤 `?size=`·`?w=` 응답)
      */
     public function __construct(
-        private ProductReviewImageService $imageService
+        private ProductReviewImageService $imageService,
+        private ThumbnailResponder $thumbnails
     ) {}
 
     /**
@@ -133,16 +136,20 @@ class ReviewImageController extends AuthBaseController
      * 응답 직렬화(ProductReviewResource)가 발급한 한시 서명 URL 은 동등한 자격으로
      * 허용한다 — <img> 는 Authorization 헤더를 실을 수 없는 렌더 경로이기 때문이다.
      *
-     * @param  Request  $request  HTTP 요청 객체 (한시 서명 검증용)
+     * `?size={규격}`·`?w={숫자}` 가 붙으면 게이트를 지난 래스터 이미지는 썸네일로 낸다. 리뷰 이미지는 게이트 원본이라
+     * 원본이 공개 자산 디스크에 있어도 썸네일은 비공개 디스크·`private` 캐시다(D25). 서명은 그 두 파라미터를 빼고
+     * 검증한다 — 관리자 화면이 숨김 리뷰의 서명 주소 뒤에 `size` 를 덧붙여도 서명이 깨지지 않게.
+     *
+     * @param  Request  $request  HTTP 요청 객체 (한시 서명 검증·`size`·`w`)
      * @param  string  $hash  이미지 해시 (12자)
-     * @return StreamedResponse|Response|JsonResponse 이미지 스트림, 304 또는 404 응답
+     * @return SymfonyResponse|JsonResponse 이미지·썸네일 응답(200·304) 또는 404 응답
      */
-    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 요청 URL 의 한시 서명 검증(hasValidSignature)만 수행. 검증할 body 없음(hash 는 라우트 파라미터)
-    public function download(Request $request, string $hash): StreamedResponse|Response|JsonResponse
+    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 요청 URL 의 한시 서명 검증과 썸네일 파라미터(size·w) 원문 판정만 수행. 검증할 body 없음(hash 는 라우트 파라미터)
+    public function download(Request $request, string $hash): SymfonyResponse|JsonResponse
     {
         $info = $this->imageService->getFileInfo(
             $hash,
-            signatureVerified: $request->hasValidSignature(absolute: false)
+            signatureVerified: $request->hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure())
         );
 
         if (! $info) {
@@ -153,17 +160,25 @@ class ReviewImageController extends AuthBaseController
             );
         }
 
+        // 게이트(숨김 상태·한시 서명 — 서비스 `getFileInfo()`)를 지난 뒤, 원본 응답 바로 앞
+        if ($thumbnail = $this->thumbnails->respond($request, $info['thumbnail_source'] ?? null)) {
+            return $thumbnail;
+        }
+
         // 캐시 계약(검증자 비교·환경별 Cache-Control·304 의 200 헤더 동반)과 메타 키 검증은
         // 코어 단일 지점(`streamedFileResponseFromMeta()`)이 소유한다 — 종전의 컨트롤러별 사본을
         // 접었다 (14차 → 16차 G3 라운드 E-7). `immutable` 은 `false` 고정(이 URL 에는 `?v=` 가 없다),
         // 압축은 선언으로 제외한다(사용자 업로드물 — 형제 `PublicStorageController` 와 같은 선언).
-        // 만료 기간은 서비스 메타(`max_age`)가 정한다.
-        return $this->streamedFileResponseFromMeta(
+        // 만료 기간은 서비스 메타(`max_age`)가 정한다. 공유 캐시 저장 여부도 서비스 메타(`private`)가 정한다.
+        $response = $this->streamedFileResponseFromMeta(
             $info,
             null,
             immutable: false,
             skipCompression: true,
-            logContext: ['hash' => $hash]
+            logContext: ['hash' => $hash],
+            private: (bool) ($info['private'] ?? false)
         );
+
+        return $response instanceof JsonResponse ? $response : ThumbnailResponder::markBypass($response, $request);
     }
 }

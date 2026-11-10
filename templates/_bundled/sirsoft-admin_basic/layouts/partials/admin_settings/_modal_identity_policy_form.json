@@ -11,7 +11,130 @@
     "props": {
         "title": "{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}",
         "size": "lg",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "identity_policy_form_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
+                    "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "저장 — 등록/수정에 따라 주소와 메서드가 함께 갈린다.\n               숫자 칸들은 보내기 직전에 한 번 더 숫자로 바꾼다(입력 때 놓친 경로가 있어도 막힌다).\n               성공하면 창 상태를 통째로 비우고 정책 목록을 다시 받는다. 실패는 **오류 응답을 통째로**\n               담아 상단 상자와 각 칸 아래가 같은 값에서 갈라 읽는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "identity_policy_form_modal.isSaving": true,
+                                    "identity_policy_form_modal.errors": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{_global.identity_policy_form_modal?.isNew ? '/api/admin/identity/policies' : '/api/admin/identity/policies/' + _global.identity_policy_form_modal?.form?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}",
+                                    "body": {
+                                        "key": "{{_global.identity_policy_form_modal?.form?.key}}",
+                                        "scope": "{{_global.identity_policy_form_modal?.form?.scope}}",
+                                        "target": "{{_global.identity_policy_form_modal?.form?.target}}",
+                                        "purpose": "{{_global.identity_policy_form_modal?.form?.purpose}}",
+                                        "provider_id": "{{_global.identity_policy_form_modal?.form?.provider_id || null}}",
+                                        "grace_minutes": "{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}",
+                                        "applies_to": "{{_global.identity_policy_form_modal?.form?.applies_to}}",
+                                        "fail_mode": "{{_global.identity_policy_form_modal?.form?.fail_mode}}",
+                                        "enabled": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
+                                        "priority": "{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}",
+                                        "conditions": "{{_global.identity_policy_form_modal?.form?.conditions ?? null}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "$t:admin.identity.policies.save_success",
+                                            "type": "success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "identity_policy_form_modal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "policies"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "identity_policy_form_modal": null
+                                        }
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "identity_policy_form_modal.isSaving": false,
+                                        "identity_policy_form_modal.errors": "{{error}}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.identity_policy_form_modal?.isSaving}}",
+                    "className": "flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.identity_policy_form_modal?.isSaving}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -143,8 +266,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "grid grid-cols-1 gap-4"
                             },
                             "children": [
                                 {
@@ -253,8 +383,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "grid grid-cols-1 gap-4"
                             },
                             "children": [
                                 {
@@ -339,8 +476,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "grid grid-cols-1 gap-4"
                             },
                             "children": [
                                 {
@@ -502,8 +646,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "grid grid-cols-1 gap-4"
                             },
                             "children": [
                                 {
@@ -660,137 +811,6 @@
                                 "className": "alert-warning text-warning-soft"
                             },
                             "text": "$t:admin.identity.policies.form.declared_policy_notice"
-                        }
-                    ]
-                },
-                {
-                    "id": "policy_form_footer",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal",
-                                    "target": "identity_policy_form_modal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
-                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "저장 — 등록/수정에 따라 주소와 메서드가 함께 갈린다.\n                 숫자 칸들은 보내기 직전에 한 번 더 숫자로 바꾼다(입력 때 놓친 경로가 있어도 막힌다).\n                 성공하면 창 상태를 통째로 비우고 정책 목록을 다시 받는다. 실패는 **오류 응답을 통째로**\n                 담아 상단 상자와 각 칸 아래가 같은 값에서 갈라 읽는다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "identity_policy_form_modal.isSaving": true,
-                                                "identity_policy_form_modal.errors": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "{{_global.identity_policy_form_modal?.isNew ? '/api/admin/identity/policies' : '/api/admin/identity/policies/' + _global.identity_policy_form_modal?.form?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}",
-                                                "body": {
-                                                    "key": "{{_global.identity_policy_form_modal?.form?.key}}",
-                                                    "scope": "{{_global.identity_policy_form_modal?.form?.scope}}",
-                                                    "target": "{{_global.identity_policy_form_modal?.form?.target}}",
-                                                    "purpose": "{{_global.identity_policy_form_modal?.form?.purpose}}",
-                                                    "provider_id": "{{_global.identity_policy_form_modal?.form?.provider_id || null}}",
-                                                    "grace_minutes": "{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}",
-                                                    "applies_to": "{{_global.identity_policy_form_modal?.form?.applies_to}}",
-                                                    "fail_mode": "{{_global.identity_policy_form_modal?.form?.fail_mode}}",
-                                                    "enabled": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
-                                                    "priority": "{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}",
-                                                    "conditions": "{{_global.identity_policy_form_modal?.form?.conditions ?? null}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "$t:admin.identity.policies.save_success",
-                                                        "type": "success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "identity_policy_form_modal"
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "policies"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "identity_policy_form_modal": null
-                                                    }
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "identity_policy_form_modal.isSaving": false,
-                                                    "identity_policy_form_modal.errors": "{{error}}"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.identity_policy_form_modal?.isSaving}}",
-                                "className": "flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.identity_policy_form_modal?.isSaving}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "animate-spin",
-                                        "size": "sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
-                                }
-                            ]
                         }
                     ]
                 }

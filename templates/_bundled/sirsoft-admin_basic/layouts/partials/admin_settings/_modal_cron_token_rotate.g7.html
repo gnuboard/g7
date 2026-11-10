@@ -7,7 +7,7 @@
       <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.system.cron_token_rotate_confirm</p>
       <p class="mt-2 text-label-subtle">$t:admin.settings.system.cron_token_rotate_warning</p>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary">
         <on type="click">
           <close-modal/>
@@ -36,6 +36,6 @@
         <icon data-if="{{_local.cronTokenRotating}}" name="spinner" class="spinner-sm"/>
         <span>$t:admin.settings.system.cron_token_rotate</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

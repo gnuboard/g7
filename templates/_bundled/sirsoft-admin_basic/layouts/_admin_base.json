@@ -279,13 +279,15 @@
                                     },
                                     "children": [
                                         {
-                                            "comment": "관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고 (#434)",
+                                            "comment": "관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고 (#434).\n               원본 대신 md 규격 썸네일. 첫 화면에 보이는 자리라 지연 로딩하지 않는다(eager)",
                                             "id": "logo_image",
                                             "type": "basic",
                                             "name": "Img",
                                             "if": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                             "props": {
                                                 "src": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
+                                                "thumbPreset": "md",
+                                                "loading": "eager",
                                                 "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                 "className": "logo_image"
                                             }
@@ -990,13 +992,16 @@
                                                     },
                                                     "children": [
                                                         {
+                                                            "comment": "사용자 사진 — 관리자 사용자 응답의 사진 필드는 avatar 다(avatar_url 은 응답에 없는 필드라 늘 대신 그림이 나왔다). 작은 원 칸이라 xs 규격.\n                   모든 관리자 화면의 첫 화면 머리에 걸리므로 로고와 같이 지연 로딩하지 않는다(eager). 이름이 없을 때의 대체 문구는 옆 이름 줄과 같은 키다.",
                                                             "id": "user_avatar_img",
                                                             "type": "basic",
                                                             "name": "Img",
-                                                            "if": "{{current_user.data?.avatar_url}}",
+                                                            "if": "{{current_user.data?.avatar}}",
                                                             "props": {
-                                                                "src": "{{current_user.data?.avatar_url}}",
-                                                                "alt": "{{current_user.data?.name ?? 'User'}}",
+                                                                "src": "{{current_user.data?.avatar}}",
+                                                                "thumbPreset": "xs",
+                                                                "loading": "eager",
+                                                                "alt": "{{current_user.data?.name ?? $t('admin.default_user_name')}}",
                                                                 "className": "user_avatar_img"
                                                             }
                                                         },
@@ -1005,7 +1010,7 @@
                                                             "id": "user_avatar_fallback",
                                                             "type": "basic",
                                                             "name": "I",
-                                                            "if": "{{!current_user.data?.avatar_url}}",
+                                                            "if": "{{!current_user.data?.avatar}}",
                                                             "props": {
                                                                 "aria-hidden": "true",
                                                                 "className": "fas fa-user text-gray-600 dark:text-gray-300"
@@ -1017,8 +1022,15 @@
                                                     "id": "user_info",
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "block min-w-0"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "user_info min-w-0"
+                                                        "className": "hidden min-w-0"
                                                     },
                                                     "children": [
                                                         {
@@ -1129,12 +1141,15 @@
                                             },
                                             "children": [
                                                 {
+                                                    "comment": "모바일 헤더 로고 — 사이드바 로고와 같은 규칙(템플릿 설정 로고 우선, md 규격, 지연 로딩 안 함)",
                                                     "id": "mobile_logo_image",
                                                     "type": "basic",
                                                     "name": "Img",
                                                     "if": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                                     "props": {
                                                         "src": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
+                                                        "thumbPreset": "md",
+                                                        "loading": "eager",
                                                         "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                         "className": "mobile_logo_image"
                                                     }

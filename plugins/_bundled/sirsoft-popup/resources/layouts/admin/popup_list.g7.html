@@ -85,7 +85,7 @@
       <div data-ref="page_header" class="g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-6">
         <div>
           <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
-          <h1 class="g7pp-page-title">$t:sirsoft-popup.admin.title</h1>
+          <h1 class="gpp:text-xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"><responsive on="640-" class="gpp:text-2xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"/>$t:sirsoft-popup.admin.title</h1>
           <p class="g7pp-text-label-subtle gpp:mt-1">$t:sirsoft-popup.admin.description</p>
         </div>
         <div class="gpp:flex gpp:flex-wrap gpp:gap-2">
@@ -110,15 +110,18 @@
         </div>
       </div>
       <!-- 지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10) -->
-      <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:lg:flex-row gpp:lg:items-center gpp:gap-4">
-        <div class="gpp:lg:w-1/5 gpp:shrink-0">
+      <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:gap-4">
+        <responsive on="desktop" class="gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-row gpp:items-center gpp:gap-4"/>
+        <div class="gpp:shrink-0">
+          <responsive on="desktop" class="gpp:w-1/5 gpp:shrink-0"/>
           <h2 id="popup_summary_heading" class="gpp:text-base gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white">$t:sirsoft-popup.admin.summary.title|count={{(summary?.data?.data ?? []).length}}</h2>
           <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mt-1">$t:sirsoft-popup.admin.summary.order_hint</p>
         </div>
         <p data-if="{{summary !== undefined &amp;&amp; (summary?.data?.data ?? []).length === 0}}" class="gpp:text-sm gpp:text-gray-500 gpp:dark:text-gray-400 gpp:flex-1">$t:sirsoft-popup.admin.summary.empty</p>
         <!-- 많으면 처음 8개만(휴대폰 폭은 한 줄 3개) — 검색·목록이 화면 아래로 밀려나지 않게. 번호는 전체 순서 그대로다 -->
         <ol id="popup_summary_items" data-ref="summary_items" data-if="{{(summary?.data?.data ?? []).length &gt; 0}}" class="gpp:flex gpp:flex-wrap gpp:items-start gpp:gap-3 gpp:flex-1">
-          <li data-each="item, idx in (summary?.data?.data ?? []).slice(0, _local.summaryExpanded === true ? undefined : 8)" class="gpp:w-20 {{idx &gt;= 3 &amp;&amp; _local.summaryExpanded !== true ? 'gpp:hidden gpp:md:block' : ''}}">
+          <li data-each="item, idx in (summary?.data?.data ?? []).slice(0, _local.summaryExpanded === true ? undefined : 8)" class="gpp:w-20 {{idx &gt;= 3 &amp;&amp; _local.summaryExpanded !== true ? 'gpp:hidden' : ''}}">
+            <responsive on="768-" class="gpp:w-20 {{idx &gt;= 3 &amp;&amp; _local.summaryExpanded !== true ? 'gpp:block' : ''}}"/>
             <!-- 누르면 그 팝업의 수정 화면 — 보던 목록 조건(상태·기기·검색·쪽)을 이고 가 저장·취소 뒤 같은 목록으로 돌아온다.
               수정 권한이 없으면(조회 전용) 수정 화면이 403 이라 링크를 걸지 않는다 -->
             <a data-if="{{item.abilities?.can_update !== false}}" href="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" title="{{item.title}}" aria-label="$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}" class="g7pp-summary-link gpp:flex gpp:flex-col gpp:items-center gpp:gap-1 gpp:rounded gpp:p-0.5 gpp:hover:bg-gray-50 gpp:dark:hover:bg-gray-700/50">
@@ -127,25 +130,28 @@
                   <query/>
                 </navigate>
               </on>
-              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="g7pp-summary-link__thumb gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
+              <!-- 팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160) -->
+              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" thumbPreset="sm" decoding="async" alt="" class="g7pp-summary-link__thumb gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
               <span data-if="{{!item.thumbnail}}" class="gpp:w-16 gpp:h-20 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-white gpp:dark:bg-gray-700 gpp:text-[11px] gpp:text-gray-500 gpp:dark:text-gray-300 gpp:text-center gpp:px-1 g7pp-summary-link__thumb">$t:sirsoft-popup.admin.content_type.html</span>
               <span class="gpp:text-xs gpp:text-gray-700 gpp:dark:text-gray-300 gpp:tabular-nums g7pp-summary-link__label">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
             </a>
             <div data-if="{{item.abilities?.can_update === false}}" title="{{item.title}}" class="gpp:flex gpp:flex-col gpp:items-center gpp:gap-1 gpp:p-0.5">
-              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
+              <!-- 팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160) -->
+              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" thumbPreset="sm" decoding="async" alt="" class="gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
               <span data-if="{{!item.thumbnail}}" class="gpp:w-16 gpp:h-20 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-white gpp:dark:bg-gray-700 gpp:text-[11px] gpp:text-gray-500 gpp:dark:text-gray-300 gpp:text-center gpp:px-1">$t:sirsoft-popup.admin.content_type.html</span>
               <span class="gpp:text-xs gpp:text-gray-700 gpp:dark:text-gray-300 gpp:tabular-nums">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
               <span class="gpp:sr-only">{{item.title}}</span>
             </div>
           </li>
-          <li data-if="{{(summary?.data?.data ?? []).length &gt; 3}}" class="gpp:self-center {{(summary?.data?.data ?? []).length &gt; 8 ? '' : 'gpp:md:hidden'}}">
+          <li data-if="{{(summary?.data?.data ?? []).length &gt; 3}}" class="gpp:self-center">
+            <responsive on="768-" class="gpp:self-center {{(summary?.data?.data ?? []).length &gt; 8 ? '' : 'gpp:hidden'}}"/>
             <button type="button" data-ref="summary_toggle" aria-expanded="{{_local.summaryExpanded === true}}" aria-controls="popup_summary_items" class="gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline">
               <on type="click">
                 <!-- 나머지 노출 중 팝업을 펼치거나 다시 처음 8개(휴대폰 폭은 3개)로 접는다 -->
                 <set-state target="local" summaryExpanded="{{_local.summaryExpanded !== true}}"/>
               </on>
-              <span data-if="{{_local.summaryExpanded !== true}}" class="gpp:md:hidden">$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 3}}</span>
-              <span data-if="{{_local.summaryExpanded !== true}}" class="gpp:hidden gpp:md:inline">$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 8}}</span>
+              <span data-if="{{_local.summaryExpanded !== true}}"><responsive on="768-" class="gpp:hidden"/>$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 3}}</span>
+              <span data-if="{{_local.summaryExpanded !== true}}" class="gpp:hidden"><responsive on="768-" class="gpp:inline"/>$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 8}}</span>
               <span data-if="{{_local.summaryExpanded === true}}">$t:sirsoft-popup.admin.summary.show_less</span>
             </button>
           </li>
@@ -325,7 +331,8 @@
         <blur-until-loaded sources="popups"/>
         <column field="thumbnail" header="$t:sirsoft-popup.admin.list.column.preview" width="80px">
           <cell>
-            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="gpp:w-12 gpp:h-14 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
+            <!-- 팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160) -->
+            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" thumbPreset="sm" decoding="async" alt="" class="gpp:w-12 gpp:h-14 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
             <span data-if="{{!row.thumbnail}}" class="gpp:w-12 gpp:h-14 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:bg-white gpp:dark:bg-gray-800 gpp:text-[10px] gpp:text-gray-500 gpp:dark:text-gray-400 gpp:text-center">$t:sirsoft-popup.admin.content_type.html_short</span>
           </cell>
         </column>
@@ -441,7 +448,7 @@
           <p class="gpp:text-xs gpp:text-yellow-800 gpp:dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
         </div>
       </div>
-      <div class="g7pp-modal-footer-buttons">
+      <footer>
         <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
@@ -470,7 +477,7 @@
           <icon data-if="{{_global.isDeleting}}" name="spinner" class="g7pp-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -483,7 +490,7 @@
           <p class="gpp:text-xs gpp:text-yellow-800 gpp:dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
         </div>
       </div>
-      <div class="g7pp-modal-footer-buttons">
+      <footer>
         <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <close-modal/>
@@ -513,14 +520,14 @@
           <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="g7pp-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
     <!-- 복사 확인 — 복사본은 비활성으로 맨 뒤에 붙는다(같은 팝업이 사용자 화면에 두 번 뜨지 않게, 결정 R2) -->
     <modal data-type="composite" data-ref="popup_bulk_copy_modal" title="$t:sirsoft-popup.admin.copy.title" size="medium">
       <p class="gpp:text-gray-700 gpp:dark:text-gray-300">$t:sirsoft-popup.admin.copy.message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
-      <div class="g7pp-modal-footer-buttons">
+      <footer>
         <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <close-modal/>
@@ -550,7 +557,7 @@
           <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="g7pp-spinner-sm"/>
           <span>$t:sirsoft-popup.admin.copy.confirm</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -569,11 +576,13 @@
             <sortable source="{{(_global.reorderItems ?? []).map((r, i) =&gt; ({...r, _idx: i}))}}" item-var="row" item-key="id" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]"/>
             <item-template>
               <div data-testid="popup-reorder-row-{{row.id}}" class="gpp:flex gpp:items-center gpp:gap-3 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-800">
-                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-popup.admin.reorder.drag_handle', { name: row.title })}}" class="gpp:hidden g7pp-hidden gpp:md:flex gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300">
+                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-popup.admin.reorder.drag_handle', { name: row.title })}}" class="gpp:hidden g7pp-hidden gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300">
+                  <responsive on="768-" class="gpp:flex gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300"/>
                   <icon name="fa-solid fa-grip-vertical" class="gpp:text-sm"/>
                 </div>
                 <span class="gpp:w-6 gpp:text-right gpp:text-sm gpp:tabular-nums gpp:text-gray-500 gpp:dark:text-gray-400">{{row._idx + 1}}</span>
-                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="gpp:w-8 gpp:h-10 gpp:object-cover gpp:rounded"/>
+                <!-- 팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160) -->
+                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="gpp:w-8 gpp:h-10 gpp:object-cover gpp:rounded"/>
                 <span class="gpp:truncate gpp:flex-1 gpp:font-medium gpp:text-gray-900 gpp:dark:text-gray-100">{{row.title}}</span>
                 <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-popup.admin.status.' + row.status)}}" :showIcon="false"/>
                 <button data-testid="popup-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
@@ -599,41 +608,41 @@
           </div>
         </div>
         <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="gpp:rounded-lg gpp:border gpp:border-red-200 gpp:dark:border-red-800 gpp:bg-red-50 gpp:dark:bg-red-900/20 gpp:px-4 gpp:py-3 gpp:text-sm gpp:text-red-700 gpp:dark:text-red-300">{{_global.reorderError}}</div>
-        <div class="g7pp-modal-footer-buttons">
-          <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.reorderSaving}}">
-            <on type="click">
-              <!-- 취소 — 바꾼 순서를 버리고 창을 닫는다 -->
-              <sequence>
-                <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
-                <close-modal target="popup_reorder_modal"/>
-              </sequence>
-            </on>
-            <span>$t:common.cancel</span>
-          </button>
-          <button data-testid="popup-reorder-save" type="button" :lockRepeatClick="true" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
-            <on type="click">
-              <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
-              <sequence>
-                <set-state target="global" :reorderSaving="true" :reorderError="null"/>
-                <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/order" method="PUT">
-                  <success>
-                    <set-state target="global" :reorderSaving="false" :reorderItems="null" :reorderOriginal="null"/>
-                    <close-modal target="popup_reorder_modal"/>
-                    <toast type="success" message="{{response.message}}"/>
-                    <action-ref name="reloadPopups"/>
-                  </success>
-                  <fail>
-                    <set-state target="global" :reorderSaving="false" reorderError="{{error.message}}"/>
-                  </fail>
-                  <body ids="{{(_global.reorderItems ?? []).map(i =&gt; i.id)}}"/>
-                </api-call>
-              </sequence>
-            </on>
-            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="g7pp-spinner-sm"/>
-            <span>$t:common.save</span>
-          </button>
-        </div>
       </div>
+      <footer>
+        <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.reorderSaving}}">
+          <on type="click">
+            <!-- 취소 — 바꾼 순서를 버리고 창을 닫는다 -->
+            <sequence>
+              <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+              <close-modal target="popup_reorder_modal"/>
+            </sequence>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-testid="popup-reorder-save" type="button" :lockRepeatClick="true" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
+          <on type="click">
+            <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
+            <sequence>
+              <set-state target="global" :reorderSaving="true" :reorderError="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/order" method="PUT">
+                <success>
+                  <set-state target="global" :reorderSaving="false" :reorderItems="null" :reorderOriginal="null"/>
+                  <close-modal target="popup_reorder_modal"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <action-ref name="reloadPopups"/>
+                </success>
+                <fail>
+                  <set-state target="global" :reorderSaving="false" reorderError="{{error.message}}"/>
+                </fail>
+                <body ids="{{(_global.reorderItems ?? []).map(i =&gt; i.id)}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.reorderSaving}}" name="spinner" class="g7pp-spinner-sm"/>
+          <span>$t:common.save</span>
+        </button>
+      </footer>
     </modal>
   </modal>
 </layout>

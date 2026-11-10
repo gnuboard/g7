@@ -145,8 +145,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -385,8 +392,15 @@
             "type": "basic",
             "name": "Div",
             "if": "{{form_meta?.data && !_global.currentUser?.uuid && !route.id}}",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "grid grid-cols-2 gap-4"
+                    }
+                }
+            },
             "props": {
-                "className": "grid grid-cols-1 sm:grid-cols-2 gap-4"
+                "className": "grid grid-cols-1 gap-4"
             },
             "children": [
                 {
@@ -810,8 +824,33 @@
                                     }
                                 },
                                 {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "uploadFailedCount": "{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"
+                                    }
+                                },
+                                {
+                                    "comment": "업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다.",
+                                    "handler": "setState",
+                                    "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                    "params": {
+                                        "target": "local",
+                                        "isSaving": false
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                    "params": {
+                                        "type": "error",
+                                        "message": "$t:attachment.upload_failed_save_stopped"
+                                    }
+                                },
+                                {
                                     "handler": "apiCall",
                                     "target": "{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}",
+                                    "if": "{{(_local.uploadFailedCount ?? 0) === 0}}",
                                     "auth_required": true,
                                     "params": {
                                         "method": "{{route.id ? 'PUT' : 'POST'}}",

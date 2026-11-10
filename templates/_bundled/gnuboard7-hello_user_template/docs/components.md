@@ -39,4 +39,11 @@ href 가 새 쿼리를 따르도록 코어 훅 `G7Core.navigation.useLocationSea
 엔진 `G7Core.navigation.subscribeLocationSearch` 로 구독하고, 그마저 없는 옛 엔진에서만 뒤로/앞으로를 봅니다.
 링크 props 가 그대로라 엔진이 그 링크를 다시 그리지 않기 때문입니다 — 구독하지 않으면 가운데 클릭·새 탭·주소 복사가
 바꾸기 전 쿼리로 갑니다. `mergeQuery` 가 없는 링크는 구독하지 않습니다(0.2.2).
+`Img` 는 실사용 템플릿과 바이트 동일한 사본입니다. `thumbPreset`(규격 이름)을 주면 업로드 이미지 서빙 주소에 썸네일 규격과
+1x·2x srcset 을 붙이고(판정은 코어 `G7Core.thumbnail`, 코어에 그 API 가 없으면 주소를 바꾸지 않는다), `loading` 은 기본 `lazy`,
+`decoding` 은 기본 `async` 입니다. 첫 화면 이미지는 `loading="eager"` 로 명시합니다(코어 7.2.0).
+`Img` 는 주소를 `src/support/thumbnail.ts` 어댑터의 `thumbUrl`, `thumbSrcset` 으로 만듭니다(어댑터는 본문용 `contentSrcset`,
+확대 보기용 `stripThumb`, 첨부 칸용 `attachmentThumbUrl` 도 냅니다).
+템플릿 번들은 코어와 별도 IIFE 라 코어 판정을 import 하지 못하므로, 규칙 사본을 두지 않고 `G7Core.thumbnail` 을 이름만 옮겨 부릅니다.
+새 컴포넌트가 이미지 주소에 규격을 붙일 때도 이 어댑터를 씁니다.
 <!-- @intent END -->

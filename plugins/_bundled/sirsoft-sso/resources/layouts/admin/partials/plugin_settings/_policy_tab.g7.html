@@ -23,12 +23,15 @@
           <p data-if="{{_local.policyForm?.policy?.enforce_site === true}}" role="alert" class="sso-form-error">$t:sirsoft-sso.admin.settings.policy.warnings.enforce_site</p>
         </div>
       </div>
-      <div class="sso-grid-3col-responsive">
-        <div class="sso:lg:col-span-1">
+      <div class="sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start">
+        <responsive on="1024-" class="sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"/>
+        <div>
+          <responsive on="desktop" class="sso:col-span-1"/>
           <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.enforce_roles</label>
           <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.enforce_roles</p>
         </div>
-        <div class="sso:lg:col-span-2">
+        <div>
+          <responsive on="desktop" class="sso:col-span-2"/>
           <tag-input data-type="composite" name="policy.enforce_roles" :creatable="true" placeholder="manager" class="sso:w-full" defaultVariant="blue" disabled="{{!_computed.canUpdate || _local.policyForm?.abilities?.is_super !== true}}"/>
           <p data-if="{{!!_local.policyErrors &amp;&amp; Object.keys(_local.policyErrors).some(k => k.startsWith('enforce_roles'))}}" class="sso-form-error">$t:sirsoft-sso.admin.settings.policy.errors.enforce_roles</p>
         </div>
@@ -40,12 +43,15 @@
           <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.enforce_linked</p>
         </div>
       </div>
-      <div class="sso-grid-3col-responsive">
-        <div class="sso:lg:col-span-1">
+      <div class="sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start">
+        <responsive on="1024-" class="sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"/>
+        <div>
+          <responsive on="desktop" class="sso:col-span-1"/>
           <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.auto_redirect_idp</label>
           <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.auto_redirect_idp</p>
         </div>
-        <div class="sso:lg:col-span-2">
+        <div>
+          <responsive on="desktop" class="sso:col-span-2"/>
           <select name="policy.auto_redirect_idp" class="sso:w-full" disabled="{{!_computed.canUpdate}}">
             <option value="">$t:sirsoft-sso.admin.settings.policy.no_auto_redirect</option>
             <option data-each="idp in (ssoIdps?.data?.idps ?? []).filter(i => i.protocol !== 'ldap')" value="{{idp.key}}">{{idp.display_label}}</option>
@@ -73,7 +79,8 @@
           </button>
         </li>
       </ul>
-      <div data-ref="emergency_search" data-if="{{_local.policyForm?.abilities?.is_super === true}}" class="sso:flex sso:flex-col sso:sm:flex-row sso:gap-2">
+      <div data-ref="emergency_search" data-if="{{_local.policyForm?.abilities?.is_super === true}}" class="sso:flex sso:flex-col sso:gap-2">
+        <responsive on="640-" class="sso:flex sso:flex-row sso:gap-2"/>
         <input type="text" name="emergencySearchBox" class="sso-input sso:flex-1 sso:min-w-0" value="{{_local.emergencySearch}}" placeholder="$t:sirsoft-sso.admin.settings.policy.emergency_search_placeholder" aria-label="$t:sirsoft-sso.admin.settings.policy.emergency_search_placeholder">
           <on type="change">
             <!-- 검색어만 담아 둔다 — 실제 검색은 옆 [검색] 버튼이 한다 -->
@@ -115,12 +122,15 @@
     <!-- 세션과 진입 -->
     <div data-ref="session_section" class="sso-admin-card sso:space-y-6">
       <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.settings.policy.session</h2>
-      <div class="sso-grid-3col-responsive">
-        <div class="sso:lg:col-span-1">
+      <div class="sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start">
+        <responsive on="1024-" class="sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"/>
+        <div>
+          <responsive on="desktop" class="sso:col-span-1"/>
           <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.session_max_minutes</label>
           <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.session_max_minutes</p>
         </div>
-        <div class="sso:lg:col-span-2">
+        <div>
+          <responsive on="desktop" class="sso:col-span-2"/>
           <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
           <input type="number" name="policy.session_max_minutes" :min="0" :max="10080" class="sso-input" disabled="{{!_computed.canUpdate}}"/>
         </div>

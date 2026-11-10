@@ -81,7 +81,9 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="module_list_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="module_list_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.modules.title" description="$t:admin.modules.description">
         <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">

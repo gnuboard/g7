@@ -63,10 +63,10 @@ A 등급 화면에서 처음 펼쳐 둘 기본 필터(`defaultFilters`)는 **거
   <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
     <div data-ref="status_filter_row"
          data-slot="{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}"
-         data-slot-order="1" class="filter-row">
-      <responsive on="portable" class="filter-row flex-col items-start"/>
+         data-slot-order="1" class="flex flex-row gap-2 items-center">
+      <responsive on="portable" class="flex gap-2 flex-col items-start"/>
       <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{…}}">…</input>
-      <span class="filter-label w-32">…</span>
+      <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>…</span>
       …
     </div>
   </div>
@@ -78,6 +78,7 @@ A 등급 화면에서 처음 펼쳐 둘 기본 필터(`defaultFilters`)는 **거
 ```
 
 - 행은 N 개를 같은 모양으로 늘어놓고 `data-slot-order` 는 1..N 으로 끊김 없이 잇는다.
+- 행과 라벨의 폭 분기는 엔진 `responsive` 구간 값으로 쓴다. 폭 미디어를 품은 옛 의미 클래스(`filter-row`·`filter-label`)는 폐지 예정이라 새 레이아웃에 쓰지 않는다. 라벨의 `filter-field-label` 은 곁 라벨 표식이라 기본·구간 값 양쪽에 둔다.
 - 두 `slot-container` 는 **반드시 `filter-grid`** 를 가진다 — 행 사이 간격은 행이 아니라 이 컨테이너가 준다.
 - 행 라벨 폭은 코어 관리자 화면이 `w-32`(한국어 라벨이 길다), 이커머스 화면은 `w-20`~`w-28` 이다.
 - 선택지 수가 설치마다 늘어나는 다중선택(역할·카테고리처럼 데이터소스에서 오는 목록)은 체크박스를 늘어놓지 않고 **검색형 `tag-input` 한 칸**으로 고른다(비우면 전체) — 체크박스는 선택지가 고정·소수(계정 상태 6종 등)일 때만 쓴다. `tag-input` 의 `class` 는 안쪽 입력 상자에만 붙으므로 폭은 감싸는 `div`(`flex-1 min-w-0 max-w-2xl`)가 맡고, 선택지 value 는 URL 에서 되읽히는 형태(문자열 id)로 맞춘다. 선택지 데이터소스가 목록보다 늦게 오면 그 전에는 고른 값을 `…` 태그로 두고 `disabled` 로 잠근다(id 가 이름 대신 보이지 않게).

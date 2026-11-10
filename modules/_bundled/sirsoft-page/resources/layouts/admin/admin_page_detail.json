@@ -65,8 +65,20 @@
                 "type": "basic",
                 "name": "Div",
                 "blur_until_loaded": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "page:p-6 page:bg-gray-50 page:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "page:p-8 page:bg-gray-50 page:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "page-admin-page-content-responsive-fluid"
+                    "className": "page:p-4 page:bg-gray-50 page:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -112,8 +124,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "page:inline"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page:hidden page-hidden page:sm:inline"
+                                            "className": "page:hidden page-hidden"
                                         },
                                         "text": "$t:sirsoft-page.admin.page.detail.back_to_list"
                                     }
@@ -152,8 +171,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "page:inline"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page:hidden page-hidden page:sm:inline"
+                                            "className": "page:hidden page-hidden"
                                         },
                                         "text": "$t:sirsoft-page.admin.page.detail.edit"
                                     }
@@ -187,8 +213,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "page:inline"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page:hidden page-hidden page:sm:inline"
+                                            "className": "page:hidden page-hidden"
                                         },
                                         "text": "$t:sirsoft-page.admin.page.detail.delete"
                                     }
@@ -503,8 +536,15 @@
                                 "id": "info_grid",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "page:grid page:grid-cols-2 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "page-grid-2col-responsive page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700"
+                                    "className": "page:grid page:grid-cols-1 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700"
                                 },
                                 "children": [
                                     {
@@ -793,6 +833,9 @@
                                                         "name": "Img",
                                                         "props": {
                                                             "src": "{{attachment_item?.preview_url}}",
+                                                            "thumbPreset": "sm",
+                                                            "loading": "lazy",
+                                                            "decoding": "async",
                                                             "alt": "{{attachment_item?.original_filename}}",
                                                             "className": "page:w-full page:h-full page:object-cover"
                                                         }
@@ -1189,7 +1232,123 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-page.admin.page.modals.delete_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-secondary",
+                            "disabled": "{{_global.isDeletingPage}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "삭제 확정 — 처리 중 플래그로 버튼을 잠그고, 지운 뒤에는 상세에 머물 수 없으므로 목록으로 보낸다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeletingPage": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingPage": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-page.admin.page.modals.delete_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingPage": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-danger",
+                            "disabled": "{{_global.isDeletingPage || page?.data?.abilities?.can_delete !== true}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isDeletingPage}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "page-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1208,129 +1367,6 @@
                             "text": "$t:sirsoft-page.admin.page.modals.delete_confirm"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "page-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-secondary",
-                                "disabled": "{{_global.isDeletingPage}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "삭제 확정 — 처리 중 플래그로 버튼을 잠그고, 지운 뒤에는 상세에 머물 수 없으므로 목록으로 보낸다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeletingPage": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingPage": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-page.admin.page.modals.delete_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/pages",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingPage": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-danger",
-                                "disabled": "{{_global.isDeletingPage || page?.data?.abilities?.can_delete !== true}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isDeletingPage}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "page-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -1341,7 +1377,126 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-page.admin.page.modals.restore_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-secondary",
+                            "disabled": "{{_global.isRestoringVersion}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "버전 복원 확정 — 대상은 미리보기에서 전역에 심어 둔 restoreVersionId 다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isRestoringVersion": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}/versions/{{_global.restoreVersionId}}/restore",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isRestoringVersion": false,
+                                                    "modalStack": [],
+                                                    "activeModal": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-page.admin.page.modals.restore_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "page"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "versions"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isRestoringVersion": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-page.admin.page.errors.restore_failed'}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-primary",
+                            "disabled": "{{_global.isRestoringVersion || page?.data?.abilities?.can_update !== true}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isRestoringVersion}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "page-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isRestoringVersion ? '$t:sirsoft-page.admin.page.modals.restoring' : '$t:sirsoft-page.admin.page.detail.versions.restore'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1368,132 +1523,6 @@
                             "text": "$t:sirsoft-page.admin.page.modals.restore_notice"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "page-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-secondary",
-                                "disabled": "{{_global.isRestoringVersion}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "버전 복원 확정 — 대상은 미리보기에서 전역에 심어 둔 restoreVersionId 다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isRestoringVersion": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}/versions/{{_global.restoreVersionId}}/restore",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isRestoringVersion": false,
-                                                        "modalStack": [],
-                                                        "activeModal": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-page.admin.page.modals.restore_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "page"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "versions"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isRestoringVersion": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:sirsoft-page.admin.page.errors.restore_failed'}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-primary",
-                                "disabled": "{{_global.isRestoringVersion || page?.data?.abilities?.can_update !== true}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isRestoringVersion}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "page-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isRestoringVersion ? '$t:sirsoft-page.admin.page.modals.restoring' : '$t:sirsoft-page.admin.page.detail.versions.restore'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -1504,7 +1533,75 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-page.admin.page.detail.versions.preview_modal_title|version={{_global.previewVersion?.version ?? ''}}",
-                "width": "800px"
+                "width": "800px",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.close"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "if": "{{_global.previewVersion?.version !== page?.data?.current_version}}",
+                        "actions": [
+                            {
+                                "comment": "미리보기에서 곧장 복원 — 복원 대상을 전역에 옮겨 담고 확인 창으로 넘긴다(현재 버전이면 버튼 자체가 뜨지 않는다)",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "restoreVersionId": "{{_global.previewVersion?.id}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "restoreVersionModal"
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{page?.data?.abilities?.can_update !== true}}",
+                            "className": "page-btn page-btn-primary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "rotate-left",
+                                    "className": "page:text-xs"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-page.admin.page.detail.versions.restore"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1667,81 +1764,6 @@
                                             "text": "{{_global.previewVersion?.seo_meta?.keywords ?? '-'}}"
                                         }
                                     ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "page-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-secondary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.close"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{_global.previewVersion?.version !== page?.data?.current_version}}",
-                            "actions": [
-                                {
-                                    "comment": "미리보기에서 곧장 복원 — 복원 대상을 전역에 옮겨 담고 확인 창으로 넘긴다(현재 버전이면 버튼 자체가 뜨지 않는다)",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "restoreVersionId": "{{_global.previewVersion?.id}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "restoreVersionModal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{page?.data?.abilities?.can_update !== true}}",
-                                "className": "page-btn page-btn-primary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "rotate-left",
-                                        "className": "page:text-xs"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-page.admin.page.detail.versions.restore"
                                 }
                             ]
                         }

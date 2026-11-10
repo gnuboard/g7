@@ -65,8 +65,7 @@
         </button>
       </div>
     </div>
-    <!-- 푸터 (취소 / 발급) -->
-    <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
         <on type="click">
           <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
@@ -102,7 +101,7 @@
         <icon data-if="{{_global.directIssueSubmitting}}" name="spinner" size="sm" class="ecommerce:animate-spin"/>
         <span>{{_global.directIssueSubmitting ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_btn'}}</span>
       </button>
-    </div>
+    </footer>
     <!-- 창 닫힘 표지 — 본문이 조건으로 갈리는 형제 여럿이라 늘 붙어 있는 빈 표지에 건다 -->
     <div class="ecommerce:hidden ecommerce-hidden" aria-hidden="true">
       <on event="unmount">

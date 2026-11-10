@@ -2,7 +2,8 @@
      「SSO」라고 부르지 않는다 — 예시 이름은 「사내 계정」. -->
 <partial name="partials/plugin_settings/_provider_add" description="일반 OIDC 제공자 추가">
   <div data-ref="provider_add_section" class="sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-dashed sl:border-gray-300 sl:dark:border-gray-600">
-    <div class="sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-4 sl:sm:px-6 sl:py-4">
+    <div class="sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-4 sl:py-4">
+      <responsive on="640-" class="sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-6 sl:py-4"/>
       <div>
         <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.admin.providers.add_title</h2>
         <p data-ref="custom_limit_text" data-if="{{!!providers?.data}}" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.add_limit|count={{providers?.data?.limits?.custom_count ?? 0}}|limit={{providers?.data?.limits?.custom_limit ?? 0}}</p>
@@ -28,8 +29,10 @@
         <span>$t:sirsoft-social_login.admin.providers.add_button</span>
       </button>
     </div>
-    <div data-ref="provider_add_form" data-if="{{_local.showAddForm}}" data-key="newProvider" class="sl:px-4 sl:sm:px-6 sl:pb-5 sl:space-y-3">
-      <div class="sl-grid-2col-responsive">
+    <div data-ref="provider_add_form" data-if="{{_local.showAddForm}}" data-key="newProvider" class="sl:px-4 sl:pb-5 sl:space-y-3">
+      <responsive on="640-" class="sl:px-6 sl:pb-5 sl:space-y-3"/>
+      <div class="sl:grid sl:grid-cols-1 sl:gap-4">
+        <responsive on="768-" class="sl:grid sl:grid-cols-2 sl:gap-4"/>
         <div>
           <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.key</label>
           <input type="text" name="key" class="sl-input" placeholder="corp_account"/>
@@ -53,7 +56,8 @@
           <p data-if="{{!!_local.newProviderErrors?.client_secret}}" class="sl-form-error">{{_local.newProviderErrors?.client_secret?.[0] ?? ''}}</p>
         </div>
       </div>
-      <div class="sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-end sl:gap-2">
+      <div class="sl:flex sl:flex-col sl:gap-2">
+        <responsive on="640-" class="sl:flex sl:flex-row sl:items-end sl:gap-2"/>
         <div class="sl:flex-1">
           <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.discovery_url</label>
           <input type="url" name="discovery_url" class="sl-input" placeholder="https://"/>
@@ -76,7 +80,8 @@
           <span>$t:sirsoft-social_login.admin.providers.discover</span>
         </button>
       </div>
-      <div class="sl-grid-2col-responsive">
+      <div class="sl:grid sl:grid-cols-1 sl:gap-4">
+        <responsive on="768-" class="sl:grid sl:grid-cols-2 sl:gap-4"/>
         <div>
           <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.issuer</label>
           <input type="text" name="issuer" class="sl-input"/>
@@ -151,6 +156,6 @@
         </button>
       </div>
     </div>
-    <p data-ref="extension_providers_note" class="sl:px-4 sl:sm:px-6 sl:pb-4 sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.extension_hint</p>
+    <p data-ref="extension_providers_note" class="sl:px-4 sl:pb-4 sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"><responsive on="640-" class="sl:px-6 sl:pb-4 sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"/>$t:sirsoft-social_login.admin.providers.extension_hint</p>
   </div>
 </partial>

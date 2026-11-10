@@ -18,6 +18,10 @@ return [
         'attached_not_deletable' => 'An image attached to a banner cannot be deleted here. Change it on the banner edit screen and save.',
         'not_found' => 'Image not found.',
     ],
+    'thumbnail' => [
+        'source_label' => 'Hero section banner images',
+        'list_preset_label' => 'Banner list',
+    ],
     'position' => [
         'fetched' => 'Position settings loaded.',
         'updated' => 'Slider settings saved.',

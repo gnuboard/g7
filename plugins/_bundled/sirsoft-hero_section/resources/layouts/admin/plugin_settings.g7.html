@@ -27,7 +27,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="hs-admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="hs:p-4 hs:min-h-screen hs:bg-gray-50 hs:dark:bg-gray-900">
+      <responsive on="640-1023" class="hs:p-6 hs:min-h-screen hs:bg-gray-50 hs:dark:bg-gray-900"/>
+      <responsive on="1024-" class="hs:p-8 hs:min-h-screen hs:bg-gray-50 hs:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-hero_section.settings.title" description="$t:sirsoft-hero_section.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="hs-alert-warning hs:mt-6">
         <icon name="lock" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
@@ -35,35 +37,44 @@
       </div>
       <div data-ref="settings_form" class="hs:mt-6 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:shadow-sm hs:border hs:border-gray-200 hs:dark:border-gray-700">
         <div data-ref="settings_fields" class="hs:p-6 hs:space-y-6">
-          <div data-ref="field_max_upload_mb" class="hs-grid-3col-responsive">
-            <div class="hs:lg:col-span-1">
+          <div data-ref="field_max_upload_mb" class="hs:grid hs:grid-cols-1 hs:gap-4 hs:items-start">
+            <responsive on="1024-" class="hs:grid hs:grid-cols-3 hs:gap-4 hs:items-start"/>
+            <div>
+              <responsive on="desktop" class="hs:col-span-1"/>
               <label class="hs-form-label" htmlFor="hero_section_max_upload_mb">$t:sirsoft-hero_section.settings.fields.max_upload_mb.label</label>
               <p class="hs-form-hint">$t:sirsoft-hero_section.settings.fields.max_upload_mb.hint</p>
             </div>
-            <div class="hs:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="hs:col-span-2"/>
               <input type="number" id="hero_section_max_upload_mb" name="max_upload_mb" :min="1" :max="10" class="hs:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
               <p data-if="{{_local.errors?.max_upload_mb}}" class="hs-form-error">{{_local.errors?.max_upload_mb?.[0]}}</p>
               <p data-ref="server_upload_limit" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb}}" class="hs-form-hint">$t:sirsoft-hero_section.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
               <p data-ref="server_upload_limit_warning" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb &amp;&amp; Number(_local.form?.max_upload_mb ?? 0) &gt; upload_limit.data.upload.server_limit_mb}}" role="status" class="hs:text-sm hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
             </div>
           </div>
-          <div data-ref="field_max_video_upload_mb" class="hs-grid-3col-responsive">
-            <div class="hs:lg:col-span-1">
+          <div data-ref="field_max_video_upload_mb" class="hs:grid hs:grid-cols-1 hs:gap-4 hs:items-start">
+            <responsive on="1024-" class="hs:grid hs:grid-cols-3 hs:gap-4 hs:items-start"/>
+            <div>
+              <responsive on="desktop" class="hs:col-span-1"/>
               <label class="hs-form-label" htmlFor="hero_section_max_video_upload_mb">$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.label</label>
               <p class="hs-form-hint">$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.hint</p>
             </div>
-            <div class="hs:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="hs:col-span-2"/>
               <input type="number" id="hero_section_max_video_upload_mb" name="max_video_upload_mb" :min="1" :max="100" class="hs:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
               <p data-if="{{_local.errors?.max_video_upload_mb}}" class="hs-form-error">{{_local.errors?.max_video_upload_mb?.[0]}}</p>
               <p data-ref="server_video_upload_limit_warning" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb &amp;&amp; Number(_local.form?.max_video_upload_mb ?? 0) &gt; upload_limit.data.upload.server_limit_mb}}" role="status" class="hs:text-sm hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
             </div>
           </div>
-          <div data-ref="field_public_cache_minutes" class="hs-grid-3col-responsive">
-            <div class="hs:lg:col-span-1">
+          <div data-ref="field_public_cache_minutes" class="hs:grid hs:grid-cols-1 hs:gap-4 hs:items-start">
+            <responsive on="1024-" class="hs:grid hs:grid-cols-3 hs:gap-4 hs:items-start"/>
+            <div>
+              <responsive on="desktop" class="hs:col-span-1"/>
               <label class="hs-form-label" htmlFor="hero_section_public_cache_minutes">$t:sirsoft-hero_section.settings.fields.public_cache_minutes.label</label>
               <p class="hs-form-hint">$t:sirsoft-hero_section.settings.fields.public_cache_minutes.hint</p>
             </div>
-            <div class="hs:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="hs:col-span-2"/>
               <input type="number" id="hero_section_public_cache_minutes" name="public_cache_minutes" :min="0" :max="60" class="hs:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
               <p data-if="{{_local.errors?.public_cache_minutes}}" class="hs-form-error">{{_local.errors?.public_cache_minutes?.[0]}}</p>
             </div>

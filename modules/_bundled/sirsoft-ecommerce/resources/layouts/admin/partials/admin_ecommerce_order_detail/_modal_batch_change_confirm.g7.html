@@ -38,7 +38,7 @@
               <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2 ecommerce:px-3 ecommerce:py-2 ecommerce:items-center"/>
               <div class="ecommerce:col-span-5 ecommerce-flex-center ecommerce:gap-2 ecommerce:min-w-0">
                 <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:min-w-0"/>
-                <img data-if="{{confirmItem.thumbnail_url}}" src="{{confirmItem.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0" alt=""/>
+                <img data-if="{{confirmItem.thumbnail_url}}" src="{{confirmItem.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0" alt=""/>
                 <div data-if="{{!confirmItem.thumbnail_url}}" class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0">
                   <icon name="image" class="ecommerce-text-hint"/>
                 </div>
@@ -160,7 +160,7 @@
         </div>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
         <on type="click">
           <close-modal/>
@@ -191,6 +191,6 @@
         <icon data-if="{{_global.isProcessing}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.confirm'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -10,6 +10,7 @@ use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
 use App\Support\TrustedProxySetting;
 use App\Support\WorkerSettingsRefresher;
+use App\Thumbnails\ThumbnailConfig;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
@@ -477,6 +478,11 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('scout.driver', $driverSettings['search_engine_driver']);
         }
 
+        // 이미지 처리 엔진 — 업로드 축소·썸네일 생성 공용. 쓸 수 없는 엔진이면 해석기가 gd 로 폴백한다.
+        if (! empty($driverSettings['image_driver'])) {
+            Config::set('core.image.driver', (string) $driverSettings['image_driver']);
+        }
+
         // 로그 설정
         $this->applyLogConfig($driverSettings);
     }
@@ -906,6 +912,12 @@ class SettingsServiceProvider extends ServiceProvider
             if (isset($uploadSettings[$key]) && $uploadSettings[$key] !== '') {
                 Config::set("attachment.{$key}", (int) $uploadSettings[$key]);
             }
+        }
+
+        // 이미지 썸네일 — 규격 목록은 저장 행 그대로 넘기고, 고정 슬롯 보충·확장 규격 병합은 레지스트리가 한다.
+        // 대응표는 저장 직후 반영(SettingsService)과 같은 한 곳(ThumbnailConfig)을 쓴다.
+        foreach (ThumbnailConfig::fromUploadSettings($uploadSettings) as $configKey => $value) {
+            Config::set($configKey, $value);
         }
     }
 }

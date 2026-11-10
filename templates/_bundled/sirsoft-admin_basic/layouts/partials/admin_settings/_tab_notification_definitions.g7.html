@@ -11,7 +11,9 @@
     </div>
     <div data-ref="channel_toggles" class="admin-card">
       <h4 class="text-body font-medium mb-3">$t:admin.settings.notification_definitions.channel_management</h4>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 gap-3">
+        <responsive on="640-1023" class="grid grid-cols-2 gap-3"/>
+        <responsive on="desktop" class="grid grid-cols-3 gap-3"/>
         <div data-each="ch, chIdx in {{availableChannels?.data?.channels ?? []}}" class="flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
           <div class="flex-center gap-2">
             <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-gray-500 dark:text-gray-400"/>
@@ -47,7 +49,8 @@
            (채널을 바꿔도 분류는 그대로, 분류를 바꿔도 채널은 그대로). 칩이 많아지는 좁은 화면에서는 한 줄로
            가로 스크롤한다. [정책별 문구 추가]는 분류가 본인인증일 때만 보인다 — 운영자가 추가한 본인인증 정책에
            전용 문구를 붙이는 기능이라 일반 알림에는 해당하지 않는다. -->
-      <div data-ref="notif_category_bar" class="flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <div data-ref="notif_category_bar" class="flex flex-col gap-2 pt-3">
+        <responsive on="640-" class="flex gap-2 pt-3 flex-row items-center justify-between"/>
         <div data-ref="notif_category_chips" class="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
           <span class="text-label-subtle flex-shrink-0">$t:admin.settings.notification_definitions.category.label</span>
           <button data-each='cat in [{"value":"","key":"all"},{"value":"general","key":"general"},{"value":"identity","key":"identity"}]' type="button" aria-pressed="{{(query.category ?? '') === cat.value}}" class="{{(query.category ?? '') === cat.value ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'}} flex-shrink-0 text-sm px-3 py-1 rounded-full border transition-colors">
@@ -60,7 +63,8 @@
             {{$t('admin.settings.notification_definitions.category.' + cat.key)}}
           </button>
         </div>
-        <button data-ref="notif_identity_add_button" data-if="{{(query.category ?? '') === 'identity' &amp;&amp; notificationDefinitions?.data?.abilities?.can_create === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="w-full sm:w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="notif_identity_add_button" data-if="{{(query.category ?? '') === 'identity' &amp;&amp; notificationDefinitions?.data?.abilities?.can_create === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="w-full text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <responsive on="640-" class="w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
           <on type="click">
             <!-- 정책별 문구 추가 창 — 창은 이 화면 상태를 못 읽으므로 빈 폼을 전역에 마련한 뒤 연다.
                  「문구가 이미 있는 정책」 목록은 열 때마다 다시 받는다 — 다른 창·다른 관리자가 그사이 추가했으면
@@ -118,7 +122,8 @@
               </button>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div class="flex flex-col gap-2">
+                <responsive on="640-" class="flex gap-2 flex-row items-start justify-between"/>
                 <div class="flex-1 min-w-0">
                   <div class="flex-center flex-wrap gap-2 mb-1">
                     <!-- 제목은 서버가 내려준 로케일 객체(이름)를 쓴다 — 운영자가 추가한 본인인증 정책 문구는 화면 번역

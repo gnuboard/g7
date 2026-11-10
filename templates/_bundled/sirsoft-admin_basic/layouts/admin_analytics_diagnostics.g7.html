@@ -144,13 +144,15 @@
     <wait-for>analytics_collect_failures</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="analytics_diagnostics_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="analytics_diagnostics_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <on event="unmount">
         <stop-interval id="analytics_archive_poll"/>
       </on>
       <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
         <div>
-          <h1 class="page-title">$t:admin.analytics.diagnostics.title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.diagnostics.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.diagnostics.description</p>
         </div>
         <div class="flex-center gap-2 flex-wrap">
@@ -185,7 +187,8 @@
           </div>
         </div>
       </div>
-      <div data-ref="status_cards" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <div data-ref="status_cards" class="grid grid-cols-1 gap-4 mb-4">
+        <responsive on="desktop" class="grid grid-cols-2 gap-4 mb-4"/>
         <blur-until-loaded sources="analytics_diagnostics"/>
         <div data-ref="card_collection" class="admin-card">
           <div class="flex flex-wrap items-center gap-2">

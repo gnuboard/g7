@@ -63,11 +63,15 @@ test('@smoke #399 Phase 1.3 - admin_settings 진입 시 sticky-tab-nav 시맨틱
 
   expect(page.url(), '권한 보유 토큰임에도 /admin/login 으로 리다이렉트').not.toMatch(/\/admin\/login/);
 
-  // tab_navigation 컴포넌트가 .sticky-tab-nav 시맨틱 클래스로 마운트되어야 한다.
-  // (Phase 1.3 에서 7개 레이아웃 동일 인라인 Tailwind → .sticky-tab-nav 자산으로 흡수)
+  // tab_navigation 은 상단에 붙는 탭 바다. 폭에 따라 바뀌는 여백은 폭 미디어 의미 클래스
+  // (.sticky-tab-nav-responsive, 폐지 예정)가 아니라 엔진 responsive 구간 값이고, 고정 배치(sticky top-0 z-40)는 모든 구간에 있다.
+  await page.setViewportSize({ width: 1280, height: 900 });
   const stickyNav = page.locator('#tab_navigation');
-  await expect(stickyNav).toBeAttached({ timeout: 10_000 });
-  await expect(stickyNav).toHaveClass(/sticky-tab-nav/);
+  await expect(stickyNav).toBeAttached({ timeout: 20_000 });
+  for (const token of ['sticky', 'top-0', 'z-40', '-mx-8', 'px-8']) {
+    await expect(stickyNav).toHaveClass(new RegExp(`(^|\\s)${token}(\\s|$)`));
+  }
+  await expect(stickyNav).not.toHaveClass(/sticky-tab-nav-responsive/);
 
   // TabNavigation composite (variant="default") 가 .tab-nav-default 컨테이너 + .tab-btn-base 탭 버튼을 렌더해야 한다.
   // 인라인 Tailwind (flex gap-2, flex items-center gap-2 px-4 py-2 ...) → 시맨틱 클래스로 흡수됨.
@@ -178,11 +182,12 @@ test('@smoke #399 Phase 1.7 - admin 페이지 컨텐츠 영역이 .admin-page-co
 });
 
 // @scenario surface=admin_settings_content
-// @effects settings_page_content_uses_responsive_semantic_class
-test('@smoke #399 Phase 1.7 후속 - admin_settings 환경설정 페이지가 .admin-page-content-responsive 시맨틱으로 마운트된다', async ({ page }) => {
+// @effects settings_page_content_padding_by_engine_width
+test('@smoke #399 Phase 1.7 후속 - admin_settings 환경설정 본문 여백이 엔진 폭 구간(639 이하 p-4, 640~1023 p-6, 1024 이상 p-8)을 따른다', async ({ page }) => {
   const token = issueToken('core.settings.read');
   await authenticatePage(page, token);
 
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/admin/settings');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   await page.waitForFunction(
@@ -190,10 +195,16 @@ test('@smoke #399 Phase 1.7 후속 - admin_settings 환경설정 페이지가 .a
     { timeout: 15_000 },
   );
 
-  // Phase 1.7 후속: p-4 sm:p-6 lg:p-8 반응형 변종 = .admin-page-content-responsive
-  await expect(page.locator('#main_content .admin-page-content-responsive').first()).toBeAttached({
-    timeout: 10_000,
-  });
+  // 폭 분기는 Tailwind 접두(sm:p-6 lg:p-8)나 폭 미디어를 품은 의미 클래스가 아니라 엔진 responsive 구간 값이다.
+  const content = page.locator('#main_content #settings_content').first();
+  await expect(content).toHaveClass(/(^|\s)p-8(\s|$)/, { timeout: 10_000 });
+
+  await page.setViewportSize({ width: 700, height: 900 });
+  await expect(content).toHaveClass(/(^|\s)p-6(\s|$)/);
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  await expect(content).toHaveClass(/(^|\s)p-4(\s|$)/);
+  await expect(content).not.toHaveClass(/(^|\s)(sm|md|lg):/);
 });
 
 // @scenario surface=admin_page_header
@@ -322,6 +333,10 @@ test('@smoke #399 Phase 1.14 - admin_user_list 의 list_options + 섹션 헤딩 
 // @scenario surface=admin_footer
 // @effects admin_footer_uses_semantic_classes
 test('@smoke #399 Phase 1.15 - AdminFooter composite 가 .admin-footer 시맨틱으로 마운트된다', async ({ page }) => {
+  // 바닥줄은 레이아웃, 번들 단계가 늦을 때 늦게 붙는다 — 대시보드 데이터 요청은 바닥줄을 막지 않는다(데이터 4건을
+  // 25초 늦춰도 8.9초에 붙음, 브라우저 실측). 새 컨텍스트(캐시 없음)에서는 이 단계가 25초를 넘기기도 해, 아래 .admin-footer
+  // 대기를 60초로 두고 시험 제한은 그 대기보다 넉넉하게 둔다(레이아웃 25초 지연: 대기 30초 2/2 실패).
+  test.setTimeout(90_000);
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
 
@@ -332,11 +347,18 @@ test('@smoke #399 Phase 1.15 - AdminFooter composite 가 .admin-footer 시맨틱
     { timeout: 15_000 },
   );
 
-  // Phase 1.15: AdminFooter composite 가 .admin-footer + .admin-footer-row + .admin-footer-group
-  // 시맨틱 자산으로 마운트되는지 검증 (인라인 'px-6 py-4 mt-6' / 'flex flex-col md:flex-row ...' /
+  // Phase 1.15: AdminFooter composite 가 .admin-footer + .admin-footer-bar + .admin-footer-group
+  // 시맨틱 자산으로 마운트되는지 검증 (인라인 'px-6 py-4 mt-6' / 'flex flex-col ...' /
   // 'flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400' 인라인이 자산으로 흡수).
-  await expect(page.locator('.admin-footer').first()).toBeAttached();
-  await expect(page.locator('.admin-footer .admin-footer-row').first()).toBeAttached();
+  // 줄 방향은 폭 미디어 클래스(.admin-footer-row, 폐지 예정)가 아니라 렌더 폭으로 고른다 — 768 이상 flex-row.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.locator('.admin-footer').first()).toBeAttached({ timeout: 60_000 }); // 레이아웃, 번들 단계가 늦으면 DCL 뒤 30초를 넘겨 붙는다 — 기본 5초, 30초로는 붙기 전에 잰다
+  const bar = page.locator('.admin-footer .admin-footer-bar').first();
+  await expect(bar).toBeAttached();
+  await expect(bar).toHaveClass(/(^|\s)flex-row(\s|$)/);
+  await expect(page.locator('.admin-footer .admin-footer-row')).toHaveCount(0);
+  await page.setViewportSize({ width: 375, height: 800 });
+  await expect(bar).not.toHaveClass(/(^|\s)flex-row(\s|$)/);
 });
 
 // @scenario surface=admin_settings_form

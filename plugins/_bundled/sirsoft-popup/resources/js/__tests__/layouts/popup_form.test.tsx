@@ -21,6 +21,7 @@ const evalComputed = (name: string, scope: Record<string, unknown>) => {
 
 describe('팝업 등록·수정 화면', () => {
   // @scenario surface=form_create_initializes_once_with_temp_key
+  // @effects create_resets_form_with_new_temp_key
   it('등록 진입은 폼을 기본값(이미지형·상시·전체 페이지·전체 대상·전체 기기)으로 되돌리고 새 임시 키를 만든다', () => {
     const init = json(doc.init_actions);
     expect(init).toContain('"if":"{{!route.id}}"');
@@ -32,6 +33,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_edit_initializes_from_show_once
+  // @effects edit_seeds_form_once_from_show
   it('수정 진입은 상세를 한 번만 폼에 심는다(initLocal) — 재조회가 손댄 값을 덮지 않게', () => {
     const source = doc.data_sources.find((s: any) => s.id === 'popup');
     expect(source.initLocal).toBe('form');
@@ -41,6 +43,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_content_type_switch_shows_fields
+  // @effects content_type_switches_fields
   it('이미지형이면 이미지·alt·링크 칸, 직접 작성형이면 본문 칸만 보인다', () => {
     expect(doc.computed.isImage).toContain("(_local.form?.content_type ?? 'image') === 'image'");
     expect(findById(form, 'image_fields')!.if).toBe('{{_computed.isImage}}');
@@ -50,6 +53,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_language_tabs_mark_filled_locales
+  // @effects multilingual_inputs_and_preview_locale
   it('alt 는 언어 탭 입력이고 본문은 다국어 편집기, 미리보기는 고른 언어로 그린다', () => {
     const alt = collect(form, (n) => n.name === 'MultilingualInput' && n.props?.name === 'image_alt')[0];
     expect(alt.props.layout).toBe('tabs');
@@ -59,6 +63,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_route_chips_add_remove_and_hint
+  // @effects route_chips_validated_like_server
   it('경로는 칩으로 추가·삭제하고, 형식 오류는 서버 규칙과 같은 안내를 미리 보인다', () => {
     const editor = findById(form, 'routes_editor')!;
     expect(editor.if).toContain("page_scope === 'routes'");
@@ -73,6 +78,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_html_editor_extension_point_with_default
+  // @effects html_editor_extension_point_with_fallback
   it('직접 작성형 본문은 html_editor 확장점(에디터 플러그인 대체)과 기본 입력창 폴백', () => {
     const point = findById(form, 'body_editor')!;
     expect(point.type).toBe('extension_point');
@@ -82,6 +88,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_upload_urls_use_temp_key
+  // @effects uploads_use_temp_key_and_apply_on_save
   it('PC·모바일 업로더는 임시 키로 올리고 삭제 주소를 비워 화면에서만 뺀다(저장 때만 반영)', () => {
     for (const id of ['pc_image_uploader', 'mobile_image_uploader']) {
       const uploader = findById(form, id)!;
@@ -96,6 +103,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_recommended_size_warning
+  // @effects image_ratio_mismatch_warns_without_blocking
   it('PC 이미지 비율이 환경설정 너비:높이와 다를 때만 막지 않고 노란 안내를 보인다(2배 크기는 경고 없음)', () => {
     const mismatch = (pc: unknown, settings: unknown) =>
       evalComputed('pcSizeMismatch', { _local: { form: { images: { pc } } }, display_settings: settings });
@@ -131,6 +139,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_period_inputs_only_for_range
+  // @effects period_inputs_only_for_range
   it('기간 지정일 때만 시작·종료를 보이고, 저장 후 상태를 미리 알린다', () => {
     expect(findById(form, 'period_range')!.if).toContain("display_period === 'range'");
     const hint = findById(form, 'period_hint')!;
@@ -139,6 +148,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_validation_errors_shown_per_field
+  // @effects validation_errors_shown_per_field
   it('422 는 칸별 사유와 요약, 모든 실패는 알림', () => {
     const save = actionsOf(findById(form, 'footer_save_button'), 'apiCall')[0];
     expect(json(save.onError)).toContain('error.errors ?? null');
@@ -149,6 +159,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_conflict_resolver_opens_on_409
+  // @effects conflict_409_opens_resolver_keeping_input
   it('409 면 입력을 두고 충돌 안내를 열어 최신본과 비교·재적용한다', () => {
     const save = actionsOf(findById(form, 'footer_save_button'), 'apiCall')[0];
     expect(json(save.onError)).toContain('error.status === 409');
@@ -160,6 +171,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_preview_follows_display_settings
+  // @effects preview_uses_display_settings_and_device
   it('미리보기는 표시 방식 응답·기기 전환으로 사용자 레이어와 같은 컴포넌트를 그린다', () => {
     const preview = findById(form, 'form_preview')!;
     expect(preview.name).toBe('sirsoft-popup.PopupPreview');
@@ -169,6 +181,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_image_and_body_changes_mark_dirty
+  // @effects direct_value_changes_mark_dirty
   it('이미지 올림·뺌과 본문 입력은 값을 직접 넘기는 경로라 hasChanges 를 직접 올린다(떠날 때 확인)', () => {
     const writes = actionsOf(doc, 'setState').filter((a) => Object.keys(a.params ?? {}).some((k) => /^form\.(images\.(pc|mobile)|body_html)$/.test(k)));
 
@@ -179,13 +192,18 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_preview_sticky_and_alt_placeholder
+  // @effects preview_sticky_on_desktop_and_alt_placeholder
   it('넓은 화면에서 미리보기는 따라 내려오고(sticky), 대체 텍스트 칸은 기본 언어 값을 자리표시로 보인다', () => {
-    expect(findById(form, 'preview_card')!.props.className).toContain('lg:sticky');
+    // 폭 분기는 엔진 responsive 로 한다 — desktop 에서만 sticky
+    const preview = findById(form, 'preview_card')!;
+    expect(preview.props.className).not.toContain('gpp:sticky');
+    expect(preview.responsive?.desktop?.props?.className).toContain('gpp:sticky');
     const alt = collect(doc, (n) => n.name === 'MultilingualInput' && n.props?.name === 'image_alt')[0];
     expect(alt.props.placeholder).toContain('_local.form?.image_alt?.[display_settings?.data?.editor?.default_locale ?? $locale]');
   });
 
   // @scenario surface=form_places_overlay_editor_in_image_fields
+  // @effects overlay_editor_placed_and_bound_in_form
   it('이미지 위 글 편집기는 이미지형 칸 안(모바일 이미지 다음·대체 텍스트 앞)에서 폼 값·이미지·언어를 받는다', () => {
     const fields = findById(form, 'image_fields')!;
     const order = (fields.children ?? []).map((c: any) => c.id);
@@ -206,12 +224,14 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_saves_overlays_in_body
+  // @effects save_body_carries_overlays
   it('저장 본문에 overlays 를 싣는다(없으면 null)', () => {
     const save = actionsOf(findById(form, 'footer_save_button'), 'apiCall')[0];
     expect(save.params.body).toContain('overlays: _local.form?.overlays ?? null');
   });
 
   // @scenario surface=form_resets_overlays_on_create
+  // @effects overlays_reset_on_create
   it('처음 값과 등록 진입 초기화 모두 overlays 를 null 로 둔다(수정 화면에서 넘어와도 남지 않게)', () => {
     expect(doc.initLocal.form.overlays).toBeNull();
     const reset = actionsOf(doc, 'setState').find((a) => a.if === '{{!route.id}}' && a.params?.form?.content_type === 'image');
@@ -219,6 +239,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_shows_overlay_errors
+  // @effects overlay_validation_error_shown_under_editor
   it('overlays.* 검증 오류는 편집기 아래에 첫 사유를 보인다', () => {
     const error = findById(form, 'overlay_error')!;
     expect(error.if).toBe('{{!!_computed.overlayError}}');
@@ -228,6 +249,7 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_passes_errors_to_overlay_editor
+  // @effects overlay_save_errors_reach_editor
   it('저장 오류를 편집기에 넘겨 문제 상자를 표시하게 하고, 구형 브라우저 안내를 함께 보인다', () => {
     const editor = findById(form, 'overlay_editor')!;
     expect(editor.props.errors).toBe('{{_local.errors ?? null}}');
@@ -243,6 +265,7 @@ describe('팝업 등록·수정 화면', () => {
     }
   });
   // @scenario surface=form_save_lock_reason_and_field_error_links
+  // @effects save_lock_reason_and_field_errors_linked
   it('저장이 잠기면 단추 옆에 이유를 보이고 단추가 그 문구를 가리키며, 필수·오류 상태를 입력칸에 잇는다', () => {
     const reason = (local: Record<string, unknown>) => evalComputed('saveBlockedReason', { _local: local });
     expect(reason({ form: { content_type: 'image' } })).toBe('no_image');
@@ -281,6 +304,7 @@ describe('팝업 등록·수정 화면', () => {
     expect(input('popup_link_url_hint')).toBeTruthy();
   });
   // @scenario surface=form_preview_actual_size_modal
+  // @effects actual_size_preview_modal
   it('미리보기 「실제 크기로 보기」는 지금 입력 값·기기를 배율 1 미리보기 큰 창으로 열고, 이미지가 없으면 다음 할 일을 안내한다', () => {
     const button = findById(form, 'preview_actual_button')!;
     expect(button.name).toBe('Button');

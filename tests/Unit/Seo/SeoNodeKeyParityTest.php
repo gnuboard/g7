@@ -3,6 +3,8 @@
 namespace Tests\Unit\Seo;
 
 use App\Seo\ComponentHtmlMapper;
+use App\Seo\PipeRegistry;
+use App\Thumbnails\ThumbnailPresetRegistry;
 use Tests\TestCase;
 
 /**
@@ -224,6 +226,143 @@ class SeoNodeKeyParityTest extends TestCase
             array_values(array_intersect(self::SUPPORTED_KEYS, self::INTENTIONALLY_IGNORED_KEYS)),
             '같은 키가 지원 목록과 무시 목록에 동시에 있습니다.'
         );
+    }
+
+    /**
+     * 봇 대상 자산의 이미지 썸네일 표기를 SEO 렌더러가 모두 해석합니다 (#869).
+     *
+     * 썸네일은 노드 키가 아니라 Img 의 `thumbPreset` 속성과 표현식 파이프(`| thumb('md')`, `| thumbSrcset(...)`)로 적는다.
+     * 위 키 분류 검사는 이 둘을 보지 않으므로, 사람 화면(React)만 썸네일 주소를 쓰고 봇 화면이 조용히 원본 주소를 내는
+     * 갈림이 생겨도 잡히지 않는다. 그래서 여기서 따로 잰다.
+     * - `thumbPreset` 을 단 컴포넌트는 그 자산을 그리는 템플릿 `seo-config.json` 의 `component_map` 에서 `img` 태그다
+     *   (SEO 렌더러는 `img` 태그에서만 `thumbPreset` 을 src·srcset 으로 바꾼다 — ComponentHtmlMapper::buildAttributes).
+     * - 쓰인 썸네일 파이프는 SEO 파이프 표(PipeRegistry)에 있다.
+     * - 글자 그대로 적은 규격 이름은 어느 사이트에나 있는 코어 규격(xs~xl·og)이거나 확장 규격 이름 형식이다.
+     * 모집단이 비면 이 검사는 아무것도 재지 않으므로 두 표기 모두 하나 이상 있어야 한다.
+     *
+     * @effects thumbnail_notations_resolved_by_seo_renderer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_thumbnail_notations_in_bot_facing_assets_are_resolved_by_seo_renderer(): void
+    {
+        $presetNodes = [];
+        $pipes = [];
+
+        foreach ($this->botFacingLayoutFiles() as $file) {
+            $decoded = json_decode((string) file_get_contents($file), true);
+            if (is_array($decoded)) {
+                $this->collectThumbnailNotations($decoded, $file, $presetNodes, $pipes);
+            }
+        }
+
+        $this->assertNotEmpty($presetNodes, '봇 대상 자산에서 thumbPreset 을 하나도 찾지 못했다 — 수집이 실물과 어긋났다');
+        $this->assertNotEmpty($pipes, '봇 대상 자산에서 썸네일 파이프를 하나도 찾지 못했다 — 수집이 실물과 어긋났다');
+
+        $problems = [];
+        $componentMaps = $this->userTemplateComponentMaps();
+        $this->assertNotEmpty($componentMaps, 'seo-config.json 을 가진 사용자 템플릿이 없다');
+
+        foreach ($presetNodes as [$file, $component, $preset]) {
+            $relative = str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $file));
+            $templateId = preg_match('#^templates/_bundled/([^/]+)/#', $relative, $m) === 1 ? $m[1] : null;
+            $maps = $templateId !== null ? array_intersect_key($componentMaps, [$templateId => true]) : $componentMaps;
+
+            foreach ($maps as $id => $map) {
+                if (($map[$component]['tag'] ?? null) !== 'img') {
+                    $problems[] = "{$relative}: {$component} 의 thumbPreset — {$id} seo-config 에서 img 태그가 아니라 봇 화면이 원본 주소를 낸다";
+                }
+            }
+
+            if ($preset !== null && ! $this->isPortablePresetName($preset)) {
+                $problems[] = "{$relative}: thumbPreset '{$preset}' 은 코어 규격도 확장 규격 이름도 아니다";
+            }
+        }
+
+        $registry = new PipeRegistry;
+        foreach ($pipes as [$file, $pipe, $preset]) {
+            $relative = str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $file));
+
+            if (! $registry->has($pipe)) {
+                $problems[] = "{$relative}: 파이프 {$pipe} 가 SEO 파이프 표에 없다";
+            }
+
+            if ($preset !== null && ! $this->isPortablePresetName($preset)) {
+                $problems[] = "{$relative}: {$pipe}('{$preset}') 은 코어 규격도 확장 규격 이름도 아니다";
+            }
+        }
+
+        $this->assertSame([], array_values(array_unique($problems)));
+    }
+
+    /**
+     * 노드 트리를 훑어 썸네일 표기를 모읍니다.
+     *
+     * @param  array<mixed>  $node  문서 또는 노드
+     * @param  string  $file  파일 경로
+     * @param  list<array{0:string,1:string,2:string|null}>  $presetNodes  [파일, 컴포넌트 이름, 글자 그대로 적은 규격(표현식이면 null)] (참조)
+     * @param  list<array{0:string,1:string,2:string|null}>  $pipes  [파일, 파이프 이름, 글자 그대로 적은 규격 인자(없으면 null)] (참조)
+     * @return void 반환값 없음
+     */
+    private function collectThumbnailNotations(array $node, string $file, array &$presetNodes, array &$pipes): void
+    {
+        $preset = $node['props']['thumbPreset'] ?? null;
+        if (is_string($preset) && is_string($node['name'] ?? null)) {
+            $presetNodes[] = [$file, $node['name'], str_contains($preset, '{{') ? null : $preset];
+        }
+
+        foreach ($node as $value) {
+            if (is_array($value)) {
+                $this->collectThumbnailNotations($value, $file, $presetNodes, $pipes);
+            } elseif (is_string($value) && str_contains($value, 'thumb')) {
+                // `||`(논리합)는 파이프가 아니다
+                preg_match_all('/(?<!\|)\|(?!\|)\s*(thumb[A-Za-z]*)\s*(?:\(\s*[\'"]([^\'"]*)[\'"])?/', $value, $matches, PREG_SET_ORDER);
+                foreach ($matches as $match) {
+                    $pipes[] = [$file, $match[1], ($match[2] ?? '') !== '' ? $match[2] : null];
+                }
+            }
+        }
+    }
+
+    /**
+     * 사용자(비관리자) 템플릿의 SEO 컴포넌트 매핑 (`seo-config.json` 의 `component_map`)
+     *
+     * @return array<string, array<string, mixed>> 템플릿 id → component_map
+     */
+    private function userTemplateComponentMaps(): array
+    {
+        $maps = [];
+        $templates = base_path('templates/_bundled');
+
+        foreach (scandir($templates) ?: [] as $id) {
+            $config = $templates.'/'.$id.'/seo-config.json';
+            $manifest = $templates.'/'.$id.'/template.json';
+            if ($id === '.' || $id === '..' || ! is_file($config)) {
+                continue;
+            }
+            $meta = is_file($manifest) ? json_decode((string) file_get_contents($manifest), true) : null;
+            if (is_array($meta) && ($meta['type'] ?? null) === 'admin') {
+                continue;
+            }
+            $decoded = json_decode((string) file_get_contents($config), true);
+            $maps[$id] = is_array($decoded['component_map'] ?? null) ? $decoded['component_map'] : [];
+        }
+
+        return $maps;
+    }
+
+    /**
+     * 레이아웃이 글자 그대로 적어도 되는 규격 이름인지 — 코어 규격(어느 사이트에나 있다)이거나 확장 규격 이름 형식.
+     *
+     * 운영자 규격 이름은 사이트마다 달라 번들 레이아웃이 기대면 다른 사이트에서 썸네일 없이 원본이 나간다.
+     *
+     * @param  string  $preset  규격 이름
+     * @return bool 써도 되면 true
+     */
+    private function isPortablePresetName(string $preset): bool
+    {
+        return in_array($preset, ThumbnailPresetRegistry::RESERVED, true)
+            || preg_match(ThumbnailPresetRegistry::EXTENSION_NAME_PATTERN, $preset) === 1;
     }
 
     /**

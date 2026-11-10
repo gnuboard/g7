@@ -14,7 +14,7 @@
  * - 저장 버튼에 can_update 어빌리티 조건 존재
  * - modals 섹션에 버전 히스토리 모달 partial 등록
   *
- * @effects code_editor_file_select_syncs_route_query, code_editor_extension_select_clears_route_query
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
 */
 
 import { describe, it, expect } from 'vitest';
@@ -92,6 +92,13 @@ function findAllComponents(node: any, predicate: (n: any) => boolean): any[] {
 
   if (Array.isArray(node.children)) {
     for (const child of node.children) {
+      results.push(...findAllComponents(child, predicate));
+    }
+  }
+
+  // Modal 고정 하단(props.footer)의 단추도 걷는다(#869 P1)
+  if (Array.isArray(node.props?.footer)) {
+    for (const child of node.props.footer) {
       results.push(...findAllComponents(child, predicate));
     }
   }

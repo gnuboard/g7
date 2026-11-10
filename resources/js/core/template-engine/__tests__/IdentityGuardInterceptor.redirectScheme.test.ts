@@ -8,11 +8,11 @@
  * @since engine-v1.73.0
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { IdentityGuardInterceptor } from '../../identity/IdentityGuardInterceptor';
 
 describe('IdentityGuardInterceptor.redirectExternally — 실행 스킴 차단', () => {
-    let hrefSetter: ReturnType<typeof vi.fn>;
+    let hrefSetter: Mock;
 
     beforeEach(() => {
         IdentityGuardInterceptor.reset();

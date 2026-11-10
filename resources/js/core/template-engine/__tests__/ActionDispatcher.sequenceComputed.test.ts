@@ -42,7 +42,7 @@ describe('ActionDispatcher — sequence setState 뒤 computed 재계산', () => 
   });
 
   const run = (definitions: Record<string, any>, computed: Record<string, any>, actions: any[]) =>
-    dispatcher.executeAction(
+    dispatcher['executeAction'](
       { handler: 'sequence' as const, actions } as any,
       {
         state: { tab: 'a', qty: 1 },

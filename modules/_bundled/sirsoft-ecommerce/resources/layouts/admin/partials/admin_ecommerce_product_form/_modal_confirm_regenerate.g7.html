@@ -12,24 +12,24 @@
           </div>
         </div>
       </div>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3">
-        <button type="button" class="ecommerce-btn ecommerce-btn-outline">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:sirsoft-ecommerce.common.cancel
-        </button>
-        <button type="button" class="ecommerce-btn ecommerce-btn-warning">
-          <on type="click">
-            <!-- 창을 먼저 닫고 재생성한다 — 조합이 많으면 만드는 동안 화면이 멈춘 것처럼 보이기 때문이다. 확인을 이미 받았으므로 핸들러의 재확인은 건너뛴다 -->
-            <sequence>
-              <close-modal/>
-              <action handler="sirsoft-ecommerce.generateOptions" :skipConfirm="true" isCreate="{{!route.itemCode}}"/>
-            </sequence>
-          </on>
-          $t:sirsoft-ecommerce.common.confirm
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button type="button" class="ecommerce-btn ecommerce-btn-warning">
+        <on type="click">
+          <!-- 창을 먼저 닫고 재생성한다 — 조합이 많으면 만드는 동안 화면이 멈춘 것처럼 보이기 때문이다. 확인을 이미 받았으므로 핸들러의 재확인은 건너뛴다 -->
+          <sequence>
+            <close-modal/>
+            <action handler="sirsoft-ecommerce.generateOptions" :skipConfirm="true" isCreate="{{!route.itemCode}}"/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.common.confirm
+      </button>
+    </footer>
   </modal>
 </partial>

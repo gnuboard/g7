@@ -9,7 +9,135 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.title",
-        "size": "medium"
+        "size": "medium",
+        "footer": [
+            {
+                "comment": "기본 정책 지정. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다 — 그래서 화면에서 직접 되돌리는 처리가 없다",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "remount",
+                                "params": {
+                                    "componentId": "is_default_toggle_{{_global.targetDefaultPolicy?.id}}"
+                                }
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "targetDefaultPolicy": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isSettingDefault}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "기본 정책 지정 실행. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다(그래서 여기에는 취소 쪽 같은 되돌리기가 없다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isSettingDefault": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{_global.targetDefaultPolicy?.id}}/set-default",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PATCH"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isSettingDefault": false,
+                                            "targetDefaultPolicy": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "shipping_policies"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isSettingDefault": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isSettingDefault}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isSettingDefault}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.confirm"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -44,141 +172,6 @@
                                     "text": "{{_global.targetDefaultPolicy?.name_localized}}"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "comment": "기본 정책 지정. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다 — 그래서 화면에서 직접 되돌리는 처리가 없다",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "remount",
-                                    "params": {
-                                        "componentId": "is_default_toggle_{{_global.targetDefaultPolicy?.id}}"
-                                    }
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "targetDefaultPolicy": null
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isSettingDefault}}"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "기본 정책 지정 실행. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다(그래서 여기에는 취소 쪽 같은 되돌리기가 없다).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isSettingDefault": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{_global.targetDefaultPolicy?.id}}/set-default",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "PATCH"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isSettingDefault": false,
-                                                "targetDefaultPolicy": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "shipping_policies"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isSettingDefault": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isSettingDefault}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isSettingDefault}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "ecommerce-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.confirm"
                         }
                     ]
                 }

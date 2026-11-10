@@ -6,9 +6,38 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Checkbox } from '../basic/Checkbox';
 import type { EditorAttrs } from '../../types';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { classAtWidth } from '../layout/widthBreakpoints';
+
+/**
+ * 그누보드7 Core 에서 이 컴포넌트가 쓰는 부분만 적은 모양.
+ * 전역 Window 를 넓히지 않는다 — 코어의 Window.G7Core 선언과 합쳐지면 코어 쪽 속성(TemplateEngine 등)이 가려진다(#869).
+ */
+interface G7CoreLike {
+  createLogger?: (name: string) => {
+    log: (...args: unknown[]) => void;
+    warn: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
+  };
+  AuthManager?: { getInstance: () => AuthManagerLike };
+  t?: (key: string, params?: Record<string, string | number>) => string;
+  style?: { mergeClasses?: (...classes: Array<string | undefined>) => string };
+}
+
+/** 그누보드7 Core 의 AuthManager 인스턴스에서 이 컴포넌트가 쓰는 부분 */
+interface AuthManagerLike {
+  getUser: () => { uuid: string; [key: string]: any } | null;
+}
+
+/**
+ * window.G7Core 를 이 파일의 지역 타입으로 읽는다.
+ *
+ * @returns 코어 전역 객체, 코어가 아직 없으면 undefined
+ */
+const G7Core = (): G7CoreLike | undefined => (window as unknown as { G7Core?: G7CoreLike }).G7Core;
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
-const logger = ((window as any).G7Core?.createLogger?.('Comp:ColumnSelector')) ?? {
+const logger = G7Core()?.createLogger?.('Comp:ColumnSelector') ?? {
     log: (...args: unknown[]) => console.log('[Comp:ColumnSelector]', ...args),
     warn: (...args: unknown[]) => console.warn('[Comp:ColumnSelector]', ...args),
     error: (...args: unknown[]) => console.error('[Comp:ColumnSelector]', ...args),
@@ -16,23 +45,7 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:ColumnSelector')) ?
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
-  (window as any).G7Core?.t?.(key, params) ?? key;
-
-/**
- * 전역 window 타입 확장
- * 그누보드7 Core의 AuthManager에 접근하기 위한 타입 선언
- */
-declare global {
-  interface Window {
-    G7Core?: {
-      AuthManager?: {
-        getInstance: () => {
-          getUser: () => { uuid: string; [key: string]: any } | null;
-        };
-      };
-    };
-  }
-}
+  G7Core()?.t?.(key, params) ?? key;
 
 export interface ColumnItem {
   field: string;
@@ -40,9 +53,6 @@ export interface ColumnItem {
   required?: boolean;
   visible?: boolean;
 }
-
-// G7Core 전역 객체의 스타일 헬퍼 접근
-const G7Core = () => (window as any).G7Core;
 
 export interface ColumnSelectorProps {
   /** 컴포넌트 고유 ID (레이아웃 JSON의 id 값, localStorage 키 생성에 사용) */
@@ -165,6 +175,8 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   dynamicColumnsInsertAfter,
   editorAttrs,
 }) => {
+  // 단추 글을 보일지 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedTriggerLabel = triggerLabel ?? t('common.column_selector');
   const resolvedRequiredText = requiredText ?? t('common.required');
@@ -195,6 +207,8 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownMenuRef = useRef<HTMLDivElement>(null);
+  // 여는 단추 — Esc 로 닫은 뒤 포커스를 돌려받는다(목록이 사라져 body 로 빠지지 않게, #869 키보드 접근)
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [adjustedPosition, setAdjustedPosition] = useState<'left' | 'right'>(position);
 
@@ -202,7 +216,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   // window.G7Core.AuthManager는 런타임에 G7 코어 엔진에서 제공됨
   const userId = useMemo(() => {
     try {
-      const authManager = window.G7Core?.AuthManager?.getInstance();
+      const authManager = G7Core()?.AuthManager?.getInstance();
       if (authManager) {
         const user = authManager.getUser();
         return user?.uuid;
@@ -422,7 +436,11 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
     >
       {/* 트리거 버튼 */}
       <Button
+        ref={triggerButtonRef}
         onClick={() => setIsOpen(!isOpen)}
+        // Modal 이 펼친 목록으로 알아보게 한다 — 목록 안 Esc 는 목록 몫이다(#869)
+        aria-haspopup="true"
+        aria-expanded={isOpen}
         className={G7Core()?.style?.mergeClasses?.(
           'flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors',
           triggerClassName
@@ -430,7 +448,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
       >
         <Icon name={triggerIconName} className="w-5 h-5" />
         {resolvedTriggerLabel && (
-          <Span className={`${labelClassName ? labelClassName : 'hidden sm:inline'} text-sm`}>
+          <Span className={`${labelClassName ? labelClassName : classAtWidth(renderWidth, 'sm', 'inline', 'hidden')} text-sm`}>
             {resolvedTriggerLabel}
           </Span>
         )}
@@ -440,6 +458,15 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
       {isOpen && (
         <Div
           ref={dropdownMenuRef}
+          // 펼친 목록은 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혀 키보드로는 닫을 길이 없었다
+          onKeyDown={(event: React.KeyboardEvent) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              setIsOpen(false);
+              triggerButtonRef.current?.focus();
+            }
+          }}
           className={`absolute ${positionClasses} z-50 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg`}
         >
           {/* 헤더 영역 */}

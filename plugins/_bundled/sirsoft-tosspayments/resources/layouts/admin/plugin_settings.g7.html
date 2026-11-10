@@ -24,7 +24,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="pay-tosspayments-admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paytosspayments:p-4 paytosspayments:min-h-screen paytosspayments:bg-gray-50 paytosspayments:dark:bg-gray-900">
+      <responsive on="640-1023" class="paytosspayments:p-6 paytosspayments:min-h-screen paytosspayments:bg-gray-50 paytosspayments:dark:bg-gray-900"/>
+      <responsive on="1024-" class="paytosspayments:p-8 paytosspayments:min-h-screen paytosspayments:bg-gray-50 paytosspayments:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-tosspayments-alert-warning paytosspayments:mt-6">
         <icon name="lock" class="paytosspayments:text-xl paytosspayments:leading-none paytosspayments:text-amber-600 paytosspayments:dark:text-amber-400 paytosspayments:flex-shrink-0"/>
@@ -57,21 +59,27 @@
           <h3 class="pay-tosspayments-section-heading-md">$t:sirsoft-tosspayments.settings.section_test_keys</h3>
         </div>
         <div class="paytosspayments:p-6 paytosspayments:space-y-6">
-          <div data-ref="field_test_client_key" class="pay-tosspayments-grid-3col-responsive">
-            <div class="paytosspayments:lg:col-span-1">
+          <div data-ref="field_test_client_key" class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start">
+            <responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-1"/>
               <label class="pay-tosspayments-form-label">$t:sirsoft-tosspayments.settings.test_client_key</label>
               <p class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.settings.test_client_key_hint</p>
             </div>
-            <div class="paytosspayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-2"/>
               <input type="text" name="test_client_key" placeholder="test_ck_..." class="paytosspayments:focus:border-transparent paytosspayments:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_test_secret_key" class="pay-tosspayments-grid-3col-responsive">
-            <div class="paytosspayments:lg:col-span-1">
+          <div data-ref="field_test_secret_key" class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start">
+            <responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-1"/>
               <label class="pay-tosspayments-form-label">$t:sirsoft-tosspayments.settings.test_secret_key</label>
               <p class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.settings.test_secret_key_hint</p>
             </div>
-            <div class="paytosspayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-2"/>
               <input type="password" name="test_secret_key" placeholder="test_sk_..." class="paytosspayments:focus:border-transparent paytosspayments:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -82,20 +90,26 @@
           <h3 class="pay-tosspayments-section-heading-md">$t:sirsoft-tosspayments.settings.section_live_keys</h3>
         </div>
         <div class="paytosspayments:p-6 paytosspayments:space-y-6">
-          <div data-ref="field_live_client_key" class="pay-tosspayments-grid-3col-responsive">
-            <div class="paytosspayments:lg:col-span-1">
+          <div data-ref="field_live_client_key" class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start">
+            <responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-1"/>
               <label class="pay-tosspayments-form-label">$t:sirsoft-tosspayments.settings.live_client_key</label>
             </div>
-            <div class="paytosspayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-2"/>
               <input type="text" name="live_client_key" placeholder="live_ck_..." class="paytosspayments:focus:border-transparent paytosspayments:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_live_secret_key" class="pay-tosspayments-grid-3col-responsive">
-            <div class="paytosspayments:lg:col-span-1">
+          <div data-ref="field_live_secret_key" class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start">
+            <responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-1"/>
               <label class="pay-tosspayments-form-label">$t:sirsoft-tosspayments.settings.live_secret_key</label>
               <p class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.settings.live_secret_key_hint</p>
             </div>
-            <div class="paytosspayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-2"/>
               <input type="password" name="live_secret_key" placeholder="live_sk_..." class="paytosspayments:focus:border-transparent paytosspayments:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -106,21 +120,27 @@
           <h3 class="pay-tosspayments-section-heading-md">$t:sirsoft-tosspayments.settings.section_redirect</h3>
         </div>
         <div class="paytosspayments:p-6 paytosspayments:space-y-6">
-          <div data-ref="field_redirect_success_url" class="pay-tosspayments-grid-3col-responsive">
-            <div class="paytosspayments:lg:col-span-1">
+          <div data-ref="field_redirect_success_url" class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start">
+            <responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-1"/>
               <label class="pay-tosspayments-form-label">$t:sirsoft-tosspayments.settings.redirect_success_url</label>
               <p class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.settings.redirect_success_url_hint</p>
             </div>
-            <div class="paytosspayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-2"/>
               <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="paytosspayments:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_redirect_fail_url" class="pay-tosspayments-grid-3col-responsive">
-            <div class="paytosspayments:lg:col-span-1">
+          <div data-ref="field_redirect_fail_url" class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start">
+            <responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-1"/>
               <label class="pay-tosspayments-form-label">$t:sirsoft-tosspayments.settings.redirect_fail_url</label>
               <p class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.settings.redirect_fail_url_hint</p>
             </div>
-            <div class="paytosspayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paytosspayments:col-span-2"/>
               <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="paytosspayments:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>

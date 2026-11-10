@@ -1,22 +1,4 @@
 import { default as React } from 'react';
-/**
- * 전역 window 타입 확장
- * 그누보드7 Core의 AuthManager에 접근하기 위한 타입 선언
- */
-declare global {
-    interface Window {
-        G7Core?: {
-            AuthManager?: {
-                getInstance: () => {
-                    getUser: () => {
-                        uuid: string;
-                        [key: string]: any;
-                    } | null;
-                };
-            };
-        };
-    }
-}
 export interface FilterVisibilitySelectorProps {
     /** 컴포넌트 고유 ID (localStorage 키 생성에 사용) */
     id: string;

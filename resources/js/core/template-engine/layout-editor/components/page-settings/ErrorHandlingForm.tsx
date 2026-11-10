@@ -54,9 +54,14 @@ export interface ErrorHandlingFormProps {
   stateKeyCandidates?: Array<{ value: string; label: string }>;
 }
 
-/** maintenance 제외 + default 행 부착 */
-function buildRowCodes(errorConfigCodes: string[]): string[] {
-  const codes = errorConfigCodes.filter((c) => c !== 'maintenance');
+/**
+ * 행 코드 — 표준 코드, 템플릿 설정 코드, 레이아웃이 선언한 코드의 합집합(maintenance 제외) + default 행.
+ * 종전엔 표준 코드만 행으로 만들어 레이아웃이 따로 선언한 코드(예 418)와 템플릿 설정 코드를 볼 수 없었다(#869).
+ */
+function buildRowCodes(errorConfigCodes: string[], templateCodes: string[], valueCodes: string[]): string[] {
+  const codes = [...new Set([...errorConfigCodes, ...templateCodes, ...valueCodes])].filter(
+    (c) => c !== 'maintenance' && c !== 'default',
+  );
   return [...codes, 'default'];
 }
 
@@ -80,7 +85,10 @@ export function ErrorHandlingForm({
   stateKeyCandidates,
 }: ErrorHandlingFormProps): React.ReactElement {
   const normalized = useMemo(() => normalizeActionRecipes(recipes), [recipes]);
-  const codes = useMemo(() => buildRowCodes(errorConfigCodes), [errorConfigCodes]);
+  const codes = useMemo(
+    () => buildRowCodes(errorConfigCodes, templateCodes, Object.keys(value)),
+    [errorConfigCodes, templateCodes, value],
+  );
   const hasRecipes = normalized.length > 0;
 
   // 에러 컨텍스트 데이터칩 후보(error.status/message/errors/data/statusText) — 모든 동작 입력칸이
@@ -129,7 +137,7 @@ export function ErrorHandlingForm({
         mode="badge"
         sourceOf={sourceOf}
         testIdPrefix="g7le-error-rows"
-        renderActionList={(code, action, onPatch) => (
+        renderActionList={(code, action, onPatch, onClear) => (
           <ErrorActionEditor
             code={code}
             action={action}
@@ -138,6 +146,7 @@ export function ErrorHandlingForm({
             t={t}
             pools={pools}
             onPatch={onPatch}
+            onClear={onClear}
           />
         )}
       />
@@ -163,6 +172,7 @@ function ErrorActionEditor({
   t,
   pools,
   onPatch,
+  onClear,
 }: {
   code: string;
   action: ErrorAction | undefined;
@@ -171,6 +181,8 @@ function ErrorActionEditor({
   t: ErrorHandlingFormProps['t'];
   pools: ActionParamCandidatePools;
   onPatch: (next: ErrorAction) => void;
+  /** 그 코드 키 제거(「설정 안 함」) */
+  onClear: () => void;
 }): React.ReactElement {
   const [codeOpen, setCodeOpen] = useState(false);
 
@@ -184,8 +196,9 @@ function ErrorActionEditor({
 
   const setHandler = (h: string): void => {
     if (h === '') {
-      // "설정 안 함" — ErrorHandlingRows 가 clear 로 키 제거하므로 여기선 빈 액션 회피.
-      onPatch({});
+      // "설정 안 함" — 그 코드 키를 지운다. 빈 동작({})을 남기면 런타임이 「처리됨」으로 보아 같은 맵
+      // default 와 상위 기본 처리를 가린다(#869).
+      onClear();
       return;
     }
     const r = normalized.find((x) => x.id === h);

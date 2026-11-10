@@ -28,7 +28,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="marketing-admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="marketing:p-4 marketing:min-h-screen marketing:bg-gray-50 marketing:dark:bg-gray-900">
+      <responsive on="640-1023" class="marketing:p-6 marketing:min-h-screen marketing:bg-gray-50 marketing:dark:bg-gray-900"/>
+      <responsive on="1024-" class="marketing:p-8 marketing:min-h-screen marketing:bg-gray-50 marketing:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="marketing-alert-warning marketing:mt-6">
         <icon name="lock" class="marketing:text-xl marketing:leading-none marketing:text-amber-600 marketing:dark:text-amber-400 marketing:flex-shrink-0"/>
@@ -50,21 +52,27 @@
           <h3 class="marketing-section-heading-md">$t:sirsoft-marketing.settings.section.channels</h3>
         </div>
         <div data-ref="section_channels_fields" class="marketing:divide-y marketing:divide-gray-100 marketing:dark:divide-gray-700">
-          <div data-ref="field_marketing_consent_enabled" class="marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4">
-            <div class="marketing:lg:col-span-2">
+          <div data-ref="field_marketing_consent_enabled" class="marketing-grid-2col marketing:items-center marketing:px-6 marketing:py-4">
+            <responsive on="desktop" class="marketing-grid-2col marketing:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"/>
+            <div>
+              <responsive on="desktop" class="marketing:col-span-2"/>
               <label class="marketing-form-label">$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.label</label>
               <p class="marketing-form-hint">$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.hint</p>
             </div>
-            <div class="marketing:lg:col-span-1 marketing:flex marketing:justify-end">
+            <div class="marketing:flex marketing:justify-end">
+              <responsive on="desktop" class="marketing:col-span-1 marketing:flex marketing:justify-end"/>
               <toggle data-type="composite" name="marketing_consent_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_marketing_consent_terms_slug" class="marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700">
-            <div class="marketing:lg:col-span-2">
+          <div data-ref="field_marketing_consent_terms_slug" class="marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700">
+            <responsive on="1024-" class="marketing:grid marketing:grid-cols-3 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"/>
+            <div>
+              <responsive on="desktop" class="marketing:col-span-2"/>
               <label class="marketing-form-label">$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.label</label>
               <p class="marketing-form-hint">$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.hint</p>
             </div>
-            <div class="marketing:lg:col-span-1">
+            <div>
+              <responsive on="desktop" class="marketing:col-span-1"/>
               <input type="text" name="marketing_consent_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="marketing:dark:focus:ring-blue-400 marketing:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -101,26 +109,29 @@
             <p class="marketing-text-tertiary marketing:mb-3">$t:sirsoft-marketing.settings.channels.description</p>
             <div data-ref="channels_table" class="marketing:border marketing:border-gray-200 marketing:dark:border-gray-600 marketing:rounded-lg marketing:overflow-hidden">
               <div class="marketing-text-tertiary marketing:grid marketing:grid-cols-12 marketing:gap-2 marketing:px-4 marketing:py-2 marketing:bg-gray-50 marketing:dark:bg-gray-700 marketing:font-medium marketing:uppercase">
-                <div class="marketing:col-span-6 marketing:sm:col-span-4">$t:sirsoft-marketing.settings.channels.col_label</div>
-                <div class="marketing:hidden marketing-hidden marketing:sm:block marketing:sm:col-span-4">$t:sirsoft-marketing.settings.channels.col_slug</div>
-                <div class="marketing:col-span-4 marketing:sm:col-span-2 marketing:text-center">$t:sirsoft-marketing.settings.channels.col_enabled</div>
-                <div class="marketing:col-span-2 marketing:hidden marketing-hidden marketing:sm:block"/>
+                <div class="marketing:col-span-6"><responsive on="640-" class="marketing:col-span-4"/>$t:sirsoft-marketing.settings.channels.col_label</div>
+                <div class="marketing:hidden marketing-hidden"><responsive on="640-" class="marketing-hidden marketing:block marketing:col-span-4"/>$t:sirsoft-marketing.settings.channels.col_slug</div>
+                <div class="marketing:col-span-4 marketing:text-center"><responsive on="640-" class="marketing:col-span-2 marketing:text-center"/>$t:sirsoft-marketing.settings.channels.col_enabled</div>
+                <div class="marketing:col-span-2 marketing:hidden marketing-hidden"><responsive on="640-" class="marketing:col-span-2 marketing-hidden marketing:block"/></div>
               </div>
               <div data-ref="channels_table_rows_{{channelIdx}}" data-each="channel, channelIdx in _global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))" class="marketing:divide-y marketing:divide-gray-100 marketing:dark:divide-gray-700">
                 <div class="marketing:grid marketing:grid-cols-12 marketing:gap-2 marketing:px-4 marketing:py-3 marketing:items-center marketing:hover:bg-gray-50 marketing:dark:hover:bg-gray-700/50">
-                  <div class="marketing:col-span-6 marketing:sm:col-span-4">
+                  <div class="marketing:col-span-6">
+                    <responsive on="640-" class="marketing:col-span-4"/>
                     <div class="marketing-flex-center marketing:gap-2 marketing:flex-wrap">
                       <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다. 시스템 채널은 저장 맵에 없는 로케일(언어팩으로 늘어난 언어)을 플러그인 번역으로 보강한다 — 운영자가 만든 채널은 키가 번역 키와 우연히 겹칠 수 있어 저장 맵만 쓴다 -->
                       <span class="marketing-text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : ($localized(channel.label) || channel.key)}}</span>
                       <span data-if="{{channel.is_system}}" class="marketing:text-xs marketing:text-blue-700 marketing:dark:text-blue-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-blue-100 marketing:dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
                     </div>
                     <span class="marketing-text-hint marketing:font-mono marketing:mt-0.5">{{channel.key}}</span>
-                    <span data-if="{{!!channel.page_slug}}" class="marketing:block marketing:sm:hidden marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:font-mono marketing:mt-0.5">{{channel.page_slug}}</span>
+                    <span data-if="{{!!channel.page_slug}}" class="marketing:block marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:font-mono marketing:mt-0.5"><responsive on="640-" class="marketing:hidden marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:font-mono marketing:mt-0.5"/>{{channel.page_slug}}</span>
                   </div>
-                  <div class="marketing:hidden marketing-hidden marketing:sm:block marketing:sm:col-span-4">
+                  <div class="marketing:hidden marketing-hidden">
+                    <responsive on="640-" class="marketing-hidden marketing:block marketing:col-span-4"/>
                     <span class="marketing-text-label-subtle marketing:font-mono">{{channel.page_slug || '-'}}</span>
                   </div>
-                  <div class="marketing:col-span-4 marketing:sm:col-span-2 marketing:flex marketing:justify-center">
+                  <div class="marketing:col-span-4 marketing:flex marketing:justify-center">
+                    <responsive on="640-" class="marketing:col-span-2 marketing:flex marketing:justify-center"/>
                     <toggle data-type="composite" checked="{{channel.enabled}}" size="sm" disabled="{{_computed.isPluginReadOnly}}">
                       <on type="change">
                         <!-- 채널 사용 여부 토글 — 목록을 통째로 다시 만들어 그 채널만 바꾸고, 저장 버튼이 열리도록 변경 표시를 세운다 -->
@@ -131,7 +142,8 @@
                       </on>
                     </toggle>
                   </div>
-                  <div class="marketing:col-span-2 marketing:flex marketing:justify-end marketing:gap-1 marketing:sm:gap-2">
+                  <div class="marketing:col-span-2 marketing:flex marketing:justify-end marketing:gap-1">
+                    <responsive on="640-" class="marketing:col-span-2 marketing:flex marketing:justify-end marketing:gap-2"/>
                     <button aria-label="$t:common.edit" title="$t:common.edit" type="button" class="marketing:p-1.5 marketing:text-gray-500 marketing:dark:text-gray-500 marketing:hover:text-blue-600 marketing:dark:hover:text-blue-400 marketing:rounded marketing:transition-colors marketing:disabled:opacity-50 marketing:disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
                       <on type="click">
                         <!-- 채널 편집 — 그 행을 전역에 옮겨 담고 편집 창을 연다. 먼저 null 로 비운다 — 기본(deep) 병합은 이름(label) 다국어 객체를
@@ -166,39 +178,51 @@
           <h3 class="marketing-section-heading-md">$t:sirsoft-marketing.settings.section.legal</h3>
         </div>
         <div data-ref="section_legal_fields" class="marketing:divide-y marketing:divide-gray-100 marketing:dark:divide-gray-700">
-          <div data-ref="field_third_party_consent_enabled" class="marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4">
-            <div class="marketing:lg:col-span-2">
+          <div data-ref="field_third_party_consent_enabled" class="marketing-grid-2col marketing:items-center marketing:px-6 marketing:py-4">
+            <responsive on="desktop" class="marketing-grid-2col marketing:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"/>
+            <div>
+              <responsive on="desktop" class="marketing:col-span-2"/>
               <label class="marketing-form-label">$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.label</label>
               <p class="marketing-form-hint">$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.hint</p>
             </div>
-            <div class="marketing:lg:col-span-1 marketing:flex marketing:justify-end">
+            <div class="marketing:flex marketing:justify-end">
+              <responsive on="desktop" class="marketing:col-span-1 marketing:flex marketing:justify-end"/>
               <toggle data-type="composite" name="third_party_consent_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_third_party_consent_terms_slug" class="marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700">
-            <div class="marketing:lg:col-span-2">
+          <div data-ref="field_third_party_consent_terms_slug" class="marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700">
+            <responsive on="1024-" class="marketing:grid marketing:grid-cols-3 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"/>
+            <div>
+              <responsive on="desktop" class="marketing:col-span-2"/>
               <label class="marketing-form-label">$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.label</label>
               <p class="marketing-form-hint">$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.hint</p>
             </div>
-            <div class="marketing:lg:col-span-1">
+            <div>
+              <responsive on="desktop" class="marketing:col-span-1"/>
               <input type="text" name="third_party_consent_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="marketing:dark:focus:ring-blue-400 marketing:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_info_disclosure_enabled" class="marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4">
-            <div class="marketing:lg:col-span-2">
+          <div data-ref="field_info_disclosure_enabled" class="marketing-grid-2col marketing:items-center marketing:px-6 marketing:py-4">
+            <responsive on="desktop" class="marketing-grid-2col marketing:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"/>
+            <div>
+              <responsive on="desktop" class="marketing:col-span-2"/>
               <label class="marketing-form-label">$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.label</label>
               <p class="marketing-form-hint">$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.hint</p>
             </div>
-            <div class="marketing:lg:col-span-1 marketing:flex marketing:justify-end">
+            <div class="marketing:flex marketing:justify-end">
+              <responsive on="desktop" class="marketing:col-span-1 marketing:flex marketing:justify-end"/>
               <toggle data-type="composite" name="info_disclosure_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_info_disclosure_terms_slug" class="marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700">
-            <div class="marketing:lg:col-span-2">
+          <div data-ref="field_info_disclosure_terms_slug" class="marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700">
+            <responsive on="1024-" class="marketing:grid marketing:grid-cols-3 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"/>
+            <div>
+              <responsive on="desktop" class="marketing:col-span-2"/>
               <label class="marketing-form-label">$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.label</label>
               <p class="marketing-form-hint">$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.hint</p>
             </div>
-            <div class="marketing:lg:col-span-1">
+            <div>
+              <responsive on="desktop" class="marketing:col-span-1"/>
               <input type="text" name="info_disclosure_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="marketing:dark:focus:ring-blue-400 marketing:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -308,7 +332,7 @@
           <p class="marketing-form-hint">$t:sirsoft-marketing.settings.channel_modal.page_slug_hint</p>
         </div>
       </div>
-      <div class="marketing:flex marketing:justify-end marketing:gap-2 marketing:mt-4">
+      <footer>
         <button type="button" class="marketing-btn marketing-btn-secondary">
           <on type="click">
             <close-modal/>
@@ -331,7 +355,7 @@
           </on>
           <span>$t:common.save</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -343,27 +367,27 @@
         <ul class="marketing:list-disc marketing:list-inside marketing:space-y-1">
           <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="marketing-text-heading">{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : ($localized(blockedChannel.label) || blockedChannel.key)}} ({{blockedChannel.key}})</li>
         </ul>
-        <div class="marketing:flex marketing:justify-end marketing:gap-2 marketing:mt-4">
-          <button type="button" class="marketing-btn marketing-btn-secondary">
-            <on type="click">
-              <close-modal/>
-            </on>
-            <span>$t:common.cancel</span>
-          </button>
-          <button type="button" class="marketing-btn marketing-btn-primary" disabled="{{_computed.isPluginReadOnly}}">
-            <on type="click">
-              <!-- 비활성 채널 되살리기 — 서버가 막은 키의 채널을 저장본에서 꺼내 꺼진 채로 원래 자리에 되돌린다(저장본 순서를 따르고, 새로 더한 채널은 뒤에 둔다). 반영은 저장을 다시 눌러야 한다 -->
-              <sequence>
-                <set-state target="global" channels="{{[...(_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channels ?? []).some((c) => c.key === ch.key) || (_global.channelDeactivation?.keys ?? []).includes(ch.key)).map((ch) => (_global.channels ?? []).find((c) => c.key === ch.key) ?? { ...ch, enabled: false }), ...(_global.channels ?? []).filter((c) => !(_global.channelDeactivation?.saved ?? []).some((ch) => ch.key === c.key))]}}" :channelDeactivation="null"/>
-                <set-state if="{{!_computed.isPluginReadOnly}}" target="$parent._local" :hasChanges="true" :errors="null"/>
-                <close-modal/>
-                <toast type="info" message="$t:sirsoft-marketing.settings.channel_deactivate_modal.restored"/>
-              </sequence>
-            </on>
-            <span>$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm</span>
-          </button>
-        </div>
       </div>
+      <footer>
+        <button type="button" class="marketing-btn marketing-btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" class="marketing-btn marketing-btn-primary" disabled="{{_computed.isPluginReadOnly}}">
+          <on type="click">
+            <!-- 비활성 채널 되살리기 — 서버가 막은 키의 채널을 저장본에서 꺼내 꺼진 채로 원래 자리에 되돌린다(저장본 순서를 따르고, 새로 더한 채널은 뒤에 둔다). 반영은 저장을 다시 눌러야 한다 -->
+            <sequence>
+              <set-state target="global" channels="{{[...(_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channels ?? []).some((c) => c.key === ch.key) || (_global.channelDeactivation?.keys ?? []).includes(ch.key)).map((ch) => (_global.channels ?? []).find((c) => c.key === ch.key) ?? { ...ch, enabled: false }), ...(_global.channels ?? []).filter((c) => !(_global.channelDeactivation?.saved ?? []).some((ch) => ch.key === c.key))]}}" :channelDeactivation="null"/>
+              <set-state if="{{!_computed.isPluginReadOnly}}" target="$parent._local" :hasChanges="true" :errors="null"/>
+              <close-modal/>
+              <toast type="info" message="$t:sirsoft-marketing.settings.channel_deactivate_modal.restored"/>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm</span>
+        </button>
+      </footer>
     </modal>
   </modal>
 </layout>

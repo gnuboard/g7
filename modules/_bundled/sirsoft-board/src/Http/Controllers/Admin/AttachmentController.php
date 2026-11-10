@@ -209,7 +209,9 @@ class AttachmentController extends AdminBaseController
                 immutable: false,
                 skipCompression: true,
                 logContext: ['board_slug' => $slug, 'hash' => $hash],
-                errorMessageKey: 'sirsoft-board::messages.attachment.download_failed'
+                errorMessageKey: 'sirsoft-board::messages.attachment.download_failed',
+                // 관리자 권한을 지난 응답이다 — 글 상태와 무관하게 공유 캐시에 남기지 않는다.
+                private: true
             );
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);

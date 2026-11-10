@@ -160,8 +160,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-center ecommerce:sm:justify-between"
+                                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                                     },
                                                     "children": [
                                                         {

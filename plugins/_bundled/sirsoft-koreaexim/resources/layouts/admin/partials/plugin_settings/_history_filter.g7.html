@@ -1,7 +1,8 @@
 <partial description="실행 이력의 기간·결과·계기 필터">
 <!-- 이력 필터 — 값은 전부 query 에 실린다(새로고침·뒤로 가기에도 유지). 어느 필터를 바꾸든 1페이지부터 다시 조회하고, 데이터소스 koreaeximRuns 가 쿼리에서 읽는다 -->
 <div class="koreaexim-admin-card koreaexim:mb-4">
-  <div class="koreaexim-grid-2col-responsive">
+  <div class="koreaexim:grid koreaexim:grid-cols-1 koreaexim:gap-4">
+    <responsive on="768-" class="koreaexim:grid koreaexim:grid-cols-2 koreaexim:gap-4"/>
     <div>
       <label class="koreaexim-form-label">$t:sirsoft-koreaexim.date_from</label>
       <input aria-label="$t:sirsoft-koreaexim.date_from" type="date" value="{{query.date_from ?? ''}}" max="{{query.date_to ?? ''}}">

@@ -41,7 +41,6 @@ describe('LayoutLoader', () => {
       const mockLayoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Container',
@@ -175,7 +174,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Container',
@@ -221,7 +219,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'UnknownComponent',
@@ -253,7 +250,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Container',
@@ -293,7 +289,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Text',
@@ -326,7 +321,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Button',
@@ -370,8 +364,6 @@ describe('LayoutLoader', () => {
      * @effects layout_loader_error_state_without_inline_handler
      */
     it('에러 상태 UI를 렌더링한다', () => {
-      const error = new LayoutLoaderError('Test error', 'TEST_ERROR');
-
       loader.renderLayout(container);
 
       expect(container.querySelector('.layout-error')).not.toBeNull();
@@ -415,7 +407,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -437,7 +428,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -482,7 +472,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -509,7 +498,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -534,7 +522,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -577,7 +564,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -607,7 +593,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -634,7 +619,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'admin_dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
         permissions: ['core.dashboard.read'],
       };
@@ -667,7 +651,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
-        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -704,7 +687,6 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'admin_login',
-        endpoint: '/admin/login',
         components: [],
       };
 

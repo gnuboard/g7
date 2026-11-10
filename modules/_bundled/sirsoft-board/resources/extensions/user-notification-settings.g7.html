@@ -19,7 +19,8 @@
           </div>
           <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
         </div>
-        <div class="board-grid-2col-responsive">
+        <div class="board:grid board:grid-cols-1 board:gap-4">
+          <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
           <div data-ref="field_notify_post_complete">
             <label class="board:flex board:items-center board:gap-2 board:cursor-pointer">
               <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}" :autoBinding="false" class="board:w-4 board:h-4 board:text-blue-600 board:border-gray-300 board:dark:border-gray-600 board:rounded board:focus:ring-blue-500">

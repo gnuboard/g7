@@ -39,6 +39,11 @@ function buildDocCtx(initialComponents: EditorNode[]): {
     error: null,
     isDirty: false,
     saveSuccessCounter: 0,
+    patchDocumentRaw: () => {},
+    dirtyKeys: new Set<string>(),
+    dirtyLayoutNames: new Set<string>(),
+    invalidateCurrentCache: () => {},
+    reloadCounter: 0,
     reload: async () => {},
     patchLayout: (patcher) => {
       const current = (document.raw.components as EditorNode[]) ?? [];
@@ -57,7 +62,6 @@ function buildDocCtx(initialComponents: EditorNode[]): {
 
 /** 훅을 마운트하고 commit + keyifyChipValue 핸들을 ref 로 노출. */
 function Harness({
-  ctx,
   onReady,
 }: {
   ctx: UseLayoutDocumentResult;
@@ -130,6 +134,10 @@ afterEach(() => {
 });
 
 describe('useInlineEdit.commit — 평문+보간 키화 param 정규화 (라이브 회귀)', () => {
+  /**
+   * @scenario hook=inline_edit_commit
+   * @effects keyify_plain_with_interpolation_keeps_placeholder_and_param
+   */
   it('평문+보간 노드 키화 → POST value=자리표시 문장 + node.text=param 부착(보간 보존)', async () => {
     const { calls } = stubCreateKeyFetch();
     const original = "회원 {{current_user?.data?.id ?? ''}}";
@@ -151,6 +159,10 @@ describe('useInlineEdit.commit — 평문+보간 키화 param 정규화 (라이�
     expect(node.text).toContain("|p0={{current_user?.data?.id ?? ''}}");
   });
 
+  /**
+   * @scenario hook=inline_edit_commit
+   * @effects keyify_pure_plain_creates_single_param_key
+   */
   it('순수 평문 노드 키화 → POST value=입력값 + node.text=param 0 단일 키', async () => {
     const { calls } = stubCreateKeyFetch();
     const { getComponents, getCommit } = mount([{ name: 'P', text: '회원' }]);
@@ -165,6 +177,10 @@ describe('useInlineEdit.commit — 평문+보간 키화 param 정규화 (라이�
     expect(node.text).toMatch(/^\$t:custom\.home\.\d+$/); // param 미부착
   });
 
+  /**
+   * @scenario hook=inline_edit_commit
+   * @effects keyify_lang_key_with_data_avoids_raw_t_in_value
+   */
   it('D-44: "공통 문구 + 데이터"(lang 키 + 보간) 키화 → 키 값에 raw $t: 미박힘 (재귀 폭증 차단)', async () => {
     // 재현: $t:policy.published_at: {{date}} 노드를 인라인 편집 키화.
     // 결함 시: createCustomKey POST value = "$t:policy.published_at: {p0}" (lang 키 참조) →
@@ -199,6 +215,10 @@ describe('useInlineEdit.commit — 평문+보간 키화 param 정규화 (라이�
 });
 
 describe('useInlineEdit.keyifyChipValue — 칩 온 엔트리 키화', () => {
+  /**
+   * @scenario hook=inline_edit_commit
+   * @effects keyify_chip_editor_change_posts_plain_base_and_buffers_sentence
+   */
   it('미키화 데이터 노드 칩 편집기 내용 변경 시 키화 → POST=평문 base(자리표시 0) + 버퍼=자리표시 문장 + node.text=param', async () => {
     // 데이터 든 미키화 노드를 칩 편집기에서 편집(키 값 "발행일자: {p0}")하면:
     //  - createCustomKey POST value = 평문 base("발행일자", {pN} 제거) — 속성패널 keyifyWithNewBinding 과
@@ -245,6 +265,10 @@ describe('useInlineEdit.keyifyChipValue — 칩 온 엔트리 키화', () => {
     expect(engineVal).toBe('발행일자: {p0}');
   });
 
+  /**
+   * @scenario hook=inline_edit_commit
+   * @effects keyify_chip_value_on_param_key_skips_rekeyify
+   */
   it('G-2: 이미 param 키화된 노드에 keyifyChipValue 재호출 → 재키화 안 하고 현재 로케일 값만 버퍼(충돌 차단)', async () => {
     // 결함 G-2 재현(라이브 DB 확정): 미키화 노드에 '+데이터'(keyifyWithNewBinding)로 1차 키화하면
     // node.text 가 `$t:custom.X|p0={{published_at}}|p1={{data.id}}` 가 된다. 그 직후 저장 버튼이
@@ -277,6 +301,10 @@ describe('useInlineEdit.keyifyChipValue — 칩 온 엔트리 키화', () => {
     expect(getPendingValue('custom.home.7', 'ko')).toBe('발행일: {p0}');
   });
 
+  /**
+   * @scenario hook=inline_edit_commit
+   * @effects keyify_named_param_lang_node_after_chip_move_creates_key
+   */
   it('S9-N4: 미키화 lang **named-param** 노드(`$t:user.*|count={{}}`) 칩 이동 후 키화 → createCustomKey 발생(저장 무반응 회귀 차단)', async () => {
     // 결함 (identity/challenge `남은 시도: {{count}}회` 노드 칩 순서 변경 후 저장
     // 무반응): keyifyChipValue 의 G-2 충돌 가드(`extractParamBindings(originalText)` 가 truthy 면

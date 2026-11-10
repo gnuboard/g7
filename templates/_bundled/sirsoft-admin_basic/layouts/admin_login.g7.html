@@ -91,7 +91,9 @@
     </sequence>
   </init>
   <toast data-type="composite" data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
-  <div data-ref="login_page_wrapper" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
+  <div data-ref="login_page_wrapper" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <responsive on="640-1023" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-6"/>
+    <responsive on="desktop" class="flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-8"/>
     <on event="mount">
       <!-- 세션 만료로 튕겨 온 경우에만 안내를 띄운다. 직접 로그인 화면에 온 사람에게는 아무 말도 하지
            않는다 — 사유는 코어가 리다이렉트할 때 쿼리로 실어 준다. -->
@@ -100,7 +102,7 @@
     <div data-ref="login_card_container" class="max-w-md w-full space-y-8">
       <div data-ref="login_header" class="text-center">
         <div data-ref="logo_image_wrapper" data-if="{{_global.settings?.general?.site_logo_url}}" class="mb-4">
-          <img data-ref="logo_image" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="h-16 w-auto max-w-[200px] mx-auto object-contain"/>
+          <img data-ref="logo_image" src="{{_global.settings?.general?.site_logo_url}}" thumbPreset="md" loading="eager" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="h-16 w-auto max-w-[200px] mx-auto object-contain"/>
         </div>
         <h1 data-ref="logo" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary text-4xl font-bold mb-2 break-words">
           <span data-ref="logo_text">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
@@ -300,7 +302,8 @@
             <span data-ref="login_two_factor_submit_text" data-if="{{!_local.isLoggingIn}}">$t:auth.login.two_factor.verify</span>
             <span data-ref="login_two_factor_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.two_factor.verifying</span>
           </button>
-          <div data-ref="login_two_factor_actions" class="flex flex-col sm:flex-row gap-2">
+          <div data-ref="login_two_factor_actions" class="flex flex-col gap-2">
+            <responsive on="640-" class="flex flex-row gap-2"/>
             <!-- 인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급
                  이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다. -->
             <button data-ref="login_two_factor_resend" type="button" data-if="{{_local.twoFactor?.provider_id !== 'totp'}}" class="flex-1 px-4 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.twoFactor?.resending || _local.isLoggingIn}}">
@@ -395,7 +398,8 @@
             <span data-if="{{!_local.isLoggingIn}}">$t:auth.login.password_change.submit</span>
             <span data-if="{{_local.isLoggingIn}}">$t:auth.login.processing</span>
           </button>
-          <div data-ref="login_password_change_actions" class="flex flex-col sm:flex-row gap-2">
+          <div data-ref="login_password_change_actions" class="flex flex-col gap-2">
+            <responsive on="640-" class="flex flex-row gap-2"/>
             <button data-ref="login_password_change_postpone" type="button" data-if="{{_local.passwordChange?.can_postpone}}" class="flex-1 px-4 py-3 rounded-lg font-medium whitespace-nowrap border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer" disabled="{{_local.isLoggingIn}}">
               <on type="click">
                 <!-- 다음에 변경 — 만료 시 동작이 「다음에 변경 허용」일 때만 보인다. 연기 종료일을 알려 주고 원래 가려던 곳으로 보낸다.

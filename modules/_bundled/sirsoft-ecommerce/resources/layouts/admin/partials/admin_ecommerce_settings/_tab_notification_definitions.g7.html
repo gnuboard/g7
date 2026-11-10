@@ -10,7 +10,9 @@
     </div>
     <div data-ref="ecommerce_channel_toggles" class="ecommerce-admin-card">
       <h4 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.notification_definitions.channel_management</h4>
-      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:lg:grid-cols-3 ecommerce:gap-3">
+      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3">
+        <responsive on="640-1023" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"/>
+        <responsive on="desktop" class="ecommerce:grid ecommerce:grid-cols-3 ecommerce:gap-3"/>
         <div data-each="ch, chIdx in {{availableChannels?.data?.channels ?? []}}" class="ecommerce-flex-between ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
           <div class="ecommerce-flex-center ecommerce:gap-2">
             <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
@@ -75,7 +77,8 @@
               </button>
             </div>
             <div class="ecommerce:flex-1 ecommerce:min-w-0">
-              <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-start ecommerce:sm:justify-between">
+              <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+                <responsive on="640-" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-start ecommerce:justify-between"/>
                 <div class="ecommerce:flex-1 ecommerce:min-w-0">
                   <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:mb-1">
                     <h4 class="ecommerce-text-primary ecommerce:text-base ecommerce:font-medium">{{$localized(def.name) || def.type}}</h4>

@@ -10,7 +10,31 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.identity.logs.detail_title",
-        "size": "lg"
+        "size": "lg",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "identity_log_detail_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.close"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -23,8 +47,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4 text-sm"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid-2col-responsive text-sm"
+                        "className": "grid grid-cols-1 gap-4 text-sm"
                     },
                     "children": [
                         {
@@ -358,37 +389,6 @@
                                 "className": "p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto"
                             },
                             "text": "{{JSON.stringify(_global.identity_log_modal_data?.metadata ?? {}, null, 2)}}"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "identity_log_detail_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.close"
                         }
                     ]
                 }

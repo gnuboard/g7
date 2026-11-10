@@ -58,9 +58,10 @@
   </init>
   <slot name="content">
     <div data-ref="wishlists_content" class="ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen">
-      <div data-ref="page_header" class="ecommerce-page-header">
+      <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+        <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div data-ref="page_header_left">
-          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.wishlists.title</h1>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.wishlists.title</h1>
           <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.wishlists.description</p>
         </div>
       </div>
@@ -296,7 +297,7 @@
       <div class="ecommerce:py-2">
         <p class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.wishlists.modal.delete.message</p>
       </div>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6">
+      <footer>
         <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -326,7 +327,7 @@
           </on>
           <span>$t:common.confirm</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -336,7 +337,7 @@
       <div class="ecommerce:py-2">
         <p class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.wishlists.modal.bulk_delete.message|count={{(_global.selectedItems_wishlists ?? []).length}}</p>
       </div>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6">
+      <footer>
         <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -367,7 +368,7 @@
           <span data-if="{{!_global.bulkDeleting_wishlists}}">$t:common.confirm</span>
           <span data-if="{{_global.bulkDeleting_wishlists}}">$t:sirsoft-ecommerce.admin.wishlists.modal.bulk_delete.deleting</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>

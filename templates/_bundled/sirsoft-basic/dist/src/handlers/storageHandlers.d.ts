@@ -37,6 +37,17 @@ export declare function getCartKeyHandler(_action?: any, _context?: any): string
  */
 export declare function clearCartKeyHandler(_action?: any, _context?: any): void;
 /**
+ * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다 (#869 ρ J2).
+ *
+ * 저장된 키가 있으면 그것을 싣고, 없으면(init 의 발급이 실패한 경우) 새로 요청해 응답을 기다린다. 레이아웃은 담기, 바로 구매처럼 키가
+ * 필요한 동작의 sequence 맨 앞에 둔다. 받지 못하면 null 로 끝나고 동작은 종전처럼 서버 응답대로 처리된다.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ * @returns 갖춘 키(받지 못하면 null)
+ */
+export declare function ensureCartKeyHandler(_action?: any, _context?: any): Promise<string | null>;
+/**
  * 장바구니 키 새로 생성
  *
  * 기존 키를 삭제하고 백엔드 API를 통해 새로운 키를 발급합니다.

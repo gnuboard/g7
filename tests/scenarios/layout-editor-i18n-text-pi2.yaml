@@ -1,0 +1,109 @@
+feature: 레이아웃 편집기 다국어 텍스트 입력 — I18nTextField, 번역 탭, 자리표시 칩, 데이터 피커, 부유 드롭다운
+
+description: |
+  텍스트 propControl 과 번역 탭이 쓰는 입력 위젯의 단위 시험을 묶는다. 소유 매니페스트
+  (layout-editor-prop-controls, page-settings, layout-editor-text-inline-binding)가 이미 선언한
+  효과는 그쪽을 쓰고, 여기에는 그 매니페스트에 없던 동작만 둔다.
+
+  - classifyCustomText: 평문, custom 키, 임의 lang 키, 바인딩, param 키 분류.
+  - I18nTextField: 미리보기와 blur 커밋(키 생성, 현재 로케일 갱신), 표현식 트리 opt-in 과 접힘,
+    일반 이름과 표현식 전환, 단일 바인딩 데이터 칩, 설정 참조 칩, ko/en/ja 펼침, 칸자리 칩과
+    +데이터 키화.
+  - ControlRenderer: i18n-text 와 text propValue 분기.
+  - TranslationField: param 키 저장 상태 표시, 칩 구조 변경 판정과 즉시 동기화, 칩 해제 배선.
+  - PlaceholderChipInput: 슬롯 구성, 무손실 분해, 칩 렌더와 해제 버튼, 드래그 뒤 오클릭 차단,
+    글자 사이 이동, 비제어 평문 타이핑.
+  - InlineBindingScalarPicker, FloatingDropdown: 부유와 인라인 분기, 후보 선택, 닫힘 트리거.
+
+axes:
+  area: [classify, i18n_field_commit, expression_tree, data_binding, settings_ref, expand_locales, prop_control, param_chip, translation_field, placeholder_chip, scalar_picker, floating_dropdown]
+
+effects:
+  # 분류
+  - classify_plain_text_not_key_not_binding
+  - classify_custom_key_extracts_key_and_preview
+  - classify_foreign_lang_key_treated_as_plain
+  - classify_binding_expression_not_editable
+  - classify_unresolved_key_yields_empty_display
+  - classify_param_custom_key_before_binding
+  - classify_lang_named_param_falls_back_binding
+  # 미리보기와 커밋
+  - i18n_field_plain_preview_with_plus_hint
+  - i18n_field_custom_key_preview_shows_resolved
+  - plain_prop_text_blur_creates_custom_key_token
+  - existing_custom_key_prop_blur_updates_current_locale_value
+  - i18n_field_unchanged_blur_skips_crud
+  - binding_expression_prop_degrades_readonly
+  # 표현식 트리
+  - i18n_field_collapsible_expr_opens_segment_editor
+  - i18n_field_nested_expr_uses_conditional_tree
+  - i18n_field_expr_tree_opt_in_gate_keeps_badge
+  - i18n_field_to_expr_seeds_conditional_branch
+  - i18n_field_to_expr_button_only_at_top_level
+  - i18n_field_to_plain_confirm_reverts_first_branch
+  - i18n_field_to_plain_confirm_preview_resolved
+  - i18n_field_to_plain_cancel_keeps_expression
+  - i18n_field_complex_expr_stays_readonly_badge
+  # 단일 바인딩
+  - i18n_field_single_binding_no_candidates_badge
+  - i18n_field_single_binding_stays_chip_when_collapsible
+  - i18n_field_change_data_emits_pure_binding
+  # 설정 참조
+  - i18n_field_plain_and_key_skip_settings_ref_chip
+  # 펼침
+  - i18n_field_expand_custom_key_loads_locale_rows
+  - i18n_field_expand_plain_shows_create_key_hint
+  - i18n_field_expand_drops_stale_key_form
+  # ControlRenderer 분기
+  - prop_text_control_promoted_to_dynamic_i18n_when_propvalue
+  - text_propvalue_promoted_to_value_chip_input_no_keyify
+  - recipe_param_text_without_apply_stays_bare_widget
+  - i18n_propvalue_decomposable_expression_enters_collapsed_tree
+  # 칸자리 칩과 +데이터
+  - i18n_field_param_key_renders_chip_input
+  - i18n_field_plus_data_resolves_lang_key_label
+  - i18n_field_plus_data_keyifies_plain_text
+  - i18n_field_plus_data_in_param_key_inherits_key
+  - i18n_field_chip_mode_keeps_action_buttons
+  - i18n_field_chip_mode_fx_promotes_keeping_chip
+  - i18n_field_hides_plus_data_without_candidates
+  # 번역 탭
+  - translation_field_param_save_shows_saving_then_saved
+  - translation_field_chip_structure_change_detection
+  - translation_field_chip_structure_change_syncs_pending
+  - translation_field_chip_remove_calls_on_remove_param
+  # 자리표시 칩 입력
+  - chip_slots_surround_every_chip_with_text
+  - chip_segments_parse_lossless_with_positions
+  - chip_label_uses_param_labels_or_name
+  - chip_input_empty_value_renders_editable_slot
+  - chip_input_insert_button_follows_handler
+  - chip_remove_button_needs_handler_and_enabled
+  - chip_remove_click_calls_handler_with_param
+  - chip_remove_pointerdown_does_not_start_drag
+  - chip_remove_trailing_click_after_drag_ignored
+  - chip_move_recompose_inserts_at_any_offset
+  - chip_insert_at_cursor_pads_with_spaces
+  - chip_input_plain_slots_keep_typed_dom
+  - chip_input_structure_change_reinjects_text
+  # 데이터 피커와 드롭다운
+  - scalar_picker_defaults_to_floating_dialog
+  - scalar_picker_inline_mode_renders_in_flow
+  - scalar_picker_default_open_lists_scalar_only
+  - scalar_picker_select_calls_on_select
+  - scalar_picker_search_filters_candidates
+  - floating_dropdown_renders_only_when_open
+  - floating_dropdown_closes_on_outside_or_escape
+  - floating_dropdown_ignores_anchor_and_panel
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/prop-i18n-text-field.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/TranslationField.saving.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PlaceholderChipInput.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/property-controls/InlineBindingScalarPicker.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/shared/FloatingDropdown.test.tsx
+
+validation:
+  note: |
+    Vitest RTL 단위가 잰다. contentEditable 칩 드래그와 부유 위치 보정(flip, clamp)은 jsdom 좌표가
+    0 이라 각 시험 파일 머리말의 e2e:allow 사유대로 Chrome MCP 실측이 맡는다.

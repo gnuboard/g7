@@ -9,7 +9,96 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isProcessing}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "일괄 적용. 버튼이 열리는 조건이 두 겹이라 잠금 식이 길다 — 바꿀 값이 하나라도 있어야 하고 대상이 비어 있지 않아야 한다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "comment": "적용. 버튼이 열리는 조건이 두 겹이라 disabled 식이 길다 — 바꿀 값이 하나라도 있어야 하고,\n              배송준비·배송중으로 보낼 때는 택배사와 송장이 **둘 다** 있어야 한다(택배사만 골라 두면 막힌다).\n              실패해도 창을 닫지 않는다: 무엇이 틀렸는지 읽고 값을 고쳐 다시 시도할 자리가 이 창이다.",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isProcessing": true
+                                }
+                            },
+                            {
+                                "handler": "sirsoft-ecommerce.executeOrderBulkAction",
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": {
+                                    "comment": "사유 토스트는 핸들러가 이미 띄운다 — 여기서 또 띄우면 같은 문구가 두 번 뜬다.",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": false
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{(!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0 || _global.isProcessing}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isProcessing}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -490,102 +579,6 @@
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled_orders|order_numbers={{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).join(', ')}}"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isProcessing}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "일괄 적용. 버튼이 열리는 조건이 두 겹이라 잠금 식이 길다 — 바꿀 값이 하나라도 있어야 하고 대상이 비어 있지 않아야 한다",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "comment": "적용. 버튼이 열리는 조건이 두 겹이라 disabled 식이 길다 — 바꿀 값이 하나라도 있어야 하고,\n              배송준비·배송중으로 보낼 때는 택배사와 송장이 **둘 다** 있어야 한다(택배사만 골라 두면 막힌다).\n              실패해도 창을 닫지 않는다: 무엇이 틀렸는지 읽고 값을 고쳐 다시 시도할 자리가 이 창이다.",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isProcessing": true
-                                    }
-                                },
-                                {
-                                    "handler": "sirsoft-ecommerce.executeOrderBulkAction",
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": {
-                                        "comment": "사유 토스트는 핸들러가 이미 띄운다 — 여기서 또 띄우면 같은 문구가 두 번 뜬다.",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isProcessing": false
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{(!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0 || _global.isProcessing}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isProcessing}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "ecommerce-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}"
                         }
                     ]
                 }

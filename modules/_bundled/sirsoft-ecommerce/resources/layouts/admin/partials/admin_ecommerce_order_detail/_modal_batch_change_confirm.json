@@ -9,7 +9,103 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.title",
-        "width": "750px"
+        "width": "750px",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isProcessing}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "일괄 변경 실행. 부모가 들고 있던 값들을 여기서 한 번에 모아 핸들러로 넘긴다 — 재고·\n            마일리지·알림까지 얽히는 처리라 화면에서 조립하지 않는다.\n            처리 중 깃발은 전역이다. 이 창과 뒤 화면의 버튼이 함께 잠겨야 같은 변경이 두 번 나가지\n            않는다. 성공하면 창을 닫고, 실패하면 사유만 알리고 **창을 열어 둔다**(고른 항목이\n            살아 있어 곧바로 다시 시도할 수 있다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isProcessing": true
+                                }
+                            },
+                            {
+                                "handler": "sirsoft-ecommerce.processOrderDetailBulkChange",
+                                "params": {
+                                    "orderId": "{{route.orderNumber}}",
+                                    "selectedProducts": "{{$parent._local.selectedProducts ?? []}}",
+                                    "batchOrderStatus": "{{$parent._local.batchOrderStatus ?? ''}}",
+                                    "batchCarrierId": "{{$parent._local.batchCarrierId ?? ''}}",
+                                    "batchTrackingNumber": "{{$parent._local.batchTrackingNumber ?? ''}}",
+                                    "changeQuantities": "{{_local.changeQuantities ?? $parent._local.changeQuantities ?? {}}}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": {
+                                    "comment": "사유 토스트는 핸들러가 이미 띄운다 — 여기서 또 띄우면 같은 문구가 두 번 뜬다.",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": false
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{(!$parent._local.batchOrderStatus && !$parent._local.batchCarrierId && !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') && (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isProcessing}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.confirm'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -155,6 +251,9 @@
                                                             "if": "{{confirmItem.thumbnail_url}}",
                                                             "props": {
                                                                 "src": "{{confirmItem.thumbnail_url}}",
+                                                                "thumbPreset": "sm",
+                                                                "loading": "lazy",
+                                                                "decoding": "async",
                                                                 "className": "ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0",
                                                                 "alt": ""
                                                             }
@@ -790,109 +889,6 @@
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isProcessing}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "일괄 변경 실행. 부모가 들고 있던 값들을 여기서 한 번에 모아 핸들러로 넘긴다 — 재고·\n            마일리지·알림까지 얽히는 처리라 화면에서 조립하지 않는다.\n            처리 중 깃발은 전역이다. 이 창과 뒤 화면의 버튼이 함께 잠겨야 같은 변경이 두 번 나가지\n            않는다. 성공하면 창을 닫고, 실패하면 사유만 알리고 **창을 열어 둔다**(고른 항목이\n            살아 있어 곧바로 다시 시도할 수 있다).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isProcessing": true
-                                    }
-                                },
-                                {
-                                    "handler": "sirsoft-ecommerce.processOrderDetailBulkChange",
-                                    "params": {
-                                        "orderId": "{{route.orderNumber}}",
-                                        "selectedProducts": "{{$parent._local.selectedProducts ?? []}}",
-                                        "batchOrderStatus": "{{$parent._local.batchOrderStatus ?? ''}}",
-                                        "batchCarrierId": "{{$parent._local.batchCarrierId ?? ''}}",
-                                        "batchTrackingNumber": "{{$parent._local.batchTrackingNumber ?? ''}}",
-                                        "changeQuantities": "{{_local.changeQuantities ?? $parent._local.changeQuantities ?? {}}}"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": {
-                                        "comment": "사유 토스트는 핸들러가 이미 띄운다 — 여기서 또 띄우면 같은 문구가 두 번 뜬다.",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isProcessing": false
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{(!$parent._local.batchOrderStatus && !$parent._local.batchCarrierId && !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') && (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isProcessing}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "ecommerce-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.confirm'}}"
                         }
                     ]
                 }

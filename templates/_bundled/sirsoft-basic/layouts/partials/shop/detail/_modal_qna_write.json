@@ -37,6 +37,9 @@
                             "name": "Img",
                             "props": {
                                 "src": "{{_global.qnaProductImage}}",
+                                "thumbPreset": "sm",
+                                "loading": "lazy",
+                                "decoding": "async",
                                 "alt": "{{_global.qnaProductName ?? ''}}",
                                 "className": "w-full h-full object-cover"
                             }

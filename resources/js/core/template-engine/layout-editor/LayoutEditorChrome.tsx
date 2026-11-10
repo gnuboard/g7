@@ -35,6 +35,7 @@ import { ShortcutHelpModal } from './components/ShortcutHelpModal';
 import { collectReferencedCustomKeys } from './utils/customTranslations';
 import { useEditorShortcuts, type ShortcutHandlers } from './hooks/useEditorShortcuts';
 import { SaveFeedbackBanner } from './components/SaveFeedbackBanner';
+import { SpecLoadErrorBanner } from './components/SpecLoadErrorBanner';
 import type { SaveResult, UseLayoutDocumentResult } from './hooks/useLayoutDocument';
 import { RouteTreePanel } from './components/RouteTreePanel';
 import { PreviewCanvas } from './components/PreviewCanvas';
@@ -88,16 +89,26 @@ import { suffixed, withBasePrefix } from '../../support/assetUrl';
 /**
  * 편집기 셸 최소 너비(px) — 이 아래로는 셸을 압착하지 않고 브라우저 가로 스크롤로 흡수한다.
  *
+ * 2026-11-08 설계 확정: 툴바는 「두 줄로 감기」. 셸 폭이 툴바 자연 폭(한국어 실측 1506px — 격리 크로미움,
+ * 항목 1378 + gap 17×6 + 안쪽 여백 24)보다 좁으면 툴바와 기기 툴바를 줄 단위로 감는다. 항목은
+ * `flex-shrink: 0` + `nowrap` 이라 찌그러지지 않는다(50412256f3 의 「요 소 추 가」 차단 유지). 그래서 셸
+ * 최소 너비는 툴바 폭과 무관해지고, 미리보기는 맞춤 줌으로 남은 폭에 맞으므로 창 1024~1520 에서도 문서
+ * 가로 스크롤이 생기지 않는다.
+ *
+ * 값 1000 = 창 1024 에서 클래식 세로 스크롤바(15~17px)를 뺀 안쪽 폭(1007~1009)보다 작은 값. 종전 1280 은
+ * 「툴바 한 줄이 들어가는 폭」이었으나 툴바가 감기면서 그 근거가 없어졌다.
+ *
  * 레이아웃 편집기는 대화면 전용 도구다. 셸 안에는 축약 불가능한 요소가 나란히 놓인다:
  * 라우트 트리(280px 고정) + 캔버스(디바이스 미리보기 프레임) + 툴바(라벨 있는 버튼 10여 개).
  * 창 너비에 맞춰 이들을 압착하면 툴바 라벨이 글자 단위로 줄바꿈되고("요 소 추 가") 캔버스
- * 실측 폭이 뷰포트에 종속돼 디바이스 미리보기의 의미 자체가 사라진다. 편집기 UI 를 반응형으로
- * 재배치하지 않고 최소 너비를 유지하는 이유다.
+ * 실측 폭이 뷰포트에 종속돼 디바이스 미리보기의 의미 자체가 사라진다. 그래서 항목은 줄이지 않고
+ * 줄 단위로만 감으며, 이 최소 너비 아래로는 가로 스크롤로 흡수한다.
  *
- * 값 1280 = 툴바 한 줄이 줄바꿈 없이 들어가는 폭. 디바이스 미리보기 프레임이 남는 캔버스 폭보다
- * 넓을 때는 종전대로 줌 슬라이더로 축소해 본다(프레임 폭은 별도 SSoT — deviceList.ts).
+ * 디바이스 미리보기 프레임이 남는 캔버스 폭보다 넓으면 캔버스가 미리보기를 남는 폭에 맞춰 줄이고(맞춤 줌,
+ * 줌 슬라이더 값은 배율 상한) 레이아웃 폭도 줄인 폭으로 잡는다(PreviewCanvas `PreviewStage`, useDevicePreview
+ * `computePreviewScale`). 「실제 크기」를 켜면 캔버스만 가로로 스크롤한다. 프레임 폭은 별도 SSoT — deviceList.ts.
  */
-export const EDITOR_MIN_WIDTH = 1280;
+export const EDITOR_MIN_WIDTH = 1000;
 
 // 코어 위젯 등록 — 셸 모듈 로드 시 1회(멱등). 속성 편집 모달의 widgetRegistry
 // 디스패치가 동작하려면 segmented/slider/select/toggle/color/image/tag-input 위젯이
@@ -236,6 +247,12 @@ function LayoutEditorChromeBody({
   // sampleGlobal deep merge 체인 소스 (모듈 → 플러그인 → 템플릿 순) — PreviewCanvas
   // 가 코어 시드와 합성해 격리 store baseline 을 만든다.
   const [sampleGlobalSources, setSampleGlobalSources] = useState<SampleGlobalSource[]>([]);
+  // 스펙 묶음 요청 실패 — 알림과 다시 시도 단추를 보인다. 다시 시도는 요청 차례(specLoadAttempt)를 올려
+  // 아래 로드 effect 를 다시 돌린다(묶음을 다시 요청, 개별 엔드포인트로 되돌아가지 않음 — #869, 설계 확정 2026-11-09).
+  const [specLoadFailed, setSpecLoadFailed] = useState(false);
+  const [specLoading, setSpecLoading] = useState(false);
+  const [specLoadAttempt, setSpecLoadAttempt] = useState(0);
+  const handleSpecRetry = useCallback(() => setSpecLoadAttempt((n) => n + 1), []);
 
   // 편집 대상 템플릿 타입(admin/user) — 나가기 목적지(`/admin/templates/{type}`)
   // 분기에 사용. 미확정 시 'user' 로 fallback(템플릿 목록 기본 탭).
@@ -272,23 +289,26 @@ function LayoutEditorChromeBody({
 
   useEffect(() => {
     let cancelled = false;
+    setSpecLoading(true);
     (async () => {
       // 활성 모듈/플러그인 식별자는 loader 가 window.G7Config 에서 추출.
       // 코어 핸들러 스펙 카탈로그(C1~C27)를 병합 base 로 주입.
-      const { spec, sampleGlobalSources: sources } = await loadEditorSpecBundle({
+      const { spec, sampleGlobalSources: sources, bundleFailed } = await loadEditorSpecBundle({
         templateIdentifier,
         coreSeed: buildCoreActionRecipeSeed(),
       });
       if (!cancelled) {
         setEditorSpec(spec);
         setSampleGlobalSources(sources);
+        setSpecLoadFailed(bundleFailed === true);
+        setSpecLoading(false);
         emitSpecMergeTracker(templateIdentifier, spec, sources);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [templateIdentifier]);
+  }, [templateIdentifier, specLoadAttempt]);
 
   // 팔레트에 컴포넌트를 등재한 확장의 components.json 을 받아 팔레트 목록에 더한다. 등재한 확장이
   // 없으면 요청이 없다. 템플릿 매니페스트를 기다리는 것은 템플릿 대체본(`overrides`)의 메타를 쓰기 위해서다.
@@ -550,6 +570,7 @@ function LayoutEditorChromeBody({
     ro.observe(header);
     return () => ro.disconnect();
   }, []);
+
   const handleConcurrentLoadLatest = useCallback(() => {
     void activeDocument.reload();
   }, [activeDocument]);
@@ -1035,6 +1056,7 @@ function LayoutEditorChromeBody({
             onDismiss={handleSaveBannerDismiss}
             onLoadLatest={handleConcurrentLoadLatest}
           />
+          <SpecLoadErrorBanner failed={specLoadFailed} retrying={specLoading} onRetry={handleSpecRetry} />
           {/* 캔버스 제목 배너 제거 — 제목/설명 편집은 [페이지 설정] 모달 단일
               진입(툴바 ⚙ 페이지 설정)으로 일원화. 배너의 인라인 편집/표현식 고급 배지 폐기. */}
           <div
@@ -1042,12 +1064,17 @@ function LayoutEditorChromeBody({
             data-testid="g7le-chrome-device-toolbar"
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
+              gap: 6,
               justifyContent: 'center',
               padding: '6px 12px',
               background: '#f1f5f9',
               borderBottom: '1px solid #e2e8f0',
             }}
           >
+            {/* 기기 줄 항목(기기 툴바, 페이지 상태 전환기)도 툴바처럼 줄 단위로 감고 줄이지 않는다.
+                기기 툴바는 줄 폭을 넘지 않게(maxWidth) 자기 안에서 다시 감긴다. */}
+            <style>{'.g7le-chrome__device-toolbar > * { flex-shrink: 0; }'}</style>
             <DevicePreviewToolbar />
             <PageStateSwitcher />
           </div>
@@ -1056,7 +1083,11 @@ function LayoutEditorChromeBody({
           className="g7le-chrome__body"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'auto 1fr',
+            // 캔버스 열은 `minmax(0, 1fr)` — 캔버스 폭이 내용(미리보기 프레임)이 아니라 남은 폭으로
+            // 정해져야 캔버스가 그 폭을 재서 미리보기를 맞출 수 있다. `1fr`(최솟값 auto)이면 열이
+            // 프레임 폭(데스크톱 1280 + 여백 48)까지 늘어 문서 폭이 1608px 이 되고, 창을 줄여도 열이
+            // 내용 폭 아래로 줄지 않아 측정값이 갇힌다.
+            gridTemplateColumns: 'auto minmax(0, 1fr)',
             // body 는 캔버스 콘텐츠 전체 높이만큼 자연 확장한다(고정 높이/overflow 없음).
             // 세로 스크롤은 셸 전체 → 브라우저 창에서 한 번만 일어난다.
             // 트리 셀은 stretch(기본)로 body 전체 높이를 차지해야 그 안에서 트리 aside 가

@@ -6,7 +6,7 @@
       <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.modals.cache_delete_confirm</p>
       <p class="mt-2 text-label-subtle">$t:admin.settings.modals.cache_delete_warning</p>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingCache}}">
         <on type="click">
           <close-modal/>
@@ -35,6 +35,6 @@
         <icon data-if="{{_global.isDeletingCache}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isDeletingCache ? '$t:admin.settings.modals.deleting' : '$t:admin.settings.modals.delete_cache'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -140,15 +140,26 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "1024-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-3col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-1"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-1"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -172,8 +183,12 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-2"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-2"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -245,15 +260,26 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "1024-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-3col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-1"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-1"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -277,8 +303,12 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-2"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-2"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -440,8 +470,15 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.policyForm?.abilities?.is_super === true}}",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "sso:flex sso:flex-row sso:gap-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso:flex sso:flex-col sso:sm:flex-row sso:gap-2"
+                        "className": "sso:flex sso:flex-col sso:gap-2"
                     },
                     "children": [
                         {
@@ -616,15 +653,26 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "1024-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-3col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-1"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-1"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -648,8 +696,12 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-2"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-2"
+                                    }
+                                }
                             },
                             "children": [
                                 {

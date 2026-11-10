@@ -217,6 +217,8 @@ describe('드라이버 탭 S3 블록 (실 partial 렌더)', () => {
     testUtils.cleanup();
   });
 
+  // @scenario region_shape=aws_region,endpoint=custom_url,driver_usability=adapter_present,attachment_disk=local_default
+  // @effects endpoint_field_mounted, path_style_toggle_mounted
   it('s3_endpoint Input 과 s3_use_path_style Toggle 이 렌더된다', async () => {
     const testUtils = renderS3Block();
     await testUtils.render();
@@ -227,6 +229,8 @@ describe('드라이버 탭 S3 블록 (실 partial 렌더)', () => {
     testUtils.cleanup();
   });
 
+  // @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
+  // @effects region_free_input_mounted
   it('기존 s3 필드(bucket/access/secret/url)가 유지된다 (회귀 가드)', async () => {
     const testUtils = renderS3Block();
     await testUtils.render();
@@ -271,6 +275,8 @@ describe('드라이버 탭 연결 테스트 payload 계약', () => {
     expect(body).not.toHaveProperty('s3_url');
   });
 
+  // @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
+  // @effects test_covers_server_websocket
   it('websocket 테스트 payload 에 server 3필드가 포함된다 (A6)', () => {
     const roots = driversPartial.components ?? [driversPartial];
     const allCalls: any[] = [];
@@ -295,6 +301,8 @@ describe('드라이버 탭 연결 테스트 payload 계약', () => {
     );
   });
 
+  // @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
+  // @effects region_free_input_mounted
   it('리전 Select 하드코딩 옵션(regions.*)이 partial 에서 제거되었다', () => {
     const raw = JSON.stringify(driversPartial);
     // 존재 확정 — 대체된 자유 입력 힌트 키가 같은 s3 블록에 실려 있다
@@ -303,6 +311,8 @@ describe('드라이버 탭 연결 테스트 payload 계약', () => {
     expect(raw).not.toContain('storage.regions.');
   });
 
+  // @scenario region_shape=invalid_format,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
+  // @effects invalid_region_rejected
   it('onError fallback 메시지가 다국어 키를 사용한다 (a9)', () => {
     const raw = JSON.stringify(driversPartial);
     // 존재 확정 — 영문 하드코딩을 대체한 다국어 키가 실제로 쓰이고 있다
@@ -326,8 +336,9 @@ describe('드라이버 탭 연결 테스트 payload 계약', () => {
     expect(saveBody).toBeDefined();
 
     // 탭 폼 객체를 통째로 전달 — s3_endpoint/s3_use_path_style 등 신규 키가
-    // 별도 열거 없이 자동 포함된다 (열거 방식이면 키 추가 시 조용히 누락)
-    expect(saveBody).toContain('[tab]: form[tab] || {}');
+    // 별도 열거 없이 자동 포함된다 (열거 방식이면 키 추가 시 조용히 누락).
+    // .env 로 잠긴 키만 걸러 낸다(#869 ζ — admin-settings-env-locked-save-body.test.tsx 가 값을 잰다)
+    expect(saveBody).toContain('[tab]: unlocked(tab, form[tab])');
     expect(saveBody).not.toContain('s3_');
   });
 });

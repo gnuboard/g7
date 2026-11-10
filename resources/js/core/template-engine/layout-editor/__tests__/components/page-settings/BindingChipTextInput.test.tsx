@@ -11,7 +11,6 @@
  *  ⑤ 렌더 — 칩+평문 슬롯, [+데이터]/[완료] 어포던스, 설정참조 칩 X 미노출
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 
@@ -34,6 +33,10 @@ const CANDS: BindingCandidate[] = [
 beforeEach(() => cleanup());
 
 describe('tokenizeBindingSegments — 평문/바인딩/설정참조 무손실 분해', () => {
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_tokenize_text_and_chip_lossless
+   */
   it('평문 + 데이터칩(URL) → 평문 조각 + 바인딩 칩, raw 이으면 원문', () => {
     const v = '/api/modules/sirsoft-ecommerce/products/{{route.id}}';
     const toks = tokenizeBindingSegments(v);
@@ -44,17 +47,29 @@ describe('tokenizeBindingSegments — 평문/바인딩/설정참조 무손실 �
     expect(toks.map((x) => x.raw).join('')).toBe(v); // 무손실.
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_tokenize_chip_between_text
+   */
   it('평문 사이 칩(`회원 {{user.name}} 님`) → text-chip-text', () => {
     const toks = tokenizeBindingSegments('회원 {{user.name}} 님');
     expect(toks.map((x) => x.kind)).toEqual(['text', 'chip', 'text']);
     expect(toks[2].raw).toBe(' 님');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_tokenize_multiple_chips
+   */
   it('다중 칩(`{{a.b}}/{{c.d}}`) → chip-text-chip', () => {
     const toks = tokenizeBindingSegments('{{a.b}}/{{c.d}}');
     expect(toks.map((x) => x.kind)).toEqual(['chip', 'text', 'chip']);
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_tokenize_setting_ref_not_removable
+   */
   it('설정 참조($core_settings:) → 칩(해제 불가)', () => {
     const toks = tokenizeBindingSegments('접두 $core_settings:site.name 접미');
     expect(toks.map((x) => x.kind)).toEqual(['text', 'chip', 'text']);
@@ -62,16 +77,28 @@ describe('tokenizeBindingSegments — 평문/바인딩/설정참조 무손실 �
     expect(toks[1].raw).toBe('$core_settings:site.name');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_tokenize_empty_returns_empty
+   */
   it('빈 값 → 빈 배열', () => {
     expect(tokenizeBindingSegments('')).toEqual([]);
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_tokenize_unclosed_stays_text
+   */
   it('미닫힘 보간(`{{x`) → 평문으로 흡수(손상 0)', () => {
     const toks = tokenizeBindingSegments('abc{{x');
     expect(toks.map((x) => x.kind)).toEqual(['text']);
     expect(toks[0].raw).toBe('abc{{x');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_tokenize_object_literal_one_chip
+   */
   it('보간 내부 객체 리터럴(`{{f(x ?? {})}}`) → 한 칩으로 흡수', () => {
     const toks = tokenizeBindingSegments('pre {{f(x ?? {})}} post');
     expect(toks.map((x) => x.kind)).toEqual(['text', 'chip', 'text']);
@@ -80,6 +107,10 @@ describe('tokenizeBindingSegments — 평문/바인딩/설정참조 무손실 �
 });
 
 describe('buildBindingChipSlots — 칩 앞·사이·끝 빈 평문 슬롯 보장', () => {
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_slots_surround_chips_with_text
+   */
   it('맨 앞 칩 / 칩 사이 / 끝 칩 모두 평문 슬롯이 둘러싼다(text 로 시작·끝)', () => {
     const slots = buildBindingChipSlots('{{a.b}}{{c.d}}');
     expect(slots[0].kind).toBe('text'); // 맨 앞 평문 슬롯.
@@ -89,6 +120,10 @@ describe('buildBindingChipSlots — 칩 앞·사이·끝 빈 평문 슬롯 보�
     expect(kinds).toBe('text,chip,text,chip,text');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_slots_empty_has_one_text_slot
+   */
   it('빈 값 → 평문 슬롯 1개(커서 둘 곳)', () => {
     const slots = buildBindingChipSlots('');
     expect(slots).toEqual([{ kind: 'text', text: '' }]);
@@ -96,6 +131,10 @@ describe('buildBindingChipSlots — 칩 앞·사이·끝 빈 평문 슬롯 보�
 });
 
 describe('recomposeBindingChipMove — 칩 글자단위 이동', () => {
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_move_chip_between_chars
+   */
   it('끝 칩을 앞 평문 글자 사이로 이동', () => {
     // 슬롯: [text "abcd"][chip {{x.y}}][text ""]
     const slots: BindingChipSlot[] = [
@@ -108,6 +147,10 @@ describe('recomposeBindingChipMove — 칩 글자단위 이동', () => {
     expect(next).toBe('ab{{x.y}}cd');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_move_removes_first_match_only
+   */
   it('원위치 칩 1개만 제거(중복 raw 여도 첫 일치)', () => {
     const slots: BindingChipSlot[] = [
       { kind: 'text', text: '' },
@@ -123,27 +166,47 @@ describe('recomposeBindingChipMove — 칩 글자단위 이동', () => {
 });
 
 describe('insertBindingAt / removeBindingChip — 삽입/제거', () => {
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_insert_at_cursor
+   */
   it('insertBindingAt — 커서 위치에 토큰 삽입', () => {
     expect(insertBindingAt('/api/products/', 14, '{{route.id}}')).toBe('/api/products/{{route.id}}');
     expect(insertBindingAt('ab', 1, '{{x}}')).toBe('a{{x}}b');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_insert_clamps_bounds
+   */
   it('insertBindingAt — 경계 클램프', () => {
     expect(insertBindingAt('ab', 99, '{{x}}')).toBe('ab{{x}}');
     expect(insertBindingAt('ab', -5, '{{x}}')).toBe('{{x}}ab');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_remove_first_match_only
+   */
   it('removeBindingChip — 첫 일치 토큰만 제거', () => {
     expect(removeBindingChip('회원 {{user.name}} 님', '{{user.name}}')).toBe('회원  님');
     expect(removeBindingChip('{{x}}{{x}}', '{{x}}')).toBe('{{x}}');
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_remove_missing_keeps_original
+   */
   it('removeBindingChip — 미존재 토큰이면 원본 유지', () => {
     expect(removeBindingChip('abc', '{{x}}')).toBe('abc');
   });
 });
 
 describe('BindingChipTextInput — 렌더', () => {
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_input_renders_chip_and_affordances
+   */
   it('평문+칩 → 칩 + 평문 슬롯 + [+데이터]/[완료] 어포던스', () => {
     render(<BindingChipTextInput value="회원 {{user.name}}" onChange={vi.fn()} t={t} candidates={CANDS} onDone={vi.fn()} testidPrefix="g7le-bct" />);
     expect(screen.getByTestId('g7le-bct')).toBeInTheDocument();
@@ -156,6 +219,10 @@ describe('BindingChipTextInput — 렌더', () => {
     expect(screen.getByTestId('g7le-bct-done')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_input_remove_button_only_binding
+   */
   it('바인딩 칩에는 X(해제) 버튼, 설정참조 칩에는 X 미노출', () => {
     render(<BindingChipTextInput value="{{user.name}} $core_settings:site.name" onChange={vi.fn()} t={t} candidates={CANDS} testidPrefix="g7le-bct" />);
     // 바인딩 칩 X 존재.
@@ -165,6 +232,10 @@ describe('BindingChipTextInput — 렌더', () => {
     expect(removeBtns.length).toBe(1);
   });
 
+  /**
+   * @scenario subject=binding_chip_text_input
+   * @effects binding_chip_input_no_candidates_hides_insert
+   */
   it('후보 없으면 [+데이터] 미노출(삽입 입구 없음)', () => {
     render(<BindingChipTextInput value="회원 {{user.name}}" onChange={vi.fn()} t={t} testidPrefix="g7le-bct" />);
     expect(screen.queryByTestId('g7le-bct-insert')).toBeNull();

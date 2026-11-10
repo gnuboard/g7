@@ -22,11 +22,7 @@ import type { NodeSource } from '../../utils/layoutTreeUtils';
 
 function makeWrapper(): React.FC<{ children: React.ReactNode }> {
   return ({ children }) =>
-    React.createElement(
-      LayoutEditorProvider,
-      { templateIdentifier: 'sirsoft-admin_basic', initialLocale: 'ko' },
-      children,
-    );
+    React.createElement(LayoutEditorProvider, { templateIdentifier: 'sirsoft-admin_basic', initialLocale: 'ko', children });
 }
 
 function combinedHook() {
@@ -177,7 +173,8 @@ describe('extractCurrentExtensionNodes ', () => {
     // 최상위 ext-root + content 자식의 nested-ext (호스트/타 확장은 건너뛰되 자식 재귀).
     expect(found.map((n: any) => n.id)).toEqual(['ext-root', 'nested-ext']);
     // 진입점 자식은 별도 수집되지 않음(통짜).
-    expect(found[0].children[0].id).toBe('ext-kid');
+    const entryKids = found[0].children as Array<{ id?: string }>;
+    expect(entryKids[0].id).toBe('ext-kid');
   });
 
   // @scenario edit_mode=extension, extension_type=extension_point

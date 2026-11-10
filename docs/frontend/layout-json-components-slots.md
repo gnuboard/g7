@@ -95,7 +95,8 @@
 사용자가 체크박스를 클릭하면 필터가 "기본 필터"와 "상세 필터" 사이를 이동:
 
 ```html
-<div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
+<div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="flex flex-row gap-2 items-center">
+  <responsive on="portable" class="flex gap-2 flex-col items-start"/>
   <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
     <on type="change">
       <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"/>
@@ -115,7 +116,10 @@
   "name": "Div",
   "slot": "{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}",
   "slotOrder": 1,
-  "props": { "className": "filter-row" },
+  "responsive": {
+    "portable": { "props": { "className": "flex gap-2 flex-col items-start" } }
+  },
+  "props": { "className": "flex flex-row gap-2 items-center" },
   "children": [
     {
       "type": "basic",

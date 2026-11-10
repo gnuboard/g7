@@ -18,15 +18,15 @@
 <partial description="User List - Filter Section with Slot System">
   <div data-ref="filter_card" data-key="filter" class="admin-card">
     <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
-      <div data-ref="status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('status') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('status')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status">
           <on type="change">
             <!-- 계정 상태 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 브라우저에 남긴다 — 여기서는 상태만 바꾸고 저장은 필터 표시 선택기가 한다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('status') ? (_local.visibleFilters || []).filter(f => f !== 'status') : [...(_local.visibleFilters || []), 'status']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.status</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.status</span>
         <div class="flex-center flex-wrap gap-3">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="checkbox" name="statusAll" class="checkbox" checked="{{(_local.filter.status || []).length === 0}}">
@@ -48,15 +48,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="role_filter_row" data-slot="{{(_local.visibleFilters || []).includes('role') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="role_filter_row" data-slot="{{(_local.visibleFilters || []).includes('role') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('role')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.role">
           <on type="change">
             <!-- 권한 그룹 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('role') ? (_local.visibleFilters || []).filter(f => f !== 'role') : [...(_local.visibleFilters || []), 'role']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.role</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.role</span>
         <!-- 역할은 설치마다 수십 개가 될 수 있어 체크박스를 늘어놓으면 행이 화면 몇 개 높이로 자란다 — 회원 폼의
              역할 선택과 같은 「검색 + 태그」 한 칸으로 고른다. 비워 두면 전체다(「전체」 칸이 따로 없다).
              값은 id 문자열이다 — URL(`role_ids[]`)에서 되읽으면 문자열로 오므로 선택지 value 도 문자열로 맞춘다.
@@ -72,15 +72,15 @@
           </tag-input>
         </div>
       </div>
-      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.created_at">
           <on type="change">
             <!-- 가입일 필터 노출 스위치. 빠른 기간 버튼이 붙어 자리를 많이 먹는다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.created_at</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.created_at</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
@@ -162,15 +162,15 @@
           </div>
         </div>
       </div>
-      <div data-ref="last_login_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lastLoginAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="last_login_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lastLoginAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lastLoginAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.last_login">
           <on type="change">
             <!-- 최근 로그인 필터 노출 스위치. 휴면 전 안내 대상을 찾을 때 기본으로 올려 두는 일이 많다. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lastLoginAt') ? (_local.visibleFilters || []).filter(f => f !== 'lastLoginAt') : [...(_local.visibleFilters || []), 'lastLoginAt']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.last_login</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.last_login</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
             <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
@@ -261,15 +261,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="admin_scope_filter_row" data-slot="{{(_local.visibleFilters || []).includes('adminScope') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="admin_scope_filter_row" data-slot="{{(_local.visibleFilters || []).includes('adminScope') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('adminScope')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.admin_scope">
           <on type="change">
             <!-- 관리자 여부 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('adminScope') ? (_local.visibleFilters || []).filter(f => f !== 'adminScope') : [...(_local.visibleFilters || []), 'adminScope']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.admin_scope</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.admin_scope</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="adminScope" value="all" checked="{{(_local.filter.adminScope || 'all') === 'all'}}" class="radio">
@@ -300,15 +300,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="lock_state_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lockState') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="lock_state_filter_row" data-slot="{{(_local.visibleFilters || []).includes('lockState') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('lockState')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.lock_state">
           <on type="change">
             <!-- 계정 잠금 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('lockState') ? (_local.visibleFilters || []).filter(f => f !== 'lockState') : [...(_local.visibleFilters || []), 'lockState']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.lock_state</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.lock_state</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="lockState" value="all" checked="{{(_local.filter.lockState || 'all') === 'all'}}" class="radio">
@@ -339,15 +339,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="dormant_filter_row" data-slot="{{(_local.visibleFilters || []).includes('dormantAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="dormant_filter_row" data-slot="{{(_local.visibleFilters || []).includes('dormantAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('dormantAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.dormant_at">
           <on type="change">
             <!-- 휴면 전환일 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('dormantAt') ? (_local.visibleFilters || []).filter(f => f !== 'dormantAt') : [...(_local.visibleFilters || []), 'dormantAt']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.dormant_at</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.dormant_at</span>
         <div class="flex-center gap-2">
           <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
           <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.dormant_at')}}" name="dormantStartDate" value="{{_local.filter.dormantStartDate || ''}}" class="input w-36">
@@ -365,15 +365,15 @@
           </input>
         </div>
       </div>
-      <div data-ref="status_changed_filter_row" data-slot="{{(_local.visibleFilters || []).includes('statusChangedAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="status_changed_filter_row" data-slot="{{(_local.visibleFilters || []).includes('statusChangedAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('statusChangedAt')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.status_changed">
           <on type="change">
             <!-- 상태 변경일 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('statusChangedAt') ? (_local.visibleFilters || []).filter(f => f !== 'statusChangedAt') : [...(_local.visibleFilters || []), 'statusChangedAt']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.status_changed</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.status_changed</span>
         <div class="flex-center flex-wrap gap-2">
           <select name="statusChangedType" aria-label="$t:admin.users.filter.status_changed" class="w-28" value="{{_local.filter.statusChangedType || ''}}">
             <options>
@@ -404,15 +404,15 @@
           </div>
         </div>
       </div>
-      <div data-ref="language_filter_row" data-slot="{{(_local.visibleFilters || []).includes('language') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="language_filter_row" data-slot="{{(_local.visibleFilters || []).includes('language') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('language')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.language">
           <on type="change">
             <!-- 언어 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('language') ? (_local.visibleFilters || []).filter(f => f !== 'language') : [...(_local.visibleFilters || []), 'language']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.language</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.language</span>
         <div class="flex-center gap-2">
           <select name="language" class="w-40" value="{{_local.filter.language || ''}}" options="{{[{ value: '', label: '$t:common.all' }, ...(($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l })))]}}">
             <on type="change">
@@ -422,15 +422,15 @@
           </select>
         </div>
       </div>
-      <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.country">
           <on type="change">
             <!-- 국가 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.country</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.country</span>
         <div class="flex-center gap-2 flex-1">
           <searchable-dropdown data-type="composite" aria-label="$t:admin.users.filter.country" options="{{_computed.countryOptions ?? []}}" value="{{_local.filter.country || ''}}" triggerLabel="$t:admin.users.filter.country_select" searchPlaceholder="$t:admin.users.filter.country_search" noResultsText="$t:common.no_results" class="w-64">
             <on type="change" event="onChange">
@@ -447,15 +447,15 @@
           </button>
         </div>
       </div>
-      <div data-ref="email_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('emailVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="email_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('emailVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('emailVerified')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.email_verified">
           <on type="change">
             <!-- 이메일 인증 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('emailVerified') ? (_local.visibleFilters || []).filter(f => f !== 'emailVerified') : [...(_local.visibleFilters || []), 'emailVerified']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.email_verified</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.email_verified</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="emailVerified" value="all" checked="{{(_local.filter.emailVerified || 'all') === 'all'}}" class="radio">
@@ -486,15 +486,15 @@
           </label>
         </div>
       </div>
-      <div data-ref="identity_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('identityVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
+      <div data-ref="identity_verified_filter_row" data-slot="{{(_local.visibleFilters || []).includes('identityVerified') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
         <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('identityVerified')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.filter.identity_verified">
           <on type="change">
             <!-- 본인인증 필터 노출 스위치. -->
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('identityVerified') ? (_local.visibleFilters || []).filter(f => f !== 'identityVerified') : [...(_local.visibleFilters || []), 'identityVerified']}}"/>
           </on>
         </input>
-        <span class="filter-label w-32">$t:admin.users.filter.identity_verified</span>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.filter.identity_verified</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
             <input type="radio" :autoBinding="false" name="identityVerified" value="all" checked="{{(_local.filter.identityVerified || 'all') === 'all'}}" class="radio">

@@ -16,6 +16,11 @@
  * DASHBOARD GRIDS
  * ======================================== */
 
+/*
+ * 번들 레이아웃·부품은 아래 대시보드 격자 클래스를 쓰지 않는다.
+ * 폭 미디어 부분은 사이트에서 직접 고친 레이아웃의 호환을 위해 폐지 예정으로 남기고, 다음 출시 이후 제거한다.
+ */
+
 /* Stats Grid - 4 columns responsive */
 .dashboard-stats-grid {
   display: grid;
@@ -25,12 +30,14 @@
 }
 
 @media (min-width: 768px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .dashboard-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (min-width: 1024px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .dashboard-stats-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -44,6 +51,7 @@
 }
 
 @media (min-width: 1024px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .dashboard-main-grid {
     grid-template-columns: repeat(5, 1fr);
   }
@@ -56,6 +64,7 @@
 }
 
 @media (min-width: 1024px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .dashboard-column-left {
     grid-column: span 3;
   }
@@ -68,6 +77,7 @@
 }
 
 @media (min-width: 1024px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .dashboard-column-right {
     grid-column: span 2;
   }

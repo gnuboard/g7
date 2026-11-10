@@ -23,11 +23,11 @@
  */
 
 import React, { memo, useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef, useContext, Component, ErrorInfo } from 'react';
-import { ComponentRegistry } from './ComponentRegistry';
+import type { ComponentLookup } from './ComponentRegistry';
 import { DataBindingEngine } from './DataBindingEngine';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
-import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps } from './helpers/RenderHelpers';
+import { resolveIterationSource, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
 import { evaluateComputedDefinitions, isInheritableDefinitions } from './helpers/ComputedEvaluator';
 import { splitExtensionClassPrefix } from './helpers/StyleHelpers';
@@ -64,6 +64,90 @@ const HREF_URL_PROPS = new Set(['href', 'xlinkHref', 'xlink:href']);
 
 /** 폼 제출·미디어 대상 prop — 실행 스킴이면 속성 자체를 제거 */
 const NAV_URL_PROPS = new Set(['formAction', 'formaction', 'action', 'poster']);
+
+/**
+ * 컴포넌트가 직접 그리는 prop 키의 기본값 — 엔진은 이 키를 바인딩하지 않고 원문 정의로 넘긴다(컴포넌트별 추가는 메타데이터
+ * `skipBindingKeys`). 셀 정의의 responsive 구간 추적(`collectSelfRenderedResponsiveMaps`)도 같은 키를 본다.
+ */
+const DEFAULT_SKIP_BINDING_KEYS = ['cellChildren', 'expandChildren', 'expandContext', 'render'];
+
+/** 셀 정의 responsive 수집이 내려가는 최대 깊이 — 레이아웃 JSON 의 정의 중첩을 넉넉히 덮고, 순환·큰 정적 데이터에서 멈춘다 */
+const SELF_RENDERED_SCAN_MAX_DEPTH = 24;
+
+/**
+ * 자동바인딩 칸 값의 표시 글자 — 객체 값(다국어 칸 등)은 내용으로 비교한다(String(객체) 는 늘 같은 글자다)
+ *
+ * @param v 칸 값
+ * @returns 비교용 글자
+ * @since engine-v1.89.0
+ */
+function autoBindingDisplayText(v: any): string {
+  if (v !== null && typeof v === 'object') {
+    try { return JSON.stringify(v); } catch { return String(v); }
+  }
+
+  return String(v ?? '');
+}
+
+/** 수집할 것이 없을 때의 공용 빈 배열 (메모 결과 참조를 고정한다) */
+const NO_RESPONSIVE_MAPS: ReadonlyArray<Record<string, any>> = Object.freeze([]);
+
+/**
+ * 컴포넌트가 직접 그리는 prop(셀 정의 등) 안의 `responsive` 맵을 모두 모읍니다.
+ *
+ * 셀은 복합 컴포넌트가 렌더 중에 `renderItemChildren` 으로 그리고, 그 순간의 폭으로 분기를 고른다. 폭을 구독하지 않는
+ * 컴포넌트는 props 가 그대로면 다시 그려지지 않으므로, 엔진이 이 맵들의 분기 판정이 바뀌는 순간(구간 경계)을 알아야 한다.
+ * props 어느 깊이에 있든 직접 그리는 키(`columns[].cellChildren` 같은 중첩 포함) 아래만 본다.
+ *
+ * @param props 원문 props (바인딩 전)
+ * @param selfRenderedKeys 컴포넌트가 직접 그리는 키
+ * @returns responsive 맵 목록 (없으면 공용 빈 배열)
+ * @since engine-v1.89.0
+ */
+function collectSelfRenderedResponsiveMaps(
+  props: Record<string, any> | undefined,
+  selfRenderedKeys: readonly string[],
+): ReadonlyArray<Record<string, any>> {
+  if (!props) return NO_RESPONSIVE_MAPS;
+  const maps: Array<Record<string, any>> = [];
+  const seenDefs = new WeakSet<object>();
+  const seenProps = new WeakSet<object>();
+
+  const walkDefinitions = (value: unknown, depth: number): void => {
+    if (!value || typeof value !== 'object' || depth > SELF_RENDERED_SCAN_MAX_DEPTH || seenDefs.has(value)) return;
+    seenDefs.add(value);
+    if (Array.isArray(value)) {
+      for (const item of value) walkDefinitions(item, depth + 1);
+      return;
+    }
+    const responsive = (value as Record<string, any>).responsive;
+    if (responsive && typeof responsive === 'object' && !Array.isArray(responsive)) {
+      maps.push(responsive);
+    }
+    // responsive 분기 안의 children 에도 responsive 가 있을 수 있어 분기도 내려간다
+    for (const child of Object.values(value)) walkDefinitions(child, depth + 1);
+  };
+
+  const findSelfRendered = (value: unknown, depth: number): void => {
+    if (!value || typeof value !== 'object' || depth > SELF_RENDERED_SCAN_MAX_DEPTH || seenProps.has(value)) return;
+    seenProps.add(value);
+    if (Array.isArray(value)) {
+      for (const item of value) findSelfRendered(item, depth + 1);
+      return;
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (selfRenderedKeys.includes(key)) {
+        walkDefinitions(child, 0);
+      } else {
+        findSelfRendered(child, depth + 1);
+      }
+    }
+  };
+
+  findSelfRendered(props, 0);
+
+  return maps.length > 0 ? maps : NO_RESPONSIVE_MAPS;
+}
 
 /**
  * G7Core.devTools 인터페이스 가져오기
@@ -176,7 +260,7 @@ function resolveTranslationsInValue(
 }
 import { responsiveManager } from './ResponsiveManager';
 import { FormProvider, FormContextValue, useFormContext, getNestedValue, setNestedValue } from './FormContext';
-import { SlotProvider, SlotContext } from './SlotContext';
+import { SlotContext } from './SlotContext';
 import { IsolatedStateProvider, useIsolatedState } from './IsolatedStateContext';
 import { SortableContainer, SortableItemWrapper, useSortableContext, type SortableStrategy } from './sortable';
 import { useParentContext } from './ParentContextProvider';
@@ -764,8 +848,8 @@ class ComponentErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundary
  * 컴포넌트 정의 인터페이스
  */
 export interface ComponentDefinition {
-  /** 컴포넌트 고유 ID */
-  id: string;
+  /** 컴포넌트 고유 ID — 선택. 실제 레이아웃 컴포넌트 대부분은 id 없이 쓴다 */
+  id?: string;
 
   /** 컴포넌트 타입 (basic, composite, layout, extension_point) */
   type: 'basic' | 'composite' | 'layout' | 'extension_point';
@@ -1187,6 +1271,10 @@ export interface ComponentDefinition {
     itemVar?: string;
     /** 인덱스 변수명 (기본값: '$index') */
     indexVar?: string;
+    /**
+     * 아이템을 감쌀 HTML 요소 (예: 표 행 정렬의 "tr") — 지정하면 itemTemplate 의 children 을 이 요소 안에 바로 그린다
+     */
+    wrapperElement?: keyof React.JSX.IntrinsicElements;
   };
 
   /**
@@ -1258,8 +1346,8 @@ export interface DynamicRendererProps {
   /** 번역 컨텍스트 */
   translationContext: TranslationContext;
 
-  /** ComponentRegistry 인스턴스 */
-  registry: ComponentRegistry;
+  /** 컴포넌트 레지스트리 — 이름으로 컴포넌트·메타데이터를 찾는 면만 쓴다(ComponentRegistry 인스턴스가 보통) */
+  registry: ComponentLookup;
 
   /** DataBindingEngine 인스턴스 */
   bindingEngine: DataBindingEngine;
@@ -1284,6 +1372,8 @@ export interface DynamicRendererProps {
      * 같은 객체다 — computed 스코프 물려받기 조건 (a) 가 이 동일성을 본다(engine-v1.74.0).
      */
     parentDataContext?: Record<string, any>;
+    /** 부모 렌더러의 렌더 환경 ref (engine-v1.75.2, #141) — 번역 문맥이 빠진 자식이 이어받는다 */
+    renderEnvRef?: { current: RenderEnvironment | null };
   };
 
   /**
@@ -1309,8 +1399,9 @@ export interface DynamicRendererProps {
   /**
    * 루트 렌더러 여부
    *
-   * true이면 SlotProvider로 래핑합니다. (레이아웃 최상위에서만 true)
-   * 자식 DynamicRenderer에서는 false로 전달됩니다.
+   * 레이아웃 최상위 렌더러만 true, 자식 DynamicRenderer 에서는 false 로 전달됩니다.
+   * 렌더러는 이 값을 읽지 않습니다 — 슬롯 공급자(SlotProvider)는 호출자(renderTemplate/updateTemplateData)가
+   * 바깥에서 감싸고, 이중 래핑을 막으려고 여기서는 감싸지 않습니다. 호출자 호환을 위해 prop 은 남겨 둡니다.
    */
   isRootRenderer?: boolean;
 
@@ -1421,7 +1512,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
   ({
     componentDef,
     dataContext,
-    translationContext,
+    translationContext: translationContextProp,
     registry,
     bindingEngine,
     translationEngine,
@@ -1429,7 +1520,6 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     parentComponentContext,
     parentFormContextProp,
     parentDataContext,
-    isRootRenderer = false,
     isInsideIteration = false,
     isEditMode = false,
     onComponentSelect,
@@ -1439,6 +1529,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     componentPath,
     layoutKey,
   }) => {
+    // 번역 문맥이 빠진 렌더러는 부모 렌더러의 렌더 환경에서 이어받는다 (engine-v1.89.0, #869).
+    // 컴포넌트가 배열 prop 의 정의를 엔진 렌더러로 직접 그릴 때(Modal 고정 하단 등) 번역 문맥을 못 넘기면, 식 안의 `$t:` 를 풀다가
+    // getTranslation 이 templateId 를 구조 분해하며 던져 그 칸이 「컴포넌트 로드 실패」 로 그려졌다. 정의를 skipBindingKeys 로 원문 그대로
+    // 넘기게 되면서(부모가 미리 풀지 않음) 드러났다
+    const translationContext: TranslationContext = translationContextProp
+      ?? parentComponentContext?.renderEnvRef?.current?.translationContext
+      ?? { templateId: '', locale: (typeof document !== 'undefined' && document.documentElement.lang) || 'ko' };
+
     // 슬롯 컨텍스트는 window.__slotContextValue를 직접 사용
     // React Context 타이밍 이슈로 useSlotContext() 대신 전역 변수 사용
     // 단, 첫 렌더 패스에는 전역 값이 아직 없다(SlotProvider 가 useLayoutEffect 로 연다) — 렌더 시점 「제자리 건너뛰기」 판정만
@@ -1966,6 +2064,20 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     const sortableContext = useSortableContext();
 
     /**
+     * 현재 폭에 맞는 responsive 분기 키 (분기가 없으면 null)
+     *
+     * 병합 정의는 폭이 아니라 이 키로 다시 만든다 — 같은 구간 안의 폭 변경(1280→1300)마다 새 정의 객체가
+     * 생기면, 정의 전체를 지켜보는 반복 항목 렌더가 구간이 그대로인데도 항목 전부를 다시 그린다.
+     * `type: "iterator"` 변환은 responsive 를 그대로 두므로 원본 정의의 responsive 로 판정해도 같다.
+     *
+     * @since engine-v1.89.0
+     */
+    const matchedResponsiveKey = useMemo(
+      () => (componentDef.responsive ? responsiveManager.getMatchingKey(componentDef.responsive, responsiveWidth) : null),
+      [componentDef.responsive, responsiveWidth]
+    );
+
+    /**
      * 반응형 오버라이드가 적용된 컴포넌트 정의
      *
      * responsive 속성이 있으면 현재 화면 너비에 맞는 오버라이드를 적용합니다.
@@ -1991,7 +2103,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         return baseDef;
       }
 
-      const matchedKey = responsiveManager.getMatchingKey(baseDef.responsive, responsiveWidth);
+      const matchedKey = matchedResponsiveKey;
       if (!matchedKey) {
         return baseDef;
       }
@@ -2012,7 +2124,39 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // 유지.
         __responsiveChildrenKey: override.children !== undefined ? matchedKey : undefined,
       };
-    }, [componentDef, responsiveWidth]);
+    }, [componentDef, matchedResponsiveKey]);
+
+    /**
+     * 컴포넌트가 직접 그리는 셀 정의 안의 responsive 맵 (props 가 바뀔 때만 다시 모은다)
+     *
+     * @since engine-v1.89.0
+     */
+    const selfRenderedResponsiveMaps = useMemo(() => {
+      const componentSkipKeys: string[] = registry.getMetadata(effectiveComponentDef.name)?.skipBindingKeys || [];
+      const selfRenderedKeys = componentSkipKeys.length > 0
+        ? [...new Set([...DEFAULT_SKIP_BINDING_KEYS, ...componentSkipKeys])]
+        : DEFAULT_SKIP_BINDING_KEYS;
+
+      return collectSelfRenderedResponsiveMaps(effectiveComponentDef.props, selfRenderedKeys);
+    }, [effectiveComponentDef.props, effectiveComponentDef.name, registry]);
+
+    /**
+     * 셀 정의 responsive 의 현재 구간 판정 — 구간 경계를 넘을 때만 값이 바뀐다
+     *
+     * 셀은 복합 컴포넌트가 렌더 중에 `renderItemChildren` 으로 그리므로, 컴포넌트가 폭을 구독하지 않으면 셀이 이전 구간에
+     * 머문다(번들 DataGrid·CardGrid 는 스스로 구독). 이 값은 renderComponent 의존성이자 composite 에 넘기는 `__responsiveBand`
+     * prop 이다 — 레지스트리가 모든 컴포넌트를 React.memo 로 감싸므로 prop 이 바뀌어야 다시 그려진다. 같은 구간 안의 폭
+     * 변경에는 같은 문자열이라 다시 그리지 않는다. 셀을 폭 없는 메모로 만들어 두는 컴포넌트는 스스로 `useResponsive` 를
+     * 구독해야 한다(docs/frontend/responsive-layout.md 「셀의 responsive 와 다시 그리기」).
+     *
+     * @since engine-v1.89.0
+     */
+    const selfRenderedResponsiveBand = useMemo(
+      () => (selfRenderedResponsiveMaps.length === 0
+        ? ''
+        : selfRenderedResponsiveMaps.map((map) => responsiveManager.getMatchingKey(map, responsiveWidth) ?? '').join('|')),
+      [selfRenderedResponsiveMaps, responsiveWidth]
+    );
 
     /**
      * 로컬 상태 업데이트 핸들러
@@ -2278,7 +2422,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               devToolsForComputed.trackComputedProperty?.(
                 key,
                 typeof expression === 'string' ? expression : JSON.stringify(expression),
-                [{ type: '_local', path: '_local', value: result._local }],
+                // 의존성 종류는 DevTools 계약 값(state)이고 경로가 `_local` 이다(#869)
+                [{ type: 'state', path: '_local', value: result._local }],
                 value,
                 duration ?? 0,
                 effectiveComponentDef.id,
@@ -2292,7 +2437,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
                   previousValue,
                   value,
                   duration ?? 0,
-                  { type: '_local', path: '_local' },
+                  { type: 'state', path: '_local' },
                   effectiveComponentDef.id
                 );
               }
@@ -2532,7 +2677,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // iteration 패턴 사용 시 데이터소스(order, active_carriers 등)에 접근 필요.
       // getEffectiveContext()에서 데이터소스 키를 최상위 컨텍스트에 병합함.
       parentDataContext: extendedDataContext,
-    }), [extendedDataContext._local, handleSetState, localDynamicState, isolatedContext, extendedDataContext]);
+      // 이 노드의 편집기 경로(`data-editor-path` 와 같은 문자열, 편집 모드가 아니면 보통 없음) (#141).
+      // children 이 아닌 컴포넌트 배열 prop(Modal 의 `footer`)을 컴포넌트가 직접 그릴 때
+      // `${componentPath}.props.footer.${index}` 를 그 렌더러에 넘겨 편집기가 고를 수 있게 한다.
+      componentPath,
+    }), [extendedDataContext._local, handleSetState, localDynamicState, isolatedContext, extendedDataContext, componentPath]);
 
     // `<on listen>`(onComponentEvent) 리스너가 실행 시점에 읽을 최신 문맥 — 구독은 마운트 때 한 번이라
     // 콜백이 마운트 시점 문맥을 붙잡으면 `{{_local.x}}` 가 옛 값으로 읽히고, 로컬 setState 가 그 옛 스냅샷을
@@ -2577,7 +2726,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
 
       return result;
-    }, [effectiveComponentDef.if, effectiveComponentDef.conditions, extendedDataContext, bindingEngine, effectiveComponentDef.id]);
+      // condition: 편집기가 condition 만 바꾼 정의를 끼우면(props·if 는 그대로) 종전에는 이전 판정을 그대로 썼다 (engine-v1.89.0)
+    }, [effectiveComponentDef.if, effectiveComponentDef.condition, effectiveComponentDef.conditions, extendedDataContext, bindingEngine, effectiveComponentDef.id]);
 
     /**
      * 슬롯 ID 평가
@@ -2887,12 +3037,15 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 2. 다국어 번역 ($t:key) - 재귀적 처리
      * 3. 액션 바인딩 (onClick 등)
      */
+    /** 정의에 자식이 있는지 — resolvedProps 가 컴포넌트 문맥 전달 여부를 정할 때 읽는다 (engine-v1.89.0) */
+    const hasChildDefinitions = !!(effectiveComponentDef.children && effectiveComponentDef.children.length > 0);
+
     const resolvedProps = useMemo(() => {
       let props = { ...(effectiveComponentDef.props || {}) };
 
       // 기본 skipBindingKeys (하위 호환성)
       // 컴포넌트 내부에서 자체적으로 바인딩 처리하는 키들
-      const DEFAULT_SKIP_BINDING_KEYS = ['cellChildren', 'expandChildren', 'expandContext', 'render'];
+      // (DEFAULT_SKIP_BINDING_KEYS — 파일 상단 상수, 셀 responsive 구간 추적과 공유)
 
       // 컴포넌트 메타데이터에서 skipBindingKeys 조회
       const componentMeta = registry.getMetadata(effectiveComponentDef.name);
@@ -3166,7 +3319,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // - composite 타입: 복합 컴포넌트는 내부적으로 dispatch 호출 가능성 있음 (engine-v1.17.3)
       const hasExpandChildren = effectiveComponentDef.expandChildren || effectiveComponentDef.props?.expandChildren;
       const hasCellChildren = effectiveComponentDef.props?.cellChildren;
-      const hasChildren = effectiveComponentDef.children && effectiveComponentDef.children.length > 0;
+      const hasChildren = hasChildDefinitions;
       const hasComponentLayout = effectiveComponentDef.component_layout;
       const hasSlot = effectiveComponentDef.slot;
       const hasModalId = effectiveComponentDef.props?.modalId;
@@ -3183,6 +3336,15 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       effectiveComponentDef.style,
       effectiveComponentDef.classMap,
       effectiveComponentDef.id,
+      // 이 메모가 읽는 정의 필드 전부 — 편집기가 props 참조는 그대로 두고 아래 필드만 바꾼 정의를 끼우면 종전에는
+      // 이전 결과(컴포넌트 문맥 전달 여부·component_layout·skipBindingKeys)를 그대로 썼다. children 은 개수 유무만 읽으므로
+      // 불리언으로 지켜본다(같은 구간 폭 변경·데이터 갱신마다 새 배열이 와도 다시 계산하지 않게) (engine-v1.89.0)
+      effectiveComponentDef.name,
+      effectiveComponentDef.type,
+      effectiveComponentDef.slot,
+      effectiveComponentDef.component_layout,
+      effectiveComponentDef.expandChildren,
+      hasChildDefinitions,
       extendedDataContext,
       translationContext,
       bindingEngine,
@@ -3643,9 +3805,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         return null;
       }
     }, [
-      effectiveComponentDef.iteration,
-      effectiveComponentDef.children,
-      effectiveComponentDef.id,
+      // 항목 정의는 병합 정의 **전체**를 복사한다(위 componentDefWithoutIteration). 종전에는
+      // iteration·children·id 만 지켜봐서, 폭이 바뀌어 반복 노드 자신의 responsive props·text·if 만
+      // 달라지면 항목이 이전 구간 값을 그대로 썼다. 병합 정의는 분기 키가 바뀔 때만 새 객체가 된다.
+      // @since engine-v1.89.0
+      effectiveComponentDef,
       dataContext,
       extendedDataContext,
       translationContext,
@@ -3915,9 +4079,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
       mountedRef.current = true;
 
-      // DevTools 마운트 추적
+      // DevTools 마운트 추적 — id 가 있는 컴포넌트만 알린다. id 는 선택이라 없는 컴포넌트를 알리면
+      // `undefined` 한 칸에 서로 덮어쓴다(#869)
       const devTools = getDevTools();
-      if (devTools?.isEnabled()) {
+      if (componentDef.id && devTools?.isEnabled()) {
         devTools.trackMount(componentDef.id, {
           name: componentDef.name,
           type: componentDef.type || 'component',
@@ -4013,9 +4178,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
       // cleanup 함수 (이벤트 구독 해제 + onUnmount 실행)
       return () => {
-        // DevTools 언마운트 추적
+        // DevTools 언마운트 추적 — 마운트와 같이 id 가 있는 컴포넌트만
         const devToolsCleanup = getDevTools();
-        if (devToolsCleanup?.isEnabled()) {
+        if (componentDef.id && devToolsCleanup?.isEnabled()) {
           devToolsCleanup.trackUnmount(componentDef.id);
         }
 
@@ -4203,6 +4368,23 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 이 표식이 서 있는 대기 값은 타이머 대기 중과 똑같이 버림 기록을 남긴다. 새 예약·기록 때 내린다.
      */
     const autoBindingFlushedForNavRef = useRef(false);
+    /**
+     * 이 칸의 마지막 대기 쓰기에 change 동작(onChange)이 붙어 있었는지 (engine-v1.89.0, #869).
+     *
+     * 동작이 없는 칸의 쓰기는 경로를 바꿀 수 없다 — 그 칸의 「이미 쓴」 대기 값을 다른 경로의 렌더가 만났다면 그 쓰기를 확정하는 렌더가
+     * 커밋되기 전에 다른 곳에서 경로가 바뀐 것이다. 입력 중 렌더러는 칸을 다시 그리지 않아(칸 지역 표시값만 친 값) 칸이 받은 value 는
+     * 입력 전 값 그대로인데, 새 화면 value 가 그 값과 같으면(빈 칸 → 빈 칸) 칸이 따라오지 않아 앞 화면 입력이 남았다. 이런 대기 값은
+     * 타이머 대기 중과 똑같이 버림 기록을 남겨 칸을 다시 마운트한다. 동작이 붙은 칸은 그 동작이 경로를 바꿨을 수 있어(입력 중인 칸의
+     * 포커스·조합을 지킨다) 종전대로 버리기만 한다.
+     */
+    const autoBindingWriteHadChangeActionRef = useRef(false);
+    /**
+     * 칸이 마지막으로 커밋된 렌더에서 받은 value 의 표시 글자 (engine-v1.89.0, #869).
+     *
+     * 입력 중에는 렌더러가 칸을 다시 그리지 않아 칸은 친 값을 지역 표시값으로만 든다. 대기 값을 「다른 값으로 다시 쓰였다」고 보고 버릴 때
+     * 새 값이 이 글자와 같으면 React 가 바꿀 것이 없어 칸이 따라오지 않는다(화면 ≠ 상태) — 그때만 버림 기록을 남겨 다시 마운트한다.
+     */
+    const autoBindingCommittedValueRef = useRef<{ text: string } | null>(null);
     const autoBindingRemountSeqRef = useRef(0);
     // 커밋 효과가 이미 반영한 다시 마운트 판정의 기록 (engine-v1.81.2) — 같은 판정을 두 번 세지 않는다(autoBindingRemountDecisions 참조)
     const autoBindingAppliedRemountRecordRef = useRef<{ value: any } | null>(null);
@@ -4550,6 +4732,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               autoBindingPendingSeenRef.current = new Set([String(currentValue ?? '')]);
             }
             autoBindingPendingValueRef.current = newValue;
+            autoBindingWriteHadChangeActionRef.current = typeof propsWithoutFormConfig.onChange === 'function';
             // base-path:allow 경로 가드는 브라우저 주소끼리 대조한다(예약 때 주소와 지금 주소, 둘 다 접두사 포함) — 벗기지 않는다.
             autoBindingPendingPathRef.current = typeof window !== 'undefined' ? window.location.pathname : '';
             // 새 경로에서 다시 쳤으면 지금 화면 글자가 사용자 입력이다 — 앞서 버린 값의 다시 마운트 기록은 버린다
@@ -4630,7 +4813,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // 옮기면 여기서 보인다 — 이미 옛 경로에서 실행된 쓰기라 버리기만 한다(engine-v1.79.0 과 같음). 기록하면 입력 중인 칸이
           // 다시 마운트돼 포커스·조합이 끊긴다
           // engine-v1.83.0: 다른 화면으로 가는 navigate 가 앞당겨 쓴 대기 값도 같다(autoBindingFlushedForNavRef)
-          if (autoBindingDebounceTimerRef.current !== null || autoBindingFlushedForNavRef.current) {
+          // engine-v1.89.0: change 동작이 없는 칸의 쓴 대기 값도 같다 — 그 쓰기는 경로를 바꿀 수 없으므로 확정 렌더 전에 다른 곳에서 경로가
+          // 바뀐 것이고, 칸은 앞 화면 입력을 지역 표시값으로 들고 있다(autoBindingWriteHadChangeActionRef)
+          if (autoBindingDebounceTimerRef.current !== null || autoBindingFlushedForNavRef.current || !autoBindingWriteHadChangeActionRef.current) {
             autoBindingDroppedPendingRef.current = { value: autoBindingPendingValueRef.current };
             ensureCompositionTracker();
           }
@@ -4671,6 +4856,17 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               const rewritten = (liveValue !== undefined && String(liveValue ?? '') !== pendingText)
                 || (seen !== null && !seen.has(currentText));
               if (rewritten) {
+                // engine-v1.89.0 (#869): 새 값이 칸이 마지막으로 받은 value 와 같으면 칸이 따라오지 않는다 — 쓰기를 확정하는 렌더보다
+                // 같은 칸을 되돌리는 쓰기(주소만 바꾼 이동의 다시 받기 initLocal 등)가 먼저 커밋되면, 칸이 받은 value 는 입력 전 값 그대로라
+                // 되돌린 값과 같아 친 값이 칸에 남았다. 그때만 버림 기록을 남겨 다시 마운트한다. 새 값이 받은 value 와 다르면(포맷팅 등)
+                // React 가 칸을 바꾸므로 종전대로 두어 입력 중인 칸의 포커스를 지킨다
+                const committed = autoBindingCommittedValueRef.current;
+                const nextText = autoBindingDisplayText(currentValue ?? '');
+                if (committed !== null && committed.text === nextText
+                  && autoBindingDisplayText(autoBindingPendingValueRef.current) !== nextText) {
+                  autoBindingDroppedPendingRef.current = { value: autoBindingPendingValueRef.current };
+                  ensureCompositionTracker();
+                }
                 autoBindingPendingValueRef.current = undefined;
                 autoBindingPendingSeenRef.current = null;
                 effectiveValue = currentValue ?? '';
@@ -4770,6 +4966,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       if (autoBindingDroppedPendingRef.current === decision.record) {
         autoBindingDroppedPendingRef.current = null;
       }
+    }, [propsWithAutoBinding]);
+
+    /**
+     * 커밋된 렌더에서 칸이 받은 value 를 기억한다 (engine-v1.89.0 — autoBindingCommittedValueRef 참조). 무조건 호출 훅.
+     */
+    useLayoutEffect(() => {
+      const committed = (propsWithAutoBinding as any)?.value;
+      autoBindingCommittedValueRef.current = committed === undefined ? null : { text: autoBindingDisplayText(committed) };
     }, [propsWithAutoBinding]);
 
     /**
@@ -4892,6 +5096,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // cellChildren 내부의 컴포넌트가 새 key를 받을 수 있도록 함
         ...(remountKeys && Object.keys(remountKeys).length > 0 && {
           __remountTrigger: JSON.stringify(remountKeys),
+        }),
+        // 셀 정의 responsive 의 구간 판정 — 레지스트리가 모든 컴포넌트를 React.memo 로 감싸므로 요소만 새로 만들어서는
+        // 다시 그려지지 않는다. 이 값이 구간 경계에서만 바뀌어 memo 비교를 깨고, 폭을 구독하지 않는 컴포넌트도 셀을 새 폭으로
+        // 다시 그린다. 셀 responsive 가 없으면 싣지 않는다. basic·layout 은 아래에서 `__` 키를 걸러낸다 (engine-v1.89.0)
+        ...(selfRenderedResponsiveBand !== '' && {
+          __responsiveBand: selfRenderedResponsiveBand,
         }),
       };
 
@@ -5112,6 +5322,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       componentPath,
       // cellChildren이 있는 컴포넌트가 _remountKeys 변경 시 리렌더링되도록 의존성 추가
       dataContext._global?._remountKeys,
+      // 셀 정의 responsive 의 구간이 바뀌면 요소를 새로 만들어, 폭을 구독하지 않는 컴포넌트도 셀을 다시 그리게 한다 (engine-v1.89.0)
+      selfRenderedResponsiveBand,
     ]);
 
     /**

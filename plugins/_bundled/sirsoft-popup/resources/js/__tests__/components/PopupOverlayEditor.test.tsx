@@ -74,6 +74,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_needs_pc_image
+  // @effects editor_requires_pc_image
   it('PC 이미지가 없으면 안내만 보인다', () => {
     const { container, getByText } = render(<PopupOverlayEditor images={{ pc: null, mobile: null }} />);
 
@@ -82,6 +83,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_add_box_centered
+  // @effects editor_adds_centered_box_in_default_locale
   it('「글 상자 추가」는 기본 언어 글이 든 상자를 가운데 쯤에 놓고 고른다', () => {
     const onChange = vi.fn();
     const { container, getByText } = render(<Harness images={{ pc: PC }} locales={['ko', 'en']} defaultLocale="ko" onChange={onChange} />);
@@ -98,6 +100,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_add_locked_at_ten
+  // @effects editor_limits_ten_boxes
   it(`${MAX_BOXES}개면 추가 단추가 잠기고 한도를 알린다`, () => {
     const full = Array.from({ length: MAX_BOXES }, (_, i) => box({ id: `box${String(i).padStart(5, '0')}` }));
     const { container, getByText } = render(<Harness images={{ pc: PC }} initial={{ pc: full, mobile: null }} defaultLocale="ko" />);
@@ -107,6 +110,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_text_per_locale
+  // @effects editor_text_per_locale_format_shared
   it('글은 고른 언어에만 쓰고 서식은 공통이다 — 비우면 그 언어 키를 지운다', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box()], mobile: null }} locales={['ko', 'en']} defaultLocale="ko" localeNames={{ ko: '한국어', en: 'English' }} onChange={onChange} />);
@@ -126,6 +130,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_drag_moves_and_clamps
+  // @effects editor_drag_moves_in_percent, editor_keeps_box_inside_image
   it('상자를 끌면 프레임 대비 % 로 옮기고 이미지 밖으로 나가지 않게 자른다 — 놓을 때 한 번만 알린다', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box()], mobile: null }} defaultLocale="ko" onChange={onChange} />);
@@ -148,6 +153,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_resize_width_clamps
+  // @effects editor_resize_clamps_width
   it('오른쪽 손잡이로 폭을 바꾸고 5% 아래·오른쪽 끝 밖으로는 가지 않는다', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box()], mobile: null }} defaultLocale="ko" onChange={onChange} />);
@@ -171,6 +177,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_keyboard_moves_1_and_5
+  // @effects editor_keyboard_moves_box, editor_keeps_box_inside_image
   it('고른 상자는 화살표로 1%, Shift+화살표로 5% 옮기고 끝에서 멈춘다', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box({ x: 1 })], mobile: null }} defaultLocale="ko" onChange={onChange} />);
@@ -185,6 +192,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_delete_key_removes
+  // @effects editor_delete_removes_box
   it('Delete 로 고른 상자를 지우고, 마지막 상자를 지우면 값은 null', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box(), box({ id: 'second01' })], mobile: null }} defaultLocale="ko" onChange={onChange} />);
@@ -196,6 +204,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_format_panel_updates
+  // @effects editor_format_panel_updates_box
   it('옆 패널로 크기·색·굵게·정렬·바탕(색·진하기)·그림자를 바꾼다', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box()], mobile: null }} defaultLocale="ko" onChange={onChange} />);
@@ -227,6 +236,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_order_forward_back
+  // @effects editor_reorders_stacking
   it('앞으로·뒤로는 겹침 순서(배열 순서)를 한 칸씩 바꾸고 끝에서는 잠긴다', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box(), box({ id: 'second01' })], mobile: null }} defaultLocale="ko" onChange={onChange} />);
@@ -242,6 +252,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_mobile_tab_only_with_mobile_image
+  // @effects editor_device_tabs_need_mobile_image
   it('기기 탭은 모바일 이미지가 있을 때만 보인다', () => {
     const { container, rerender } = render(<PopupOverlayEditor images={{ pc: PC, mobile: null }} defaultLocale="ko" />);
     expect(container.querySelector('[data-overlay-device]')).toBeNull();
@@ -251,6 +262,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_copy_pc_then_edit_separately
+  // @effects editor_mobile_layout_copied_from_pc
   it('모바일 탭은 처음엔 PC 배치를 흐리게 보여 고칠 수 없고, 복사하면 따로 고친다(PC 는 그대로)', () => {
     const onChange = vi.fn();
     const { container, getByText } = render(<Harness images={{ pc: PC, mobile: MOBILE }} initial={{ pc: [box()], mobile: null }} defaultLocale="ko" onChange={onChange} />);
@@ -269,6 +281,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_use_pc_layout_resets_mobile
+  // @effects editor_mobile_layout_resets_to_pc
   it('「PC 배치 그대로 쓰기」는 모바일 배치를 지운다(null)', () => {
     const onChange = vi.fn();
     const { container, getByText } = render(<Harness images={{ pc: PC, mobile: MOBILE }} initial={{ pc: [box()], mobile: [box({ id: 'mobile01' })] }} defaultLocale="ko" onChange={onChange} />);
@@ -281,6 +294,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_marks_fallback_locale
+  // @effects editor_marks_fallback_locale_text
   it('고른 언어 글이 없는 상자는 기본 언어 글을 흐리게 보이고 「기본 언어로 표시」를 단다', () => {
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box({ text: { ko: '한국어만' } })], mobile: null }} locales={['ko', 'en']} defaultLocale="ko" />);
     fireEvent.focus(boxEl(container, 'a1b2c3d4'));
@@ -295,6 +309,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_disabled_while_saving
+  // @effects editor_locked_while_saving
   it('저장 중에는 추가·끌기·키보드가 막힌다', () => {
     const onChange = vi.fn();
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box()], mobile: null }} defaultLocale="ko" disabled onChange={onChange} />);
@@ -312,6 +327,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_warns_overflow_any_locale
+  // @effects editor_warns_text_overflow
   it('어느 언어든 글이 이미지 아래로 넘치면 그 상자와 언어를 알리고 상자에 표시한다', () => {
     // 프레임 400×300 — 영어 복제본만 아래 끝이 320px(107%)
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
@@ -332,6 +348,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_keyboard_keeps_box_inside
+  // @effects editor_keeps_box_inside_image
   it('화살표로 내릴 때도 상자 높이만큼 위에서 멈춘다', () => {
     // 상자 높이 60px = 프레임(300px)의 20% → y 는 80 까지
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
@@ -346,6 +363,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_warns_image_ratio_change
+  // @effects editor_warns_image_ratio_change
   it('상자가 있는데 이미지를 다른 비율로 바꾸면 위치를 다시 확인하라고 알리고, 확인하면 닫힌다', () => {
     const initial = { pc: [box()], mobile: null };
     const { container, rerender, getByText } = render(<PopupOverlayEditor images={{ pc: PC }} value={initial} defaultLocale="ko" />);
@@ -363,6 +381,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_marks_error_boxes
+  // @effects editor_marks_error_boxes
   it('저장 오류가 난 상자(그 기기의 순번)에 오류 표시를 한다', () => {
     const { container } = render(<PopupOverlayEditor images={{ pc: PC }} value={{ pc: [box(), box({ id: 'second01' })], mobile: null }} defaultLocale="ko"
       errors={{ 'overlays.pc.1.text': ['PC 글 상자 2 글의 한국어(ko) 값은 필수입니다.'], 'overlays.mobile.0': ['…'], title: ['…'] }} />);
@@ -373,6 +392,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_shows_phone_text_size
+  // @effects editor_warns_small_phone_text
   it('휴대폰에 보이는 배치면 작은 휴대폰 기준 예상 글자 크기를 보이고, 12px 미만이면 알린다', () => {
     const { container, rerender } = render(<Harness images={{ pc: PC }} initial={{ pc: [box({ size: 3 })], mobile: null }} defaultLocale="ko" />);
     fireEvent.focus(boxEl(container, 'a1b2c3d4'));
@@ -393,6 +413,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_warns_low_text_bg_contrast
+  // @effects editor_warns_low_contrast
   it('바탕 깔기 상자는 글자·바탕 대비를 보이고(반투명이면 흰/검 이미지 위 나쁜 쪽), 4.5:1 미만이면 알린다', () => {
     // 흰 글자 + 검은 바탕 100% 에 가까우면 높다
     expect(boxContrast({ color: '#FFFFFF', bg: { color: '#000000', opacity: 90 } })).toBeGreaterThan(MIN_CONTRAST);
@@ -417,6 +438,7 @@ describe('PopupOverlayEditor', () => {
   });
 
   // @scenario surface=editor_canvas_backdrop_switch
+  // @effects editor_backdrop_matches_popup_background
   it('미리 볼 바탕을 투명 표시·라이트·다크로 바꿔 투명 이미지 뒤에 비칠 팝업 바탕색을 본다', () => {
     const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box()], mobile: null }} defaultLocale="ko" />);
     const canvas = () => container.querySelector('[data-overlay-canvas]') as HTMLElement;
@@ -434,5 +456,23 @@ describe('PopupOverlayEditor', () => {
     const dark = css.match(/\.g7pp-root:is\(\[data-g7-color-scheme=\"dark\"\][^{]*\{\s*--g7pp-bg: (#[0-9a-f]{6});/i)?.[1];
     expect(css).toMatch(new RegExp(`canvas--light \\{\\s*background: ${light};`, 'i'));
     expect(css).toMatch(new RegExp(`canvas--dark \\{\\s*background: ${dark};`, 'i'));
+  });
+
+  // @scenario surface=editor_size_grid_follows_engine_width
+  // @effects editor_layout_follows_engine_width
+  it.each([[375, false], [639, false], [640, true], [1280, true]])('크기·색 칸 배치는 엔진 폭(G7Core.useResponsive)으로 고르고 Tailwind 폭 접두를 쓰지 않는다 — %ipx', (width, wide) => {
+    installCore({ useResponsive: () => ({ width }) });
+    const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box({ size: 3 })], mobile: null }} defaultLocale="ko" />);
+    fireEvent.focus(boxEl(container, 'a1b2c3d4'));
+
+    const tokens = [...container.querySelectorAll('[class]')].flatMap((el) => el.getAttribute('class')!.split(/\s+/));
+    expect(tokens.length).toBeGreaterThan(0);
+    expect(tokens.filter((t) => /^(?:[a-z0-9]+:)?(?:sm|md|lg|xl|2xl):/.test(t))).toEqual([]);
+
+    const grid = container.querySelector('[data-overlay-field="size"]')!.closest('.gpp\\:grid') as HTMLElement;
+    expect(grid.classList.contains('gpp:grid-cols-2')).toBe(wide);
+    expect(grid.classList.contains('gpp:grid-cols-1')).toBe(!wide);
+    const hint = container.querySelector('[data-overlay-phone-size]') as HTMLElement;
+    expect(hint.classList.contains('gpp:col-span-2')).toBe(wide);
   });
 });

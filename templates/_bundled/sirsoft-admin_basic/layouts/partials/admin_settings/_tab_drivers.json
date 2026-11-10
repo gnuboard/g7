@@ -76,8 +76,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -179,12 +186,19 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "{{_local.errors?.['drivers.s3_bucket'] ? 'input-error w-64' : 'w-64'}}"
+                                                    }
+                                                }
+                                            },
                                             "props": {
                                                 "type": "text",
                                                 "name": "drivers.s3_bucket",
                                                 "placeholder": "my-bucket",
                                                 "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_bucket'] === true}}",
-                                                "className": "{{_local.errors?.['drivers.s3_bucket'] ? 'input-error md:w-64' : 'md:w-64'}}"
+                                                "className": "{{_local.errors?.['drivers.s3_bucket'] ? 'input-error' : ''}}"
                                             }
                                         },
                                         {
@@ -233,12 +247,19 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "{{_local.errors?.['drivers.s3_region'] ? 'input-error w-64 font-mono' : 'w-64 font-mono'}}"
+                                                    }
+                                                }
+                                            },
                                             "props": {
                                                 "type": "text",
                                                 "name": "drivers.s3_region",
                                                 "placeholder": "ap-northeast-2",
                                                 "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_region'] === true}}",
-                                                "className": "{{_local.errors?.['drivers.s3_region'] ? 'input-error md:w-64 font-mono' : 'md:w-64 font-mono'}}"
+                                                "className": "{{_local.errors?.['drivers.s3_region'] ? 'input-error font-mono' : 'font-mono'}}"
                                             }
                                         },
                                         {
@@ -295,12 +316,19 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "{{_local.errors?.['drivers.s3_access_key'] ? 'input-error w-80 font-mono' : 'w-80 font-mono'}}"
+                                                    }
+                                                }
+                                            },
                                             "props": {
                                                 "type": "text",
                                                 "name": "drivers.s3_access_key",
                                                 "placeholder": "AKIAIOSFODNN7EXAMPLE",
                                                 "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_access_key'] === true}}",
-                                                "className": "{{_local.errors?.['drivers.s3_access_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"
+                                                "className": "{{_local.errors?.['drivers.s3_access_key'] ? 'input-error font-mono' : 'font-mono'}}"
                                             }
                                         },
                                         {
@@ -349,12 +377,19 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error w-80 font-mono' : 'w-80 font-mono'}}"
+                                                    }
+                                                }
+                                            },
                                             "props": {
                                                 "type": "password",
                                                 "name": "drivers.s3_secret_key",
                                                 "placeholder": "********",
                                                 "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.s3_secret_key'] === true}}",
-                                                "className": "{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error md:w-80 font-mono' : 'md:w-80 font-mono'}}"
+                                                "className": "{{_local.errors?.['drivers.s3_secret_key'] ? 'input-error font-mono' : 'font-mono'}}"
                                             }
                                         },
                                         {
@@ -770,8 +805,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -909,8 +951,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -979,8 +1028,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -1098,8 +1154,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -1385,8 +1448,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -1729,8 +1799,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -1825,6 +1902,176 @@
             ]
         },
         {
+            "comment": "이미지 처리 엔진 (#869) — 업로드 축소와 썸네일 생성이 같은 엔진을 쓴다. 선택지는 서버가 이 서버에서 쓸 수 있는\n         엔진만 내려 준다(GD·Imagick 중 확장이 없는 것은 빠지고, 플러그인 엔진이 더해진다). 저장값이 선택지에 없으면\n         다른 카드와 같은 「저장된 값 … (현재 사용할 수 없음)」 안내를 띄운다 — 그동안 서버는 GD 로 물러서 처리한다.",
+            "id": "card_image_driver_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.drivers.image.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.drivers.image.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_image_driver",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.image.driver"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.image_driver'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "w-full"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "drivers.image_driver",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.image_driver'] === true}}",
+                                                "className": "w-full",
+                                                "error": "{{_local.errors?.['drivers.image_driver']?.[0] ?? ''}}",
+                                                "options": "{{(_local.form?.available_drivers?.image ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['drivers.image_driver']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['drivers.image_driver']?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "id": "unavailable_driver_notice_image",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.form?.drivers?.image_driver && !(_local.form?.available_drivers?.image ?? []).some(d => d.id === _local.form?.drivers?.image_driver)}}",
+                                            "props": {
+                                                "className": "text-warning-soft mt-2",
+                                                "data-testid": "driver-unavailable-image"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.common.unavailable_saved_value_prefix"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-mono"
+                                                    },
+                                                    "text": "{{_local.form?.drivers?.image_driver ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.common.unavailable_saved_value_suffix"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-2"
+                                    },
+                                    "text": "$t:admin.settings.drivers.image.driver_desc"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-info",
+                                        "className": "text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-info-soft"
+                                    },
+                                    "text": "$t:admin.settings.drivers.image.plugin_notice"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "id": "card_session_settings",
             "type": "basic",
             "name": "Div",
@@ -1891,8 +2138,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -2114,8 +2368,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -2299,9 +2560,16 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "w-2/3"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "data-testid": "queue-connections-input",
-                                                        "className": "w-full md:w-2/3"
+                                                        "className": "w-full"
                                                     },
                                                     "children": [
                                                         {
@@ -2379,16 +2647,30 @@
                                                         "source": "_computed.queueConnectionList",
                                                         "item_var": "conn"
                                                     },
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "flex flex-row items-start gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "data-testid": "{{'queue-names-' + conn}}",
-                                                        "className": "flex flex-col md:flex-row md:items-start gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2"
+                                                        "className": "flex flex-col gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "responsive": {
+                                                                "768-": {
+                                                                    "props": {
+                                                                        "className": "text-sm font-mono text-gray-700 dark:text-gray-300 w-40 shrink-0 break-all"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "text-sm font-mono text-gray-700 dark:text-gray-300 md:w-40 shrink-0 break-all"
+                                                                "className": "text-sm font-mono text-gray-700 dark:text-gray-300 shrink-0 break-all"
                                                             },
                                                             "text": "{{conn}}"
                                                         },
@@ -3496,8 +3778,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -3590,8 +3879,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -3880,8 +4176,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-3 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -4078,8 +4381,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-3 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -4286,8 +4596,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "grid grid-cols-3 gap-4"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                                                "className": "grid grid-cols-1 gap-4"
                                             },
                                             "children": [
                                                 {

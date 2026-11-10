@@ -33,8 +33,11 @@
       </div>
     </div>
     <div data-ref="filter_grid" class="ecommerce-filter-grid">
-      <div data-ref="status_filter" class="ecommerce-filter-row">
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.export.filter.status</span>
+      <div data-ref="status_filter" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.export.filter.status</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-inline-clickable">
             <input type="checkbox" class="ecommerce-checkbox" checked="{{!_local.filter.statuses || _local.filter.statuses.length === 0}}">
@@ -56,8 +59,11 @@
           </label>
         </div>
       </div>
-      <div data-ref="type_filter" class="ecommerce-filter-row">
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.export.filter.type</span>
+      <div data-ref="type_filter" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.export.filter.type</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-inline-clickable">
             <input type="checkbox" class="ecommerce-checkbox" checked="{{!_local.filter.types || _local.filter.types.length === 0}}">
@@ -79,8 +85,11 @@
           </label>
         </div>
       </div>
-      <div data-ref="personal_filter" class="ecommerce-filter-row">
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.export.filter.personal</span>
+      <div data-ref="personal_filter" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.export.filter.personal</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-inline-clickable">
             <input type="radio" name="personal_filter" class="ecommerce-radio" checked="{{!_local.filter.personal}}">
@@ -111,8 +120,11 @@
           </label>
         </div>
       </div>
-      <div data-ref="requested_at_filter" class="ecommerce-filter-row">
-        <span class="ecommerce-filter-label ecommerce:w-32">$t:sirsoft-ecommerce.admin.export.filter.requested_at</span>
+      <div data-ref="requested_at_filter" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
+$t:sirsoft-ecommerce.admin.export.filter.requested_at</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.export.filter.requested_at')}}" type="date" value="{{_local.filter.startDate ?? ''}}" class="ecommerce-input ecommerce:w-36">
             <on type="change">

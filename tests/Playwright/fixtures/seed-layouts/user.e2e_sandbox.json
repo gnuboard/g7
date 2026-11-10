@@ -78,6 +78,108 @@
                 ]
               }
             ]
+          },
+          {
+            "id": "e2e_sandbox_dnd_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mt-4 grid grid-cols-3 gap-4"
+            },
+            "children": [
+              {
+                "id": "e2e_sandbox_dnd_hero",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "p-4 rounded border border-gray-200 h-24"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                      "className": "text-sm"
+                    },
+                    "text": "dnd hero"
+                  }
+                ]
+              },
+              {
+                "id": "e2e_sandbox_dnd_wrap",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "style": {
+                    "display": "contents"
+                  }
+                },
+                "children": [
+                  {
+                    "id": "e2e_sandbox_dnd_card_a",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "p-4 rounded border border-gray-200 h-24"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                          "className": "text-sm"
+                        },
+                        "text": "dnd card A"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "e2e_sandbox_dnd_card_b",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "p-4 rounded border border-gray-200 h-24"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                          "className": "text-sm"
+                        },
+                        "text": "dnd card B"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "e2e_sandbox_dnd_other",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "mt-4 p-4 rounded border border-gray-200 flex flex-col gap-2"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "text-sm"
+                },
+                "text": "dnd other 1"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "text-sm"
+                },
+                "text": "dnd other 2"
+              }
+            ]
           }
         ]
       }

@@ -82,8 +82,15 @@
                     "id": "mobile_nav",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center hidden"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center md:hidden"
+                        "className": "fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center"
                     },
                     "children": [
                         {

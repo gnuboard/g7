@@ -13,8 +13,15 @@
         {
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "koreaexim:grid koreaexim:grid-cols-2 koreaexim:gap-4"
+                    }
+                }
+            },
             "props": {
-                "className": "koreaexim-grid-2col-responsive"
+                "className": "koreaexim:grid koreaexim:grid-cols-1 koreaexim:gap-4"
             },
             "children": [
                 {

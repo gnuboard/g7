@@ -21,8 +21,15 @@
         {
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "koreaexim:grid koreaexim:grid-cols-2 koreaexim:gap-4"
+                    }
+                }
+            },
             "props": {
-                "className": "koreaexim-grid-2col-responsive"
+                "className": "koreaexim:grid koreaexim:grid-cols-1 koreaexim:gap-4"
             },
             "children": [
                 {
@@ -100,12 +107,19 @@
                     ]
                 },
                 {
-                    "comment": "갱신 일정 — 갱신 시각은 코어 스케줄 행(plugin/sirsoft-koreaexim/update-rates)이 원천이라 여기서는 입력받지 않는다. 다음 실행 시각과 스케줄 관리 화면 링크(소유 필터 쿼리)만 보여 준다.\n  2열 격자의 한 칸이 아니라 한 줄 전체를 쓴다(md:col-span-2) — 안내 상자와 경고가 반 칸에 끼면 줄바꿈이 많아진다.\n  「스케줄 관리에서 변경」 안내는 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이고, 11:00 권장 안내는 이 블록에만 둔다",
+                    "comment": "갱신 일정 — 갱신 시각은 코어 스케줄 행(plugin/sirsoft-koreaexim/update-rates)이 원천이라 여기서는 입력받지 않는다. 다음 실행 시각과 스케줄 관리 화면 링크(소유 필터 쿼리)만 보여 준다.\n  2열 격자의 한 칸이 아니라 한 줄 전체를 쓴다(768px 이상 구간의 col-span-2) — 안내 상자와 경고가 반 칸에 끼면 줄바꿈이 많아진다.\n  「스케줄 관리에서 변경」 안내는 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이고, 11:00 권장 안내는 이 블록에만 둔다",
                     "id": "koreaexim_schedule_block",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "koreaexim-form-group koreaexim:col-span-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "koreaexim-form-group koreaexim:md:col-span-2"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {

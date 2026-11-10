@@ -91,4 +91,24 @@ interface ImageUploadRepositoryInterface
      * @return bool 삭제 성공 여부
      */
     public function delete(Ckeditor5ImageUpload $upload): bool;
+
+    /**
+     * 주어진 MIME 의 업로드 건수를 반환합니다 (기존 이미지 썸네일 만들기의 진행률 분모).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 건수
+     */
+    public function countByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 주어진 MIME 의 업로드를 id 순으로 나눠 조회합니다 (커서는 마지막 id).
+     *
+     * 썸네일 원본을 만드는 데 필요한 컬럼(disk·경로·MIME)만 읽습니다.
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 id 보다 큰 행부터
+     * @param  int  $limit  최대 행 수
+     * @return Collection<int, Ckeditor5ImageUpload> 업로드 목록 (id 오름차순)
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 }

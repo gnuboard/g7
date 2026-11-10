@@ -1,4 +1,6 @@
 {
+  "zoom_image": "View larger image",
+  "zoom_image_named": "View larger: {{name}}",
   "range_start": "{{label}} start date",
   "range_end": "{{label}} end date",
   "all": "All",

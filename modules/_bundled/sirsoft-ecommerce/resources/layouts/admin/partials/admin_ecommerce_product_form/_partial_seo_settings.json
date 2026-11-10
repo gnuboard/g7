@@ -449,7 +449,10 @@
                                     "if": "{{!!_local.form.images?.[0]?.download_url}}",
                                     "props": {
                                         "src": "{{_local.form.images?.[0]?.download_url}}",
-                                        "alt": "OG Image",
+                                        "thumbPreset": "sm",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "alt": "$t:sirsoft-ecommerce.admin.product.seo.preview_image_alt",
                                         "className": "ecommerce:w-20 ecommerce:h-20 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0"
                                     }
                                 },

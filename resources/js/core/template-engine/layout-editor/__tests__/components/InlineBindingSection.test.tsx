@@ -13,7 +13,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { LayoutEditorProvider } from '../../LayoutEditorContext';
@@ -40,6 +39,8 @@ function buildDocCtx(): UseLayoutDocumentResult {
   const ctx: UseLayoutDocumentResult = {
     document, isLoading: false, error: null, isDirty: false, saveSuccessCounter: 0,
     reload: async () => {},
+    patchDocumentRaw: () => {}, dirtyKeys: new Set<string>(), dirtyLayoutNames: new Set<string>(),
+    invalidateCurrentCache: () => {}, reloadCounter: 0,
     patchLayout: (p) => { document = { ...document, raw: { ...document.raw, components: p((document.raw.components as EditorNode[]) ?? []) } }; (ctx as unknown as { document: LoadedLayoutDocument }).document = document; },
     setLayoutComponents: (n) => { document = { ...document, raw: { ...document.raw, components: n } }; (ctx as unknown as { document: LoadedLayoutDocument }).document = document; },
     save: async () => ({ kind: 'success', newLockVersion: 2 }),
@@ -83,6 +84,10 @@ function stubKeyifyFetch(): { calls: Array<{ url: string; method?: string; body:
 }
 
 describe('InlineBindingSection — 비키화 노드: 데이터 삽입 = 즉시 키화', () => {
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_plain_text_shows_none_and_picker
+   */
   it('보간 없는 평문 → none 안내 + 삽입 피커', () => {
     renderSection({ name: 'Span', text: '안녕하세요' });
     expect(screen.getByTestId('g7le-inline-binding-section')).toBeInTheDocument();
@@ -90,6 +95,10 @@ describe('InlineBindingSection — 비키화 노드: 데이터 삽입 = 즉시 �
     expect(screen.getByTestId('g7le-inline-binding-append')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_insert_keyifies_plain_into_param_key
+   */
   it('+데이터 삽입 → 키화(POST=평문, 자리표시는 버퍼) → node.text=param 키', async () => {
     const { calls } = stubKeyifyFetch();
     const onPatch = vi.fn();
@@ -106,6 +115,10 @@ describe('InlineBindingSection — 비키화 노드: 데이터 삽입 = 즉시 �
     expect(patched.text).toBe("$t:custom.home.1|p0={{user?.name ?? ''}}");
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_picker_lists_scalar_only
+   */
   it('삽입 피커는 scalar 후보만(array 미노출)', () => {
     renderSection({ name: 'Span', text: '' });
     fireEvent.click(screen.getByTestId('g7le-inline-binding-search-toggle-append'));
@@ -113,6 +126,10 @@ describe('InlineBindingSection — 비키화 노드: 데이터 삽입 = 즉시 �
     expect(screen.queryByTestId('g7le-inline-binding-candidate-{{products.data}}')).toBeNull();
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_legacy_raw_interp_read_only
+   */
   it('레거시 raw 보간 노드 → 보간 읽기 표시(교체/해제 버튼 없음 — 키화 후 가능)', () => {
     renderSection({ name: 'P', text: '작성자 {{user.name}}' });
     expect(screen.getByTestId('g7le-inline-binding-expr-0')).toHaveTextContent('{{user.name}}');
@@ -125,6 +142,10 @@ describe('InlineBindingSection — 비키화 노드: 데이터 삽입 = 즉시 �
 });
 
 describe('InlineBindingSection — param 키 노드', () => {
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_param_rows_with_clear_and_append
+   */
   it('param 값 행 + [해제] + 신규 추가 입구 노출', () => {
     const node: EditorNode = { name: 'Span', text: '$t:custom.home.5|p0={{user.name}}|p1={{_local.keyword}}' };
     renderSection(node);
@@ -135,6 +156,10 @@ describe('InlineBindingSection — param 키 노드', () => {
     expect(screen.getByTestId('g7le-inline-binding-param-append')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_param_replace_keeps_key_and_others
+   */
   it('param 값 교체 → 해당 |pN= 만 새 소스로(키·다른 param 보존)', () => {
     const onPatch = vi.fn();
     const node: EditorNode = { name: 'Span', text: '$t:custom.home.5|p0={{user.name}}|p1={{old.x}}' };
@@ -146,6 +171,10 @@ describe('InlineBindingSection — param 키 노드', () => {
     );
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_param_clear_removes_pn_segment
+   */
   it('데이터 연결 해제 → node.text 의 |pN= 제거', () => {
     stubKeyifyFetch();
     const onPatch = vi.fn();
@@ -157,6 +186,10 @@ describe('InlineBindingSection — param 키 노드', () => {
     );
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_complex_param_read_only
+   */
   it('복합 param 은 읽기전용(교체 피커 미노출)', () => {
     const node: EditorNode = { name: 'Span', text: '$t:custom.home.5|p0={{a ? b : c}}' };
     renderSection(node);
@@ -164,6 +197,10 @@ describe('InlineBindingSection — param 키 노드', () => {
     expect(screen.queryByTestId('g7le-inline-binding-search-toggle-param-p0')).toBeNull();
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_lang_named_param_not_param_key
+   */
   it('S9-N4: 미키화 lang **named-param** 노드(`$t:user.*|count={{}}`)는 param 키로 오판 금지 → 비키화 취급(데이터 추가=신규 키화)', () => {
     // 결함: `isParamized = isParamizedKeyText(text) ||...` 가
     // lang named-param(`$t:user.identity.challenge.remaining_attempts|count={{Math.max(...)}}`)도
@@ -183,6 +220,10 @@ describe('InlineBindingSection — param 키 노드', () => {
     expect(screen.getByTestId('g7le-inline-binding-append')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=inline_binding_section
+   * @effects inline_binding_lang_named_param_insert_new_custom_key
+   */
   it('S9-N4: lang named-param 노드 데이터 추가 → insertDataKeyify(신규 custom 키 POST) — lang 키 미오염', async () => {
     const { calls } = stubKeyifyFetch();
     const onPatch = vi.fn();

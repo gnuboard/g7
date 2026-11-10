@@ -9,7 +9,97 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "id": "cic_003_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline",
+                    "disabled": "{{_global.isProcessing}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "comment": "진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 막는다. 실패 사유 토스트는 핸들러가 이미 띄우므로 fail 은 진행 표식만 되돌리고 창을 남긴다 — 운영자가 그 자리에서 다시 누르거나 닫는다.",
+                "id": "cic_004_confirm",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isProcessing": true
+                                }
+                            },
+                            {
+                                "handler": "sirsoft-ecommerce.clearClaimImages",
+                                "params": {
+                                    "pathSegment": "{{_global.claimImagesClearContext?.pathSegment ?? ''}}",
+                                    "claimType": "{{_global.claimImagesClearContext?.claimType ?? ''}}",
+                                    "claimId": "{{_global.claimImagesClearContext?.claimId ?? null}}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false,
+                                            "claimImagesClearContext": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": false
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-danger",
+                    "disabled": "{{!_global.claimImagesClearContext || _global.isProcessing}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isProcessing}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!_global.isProcessing}}",
+                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.confirm"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -36,103 +126,6 @@
                         "className": "ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-yellow-50 ecommerce:dark:bg-yellow-900/20 ecommerce:text-sm ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.warning"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2"
-                    },
-                    "children": [
-                        {
-                            "id": "cic_003_cancel",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline",
-                                "disabled": "{{_global.isProcessing}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "comment": "진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 막는다. 실패 사유 토스트는 핸들러가 이미 띄우므로 fail 은 진행 표식만 되돌리고 창을 남긴다 — 운영자가 그 자리에서 다시 누르거나 닫는다.",
-                            "id": "cic_004_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "sirsoft-ecommerce.clearClaimImages",
-                                            "params": {
-                                                "pathSegment": "{{_global.claimImagesClearContext?.pathSegment ?? ''}}",
-                                                "claimType": "{{_global.claimImagesClearContext?.claimType ?? ''}}",
-                                                "claimId": "{{_global.claimImagesClearContext?.claimId ?? null}}"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "claimImagesClearContext": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isProcessing": false
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-danger",
-                                "disabled": "{{!_global.claimImagesClearContext || _global.isProcessing}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isProcessing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "ecommerce-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_global.isProcessing}}",
-                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.confirm"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         }

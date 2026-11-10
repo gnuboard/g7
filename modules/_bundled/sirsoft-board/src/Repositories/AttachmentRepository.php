@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
@@ -98,33 +97,6 @@ class AttachmentRepository implements AttachmentRepositoryInterface
             ->where('board_id', $board?->id)
             ->where('hash', $hash)
             ->first();
-    }
-
-    /**
-     * 첨부파일이 속한 게시글이 삭제(soft delete) 상태인지 확인합니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @return bool 소속 게시글이 삭제 상태인지 여부
-     */
-    public function isPostDeleted(string $slug, int $postId): bool
-    {
-        $board = Board::where('slug', $slug)->first();
-
-        if (! $board) {
-            return false;
-        }
-
-        $post = Post::withTrashed()
-            ->where('board_id', $board->id)
-            ->where('id', $postId)
-            ->first(['id', 'status', 'deleted_at']);
-
-        if (! $post) {
-            return false;
-        }
-
-        return $post->deleted_at !== null || $post->status === PostStatus::Deleted;
     }
 
     /**
@@ -570,6 +542,72 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     public function forceDeleteByBoardId(int $boardId): int
     {
         return Attachment::where('board_id', $boardId)->forceDelete();
+    }
+
+    /**
+     * 게시판 첨부 파일이 놓인 디스크 목록을 조회합니다 (게시판 영구 삭제의 물리 파일 정리용).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  string  $slug  게시판 슬러그 (임시 첨부 경로 접두)
+     * @return list<string> 디스크 이름 (빈 값 제외, 중복 없음)
+     */
+    public function getDistinctDisksByBoard(int $boardId, string $slug): array
+    {
+        $tempPrefix = addcslashes($slug, '\\%_').'/temp/%';
+
+        return Attachment::withTrashed()
+            ->where(fn (Builder $query) => $query
+                ->where('board_id', $boardId)
+                ->orWhere('path', 'like', $tempPrefix))
+            ->whereNotNull('disk')
+            ->where('disk', '!=', '')
+            ->distinct()
+            ->pluck('disk')
+            ->map(fn ($disk) => (string) $disk)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 래스터 이미지 첨부 수를 셉니다 (썸네일 원본 제공자용 — 글에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 개수
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->imageRowsQuery($mimeTypes)->count();
+    }
+
+    /**
+     * 래스터 이미지 첨부를 ID 순으로 나눠 조회합니다 (썸네일 원본 제공자용 — 글에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 ID 다음부터 (처음이면 0)
+     * @param  int  $limit  최대 개수
+     * @return Collection<int, Attachment> 첨부 목록
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->imageRowsQuery($mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get(['id', 'board_id', 'post_id', 'disk', 'path', 'mime_type', 'meta']);
+    }
+
+    /**
+     * 썸네일 원본이 되는 첨부 행 쿼리 — 래스터 MIME, 글에 이어진 행(임시 첨부 제외), 소프트 삭제 제외.
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return Builder<Attachment> 쿼리
+     */
+    private function imageRowsQuery(array $mimeTypes): Builder
+    {
+        return Attachment::query()
+            ->whereIn('mime_type', $mimeTypes)
+            ->whereNotNull('post_id')
+            ->whereNull('temp_key');
     }
 
     /**

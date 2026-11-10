@@ -2617,6 +2617,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 모듈의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 모듈만 대상으로 하며 설치본(`modules/{identifier}`)만 읽어(배포 원본 폴백 없음) `data.spec` 형태로 반환합니다. 비활성·미존재 모듈은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다.
+**설명** 모듈의 레이아웃 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 활성 모듈만 대상으로 하며 설치본(`modules/{identifier}`)만 읽어(배포 원본 폴백 없음) `data.spec` 형태로 반환합니다. 비활성·미존재 모듈은 404 이고, 편집기 스펙 파일을 작성하지 않은 경우 spec=null 로 정상 응답합니다. 7.2.0 부터 코어 레이아웃 편집기는 이 엔드포인트를 확장마다 부르지 않고 묶음 엔드포인트 `GET /api/templates/{identifier}/editor-spec-bundle`([templates.md](templates.md#get-apitemplatesidentifiereditor-spec-bundle))로 한 번에 받습니다. 묶음의 모듈 항목은 이 엔드포인트와 같은 판정(`getEditorSpec`)을 쓰고, 이 엔드포인트는 서드파티 호환을 위해 이름과 응답 모양 그대로 남아 있습니다.
 
 

@@ -27,7 +27,38 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.schedules.modals.history_title",
-        "size": "lg"
+        "size": "lg",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "닫으면서 쪽 번호를 1로 되돌린다 — 안 그러면 다음에 다른 작업의 이력을 열었을 때 있지도 않은 쪽부터 보여 빈 화면이 뜬다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "historyPage": 1
+                                }
+                            },
+                            {
+                                "handler": "closeModal",
+                                "target": "schedule_history_modal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "text": "$t:common.close"
+            }
+        ]
     },
     "children": [
         {
@@ -308,44 +339,6 @@
                         "totalPages": "{{_global.scheduleHistory?.pagination?.last_page ?? null}}",
                         "hasMorePages": "{{_global.scheduleHistory?.pagination?.has_more_pages ?? false}}"
                     }
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "닫으면서 쪽 번호를 1로 되돌린다 — 안 그러면 다음에 다른 작업의 이력을 열었을 때 있지도 않은 쪽부터 보여 빈 화면이 뜬다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "historyPage": 1
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal",
-                                    "target": "schedule_history_modal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "text": "$t:common.close"
                 }
             ]
         }

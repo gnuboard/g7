@@ -5,6 +5,7 @@
 @source "../layouts";
 @source "../extensions";
 @source "../js";
+@source not "../js/**/__tests__";
 @source "../../src";
 @theme {
   --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -47,10 +48,12 @@
   background: #111827;
 }
 
-@media (max-width: 767px) {
-  .hs-slider {
-    aspect-ratio: var(--hs-ratio-mobile, 750 / 1000);
-  }
+/*
+ * 기기 모양 — 휴대폰(0~767px)이면 루트에 hs-slider--mobile, 휴대 기기(0~1023px, 휴대폰 포함)면 hs-slider--portable 이 붙는다.
+ * 화면 폭 미디어로 고르지 않고 컴포넌트가 엔진 폭(레이아웃 편집기 미리보기에서는 기기 폭, 관리자 미리보기는 고정 기기)으로 판정한다.
+ */
+.hs-slider--mobile {
+  aspect-ratio: var(--hs-ratio-mobile, 750 / 1000);
 }
 
 /*
@@ -188,9 +191,7 @@
   object-position: var(--hs-focus-pc, 50% 50%);
 }
 
-@media (max-width: 767px) {
-  .hs-slider__image { object-position: var(--hs-focus-mobile, 50% 50%); }
-}
+.hs-slider--mobile .hs-slider__image { object-position: var(--hs-focus-mobile, 50% 50%); }
 
 /*
  * 영상 배너 — 영상·유튜브는 대표 이미지 위에 겹친다(받는 동안·멈춘 동안은 대표 이미지가 보인다). 영상은 object-fit 으로, 유튜브
@@ -211,9 +212,7 @@
   object-position: var(--hs-focus-pc, 50% 50%);
 }
 
-@media (max-width: 767px) {
-  .hs-slider__video { object-position: var(--hs-focus-mobile, 50% 50%); }
-}
+.hs-slider--mobile .hs-slider__video { object-position: var(--hs-focus-mobile, 50% 50%); }
 
 .hs-slider__youtube {
   overflow: hidden;
@@ -311,12 +310,10 @@
   pointer-events: none;
 }
 
-@media (max-width: 767px) {
-  .hs-slider__text {
-    --hs-tx: var(--hs-tx-mobile, 0);
-    --hs-ty: var(--hs-ty-mobile, 100);
-    --hs-shade: var(--hs-shade-mobile, to bottom);
-  }
+.hs-slider--mobile .hs-slider__text {
+  --hs-tx: var(--hs-tx-mobile, 0);
+  --hs-ty: var(--hs-ty-mobile, 100);
+  --hs-shade: var(--hs-shade-mobile, to bottom);
 }
 
 /*
@@ -452,7 +449,6 @@
 }
 .hs-slider--controlled .hs-slider__text { padding-bottom: max(76px, 5vw); }
 
-.hs-editor-preview { position: sticky; top: 84px; }
 .hs-preview__viewport { width: 100%; overflow: hidden; position: relative; }
 .hs-preview__expand { display: block; margin: 8px; border: 1px solid #64748b; border-radius: 6px; padding: 6px 12px; background: #f8fafc; color: #0f172a; cursor: pointer; }
 .hs-preview__expand:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #1e293b; color: #f8fafc; }
@@ -464,7 +460,6 @@
 .hs-editor-language { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .hs-editor-language select { color: #0f172a; background: #fff; border: 1px solid #64748b; padding: 6px; border-radius: 6px; }
 .hs-editor-language select:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #1e293b; color: #f8fafc; }
-@media (max-width: 1023px) { .hs-editor-preview { position: static; } }
 
 .hs-slider__button {
   display: inline-block;
@@ -529,7 +524,7 @@
 /*
  * Swiper 기본 화살표·점 표시 — 모양은 Swiper(14.3.0) navigation·pagination CSS 의 선언을 자기 클래스로 옮겨 쓰고(라이브러리 클래스는
  * 걸지 않는다), 색·크기만 배너에 맞춘다(흰색, 사진 위에서 보이게 그림자). 단추 기본 테두리·배경은 지운다. 화살표는 데스크톱
- * (1024px 이상)에서만 — 좁은 화면에서는 문구 여백보다 넓어 글자를 가린다. 변수 이름은 Swiper 와 같은 --swiper-* 를 그대로 둔다.
+ * (1024px 이상, hs-slider--portable 이 없을 때)에서만 — 좁은 화면에서는 문구 여백보다 넓어 글자를 가린다. 변수 이름은 Swiper 와 같은 --swiper-* 를 그대로 둔다.
  */
 .hs-slider {
   --swiper-navigation-size: 32px;
@@ -733,28 +728,26 @@
   text-overflow: ellipsis;
 }
 
-/* 휴대폰 — 이름은 화면 읽기용으로만 남기고(단추 이름) 막대만 보인다. 막대 단추 높이 24px */
-@media (max-width: 767px) {
-  /* 양옆 60px — 오른쪽 일시정지 단추(오른쪽 16px + 36px)와 8px 띄운다 */
-  .hs-slider__tabs {
-    width: calc(100% - 120px);
-    gap: 8px;
-  }
+/* 휴대폰(hs-slider--mobile) — 이름은 화면 읽기용으로만 남기고(단추 이름) 막대만 보인다. 막대 단추 높이 24px.
+   양옆 60px — 오른쪽 일시정지 단추(오른쪽 16px + 36px)와 8px 띄운다 */
+.hs-slider--mobile .hs-slider__tabs {
+  width: calc(100% - 120px);
+  gap: 8px;
+}
 
-  .hs-slider__tab {
-    justify-content: center;
-    min-height: 24px;
-    padding: 0;
-  }
+.hs-slider--mobile .hs-slider__tab {
+  justify-content: center;
+  min-height: 24px;
+  padding: 0;
+}
 
-  .hs-slider__tab-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
+.hs-slider--mobile .hs-slider__tab-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* 번호 — 「01 / 05」, 맨 아래 가운데. 장 번호는 슬라이드 이름이 읽어 주므로 화면 읽기에서는 감춘다 */
@@ -785,10 +778,8 @@
   transform: translateX(calc(var(--hs-index, 0) * -100%));
 }
 
-/* 화살표 기본 규칙(.hs-slider__arrow{display:flex})을 두 클래스로 이긴다 */
-@media (max-width: 1023px) {
-  .hs-slider .hs-slider__arrow { display: none; }
-}
+/* 휴대 기기(hs-slider--portable, 0~1023px)는 화살표를 감춘다 — 기본 규칙(.hs-slider__arrow{display:flex})을 두 클래스로 이긴다 */
+.hs-slider--portable .hs-slider__arrow { display: none; }
 
 /* PC 마우스로 끌어 넘길 때 사진이 끌려 나오거나 글자가 선택되지 않게 */
 .hs-slider__image {

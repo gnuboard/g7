@@ -9,7 +9,51 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "id": "cem_003_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "id": "cem_004_confirm",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "확인하면 교환 진행 방식을 실제로 바꾼다 — 대상·방식은 창을 연 핸들러가 _global 문맥에 둔 값이다",
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.setClaimExchangeMode",
+                        "params": {
+                            "claimId": "{{_global.claimExchangeModeContext?.claimId ?? null}}",
+                            "mode": "{{_global.claimExchangeModeContext?.mode ?? ''}}"
+                        },
+                        "onError": {
+                            "comment": "실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
+                            "handler": "suppress"
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isSettingExchangeMode === true}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm"
+            }
+        ]
     },
     "children": [
         {
@@ -38,57 +82,6 @@
                         "className": "ecommerce-text-label"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm_standard"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2"
-                    },
-                    "children": [
-                        {
-                            "id": "cem_003_cancel",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "id": "cem_004_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "확인하면 교환 진행 방식을 실제로 바꾼다 — 대상·방식은 창을 연 핸들러가 _global 문맥에 둔 값이다",
-                                    "type": "click",
-                                    "handler": "sirsoft-ecommerce.setClaimExchangeMode",
-                                    "params": {
-                                        "claimId": "{{_global.claimExchangeModeContext?.claimId ?? null}}",
-                                        "mode": "{{_global.claimExchangeModeContext?.mode ?? ''}}"
-                                    },
-                                    "onError": {
-                                        "comment": "실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
-                                        "handler": "suppress"
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isSettingExchangeMode === true}}"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.exchange_mode.confirm"
-                        }
-                    ]
                 }
             ]
         }

@@ -160,10 +160,12 @@
     <wait-for>analytics_settings</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="analytics_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="analytics_settings_content" data-key="form" data-track-changes class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between mb-4">
         <div>
-          <h1 class="page-title">$t:admin.analytics.settings.title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.settings.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.settings.description</p>
         </div>
         <div class="flex-center gap-2 flex-wrap">
@@ -203,8 +205,12 @@
           </button>
         </div>
       </div>
-      <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
-        <tab-navigation data-type="composite" data-ref="settings_tabs" class="sticky-tab-nav-responsive" activeTabId="{{query.tab || 'collection'}}" variant="default">
+      <div data-ref="sticky_header" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <tab-navigation data-type="composite" data-ref="settings_tabs" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700" activeTabId="{{query.tab || 'collection'}}" variant="default">
+          <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+          <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
           <prop name="tabs">
             <item id="collection" href="/admin/analytics/settings?tab=collection" label="$t:admin.analytics.settings.tabs.collection"/>
             <item id="privacy" href="/admin/analytics/settings?tab=privacy" label="$t:admin.analytics.settings.tabs.privacy"/>
@@ -256,7 +262,8 @@
             </div>
           </div>
           <div class="admin-card space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_visit_timeout">
                 <label class="form-label">$t:admin.analytics.settings.collection.visit_timeout</label>
                 <div class="flex-center gap-2">
@@ -365,7 +372,8 @@
           <!-- 세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는
             모드인지 훑어서 구분되지 않는다. 아이콘은 장식이라 `aria-hidden` 으로 이름에서 뺀다 — 빼지 않으면
             버튼 이름이 「users 전체 수집 …」이 된다(#682 라운드 4, 검수 지적 ④). -->
-          <div data-ref="privacy_mode_cards" role="radiogroup" aria-label="$t:admin.analytics.settings.privacy.mode_label" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div data-ref="privacy_mode_cards" role="radiogroup" aria-label="$t:admin.analytics.settings.privacy.mode_label" class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-3 gap-4"/>
             <button data-ref="mode_full" type="button" role="radio" aria-checked="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full'}}" class="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full' ? 'admin-card admin-card-clickable admin-card-selected text-left' : 'admin-card admin-card-clickable text-left'}}" disabled="{{_computed.isReadOnly}}">
               <on type="click">
                 <!-- 「전체 수집」 고르기 — 카드는 이름 있는 입력이 아니라 폼 자동 바인딩이 닿지 않으므로 폼 값과 변경 표시를 직접 세운다.
@@ -427,7 +435,8 @@
               </div>
               <toggle data-type="composite" name="settings.respect_dnt" ariaLabel="$t:admin.analytics.settings.privacy.respect_dnt" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_ip_mask">
                 <label class="form-label">$t:admin.analytics.settings.privacy.ip_mask_octets</label>
                 <select name="settings.ip_mask_octets" class="w-full" disabled="{{_computed.isReadOnly}}">
@@ -554,7 +563,8 @@
             <!-- GeoIP 상태는 조회 권한 API 에서 온다 — 조회 권한이 없는 계정(설정 전용)에서는 403 이라 fallback 이
                  「꺼짐」으로 굳는다. 그때는 「모른다」로 두고 잠그지 않는다. 잠그면 GeoIP 가 켜진 사이트에서도
                  국가 필터를 영영 못 고르고, 이유로 거짓 안내를 보게 된다(#682 S3 라운드 3). -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_country_filter_mode">
                 <label class="form-label">$t:admin.analytics.settings.bots.country_filter_mode</label>
                 <select name="settings.country_filter_mode" class="w-full" disabled="{{_computed.isReadOnly || (_computed.canReadAnalytics &amp;&amp; analytics_status?.data?.geoip?.enabled !== true)}}">
@@ -575,7 +585,8 @@
         </div>
         <div data-ref="tab_retention" data-if="{{(query.tab || 'collection') === 'retention'}}" class="space-y-4">
           <div class="admin-card">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_retention_days">
                 <label class="form-label">$t:admin.analytics.settings.retention.retention_days</label>
                 <div class="flex-center gap-2">
@@ -647,7 +658,8 @@
               </div>
               <toggle data-type="composite" name="settings.archive_on_view_enabled" ariaLabel="$t:admin.analytics.settings.retention.archive_on_view_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_archive_on_view_max_visits">
                 <label class="form-label">$t:admin.analytics.settings.retention.archive_on_view_max_visits</label>
                 <input type="number" name="settings.archive_on_view_max_visits" min="1000" max="1000000" class="input w-full {{_local.errors?.archive_on_view_max_visits ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>

@@ -156,9 +156,105 @@ export interface AuthState {
 }
 
 /**
+ * 마지막 인증 확인의 결론
+ *
+ * - `authenticated`: 서버가 사용자를 돌려줬다(또는 일시 오류여도 이미 인증된 세션을 유지했다)
+ * - `unauthenticated`: 토큰이 없거나 서버가 인증 실패(401·419 등)로 답했다
+ * - `unavailable`: 서버 일시 오류(5xx)·네트워크 오류가 짧은 재시도 뒤에도 이어져 인증 여부를 알 수 없다
+ *
+ * @since engine-v1.89.0
+ */
+export type AuthCheckStatus = 'authenticated' | 'unauthenticated' | 'unavailable';
+
+/**
  * 이벤트 핸들러 타입
  */
 type EventHandler = (...args: any[]) => void;
+
+/**
+ * 인증 확인의 일시 오류 재시도 간격(ms)
+ *
+ * 개발 서버의 라우트 캐시 재생성처럼 서버가 잠깐 5xx 를 내는 순간을 넘기는 정도로만 짧게 둔다 — 부팅 때
+ * `preloadAuth` 와 라우터 확인이 차례로 한 번씩 부르므로, 서버가 계속 죽어 있으면 이 합의 두 배만큼 늦게 오류 화면이 뜬다.
+ *
+ * @since engine-v1.89.0
+ */
+const TRANSIENT_RETRY_DELAYS_MS = [250, 750, 1500] as const;
+
+/**
+ * 인증 확인 응답이 「인증 실패」가 아니라 서버·네트워크의 일시 오류인지 판정합니다.
+ *
+ * 5xx, 429(요청 제한)와 응답이 없는 HTTP 오류(axios 의 네트워크 끊김·시간 초과)만 일시 오류다. 요청 취소(`ERR_CANCELED`)는 호출자가
+ * 그만둔 것이라 다시 묻지 않는다. 429 밖의 4xx(401·403·419 등)는 서버가 판정한 결과라 일시 오류가 아니다. HTTP 오류가 아닌 예외
+ * (인터셉터 안의 프로그램 오류 등)도 일시 오류가 아니다 — 종전처럼 미인증으로 끝내 오류를 덮지 않는다.
+ *
+ * @param error 요청 오류
+ * @returns 일시 오류면 true
+ * @since engine-v1.89.0
+ */
+function isTransientAuthCheckError(error: any): boolean {
+  if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
+    return false;
+  }
+  const status = error?.response?.status;
+  if (typeof status === 'number') {
+    // 429(요청 제한)는 서버가 「잠시 뒤 다시」 라고 답한 것이라 인증 판정이 아니다 — 5xx 처럼 다시 묻는다.
+    // 종전에는 4xx 로 보고 로그인 화면으로 보냈다(#869 λ 4부 16 관찰 4, 출시본에도 있음)
+    return status >= 500 || status === 429;
+  }
+  return error?.isAxiosError === true;
+}
+
+/**
+ * 429 의 Retry-After 를 따를 최대 대기(ms) — 부팅 인증 확인이 화면을 오래 막지 않게 이보다 길게 기다리지 않는다 (engine-v1.89.0)
+ */
+const RETRY_AFTER_MAX_MS = 5000;
+
+/**
+ * 다음 재시도까지 기다릴 시간을 정합니다.
+ *
+ * 기본은 {@link TRANSIENT_RETRY_DELAYS_MS} 이고, 429 가 `Retry-After`(초 또는 HTTP 날짜)를 주면 그 값을 따르되
+ * {@link RETRY_AFTER_MAX_MS} 를 넘기지 않는다. 기본보다 짧게 기다리지는 않는다.
+ *
+ * @param error 요청 오류
+ * @param attempt 지금까지 다시 물은 횟수
+ * @returns 대기 시간(ms)
+ * @since engine-v1.89.0
+ */
+function transientRetryDelay(error: any, attempt: number): number {
+  const base: number = TRANSIENT_RETRY_DELAYS_MS[attempt];
+  if (error?.response?.status !== 429) {
+    return base;
+  }
+  const headers = error?.response?.headers;
+  const raw = typeof headers?.get === 'function' ? headers.get('retry-after') : (headers?.['retry-after'] ?? headers?.['Retry-After']);
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    return base;
+  }
+  const text = String(raw).trim();
+  let requestedMs: number | null = null;
+  if (/^\d+$/.test(text)) {
+    requestedMs = Number(text) * 1000;
+  } else {
+    const at = Date.parse(text);
+    if (!Number.isNaN(at)) {
+      requestedMs = at - Date.now();
+    }
+  }
+  if (requestedMs === null) {
+    return base;
+  }
+
+  return Math.max(base, Math.min(requestedMs, RETRY_AFTER_MAX_MS));
+}
+
+/**
+ * 재시도 대기
+ *
+ * @param ms 대기 시간
+ * @returns 대기가 끝나면 풀리는 Promise
+ */
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * 로그인·2단계 인증·비밀번호 변경 단계 응답의 data 페이로드
@@ -251,6 +347,19 @@ export class AuthManager {
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<boolean> | null = null;
   private eventHandlers: Map<string, EventHandler[]> = new Map();
+  /** 인증 타입별 마지막 확인 결론 (@since engine-v1.89.0) */
+  private lastCheckStatus: Map<AuthType, AuthCheckStatus> = new Map();
+  /** 인증 타입별 마지막 「확인 불가」 시각(ms) (@since engine-v1.89.0) */
+  private lastUnavailableAt: Map<AuthType, number> = new Map();
+
+  /**
+   * 「확인 불가」 결론을 다시 쓰는 유효 시간(ms)
+   *
+   * 부팅 순서에서 preloadAuth 가 끝난 뒤 라우터 인증 가드까지는 확장 번들, 템플릿 설정 적재 등으로 보통 1초 안팎이 걸린다.
+   * 그 사이 서버는 방금 재시도 창(2.5초) 내내 답하지 못했으므로 다시 물어도 같은 장애일 가능성이 크다. 재시도 창의 두 배를
+   * 넘으면 새 확인으로 본다 — 사용자가 한참 뒤 다른 화면으로 옮길 때 낡은 결론을 쓰지 않게 한다 (설계 확정 2026-11-08).
+   */
+  static readonly UNAVAILABLE_REUSE_MS = 5000;
 
   /** 로케일 스토리지 키 (TemplateApp과 동일) */
   private static readonly LOCALE_STORAGE_KEY = 'g7_locale';
@@ -364,8 +473,13 @@ export class AuthManager {
   /**
    * 백엔드 API로 인증 상태 확인
    *
+   * 서버 일시 오류(5xx)·네트워크 오류는 「로그인 안 됨」이 아니다 — 짧게 몇 번 다시 묻고, 그래도 안 되면 이미 인증된
+   * 같은 타입 세션은 그대로 두고 true, 아니면 상태를 건드리지 않고 false 를 돌려준다(결론은 `getLastCheckStatus` 가
+   * `unavailable`). 토큰은 어느 경우에도 지우지 않는다. 401 은 토큰 갱신 뒤 다시 묻고, 그 밖의 4xx 는 종전처럼 미인증이다.
+   *
    * @param type - 인증 타입 (admin 또는 user)
    * @returns 인증 여부
+   * @since engine-v1.89.0 일시 오류 재시도·세션 유지·`getLastCheckStatus`
    */
   async checkAuth(type: AuthType): Promise<boolean> {
     const apiClient = getApiClient();
@@ -374,6 +488,7 @@ export class AuthManager {
     // 토큰이 없으면 미인증
     if (!token) {
       this.clearState();
+      this.lastCheckStatus.set(type, 'unauthenticated');
       return false;
     }
 
@@ -383,35 +498,131 @@ export class AuthManager {
       return false;
     }
 
-    try {
-      // 사용자 정보 조회 API 호출
-      const response = await apiClient.get<{ success: boolean; data: AuthUser }>(config.userEndpoint);
-
-      if (response.success && response.data) {
-        this.state = {
-          isAuthenticated: true,
-          user: response.data,
-          type: type,
-        };
-        this.emit('authStateChange', this.state);
-        return true;
+    // 다시 묻기 시작했으면(첫 시도가 일시 오류) 끝날 때 한 번 알린다 — 기다리는 동안의 확인 중 표시가 이 두 이벤트를 쓴다 (설계 확정 2026-11-08)
+    let retried = false;
+    // 모든 확인의 시작과 끝을 한 번씩 알린다 — 첫 요청이 늦어도 확인 중 표시를 띄울 수 있게 (설계 확정 2026-11-08, 브라우저 실측)
+    this.emitIsolated('authCheckStart', { type });
+    const finish = (status: AuthCheckStatus, result: boolean): boolean => {
+      this.lastCheckStatus.set(type, status);
+      if (status === 'unavailable') {
+        this.lastUnavailableAt.set(type, Date.now());
+      } else {
+        this.lastUnavailableAt.delete(type);
       }
+      if (retried) {
+        this.emitIsolated('authCheckRetryEnd', { type, status });
+      }
+      this.emitIsolated('authCheckEnd', { type, status });
+      return result;
+    };
 
-      this.clearState();
-      return false;
-    } catch (error: any) {
-      // 401 에러인 경우 토큰 갱신 시도
-      if (error.response?.status === 401) {
-        const refreshed = await this.refreshToken();
-        if (refreshed) {
-          // 갱신 성공 후 다시 인증 확인
-          return this.checkAuth(type);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        // 사용자 정보 조회 API 호출
+        const response = await apiClient.get<{ success: boolean; data: AuthUser }>(config.userEndpoint);
+
+        if (response.success && response.data) {
+          this.state = {
+            isAuthenticated: true,
+            user: response.data,
+            type: type,
+          };
+          this.lastCheckStatus.set(type, 'authenticated');
+          // 구독자 예외를 격리한다 — 이 try 안에서 새면 사용자 조회 실패로 잡혀 다시 묻거나 세션을 비운다 (engine-v1.89.0)
+          this.emitIsolated('authStateChange', this.state);
+          return finish('authenticated', true);
         }
-      }
 
-      this.clearState();
+        this.clearState();
+        return finish('unauthenticated', false);
+      } catch (error: any) {
+        // 401 에러인 경우 토큰 갱신 시도
+        if (error.response?.status === 401) {
+          const refreshed = await this.refreshToken();
+          if (refreshed) {
+            // 갱신 성공 후 다시 인증 확인 — 결론은 안쪽 확인이 정한다
+            const result = await this.checkAuth(type);
+            const nestedStatus = this.lastCheckStatus.get(type) ?? 'unauthenticated';
+            if (retried) {
+              this.emitIsolated('authCheckRetryEnd', { type, status: nestedStatus });
+            }
+            this.emitIsolated('authCheckEnd', { type, status: nestedStatus });
+            return result;
+          }
+        }
+
+        if (!isTransientAuthCheckError(error)) {
+          this.clearState();
+          return finish('unauthenticated', false);
+        }
+
+        if (attempt < TRANSIENT_RETRY_DELAYS_MS.length) {
+          const delay = transientRetryDelay(error, attempt);
+          logger.warn(`인증 확인 일시 오류 — ${delay}ms 뒤 다시 묻습니다 (${attempt + 1}/${TRANSIENT_RETRY_DELAYS_MS.length})`, error?.response?.status ?? error?.code);
+          if (!retried) {
+            retried = true;
+            this.emitIsolated('authCheckRetry', { type, attempt: attempt + 1 });
+          }
+          await wait(delay);
+          continue;
+        }
+
+        // 서버가 계속 답하지 못한다 — 인증 실패로 단정하지 않는다
+        if (this.state.isAuthenticated && this.state.type === type) {
+          logger.warn('인증 확인이 일시 오류로 끝났습니다 — 현재 세션을 유지합니다');
+          return finish('authenticated', true);
+        }
+        logger.warn('인증 확인이 일시 오류로 끝났습니다 — 인증 여부를 알 수 없습니다');
+        return finish('unavailable', false);
+      }
+    }
+  }
+
+  /**
+   * 방금 「확인 불가」로 끝난 확인이 있는지 돌려줍니다.
+   *
+   * 부팅 때 `preloadAuth` 가 재시도(합 2.5초) 끝에 확인 불가로 끝나면 라우터 인증 가드가 곧바로 다시 물어 재시도를 한 번 더
+   * 했다 — 같은 장애에 백지가 두 배(약 5초)로 길어졌다. 라우터는 이 값이 참이면 다시 묻지 않고 확인 불가로 처리한다(설계 확정 2026-11-08).
+   * 유효 시간은 `UNAVAILABLE_REUSE_MS` 다.
+   *
+   * @param type 인증 타입
+   * @returns 유효 시간 안의 확인 불가 결론이 있으면 true
+   * @since engine-v1.89.0
+   */
+  isRecentlyUnavailable(type: AuthType): boolean {
+    if (this.lastCheckStatus.get(type) !== 'unavailable') {
       return false;
     }
+    const at = this.lastUnavailableAt.get(type);
+    return at !== undefined && Date.now() - at <= AuthManager.UNAVAILABLE_REUSE_MS;
+  }
+
+  /**
+   * 구독자 예외를 격리해 이벤트를 냅니다 — 인증 확인 흐름 안에서 구독자 오류가 확인 결과를 바꾸지 않게 한다.
+   *
+   * @param event 이벤트 이름
+   * @param payload 이벤트 값
+   */
+  private emitIsolated(event: string, payload: unknown): void {
+    try {
+      this.emit(event, payload);
+    } catch (listenerError) {
+      logger.error(`${event} 구독자 오류 (인증 확인)`, listenerError);
+    }
+  }
+
+  /**
+   * 마지막 인증 확인의 결론을 돌려줍니다.
+   *
+   * `checkAuth` 가 false 를 돌려줬을 때 그것이 인증 실패인지(로그인으로 보낸다) 서버 일시 오류인지(로그인으로 보내지
+   * 않는다) 가르는 데 쓴다. 아직 확인하지 않은 타입은 null.
+   *
+   * @param type 인증 타입
+   * @returns 마지막 결론, 없으면 null
+   * @since engine-v1.89.0
+   */
+  getLastCheckStatus(type: AuthType): AuthCheckStatus | null {
+    return this.lastCheckStatus.get(type) ?? null;
   }
 
   /**

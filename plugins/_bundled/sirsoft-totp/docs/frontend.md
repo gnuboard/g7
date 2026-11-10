@@ -134,7 +134,10 @@
 이 CSS 는 플러그인 화면(설정 화면, 회원 상세의 2단계 인증 카드)의 스타일 전부를 싣습니다 — 템플릿 CSS 에 기대지 않습니다.
 배치·색 유틸리티는 `totp:` 접두 Tailwind 빌드(파일 맨 앞 생성 블록), 템플릿에서 가져온 의미 클래스는 `totp-*` 사본
 (생성 파일 `resources/css/g7-extension.generated.css`)이고, 다크 모드는 템플릿의 `.dark` 대신 코어의 중립 표식
-(`data-g7-color-scheme`)을 따릅니다.
+(`data-g7-color-scheme`)을 따릅니다. 화면 폭에 따라 클래스가 달라지는 자리는 Tailwind 반응형 접두(`totp:sm:flex-row`
+같은 꼴)를 쓰지 않고, 노드의 `<responsive on="…">` 구간(`640-` 등)에 그 폭에서 쓸 className 전체를 둡니다.
+
+폭 미디어를 품은 의미 클래스 사본(`totp-grid-3col-responsive`·`totp-grid-2col-responsive`·`totp-page-title`·`totp-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="totp:grid totp:grid-cols-1 totp:gap-4 totp:items-start"` 에 `<responsive on="1024-" class="totp:grid totp:grid-cols-3 totp:gap-4 totp:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`totp:mb-4` 등)을 직접 줍니다.
 
 `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 으로 다시 만들고
 (`sourceMappingURL` 잔존 금지) `php artisan plugin:update sirsoft-totp --force` 로 반영합니다.

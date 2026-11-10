@@ -11,7 +11,7 @@
  * @since engine-v1.20.0
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { Logger } from '../../utils/Logger';
 
@@ -35,7 +35,7 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('ActionDispatcher - debounce flush', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -201,6 +201,45 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(executed).toHaveLength(2);
       expect(executed).toContain('A');
       expect(executed).toContain('B');
+    });
+
+    /**
+     * flush 가 실행한 대기 항목이 다른 화면으로 가는 navigate 면, navigate 가 대기 입력을 반영하려고 flush 를 한 번 더 부른다(안쪽 flush).
+     * 안쪽 flush 가 남은 항목을 먼저 실행하므로, 바깥 flush 는 복사본에 남은 그 항목을 다시 실행하면 안 된다 (engine-v1.81.2).
+     * 자동바인딩 칸의 change 동작은 `runWithoutDebounceFlush` 안에서 불려 안쪽 flush 를 부르지 않으므로, 이 가드는 이 경로로 잰다.
+     *
+     * @scenario pending_debounce=multiple, trigger=explicit_flush
+     *
+     * @effects inner_flush_does_not_rerun_items_it_already_ran
+     */
+    it('flush 한 대기 항목이 안쪽 flush 를 불러도(다른 화면 navigate) 남은 대기 항목은 한 번만 실행된다', () => {
+      const runsB = { value: 0 };
+      dispatcher.registerHandler('handlerB', () => {
+        runsB.value++;
+      });
+
+      const boundNav = dispatcher.bindActionsToProps({
+        id: 'comp-nav',
+        actions: [{ type: 'change' as const, handler: 'navigate', params: { path: '/other-page' }, debounce: 300 }],
+      });
+      const boundB = dispatcher.bindActionsToProps({
+        id: 'comp-B',
+        actions: [{ type: 'change' as const, handler: 'handlerB', debounce: 500 }],
+      });
+
+      boundNav.onChange(createMockChangeEvent('q'));
+      boundB.onChange(createMockChangeEvent('valueB'));
+      expect(runsB.value).toBe(0);
+
+      dispatcher.flushPendingDebounceTimers();
+
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(runsB.value).toBe(1);
+      expect(dispatcher.hasPendingDebounce()).toBe(false);
+
+      // 지운 타이머가 남아 다시 실행되지도 않는다
+      vi.advanceTimersByTime(1000);
+      expect(runsB.value).toBe(1);
     });
 
     /**
@@ -463,7 +502,7 @@ describe('ActionDispatcher - debounce flush', () => {
     it('여러 번 입력 후 flush 시 마지막 값으로 실행되어야 함', () => {
       const capturedValues: string[] = [];
 
-      dispatcher.registerHandler('captureHandler', (action, context) => {
+      dispatcher.registerHandler('captureHandler', (_action, context) => {
         // executeDebouncedAction에서 contextWithEvent.$event로 전달됨
         // createHandler 내부에서 ActionContext.data.$event로 매핑됨
         const value = context?.data?.$event?.target?.value ?? 'no-value';
@@ -521,7 +560,7 @@ describe('ActionDispatcher - debounce flush', () => {
     it('_changedKeys가 있으면 디바운스 중 이전 로케일 변경분이 유지됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
-      dispatcher.registerHandler('captureMultilingual', (action, context) => {
+      dispatcher.registerHandler('captureMultilingual', (_action, context) => {
         const value = context?.data?.$event?.target?.value;
         if (value && typeof value === 'object') {
           capturedValues.push({ ...value });
@@ -571,7 +610,7 @@ describe('ActionDispatcher - debounce flush', () => {
     it('_changedKeys가 없으면 기존 동작 유지 (마지막 값 사용)', () => {
       const capturedValues: string[] = [];
 
-      dispatcher.registerHandler('captureNormal', (action, context) => {
+      dispatcher.registerHandler('captureNormal', (_action, context) => {
         const value = context?.data?.$event?.target?.value ?? 'no-value';
         capturedValues.push(value);
       });
@@ -608,7 +647,7 @@ describe('ActionDispatcher - debounce flush', () => {
     it('_changedKeys 디바운스 완료 후 누적값이 정리됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
-      dispatcher.registerHandler('captureCleanup', (action, context) => {
+      dispatcher.registerHandler('captureCleanup', (_action, context) => {
         const value = context?.data?.$event?.target?.value;
         if (value && typeof value === 'object') {
           capturedValues.push({ ...value });
@@ -650,7 +689,7 @@ describe('ActionDispatcher - debounce flush', () => {
     it('flush 시에도 _changedKeys 병합이 적용됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
-      dispatcher.registerHandler('captureFlush', (action, context) => {
+      dispatcher.registerHandler('captureFlush', (_action, context) => {
         const value = context?.data?.$event?.target?.value;
         if (value && typeof value === 'object') {
           capturedValues.push({ ...value });
@@ -700,7 +739,7 @@ describe('ActionDispatcher - debounce flush', () => {
     it('plain object 이벤트에서도 _changedKeys가 보존되어 디바운스 병합됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
-      dispatcher.registerHandler('capturePlainML', (action, context) => {
+      dispatcher.registerHandler('capturePlainML', (_action, context) => {
         const value = context?.data?.$event?.target?.value;
         if (value && typeof value === 'object') {
           capturedValues.push({ ...value });
@@ -748,7 +787,7 @@ describe('ActionDispatcher - debounce flush', () => {
     it('plain object 이벤트 flush 시에도 _changedKeys 병합 적용', () => {
       const capturedValues: Record<string, string>[] = [];
 
-      dispatcher.registerHandler('capturePlainFlush', (action, context) => {
+      dispatcher.registerHandler('capturePlainFlush', (_action, context) => {
         const value = context?.data?.$event?.target?.value;
         if (value && typeof value === 'object') {
           capturedValues.push({ ...value });
@@ -803,12 +842,12 @@ describe('ActionDispatcher - debounce flush', () => {
 
       (window as any).G7Core = { state: { get: () => ({ ...globalStore }) } };
 
-      dispatcher.registerHandler('writeBuffer', (action, context) => {
+      dispatcher.registerHandler('writeBuffer', (_action, context) => {
         globalStore.editorMarkup = context?.data?.$event?.target?.value ?? '';
       });
 
       let sentBody: string | undefined;
-      dispatcher.registerHandler('save', (action, context) => {
+      dispatcher.registerHandler('save', (_action, context) => {
         sentBody = context?.data?._global?.editorMarkup;
       });
 
@@ -843,7 +882,7 @@ describe('ActionDispatcher - debounce flush', () => {
       (window as any).G7Core = { state: { get: () => ({ editorMarkup: 'store-value' }) } };
 
       let seen: string | undefined;
-      dispatcher.registerHandler('readOnly', (action, context) => {
+      dispatcher.registerHandler('readOnly', (_action, context) => {
         seen = context?.data?._global?.editorMarkup;
       });
 
@@ -878,7 +917,7 @@ describe('ActionDispatcher - debounce flush', () => {
       let localState: Record<string, any> = {};
 
       // debounced 핸들러: state에 값 저장 시뮬레이션
-      dispatcher.registerHandler('updateOptionInput', (action, context) => {
+      dispatcher.registerHandler('updateOptionInput', (_action, context) => {
         const value = context?.data?.$event?.target?.value ?? '';
         localState['optionName'] = value;
       });

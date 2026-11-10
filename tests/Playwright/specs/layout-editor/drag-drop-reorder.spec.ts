@@ -25,37 +25,38 @@
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
+import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
+import { sandboxRouteParam } from '../../fixtures/seed-layout';
+
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+test.describe.configure({ timeout: 90_000 });
 
 /** 편집기 home 진입 + 캔버스 준비(드래그 핸들 렌더)까지 대기. */
 async function openEditor(page: Page): Promise<void> {
   await page.goto('/admin/layout-editor/sirsoft-basic?route=%2F');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // 준비 신호 = 드래그 핸들 렌더(툴바 라벨은 로케일 의존이라 핸들로 판정).
-  await page.waitForSelector('[data-testid^="g7le-dnd-handle-"]', { timeout: 30_000 });
+  await page.waitForSelector('[data-testid^="g7le-dnd-handle-"]', { timeout: 60_000 });
+  await waitForEditorScrollSettled(page);
 }
 
 /**
- * 큰 stat 카드(첫 카드, path 접미사 children.1.children.0) 핸들의 중심 좌표 + path.
+ * e2e 시드 화면(`/e2e-sandbox`) 편집기 진입 + 드래그 구조 노드의 path.
  *
- * **z-index 깊이순**: 드래그 핸들 z 는 트리 깊이순(`20 + depth`)이라 카드보다
- * 깊은 자손 핸들이 카드 영역 위에 온다. 따라서 카드 중심/가장자리에서 `elementFromPoint`
- * 는 자손 핸들을 반환한다 — 카드를 직접 trusted mouse 로 잡을 수 없다. 대신 카드 핸들의
- * 좌표만 반환하고, 드래그 시작은 카드 핸들 DOM 에 직접 PointerEvent 를 dispatch 한다
- * (`startDragOnHandle`). topmost 검증은 하지 않는다(깊이순이라 카드는 topmost 가 아님).
+ * 홈 레이아웃의 「통계 카드 W(display:contents) 와 Welcome 히어로가 있는 그리드 G」 구조는 사라졌다(#869 λ C1).
+ * 그 구조를 시드 화면에 고정해 둔다(`tests/Playwright/fixtures/seed-layouts/user.e2e_sandbox.json`):
+ * G(`e2e_sandbox_dnd_grid`) > [히어로(`…_hero`), W(`…_wrap`, display:contents) > [카드 A, 카드 B]],
+ * 그리고 G 밖 다른 컨테이너(`e2e_sandbox_dnd_other`).
  */
-async function statCardHandleCenter(
-  page: Page,
-): Promise<{ x: number; y: number; path: string } | null> {
+async function openSandboxDnd(page: Page): Promise<{ grid: string; wrap: string; cardA: string; other: string }> {
+  await page.goto(`/admin/layout-editor/sirsoft-basic?route=${sandboxRouteParam()}`);
+  await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+  await page.waitForSelector('#e2e_sandbox_dnd_card_a[data-editor-path]', { timeout: 60_000 });
+  await page.waitForSelector('[data-testid^="g7le-dnd-handle-"]', { timeout: 30_000 });
+  await waitForEditorScrollSettled(page);
   return page.evaluate(() => {
-    const el = Array.from(document.querySelectorAll('[data-dnd-handle-path]')).find(
-      (e) =>
-        /children\.1\.children\.0$/.test(e.getAttribute('data-dnd-handle-path') || '') &&
-        (e as HTMLElement).getBoundingClientRect().width > 100,
-    ) as HTMLElement | undefined;
-    if (!el) return null;
-    const path = el.getAttribute('data-dnd-handle-path')!;
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2, path };
+    const p = (id: string) => document.getElementById(id)?.getAttribute('data-editor-path') ?? '';
+    return { grid: p('e2e_sandbox_dnd_grid'), wrap: p('e2e_sandbox_dnd_wrap'), cardA: p('e2e_sandbox_dnd_card_a'), other: p('e2e_sandbox_dnd_other') };
   });
 }
 
@@ -76,6 +77,27 @@ async function selectHandle(page: Page, handlePath: string): Promise<void> {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
   }, handlePath);
   await page.waitForTimeout(60);
+  // 선택 뒤 문서가 움직이면 호출자가 잰 좌표가 어긋난다 — 멈출 때까지 기다린다.
+  await waitForEditorScrollSettled(page);
+}
+
+/**
+ * 핸들을 화면 가운데로 즉시 스크롤하고 그 중심 좌표를 잰다.
+ *
+ * 홈 레이아웃이 길어져 대상 핸들이 첫 화면 밖(아래)에 놓이는 일이 생겼고(#869 λ 실측 C1), 화면 밖 좌표의
+ * trusted mouse down 은 아무것도 누르지 않아 드래그가 시작되지 않았다. 선택 뒤 문서가 움직이는 경우도 있어
+ * 드래그 직전에 다시 잰다.
+ */
+async function handleCenterInView(page: Page, path: string): Promise<{ x: number; y: number }> {
+  await page.evaluate((p) => {
+    document.querySelector(`[data-dnd-handle-path="${p}"]`)?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior });
+  }, path);
+  await waitForEditorScrollSettled(page);
+  return page.evaluate((p) => {
+    const el = document.querySelector(`[data-dnd-handle-path="${p}"]`) as HTMLElement;
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }, path);
 }
 
 /**
@@ -130,18 +152,20 @@ test.describe('@layout-editor drag-drop reorder', () => {
   test('드래그 중 고스트가 body 포털 + 실제 컴포넌트 복제 + 커서 정합, 드롭 슬롯 표시', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    await openEditor(page);
-
-    const handle = await statCardHandleCenter(page);
-    expect(handle, '회원 stat 카드 핸들을 찾아야 함').not.toBeNull();
+    // 시드 화면 카드 A(높이 96px) — 홈에서 「통계 카드」 정규식이 잡던 노드는 이제 904×1409 큰 컨테이너라 커서가
+    // 그 중심에 있으면 고스트 좌상단이 커서에서 200px 넘게 떨어진다(#869 λ C1).
+    const sb = await openSandboxDnd(page);
+    expect(sb.cardA, '시드 카드 A 의 path 를 찾아야 함').not.toBe('');
 
     // z 깊이순이라 카드 좌표 위는 자손 핸들 — 카드를 먼저 선택해 두면 trusted mouse 가
     // 자손에서 시작해도 onDragStart 치환으로 선택 카드가 끌린다.
-    await selectHandle(page, handle!.path);
+    await selectHandle(page, sb.cardA);
     // trusted mouse 로 드래그 활성(드롭 없이 유지)
-    await startDrag(page, { x: handle!.x, y: handle!.y });
-    await page.mouse.move(handle!.x + 40, handle!.y + 220);
-    const to = { x: handle!.x + 40, y: handle!.y + 220 };
+    const from = await handleCenterInView(page, sb.cardA);
+    await startDrag(page, from);
+    // 끌 곳도 화면 안에 둔다 — 스크롤 뒤 좌표(from) 기준. 화면 밖으로 끌면 고스트가 커서를 따라가지 못한다.
+    const to = { x: from.x + 40, y: Math.min(from.y + 220, (page.viewportSize()?.height ?? 720) - 40) };
+    await page.mouse.move(to.x, to.y);
 
     // 활성 신호 = 슬롯 렌더(vacuous pass 방지)
     await page.waitForSelector('[data-dnd-slot-id]', { timeout: 5_000 });
@@ -189,17 +213,16 @@ test.describe('@layout-editor drag-drop reorder', () => {
   test('드롭 슬롯이 드래그 노드의 관련 레벨로 한정 — 자기 자손/래퍼 밖 break-out 슬롯 없음', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    await openEditor(page);
-
-    const handle = await statCardHandleCenter(page);
-    expect(handle, 'stat 카드 핸들을 찾아야 함').not.toBeNull();
-    const draggedPath = handle!.path; // 예: …1.children.0 (W 안 카드)
-    const wParent = draggedPath.replace(/\.children\.\d+$/, ''); // W
-    const grid = wParent.replace(/\.children\.\d+$/, ''); // G (W 의 부모 = contents 래퍼를 가진 컨테이너)
+    // 시드 화면의 G > [히어로, W(contents) > [카드 A, 카드 B]] 구조(홈의 통계 카드 구조는 사라짐, #869 λ C1).
+    const sb = await openSandboxDnd(page);
+    expect(sb.cardA, '시드 카드 A 의 path 를 찾아야 함').not.toBe('');
+    const draggedPath = sb.cardA; // W 안 카드
+    const grid = sb.grid; // G (W 의 부모 = contents 래퍼를 가진 컨테이너)
+    expect(sb.wrap.startsWith(`${grid}.`), 'W 는 G 의 자식이어야 함').toBe(true);
 
     // z 깊이순이라 카드 좌표 위는 자손 핸들 — 카드 선택 후 시작하면 치환으로 카드가 드래그됨.
     await selectHandle(page, draggedPath);
-    await startDrag(page, { x: handle!.x, y: handle!.y });
+    await startDrag(page, await handleCenterInView(page, draggedPath));
     await page.waitForSelector('[data-dnd-slot-id]', { timeout: 5_000 });
 
     const scope = await page.evaluate(({ dp, g }) => {
@@ -237,8 +260,8 @@ test.describe('@layout-editor drag-drop reorder', () => {
     expect(scope.intoSelf, '드래그 노드 자신/자손을 컨테이너로 하는 슬롯이 없어야 함').toEqual([]);
     // 결함 b — G 레벨 전체 영역 break-out 슬롯 없음(Welcome 주변 gap 띠는 허용, 전체 영역만 금지)
     expect(scope.gFullAreaCount, 'G 레벨 전체 영역 break-out 슬롯이 없어야 함(결함 b)').toBe(0);
-    // Welcome(일반 형제) 주변 G gap 슬롯은 존재해야 함(카드를 Welcome 옆으로 배치 가능)
-    expect(scope.gGapSlotCount, 'Welcome 주변 G gap 슬롯이 존재해야 함(카드를 히어로 옆 grid 위치로)').toBeGreaterThan(0);
+    // 히어로(일반 형제) 주변 G gap 슬롯은 존재해야 함(카드를 히어로 옆으로 배치 가능)
+    expect(scope.gGapSlotCount, '히어로 주변 G gap 슬롯이 존재해야 함(카드를 히어로 옆 grid 위치로)').toBeGreaterThan(0);
     // 결함 1 수정 반영 — 슬롯은 카드 자손 leaf 가 아닌 **트리 전역 accepting
     // 컨테이너**에 깔린다(다른 컨테이너로 이동 가능). 검수 10차의 `<40` 상한은 그 수정으로
     // 무효화되어 제거. 과생성 회귀의 진짜 가드는 "카드 자손 슬롯 없음"(intoSelf=[]) 이다.
@@ -306,16 +329,15 @@ test.describe('@layout-editor drag-drop reorder', () => {
   test('드롭 슬롯이 드래그 노드의 부모 외 다른 컨테이너에도 생성 (결함 1: 컨테이너 간 이동)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    await openEditor(page);
-
-    const handle = await statCardHandleCenter(page);
-    expect(handle, 'stat 카드 핸들을 찾아야 함').not.toBeNull();
-    const draggedPath = handle!.path;
+    // 시드 화면 카드 A 를 끈다 — 부모 W 밖 다른 컨테이너(e2e_sandbox_dnd_other 등)에도 칸이 있어야 한다.
+    const sb = await openSandboxDnd(page);
+    expect(sb.cardA, '시드 카드 A 의 path 를 찾아야 함').not.toBe('');
+    const draggedPath = sb.cardA;
     const dragParent = draggedPath.replace(/\.children\.\d+$/, '');
 
     // 카드 선택 후 시작 → 치환으로 카드가 드래그 대상(z 깊이순 좌표는 자손이 잡힘).
     await selectHandle(page, draggedPath);
-    await startDrag(page, { x: handle!.x, y: handle!.y });
+    await startDrag(page, await handleCenterInView(page, draggedPath));
     await page.waitForSelector('[data-dnd-slot-id]', { timeout: 5_000 });
 
     const result = await page.evaluate(({ dp, parent }) => {
@@ -420,7 +442,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
     await page.waitForTimeout(60);
 
     // (2) 자식 영역에서 드래그 시작 — 선택 부모로 치환되어야
-    await startDrag(page, { x: pair!.cx, y: pair!.cy });
+    await startDrag(page, await handleCenterInView(page, pair!.child));
     await page.waitForSelector('[data-dnd-slot-id]', { timeout: 5_000 });
 
     const dragResult = await page.evaluate(({ parent }) => {
@@ -512,11 +534,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
 
     // 아이콘 선택 후 드래그 시작(아이콘 자신이 드래그 대상)
     await selectHandle(page, probe!.iconChild);
-    const iconCenter = await page.evaluate((p) => {
-      const el = document.querySelector(`[data-dnd-handle-path="${p}"]`) as HTMLElement;
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    }, probe!.iconChild);
+    const iconCenter = await handleCenterInView(page, probe!.iconChild);
     await startDrag(page, iconCenter);
     await page.waitForSelector('[data-dnd-slot-id]', { timeout: 5_000 });
 

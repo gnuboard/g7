@@ -79,8 +79,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "gpp:p-6 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "gpp:p-8 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "g7pp-admin-page-content-responsive"
+                    "className": "gpp:p-4 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -164,16 +176,30 @@
                         "id": "settings_columns",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "gpp:mt-6 gpp:grid gpp:grid-cols-3 gpp:gap-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "gpp:mt-6 gpp:grid gpp:grid-cols-1 gpp:lg:grid-cols-3 gpp:gap-6"
+                            "className": "gpp:mt-6 gpp:grid gpp:grid-cols-1 gpp:gap-6"
                         },
                         "children": [
                             {
                                 "id": "settings_cards",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "gpp:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "gpp:lg:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
+                                    "className": "gpp:flex gpp:flex-col gpp:gap-6"
                                 },
                                 "children": [
                                     {

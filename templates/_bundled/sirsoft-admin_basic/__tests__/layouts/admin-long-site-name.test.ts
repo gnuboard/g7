@@ -113,7 +113,11 @@ describe('관리자 긴 사이트 이름', () => {
    */
   it('A5 페이지 제목·설명 break-words', () => {
     const src = read('src/components/composite/PageHeader.tsx');
-    expect(src).toMatch(/<H1 className="[^"]*\bbreak-words\b[^"]*">\{title\}<\/H1>/);
+    // 제목 className 은 렌더 폭(640 이상 text-2xl)으로 고르는 식이다 — 식이든 문자열이든 break-words 가 늘 들어 있어야 한다.
+    const literal = /<H1 className="[^"]*\bbreak-words\b[^"]*">\{title\}<\/H1>/.test(src);
+    const viaVar = src.match(/<H1 className=\{(\w+)\}>\{title\}<\/H1>/)?.[1];
+    const varHasBreak = viaVar ? new RegExp(`const ${viaVar} = [^;]*\\bbreak-words\\b`).test(src) : false;
+    expect(literal || varHasBreak).toBe(true);
     expect(src).toMatch(/<P className="[^"]*\bbreak-words\b[^"]*">\{description\}<\/P>/);
   });
 });

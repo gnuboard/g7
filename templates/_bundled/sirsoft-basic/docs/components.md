@@ -150,7 +150,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Icon` | FontAwesome 아이콘 | name | - |
-| `Img` | 이미지 | src, alt | - |
+| `Img` | 이미지 | src, alt, thumbPreset, loading(기본 lazy), decoding(기본 async) | - |
 
 #### 기타
 
@@ -221,10 +221,12 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, text, isHtml, purifyConfig |
+| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, text, isHtml, purifyConfig, imageSizes |
 | `HtmlEditor` | HTML/텍스트 에디터 (WYSIWYG, 미리보기) | name, value, placeholder, isHtml, showPreview, minHeight |
 | `RichTextEditor` | 리치 텍스트 에디터 | value, placeholder |
 | `ImageGallery` | 이미지 갤러리 (썸네일 + 메인 이미지) | images |
+
+- **본문 이미지 srcset**: `HtmlContent` 는 서빙 경로 이미지의 `src` 를 본문 규격으로 바꾸고, img `width`(정수)를 알 때만 그 가로 **이하**의 숫자 규격 후보로 `srcset` 을 덮어쓴다. 후보 거르기는 코어 `G7Core.thumbnail.contentSrcsetWithin(src, width)` 한 곳이 하며(`src/support/contentImages.ts` → `src/support/thumbnail.ts` 어댑터), 봇 화면 `HtmlSanitizer` 와 같은 규칙이다. 그 함수가 없는 코어에서는 `srcset` 을 붙이지 않는다(원본보다 큰 후보를 싣지 않는다). 회귀 테스트: `src/components/composite/__tests__/ThumbnailComponents.test.tsx`.
 
 #### 파일/미디어
 
@@ -235,6 +237,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 - **키보드 초점 자리**: 항목의 「삭제」로 항목이 사라지면 초점은 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 타일, 목록이 비면 드롭존)의 같은 단추로 간다. 빈 드롭존이나 「추가」 타일로 파일을 고른 뒤 그 요소가 사라지면 「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 간다. 삭제 확인 창을 거친 삭제도 같다. 초점이 업로더 밖으로 나간 뒤에는 끌어오지 않는다. 자리 판정은 항목 루트의 `data-uploader-item` 과 단추의 `data-uploader-action`(`pick`·`add`·`primary`·`drag`·`download`·`retry`·`remove`)으로 하므로 이 표식을 지우지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx`.
 - **언어 전환 인계**: 화면 언어를 바꾸면 엔진이 같은 화면을 새로 마운트한다. 업로더는 언어 전환 중에 내려갈 때만 아직 올리지 않은 대기 파일과 끌어 놓은 순서를 `G7Core.locale.handoff` 에 맡기고(키: 경로 + collection + 업로드 시점), 새 인스턴스가 마운트 때 한 번 꺼내 이어 쓴다. 올리던 항목은 대기 상태로 되돌린다. 일반 화면 이동에서는 맡기지 않는다(engine-v1.79.0). 회귀 테스트: `src/components/composite/__tests__/FileUploaderLocaleHandoff.test.tsx`.
 - **생략한 배열 속성의 기본값**: `initialFiles`·`roleIds` 를 생략하면 모듈 상수인 얼린 빈 배열을 쓴다(렌더마다 새 배열을 기본값으로 만들면 `initialFiles` 동기화 effect 가 끝없이 돈다). 훅은 같은 ID 목록이 새 배열로 들어와도 이전 참조를 쓴다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderDefaultInitialFiles.test.tsx`.
+- **accept 판정**: 고른 파일이 `accept` 의 확장자(`.jpg`, 대소문자 무시), 정확한 MIME(`image/jpeg`), MIME 와일드카드(`image/*`, 주 형식을 `/` 까지 맞춤) 중 하나라도 맞으면 받고, 아니면 `attachment.file_type_not_allowed` 로 알린다. 판정 식은 `src/components/composite/FileUploader/utils.ts` 의 `isFileAccepted` 하나이고 훅과 시험이 같은 함수를 부른다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderAcceptValidation.test.ts`.
 
 #### 네비게이션/피드백
 
@@ -256,11 +259,13 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 > }
 > ```
 | `SearchBar` | 검색 바 (자동완성 지원) | name, placeholder, value, showButton, suggestions, showSuggestions |
-| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, size, width, className, style |
+| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, children, footer, size, width, className, style |
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, cancelText, ... |
 | `Toast` | 토스트 알림 | toasts, position, duration |
 | `ThemeToggle` | 테마 전환 토글 (auto/light/dark) | autoText, lightText, darkText |
 
+- `Modal` 의 `footer` 는 본문 스크롤 밖 고정 하단에 그린다. 레이아웃 편집기에서는 엔진이 준 Modal 노드 경로(`__componentContext.componentPath`)로 footer 단추마다 `{경로}.props.footer.{i}` 를 넘겨, 본문 children 과 같게 고르고 고칠 수 있다(경로가 없는 일반 화면에서는 넘기지 않음). 회귀 테스트: `src/components/composite/__tests__/Modal.footer.test.tsx`.
+- `Modal` 의 `footer` 는 `components.json` 의 `skipBindingKeys` 로 선언한다 — 엔진이 Modal 노드에서 그 안의 `{{…}}` 를 미리 풀지 않고 원문 정의를 넘겨, 고정 하단 렌더러가 본문 children 과 같은 데이터 문맥(`__componentContext.parentDataContext`, 상태 범위 `__componentContext`)과 같은 격리 범위에서 평가한다. 종전에는 Modal 노드 렌더러가 미리 풀어 Modal 자신의 `isolatedState` 처럼 본문만 보는 값이 고정 하단에서 비었다(#869). 회귀 테스트: `__tests__/layouts/modalFooterContextParity.test.tsx`
 - `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다**(관리자 템플릿과 같은 규칙). 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안 드롭다운·메뉴는 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 키를 누른 순간(캡처 단계)의 펼침 여부로 판정하고, `aria-haspopup` 없는 펼침과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
 - `Toast` 는 항목의 만든 시각(`createdAt`, 엔진 toast 핸들러가 넣음)부터 표시 시간(`duration`, 항목의 `duration` 이 우선)을 센다. 화면이 바뀌어 Toast 가 새로 마운트돼도 남은 시간만 보이고, 이미 지난 항목은 그리지 않고 `_global.toasts` 에서 지운다. 떠나는 Toast 는 타이머를 거둔다. 만든 시각이 없는 항목은 처음 받은 시각부터 센다. 회귀 테스트: `src/components/composite/__tests__/Toast.lifetime.test.tsx`.
 - **아이콘 단추와 상태 영역의 접근 이름**: `ThemeToggle` 단추는 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추는 `common.delete_notification`, `PageSkeleton` 상태 영역은 `common.loading` 을 이름으로 단다. 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
@@ -287,9 +292,24 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `Container` | 레이아웃 컨테이너 | maxWidth |
 | `Flex` | Flexbox 레이아웃 | direction, gap |
-| `Grid` | Grid 레이아웃 | cols, gap |
+| `Grid` | Grid 레이아웃 | cols, responsive, gap |
 | `SectionLayout` | 섹션 레이아웃 (제목, 부제목, 패딩) | title, subtitle, padding, background |
 | `ThreeColumnLayout` | 3단 레이아웃 (좌/중/우) | leftWidth, centerWidth, rightWidth, gap |
+
+**Grid 반응형 열 수**: `Grid` 의 `responsive`(`{ sm, md, lg, xl, 2xl }` 구간별 열 수)는 Tailwind 반응형 접두 클래스(`md:grid-cols-3`)를 내지 않습니다. 엔진 폭(`G7Core.useResponsive().width`, 레이아웃 편집기 미리보기에서는 기기 폭)으로 열 수를 골라 접두 없는 `grid-cols-N` 하나만 냅니다. 경계는 Tailwind 와 같고(sm 640px, md 768px, lg 1024px, xl 1280px, 2xl 1536px 이상), 폭 이상인 가장 넓은 구간 값을 씁니다. 값이 없는 구간은 아래 구간 값을 이어받고, 맞는 구간이 없으면 `cols` 를 씁니다. 예: `cols: 1, responsive: { md: 3 }` 은 767px 까지 1열, 768px 부터 3열입니다. 화면 뼈대(`PageSkeleton`)도 같은 판정으로 그립니다.
+
+**부품 안의 폭 분기**: 이 템플릿의 부품은 자기 클래스에도 Tailwind 반응형 접두를 쓰지 않고 엔진 폭으로 접두 없는 클래스를 고릅니다. 판정은 `src/components/layout/viewportWidth.ts` 하나에 모았습니다 — `useViewportWidth()`(엔진 훅 폭, 훅이 없으면 창 폭), `pickByWidth(폭, 기본값, { sm, md, lg, xl, 2xl })`(Tailwind 와 같은 cascade), `containerPaddingClass(폭)`(본문 좌우 여백). 열 수는 `gridColumns.ts` 의 `resolveGridCols`·`gridColsClass` 를 씁니다. 고르는 클래스는 전체 이름으로 적어 CSS 스캔에 잡히게 합니다. 폭을 전혀 모를 때(엔진 훅도 창도 없을 때)는 엔진 기본 폭이자 검색 봇 렌더 폭인 1024px 로 고릅니다(`UNKNOWN_VIEWPORT_WIDTH`, `Grid`·`PageSkeleton` 도 같은 값). 브라우저에서는 엔진이 첫 렌더부터 창 폭을 주므로 깜박임이 없습니다.
+
+| 부품 | 폭별 클래스 |
+| --- | --- |
+| `Header`·`Footer` 본문 칸, `PageSkeleton` 헤더·푸터 뼈대 | 640px 미만 `px-4`, 640px 이상 `px-6`, 1024px 이상 `px-8` |
+| `Header` 회원 이름 | 640px 미만 `hidden`, 이상 `line-clamp-1` |
+| `Pagination` 맨 앞·맨 끝 단추 | 640px 미만 `hidden`, 이상 `inline-block` |
+| `FileUploader` 썸네일 격자 | 2열, 640px 이상 3열, 768px 이상 4열, 1024px 이상 5열 |
+| `VisitorCounter` `row` 배치 | 768px 미만 2열, 이상 4열 |
+| `PageSkeleton` 헤더 뼈대의 메뉴 자리 | 1024px 미만 `hidden`, 이상 `flex` |
+
+회귀 테스트: `src/components/composite/__tests__/ResponsiveWidthClasses.test.tsx`(폭별 클래스, 접두 없음, 창 크기 변경, 편집기 미리보기 폭), `src/components/layout/__tests__/viewportWidth.test.ts`.
 
 ---
 

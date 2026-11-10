@@ -243,8 +243,15 @@
                                         "item_var": "account"
                                     },
                                     "dataKey": "{{account.id}}",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sso:py-3 sso:flex sso:flex-row sso:items-center sso:gap-3"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "sso:py-3 sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:sm:items-center sso:sm:gap-3"
+                                        "className": "sso:py-3 sso:flex sso:flex-col sso:gap-2"
                                     },
                                     "children": [
                                         {
@@ -355,8 +362,15 @@
                                             "type": "basic",
                                             "name": "P",
                                             "if": "{{!!account.unlink_block}}",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:max-w-xs"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:md:max-w-xs"
+                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
                                             },
                                             "text": "{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}"
                                         }
@@ -395,8 +409,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sso:flex sso:gap-2 sso:flex-row sso:flex-wrap"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:flex-wrap"
+                                        "className": "sso:flex sso:flex-col sso:gap-2 sso:flex-wrap"
                                     },
                                     "children": [
                                         {

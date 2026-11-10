@@ -50,8 +50,15 @@
                                 "source": "identityPurposes?.data ?? []",
                                 "item_var": "purpose"
                             },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "flex flex-row items-center justify-between gap-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+                                "className": "flex flex-col gap-2"
                             },
                             "children": [
                                 {
@@ -80,8 +87,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-64"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {

@@ -8,6 +8,7 @@
 | `capture-style-fingerprints.mjs` | 화면 목록을 라이트·다크 × 너비 조합으로 열어 지문을 일괄 채취한다(Playwright) |
 | `compare-style-fingerprints.mjs` | 전환 전후 지문을 비교한다. 전환은 모양을 바꾸지 않는 작업이므로 기대값은 차이 0 건이다 |
 | `convert-layout-classes.mjs` | 확장 레이아웃·조각(·PHP)의 클래스 토큰을 확장 자기 이름으로 바꾸고, 필요한 CSS 를 생성한다 |
+| `deprecated-responsive-classes.mjs` | 공개 출시본 빌드 CSS 의 반응형 접두 클래스를 뽑아 템플릿·확장 입력 CSS 의 폐지 예정 보존 블록(`DEPRECATED-RESPONSIVE-START`~`END`)에 쓴다. 확장 출시본 CSS 의 접두 없는 반응형 클래스는 지금 접두 빌드가 만들 수 없어 관리자 템플릿 블록에 더한다. `utilities` 명령은 출시본 빌드 CSS 에 있던 일반 유틸리티 중 레이아웃이 더 쓰지 않아 지금 빌드에서 빠진 이름(관리자 42, 사용자 34)을 기준 픽스처에 더해 같은 블록에 싣는다(7.2.0 한정, 다음 출시 이후 블록과 함께 지운다) |
 
 권장 순서는 다음과 같다.
 
@@ -122,6 +123,7 @@ node scripts/extension-css/convert-layout-classes.mjs <확장경로> [--dry-run]
 @source "../layouts";
 @source "../extensions";
 @source "../js";
+@source not "../js/**/__tests__";
 @source "../../src";
 @theme { /* 두 번들 템플릿 @theme 합집합 */ }
 @plugin "@tailwindcss/typography"; /* prose 계열을 쓸 때만 */
@@ -131,7 +133,7 @@ node scripts/extension-css/convert-layout-classes.mjs <확장경로> [--dry-run]
 
 - preflight(tailwindcss 패키지의 preflight.css)는 싣지 않는다. 확장 CSS 가 페이지 전체 기본값을 바꾸면 안 되기 때문이다.
 - `@import` 는 CSS 규칙대로 다른 at-rule 보다 앞에 둔다.
-- `source(none)` 으로 자동 탐색을 끄고 `@source` 로 훑을 곳을 명시한다. `../../src` 는 PHP 가 내보내는 클래스 문자열을 훑기 위함이다.
+- `source(none)` 으로 자동 탐색을 끄고 `@source` 로 훑을 곳을 명시한다. `../../src` 는 PHP 가 내보내는 클래스 문자열을 훑기 위함이다. 시험 디렉터리(`../js/**/__tests__`)는 빼낸다 — 시험 문자열의 클래스(금지 폭 접두 `{접두}:md:` 포함)가 빌드 CSS 에 실렸다(#869).
 - 산출에는 접두 클래스(`.<letters>\:flex`)·접두 테마 변수(`--<letters>-color-*`)·`--tw-*` 초기값(`@layer properties` 의 `*, ::before, ::after, ::backdrop` 블록)만 나온다.
 
 ### 보고서

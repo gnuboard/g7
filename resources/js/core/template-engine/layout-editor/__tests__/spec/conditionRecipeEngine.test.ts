@@ -15,6 +15,7 @@ import {
   combineConditions,
   matchSinglePreset,
   parseConditionExpr,
+  type ConditionClause,
 } from '../../spec/conditionRecipeEngine';
 
 const RECIPES = {
@@ -31,11 +32,19 @@ const RECIPES = {
 const ops = normalizeConditionRecipes(RECIPES);
 
 describe('normalizeConditionRecipes', () => {
+  /**
+   * @scenario behavior=recipes_normalized
+   * @effects cond_recipes_normalized
+   */
   it('operators 배열을 정규화한다 (expr 본문 보존)', () => {
     expect(ops.map((o) => o.value)).toEqual(['isLoggedIn', 'isGuest', 'dsHasData', 'fieldEquals', 'fieldHasError']);
     expect(ops[0].expr).toBe('_global?.currentUser?.uuid');
   });
 
+  /**
+   * @scenario behavior=recipes_normalized
+   * @effects cond_recipes_normalized
+   */
   it('S6-2 평탄 맵({id:{label,expr-with-braces}})을 흡수하고 {{ }} 를 벗긴다', () => {
     const flat = normalizeConditionRecipes({
       comment: 'm',
@@ -46,6 +55,10 @@ describe('normalizeConditionRecipes', () => {
 });
 
 describe('buildClauseExpr — {paramKey} 치환', () => {
+  /**
+   * @scenario behavior=recipes_normalized
+   * @effects cond_recipes_normalized
+   */
   it('파라미터 없는 프리셋은 expr 그대로', () => {
     expect(buildClauseExpr({ operator: 'isLoggedIn', params: {} }, ops)).toBe('_global?.currentUser?.uuid');
   });
@@ -62,12 +75,20 @@ describe('buildClauseExpr — {paramKey} 치환', () => {
     expect(e).toBe("status === 'open'");
   });
 
+  /**
+   * @scenario behavior=build_unknown_operator_null
+   * @effects cond_build_unknown_operator_null
+   */
   it('미발견 operator → null', () => {
     expect(buildClauseExpr({ operator: 'nope', params: {} }, ops)).toBeNull();
   });
 });
 
 describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
+  /**
+   * @scenario behavior=combine_single_wrapped
+   * @effects cond_combine_single_wrapped
+   */
   it('단일 조건 → {{ 식 }}', () => {
     const r = combineConditions([{ operator: 'isLoggedIn', params: {} }], 'and', ops);
     expect(r).toBe('{{ _global?.currentUser?.uuid }}');
@@ -83,6 +104,10 @@ describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
     expect(r).toBe('{{ (_global?.currentUser?.uuid) && ((posts?.data?.length ?? 0) > 0) }}');
   });
 
+  /**
+   * @scenario behavior=combine_or_joined
+   * @effects cond_combine_or_joined
+   */
   it('OR 결합', () => {
     const r = combineConditions(
       [{ operator: 'isLoggedIn', params: {} }, { operator: 'isGuest', params: {} }],
@@ -104,6 +129,10 @@ describe('combineConditions — 단일 {{ }} 합성 (코어 if 규칙)', () => {
     expect((r.match(/\}\}/g) ?? []).length).toBe(1);
   });
 
+  /**
+   * @scenario behavior=combine_empty_removes_if
+   * @effects cond_combine_empty_removes_if
+   */
   it('빈 절 목록 → 빈 문자열 (if 제거)', () => {
     expect(combineConditions([], 'and', ops)).toBe('');
   });
@@ -122,34 +151,58 @@ describe('matchSinglePreset — 역해석', () => {
     expect(matchSinglePreset('{{_global?.currentUser?.uuid}}', ops)).toBe('isLoggedIn');
   });
 
+  /**
+   * @scenario behavior=match_single_rejects_param_or_unknown
+   * @effects cond_match_single_rejects_param_or_unknown
+   */
   it('파라미터 있는 조건은 모호 → null (고급 표시)', () => {
     expect(matchSinglePreset('{{ (posts?.data?.length ?? 0) > 0 }}', ops)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=match_single_rejects_param_or_unknown
+   * @effects cond_match_single_rejects_param_or_unknown
+   */
   it('알 수 없는 식 → null', () => {
     expect(matchSinglePreset('{{ someCustom.expr }}', ops)).toBeNull();
   });
 });
 
 describe('parseConditionExpr — 라운드트립 역해석 (modal remount 무상태 보존)', () => {
+  /**
+   * @scenario behavior=parse_roundtrip_restores_clauses
+   * @effects cond_parse_roundtrip_restores_clauses
+   */
   it('단일 프리셋 → 절 1개', () => {
     const r = parseConditionExpr('{{ _global?.currentUser?.uuid }}', ops);
     expect(r).toEqual({ clauses: [{ operator: 'isLoggedIn', params: {} }], combinator: 'and' });
   });
 
+  /**
+   * @scenario behavior=parse_roundtrip_restores_clauses
+   * @effects cond_parse_roundtrip_restores_clauses
+   */
   it('파라미터 조건 → 절 + 파라미터 값 복원', () => {
     const r = parseConditionExpr('{{ (posts?.data?.length ?? 0) > 0 }}', ops);
     expect(r?.clauses).toEqual([{ operator: 'dsHasData', params: { src: 'posts' } }]);
   });
 
+  /**
+   * @scenario behavior=parse_roundtrip_restores_clauses
+   * @effects cond_parse_roundtrip_restores_clauses
+   */
   it('따옴표 값 조건 — fieldEquals 라운드트립', () => {
     const expr = combineConditions([{ operator: 'fieldEquals', params: { field: 'status', value: 'open' } }], 'and', ops);
     const r = parseConditionExpr(expr, ops);
     expect(r?.clauses).toEqual([{ operator: 'fieldEquals', params: { field: 'status', value: 'open' } }]);
   });
 
+  /**
+   * @scenario behavior=parse_roundtrip_restores_clauses
+   * @effects cond_parse_roundtrip_restores_clauses
+   */
   it('AND 결합 라운드트립 (combineConditions → parseConditionExpr 동치)', () => {
-    const clauses = [
+    const clauses: ConditionClause[] = [
       { operator: 'isLoggedIn', params: {} },
       { operator: 'dsHasData', params: { src: 'posts' } },
     ];
@@ -159,6 +212,10 @@ describe('parseConditionExpr — 라운드트립 역해석 (modal remount 무상
     expect(r?.clauses).toEqual(clauses);
   });
 
+  /**
+   * @scenario behavior=parse_roundtrip_restores_clauses
+   * @effects cond_parse_roundtrip_restores_clauses
+   */
   it('OR 결합 라운드트립', () => {
     const clauses = [
       { operator: 'isLoggedIn', params: {} },
@@ -180,6 +237,10 @@ describe('parseConditionExpr — 라운드트립 역해석 (modal remount 무상
 // 의미 보존 정규화 후 매칭(Bug2). 손작성 번들 레이아웃 식이 recipe expr 과
 // `?.`/`!!`/공백/외곽괄호만 다를 때 프리셋으로 인식되어야 한다(고급으로 떨어지지 않음).
 describe('normalizeConditionExpr — 의미 보존 정규화', () => {
+  /**
+   * @scenario behavior=normalize_preserves_meaning
+   * @effects cond_normalize_preserves_meaning
+   */
   it('공백 제거 + 옵셔널 체이닝(?. → .) + 외곽 !! 흡수 + 외곽 괄호 1겹 제거', () => {
     expect(normalizeConditionExpr('_local?.isSaving')).toBe('_local.isSaving');
     expect(normalizeConditionExpr('_local.isSaving')).toBe('_local.isSaving');
@@ -191,6 +252,10 @@ describe('normalizeConditionExpr — 의미 보존 정규화', () => {
     expect(normalizeConditionExpr('(x)')).toBe('x');
   });
 
+  /**
+   * @scenario behavior=normalize_preserves_meaning
+   * @effects cond_normalize_preserves_meaning
+   */
   it('단항 부정(!)은 흡수하지 않는다 (의미 다름)', () => {
     expect(normalizeConditionExpr('!_local?.isSaving')).toBe('!_local.isSaving');
     // !! 만 흡수, 단일 ! 는 보존
@@ -199,6 +264,10 @@ describe('normalizeConditionExpr — 의미 보존 정규화', () => {
     expect(normalizeConditionExpr('!!!x')).toBe('!x');
   });
 
+  /**
+   * @scenario behavior=normalize_preserves_meaning
+   * @effects cond_normalize_preserves_meaning
+   */
   it('외곽 괄호가 식 전체를 감싸지 않으면 보존 ((a) && (b))', () => {
     expect(normalizeConditionExpr('(a) && (b)')).toBe('(a)&&(b)');
   });
@@ -215,21 +284,45 @@ describe('matchSinglePreset — 손작성 식 정규화 매칭 (Bug2 회귀)', (
     ],
   });
 
+  /**
+   * @scenario behavior=handwritten_expr_matches_preset
+   * @effects cond_handwritten_expr_matches_preset
+   */
   it('_local.isSaving(손작성) → isSaving 프리셋 (recipe 는 _local?.isSaving)', () => {
     expect(matchSinglePreset('{{_local.isSaving}}', REAL)).toBe('isSaving');
   });
+  /**
+   * @scenario behavior=handwritten_expr_matches_preset
+   * @effects cond_handwritten_expr_matches_preset
+   */
   it('!_local.isSaving → notSaving (단항 부정 보존)', () => {
     expect(matchSinglePreset('{{!_local.isSaving}}', REAL)).toBe('notSaving');
   });
+  /**
+   * @scenario behavior=handwritten_expr_matches_preset
+   * @effects cond_handwritten_expr_matches_preset
+   */
   it('_local.errors → hasErrors (recipe 는 !!_local?.errors)', () => {
     expect(matchSinglePreset('{{_local.errors}}', REAL)).toBe('hasErrors');
   });
+  /**
+   * @scenario behavior=handwritten_expr_matches_preset
+   * @effects cond_handwritten_expr_matches_preset
+   */
   it('_global.currentUser?.uuid → isLoggedIn (recipe 는 _global?.currentUser?.uuid)', () => {
     expect(matchSinglePreset('{{_global.currentUser?.uuid}}', REAL)).toBe('isLoggedIn');
   });
+  /**
+   * @scenario behavior=handwritten_expr_matches_preset
+   * @effects cond_handwritten_expr_matches_preset
+   */
   it('route?.id → isEditMode (recipe 는 !!route?.id)', () => {
     expect(matchSinglePreset('{{route?.id}}', REAL)).toBe('isEditMode');
   });
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('대응 recipe 없는 자유 식 → null (고급 유지)', () => {
     expect(matchSinglePreset('{{_local.success}}', REAL)).toBeNull();
   });
@@ -244,6 +337,10 @@ describe('parseConditionExpr — 손작성 식 정규화 매칭 (Bug2 회귀)', 
     ],
   });
 
+  /**
+   * @scenario behavior=handwritten_expr_matches_preset
+   * @effects cond_handwritten_expr_matches_preset
+   */
   it('단일 손작성 식 → 프리셋 절 복원', () => {
     expect(parseConditionExpr('{{_local.isSaving}}', REAL)).toEqual({
       clauses: [{ operator: 'isSaving', params: {} }],
@@ -255,12 +352,20 @@ describe('parseConditionExpr — 손작성 식 정규화 매칭 (Bug2 회귀)', 
     });
   });
 
+  /**
+   * @scenario behavior=handwritten_expr_matches_preset
+   * @effects cond_handwritten_expr_matches_preset
+   */
   it('파라미터 식 — 손작성 ?. 차이 흡수 후 src 추출', () => {
     // recipe: ({src}?.data?.length ?? 0) > 0, 손작성: (posts.data.length ?? 0) > 0
     const r = parseConditionExpr('{{(posts.data.length ?? 0) > 0}}', REAL);
     expect(r?.clauses).toEqual([{ operator: 'dsHasData', params: { src: 'posts' } }]);
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('다른 shape 의 파라미터 식은 매칭 안 됨 (정상 — 고급 유지)', () => {
     // data.items.modules.length 는 recipe 의 data.length 와 경로가 달라 미매칭
     expect(parseConditionExpr('{{(x?.data?.items?.modules?.length ?? 0) > 0}}', REAL)).toBeNull();
@@ -268,6 +373,10 @@ describe('parseConditionExpr — 손작성 식 정규화 매칭 (Bug2 회귀)', 
 
   // 탐욕적 캡처가 top-level &&/|| 를 삼켜 compound 식을 단일 프리셋으로
   // 오매칭하던 false-positive 회귀. compound 식은 단일 절 매칭에서 제외되어 advanced 유지.
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('compound 식(A && B)은 단일 fieldEquals/fieldNotEquals 로 오매칭하지 않음 (고급 유지)', () => {
     const SPEC = normalizeConditionRecipes({
       operators: [
@@ -301,12 +410,24 @@ describe('L2 recipe-local alias — 역해석은 변종 흡수, 생성은 canoni
     ],
   });
 
+  /**
+   * @scenario behavior=alias_absorbed_canonical_generated
+   * @effects cond_alias_absorbed_canonical_generated
+   */
   it('canonical expr 매칭', () => {
     expect(matchSinglePreset('{{_local.success}}', NO_PARAM)).toBe('hasSuccess');
   });
+  /**
+   * @scenario behavior=alias_absorbed_canonical_generated
+   * @effects cond_alias_absorbed_canonical_generated
+   */
   it('alias(=== true) 매칭 — L1 이 흡수 못하는 준동치 변종', () => {
     expect(matchSinglePreset('{{_local.success === true}}', NO_PARAM)).toBe('hasSuccess');
   });
+  /**
+   * @scenario behavior=alias_absorbed_canonical_generated
+   * @effects cond_alias_absorbed_canonical_generated
+   */
   it('alias(!! 표기) 매칭', () => {
     // !! 는 L1 이 이미 흡수하므로 canonical 로도 매칭되지만 alias 경로도 안전.
     expect(matchSinglePreset('{{!!_local.success}}', NO_PARAM)).toBe('hasSuccess');
@@ -325,22 +446,38 @@ describe('L2 recipe-local alias — 역해석은 변종 흡수, 생성은 canoni
     ],
   });
 
+  /**
+   * @scenario behavior=alias_absorbed_canonical_generated
+   * @effects cond_alias_absorbed_canonical_generated
+   */
   it('canonical (X?.length ?? 0) > 0 → path 추출', () => {
     expect(parseConditionExpr('{{(items?.length ?? 0) > 0}}', LIST)?.clauses).toEqual([
       { operator: 'listNonEmpty', params: { path: 'items' } },
     ]);
   });
+  /**
+   * @scenario behavior=alias_absorbed_canonical_generated
+   * @effects cond_alias_absorbed_canonical_generated
+   */
   it('alias X?.length > 0 → path 추출 (준동치 변종 흡수)', () => {
     expect(parseConditionExpr('{{items?.length > 0}}', LIST)?.clauses).toEqual([
       { operator: 'listNonEmpty', params: { path: 'items' } },
     ]);
   });
 
+  /**
+   * @scenario behavior=alias_absorbed_canonical_generated
+   * @effects cond_alias_absorbed_canonical_generated
+   */
   it('생성(combineConditions)은 항상 canonical expr — alias 로 생성하지 않음', () => {
     const r = combineConditions([{ operator: 'listNonEmpty', params: { path: 'items' } }], 'and', LIST);
     expect(r).toBe('{{ (items?.length ?? 0) > 0 }}');
   });
 
+  /**
+   * @scenario behavior=alias_absorbed_canonical_generated
+   * @effects cond_alias_absorbed_canonical_generated
+   */
   it('aliases 미정의 recipe 도 정상 (빈 배열)', () => {
     const ops0 = normalizeConditionRecipes({ operators: [{ value: 'x', expr: '_local?.x' }] });
     expect(ops0[0].aliases).toEqual([]);
@@ -357,6 +494,10 @@ describe('L4 specificity 우선 — 범용 truthy 가 구체 프리셋을 가로
     ],
   });
 
+  /**
+   * @scenario behavior=specific_preset_wins_over_generic
+   * @effects cond_specific_preset_wins_over_generic
+   */
   it('_local.isSaving → isSaving (파라미터 0개 프리셋 우선, 범용 {path} 아님)', () => {
     expect(matchSinglePreset('{{_local.isSaving}}', SPEC)).toBe('isSaving');
     expect(parseConditionExpr('{{_local.isSaving}}', SPEC)?.clauses).toEqual([
@@ -364,6 +505,10 @@ describe('L4 specificity 우선 — 범용 truthy 가 구체 프리셋을 가로
     ]);
   });
 
+  /**
+   * @scenario behavior=specific_preset_wins_over_generic
+   * @effects cond_specific_preset_wins_over_generic
+   */
   it('구체 프리셋과 무관한 임의 경로는 범용 valueTruthy 로 매칭', () => {
     expect(parseConditionExpr('{{some.other.path}}', SPEC)?.clauses).toEqual([
       { operator: 'valueTruthy', params: { path: 'some.other.path' } },
@@ -376,23 +521,39 @@ describe('path-shape 가드 — 범용 {path} 가 비교/compound 를 삼키지 
     operators: [{ value: 'valueTruthy', label: 't', params: [{ key: 'path' }], expr: '{path}' }],
   });
 
+  /**
+   * @scenario behavior=path_shape_guard
+   * @effects cond_path_shape_guard
+   */
   it('순수 경로만 valueTruthy 로 인식', () => {
     expect(parseConditionExpr('{{user.avatar_url}}', SPEC)?.clauses).toEqual([
       { operator: 'valueTruthy', params: { path: 'user.avatar_url' } },
     ]);
   });
 
+  /**
+   * @scenario behavior=path_shape_guard
+   * @effects cond_path_shape_guard
+   */
   it('비교 연산자 포함 식은 거부 (=== / > / < 등)', () => {
     expect(parseConditionExpr('{{count > 0}}', SPEC)).toBeNull();
     expect(parseConditionExpr('{{status === 1}}', SPEC)).toBeNull();
     expect(parseConditionExpr('{{a !== b}}', SPEC)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=path_shape_guard
+   * @effects cond_path_shape_guard
+   */
   it('그룹 괄호/삼항 포함 식은 거부', () => {
     expect(parseConditionExpr('{{(a ?? []).length}}', SPEC)).toBeNull();
     expect(parseConditionExpr('{{flag ? x : y}}', SPEC)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=path_shape_guard
+   * @effects cond_path_shape_guard
+   */
   it('따옴표 자유 리터럴 파라미터는 path-shape 가드 미적용 (비교 연산자 OK)', () => {
     // fieldEquals 의 value 는 따옴표 캡처 → 임의 문자열 허용
     const EQ = normalizeConditionRecipes({
@@ -421,6 +582,10 @@ describe('P1 valueTruthy/valueFalsy — 임의 경로 truthy/falsy 인식', () =
     ],
   });
 
+  /**
+   * @scenario behavior=value_truthy_falsy_presets
+   * @effects cond_value_truthy_falsy_presets
+   */
   it('범용 truthy — 임의 경로(상태/데이터) 인식 + path 추출', () => {
     expect(parseConditionExpr('{{_global.isDeleting}}', P1)?.clauses).toEqual([
       { operator: 'valueTruthy', params: { path: '_global.isDeleting' } },
@@ -438,6 +603,10 @@ describe('P1 valueTruthy/valueFalsy — 임의 경로 truthy/falsy 인식', () =
     ]);
   });
 
+  /**
+   * @scenario behavior=value_truthy_falsy_presets
+   * @effects cond_value_truthy_falsy_presets
+   */
   it('범용 falsy — !경로 인식 + path 추출(부정 기호 제외)', () => {
     expect(parseConditionExpr('{{!_local.success}}', P1)?.clauses).toEqual([
       { operator: 'valueFalsy', params: { path: '_local.success' } },
@@ -447,6 +616,10 @@ describe('P1 valueTruthy/valueFalsy — 임의 경로 truthy/falsy 인식', () =
     ]);
   });
 
+  /**
+   * @scenario behavior=specific_preset_wins_over_generic
+   * @effects cond_specific_preset_wins_over_generic
+   */
   it('L4 — 구체 프리셋(0-param)이 범용 truthy/falsy 를 가로채지 않음', () => {
     // _local.isSaving 은 isSaving(구체)으로, valueTruthy(범용) 아님
     expect(parseConditionExpr('{{_local.isSaving}}', P1)?.clauses).toEqual([{ operator: 'isSaving', params: {} }]);
@@ -456,6 +629,10 @@ describe('P1 valueTruthy/valueFalsy — 임의 경로 truthy/falsy 인식', () =
     expect(parseConditionExpr('{{!_global.currentUser?.uuid}}', P1)?.clauses).toEqual([{ operator: 'isGuest', params: {} }]);
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('음성 — 비교/배열길이/compound 는 범용 truthy/falsy 로 오매칭하지 않음 (advanced 유지)', () => {
     // 숫자 비교
     expect(parseConditionExpr('{{_global.cartCount > 0}}', P1)).toBeNull();
@@ -469,6 +646,10 @@ describe('P1 valueTruthy/valueFalsy — 임의 경로 truthy/falsy 인식', () =
     expect(parseConditionExpr('{{!_local.success && !_local.tokenError}}', P1)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=value_truthy_falsy_presets
+   * @effects cond_value_truthy_falsy_presets
+   */
   it('생성(combineConditions)은 canonical expr — valueTruthy={path}, valueFalsy=!{path}', () => {
     expect(combineConditions([{ operator: 'valueTruthy', params: { path: '_global.isDeleting' } }], 'and', P1)).toBe(
       '{{ _global.isDeleting }}',
@@ -478,6 +659,10 @@ describe('P1 valueTruthy/valueFalsy — 임의 경로 truthy/falsy 인식', () =
     );
   });
 
+  /**
+   * @scenario behavior=value_truthy_falsy_presets
+   * @effects cond_value_truthy_falsy_presets
+   */
   it('AND 결합 라운드트립 — 범용 truthy 2개', () => {
     const clauses = [
       { operator: 'valueTruthy', params: { path: '_global.isDeleting' } },
@@ -518,6 +703,10 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     ],
   });
 
+  /**
+   * @scenario behavior=numeric_and_list_presets
+   * @effects cond_numeric_and_list_presets
+   */
   it('P2 numGt — 실데이터 미커버 식 인식 + path/n 추출', () => {
     expect(parseConditionExpr('{{_global.cartCount > 0}}', P2P3)?.clauses).toEqual([
       { operator: 'numGt', params: { path: '_global.cartCount', n: '0' } },
@@ -534,6 +723,10 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=numeric_and_list_presets
+   * @effects cond_numeric_and_list_presets
+   */
   it('P2 numGte/numLt/numLte 인식', () => {
     expect(parseConditionExpr('{{remainingSeconds >= 10}}', P2P3)?.clauses).toEqual([
       { operator: 'numGte', params: { path: 'remainingSeconds', n: '10' } },
@@ -546,6 +739,10 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=specific_preset_wins_over_generic
+   * @effects cond_specific_preset_wins_over_generic
+   */
   it('L4 specificity — `>=` 가 `>` 보다 우선(리터럴 길이) → numGt 오매칭 차단', () => {
     // `a >= 1` 은 numGte. numGt(`{path} > {n}`)가 `{path}`=`a >`, `{n}`=`1` 로 삼키면 path-shape
     // 가드가 거부하므로 어차피 numGt 는 안 되지만, specificity 로도 numGte 가 먼저다.
@@ -557,12 +754,20 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=numeric_and_list_presets
+   * @effects cond_numeric_and_list_presets
+   */
   it('P3 listNonEmpty — canonical (X ?? []).length > 0 + path 추출', () => {
     expect(parseConditionExpr('{{(admin_menu.data ?? []).length > 0}}', P2P3)?.clauses).toEqual([
       { operator: 'listNonEmpty', params: { path: 'admin_menu.data' } },
     ]);
   });
 
+  /**
+   * @scenario behavior=numeric_and_list_presets
+   * @effects cond_numeric_and_list_presets
+   */
   it('P3 listNonEmpty — L2 alias 구조 변종 흡수(X && X.length>0 / X?.length>0)', () => {
     // alias 1: X && X.length > 0 (반복 키 — backreference 일치 필수)
     expect(parseConditionExpr('{{recent_posts.data && recent_posts.data.length > 0}}', P2P3)?.clauses).toEqual([
@@ -574,6 +779,10 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=numeric_and_list_presets
+   * @effects cond_numeric_and_list_presets
+   */
   it('P3 listEmpty — canonical + alias 인식', () => {
     expect(parseConditionExpr('{{(admin_menu.data ?? []).length === 0}}', P2P3)?.clauses).toEqual([
       { operator: 'listEmpty', params: { path: 'admin_menu.data' } },
@@ -583,6 +792,10 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('음성 — 반복 키 alias 가 서로 다른 두 식(compound)을 삼키지 않음 (backreference 검증)', () => {
     // `!a && b.length > 0` — alias `{path} && {path}.length > 0` 의 두 캡처(!a, b)가 불일치 →
     // backreference 검증으로 거부. compound 이므로 advanced 유지.
@@ -591,11 +804,19 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     expect(parseConditionExpr('{{x && y.length > 0}}', P2P3)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('음성 — compound 숫자비교는 단일 numGt 로 오매칭하지 않음 (advanced 유지)', () => {
     expect(parseConditionExpr('{{!_global.statusCountsLoading && _global.statusCountsData?.deleted_count > 0}}', P2P3)).toBeNull();
     expect(parseConditionExpr('{{admin_menu.success === true && (admin_menu.data ?? []).length === 0}}', P2P3)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=numeric_and_list_presets
+   * @effects cond_numeric_and_list_presets
+   */
   it('생성(combineConditions)은 canonical expr — alias 로 생성하지 않음', () => {
     expect(combineConditions([{ operator: 'numGt', params: { path: '_global.cartCount', n: '0' } }], 'and', P2P3)).toBe(
       '{{ _global.cartCount > 0 }}',
@@ -608,6 +829,10 @@ describe('P2/P3 숫자비교·배열길이 프리셋', () => {
     );
   });
 
+  /**
+   * @scenario behavior=numeric_and_list_presets
+   * @effects cond_numeric_and_list_presets
+   */
   it('라운드트립 — P2/P3 생성 후 재해석 시 동일 절 복원', () => {
     const cases: { operator: string; params: Record<string, string> }[] = [
       { operator: 'numGt', params: { path: '_global.cartCount', n: '0' } },
@@ -640,6 +865,10 @@ describe('P5 valueIsTrue/valueIsFalse — 명시 비교 프리셋', () => {
     ],
   });
 
+  /**
+   * @scenario behavior=explicit_bool_presets
+   * @effects cond_explicit_bool_presets
+   */
   it('P5 valueIsTrue — 실데이터 미커버 식 인식 + path 추출(옵셔널 체이닝 흡수)', () => {
     expect(parseConditionExpr('{{_local.showCategoryRemoveModal === true}}', P5)?.clauses).toEqual([
       { operator: 'valueIsTrue', params: { path: '_local.showCategoryRemoveModal' } },
@@ -653,6 +882,10 @@ describe('P5 valueIsTrue/valueIsFalse — 명시 비교 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=explicit_bool_presets
+   * @effects cond_explicit_bool_presets
+   */
   it('P5 valueIsFalse — `=== false` 인식 + path 추출', () => {
     expect(parseConditionExpr('{{_local.bulkApplyAll === false}}', P5)?.clauses).toEqual([
       { operator: 'valueIsFalse', params: { path: '_local.bulkApplyAll' } },
@@ -662,6 +895,10 @@ describe('P5 valueIsTrue/valueIsFalse — 명시 비교 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=specific_preset_wins_over_generic
+   * @effects cond_specific_preset_wins_over_generic
+   */
   it('L4 specificity — 구체 0-param(isAdmin) 이 valueIsTrue 보다 우선', () => {
     // `_global.currentUser.is_admin === true` 는 isAdmin(0-param)으로 인식되어야지
     // valueIsTrue(`{path}=...is_admin`)로 흡수되면 안 된다(구체 우선).
@@ -671,17 +908,29 @@ describe('P5 valueIsTrue/valueIsFalse — 명시 비교 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('음성 — `!== true` 는 valueIsTrue/valueIsFalse 어디에도 매칭 안 됨(의미 다름 → advanced)', () => {
     // `=== false` 와 `!== true` 는 (null/undefined 에서) 동치가 아니므로 흡수하지 않는다.
     expect(parseConditionExpr('{{page?.data?.abilities?.can_delete !== true}}', P5)).toBeNull();
     expect(parseConditionExpr('{{page?.data?.abilities?.can_delete !== false}}', P5)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('음성 — compound(`A === true && B`)는 단일 valueIsTrue 로 오매칭하지 않음(advanced)', () => {
     expect(parseConditionExpr("{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}", P5)).toBeNull();
     expect(parseConditionExpr('{{admin_menu.success === true && (admin_menu.data ?? []).length === 0}}', P5)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('음성 — 단순 truthy(`{path}`)는 valueIsTrue 로 승격되지 않음(=== true 명시 없음)', () => {
     // `_local.flag` 는 valueTruthy(== true 명시 없음). valueIsTrue 로 잘못 잡히면 안 됨.
     expect(parseConditionExpr('{{_local.flag}}', P5)?.clauses).toEqual([
@@ -689,6 +938,10 @@ describe('P5 valueIsTrue/valueIsFalse — 명시 비교 프리셋', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=explicit_bool_presets
+   * @effects cond_explicit_bool_presets
+   */
   it('생성(combineConditions)은 canonical `{path} === true` / `=== false`', () => {
     expect(combineConditions([{ operator: 'valueIsTrue', params: { path: '_local.modalOpen' } }], 'and', P5)).toBe(
       '{{ _local.modalOpen === true }}',
@@ -698,6 +951,10 @@ describe('P5 valueIsTrue/valueIsFalse — 명시 비교 프리셋', () => {
     );
   });
 
+  /**
+   * @scenario behavior=explicit_bool_presets
+   * @effects cond_explicit_bool_presets
+   */
   it('라운드트립 — P5 생성 후 재해석 시 동일 절 복원', () => {
     const cases: { operator: string; params: Record<string, string> }[] = [
       { operator: 'valueIsTrue', params: { path: '_local.showCategoryRemoveModal' } },
@@ -738,6 +995,10 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ],
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('C7 — `!== false` / `!== true` 인식 + path 추출', () => {
     expect(parseConditionExpr('{{posts?.data?.board?.settings?.show_view_count !== false}}', S4)?.clauses).toEqual([
       { operator: 'valueNotFalse', params: { path: 'posts.data.board.settings.show_view_count' } },
@@ -747,6 +1008,10 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('C5/C6 — undefined/null 존재 비교 인식(느슨한 `!= null` alias 포함)', () => {
     expect(parseConditionExpr('{{user.data?.notify_comment !== undefined}}', S4)?.clauses).toEqual([
       { operator: 'valueDefined', params: { path: 'user.data.notify_comment' } },
@@ -760,6 +1025,10 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('C8 — 경로 동등/부등 비교(fieldMatches/Differs) 2-path 추출', () => {
     expect(parseConditionExpr('{{_local.editingCurrencyIdx === currency._idx}}', S4)?.clauses).toEqual([
       { operator: 'fieldMatches', params: { a: '_local.editingCurrencyIdx', b: 'currency._idx' } },
@@ -769,6 +1038,10 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('C4 — 숫자/리터럴 동등은 fieldMatches(`{a} === {b}`)로 흡수 + `(X ?? 0) === N` coalesce alias', () => {
     // numEquals 를 별도 두지 않는다 — `{path}==={n}` 과 `{a}==={b}` 는 동일 템플릿이라
     // specificity 동점 모호성(round-trip 비결정) 발생. fieldMatches 가 리터럴 RHS 도 흡수.
@@ -781,6 +1054,10 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('C1 — 숫자비교 `(X ?? 0) > N` / `(X ?? []).length > N` alias 흡수', () => {
     expect(parseConditionExpr('{{(post?.view_count ?? 0) > 0}}', S4)?.clauses).toEqual([
       { operator: 'numGt', params: { path: 'post.view_count', n: '0' } },
@@ -790,6 +1067,10 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('P6 의미라벨 — `X ?? false` truthy fallback 은 valueTruthy alias 로 흡수', () => {
     expect(parseConditionExpr('{{_global.identityChallenge?.resending ?? false}}', S4)?.clauses).toEqual([
       { operator: 'valueTruthy', params: { path: '_global.identityChallenge.resending' } },
@@ -799,12 +1080,20 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('listEmpty — `!(X ?? []).length` 빈 리스트 alias 흡수', () => {
     expect(parseConditionExpr('{{!(boards_list?.data?.data ?? []).length}}', S4)?.clauses).toEqual([
       { operator: 'listEmpty', params: { path: 'boards_list.data.data' } },
     ]);
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('fieldEquals — `(X ?? \'d\') === \'v\'` / `(X ?? path) === \'v\'` coalesce alias 흡수', () => {
     expect(parseConditionExpr("{{(_local.activeTab ?? 'info') === 'info'}}", S4)?.clauses).toEqual([
       { operator: 'fieldEquals', params: { field: '_local.activeTab', default: 'info', value: 'info' } },
@@ -815,25 +1104,45 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     ]);
   });
 
+  /**
+   * @scenario behavior=specific_preset_wins_over_generic
+   * @effects cond_specific_preset_wins_over_generic
+   */
   it('L4 specificity — 구체 0-param(isAdmin) 이 단계4 비교 프리셋보다 우선', () => {
     expect(matchSinglePreset('{{_global.currentUser?.is_admin === true}}', S4)).toBe('isAdmin');
   });
 
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
   it('음성 — compound(`A === B && C`)는 단일 fieldMatches 로 오매칭하지 않음(advanced)', () => {
     expect(parseConditionExpr('{{a.x === b.y && c.z !== d.w}}', S4)).toBeNull();
   });
 
-  it('음성 — 반복키 backreference: `!a !== b` 류 서로 다른 두 식은 fieldMatches 단일절로 오삼키지 않음', () => {
+  /**
+   * @scenario behavior=unmatched_expr_stays_advanced
+   * @effects cond_unmatched_expr_stays_advanced
+   */
+  it('음성 — 비교 연산자 연쇄(`a.x === b.y === c.z`)는 fieldMatches 단일절로 오삼키지 않음', () => {
     // `a.x === b.y` 만 fieldMatches. `a.x === b.y === c.z`(2회 ===)는 비교 연산자가 캡처에
     // 들어가 path-shape 가드에 거부 → advanced.
     expect(parseConditionExpr('{{a.x === b.y === c.z}}', S4)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=path_shape_guard
+   * @effects cond_path_shape_guard
+   */
   it('음성 — `!= null` 외 느슨 비교가 path-shape 가드를 우회하지 않음(우변에 연산자 혼입 거부)', () => {
     // `x !== (a && b)` 우변 compound → 거부
     expect(parseConditionExpr('{{x !== (a && b)}}', S4)).toBeNull();
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('생성(combineConditions)은 canonical — 비교 프리셋', () => {
     expect(combineConditions([{ operator: 'valueNotFalse', params: { path: '_local.flag' } }], 'and', S4)).toBe('{{ _local.flag !== false }}');
     expect(combineConditions([{ operator: 'valueNotNull', params: { path: 'a.b' } }], 'and', S4)).toBe('{{ a.b !== null }}');
@@ -842,6 +1151,10 @@ describe('비교 패턴 프리셋 + coalesce alias', () => {
     expect(combineConditions([{ operator: 'numGt', params: { path: 'post.view_count', n: '0' } }], 'and', S4)).toBe('{{ post.view_count > 0 }}');
   });
 
+  /**
+   * @scenario behavior=comparison_presets_with_coalesce_alias
+   * @effects cond_comparison_presets_with_coalesce_alias
+   */
   it('라운드트립 — 단계4 canonical 생성 후 재해석 시 동일 절 복원', () => {
     const cases: { operator: string; params: Record<string, string> }[] = [
       { operator: 'valueNotFalse', params: { path: '_local.x' } },
@@ -885,16 +1198,28 @@ describe('60% 게이트 출고 recipes 회귀 잠금', () => {
     'valueNotNull', 'valueIsNull', 'fieldMatches', 'fieldDiffers',
   ];
 
+  /**
+   * @scenario behavior=shipped_recipes_gate_locked
+   * @effects cond_shipped_recipes_gate_locked
+   */
   it('게이트 토대 프리셋이 admin 템플릿 출고 recipes 에 전부 존재한다', () => {
     const names = adminOps.map((o) => o.value);
     for (const p of GATE_PRESETS) expect(names).toContain(p);
   });
 
+  /**
+   * @scenario behavior=shipped_recipes_gate_locked
+   * @effects cond_shipped_recipes_gate_locked
+   */
   it('게이트 토대 프리셋이 basic 템플릿 출고 recipes 에 전부 존재한다 (양 템플릿 동기)', () => {
     const names = basicOps.map((o) => o.value);
     for (const p of GATE_PRESETS) expect(names).toContain(p);
   });
 
+  /**
+   * @scenario behavior=shipped_recipes_gate_locked
+   * @effects cond_shipped_recipes_gate_locked
+   */
   it('L3 — 한 템플릿 안에서 게이트 프리셋이 중복(정규화 동일 expr) 없이 고유하다', () => {
     for (const opSet of [adminOps, basicOps]) {
       const seen = new Map<string, string>();
@@ -921,6 +1246,10 @@ describe('60% 게이트 출고 recipes 회귀 잠금', () => {
     { expr: '{{ item.has_review !== false }}', operator: 'valueNotFalse', params: { path: 'item.has_review' } }, // 단계 4
   ];
 
+  /**
+   * @scenario behavior=shipped_recipes_gate_locked
+   * @effects cond_shipped_recipes_gate_locked
+   */
   it('단계별 대표 미커버식이 출고 recipes 로 의도한 프리셋·파라미터로 역해석된다 (admin)', () => {
     for (const { expr, operator, params } of REPRESENTATIVE) {
       const r = parseConditionExpr(expr, adminOps);
@@ -928,6 +1257,10 @@ describe('60% 게이트 출고 recipes 회귀 잠금', () => {
     }
   });
 
+  /**
+   * @scenario behavior=shipped_recipes_gate_locked
+   * @effects cond_shipped_recipes_gate_locked
+   */
   it('단계별 대표 미커버식이 출고 recipes 로 의도한 프리셋·파라미터로 역해석된다 (basic)', () => {
     for (const { expr, operator, params } of REPRESENTATIVE) {
       const r = parseConditionExpr(expr, basicOps);
@@ -935,6 +1268,10 @@ describe('60% 게이트 출고 recipes 회귀 잠금', () => {
     }
   });
 
+  /**
+   * @scenario behavior=shipped_recipes_gate_locked
+   * @effects cond_shipped_recipes_gate_locked
+   */
   it('compound 식은 출고 recipes 에서도 advanced(null) 유지 (false-positive 0 게이트)', () => {
     const COMPOUND = [
       '{{ _local.forgotError && !_local.forgotErrors }}',

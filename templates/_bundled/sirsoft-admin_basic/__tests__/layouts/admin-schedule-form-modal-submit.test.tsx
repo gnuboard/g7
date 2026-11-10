@@ -25,6 +25,7 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
         }
         if (predicate(n)) result.push(n);
         if (n.children) visit(n.children);
+        if (n.props?.footer) visit(n.props.footer);
     };
     visit(node);
     return result;

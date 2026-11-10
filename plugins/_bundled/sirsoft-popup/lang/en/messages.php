@@ -24,6 +24,9 @@ return [
         'not_owned' => 'Temporary images uploaded by another administrator cannot be deleted. Unsaved images are removed by the cleanup schedule.',
         'not_found' => 'Image not found.',
     ],
+    'thumbnail' => [
+        'source_label' => 'Popup images',
+    ],
     'settings' => [
         'fetched' => 'Display settings loaded.',
     ],

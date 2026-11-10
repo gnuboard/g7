@@ -43,6 +43,9 @@
 | `drivers.storage_driver` | `filesystems.default` |
 | `drivers.public_asset_disk` | `core.storage.public_asset_disk` (`'none'`/빈값 → `''`, testing 차단) |
 | `drivers.search_engine_driver` | `scout.driver` |
+| `drivers.image_driver` | `core.image.driver` (이미지 처리 엔진, 쓸 수 없으면 실행 시 `gd` 로 되돌아간다) |
+| `upload.thumbnail_enabled`, `upload.thumbnail_presets`, `upload.thumbnail_content_preset`, `upload.thumbnail_disk_public`, `upload.thumbnail_disk_gated`, `upload.thumbnail_prune_enabled`, `upload.thumbnail_animated_original` | `core.thumbnail.{enabled, presets, content_preset, disk_public, disk_gated, prune_enabled, animated_original}` (규격 목록은 저장 행 그대로, 고정 슬롯 보충과 확장 규격 병합은 `ThumbnailPresetRegistry` 가 한다) |
+| `upload.thumbnail_generate_per_minute`, `upload.thumbnail_lock_wait_seconds`, `upload.thumbnail_max_source_pixels`, `upload.thumbnail_pregenerate_batch`, `upload.thumbnail_pregenerate_time_budget`, `upload.thumbnail_purge_time_budget` | `core.thumbnail.{generate_per_minute, lock_wait_seconds, max_source_pixels, pregenerate_batch, pregenerate_time_budget, purge_time_budget}` (정수. 비운 값이면 `core.thumbnail_server_defaults.*` — `.env` 의 `G7_THUMBNAIL_*` 또는 기본값. 기본값 파일이 비운 값이라 env 우선 모드가 꺼진 설치도 화면에 저장하기 전까지는 `.env` 를 따른다. env 대응 키라 env 우선 모드에서 잠긴다) |
 | `drivers.redis_*` | `database.redis.*` |
 | `drivers.memcached_*` | `cache.stores.memcached.*` |
 | `drivers.s3_*` | `filesystems.disks.s3.*` — `s3_url` → `url`(공개 URL base), `s3_endpoint` → `endpoint`(API 요청 대상), `s3_use_path_style` → `use_path_style_endpoint` |

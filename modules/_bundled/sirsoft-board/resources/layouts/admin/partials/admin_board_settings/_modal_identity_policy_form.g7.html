@@ -24,7 +24,8 @@
           </input>
           <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.key}}" class="board-form-error">{{_global.identity_policy_form_modal?.errors?.errors?.key?.[0] ?? ''}}</span>
         </div>
-        <div class="board-grid-2col-responsive">
+        <div class="board:grid board:grid-cols-1 board:gap-4">
+          <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
           <div>
             <label class="board-form-label">$t:admin.identity.policies.form.scope</label>
             <select value="{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}" disabled="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'board-input-error board:disabled:bg-gray-100 board:dark:disabled:bg-gray-900' : ' board:disabled:bg-gray-100 board:dark:disabled:bg-gray-900'}}">
@@ -51,7 +52,8 @@
             <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.target}}" class="board-form-error">{{_global.identity_policy_form_modal?.errors?.errors?.target?.[0] ?? ''}}</span>
           </div>
         </div>
-        <div class="board-grid-2col-responsive">
+        <div class="board:grid board:grid-cols-1 board:gap-4">
+          <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
           <div>
             <label class="board-form-label">$t:admin.identity.policies.form.purpose</label>
             <select value="{{_global.identity_policy_form_modal?.form?.purpose ?? 'sensitive_action'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'board-input-error' : ''}}" options="{{(boardIdentityPurposes?.data ?? []).map(function(p) { return {value: p.id, label: p.label ?? p.id}; })}}">
@@ -72,7 +74,8 @@
             </select>
           </div>
         </div>
-        <div class="board-grid-2col-responsive">
+        <div class="board:grid board:grid-cols-1 board:gap-4">
+          <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
           <div>
             <label class="board-form-label">$t:admin.identity.policies.form.grace_minutes</label>
             <input type="number" value="{{_global.identity_policy_form_modal?.form?.grace_minutes ?? 0}}" :min="0" :max="1440" class="{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'board-input-error' : ''}}">
@@ -110,7 +113,8 @@
           <p class="board-text-hint board:mt-1">$t:admin.identity.policies.form.priority_desc</p>
           <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.priority}}" class="board-form-error">{{_global.identity_policy_form_modal?.errors?.errors?.priority?.[0] ?? ''}}</span>
         </div>
-        <div class="board-grid-2col-responsive">
+        <div class="board:grid board:grid-cols-1 board:gap-4">
+          <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
           <div>
             <label class="board-form-label">$t:admin.identity.policies.form.fail_mode</label>
             <select value="{{_global.identity_policy_form_modal?.form?.fail_mode ?? 'block'}}" class="{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'board-input-error' : ''}}">
@@ -152,36 +156,36 @@
         </div>
         <div data-if="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="board-alert-warning board:text-xs board-tone-warning">$t:admin.identity.policies.form.declared_policy_notice</div>
       </div>
-      <div data-ref="policy_form_footer" class="board-flex-center board:justify-end board:gap-2 board:px-4 board:py-3 board:border-t board:border-gray-200 board:dark:border-gray-700 board:flex-shrink-0 board:bg-white board:dark:bg-gray-800">
-        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed">
-          <on type="click">
-            <close-modal target="identity_policy_form_modal"/>
-          </on>
-          <span>$t:common.cancel</span>
-        </button>
-        <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving || boardIdentityPolicies?.data?.abilities?.can_update !== true}}" class="board-flex-center board:gap-2 board:px-4 board:py-2 board:text-sm board:font-medium board:bg-indigo-600 board:dark:bg-indigo-500 board:hover:bg-indigo-700 board:dark:hover:bg-indigo-600 board:disabled:opacity-50 board:disabled:cursor-not-allowed board:text-white board:rounded-lg">
-          <on type="click">
-            <!-- 저장 — 새 정책은 만들고(POST) 기존 것은 고친다(PUT). 새로 만드는 것은 언제나 게시판 소유(`source_type=admin` · `source_identifier=sirsoft-board`)로 찍고, 편집일 때는 원래 출처를 그대로 지킨다. 성공하면 폼 객체를 통째로 비워 다음에 열릴 때 지난 값이 남지 않게 한다 -->
-            <sequence>
-              <set-state target="global" :identity_policy_form_modal.isSaving="true" :identity_policy_form_modal.errors="null"/>
-              <api-call :auth_required="true" target="{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-board/admin/identity-policies' : '/api/modules/sirsoft-board/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}" method="{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}">
-                <success>
-                  <toast message="$t:admin.identity.policies.save_success" type="success"/>
-                  <close-modal target="identity_policy_form_modal"/>
-                  <refetch-data-source dataSourceId="boardIdentityPolicies"/>
-                  <set-state target="global" :identity_policy_form_modal="null"/>
-                </success>
-                <fail>
-                  <set-state target="global" :identity_policy_form_modal.isSaving="false" identity_policy_form_modal.errors="{{error}}"/>
-                </fail>
-                <body key="{{_global.identity_policy_form_modal?.form?.key}}" scope="{{_global.identity_policy_form_modal?.form?.scope}}" target="{{_global.identity_policy_form_modal?.form?.target}}" purpose="{{_global.identity_policy_form_modal?.form?.purpose}}" provider_id="{{_global.identity_policy_form_modal?.form?.provider_id || null}}" grace_minutes="{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}" applies_to="{{_global.identity_policy_form_modal?.form?.applies_to}}" fail_mode="{{_global.identity_policy_form_modal?.form?.fail_mode}}" enabled="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" priority="{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}" conditions="{{_global.identity_policy_form_modal?.form?.conditions ?? null}}" source_type="{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}" source_identifier="{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-board' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-board')}}"/>
-              </api-call>
-            </sequence>
-          </on>
-          <icon data-if="{{_global.identity_policy_form_modal?.isSaving}}" name="spinner" class="board:animate-spin" size="sm"/>
-          <span>{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal target="identity_policy_form_modal"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving || boardIdentityPolicies?.data?.abilities?.can_update !== true}}" class="board-flex-center board:gap-2 board:px-4 board:py-2 board:text-sm board:font-medium board:bg-indigo-600 board:dark:bg-indigo-500 board:hover:bg-indigo-700 board:dark:hover:bg-indigo-600 board:disabled:opacity-50 board:disabled:cursor-not-allowed board:text-white board:rounded-lg">
+        <on type="click">
+          <!-- 저장 — 새 정책은 만들고(POST) 기존 것은 고친다(PUT). 새로 만드는 것은 언제나 게시판 소유(`source_type=admin` · `source_identifier=sirsoft-board`)로 찍고, 편집일 때는 원래 출처를 그대로 지킨다. 성공하면 폼 객체를 통째로 비워 다음에 열릴 때 지난 값이 남지 않게 한다 -->
+          <sequence>
+            <set-state target="global" :identity_policy_form_modal.isSaving="true" :identity_policy_form_modal.errors="null"/>
+            <api-call :auth_required="true" target="{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-board/admin/identity-policies' : '/api/modules/sirsoft-board/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}" method="{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}">
+              <success>
+                <toast message="$t:admin.identity.policies.save_success" type="success"/>
+                <close-modal target="identity_policy_form_modal"/>
+                <refetch-data-source dataSourceId="boardIdentityPolicies"/>
+                <set-state target="global" :identity_policy_form_modal="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :identity_policy_form_modal.isSaving="false" identity_policy_form_modal.errors="{{error}}"/>
+              </fail>
+              <body key="{{_global.identity_policy_form_modal?.form?.key}}" scope="{{_global.identity_policy_form_modal?.form?.scope}}" target="{{_global.identity_policy_form_modal?.form?.target}}" purpose="{{_global.identity_policy_form_modal?.form?.purpose}}" provider_id="{{_global.identity_policy_form_modal?.form?.provider_id || null}}" grace_minutes="{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}" applies_to="{{_global.identity_policy_form_modal?.form?.applies_to}}" fail_mode="{{_global.identity_policy_form_modal?.form?.fail_mode}}" enabled="{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}" priority="{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}" conditions="{{_global.identity_policy_form_modal?.form?.conditions ?? null}}" source_type="{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}" source_identifier="{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-board' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-board')}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.identity_policy_form_modal?.isSaving}}" name="spinner" class="board:animate-spin" size="sm"/>
+        <span>{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}</span>
+      </button>
+    </footer>
   </modal>
 </partial>

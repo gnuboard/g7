@@ -481,6 +481,7 @@ php g7-install --no-interaction ...  # automation — see "방법 5" in INSTALL.
 | **sirsoft-marketing** | Marketing tools |
 | **sirsoft-koreaexim** | Korea Eximbank exchange rate updates and history |
 | **sirsoft-ckeditor5** | CKEditor 5 editor |
+| **sirsoft-cdn_cloudfront** | Amazon CloudFront CDN for public image thumbnails and assets, with cache invalidation |
 | **sirsoft-gdpr** | Privacy and GDPR support |
 | **sirsoft-popup** | Popup layer for notices and promotions |
 | **sirsoft-message_bizppurio** | Bizppurio messaging (SMS/LMS and KakaoTalk alimtalk delivery) |
@@ -503,6 +504,7 @@ Official language packs you can install alongside the initial setup, so the core
 | **g7-module-sirsoft-board-ja** | Board module, Japanese |
 | **g7-module-sirsoft-ecommerce-ja** | E-commerce module, Japanese |
 | **g7-module-sirsoft-page-ja** | Page module, Japanese |
+| **g7-plugin-sirsoft-cdn_cloudfront-ja** | CloudFront CDN plugin, Japanese |
 | **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor 5 plugin, Japanese |
 | **g7-plugin-sirsoft-daum_postcode-ja** | Daum postcode plugin, Japanese |
 | **g7-plugin-sirsoft-gdpr-ja** | Privacy/GDPR plugin, Japanese |

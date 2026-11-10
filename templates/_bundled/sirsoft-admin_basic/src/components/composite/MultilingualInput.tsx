@@ -11,6 +11,9 @@ import { getSiteLocale } from '../../support/siteLocale';
 import { getLocaleDisplayName } from '../../support/localeName';
 import { findAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import { translate } from '../../utils/translate';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { classAtWidth } from '../layout/widthBreakpoints';
+import { escapeToClose } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -149,6 +152,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   'aria-label': ariaLabelAttr,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
+  // 언어 탭 이름(전체 이름·코드)을 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
 
   // 이름 prop 이 없으면 바깥 상자 곁의 라벨 글자를 이름으로 삼는다. 종전에는 그 라벨을 `aria-labelledby` 로만 이어
   // 언어명이 붙지 않았다 — 역할명 칸의 한국어·English 칸이 둘 다 「역할명*」으로 읽혔다(admin_basic 1.1.1 의 「{칸 이름} ({언어})」 약속).
@@ -277,6 +282,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 언어 추가 드롭다운 표시 여부
   const [showAddMenu, setShowAddMenu] = useState(false);
+  // 「언어 추가」 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
+  const addMenuTriggerRef = useRef<HTMLButtonElement>(null);
 
   // value prop이 변경될 때 activeLocales 동기화
   useEffect(() => {
@@ -417,9 +424,13 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     if (addableLocales.length === 0) return null;
 
     return (
-      <Div className="relative">
+      // 메뉴 안에서 Esc 로 닫고 「언어 추가」 단추로 돌아간다 — 종전에는 메뉴를 닫을 길이 단추 다시 누르기뿐이었다(#869)
+      <Div className="relative" onKeyDown={escapeToClose(showAddMenu, () => setShowAddMenu(false), addMenuTriggerRef)}>
         <Button
+          ref={addMenuTriggerRef}
           type="button"
+          aria-haspopup="menu"
+          aria-expanded={showAddMenu}
           className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full border border-dashed border-blue-300 dark:border-blue-600 transition-colors"
           onClick={() => setShowAddMenu(!showAddMenu)}
           disabled={disabled}
@@ -603,8 +614,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
               {/* showCodeOnMobile: 모바일에서는 언어 코드, 데스크탑에서는 전체 언어명 표시 */}
               {showCodeOnMobile ? (
                 <>
-                  <Span className="hidden md:inline">{getLocaleName(localeCode)}</Span>
-                  <Span className="inline md:hidden">{localeCode.toUpperCase()}</Span>
+                  <Span className={classAtWidth(renderWidth, 'md', 'inline', 'hidden')}>{getLocaleName(localeCode)}</Span>
+                  <Span className={classAtWidth(renderWidth, 'md', 'hidden', 'inline')}>{localeCode.toUpperCase()}</Span>
                 </>
               ) : (
                 getLocaleName(localeCode)

@@ -9,7 +9,8 @@
     <div data-ref="shipping_basic_card" class="ecommerce-admin-card">
       <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.shipping.basic.title</h3>
       <div class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.shipping.basic.description</div>
-      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:gap-6">
+      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-6">
+        <responsive on="640-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-6"/>
         <div data-ref="default_country_field">
           <label class="ecommerce-form-label ecommerce:mb-1.5">$t:sirsoft-ecommerce.admin.settings.shipping.basic.default_country</label>
           <select value="{{_local.form?.shipping?.default_country ?? 'KR'}}" class="ecommerce:w-full" options="{{(_local.form?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code)}))}}" disabled="{{_computed.isReadOnly}}">

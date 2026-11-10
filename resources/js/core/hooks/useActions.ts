@@ -35,7 +35,7 @@
  * @module hooks/useActions
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { createLogger } from '../utils/Logger';
 
 const logger = createLogger('useActions');

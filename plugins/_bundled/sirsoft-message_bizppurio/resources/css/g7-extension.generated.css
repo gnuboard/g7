@@ -2,6 +2,7 @@
  * 생성 파일 — 손으로 고치지 않는다.
  * scripts/extension-css/convert-layout-classes.mjs 가 템플릿 의미 클래스 정의를 복사해 만든다.
  * 템플릿이 같은 이름을 덮을 수 있도록 가장 낮은 칸(@layer g7-extension)에 둔다.
+ * 다만 템플릿에서 층 밖(@layer 미소속)이던 규칙은 유틸리티를 이기던 우선순위를 지키려고 층 밖에 둔다.
  */
 @layer g7-extension {
   @supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))) {
@@ -120,11 +121,6 @@
     color: oklch(87.2% .01 258.338);
   }
 
-  .bizppurio-btn-sm {
-    padding-inline: calc(.25rem * 3);
-    padding-block: calc(.25rem * 1.5);
-  }
-
   .bizppurio-button {
     cursor: pointer;
     justify-content: center;
@@ -161,6 +157,11 @@
   .bizppurio-btn[aria-disabled=true] {
     cursor: not-allowed;
     opacity: .5;
+  }
+
+  .bizppurio-btn-sm {
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 1.5);
   }
 
   .bizppurio-btn-primary {
@@ -914,20 +915,27 @@
   .bizppurio-break-all {
     word-break: break-all;
   }
+}
 
-  @media (max-width:640px) {
-    .bizppurio-modal-footer,
-    .bizppurio-modal-footer-row {
-      flex-direction: column;
-      gap: .5rem;
-    }
+/* 템플릿에서 층 밖이던 의미 규칙 — 확장 유틸리티 뒤에서 이기도록 층 밖에 둔다 */
+.bizppurio-flex-between {
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
+}
+
+@media (max-width:640px) {
+  .bizppurio-modal-footer,
+  .bizppurio-modal-footer-row {
+    flex-direction: column;
+    gap: .5rem;
   }
+}
 
-  @media (max-width:640px) {
-    .bizppurio-modal-footer .bizppurio-btn,
-    .bizppurio-modal-footer-row .bizppurio-btn {
-      width: 100%;
-    }
+@media (max-width:640px) {
+  .bizppurio-modal-footer .bizppurio-btn,
+  .bizppurio-modal-footer-row .bizppurio-btn {
+    width: 100%;
   }
 }
 
@@ -1036,4 +1044,9 @@
 @property --tw-shadow-color {
   syntax: "*";
   inherits: false;
+}
+
+/* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
+i:is(.bizppurio\:leading-none, .bizppurio\:text-3xl, .bizppurio\:text-base, .bizppurio\:text-sm, .bizppurio\:text-xl) {
+  line-height: 1;
 }

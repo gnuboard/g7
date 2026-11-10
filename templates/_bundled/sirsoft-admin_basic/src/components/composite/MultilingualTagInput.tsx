@@ -9,6 +9,8 @@ import { Modal } from './Modal';
 import { getSiteLocale } from '../../support/siteLocale';
 import { getLocaleDisplayName } from '../../support/localeName';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
+import { useRemovalFocus } from '../../hooks/useRemovalFocus';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -198,11 +200,15 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
   }, [supportedLocales]);
 
   // 태그 삭제
+  // 지운 뒤 포커스 — 같은 자리의 다음 지우기 단추, 마지막을 지웠으면 입력칸(#869 키보드 접근)
+  const markRemoved = useRemovalFocus(rootRef, '[data-tag-remove]', () => inputRef.current);
+
   const handleRemoveTag = useCallback((index: number) => {
+    markRemoved(index);
     const newTags = tags.filter((_, i) => i !== index);
     setTags(newTags);
     onChange?.(createFakeEvent(newTags));
-  }, [tags, onChange, createFakeEvent]);
+  }, [tags, onChange, createFakeEvent, markRemoved]);
 
   // 외부 모달 열기 (modalId 사용 시)
   const openExternalModal = useCallback((editingIdx: number | null, values: MultilingualValue, currentTags: MultilingualValue[]) => {
@@ -377,8 +383,10 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
             className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded px-2 py-0.5 text-sm"
           >
             <Span
-              className={`cursor-pointer hover:underline ${disabled ? 'cursor-not-allowed' : ''}`}
+              className={`cursor-pointer hover:underline rounded ${FOCUS_VISIBLE_RING} ${disabled ? 'cursor-not-allowed' : ''}`}
               onClick={() => handleTagClick(index)}
+              // 이름을 누르면 편집 창이 열린다 — 키보드로도 연다(#869 키보드 접근)
+              {...keyboardActivationProps(() => handleTagClick(index), { disabled })}
             >
               {getTagLabel(tag)}
             </Span>
@@ -387,6 +395,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
                 type="button"
                 className="p-0 h-4 w-4 min-w-0 border-0 bg-transparent text-blue-600 dark:text-blue-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-transparent"
                 aria-label={removeTagLabel(tag[viewLocale]?.trim() || getTagLabel(tag))}
+                data-tag-remove=""
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRemoveTag(index);

@@ -184,8 +184,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "text-xl font-semibold text-gray-900 dark:text-white"
                                         },
                                         "text": "$t:admin.identity.logs.page_title"
                                     },

@@ -204,6 +204,8 @@ Content-Disposition: attachment; filename="apidoc-sample.png"
 
 **설명** 게시판 관리자가 첨부파일을 해시로 조회해 다운로드합니다. `auth:sanctum` + admin + 게시판별 `attachments.download` 권한이 필요하며, `AttachmentService::getByHash()`로 대상을 찾은 뒤 `download()`가 파일 스트림 응답을 생성합니다. 해시에 해당하는 첨부가 없거나 실제 파일이 없으면 404를 반환하고, JSON이 아닌 `StreamedResponse`로 파일 본문을 직접 전송합니다.
 
+**캐시**: 관리자 권한을 지난 응답이라 글 상태와 무관하게 항상 `Cache-Control: private` 입니다(사용자 다운로드 엔드포인트와 같은 판정).
+
 
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/attachments/reorder
 <!-- @generated:start:api.modules.sirsoft-board.admin.board.attachments.reorder -->

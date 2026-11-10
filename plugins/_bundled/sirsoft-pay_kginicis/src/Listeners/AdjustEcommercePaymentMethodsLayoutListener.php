@@ -265,7 +265,15 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'name' => 'Div',
             'if' => '{{'.self::TEST_MODE_CONDITION.'}}',
             'props' => [
-                'className' => 'paykginicis:flex paykginicis:flex-col paykginicis:gap-3 paykginicis:sm:flex-row paykginicis:sm:items-center paykginicis:sm:justify-between',
+                'className' => 'paykginicis:flex paykginicis:flex-col paykginicis:gap-3',
+            ],
+            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paykginicis:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+            'responsive' => [
+                '640-' => [
+                    'props' => [
+                        'className' => 'paykginicis:flex paykginicis:flex-row paykginicis:items-center paykginicis:justify-between paykginicis:gap-3',
+                    ],
+                ],
             ],
             'children' => [
                 [
@@ -298,7 +306,14 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
                     'name' => 'Button',
                     'props' => [
                         'type' => 'button',
-                        'className' => 'pay-kginicis-btn pay-kginicis-btn-outline pay-kginicis-btn-sm paykginicis:w-full paykginicis:flex-shrink-0 paykginicis:border-orange-300 paykginicis:text-orange-900 paykginicis:hover:bg-orange-100 paykginicis:sm:w-auto paykginicis:dark:border-orange-600 paykginicis:dark:text-orange-100 paykginicis:dark:hover:bg-orange-900/40',
+                        'className' => 'pay-kginicis-btn pay-kginicis-btn-outline pay-kginicis-btn-sm paykginicis:w-full paykginicis:flex-shrink-0 paykginicis:border-orange-300 paykginicis:text-orange-900 paykginicis:hover:bg-orange-100 paykginicis:dark:border-orange-600 paykginicis:dark:text-orange-100 paykginicis:dark:hover:bg-orange-900/40',
+                    ],
+                    'responsive' => [
+                        '640-' => [
+                            'props' => [
+                                'className' => 'pay-kginicis-btn pay-kginicis-btn-outline pay-kginicis-btn-sm paykginicis:w-auto paykginicis:flex-shrink-0 paykginicis:border-orange-300 paykginicis:text-orange-900 paykginicis:hover:bg-orange-100 paykginicis:dark:border-orange-600 paykginicis:dark:text-orange-100 paykginicis:dark:hover:bg-orange-900/40',
+                            ],
+                        ],
                     ],
                     'actions' => [
                         [

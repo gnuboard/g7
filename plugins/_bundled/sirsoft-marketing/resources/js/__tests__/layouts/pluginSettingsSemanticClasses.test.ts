@@ -20,6 +20,7 @@ type LayoutNode = {
     name?: string;
     text?: string;
     props?: { className?: string };
+    responsive?: Record<string, { props?: { className?: string } }>;
     children?: LayoutNode[];
 };
 
@@ -47,6 +48,20 @@ function flatten(node: unknown): LayoutNode[] {
 
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props.className : '');
+
+/**
+ * 3열 그리드 입력 줄인지 — 좁은 폭 1열, 1024px 이상 3열을 접두 유틸과 엔진 responsive(`1024-` 구간)로 쓴다.
+ * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
+ */
+const GRID3_BASE = 'marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start';
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
+    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('marketing:grid-cols-3');
+/** 넓은 화면(1024px 이상) 갈래의 클래스 토큰에 접두를 뗀 유틸리티(`col-span-1` 등)가 있는지 — 화면 폭 분기는 엔진 responsive(desktop)로 쓴다 */
+const hasDesktopUtility = (n: LayoutNode, utility: string) => {
+    const c = n.responsive?.desktop?.props?.className;
+    return typeof c === 'string' && c.split(/\s+/).some((t) => t.split(':').pop() === utility);
+};
 const HEADINGS = ['H2', 'H3', 'H4'];
 /** 의미 클래스는 이 플러그인 접두 판본이다 — 템플릿 CSS 가 아니라 플러그인 CSS(`@layer g7-extension`)가 정의한다 */
 const NS = 'marketing-';
@@ -60,12 +75,12 @@ describe('마케팅 동의 환경설정 — 의미 클래스 위치', () => {
     it('라벨(2칸)·입력칸(1칸)으로 나뉜 약관 슬러그 입력 줄은 3열 그리드 클래스를 쓴다', () => {
         const rows = nodes.filter((n) => {
             const kids = Array.isArray(n.children) ? n.children : [];
-            const hasSpans = kids.some((k) => cls(k).includes('marketing:lg:col-span-1')) && kids.some((k) => cls(k).includes('marketing:lg:col-span-2'));
+            const hasSpans = kids.some((k) => hasDesktopUtility(k, 'col-span-1')) && kids.some((k) => hasDesktopUtility(k, 'col-span-2'));
             return hasSpans && flatten(kids).some((k) => k.name === 'Input');
         });
         expect(rows.length).toBeGreaterThanOrEqual(3);
         for (const row of rows) {
-            expect({ id: row.id, className: cls(row).split(' ')[0] }).toEqual({ id: row.id, className: `${NS}grid-3col-responsive` });
+            expect({ id: row.id, grid3col: isGrid3col(row), legacy: cls(row).includes(`${NS}grid-3col-responsive`) }).toEqual({ id: row.id, grid3col: true, legacy: false });
         }
     });
 

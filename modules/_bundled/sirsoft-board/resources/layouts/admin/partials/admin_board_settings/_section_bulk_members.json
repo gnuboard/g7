@@ -88,8 +88,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "desktop": {
+                            "props": {
+                                "className": "board:grid board:grid-cols-2 board:gap-6 board:mt-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "board:grid board:grid-cols-1 board:lg:grid-cols-2 board:gap-6 board:mt-4"
+                        "className": "board:grid board:grid-cols-1 board:gap-6 board:mt-4"
                     },
                     "children": [
                         {

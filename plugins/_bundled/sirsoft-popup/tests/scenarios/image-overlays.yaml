@@ -72,6 +72,7 @@ axes:
     - editor_warns_image_ratio_change
     - editor_marks_error_boxes
     - editor_shows_phone_text_size
+    - editor_size_grid_follows_engine_width
     - editor_warns_low_text_bg_contrast
     - editor_canvas_backdrop_switch
     - conflict_overlays_compared_as_one_item
@@ -88,6 +89,36 @@ effects:
   - boxes_follow_image_scale
   - image_link_and_swipe_unchanged
   - validation_messages_fully_translated
+  # 관리자 편집기 (#869 κ2 — 시험마다 단언하는 동작)
+  - editor_requires_pc_image   # PC 이미지가 없으면 캔버스 없이 안내만 보인다
+  - editor_adds_centered_box_in_default_locale   # 「글 상자 추가」가 기본 언어 글이 든 상자를 가운데 놓고 고른다
+  - editor_limits_ten_boxes   # 10개면 추가 단추가 잠기고 한도를 알린다
+  - editor_text_per_locale_format_shared   # 글은 고른 언어에만 쓰고 서식은 공통, 비우면 그 언어 키를 지운다
+  - editor_drag_moves_in_percent   # 끌기가 프레임 대비 % 로 옮기고 놓을 때 한 번만 알린다
+  - editor_keeps_box_inside_image   # 끌기·화살표 이동이 상자를 이미지 안(폭·높이 고려)에서 멈춘다
+  - editor_resize_clamps_width   # 오른쪽 손잡이 폭 조절이 5% 아래와 오른쪽 끝 밖으로 가지 않는다
+  - editor_keyboard_moves_box   # 화살표 1%, Shift+화살표 5% 이동
+  - editor_delete_removes_box   # Delete·Backspace 로 고른 상자를 지우고 마지막이면 값이 null
+  - editor_format_panel_updates_box   # 옆 패널로 크기·색·굵게·정렬·바탕·그림자를 바꾸고 캔버스에 바로 보인다
+  - editor_reorders_stacking   # 앞으로·뒤로가 배열 순서를 한 칸씩 바꾸고 끝에서는 잠긴다
+  - editor_device_tabs_need_mobile_image   # 기기 탭은 모바일 이미지가 있을 때만 보인다
+  - editor_mobile_layout_copied_from_pc   # 모바일 탭은 PC 배치를 흐리게 보이고 복사하면 따로 고친다
+  - editor_mobile_layout_resets_to_pc   # 「PC 배치 그대로 쓰기」가 모바일 배치를 null 로 지운다
+  - editor_marks_fallback_locale_text   # 고른 언어 글이 없으면 기본 언어 글을 흐리게 보이고 표시를 단다
+  - editor_locked_while_saving   # 저장 중에는 추가·끌기·키보드가 값을 바꾸지 못한다
+  - editor_warns_text_overflow   # 어느 언어든 글이 이미지 아래로 넘치면 상자와 언어를 알린다
+  - editor_warns_image_ratio_change   # 상자가 있는데 이미지 비율이 바뀌면 위치 재확인을 알린다
+  - editor_marks_error_boxes   # 저장 오류가 난 상자(그 기기의 순번)에 오류 표시와 aria-invalid 를 단다
+  - editor_warns_small_phone_text   # 휴대폰 기준 예상 글자 크기를 보이고 12px 미만이면 알린다
+  - editor_warns_low_contrast   # 바탕 깔기 상자의 글자·바탕 대비를 보이고 4.5:1 미만이면 알린다
+  - editor_backdrop_matches_popup_background   # 미리 볼 바탕(투명 표시·라이트·다크)이 사용자 레이어 팝업 바탕색과 같다
+  - editor_layout_follows_engine_width   # 크기·색 칸 배치가 엔진 폭으로 갈리고 Tailwind 폭 접두를 쓰지 않는다
+  # 등록·수정 폼 (#869 κ2)
+  - overlay_editor_placed_and_bound_in_form   # 편집기가 이미지형 칸 안 정해진 자리에서 폼 값·이미지·언어를 받는다
+  - save_body_carries_overlays   # 저장 본문에 overlays 를 싣는다(없으면 null)
+  - overlays_reset_on_create   # 처음 값과 등록 진입 초기화가 overlays 를 null 로 둔다
+  - overlay_validation_error_shown_under_editor   # overlays.* 검증 오류의 첫 사유를 편집기 아래에 보인다
+  - overlay_save_errors_reach_editor   # 저장 오류를 편집기에 넘기고 구형 브라우저 안내를 함께 보인다
 
 test_files:
   - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupOverlayTest.php

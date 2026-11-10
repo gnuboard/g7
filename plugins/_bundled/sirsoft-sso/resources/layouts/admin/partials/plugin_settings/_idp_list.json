@@ -114,8 +114,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-2 sso:gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-2col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4"
                     },
                     "children": [
                         {

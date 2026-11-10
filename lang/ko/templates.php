@@ -288,6 +288,7 @@ return [
             'success' => '템플릿 ":template" 비활성화 완료',
             'not_active' => '":template" 템플릿이 활성화되지 않았습니다.',
             'no_active_warning' => '현재 활성화된 :type 템플릿이 없습니다.',
+            'last_active_force_hint' => '그래도 끄려면 --force 를 붙여 다시 실행하세요: php artisan template:deactivate :template --force',
         ],
         'uninstall' => [
             'success' => '템플릿 ":template" 삭제 완료',

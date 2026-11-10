@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 37개 (정의: `src/handlers/index.ts`).
+핸들러 38개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -34,6 +34,7 @@
 | `findMatchingOption` | (템플릿 전용 — 네임스페이스 없음) |
 | `initCartOptionSelection` | (템플릿 전용 — 네임스페이스 없음) |
 | `initCartKey` | (템플릿 전용 — 네임스페이스 없음) |
+| `ensureCartKey` | (템플릿 전용 — 네임스페이스 없음) |
 | `getCartKey` | (템플릿 전용 — 네임스페이스 없음) |
 | `clearCartKey` | (템플릿 전용 — 네임스페이스 없음) |
 | `regenerateCartKey` | (템플릿 전용 — 네임스페이스 없음) |
@@ -643,6 +644,8 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 #### initCartKey
 
 장바구니 키를 초기화합니다. localStorage에 있으면 로드, 없으면 API를 통해 발급합니다.
+
+발급 요청은 3초(`INIT_CART_KEY_MAX_WAIT_MS`)까지만 기다린다. 이 핸들러는 바탕 레이아웃 init 에서 돌아 엔진이 첫 화면 전에 기다리므로, 요청이 보류되면 키 없이(`_global.cartKey = null`) 먼저 끝내 첫 화면을 막지 않는다. 늦게 온 키는 그때 localStorage 에 저장하고 `_global.cartKey` 에 싣는다(#869). 엔진도 init 대기 전체에 8초 상한을 둔다(engine-v1.89.0).
 
 ```html
 <init>

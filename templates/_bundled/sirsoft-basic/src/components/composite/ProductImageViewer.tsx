@@ -14,6 +14,7 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { ImageGallery, useImageGallery, GalleryImage } from './ImageGallery';
 import type { EditorAttrs } from '../../types';
+import { thumbUrl } from '../../support/thumbnail';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -77,7 +78,8 @@ export const ProductImageViewer: React.FC<ProductImageViewerProps> = ({
       images.map((img) => ({
         src: getImageSrc(img),
         title: img.alt_text_current ?? '',
-        thumbnail: getImageSrc(img),
+        // 라이트박스 아래 썸네일 줄은 120×80 칸(ImageGallery thumbnails 설정) — 원본 대신 sm. 메인 슬라이드는 원본 그대로다.
+        thumbnail: thumbUrl(getImageSrc(img), 'sm'),
         downloadUrl: img.download_url,
         filename: img.alt_text_current ?? `image-${img.id}`,
       })),
@@ -115,6 +117,9 @@ export const ProductImageViewer: React.FC<ProductImageViewerProps> = ({
             src={getImageSrc(currentImage)}
             alt={currentImage.alt_text_current ?? ''}
             className="w-full h-full object-contain"
+            // 상세 메인은 첫 화면이라 지연 로딩하지 않는다. lg(가로 1280)에 2배 밀도는 srcset 의 xl
+            thumbPreset="lg"
+            loading="eager"
           />
         </Button>
       </Div>
@@ -138,6 +143,8 @@ export const ProductImageViewer: React.FC<ProductImageViewerProps> = ({
                 src={getImageSrc(img)}
                 alt={img.alt_text_current ?? ''}
                 className="w-full h-full object-cover"
+                thumbPreset="xs"
+                loading="lazy"
               />
             </Button>
           ))}

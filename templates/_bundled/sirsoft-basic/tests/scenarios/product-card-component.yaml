@@ -1,0 +1,28 @@
+feature: 상품 카드 표시(모의 상품 카드로 본 구성)
+
+description: |
+  ProductCard.test.tsx 는 상품 카드가 갖춰야 할 표시를 영역별로 고정한다. 기본 정보, 할인, 품절, 신상품 뱃지, 찜하기,
+  리뷰, 상세 링크, 판매 상태 오버레이, 라벨, 브랜드명, 별점, 선택 통화 환산, 검색 하이라이트가 대상이다.
+
+# axis 의미:
+#   section — 카드에서 확인하는 표시 영역.
+axes:
+  section: [basic, discount, sold_out, new_badge, wishlist, review, link, sales_status, labels, brand, rating, multi_currency, search_highlight]
+
+effects:
+  - product_card_renders_core_info             # 카드, 상품명, 가격, 상품 이미지가 보인다
+  - discount_badge_and_prices_shown            # 할인 상품은 할인율 뱃지와 원래 가격, 할인된 가격을 보인다
+  - sold_out_badge_shown                       # 품절 상품은 품절 뱃지를 보인다
+  - new_badge_shown                            # 신상품은 NEW 뱃지를 보인다
+  - wishlist_button_toggles_and_reflects_state # 찜하기 단추가 보이고 누르면 콜백을 부르며 찜 여부를 하트 모양으로 보인다
+  - review_info_shown_only_with_reviews        # 리뷰가 있을 때만 리뷰 수와 평점을 보인다
+  - card_links_to_product_detail               # 카드가 상품 상세 페이지로 연결된다
+  - sales_status_overlay_follows_status        # 품절, 출시예정은 오버레이를 보이고 판매중은 보이지 않는다
+  - product_labels_shown_when_present          # 라벨이 있을 때만 라벨을 보인다
+  - brand_name_shown_when_present              # 브랜드명이 있을 때만 브랜드명을 보인다
+  - rating_stars_follow_average                # 평균 평점과 리뷰 수에 맞춰 별(채움, 반, 빈)과 개수를 보인다
+  - prices_follow_selected_currency            # 판매가와 정가를 선택 통화로 보이고 통화를 바꾸면 갱신하며 환산값이 없으면 기본 포맷으로 돌아간다
+  - search_highlight_rendered_as_html          # 검색 하이라이트가 있으면 HTML 로, 없으면 일반 텍스트로 보인다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ProductCard.test.tsx

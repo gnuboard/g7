@@ -8,9 +8,9 @@
  */
 import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup, fireEvent } from '@testing-library/react';
+import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { responsiveManager } from '@core/template-engine/ResponsiveManager';
-import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview';
+import { HeroBannerPreview, PREVIEW_STYLES_TIMEOUT_MS } from '../../components/composite/HeroBannerPreview';
 import { frameClass, matchResponsiveKey } from '../../support/editor';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
@@ -47,10 +47,23 @@ const mountFrame = (ui: React.ReactElement) => {
   return { view, iframe, doc: iframe.contentDocument! };
 };
 
+/**
+ * 틀을 떼었다 다시 붙인다 — 브라우저는 about:blank 문서를 새로 만들고 load 를 다시 보낸다. 옛 문서의 노드는 그대로 남는다.
+ * jsdom 은 떼는 순간 옛 창을 닫으며 문서를 비워(jsdom 소스의 「not really correct behavior」 주석) React 가 옛 포털을 지우지
+ * 못하므로, 옛 창의 닫기만 막아 브라우저와 같게 둔다.
+ */
+const reattach = (iframe: HTMLIFrameElement) => {
+  const parent = iframe.parentNode!;
+  (iframe.contentWindow as unknown as { close: () => void }).close = () => {};
+  iframe.remove();
+  parent.insertBefore(iframe, parent.firstChild);
+};
+
 describe('미리보기 구좌 틀', () => {
   afterEach(() => cleanup());
 
   // @scenario surface=preview_frame_responsive_rule_matches_core
+  // @effects preview_matches_site_slot
   it('반응형 키 선택이 코어 ResponsiveManager 와 같다(프리셋·사용자 범위·열린 범위, 사용자 범위 우선·좁은 범위 우선)', () => {
     const sets: Array<Record<string, string>> = [
       { desktop: 'a' },
@@ -110,6 +123,7 @@ describe('미리보기 구좌 틀', () => {
   });
 
   // @scenario surface=preview_frame_missing_slot_falls_back
+  // @effects preview_without_frame_uses_device_width
   it('틀이 없거나 그 위치에 확장점이 없으면 종전처럼 기기 폭 전체에 그린다(오버라이드·기존 호출 호환)', () => {
     for (const props of [{}, { frame, position: 'shop_hero' }, { frame: null, position: 'home_hero' }]) {
       const { doc, view } = mountFrame(<HeroBannerPreview banners={banners} device="pc" {...props} />);
@@ -141,7 +155,137 @@ describe('미리보기 구좌 틀', () => {
     expect(doc.querySelector('.hs-slider__box')?.className).toBe('hs-slider__box max-w-7xl mx-auto px-8');
   });
 
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('iframe 안 stylesheet(복사한 바깥 CSS·템플릿 CSS)가 모두 load·error 를 받기 전에는 미리보기를 가리고 표식을 달지 않는다', () => {
+    const outer = document.createElement('link');
+    outer.rel = 'stylesheet';
+    outer.href = '/admin/components.css';
+    document.head.appendChild(outer);
+    try {
+      const { view, iframe, doc } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={frame} position="home_hero" />);
+      const host = view.container.querySelector('.hs-preview__viewport')!;
+      const [copied, template] = [doc.head.querySelector('link:not([data-hs-template-css])')!, doc.head.querySelector('link[data-hs-template-css]')!];
+      expect(copied.getAttribute('href')).toContain('/admin/components.css');
+      expect(host.hasAttribute('data-hs-styles-ready')).toBe(false);
+      expect(iframe.style.visibility).toBe('hidden');
+
+      fireEvent.load(template);
+      expect(host.hasAttribute('data-hs-styles-ready'), '복사한 CSS 가 아직이면 그대로 가린다').toBe(false);
+      expect(iframe.style.visibility).toBe('hidden');
+
+      // 실패한 링크도 기다림을 끝낸다 — 받지 못한 CSS 때문에 미리보기가 계속 가려지지 않게
+      fireEvent.error(copied);
+      expect(host.hasAttribute('data-hs-styles-ready')).toBe(true);
+      expect(iframe.style.visibility).not.toBe('hidden');
+    } finally {
+      outer.remove();
+    }
+  });
+
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('틀이 늦게 와 템플릿 CSS 가 새로 붙으면 그 CSS 를 받을 때까지 다시 가리고 표식을 뗀다', () => {
+    const { view, iframe, doc } = mountFrame(<HeroBannerPreview banners={banners} device="pc" position="home_hero" />);
+    const host = () => view.container.querySelector('.hs-preview__viewport')!;
+    expect(host().hasAttribute('data-hs-styles-ready'), '받을 CSS 가 없으면 바로 준비됨').toBe(true);
+
+    view.rerender(<HeroBannerPreview banners={banners} device="pc" frame={frame} position="home_hero" />);
+    expect(host().hasAttribute('data-hs-styles-ready')).toBe(false);
+    expect(iframe.style.visibility).toBe('hidden');
+
+    fireEvent.load(doc.head.querySelector('link[data-hs-template-css]')!);
+    expect(host().hasAttribute('data-hs-styles-ready')).toBe(true);
+    expect(iframe.style.visibility).not.toBe('hidden');
+  });
+
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('CSS 가 끝내 응답하지 않아도 일정 시간 뒤에는 미리보기를 보인다 — 표식은 달지 않는다', () => {
+    vi.useFakeTimers();
+    try {
+      const { view, iframe } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={frame} position="home_hero" />);
+      expect(iframe.style.visibility).toBe('hidden');
+      act(() => { vi.advanceTimersByTime(PREVIEW_STYLES_TIMEOUT_MS); });
+      expect(iframe.style.visibility).not.toBe('hidden');
+      expect(view.container.querySelector('.hs-preview__viewport')!.hasAttribute('data-hs-styles-ready')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('iframe 문서가 새로 만들어지면 새 문서의 stylesheet 를 새로 지켜보고, 옛 문서의 링크가 끝나도 새 문서가 끝날 때까지 가린다', () => {
+    const outer = document.createElement('link');
+    outer.rel = 'stylesheet';
+    outer.href = '/admin/components.css';
+    document.head.appendChild(outer);
+    try {
+      const { view, iframe, doc } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={frame} position="home_hero" />);
+      const host = () => view.container.querySelector('.hs-preview__viewport')!;
+      const oldLinks = [...doc.head.querySelectorAll('link')];
+      oldLinks.forEach((link) => fireEvent.load(link));
+      expect(host().hasAttribute('data-hs-styles-ready')).toBe(true);
+
+      // 틀을 옮겨 붙이면 브라우저는 about:blank 문서를 새로 만들고 load 를 다시 보낸다
+
+      act(() => { reattach(iframe); });
+      const next = iframe.contentDocument!;
+      expect(next, '새 문서').not.toBe(doc);
+      act(() => { fireEvent.load(iframe); });
+
+      const copied = next.head.querySelector('link:not([data-hs-template-css])');
+      const template = next.head.querySelector('link[data-hs-template-css]');
+      expect(copied?.getAttribute('href')).toContain('/admin/components.css');
+      expect(template?.getAttribute('href')).toBe('/assets/demo-user/css/components.css?v=3');
+      expect(next.body.querySelector('.hs-slider'), '새 문서에 다시 그린다').not.toBeNull();
+      expect(host().hasAttribute('data-hs-styles-ready')).toBe(false);
+      expect(iframe.style.visibility).toBe('hidden');
+
+      // 옛 문서 링크가 늦게 끝나도 새 문서 판정을 바꾸지 않는다
+      oldLinks.forEach((link) => fireEvent.error(link));
+      expect(host().hasAttribute('data-hs-styles-ready')).toBe(false);
+
+      fireEvent.load(copied!);
+      expect(host().hasAttribute('data-hs-styles-ready')).toBe(false);
+      fireEvent.load(template!);
+      expect(host().hasAttribute('data-hs-styles-ready')).toBe(true);
+      expect(iframe.style.visibility).not.toBe('hidden');
+    } finally {
+      outer.remove();
+    }
+  });
+
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('옛 문서에서 기다림 시간이 지났어도 새 문서는 다시 기다림 시간만큼 가린다', () => {
+    vi.useFakeTimers();
+    // 응답하지 않는 바깥 CSS — 새 문서에도 복사돼 새 문서도 처음부터 받지 못한 채다
+    const outer = document.createElement('link');
+    outer.rel = 'stylesheet';
+    outer.href = '/admin/slow.css';
+    document.head.appendChild(outer);
+    try {
+      const { view, iframe } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={frame} position="home_hero" />);
+      act(() => { vi.advanceTimersByTime(PREVIEW_STYLES_TIMEOUT_MS); });
+      expect(iframe.style.visibility).not.toBe('hidden');
+
+      act(() => { reattach(iframe); });
+      act(() => { fireEvent.load(iframe); });
+      expect(iframe.style.visibility, '새 문서는 처음부터 다시 기다린다').toBe('hidden');
+
+      act(() => { vi.advanceTimersByTime(PREVIEW_STYLES_TIMEOUT_MS); });
+      expect(iframe.style.visibility).not.toBe('hidden');
+      expect(view.container.querySelector('.hs-preview__viewport')!.hasAttribute('data-hs-styles-ready')).toBe(false);
+    } finally {
+      outer.remove();
+      vi.useRealTimers();
+    }
+  });
+
   // @scenario surface=preview_frame_slot_inside_device_viewport
+  // @effects preview_matches_site_slot
   it('바깥 문서의 색상 테마 중립 표식을 미리보기 문서에도 옮긴다 — 확장 CSS 다크 규칙은 템플릿 .dark 대신 이 표식만 본다', () => {
     document.documentElement.setAttribute('data-g7-color-scheme', 'dark');
     try {
@@ -150,5 +294,122 @@ describe('미리보기 구좌 틀', () => {
     } finally {
       document.documentElement.removeAttribute('data-g7-color-scheme');
     }
+  });
+});
+
+/**
+ * 코어 자산 API 대역 — 코어 로더(networkResilience.loadStylesheetWithRetry)처럼 시도마다 바깥 문서에 새 `<link>` 를 붙이고,
+ * 실패한 시도의 link 는 지운다. 시험이 시도의 성공·실패를 바깥에서 정한다.
+ */
+function installSwiperCore() {
+  const url = '/api/plugins/assets/sirsoft-hero_section/dist/vendor/swiper/14.3.0/swiper-bundle.min.css';
+  let current: HTMLLinkElement | null = null;
+  let settle: { resolve: () => void; reject: (error: Error) => void } | null = null;
+  const attach = () => {
+    current = document.createElement('link');
+    current.rel = 'stylesheet';
+    current.href = url;
+    current.id = 'hs-swiper-css';
+    document.head.appendChild(current);
+  };
+  const loadStylesheet = vi.fn(() => {
+    attach();
+    return new Promise<void>((resolve, reject) => { settle = { resolve, reject }; });
+  });
+  const notifyFailure = vi.fn();
+  (window as any).G7Core = {
+    asset: { plugin: (id: string, p: string) => `/api/plugins/assets/${id}/${p}`, loadStylesheet },
+    assets: { notifyFailure },
+  };
+  return {
+    notifyFailure,
+    /** 이번 시도가 실패해 link 를 지우고, 같은 약속 안에서 다음 시도의 link 를 붙인다 */
+    retryAttempt: () => { current?.remove(); attach(); },
+    succeed: () => settle?.resolve(),
+    fail: () => { current?.remove(); current = null; settle?.reject(new Error('404')); },
+  };
+}
+
+describe('미리보기 Swiper CSS 가 늦게 실리는 경로', () => {
+  afterEach(() => {
+    cleanup();
+    delete (window as any).G7Core;
+    document.head.querySelectorAll('#hs-swiper-css').forEach((link) => link.remove());
+    vi.restoreAllMocks();
+  });
+
+  /** Swiper CSS 「한 번만 싣기」 모듈 상태를 시험마다 새로 시작한 미리보기 */
+  const freshPreview = async () => {
+    vi.resetModules();
+    return (await import('../../components/composite/HeroBannerPreview')).HeroBannerPreview;
+  };
+
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('바깥 첫 시도가 실패하고 다음 시도의 link 가 미리보기를 띄운 뒤에 실리면, 실패한 사본을 새 사본으로 갈고 그 사본을 받을 때까지 가린다', async () => {
+    const core = installSwiperCore();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const Preview = await freshPreview();
+    const { view, iframe, doc } = mountFrame(<Preview banners={banners} device="pc" />);
+    const host = () => view.container.querySelector('.hs-preview__viewport')!;
+
+    const first = doc.getElementById('hs-swiper-css')!;
+    expect(first, '첫 시도 link 를 사본으로 둔다').not.toBeNull();
+    expect(iframe.style.visibility).toBe('hidden');
+    fireEvent.error(first);
+    expect(host().hasAttribute('data-hs-styles-ready'), '받지 못한 사본도 기다림을 끝낸다').toBe(true);
+
+    core.retryAttempt();
+    await act(async () => { core.succeed(); });
+
+    const copies = doc.head.querySelectorAll('#hs-swiper-css');
+    expect(copies).toHaveLength(1);
+    expect(copies[0], '실패한 사본을 그대로 두지 않는다').not.toBe(first);
+    expect(host().hasAttribute('data-hs-styles-ready')).toBe(false);
+    expect(iframe.style.visibility).toBe('hidden');
+
+    fireEvent.load(copies[0]);
+    expect(host().hasAttribute('data-hs-styles-ready')).toBe(true);
+    expect(iframe.style.visibility).not.toBe('hidden');
+  });
+
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('끝내 못 실은 뒤 실패 알림의 다시 시도로 실리면 그때 미리보기에도 복사하고, 받을 때까지 가린다', async () => {
+    const core = installSwiperCore();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const Preview = await freshPreview();
+    const { view, iframe, doc } = mountFrame(<Preview banners={banners} device="pc" />);
+    const host = () => view.container.querySelector('.hs-preview__viewport')!;
+
+    fireEvent.error(doc.getElementById('hs-swiper-css')!);
+    await act(async () => { core.fail(); });
+    expect(core.notifyFailure).toHaveBeenCalledTimes(1);
+    expect(host().hasAttribute('data-hs-styles-ready')).toBe(true);
+
+    act(() => { core.notifyFailure.mock.calls[0][0].retry(); });
+    await act(async () => { core.succeed(); });
+
+    const copy = doc.getElementById('hs-swiper-css');
+    expect(copy, '다시 시도로 실린 CSS 를 미리보기에도 복사한다').not.toBeNull();
+    expect(host().hasAttribute('data-hs-styles-ready')).toBe(false);
+    expect(iframe.style.visibility).toBe('hidden');
+
+    fireEvent.load(copy!);
+    expect(host().hasAttribute('data-hs-styles-ready')).toBe(true);
+  });
+
+  // @scenario surface=preview_frame_styles_ready
+  // @effects preview_hidden_until_styles_ready
+  it('바깥 첫 시도가 그대로 성공하면 이미 둔 사본을 다시 만들지 않는다(다시 받느라 가리지 않는다)', async () => {
+    const core = installSwiperCore();
+    const Preview = await freshPreview();
+    const { view, doc } = mountFrame(<Preview banners={banners} device="pc" />);
+    const first = doc.getElementById('hs-swiper-css')!;
+    fireEvent.load(first);
+    await act(async () => { core.succeed(); });
+
+    expect(doc.getElementById('hs-swiper-css')).toBe(first);
+    expect(view.container.querySelector('.hs-preview__viewport')!.hasAttribute('data-hs-styles-ready')).toBe(true);
   });
 });

@@ -57,12 +57,47 @@ axes:
     - overlay_fragment_targets_user_global_overlay
     - overlay_fragment_hidden_when_empty
     - overlay_fragment_passes_route_path
+    - list_image_thumbnail_preset
+    - list_modal_footer_fixed
 
 effects:
+  - modal_buttons_in_fixed_footer
+  - list_image_uses_sm_thumbnail
   - accessible_names_present
   - links_used_for_navigation
   - abilities_gate_controls
   - translation_keys_present
+  # 목록 화면 (#869 κ2 — 시험마다 단언하는 동작)
+  - summary_card_lists_live_popups_in_order   # 「지금 노출 중」이 요약 API 순서대로 번호와 기기 한정 표시를 단다
+  - summary_card_collapses_extra_items   # 처음 8개(휴대폰 3개)만 보이고 「더 보기」로 펼치며 펼침 상태를 단추에 알린다
+  - summary_card_shows_display_settings   # 요약 카드에 PC·모바일·닫기 표시 방식 세 줄과 설정 링크가 있다
+  - empty_message_waits_for_response   # 받는 중에는 빈 문구를 비우고 받은 뒤 0건일 때만 보인다
+  - list_pages_through_server_pagination   # 표가 서버 쪽 페이지 이동 줄을 켜고 쪽 주소를 쓴다
+  - list_filters_sent_as_url_query   # 상태·기기·검색을 화면에서 거르지 않고 주소 쿼리(1쪽)로 보낸다
+  - bulk_selection_cleared_on_query_change   # 필터·정렬·쪽을 바꾸면 선택 묶음을 비운다
+  - destructive_actions_confirmed   # 복사·삭제는 안내가 든 확인 창을 거친다
+  - reorder_saves_full_order   # 순서 변경 창은 전체 순서를 받아 끌기·↑↓ 로 바꾸고 저장은 전체 id 를 보낸다
+  - reorder_edge_buttons_locked   # 첫 행 ↑ 와 끝 행 ↓ 는 잠긴다
+  - reorder_save_locked_until_changed   # 바뀐 것이 없으면 저장이 잠긴다
+  - reorder_state_cleared_before_close   # 창을 닫는 세 경로(닫기·취소·저장 성공)가 상태를 먼저 비우고 닫는다
+  - row_menu_toggles_active_via_bulk_status   # 행 메뉴 노출 전환이 그 행의 반대 상태를 일괄 상태 API 로 보낸다
+  # 등록·수정 화면 (#869 κ2)
+  - create_resets_form_with_new_temp_key   # 등록 진입이 폼을 기본값으로 되돌리고 새 임시 키를 만든다
+  - edit_seeds_form_once_from_show   # 수정 진입이 상세를 initLocal 로 한 번만 폼에 심는다
+  - content_type_switches_fields   # 이미지형과 직접 작성형이 서로 다른 칸 묶음을 보인다
+  - multilingual_inputs_and_preview_locale   # alt 는 언어 탭, 본문은 다국어 편집기, 미리보기는 고른 언어로 그린다
+  - route_chips_validated_like_server   # 경로 칩 추가·삭제와 서버 규칙과 같은 형식 오류 안내
+  - html_editor_extension_point_with_fallback   # 본문이 html_editor 확장점이고 기본 입력창으로 폴백한다
+  - uploads_use_temp_key_and_apply_on_save   # 업로더가 임시 키로 올리고 삭제 주소를 비워 저장 때만 반영한다
+  - image_ratio_mismatch_warns_without_blocking   # PC 이미지 비율이 설정과 다를 때만 막지 않고 안내한다(모바일 권장 비율 포함)
+  - period_inputs_only_for_range   # 기간 지정일 때만 시작·종료를 보이고 저장 후 상태를 미리 알린다
+  - validation_errors_shown_per_field   # 422 는 칸별 사유와 요약, 모든 실패는 알림
+  - conflict_409_opens_resolver_keeping_input   # 409 면 입력을 두고 충돌 안내를 열어 최신본과 비교한다
+  - preview_uses_display_settings_and_device   # 미리보기가 표시 방식 응답과 기기 전환으로 사용자 레이어 컴포넌트를 그린다
+  - direct_value_changes_mark_dirty   # 이미지 올림·뺌과 본문 입력이 hasChanges 를 직접 올린다
+  - preview_sticky_on_desktop_and_alt_placeholder   # 넓은 화면에서 미리보기가 따라 내려오고 대체 텍스트 칸은 기본 언어 값을 자리표시로 보인다
+  - save_lock_reason_and_field_errors_linked   # 저장이 잠긴 이유를 단추가 가리키고 필수·오류 상태를 입력칸에 잇는다
+  - actual_size_preview_modal   # 「실제 크기로 보기」가 지금 입력 값·기기를 배율 1 큰 창으로 연다
 
 test_files:
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_list.test.tsx

@@ -5,6 +5,7 @@ import { UserProfile, User } from '../UserProfile';
 
 describe('UserProfile', () => {
   const mockUser: User = {
+    id: 1,
     name: 'John Doe',
     email: 'john@example.com',
     avatar: '/avatar.png',
@@ -12,21 +13,29 @@ describe('UserProfile', () => {
   };
 
   describe('렌더링 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('컴포넌트가 렌더링됨', () => {
       render(<UserProfile user={mockUser} />);
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('사용자 이름이 표시됨', () => {
       render(<UserProfile user={mockUser} />);
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('사용자 역할이 표시됨', () => {
       render(<UserProfile user={mockUser} />);
       expect(screen.getByText('Administrator')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('아바타 이미지가 표시됨', () => {
       render(<UserProfile user={mockUser} />);
       const avatar = screen.getByAltText('John Doe');
@@ -34,6 +43,8 @@ describe('UserProfile', () => {
       expect(avatar).toHaveAttribute('src', '/avatar.png');
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('아바타가 없을 때 기본 아이콘이 표시됨', () => {
       const userWithoutAvatar = { ...mockUser, avatar: undefined };
       render(<UserProfile user={userWithoutAvatar} />);
@@ -43,14 +54,18 @@ describe('UserProfile', () => {
       expect(defaultIconContainer).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('역할이 없을 때도 정상 렌더링됨', () => {
-      const userWithoutRole = { name: 'Jane Doe', email: 'jane@example.com' };
+      const userWithoutRole = { id: 2, name: 'Jane Doe', email: 'jane@example.com' };
       render(<UserProfile user={userWithoutRole} />);
       expect(screen.getByText('Jane Doe')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('기본 사용자 객체로 렌더링됨', () => {
-      render(<UserProfile user={{ name: '', email: '' }} />);
+      render(<UserProfile user={{ id: 3, name: '', email: '' }} />);
       // 빈 이름으로도 렌더링되는지 확인
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
@@ -58,6 +73,8 @@ describe('UserProfile', () => {
   });
 
   describe('프로필 드롭다운 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('프로필 버튼 클릭 시 드롭다운이 표시됨', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} />);
@@ -69,6 +86,8 @@ describe('UserProfile', () => {
       expect(screen.getByText('Logout')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('드롭다운에 사용자 이메일이 표시됨', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} />);
@@ -81,6 +100,8 @@ describe('UserProfile', () => {
       expect(emails.length).toBeGreaterThan(0);
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('드롭다운이 아래에서 위로 열림 (bottom-full 클래스)', async () => {
       const user = userEvent.setup();
       const { container } = render(<UserProfile user={mockUser} />);
@@ -92,6 +113,8 @@ describe('UserProfile', () => {
       expect(dropdown).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('프로필 드롭다운에 언어 선택기가 없다 (언어는 헤더로 일원화, 중복 제거 — 유저 H-T7 패리티)', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} languageText="언어" availableLocales={['ko', 'en', 'ja']} />);
@@ -108,6 +131,8 @@ describe('UserProfile', () => {
   });
 
   describe('다국어 Props 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_custom_texts
     it('커스텀 profileText가 표시됨', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} profileText="프로필 설정" />);
@@ -118,6 +143,8 @@ describe('UserProfile', () => {
       expect(screen.getByText('프로필 설정')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_custom_texts
     it('커스텀 logoutText가 표시됨', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} logoutText="로그아웃" />);
@@ -128,6 +155,8 @@ describe('UserProfile', () => {
       expect(screen.getByText('로그아웃')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_custom_texts
     it('기본 영어 텍스트가 표시됨', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} />);
@@ -141,6 +170,8 @@ describe('UserProfile', () => {
   });
 
   describe('이벤트 핸들러 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('프로필 설정 클릭 시 onProfileClick이 호출됨', async () => {
       const user = userEvent.setup();
       const onProfileClick = vi.fn();
@@ -155,6 +186,8 @@ describe('UserProfile', () => {
       expect(onProfileClick).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('로그아웃 클릭 시 onLogoutClick이 호출됨', async () => {
       const user = userEvent.setup();
       const onLogoutClick = vi.fn();
@@ -169,6 +202,8 @@ describe('UserProfile', () => {
       expect(onLogoutClick).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('프로필 설정 클릭 시 드롭다운이 닫힘', async () => {
       const user = userEvent.setup();
       const onProfileClick = vi.fn();
@@ -184,6 +219,8 @@ describe('UserProfile', () => {
       expect(screen.queryByText('john@example.com')).not.toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('로그아웃 클릭 시 드롭다운이 닫힘', async () => {
       const user = userEvent.setup();
       const onLogoutClick = vi.fn();
@@ -202,6 +239,8 @@ describe('UserProfile', () => {
   });
 
   describe('외부 클릭 감지 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('드롭다운 외부 클릭 시 드롭다운이 닫힘', async () => {
       const user = userEvent.setup();
       render(
@@ -227,6 +266,8 @@ describe('UserProfile', () => {
   });
 
   describe('스타일 및 className 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('커스텀 className이 적용됨', () => {
       const { container } = render(
         <UserProfile user={mockUser} className="custom-profile" />
@@ -235,12 +276,16 @@ describe('UserProfile', () => {
       expect(wrapper).toHaveClass('custom-profile');
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('기본 클래스가 유지됨', () => {
       const { container } = render(<UserProfile user={mockUser} />);
       const wrapper = container.firstChild;
       expect(wrapper).toHaveClass('relative');
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_renders_user_info
     it('로그아웃 버튼에 빨간색 텍스트가 적용됨', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} />);
@@ -254,12 +299,16 @@ describe('UserProfile', () => {
   });
 
   describe('접근성 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_buttons_accessible
     it('프로필 버튼이 버튼으로 접근 가능함', () => {
       render(<UserProfile user={mockUser} />);
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_buttons_accessible
     it('드롭다운 내 버튼들이 버튼으로 접근 가능함', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} />);
@@ -273,6 +322,8 @@ describe('UserProfile', () => {
   });
 
   describe('복합 시나리오 테스트', () => {
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('드롭다운 열고 닫기를 반복해도 정상 동작함', async () => {
       const user = userEvent.setup();
       render(<UserProfile user={mockUser} />);
@@ -292,6 +343,8 @@ describe('UserProfile', () => {
       expect(screen.getByText('Profile Settings')).toBeInTheDocument();
     });
 
+    // @scenario component=user_profile
+    // @effects user_profile_dropdown_open_close_and_callbacks
     it('여러 핸들러가 모두 정상 작동함', async () => {
       const user = userEvent.setup();
       const onProfileClick = vi.fn();

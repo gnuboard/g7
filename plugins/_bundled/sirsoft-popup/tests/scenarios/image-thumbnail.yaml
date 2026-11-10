@@ -1,0 +1,64 @@
+feature: 팝업 이미지 서빙의 썸네일 (`?size=` · `?w=`) 과 사용자 레이어 srcset
+
+description: |
+  팝업 이미지(`/api/plugins/sirsoft-popup/images/{hash}`)는 해시만 알면 누구나 받는 공개 원본이다(원본 응답도 `public` 1년 캐시).
+  PC·모바일 이미지는 기기별로 따로 올리지만 둘 다 각자의 원본이라 각자 썸네일 경로를 탄다. 컨트롤러가 해시 조회(게이트) 바로 뒤·원본
+  응답 바로 앞에서 코어 `ThumbnailResponder` 를 부르고, 낼 수 없으면 원본에 `X-G7-Thumbnail: bypass:{사유}` 를 붙인다.
+
+  리스너(`ThumbnailRegistrationListener`)가 서빙 경로 패턴과 공개 원본 제공자를 코어 목록에 더한다. 코어는 이 플러그인을 모른다.
+
+  사용자 레이어(`PopupLayer` → `ImageFrame`)는 코어 `G7Core.thumbnail.contentSrcsetWithin(주소, 원본 가로, { includeOriginal: true })`
+  가 만든 srcset(원본보다 작은 후보 + 원본)을 주고, sizes 는 레이어 배치(PC 설정 폭·휴대폰 가운데 창·하단 시트, 미리보기는 틀 폭 상한)로 정하고, 이미지 비율을 알면 잘리지 않게 담는 폭(본문 높이 상한 × 비율)으로 줄인다. 글 상자 편집기는
+  sizes 를 주지 않아 원본 그대로다.
+
+  회귀 불변식:
+    1. 파라미터 없는 요청은 이전과 같은 원본 바이트이고 썸네일 헤더·파생본이 생기지 않는다.
+    2. `?size=sm` 은 160×160 파생본(첫 요청 miss·다음 hit) + nosniff. 키는 `thumbnails/{디스크}/sirsoft-popup/images/{path}/sm_…`.
+    3. 모바일 이미지는 자기 원본으로 썸네일을 낸다. `?w=300` 은 md(640), 원본(750)보다 큰 lg 는 원본 + `bypass:smaller-than-preset`.
+    4. 운영 환경에서 공개 원본 썸네일의 캐시는 `public`.
+    5. 미정의 규격·원본보다 큰 규격은 원본 + `bypass:{사유}`.
+    6. 저장 전 임시 업로드도 같은 썸네일을 낸다.
+    7. 공개 썸네일 저장 위치가 공개 자산 디스크(public)면 302 직접 주소, 비공개 디스크에는 쓰지 않는다.
+    8. 원본 파일만 사라진 행은 `?size=` 를 붙여도 무파라미터와 같은 404 다. 드라이버로 지우면 파생본도 지워진다.
+    9. 제공자는 `sirsoft-popup/images/` 의 래스터만 원본으로 분류, 기존 이미지 수·목록은 팝업에 붙은 이미지만(커서 순회).
+    10. 레이어 srcset 은 원본보다 작은 숫자 규격 + 원본, sizes 는 레이어 배치(비율을 알면 본문 높이 × 비율로 줄인 폭, 375 하단 시트의 960×1280 은 285px). 코어 함수 `contentSrcsetWithin` 이 없거나 대상 주소가 아니거나 원본 가로를 모르면 srcset 없이 원본 하나다.
+    11. 썸네일을 요청했는데 원본을 낼 때는 운영 환경에서도 `immutable` 이 없고 유지 시간은 썸네일 응답과 같은 `cache.layout_ttl` 이다(움직이는 GIF 포함, 원본 주소는 그대로 1년 불변). 설정이 1년보다 길어도 우회 원본은 1년에서 멈춘다.
+    12. 움직이는 GIF 는 `?size=sm` 에도 원본 바이트 + `bypass:animated`, 파생본 없음(업로드도 GIF 를 다시 저장하지 않는다).
+
+axes:
+  thumbnail_query: [none, size, mobile_original, size_production_cache, bypass, bypass_cache, bypass_cache_cap, animated_gif, temp_upload, size_public_disk, original_missing, delete_purges, registration, provider_reuse, layer_srcset, layer_srcset_fallback, layer_sizes_contain_height]
+
+effects:
+  - popup_image_without_size_returns_original_unchanged
+  - popup_image_size_returns_preset_dimensions
+  - popup_image_thumbnail_is_hardened
+  - popup_mobile_image_has_own_thumbnail
+  - popup_image_w_rounds_up_to_numeric_preset
+  - popup_image_thumbnail_cache_is_public
+  - popup_image_bypass_marks_original
+  - popup_temp_image_thumbnail_served
+  - popup_image_bypass_original_is_not_immutable
+  - popup_image_bypass_original_uses_thumbnail_ttl
+  - popup_image_bypass_original_ttl_capped_at_one_year
+  - popup_animated_gif_returns_original_with_reason
+  - popup_image_public_thumbnail_disk_redirects
+  - popup_image_missing_original_is_404_with_size
+  - popup_image_delete_purges_thumbnails
+  - popup_thumbnail_listener_registers_url_pattern_and_provider
+  - popup_thumbnail_provider_resolved_once
+  - popup_layer_pc_image_srcset_sized_by_pc_width
+  - popup_layer_mobile_image_srcset_is_own_original
+  - popup_image_sizes_follow_layer_geometry
+  - popup_image_sizes_capped_by_body_height
+  - popup_layer_without_thumbnail_api_keeps_original
+  - popup_srcset_skips_unknown_width_foreign_url_and_editor
+  - popup_srcset_built_by_core_content_srcset_within
+  - popup_without_within_api_has_no_srcset
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Public/PopupImageThumbnailTest.php
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupImageThumbnail.test.tsx
+
+notes: |
+  조건부 요청(304)·파일 서빙 계약은 public-popups.yaml(PublicPopupImageTest)이 소유한다 — 이 매니페스트의 변경 뒤에도 그 시나리오가 green 이어야 한다.
+  관리 목록 이미지 규격(thumbPreset sm)은 admin-screens.yaml 의 list_image_thumbnail_preset 이 소유한다.

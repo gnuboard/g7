@@ -5,7 +5,7 @@
 <partial description="이커머스 본인인증 정책 삭제 확인 모달">
   <modal data-type="composite" data-ref="ecommerce_identity_policy_delete_modal" title="$t:admin.identity.policies.delete_title" size="sm">
     <p class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:admin.identity.policies.delete_confirm</p>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceIdentityPolicyDeleting}}">
         <on type="click">
           <close-modal target="ecommerce_identity_policy_delete_modal"/>
@@ -34,6 +34,6 @@
         <icon data-if="{{_global.ecommerceIdentityPolicyDeleting}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.ecommerceIdentityPolicyDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

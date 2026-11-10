@@ -7,6 +7,7 @@ import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING, escapeToClose } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -89,6 +90,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const [internalValue, setInternalValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  // Esc 로 접은 제안 — 다시 입력하거나 입력칸에 다시 들어오면 펼친다(#869)
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const previousValueRef = React.useRef<string>('');
 
@@ -108,7 +111,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   );
 
   const value = controlledValue !== undefined ? controlledValue : internalValue;
-  const shouldShowSuggestions = showSuggestions && isFocused && suggestions.length > 0 && value.length > 0;
+  const shouldShowSuggestions = showSuggestions && isFocused && !suggestionsDismissed && suggestions.length > 0 && value.length > 0;
 
   // controlledValue가 변경될 때 previousValueRef 동기화
   useEffect(() => {
@@ -120,6 +123,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInternalValue(newValue);
+    setSuggestionsDismissed(false);
     onChange?.(e);
 
     // X 버튼으로 검색어를 지운 경우 감지
@@ -135,6 +139,26 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
 
     previousValueRef.current = newValue;
+  };
+
+  // 입력칸과 제안 항목이 포커스를 주고받는 동안에는 목록을 연 채로 둔다 — 종전에는 Tab 으로 제안에 가면 입력칸의 blur 가
+  // 200ms 뒤 목록을 닫아 키보드로는 제안을 고를 수 없었다(#869 키보드 접근)
+  const keepSuggestionsOpen = () => {
+    if (blurTimerRef.current !== null) {
+      clearTimeout(blurTimerRef.current);
+      blurTimerRef.current = null;
+    }
+    setIsFocused(true);
+    setSuggestionsDismissed(false);
+  };
+  const closeSuggestionsSoon = () => {
+    if (blurTimerRef.current !== null) {
+      clearTimeout(blurTimerRef.current);
+    }
+    blurTimerRef.current = setTimeout(() => {
+      blurTimerRef.current = null;
+      setIsFocused(false);
+    }, 200);
   };
 
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
@@ -153,7 +177,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <Div ref={containerRef} className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
+    // 제안이 펼쳐져 있으면 Esc 로 접는다 — 포커스는 입력칸에 남는다(#869)
+    <Div ref={containerRef} className={`relative ${className}`} style={style} id={id} {...editorAttrs} onKeyDown={escapeToClose(shouldShowSuggestions, () => setSuggestionsDismissed(true))}>
       <Form onSubmit={handleSubmit} className="relative">
         <Div className={`relative flex items-center ${showButton ? 'gap-2' : ''}`}>
           {/* Input wrapper */}
@@ -169,16 +194,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               name={name}
               value={value}
               onChange={handleChange}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                if (blurTimerRef.current !== null) {
-                  clearTimeout(blurTimerRef.current);
-                }
-                blurTimerRef.current = setTimeout(() => {
-                  blurTimerRef.current = null;
-                  setIsFocused(false);
-                }, 200);
-              }}
+              onFocus={keepSuggestionsOpen}
+              onBlur={closeSuggestionsSoon}
               placeholder={resolvedPlaceholder}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
             />
@@ -202,8 +219,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           {suggestions.map((suggestion) => (
             <Div
               key={suggestion.id}
-              className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
+              className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${FOCUS_VISIBLE_RING}`}
               onClick={() => handleSuggestionClick(suggestion)}
+              {...keyboardActivationProps(() => handleSuggestionClick(suggestion))}
+              onFocus={keepSuggestionsOpen}
+              onBlur={closeSuggestionsSoon}
             >
               <Div className="flex items-center gap-2">
                 <Icon name={IconName.Search} className="w-4 h-4 text-gray-500 dark:text-gray-400" />

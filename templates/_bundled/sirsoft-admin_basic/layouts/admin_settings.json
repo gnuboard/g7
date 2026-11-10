@@ -318,6 +318,43 @@
             "comment": "큐 워커 상태 (#139) — 드라이버 탭에서만 받는다. 저장된 큐 드라이버 기준으로 등록 연결·큐마다 대기 건수·마지막 워커 신호·\n       경고, 긴 작업 전용 워커 등록 단계, Supervisor 실행 명령을 서버가 판정해 돌려준다. progressive 로 받고 탭 전환 덮개는\n       다른 progressive 소스와 같이 이 응답을 기다린다. 실패하면 구역에 실패 안내를 띄운다(응답이 없을 때 「신호 없음」으로\n       오해하지 않게) — 실패 표식은 _global 에 둔다: 데이터소스 핸들러가 세운 _local 키는 이후 입력 변경의 setState 에\n       초기값으로 되돌아가 편집 중 「새로 고침」 실패가 사라진다.\n       계산값 queueConnectionList 는 연결별 큐 칸을 그릴 연결 목록(비었으면 지금 고른 드라이버 연결 하나),\n       queueErrors 는 서버 422 오류를 연결 칸·연결별 큐 칸·큐 목록 전체로 나눈 값이다(연결 간 오류가 섞이지 않게)."
         },
         {
+            "id": "thumbnailStats",
+            "label_key": "$t:editor.data_source.thumbnailStats",
+            "type": "api",
+            "endpoint": "/api/admin/thumbnails/stats",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'upload'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": {
+                    "locations": [],
+                    "presets": [],
+                    "sources": []
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "thumbnailStatsFailed": false
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "thumbnailStatsFailed": true
+                    }
+                }
+            ],
+            "comment": "썸네일 저장 위치별 사용량 (#869) — 업로드 탭에서만 받는다. 공개·권한 두 저장 위치마다 디스크·파일 수·용량을, 원격 디스크(S3·CDN)는\n       세지 않고 remote=true 로 돌려준다. 같은 응답의 presets(비우기 규격 선택지)·sources(「기존 이미지 썸네일 만들기」의 소스 선택지)도 쓴다.\n       비우기·만들기가 끝날 때와 업로드 탭 저장 성공 뒤 다시 받는다(디스크를 바꿔 저장하면 새 디스크 기준으로 다시 센다).\n       실패 표식은 큐 워커 상태와 같은 이유로 _global 에 둔다(데이터소스 핸들러가 세운 _local 키는 입력 변경 때 초기값으로 돌아간다).\n       디스크를 훑는 집계라 늦을 수 있어 background 로 받고 탭 전환 덮개(transition-overlay)의 기다림 목록에 넣지 않는다 — 종전\n       progressive 는 이 화면 규약(progressive 소스는 모두 wait-for 에 둔다, 이슈 #245 가드)상 덮개가 기다려, 업로드 탭 전체가 집계가\n       끝날 때까지 덮여 설정 칸을 고칠 수 없었다. background 도 받는 시점·성공/실패 처리는 progressive 와 같고 덮개만 기다리지 않는다.\n       사용량 줄은 응답 전까지 「-」로 그린다."
+        },
+        {
             "id": "trustedProxy",
             "label_key": "$t:editor.data_source.trustedProxy",
             "type": "api",
@@ -760,7 +797,8 @@
         "policyForm": null,
         "policyErrors": null,
         "policyIsNew": true,
-        "policyIsSaving": false
+        "policyIsSaving": false,
+        "thumbnailPurgePreset": {}
     },
     "computed": {
         "canReadLanguagePacks": "{{current_user?.data ? (current_user.data.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.read') : null}}",
@@ -782,7 +820,9 @@
         "coreUpdateTotalSteps": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.total_steps ?? 0}}",
         "coreUpdateManualSources": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.manual_sources ?? []}}",
         "coreUpdateModified": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.modified_layouts ?? null}}",
-        "coreUpdatePreflight": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.preflight ?? null}}"
+        "coreUpdatePreflight": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.preflight ?? null}}",
+        "thumbnailLocations": "{{(function() { const form = _local.form?.upload ?? {}; const saved = settings?.data?.upload ?? {}; const stats = thumbnailStats?.data?.locations ?? []; const fmt = (b) => (b === null || b === undefined) ? '' : (b >= 1073741824 ? (b / 1073741824).toFixed(2) + ' GB' : (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : (b >= 1024 ? (b / 1024).toFixed(1) + ' KB' : b + ' B'))); return ['public', 'gated'].map(kind => { const field = 'thumbnail_disk_' + kind; const current = form[field] ?? 'thumbnails'; const savedDisk = saved[field] ?? 'thumbnails'; const stat = stats.find(l => l.kind === kind) ?? null; return { kind: kind, field: field, current: current, saved: savedDisk, locked: current !== savedDisk, disk_label: stat?.disk_label ?? '', remote: stat?.remote === true, loaded: stat !== null, count: stat?.count ?? null, bytes: stat?.bytes ?? null, size: fmt(stat?.bytes), by_preset: stat?.by_preset ?? null }; }); })()}}",
+        "thumbnailPresetErrors": "{{(function() { const e = _local.errors; const rows = _local.form?.upload?.thumbnail_presets_rows ?? []; const empty = { root: [], rows: {} }; if (!e || typeof e !== 'object') return empty; const sent = rows.map((r, i) => ({ kind: r?.kind, i: i })).filter(x => x.kind !== 'og').map(x => x.i); const prefix = 'upload.thumbnail_presets.'; return Object.entries(e).reduce((out, [k, v]) => { const msgs = Array.isArray(v) ? v : [v]; if (k === 'upload.thumbnail_presets') return { ...out, root: [...out.root, ...msgs] }; if (!k.startsWith(prefix)) return out; const parts = k.slice(prefix.length).split('.'); const at = sent[Number(parts[0])]; if (at === undefined) return { ...out, root: [...out.root, ...msgs] }; const field = parts[1] ?? 'name'; const cell = out.rows[at] ?? {}; return { ...out, rows: { ...out.rows, [at]: { ...cell, [field]: [...(cell[field] ?? []), ...msgs] } } }; }, empty); })()}}"
     },
     "permissions": [
         "core.settings.read"
@@ -815,6 +855,269 @@
             "passwordExpiryManualRuns",
             "unplaced_bundled_notice"
         ]
+    },
+    "named_actions": {
+        "thumbnailPregenerateStep": {
+            "comment": "기존 이미지 썸네일 만들기의 한 걸음 (#869) — 「기존 이미지 썸네일 만들기」 창의 시작 단추가 부르고, 응답에 다음 커서가 있으면\n       자기 자신을 다시 부른다(서버는 한 번에 설정 건수만 처리하고 next_cursor 를 돌려준다). 계속할지는 `switch` 의 값으로 가른다 —\n       값 식은 부르는 순간의 최신 `_global` 을 읽으므로, 요청이 도는 사이 누른 「멈춤」·창 닫기가 다음 걸음 전에 반영된다\n       (액션의 `if` 는 처음 누른 순간의 상태를 읽어 멈춤을 놓친다).\n       사슬이 둘로 겹치지 않게 두 겹으로 막는다. 첫째, 요청이 도는 동안(inflight) 창을 여는 버튼과 시작 단추를 잠근다 — 종전에는\n       진행 중에 창을 닫고 다시 열면 여는 버튼이 상태를 새로 깔며 inflight 를 false 로 되돌려, 앞 요청이 아직 도는데 시작을 또 누를 수\n       있었다. 둘째, 시작 단추가 실행 토큰(runId)을 새로 받고 걸음은 떠날 때 그 토큰을 요청 토큰(requestRun)으로 적는다. 응답이\n       돌아왔을 때 두 토큰이 다르면(창을 새로 열어 토큰이 비었거나 다른 실행이 시작됨) 그 응답은 지난 실행의 것이라 아무것도\n       쌓지 않고 버린다 — 처리 건수·inflight 는 지금 실행의 몫이다. 액션 정의는 호출마다 값을 담아 둘 자리가 없어 토큰을 전역에\n       두므로, 같은 순간 두 요청이 함께 도는 경우는 첫째 잠금이 막는다.",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "thumbnailPregen.inflight": true,
+                        "thumbnailPregen.requestRun": "{{_global.thumbnailPregen?.runId ?? null}}"
+                    }
+                },
+                {
+                    "handler": "apiCall",
+                    "target": "/api/admin/thumbnails/pregenerate",
+                    "auth_required": true,
+                    "params": {
+                        "method": "POST",
+                        "body": {
+                            "cursor": "{{_global.thumbnailPregen?.cursor ?? null}}",
+                            "sources": "{{_global.thumbnailPregen?.sources ?? []}}",
+                            "presets": "{{_global.thumbnailPregen?.presets ?? []}}"
+                        }
+                    },
+                    "onSuccess": {
+                        "handler": "switch",
+                        "params": {
+                            "value": "{{(_global.thumbnailPregen?.runId ?? null) !== null && _global.thumbnailPregen?.requestRun === _global.thumbnailPregen?.runId ? 'current' : 'stale'}}"
+                        },
+                        "cases": {
+                            "current": {
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "thumbnailPregen.inflight": false,
+                                            "thumbnailPregen.cursor": "{{response?.data?.next_cursor ?? null}}",
+                                            "thumbnailPregen.processed": "{{(_global.thumbnailPregen?.processed ?? 0) + (response?.data?.processed ?? 0)}}",
+                                            "thumbnailPregen.generated": "{{(_global.thumbnailPregen?.generated ?? 0) + (response?.data?.generated ?? 0)}}",
+                                            "thumbnailPregen.total": "{{response?.data?.total ?? _global.thumbnailPregen?.total ?? null}}",
+                                            "thumbnailPregen.steps": "{{(_global.thumbnailPregen?.steps ?? 0) + 1}}",
+                                            "thumbnailPregen.done": "{{!response?.data?.next_cursor}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "switch",
+                                        "params": {
+                                            "value": "{{(!!response?.data?.next_cursor && _global.thumbnailPregen?.paused !== true) ? 'next' : (!response?.data?.next_cursor ? 'done' : 'paused')}}"
+                                        },
+                                        "cases": {
+                                            "next": {
+                                                "actionRef": "thumbnailPregenerateStep"
+                                            },
+                                            "done": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "thumbnailPregen.running": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.settings.upload.thumbnail.pregenerate_modal.done_toast|generated={{_global.thumbnailPregen?.generated ?? 0}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "thumbnailStats"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "paused": {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "thumbnailStats"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "onError": {
+                        "handler": "switch",
+                        "params": {
+                            "value": "{{(_global.thumbnailPregen?.runId ?? null) !== null && _global.thumbnailPregen?.requestRun === _global.thumbnailPregen?.runId ? 'current' : 'stale'}}"
+                        },
+                        "cases": {
+                            "current": {
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "thumbnailPregen.inflight": false,
+                                            "thumbnailPregen.running": false,
+                                            "thumbnailPregen.error": "{{error.message ?? $t('admin.settings.upload.thumbnail.pregenerate_modal.failed')}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.settings.upload.thumbnail.pregenerate_modal.failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "thumbnailPurgeStep": {
+            "comment": "썸네일 비우기의 한 걸음 (#869) — 업로드 탭 저장 위치 줄의 「비우기」(origin row)와 「두 곳 모두 비우기」 확인 창(origin all)이\n       `_global.thumbnailPurgeRun` 을 깔고 부른다. 같은 디스크를 나눠 쓰는 위치나 규격 하나만 지우면 서버가 파일마다 판정해야 해서,\n       한 요청이 파일 전체를 훑지 않게 시간 예산만큼만 걷고 next_cursor 를 돌려준다. 다음 커서가 있으면 자기 자신을 다시 부르고,\n       위치별 삭제 수는 deleted 에 쌓는다(디스크를 통째로 비운 -1 은 개수를 세지 않았다는 뜻이라 -1 로 남긴다).\n       진행 상태가 전역 하나라 도는 동안 두 단추가 모두 잠겨 사슬이 겹치지 않는다. 끝나면 부른 곳에 맞게 알린다 — 개수를 세지 않은\n       위치가 있으면 「-1개」 대신 서버 문구를 보인다. 확인 창은 아직 맨 위에 열려 있을 때만 닫는다(그 사이 연 다른 창을 닫지 않게).",
+            "handler": "apiCall",
+            "target": "/api/admin/thumbnails/purge",
+            "auth_required": true,
+            "params": {
+                "method": "POST",
+                "body": {
+                    "location": "{{_global.thumbnailPurgeRun?.location}}",
+                    "preset": "{{_global.thumbnailPurgeRun?.preset || undefined}}",
+                    "cursor": "{{_global.thumbnailPurgeRun?.cursor ?? null}}"
+                }
+            },
+            "onSuccess": {
+                "handler": "sequence",
+                "actions": [
+                    {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "thumbnailPurgeRun.cursor": "{{response?.data?.next_cursor ?? null}}",
+                            "thumbnailPurgeRun.deleted": "{{['public', 'gated'].filter(k => (_global.thumbnailPurgeRun?.deleted ?? {})[k] !== undefined || (response?.data?.deleted ?? {})[k] !== undefined).reduce((acc, k) => ({ ...acc, [k]: ((_global.thumbnailPurgeRun?.deleted ?? {})[k] === -1 || (response?.data?.deleted ?? {})[k] === -1) ? -1 : ((_global.thumbnailPurgeRun?.deleted ?? {})[k] ?? 0) + ((response?.data?.deleted ?? {})[k] ?? 0) }), {})}}"
+                        }
+                    },
+                    {
+                        "handler": "switch",
+                        "params": {
+                            "value": "{{response?.data?.next_cursor ? 'next' : (_global.thumbnailPurgeRun?.origin === 'all' ? 'done_all' : 'done_row')}}"
+                        },
+                        "cases": {
+                            "next": {
+                                "actionRef": "thumbnailPurgeStep"
+                            },
+                            "done_row": {
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{(_global.thumbnailPurgeRun?.deleted?.[_global.thumbnailPurgeRun?.location] ?? 0) === -1 ? (response?.message ?? '') : $t('admin.settings.upload.thumbnail.storage.purge_success', {count: _global.thumbnailPurgeRun?.deleted?.[_global.thumbnailPurgeRun?.location] ?? 0})}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "thumbnailPurgeRun": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "thumbnailStats"
+                                        }
+                                    }
+                                ]
+                            },
+                            "done_all": {
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{Object.values(_global.thumbnailPurgeRun?.deleted ?? {}).includes(-1) ? (response?.message ?? '') : $t('admin.settings.upload.thumbnail.purge_all_modal.success', {public: _global.thumbnailPurgeRun?.deleted?.public ?? 0, gated: _global.thumbnailPurgeRun?.deleted?.gated ?? 0})}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "thumbnailStats"
+                                        }
+                                    },
+                                    {
+                                        "handler": "switch",
+                                        "params": {
+                                            "value": "{{(_global.modalStack ?? []).slice(-1)[0] === 'settings_thumbnail_purge_all_modal' ? 'close' : 'keep'}}"
+                                        },
+                                        "cases": {
+                                            "close": {
+                                                "handler": "closeModal"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "thumbnailPurgeRun": null,
+                                            "thumbnailPurgeAll": null
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            "onError": {
+                "handler": "sequence",
+                "actions": [
+                    {
+                        "handler": "toast",
+                        "params": {
+                            "type": "error",
+                            "message": "{{error.message ?? '$t:admin.settings.upload.thumbnail.storage.purge_failed'}}"
+                        }
+                    },
+                    {
+                        "handler": "switch",
+                        "params": {
+                            "value": "{{_global.thumbnailPurgeRun?.origin === 'all' && (_global.modalStack ?? []).slice(-1)[0] === 'settings_thumbnail_purge_all_modal' ? 'close' : 'keep'}}"
+                        },
+                        "cases": {
+                            "close": {
+                                "handler": "closeModal"
+                            }
+                        }
+                    },
+                    {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "thumbnailPurgeRun": null,
+                            "thumbnailPurgeAll": null
+                        }
+                    },
+                    {
+                        "handler": "refetchDataSource",
+                        "params": {
+                            "dataSourceId": "thumbnailStats"
+                        }
+                    }
+                ]
+            }
+        }
     },
     "init_actions": [
         {
@@ -903,8 +1206,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "p-4 min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -1023,14 +1338,38 @@
                         "id": "sticky_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "640-1023": {
+                                "props": {
+                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                }
+                            },
+                            "1024-": {
+                                "props": {
+                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "sticky-tab-nav-responsive"
+                            "className": "sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "id": "tab_navigation",
                                 "type": "composite",
                                 "name": "TabNavigation",
+                                "responsive": {
+                                    "640-1023": {
+                                        "props": {
+                                            "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                        }
+                                    },
+                                    "1024-": {
+                                        "props": {
+                                            "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "comment": "저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고,\n                 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게)",
@@ -1091,7 +1430,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "sticky-tab-nav-responsive",
+                                    "className": "sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700",
                                     "activeTabId": "{{_global.activeSettingsTab || query.tab || 'general'}}",
                                     "variant": "default",
                                     "tabs": [
@@ -1175,8 +1514,20 @@
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
                                 "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
+                                "responsive": {
+                                    "640-1023": {
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-8"
+                                        }
+                                    },
+                                    "1024-": {
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-10"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "sub-tab-nav",
+                                    "className": "bg-white dark:bg-gray-800 flex gap-1 px-6",
                                     "sectionIdPrefix": "identity_section_",
                                     "enableScrollSpy": true,
                                     "scrollContainerId": "right_content_area",
@@ -1383,7 +1734,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트들은 아직 올라가지 않은 파일을 먼저 올리라는 신호다(일반 탭 로고·파비콘, SEO 탭 기본 공유 이미지) —\n                 각 업로더가 받아 처리하므로 여기서 파일을 다루지 않는다. 「저장할 때 올리는」 업로더(autoUpload=false)를\n                 새로 붙이면 그 신호를 여기 함께 보내야 한다 — 빠뜨리면 새 파일을 골라 저장해도 업로드 요청이 0건이고\n                 오류 표시도 없다(#639 ⑨, 기본 공유 이미지가 그랬다).\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 전역 설정은 응답의 공개 설정(`frontend_settings` — 계산 필드 site_logo_url 포함)으로 바꾼다. 관리자 형태(`settings`)로\n                 바꾸면 계산 필드가 없어 상단 로고가 새로고침 전까지 사라졌다(#434 S-3). 옛 서버 응답은 `settings` 로 대체한다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).\n                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —\n                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).\n                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.\n                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).",
+                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트들은 아직 올라가지 않은 파일을 먼저 올리라는 신호다(일반 탭 로고·파비콘, SEO 탭 기본 공유 이미지) —\n                 각 업로더가 받아 처리하므로 여기서 파일을 다루지 않는다. 「저장할 때 올리는」 업로더(autoUpload=false)를\n                 새로 붙이면 그 신호를 여기 함께 보내야 한다 — 빠뜨리면 새 파일을 골라 저장해도 업로드 요청이 0건이고\n                 오류 표시도 없다(#639 ⑨, 기본 공유 이미지가 그랬다).\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 전역 설정은 응답의 공개 설정(`frontend_settings` — 계산 필드 site_logo_url 포함)으로 바꾼다. 관리자 형태(`settings`)로\n                 바꾸면 계산 필드가 없어 상단 로고가 새로고침 전까지 사라졌다(#434 S-3). 옛 서버 응답은 `settings` 로 대체한다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).\n                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —\n                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).\n                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.\n                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).\n                 업로드 탭은 썸네일 규격 표(화면용 행 `thumbnail_presets_rows`, 행마다 kind·defaults)를 저장 키 `thumbnail_presets` 로 바꿔 보낸다 —\n                 표시용 칸은 빼고 og 행도 뺀다(크기를 SEO 탭이 소유하고 서버도 저장하지 않는다). 고정 슬롯 보충은 서버(mergeForSave) 몫이다.\n                 저장 뒤 썸네일 사용량도 다시 받는다 — 저장 위치를 바꿨다면 새 디스크 기준으로 세고 그 줄의 비우기 잠금이 풀린다(#869).",
                                         "type": "click",
                                         "handler": "switch",
                                         "params": {
@@ -1419,9 +1770,23 @@
                                                         }
                                                     },
                                                     {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "uploadFailedCount": "{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"
+                                                        }
+                                                    },
+                                                    {
                                                         "handler": "emitEvent",
                                                         "params": {
                                                             "event": "upload:site_favicon"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "uploadFailedCount": "{{(_local.uploadFailedCount ?? 0) + [].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"
                                                         }
                                                     },
                                                     {
@@ -1434,17 +1799,36 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "uploadFailedCount": "{{(_local.uploadFailedCount ?? 0) + [].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다.",
+                                                        "handler": "toast",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:attachment.upload_failed_save_stopped"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) === 0}}",
+                                                        "params": {
+                                                            "target": "local",
                                                             "isSaving": true,
                                                             "errors": null
                                                         }
                                                     },
                                                     {
+                                                        "comment": "본문에서 .env 로 잠긴 칸(`_computed.envLocked` 의 출처 `_meta.env_locked` 의 `{탭}.{키}`)을 뺀다 — 바꿀 수 없는 값을 보내지 않는다(#869 ζ).",
                                                         "handler": "apiCall",
                                                         "target": "/api/admin/settings",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) === 0}}",
                                                         "auth_required": true,
                                                         "params": {
                                                             "method": "POST",
-                                                            "body": "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}"
+                                                            "body": "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; const locked = form._meta?.env_locked || {}; const unlocked = (t, o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => locked[t + '.' + k] !== true)); if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'upload') { const upload = Object.fromEntries(Object.entries(unlocked('upload', form.upload)).filter(([k]) => k !== 'thumbnail_presets_rows')); const rows = form.upload?.thumbnail_presets_rows; return { _tab: 'upload', upload: Array.isArray(rows) ? { ...upload, thumbnail_presets: rows.filter(r => r?.kind !== 'og').map(r => ({ name: r.name, source: r.source, width: r.width, height: r.height, fit: r.fit, anchor: r.anchor, quality: r.quality, format: r.format, upscale: r.upscale === true, pregenerate: r.pregenerate === true, numeric: r.numeric === true, enabled: r.enabled !== false })) } : upload }; } return { _tab: tab, [tab]: unlocked(tab, form[tab]) }; })()}}"
                                                         },
                                                         "onSuccess": [
                                                             {
@@ -1495,6 +1879,13 @@
                                                                 "if": "{{(_global.activeSettingsTab || query.tab) === 'drivers'}}",
                                                                 "params": {
                                                                     "dataSourceId": "queueStatus"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'upload'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "thumbnailStats"
                                                                 }
                                                             }
                                                         ],
@@ -1664,6 +2055,14 @@
         {
             "comment": "비밀번호 만료 직권 실행 확인 창(보안 탭) — 사전 안내·만료 처리 두 단계가 함께 쓴다. 명단 창은 위 개인정보 명단 창을 돌려 쓴다.",
             "partial": "partials/admin_settings/_modal_password_expiry_run.json"
+        },
+        {
+            "comment": "썸네일 두 곳 모두 비우기 확인 창(업로드 탭, #869) — 공개·권한 두 저장 위치의 요약을 나눠 보이고 한 번 묻는다.",
+            "partial": "partials/admin_settings/_modal_thumbnail_purge_all.json"
+        },
+        {
+            "comment": "기존 이미지 썸네일 만들기 창(업로드 탭, #869) — 소스·규격을 고르고 명명 액션 thumbnailPregenerateStep 으로 끝까지 이어 만든다.",
+            "partial": "partials/admin_settings/_modal_thumbnail_pregenerate.json"
         },
         {
             "comment": "저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다",

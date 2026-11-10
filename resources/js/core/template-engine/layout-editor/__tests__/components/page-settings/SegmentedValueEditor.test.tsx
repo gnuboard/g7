@@ -11,7 +11,6 @@
  *  ⑤ 순서 변경(⠿ 드래그) → moveTo 재배치 + 재결합
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
@@ -59,6 +58,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
   const PO_CASE =
     "{{route.id ? '$t:board.edit_post' : '$t:board.new_post'}} - {{form_meta?.data?.board?.name || ''}}";
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_initial_split_renders_part_cards
+   */
   it('① 초기 분해 — 조각 카드 3개(보간·평문·보간) + 각 손잡이/삭제/입력칸', () => {
     render(<SegmentedValueEditor value={PO_CASE} onChange={vi.fn()} t={t} />);
     // 카드 3개.
@@ -74,6 +77,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
     expect(screen.getByTestId('g7le-seg-value-field-2-mock')).toHaveValue("{{form_meta?.data?.board?.name || ''}}");
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_edit_part_recombines_others_kept
+   */
   it('② 조각 편집 → 그 조각만 갱신해 전체 재결합(나머지 보존)', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value={PO_CASE} onChange={onChange} t={t} />);
@@ -84,6 +91,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
     );
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_add_text_part_appends_empty
+   */
   it('③ 고정 글자 조각 추가 → 끝에 빈 text 조각 + 재결합', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="{{route.id ? '$t:a' : '$t:b'}}" onChange={onChange} t={t} />);
@@ -94,6 +105,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
     expect(onChange).toHaveBeenCalledWith("{{route.id ? '$t:a' : '$t:b'}}");
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_add_condition_part_seeds_ternary
+   */
   it('③ 조건 분기 조각 추가 → 시드 삼항 식(기준 값은 빈 조건, route.id 하드코딩 금지)', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="안녕" onChange={onChange} t={t} />);
@@ -107,6 +122,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
 
   // "유저는 표현식 편집기에서 가능한 모든 조합과 양식을 정의할 수 있어야"(2026-06-13) — 폴백 양식도
   // 사용자가 직접 추가. 시드는 `{{'' ?? ''}}`(기본값/대신 빈 칸).
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_add_fallback_part_seeds_nullish
+   */
   it('③ 폴백 조각 추가([+값이 없을 때 대신]) → 시드 `?? ` 폴백 식', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="안녕" onChange={onChange} t={t} />);
@@ -116,6 +135,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
     expect(out).toContain('??');
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_remove_part_recombines
+   */
   it('④ 조각 삭제 → 그 조각 제거 + 재결합', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value={PO_CASE} onChange={onChange} t={t} />);
@@ -126,6 +149,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
     );
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_remove_all_keeps_one_empty_part
+   */
   it('④ 전부 삭제해도 빈 조각 1개 유지(편집 시작점)', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="안녕" onChange={onChange} t={t} />);
@@ -134,6 +161,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
     expect(screen.getByTestId('g7le-seg-value-card-0')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_drag_handle_reorders_parts
+   */
   it('⑤ 손잡이 드래그 순서 변경 → moveTo 재배치 + 재결합', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="A{{x.a}}B{{x.b}}" onChange={onChange} t={t} />);
@@ -143,6 +174,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
     expect(onChange).toHaveBeenLastCalledWith('{{x.a}}BA{{x.b}}');
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_drag_shows_single_drop_line
+   */
   it('⑤ 드래그 중 드롭 예정 위치에 삽입선 활성 표시(한 곳만, 캔버스 DnD 와 동일)', () => {
     // jsdom 은 getBoundingClientRect=0·드래그 이벤트 좌표 미반영이라 정확한 절반 판정은 라이브
     // (Chrome MCP)로 검증한다([[feedback_chrome_mcp_synthetic_events_false_negative...]]). 여기선
@@ -161,6 +196,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
   });
 
   // "원본 식 보기는 조각 편집기당 하나"(2026-06-13) — 통합 토글 1개, 전체 결합 식 표시.
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_single_source_toggle_shows_joined
+   */
   it('⑥ [원본 식 보기]는 세그먼트 편집기당 1개 — 전체 결합 식 표시', () => {
     render(<SegmentedValueEditor value={PO_CASE} onChange={vi.fn()} t={t} />);
     // 통합 토글 1개(카드별 토글 0 — mock I18nTextField 라 카드 내부 토글은 애초에 없지만 컨테이너 토글 1개 확인).
@@ -178,6 +217,10 @@ describe('SegmentedValueEditor — 조각 CRUD', () => {
 // 되어야" 2026-06-13). 빈 데이터 조각은 평문 입력이 아니라 데이터 피커를 즉시 노출하고, 후보를 고르면
 // 안전 바인딩(`{{src?.path ?? ''}}`)으로 채운다.
 describe('SegmentedValueEditor — 데이터 조각 자동완성', () => {
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_add_data_part_opens_picker
+   */
   it('[+데이터] 추가 → 빈 데이터 조각은 데이터 검색 피커 즉시 노출(평문 입력 아님)', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="" onChange={onChange} t={t} candidates={CANDS} />);
@@ -190,6 +233,10 @@ describe('SegmentedValueEditor — 데이터 조각 자동완성', () => {
     ).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_candidate_pick_fills_safe_binding
+   */
   it('데이터 후보 선택 → 안전 바인딩(`{{src?.path ?? \'\'}}`)으로 조각 채움', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="" onChange={onChange} t={t} candidates={CANDS} />);
@@ -201,6 +248,10 @@ describe('SegmentedValueEditor — 데이터 조각 자동완성', () => {
     expect(out).toContain('{{form_meta?.data?.board?.name ??');
   });
 
+  /**
+   * @scenario subject=segmented_value_editor
+   * @effects seg_value_no_candidates_data_part_fallback
+   */
   it('후보 풀 미전달 시 데이터 조각은 안내 폴백(피커 없음, 디그레이드)', () => {
     const onChange = vi.fn();
     render(<SegmentedValueEditor value="" onChange={onChange} t={t} />);

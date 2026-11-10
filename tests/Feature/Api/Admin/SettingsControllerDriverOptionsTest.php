@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Providers\SettingsServiceProvider;
 use App\Repositories\JsonConfigRepository;
+use App\Support\PhpExtensionProbe;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
@@ -28,6 +29,11 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     private string $token;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +44,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     /**
      * 관리자 사용자 생성
+     *
+     * @return User 설정 권한 역할을 단 관리자
      */
     private function createAdminUser(): User
     {
@@ -95,6 +103,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
+     *
+     * @return static Bearer 토큰 헤더를 실은 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -106,6 +116,12 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     /**
      * settings index 응답에 available_drivers가 포함되는지 검증합니다.
+     *
+     * @scenario surface=admin_response
+     *
+     * @effects all_driver_categories_returned_at_once
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function index_response_includes_available_drivers(): void
@@ -135,6 +151,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
      * @scenario engine_source=core
      *
      * @effects admin_driver_options_include_search_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function available_drivers_have_correct_structure(): void
@@ -145,8 +163,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
         $data = $response->json('data.available_drivers');
 
-        // 9개 카테고리 존재 (search 는 폴백 가드 편입으로 추가 — A5b)
-        $this->assertCount(9, $data);
+        // 10개 카테고리 존재 (search 는 폴백 가드 편입으로 추가 — A5b, image 는 이미지 처리 엔진 — #869)
+        $this->assertCount(10, $data);
 
         // 각 카테고리에 최소 1개 이상의 드라이버 존재
         foreach ($data as $category => $drivers) {
@@ -162,6 +180,12 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     /**
      * storage 카테고리에 코어 드라이버가 포함되는지 검증합니다.
+     *
+     * @scenario surface=admin_response
+     *
+     * @effects core_drivers_listed_per_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function storage_drivers_include_core_options(): void
@@ -177,6 +201,12 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     /**
      * mail 카테고리에 코어 드라이버가 포함되는지 검증합니다.
+     *
+     * @scenario surface=admin_response
+     *
+     * @effects core_drivers_listed_per_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function mail_drivers_include_core_options(): void
@@ -200,6 +230,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
      * @scenario engine_source=core
      *
      * @effects admin_driver_options_include_search_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function search_drivers_include_core_engine(): void
@@ -223,6 +255,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
      * @scenario engine_source=plugin
      *
      * @effects admin_driver_options_include_search_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function search_drivers_include_plugin_registered_engine(): void
@@ -244,6 +278,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
      * public_asset 카테고리에 코어 3종(none/public/s3)이 포함되는지 검증합니다.
      *
      * @effects settings_catalog_includes_plugin_registered_disks
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function public_asset_drivers_include_core_options(): void
@@ -258,6 +294,10 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     /**
      * 카탈로그에 있는 공개 자산 디스크 저장이 성공하는지 검증합니다.
+     *
+     * @effects catalog_public_asset_disk_saved_to_drivers_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saving_valid_public_asset_disk_succeeds(): void
@@ -283,6 +323,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
      * 저장 산출물(drivers.json)이 주입 입력이 되는 것까지 고정합니다.
      *
      * @effects global_setting_injects_core_config_with_none_normalized
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saved_public_asset_disk_reaches_core_config_through_injection(): void
@@ -311,6 +353,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
     /**
      * 실제 저장 산출물(drivers.json)을 읽어 주입부를 호출합니다.
+     *
+     * @return void 반환값 없음
      */
     private function injectFromStoredSettings(): void
     {
@@ -323,6 +367,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
      * 카탈로그에 없는 공개 자산 디스크 저장이 422 로 거부되는지 검증합니다.
      *
      * @effects invalid_disk_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saving_unknown_public_asset_disk_fails_with_422(): void
@@ -337,10 +383,140 @@ class SettingsControllerDriverOptionsTest extends TestCase
     }
 
     /**
+     * 이미지 엔진 선택지는 이 서버에서 쓸 수 있는 엔진만 보입니다 (#869).
+     *
+     * imagick 확장이 없는 서버(Windows 개발 서버)에서는 gd 만 보여야 한다 — 고를 수 없는 엔진을 보여 주면
+     * 운영자가 골라 저장하다 422 를 만난다.
+     *
+     * @scenario surface=driver_catalog
+     *
+     * @effects unusable_image_engines_hidden_from_catalog
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function image_drivers_list_only_engines_usable_on_this_server(): void
+    {
+        $this->fakeExtensions(['gd' => true, 'imagick' => false]);
+
+        $ids = array_column($this->authRequest()->getJson('/api/admin/settings')->json('data.available_drivers.image'), 'id');
+        $this->assertSame(['gd'], $ids);
+
+        $this->fakeExtensions(['gd' => true, 'imagick' => true]);
+
+        $ids = array_column($this->authRequest()->getJson('/api/admin/settings')->json('data.available_drivers.image'), 'id');
+        $this->assertSame(['gd', 'imagick'], $ids);
+    }
+
+    /**
+     * 쓸 수 없는 이미지 엔진을 직접 보내면 422 와 사유가 납니다 — 목록에서 뺀 것만으로는 직접 호출을 막지 못한다.
+     *
+     * @scenario surface=save_validation
+     *
+     * @effects unusable_image_engine_rejected_with_reason
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function saving_unusable_image_engine_fails_with_422_and_reason(): void
+    {
+        $this->fakeExtensions(['gd' => true, 'imagick' => false]);
+
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'drivers',
+            'drivers' => $this->driversPayload(['image_driver' => 'imagick']),
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['drivers.image_driver']);
+        $this->assertStringContainsString(
+            __('settings.driver_unusable_imagick_extension'),
+            implode(' ', (array) ($response->json('errors')['drivers.image_driver'] ?? []))
+        );
+
+        $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'drivers',
+            'drivers' => $this->driversPayload(['image_driver' => 'no-such-engine']),
+        ])->assertStatus(422)->assertJsonValidationErrors(['drivers.image_driver' => __('validation.settings.image_driver_invalid')]);
+    }
+
+    /**
+     * 쓸 수 있는 이미지 엔진은 저장되고 같은 요청 안의 config 에 반영됩니다 — 기본값(gd)이 아닌 imagick 으로 잰다.
+     *
+     * @scenario surface=save_storage
+     *
+     * @effects image_engine_saved_reaches_config
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function saving_usable_image_engine_reaches_config(): void
+    {
+        $this->fakeExtensions(['gd' => true, 'imagick' => true]);
+        config(['core.image.driver' => 'gd']);
+
+        $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'drivers',
+            'drivers' => $this->driversPayload(['image_driver' => 'imagick']),
+        ])->assertStatus(200);
+
+        $this->assertSame('imagick', (new JsonConfigRepository)->getCategory('drivers')['image_driver'] ?? null);
+        $this->assertSame('imagick', config('core.image.driver'));
+    }
+
+    /**
+     * 쓸 수 있는 엔진이 하나도 없으면 메타가 그것을 알립니다 (업로드 탭 「엔진 없음」 안내의 근거).
+     *
+     * @scenario surface=admin_response
+     *
+     * @effects engine_availability_meta_reported
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function thumbnail_engine_meta_follows_engine_availability(): void
+    {
+        $this->fakeExtensions(['gd' => true, 'imagick' => false]);
+        $this->assertTrue($this->authRequest()->getJson('/api/admin/settings')->json('data._meta.thumbnail_engine_available'));
+
+        $this->fakeExtensions(['gd' => false, 'imagick' => false]);
+        $this->assertFalse($this->authRequest()->getJson('/api/admin/settings')->json('data._meta.thumbnail_engine_available'));
+    }
+
+    /**
+     * PHP 확장 조회기를 바꿔 이미지 엔진 확장의 유무를 흉내 냅니다.
+     *
+     * @param  array<string, bool>  $loaded  확장 이름 → 로드 여부 (없는 이름은 실제 값)
+     * @return void 반환값 없음
+     */
+    private function fakeExtensions(array $loaded): void
+    {
+        $this->app->instance(PhpExtensionProbe::class, new class($loaded) extends PhpExtensionProbe
+        {
+            /**
+             * 확장 로드 여부 표를 받습니다.
+             *
+             * @param  array<string, bool>  $loaded  확장 이름 → 로드 여부
+             */
+            public function __construct(private array $loaded) {}
+
+            /**
+             * 주입한 표로 확장 로드 여부를 답합니다.
+             *
+             * @param  string  $extension  확장 이름
+             * @return bool 로드돼 있으면 true
+             */
+            public function loaded(string $extension): bool
+            {
+                return $this->loaded[$extension] ?? parent::loaded($extension);
+            }
+        });
+    }
+
+    /**
      * drivers 탭 저장에 필요한 최소 필수 필드 payload 를 반환합니다.
      *
      * @param  array<string, mixed>  $overrides  덮어쓸 필드
-     * @return array<string, mixed> drivers payload
+     * @return array<string, mixed> drivers 탭 저장 요청 본문
      */
     private function driversPayload(array $overrides = []): array
     {

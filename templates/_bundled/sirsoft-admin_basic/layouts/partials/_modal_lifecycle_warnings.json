@@ -10,7 +10,30 @@
     "name": "Modal",
     "props": {
         "title": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice') ? $t('admin.extensions.lifecycle_warnings.title') : $t('admin.extensions.lifecycle_warnings.notice_title')}}",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.close"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -183,36 +206,6 @@
                                     "text": "{{warning.message}}"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.close"
                         }
                     ]
                 }

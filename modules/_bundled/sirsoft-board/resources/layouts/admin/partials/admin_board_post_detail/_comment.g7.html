@@ -144,7 +144,8 @@
       <!-- 댓글 반응 수 — 읽기 전용. 관리자는 집계를 보기만 하고 반응을 남기지 않는다(버튼·api-call 없음). 삭제된 댓글은 집계를 감춘다 -->
       <div data-testid="comment_reaction_counts" data-if="{{post?.data?.board?.use_comment_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; !comment?.deleted_at}}" class="board:mt-2 board:px-4 board:flex board:flex-wrap board:items-center board:gap-3">
         <span data-each="rt in {{post?.data?.board?.reaction_type_options ?? []}}" class="board-text-tertiary board:inline-flex board:items-center board:gap-1 board:text-xs">
-          <img data-if="{{!!rt.icon_url}}" src="{{rt.icon_url}}" alt="" class="board:w-4 board:h-4 board:object-contain"/>
+          <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+          <img data-if="{{!!rt.icon_url}}" src="{{rt.icon_url}}" loading="lazy" decoding="async" alt="" class="board:w-4 board:h-4 board:object-contain"/>
           <icon data-if="{{!rt.icon_url}}" name="{{rt.icon_name ?? 'fa-thumbs-up'}}" size="xs"/>
           <span>{{rt.name}}</span>
           <span class="board:font-medium">{{comment?.reaction_counts?.[rt.id] ?? 0}}</span>

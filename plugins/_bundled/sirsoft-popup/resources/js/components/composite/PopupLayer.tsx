@@ -7,7 +7,21 @@ import { readDismissed, rememberDismissed } from '../../lib/dismissCookie';
 import { translate as t } from '../../support/editor';
 import { boxesFor } from '../../lib/overlays';
 import { ImageFrame } from '../../lib/ImageFrame';
+import { popupImageSizes, type PopupImageSizesInput } from '../../lib/thumbnail';
 import { sitePath } from '../../apiUrl';
+import { useViewportWidth as useEngineWidth } from '../../support/viewportWidth';
+
+/** 레이어 배치(이미지 비율 제외) — 장이 제 이미지 비율을 더해 `<img sizes>` 를 정한다 */
+type PopupImageLayout = Omit<PopupImageSizesInput, 'ratio'>;
+
+/**
+ * 화면 폭을 지켜봅니다 — 모바일 판정(767px 이하)과 창 자리 재조정에 쓴다. 판정 규칙은 `resources/js/support/viewportWidth.ts`.
+ *
+ * @returns 화면 폭(px)
+ */
+function useViewportWidth(): number {
+  return useEngineWidth(MOBILE_MAX_WIDTH + 1);
+}
 
 /** GDPR 쿠키 배너 요소 id — GDPR 조각의 `data-ref` 가 DOM id 가 된다(공개 계약 아님, 결정 R8). */
 export const GDPR_BANNER_ID = 'gdpr_cookie_banner';
@@ -286,35 +300,6 @@ function isInternal(url: string): boolean {
   return url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/\\');
 }
 
-/**
- * 화면 폭을 지켜봅니다 — 모바일 판정(767px 이하)과 창 자리 재조정에 쓴다.
- *
- * 엔진 `ResponsiveManager` 와 같은 값을 쓴다 — `G7Core.useResponsive()` 의 폭(레이아웃 편집기 미리보기에서는 기기 폭),
- * 훅이 없을 때만 `window.innerWidth`. `matchMedia` 는 소수 배율 화면의 경계 폭에서 1px 어긋나 쓰지 않는다
- * (docs/frontend/responsive-layout.md 「확장 코드에서 같은 경계를 판정할 때」).
- *
- * @returns 화면 폭(px)
- */
-function useViewportWidth(): number {
-  const useResponsive = (window as { G7Core?: { useResponsive?: () => { width?: number } | null } }).G7Core?.useResponsive;
-  // G7Core 는 페이지가 뜰 때 한 번 정해진다 — 렌더마다 훅 호출 여부가 바뀌지 않는다
-  const responsive = useResponsive?.();
-  const [innerWidth, setInnerWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : MOBILE_MAX_WIDTH + 1));
-  const hasEngineWidth = typeof responsive?.width === 'number';
-
-  useEffect(() => {
-    if (hasEngineWidth) {
-      return undefined;
-    }
-    const onResize = () => setInnerWidth(window.innerWidth);
-    onResize();
-    window.addEventListener('resize', onResize);
-
-    return () => window.removeEventListener('resize', onResize);
-  }, [hasEngineWidth]);
-
-  return hasEngineWidth ? (responsive?.width as number) : innerWidth;
-}
 
 /**
  * 움직임 줄이기 설정을 지켜봅니다.
@@ -1001,6 +986,9 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     bodyWidth = isSheet ? screenWidth : screenWidth - 48;
   }
   const showDots = count <= dotLimit(bodyWidth, isMobile, withPause);
+  // 이미지 srcset 의 sizes 를 정할 배치 — 위 본문 폭과 같은 기하(PC 설정 폭·높이, 휴대폰 가운데 창·하단 시트), 미리보기는 기기 틀 안의 상한.
+  // 장마다 이미지 비율이 달라(잘리지 않게 담는 폭 = 칸 높이 × 비율) sizes 는 장이 제 이미지로 마저 정한다
+  const imageLayout: PopupImageLayout = { isMobile, isSheet, pcWidth: config.pc_width, pcHeight: config.pc_height, preview: !!preview };
 
   // 넘김 컨트롤 — 별도 띠 없이 본문 아래쪽 가운데에 겹친 캡슐(점 또는 「n / N」 + 일시정지). 덮는 링크보다 위 층이고
   // 본문 끌기를 시작하지 않는다(onPointerDown). 장(슬라이드) 밖에 있어 장을 넘겨도 제자리다
@@ -1111,7 +1099,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
                   } : undefined}
                   data-popup-id={popup.id}
                 >
-                  <PopupContent popup={popup} eager={i === 0} isMobile={isMobile} onNavigate={close} inert={!!preview} />
+                  <PopupContent popup={popup} eager={i === 0} isMobile={isMobile} imageLayout={imageLayout} onNavigate={close} inert={!!preview} />
                 </div>
               );
             })}
@@ -1155,6 +1143,12 @@ interface PopupContentProps {
   /** 레이어가 판정한 기기가 모바일인지 (모바일 이미지가 있으면 그것을 쓴다) */
   isMobile?: boolean;
 
+  /** 이미지가 그려질 폭의 상한(`<img sizes>`) — 주면 코어 썸네일 srcset 을 붙인다(`imageLayout` 보다 먼저) */
+  imageSizes?: string;
+
+  /** 레이어 배치 — 주면 보이는 이미지의 비율과 함께 `<img sizes>` 를 정하고 코어 썸네일 srcset 을 붙인다 */
+  imageLayout?: PopupImageLayout;
+
   /** 사이트 안 링크로 이동할 때 (레이어를 닫는다) */
   onNavigate?: () => void;
 
@@ -1168,7 +1162,7 @@ interface PopupContentProps {
  * @param props 내용 props
  * @returns 내용
  */
-export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobile = false, onNavigate, inert = false }) => {
+export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobile = false, imageSizes, imageLayout, onNavigate, inert = false }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
   const isHtml = popup.content_type === 'html';
@@ -1210,6 +1204,9 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobi
   const mobile = popup.image?.mobile ?? null;
   // 레이어 판정(엔진 폭·미리보기 기기)과 같은 기준으로 고른다 — `<picture media>` 는 창 폭으로 판정해 어긋난다
   const shown = isMobile ? (mobile ?? pc) : pc;
+  const sizes = imageSizes ?? (imageLayout && shown
+    ? popupImageSizes({ ...imageLayout, ratio: shown.width && shown.height ? shown.width / shown.height : null })
+    : undefined);
   const boxes = boxesFor(popup.overlays, isMobile && !!mobile);
   const alt = popup.image_alt ?? '';
   const link = popup.link_url ?? '';
@@ -1235,7 +1232,7 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobi
   return (
     <div className="g7pp-media">
       {/* 글 상자는 이미지 표시 사각형(프레임) 기준 % 로 겹치고, 누름·끌기를 받지 않아 덮는 링크·장 넘김이 그대로 동작한다 */}
-      {shown && <ImageFrame image={shown} alt={link ? '' : alt} eager={eager} boxes={boxes} />}
+      {shown && <ImageFrame image={shown} alt={link ? '' : alt} eager={eager} boxes={boxes} sizes={sizes} />}
       {link && (
         <a
           className="g7pp-cover-link"

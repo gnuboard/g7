@@ -38,6 +38,7 @@
       <div class="ecommerce-flex-center ecommerce:flex-col ecommerce:gap-3">
         <!-- 이미지 + 좌우 버튼 -->
         <div class="ecommerce-flex-center ecommerce:relative ecommerce:justify-center ecommerce:w-full ecommerce:px-16">
+          <!-- thumb-exempt: 확대 보기 원본 -->
           <img src="{{(_global.reviewForModal?.images ?? [])[Number(_global.reviewImageIndex)]?.download_url ?? ''}}" alt="" class="ecommerce:w-full ecommerce:max-w-full ecommerce:max-h-[500px] ecommerce:object-contain ecommerce:rounded-lg"/>
           <button type="button" class="ecommerce-flex-center ecommerce:absolute ecommerce:left-0 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:z-10 ecommerce:w-12 ecommerce:h-12 ecommerce:justify-center ecommerce:rounded-full ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:hover:bg-gray-300 ecommerce:dark:hover:bg-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:leading-none ecommerce:disabled:opacity-20 ecommerce:disabled:cursor-not-allowed" disabled="{{Number(_global.reviewImageIndex) <= 0}}">
             <on type="click">

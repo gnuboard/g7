@@ -116,10 +116,11 @@
   </init>
   <slot name="content">
     <div data-ref="popup_form_content" class="g7pp-admin-page-content">
-      <div data-ref="page_header" class="g7pp-page-header">
+      <div data-ref="page_header" class="gpp:flex gpp:justify-between gpp:mb-6 gpp:flex-col gpp:items-start gpp:gap-4">
+        <responsive on="641-" class="gpp:flex gpp:items-center gpp:justify-between gpp:mb-6"/>
         <div>
           <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
-          <h1 class="g7pp-page-title">{{_local.form?.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}</h1>
+          <h1 class="gpp:text-xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"><responsive on="640-" class="gpp:text-2xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"/>{{_local.form?.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}</h1>
         </div>
       </div>
       <div id="popup_form_errors" data-ref="validation_error_banner" data-if="{{_local.errors}}" role="alert" class="g7pp-alert-danger">
@@ -131,9 +132,11 @@
           </ul>
         </div>
       </div>
-      <div data-ref="popup_form_columns" class="gpp:grid gpp:grid-cols-1 gpp:lg:grid-cols-3 gpp:gap-6">
+      <div data-ref="popup_form_columns" class="gpp:grid gpp:grid-cols-1 gpp:gap-6">
+        <responsive on="desktop" class="gpp:grid gpp:grid-cols-3 gpp:gap-6"/>
         <!-- 미리보기 — 휴대폰 폭에서는 맨 위(시안 모바일 보드), 넓은 화면에서는 오른쪽 -->
-        <section id="popup_form_preview" data-ref="preview_card" aria-labelledby="popup_form_preview_heading" class="g7pp-admin-card gpp:self-start gpp:order-first gpp:lg:order-last gpp:lg:sticky gpp:top-4">
+        <section id="popup_form_preview" data-ref="preview_card" aria-labelledby="popup_form_preview_heading" class="g7pp-admin-card gpp:self-start gpp:order-first gpp:top-4">
+          <responsive on="desktop" class="g7pp-admin-card gpp:self-start gpp:order-last gpp:sticky gpp:top-4"/>
           <div class="g7pp-flex-between gpp:flex-wrap gpp:gap-2 gpp:mb-3">
             <h2 id="popup_form_preview_heading" class="g7pp-card-title">$t:sirsoft-popup.admin.preview.title</h2>
             <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="gpp:flex gpp:gap-1">
@@ -180,7 +183,8 @@
             $t:sirsoft-popup.admin.preview.settings_link
           </a>
         </section>
-        <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="0" class="gpp:lg:col-span-2 gpp:flex gpp:flex-col gpp:gap-6">
+        <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="0" class="gpp:flex gpp:flex-col gpp:gap-6">
+          <responsive on="desktop" class="gpp:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"/>
           <!-- 기본 정보 — 관리용 제목은 관리자 목록에만 보인다(다국어 아님) -->
           <section data-ref="basic_card" class="g7pp-admin-card">
             <h2 class="g7pp-card-title">$t:sirsoft-popup.admin.form.section.basic</h2>
@@ -393,7 +397,8 @@
                   <p id="popup_route_hint" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.route_hint</p>
                 </div>
               </div>
-              <div class="gpp:grid gpp:grid-cols-1 gpp:md:grid-cols-2 gpp:gap-4">
+              <div class="gpp:grid gpp:grid-cols-1 gpp:gap-4">
+                <responsive on="768-" class="gpp:grid gpp:grid-cols-2 gpp:gap-4"/>
                 <div data-ref="field_audience" role="group" aria-label="$t:sirsoft-popup.admin.form.audience">
                   <span class="g7pp-form-label gpp:block" aria-hidden="true">$t:sirsoft-popup.admin.form.audience</span>
                   <radio-group data-type="composite" name="audience" :inline="true">

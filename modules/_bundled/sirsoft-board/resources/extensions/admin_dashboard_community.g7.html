@@ -1,11 +1,17 @@
 <!-- 관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 e2e:allow 최신 글 메타 줄을 이름·시각 두 칸으로 나눈 표시 배치 변경 — 데이터·동작 무변경이라 화면 확인으로 대신한다(#777). -->
 <extension extension-point="admin_dashboard_community" mode="append" priority="100">
-  <div data-ref="community_section_wrapper" class="board:mb-4 board:md:mb-6 board:lg:mb-8">
+  <div data-ref="community_section_wrapper" class="board:mb-4">
+    <responsive on="tablet" class="board:mb-6"/>
+    <responsive on="desktop" class="board:mb-8"/>
     <permissions>
       <permission>sirsoft-board.dashboard.view</permission>
     </permissions>
-    <div data-ref="community_section_grid" class="board:grid board:grid-cols-1 board:md:grid-cols-2 board:lg:grid-cols-4 board:gap-3 board:md:gap-4 board:lg:gap-5">
-      <div data-ref="post_graph_today_summary" class="board:flex board:items-center board:flex-wrap board:gap-2 board:md:col-span-2 board:lg:col-span-4">
+    <div data-ref="community_section_grid" class="board:grid board:grid-cols-1 board:gap-3">
+      <responsive on="tablet" class="board:grid board:grid-cols-2 board:gap-4"/>
+      <responsive on="desktop" class="board:grid board:grid-cols-4 board:gap-5"/>
+      <div data-ref="post_graph_today_summary" class="board:flex board:items-center board:flex-wrap board:gap-2">
+        <responsive on="tablet" class="board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-2"/>
+        <responsive on="desktop" class="board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-4"/>
         <blur-until-loaded sources="board_overview"/>
         <span data-ref="post_graph_today_label" class="board:text-sm board:font-semibold board:text-slate-500 board:dark:text-slate-400">$t:admin.dashboard.stats.today</span>
         <a href="/admin/boards" data-ref="today_new_posts_badge" class="board:px-2 board:py-1 board:text-xs board:font-medium board:rounded-full board:bg-slate-200 board:text-slate-700 board:dark:bg-slate-700 board:dark:text-slate-200 board:cursor-pointer board:hover:bg-slate-300 board:dark:hover:bg-slate-600 board:transition-colors">
@@ -22,12 +28,14 @@
         </a>
         <extension-badge data-type="composite" data-ref="community_section_badge" class="board:ml-auto" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
       </div>
-      <div data-ref="post_graph_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:md:p-6 board:rounded-xl board:md:rounded-2xl board:md:col-span-2 board:h-full board:flex board:flex-col">
+      <div data-ref="post_graph_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col">
+        <responsive on="768-" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:col-span-2 board:h-full board:flex board:flex-col"/>
         <blur-until-loaded>
           <item>board_overview</item>
           <item>board_post_graph</item>
         </blur-until-loaded>
-        <div data-ref="post_graph_header" class="board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center board:md:justify-between board:mb-4 board:md:mb-6">
+        <div data-ref="post_graph_header" class="board:flex board:flex-col board:gap-2 board:mb-4">
+          <responsive on="768-" class="board:flex board:gap-2 board:flex-row board:items-center board:justify-between board:mb-6"/>
           <h3 data-ref="post_graph_title" class="board:text-lg board:font-semibold board:text-slate-900 board:dark:text-white">$t:sirsoft-board.admin.dashboard.community.post_graph</h3>
           <div data-ref="post_graph_legend" class="board:flex board:items-center board:gap-4">
             <div data-ref="posts_legend_item" class="board:flex board:items-center board:gap-2">
@@ -40,18 +48,19 @@
             </div>
           </div>
         </div>
-        <div data-ref="post_graph_stats" class="board:flex board:gap-4 board:md:gap-8 board:mb-4 board:md:mb-6">
+        <div data-ref="post_graph_stats" class="board:flex board:gap-4 board:mb-4">
+          <responsive on="768-" class="board:flex board:gap-8 board:mb-6"/>
           <div data-ref="total_posts_stat">
             <p data-ref="total_posts_label" class="board:text-sm board:text-slate-600 board:dark:text-slate-400 board:mb-1">$t:sirsoft-board.admin.dashboard.community.total_posts</p>
             <div data-ref="total_posts_value_wrapper" class="board:flex board:items-baseline board:gap-2">
-              <span data-ref="total_posts_value" class="board:text-lg board:md:text-2xl board:font-bold board:text-slate-900 board:dark:text-white">{{board_post_graph?.data?.total_posts ?? 0 | number}}</span>
+              <span data-ref="total_posts_value" class="board:text-lg board:font-bold board:text-slate-900 board:dark:text-white"><responsive on="768-" class="board:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"/>{{board_post_graph?.data?.total_posts ?? 0 | number}}</span>
               <span data-ref="total_posts_change" class="{{(board_post_graph?.data?.posts_change ?? null) === null ? 'board:text-xs board:font-medium board:text-slate-600 board:dark:text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'board:text-xs board:font-medium board:text-emerald-700 board:dark:text-emerald-300' : 'board:text-xs board:font-medium board:text-rose-700 board:dark:text-rose-300')}}">{{(board_post_graph?.data?.posts_change ?? null) === null ? '—' : ((board_post_graph?.data?.posts_change >= 0 ? '+' : '') + board_post_graph?.data?.posts_change + '%')}}</span>
             </div>
           </div>
           <div data-ref="total_comments_stat">
             <p data-ref="total_comments_label" class="board:text-sm board:text-slate-600 board:dark:text-slate-400 board:mb-1">$t:sirsoft-board.admin.dashboard.community.total_comments</p>
             <div data-ref="total_comments_value_wrapper" class="board:flex board:items-baseline board:gap-2">
-              <span data-ref="total_comments_value" class="board:text-lg board:md:text-2xl board:font-bold board:text-slate-900 board:dark:text-white">{{board_post_graph?.data?.total_comments ?? 0 | number}}</span>
+              <span data-ref="total_comments_value" class="board:text-lg board:font-bold board:text-slate-900 board:dark:text-white"><responsive on="768-" class="board:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"/>{{board_post_graph?.data?.total_comments ?? 0 | number}}</span>
               <span data-ref="total_comments_change" class="{{(board_post_graph?.data?.comments_change ?? null) === null ? 'board:text-xs board:font-medium board:text-slate-600 board:dark:text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'board:text-xs board:font-medium board:text-emerald-700 board:dark:text-emerald-300' : 'board:text-xs board:font-medium board:text-rose-700 board:dark:text-rose-300')}}">{{(board_post_graph?.data?.comments_change ?? null) === null ? '—' : ((board_post_graph?.data?.comments_change >= 0 ? '+' : '') + board_post_graph?.data?.comments_change + '%')}}</span>
             </div>
           </div>
@@ -59,7 +68,8 @@
         <bar-chart data-type="composite" data-ref="post_graph_chart" labels="{{(board_post_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-board.admin.dashboard.community.posts'), data: (board_post_graph?.data?.days ?? []).map(d => d.post_count ?? 0), backgroundColor: '#7C3AED'}, {label: $t('sirsoft-board.admin.dashboard.community.comments'), data: (board_post_graph?.data?.days ?? []).map(d => d.comment_count ?? 0), backgroundColor: '#DDD6FE'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
         <p data-ref="post_graph_updated_at_caption" data-if="{{!!board_post_graph?.data?.updated_at_display}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:mt-2 board:text-right">$t:sirsoft-board.admin.dashboard.community.updated_at|time={{board_post_graph?.data?.updated_at_display ?? ''}}</p>
       </div>
-      <div data-ref="latest_posts_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:md:p-6 board:rounded-xl board:md:rounded-2xl board:h-full board:flex board:flex-col">
+      <div data-ref="latest_posts_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col">
+        <responsive on="768-" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:h-full board:flex board:flex-col"/>
         <blur-until-loaded sources="board_recent_posts"/>
         <div data-ref="latest_posts_header" class="board-flex-between board:mb-4">
           <h3 data-ref="latest_posts_title" class="board:text-base board:font-semibold board:text-slate-900 board:dark:text-white">$t:sirsoft-board.admin.dashboard.community.latest_posts</h3>
@@ -79,7 +89,8 @@
           </a>
         </div>
       </div>
-      <div data-ref="report_management_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:md:p-6 board:rounded-xl board:md:rounded-2xl board:h-full board:flex board:flex-col">
+      <div data-ref="report_management_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col">
+        <responsive on="768-" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:h-full board:flex board:flex-col"/>
         <blur-until-loaded sources="board_pending_reports"/>
         <div data-ref="report_management_header" class="board-flex-between board:mb-4">
           <h3 data-ref="report_management_title_wrapper" class="board:flex board:items-center board:text-base board:font-semibold board:text-slate-900 board:dark:text-white board:gap-1">

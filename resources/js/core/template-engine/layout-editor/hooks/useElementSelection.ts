@@ -20,7 +20,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { EditorNode, ComponentPath } from '../utils/layoutTreeUtils';
-import { findNodeByPath, isNodeLocked, isDataBoundNode, isSelfDataBoundNode, isExtensionPointNode, normalizeToExtensionEntry } from '../utils/layoutTreeUtils';
+import { findNodeByPath, isNodeLocked, isDataBoundNode, isSelfDataBoundNode, isExtensionPointNode, normalizeToExtensionEntry, EDITOR_PROP_SLOTS } from '../utils/layoutTreeUtils';
 import { trackEditorSelection, type EditorSelectionInfo } from '../devtools/editorTrackers';
 
 export type SelectionLockKind = EditorSelectionInfo['lockKind'];
@@ -124,6 +124,7 @@ export interface UseElementSelectionReturn extends SelectionState {
  *  - `"0.children.2"` → `[0, 2]`
  *  - `"0.children.2.iteration.1.children.0"` → `[0, 2, 0]` (행 인덱스 1 제외)
  *  - `"0.children.2.sortable.3.children.0"`  → `[0, 2, 0]` (행 인덱스 3 제외)
+ *  - `"0.props.footer.1"` → `[0, {propSlot:'footer'}, 1]` (컴포넌트 배열 prop — `EDITOR_PROP_SLOTS` 만)
  */
 export function parseEditorPath(path: string): ComponentPath {
   if (!path) return [];
@@ -138,6 +139,12 @@ export function parseEditorPath(path: string): ComponentPath {
       // 둘이 공존해도(`responsive.portable.children.0.iteration.3.children.0`) 같은
       // 패스에서 일관 처리(G-2 합성 순서).
       i += 1;
+      continue;
+    }
+    if (token === 'props' && EDITOR_PROP_SLOTS.includes(tokens[i + 1] ?? '')) {
+      // 컴포넌트 배열 prop 세그먼트(#141) — 소스 위치(`node.props[key]`)를 바꾸므로 보존한다.
+      out.push({ propSlot: tokens[i + 1]! });
+      i += 1; // 키 토큰 소비
       continue;
     }
     if (token === 'responsive') {

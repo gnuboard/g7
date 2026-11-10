@@ -22,8 +22,12 @@
 
 import { useEffect, type RefObject } from 'react';
 
-/** 이름표로 쓸 수 있는 요소 — 폼 라벨과 스위치 행의 제목 */
-const LABEL_SELECTOR = 'label, .form-label, .filter-label, .text-heading';
+/**
+ * 이름표로 쓸 수 있는 요소 — 폼 라벨, 목록 필터 줄 라벨, 스위치 행의 제목.
+ * 필터 줄 라벨 표식은 `filter-field-label` 이다. `filter-label` 은 폐지 예정 클래스지만 사이트에서 직접 고친 레이아웃이
+ * 계속 쓰므로 함께 받는다.
+ */
+const LABEL_SELECTOR = 'label, .form-label, .filter-field-label, .filter-label, .text-heading';
 
 /** 이름이 필요한 입력 부품 */
 const CONTROL_SELECTOR =

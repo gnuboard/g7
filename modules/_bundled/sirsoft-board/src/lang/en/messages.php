@@ -210,6 +210,8 @@ return [
         'preview_failed' => 'Failed to preview the image.',
         'reorder_success' => 'Attachment order has been updated.',
         'reorder_failed' => 'Failed to update attachment order.',
+        // Source name in Settings > Upload "Generate thumbnails for existing images"
+        'thumbnail_source' => 'Board attachment images',
     ],
 
     // Permission messages (Role-Permission System)
@@ -656,6 +658,44 @@ return [
             'scenario_created' => 'Scenario :key [:slug] :type #:id: :label',
             'scenario_e' => 'Scenario E: creating report cases left behind after board deletion',
             'resubmit_done' => 'Re-submitted/special cases created: :count',
+        ],
+        // Image thumbnail measure seeders (Sample\ThumbnailMeasureSeeder, ThumbnailMeasureCleanupSeeder)
+        'thumbnail_measure' => [
+            'start' => 'Creating board thumbnail measure data.',
+            'done' => 'Board thumbnail measure data created.',
+            'cleanup_start' => 'Cleaning up board thumbnail measure data.',
+            'cleanup_done' => 'Board thumbnail measure data cleaned up.',
+            'previous_removed' => 'Removed board measure data from the previous run: :counts',
+            'data_title' => 'Board measure data',
+            'data_headers' => [
+                'board' => 'Board',
+                'kind' => 'Kind',
+                'post_id' => 'Post ID',
+                'attachment_id' => 'Attachment ID',
+                'hash' => 'Hash',
+                'mime' => 'MIME',
+                'size' => 'Size',
+                'preview_url' => 'Preview URL',
+            ],
+            'kinds' => [
+                'general' => 'General post',
+                'secret' => 'Secret post',
+                'blinded' => 'Blinded post',
+                'variants' => 'Image variants post',
+                'reply_parent' => 'Post with a reply',
+                'reply' => 'Reply',
+                'gallery' => 'Gallery post',
+            ],
+            'boards' => 'Boards: :card (ID :card_id), :gallery (ID :gallery_id)',
+            'cleanup_title' => 'Board measure data cleanup',
+            'cleanup_headers' => [
+                'boards' => 'Boards',
+                'posts' => 'Posts',
+                'attachments' => 'Attachments',
+                'attachment_files_failed' => 'Attachment file deletions failed',
+                'temp_attachments' => 'Temporary attachments',
+                'activity_logs' => 'Activity logs',
+            ],
         ],
     ],
 ];

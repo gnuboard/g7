@@ -11,7 +11,24 @@
     "props": {
         "title": "{{_global.privacyTargets?.title ?? ''}}",
         "width": "800px",
-        "className": "board:max-w-[calc(100vw-2rem)]"
+        "className": "board:max-w-[calc(100vw-2rem)]",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-btn board-btn-secondary"
+                },
+                "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.close"
+            }
+        ]
     },
     "children": [
         {
@@ -299,31 +316,6 @@
                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.empty"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "privacy_targets_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "board:flex board:justify-end board:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "board-btn board-btn-secondary"
-                    },
-                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.close"
                 }
             ]
         }

@@ -708,11 +708,14 @@
                                                                     }
                                                                 },
                                                                 {
+                                                                    "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다",
                                                                     "type": "basic",
                                                                     "name": "Img",
                                                                     "if": "{{!!reactionType.icon_url}}",
                                                                     "props": {
                                                                         "src": "{{reactionType.icon_url}}",
+                                                                        "loading": "lazy",
+                                                                        "decoding": "async",
                                                                         "alt": "",
                                                                         "className": "board:w-5 board:h-5 board:object-contain"
                                                                     }

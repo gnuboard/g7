@@ -132,8 +132,20 @@
             "type": "basic",
             "name": "Div",
             "if": "{{query?.type === 'products' && (searchResults?.data?.products_count ?? 0) > 0}}",
+            "responsive": {
+                "640-1023": {
+                    "props": {
+                        "className": "grid gap-4 grid-cols-3"
+                    }
+                },
+                "desktop": {
+                    "props": {
+                        "className": "grid gap-4 grid-cols-4"
+                    }
+                }
+            },
             "props": {
-                "className": "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+                "className": "grid grid-cols-2 gap-4"
             },
             "children": [
                 {

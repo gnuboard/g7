@@ -204,8 +204,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "koreaexim:p-6 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "koreaexim:p-8 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "koreaexim-admin-page-content-responsive"
+                    "className": "koreaexim:p-4 koreaexim:min-h-screen koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -253,6 +265,18 @@
                         "id": "koreaexim_tab_navigation",
                         "type": "composite",
                         "name": "TabNavigation",
+                        "responsive": {
+                            "640-1023": {
+                                "props": {
+                                    "className": "koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-6 koreaexim:px-6 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"
+                                }
+                            },
+                            "1024-": {
+                                "props": {
+                                    "className": "koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-8 koreaexim:px-8 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700"
+                                }
+                            }
+                        },
                         "actions": [
                             {
                                 "comment": "탭 전환 — 전역에 기억해 두고 query.tab 을 replace 로 바꿔 뒤로 가기 이력을 쌓지 않는다",
@@ -284,7 +308,7 @@
                         "props": {
                             "activeTabId": "{{_computed.activeTab}}",
                             "variant": "default",
-                            "className": "koreaexim-sticky-tab-nav-responsive",
+                            "className": "koreaexim:sticky koreaexim:top-0 koreaexim:z-40 koreaexim:-mx-4 koreaexim:px-4 koreaexim:border-b koreaexim:bg-gray-50 koreaexim:border-gray-200 koreaexim:dark:bg-gray-900 koreaexim:dark:border-gray-700",
                             "tabs": [
                                 {
                                     "href": "/admin/plugins/sirsoft-koreaexim/settings?tab=settings",

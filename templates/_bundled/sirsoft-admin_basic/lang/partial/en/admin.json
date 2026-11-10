@@ -1996,6 +1996,143 @@
       "image_max_height": "Max Height",
       "image_quality": "Image Quality",
       "image_quality_hint": "Enter a value between 1-100. Higher values mean better quality.",
+      "thumbnail": {
+        "title": "Thumbnails",
+        "desc": "When an image URL carries a preset (such as ?size=sm), a resized file is generated per the \"Thumbnail Presets\" below, stored, and served.",
+        "engine_missing": "This server has no image processing engine (GD or Imagick), so thumbnails cannot be generated. Images are sent as originals.",
+        "enabled": "Use Thumbnails",
+        "enabled_hint": "When off, URLs with a preset also serve the original. Existing thumbnail files are not deleted.",
+        "content_preset": "Content Image Preset",
+        "content_preset_hint": "Preset used when displaying images in post and page content. The stored content HTML is not changed.",
+        "prune_enabled": "Prune Thumbnails Automatically",
+        "prune_enabled_hint": "The cleanup schedule deletes thumbnail files whose preset changed or whose original is gone.",
+        "animated_original": "Serve Animated Images as Originals",
+        "animated_original_hint": "Animated GIF, WebP and PNG images are sent as the original instead of a thumbnail. When off, a still thumbnail is made from the first frame. The GD engine cannot read animated WebP, so those are sent as the original even when off.",
+        "prune_schedule_notice": "Thumbnail cleanup is run by the thumbnail cleanup schedule.",
+        "server_limits": {
+          "title": "Advanced — Server Protection",
+          "desc": "Values that keep thumbnail generation from tying up the server. Leave a field empty to use the server default (G7_THUMBNAIL_* in .env if set); the faded number in the field is that value. With .env priority mode on, fields set in .env are locked as \"Set in .env\".",
+          "generate_per_minute": "New Thumbnails per Minute (per IP)",
+          "generate_per_minute_hint": "One IP can generate up to this many missing thumbnails per minute. Beyond that the original is sent. 1-10000",
+          "lock_wait_seconds": "Generation Wait Time",
+          "lock_wait_seconds_hint": "How long to wait while another request is generating the same thumbnail. After that the original is sent and not cached. 1-30 seconds",
+          "max_source_pixels": "Maximum Source Pixels",
+          "max_source_pixels_hint": "Larger originals are sent as is without resizing (memory protection). A lower value is used when the server memory limit is small. 1000000-100000000",
+          "pregenerate_batch": "Originals per Batch",
+          "pregenerate_batch_hint": "Number of originals processed at once by \"Generate Thumbnails for Existing Images\" and the thumbnails:pregenerate command. 1-500",
+          "pregenerate_time_budget": "Time Budget per Call",
+          "pregenerate_time_budget_hint": "Maximum time one \"Generate Thumbnails for Existing Images\" call may use. When exceeded, it continues from that point in the next call. If the server execution time limit is shorter, half of it is used. 1-60 seconds",
+          "purge_time_budget": "Time Budget per Purge Call",
+          "purge_time_budget_hint": "Maximum time one thumbnail \"Purge\" call may use. When both locations share a storage, only one preset is purged, or a remote storage is purged, it continues from that point in the next call once exceeded. If the server execution time limit is shorter, half of it is used. 1-60 seconds",
+          "unit_count": "items",
+          "unit_seconds": "sec",
+          "unit_pixels": "px"
+        },
+        "storage": {
+          "title": "Storage & Cache",
+          "desc": "Thumbnail files are stored in two places depending on whether the original is public. Storage changes apply when you press Save; purging runs immediately.",
+          "kinds": {
+            "public": "Public image thumbnails",
+            "gated": "Access-controlled image thumbnails"
+          },
+          "kind_hints": {
+            "public": "Images anyone can view, such as layout attachments, products and categories. A public storage (CDN) can be selected.",
+            "gated": "Images sent after an access check, such as attachments, secret posts and reviews. Only private storage can be selected."
+          },
+          "disk": "Storage Disk",
+          "private_disk": "Private thumbnail storage",
+          "usage": "{{count}} files, {{size}}",
+          "usage_one": "{{count}} file, {{size}}",
+          "not_counted": "Not counted (remote storage)",
+          "after_save": "Counted after saving",
+          "load_failed": "Could not load thumbnail usage. Please try again later.",
+          "locked_hint": "Rows whose storage was changed cannot be purged until you save. After saving, usage is counted for the new storage.",
+          "purge_preset": "Preset to purge",
+          "all_presets": "All presets",
+          "purge": "Purge",
+          "purge_success": "Deleted {{count}} thumbnails.",
+          "purge_success_one": "Deleted {{count}} thumbnail.",
+          "purge_failed": "Could not purge thumbnails.",
+          "purge_all": "Purge Both",
+          "pregenerate": "Generate Thumbnails for Existing Images",
+          "cdn_purge_notice": "When public thumbnails are stored on a public storage (CDN), CDN cache invalidation on purge or original deletion is handled by a CDN plugin. Without one, copies left on the CDN may be served until they expire."
+        },
+        "purge_all_modal": {
+          "title": "Purge All Thumbnails",
+          "body": "All thumbnail files in both storage locations below will be deleted.",
+          "disk": "Disk: {{disk}}",
+          "warning": "Original images are kept. Deleted thumbnails are generated again on the next request.",
+          "confirm": "Purge All",
+          "success": "Thumbnails deleted. Public {{public}}, access-controlled {{gated}}"
+        },
+        "pregenerate_modal": {
+          "title": "Generate Thumbnails for Existing Images",
+          "body": "Generates thumbnails in advance for images already uploaded. Existing thumbnails are skipped.",
+          "sources": "Target Images",
+          "no_sources": "There is no image source that can have thumbnails.",
+          "presets": "Presets to Generate",
+          "counts": "Processed {{processed}} / {{total}}, Generated {{generated}}",
+          "running": "Generating…",
+          "paused": "Paused",
+          "done": "Done",
+          "done_toast": "Thumbnail generation finished. {{generated}} new files",
+          "failed": "Could not generate thumbnails.",
+          "start": "Start",
+          "restart": "Start Again",
+          "pause": "Pause"
+        },
+        "presets": {
+          "title": "Thumbnail Presets",
+          "desc": "Set the size, fit and format of each preset. Core and extension presets cannot be renamed; only their values can be changed.",
+          "col": {
+            "name": "Name",
+            "source": "Source",
+            "width": "Width",
+            "height": "Height",
+            "fit": "Fit",
+            "anchor": "Anchor",
+            "format": "Format",
+            "quality": "Quality",
+            "upscale": "Upscale",
+            "pregenerate": "Generate on Upload",
+            "numeric": "Numeric Requests",
+            "enabled": "Enabled",
+            "actions": "Actions"
+          },
+          "kinds": {
+            "fixed": "Core",
+            "og": "Core (SEO)",
+            "extension": "Extension",
+            "custom": "Custom"
+          },
+          "fit": {
+            "cover": "Crop",
+            "contain": "Fit",
+            "width": "Width only"
+          },
+          "anchor": {
+            "center": "Center",
+            "top": "Top",
+            "bottom": "Bottom",
+            "left": "Left",
+            "right": "Right"
+          },
+          "format": {
+            "original": "Original format",
+            "webp": "WebP",
+            "avif": "AVIF"
+          },
+          "og_size_notice": "Set in the SEO tab",
+          "reset": "Reset to Default",
+          "remove": "Delete",
+          "add": "Add Preset",
+          "name_rule": "A preset name starts with a lowercase letter and uses lowercase letters, digits and underscores, 2 to 32 characters (^[a-z][a-z0-9_]{1,31}$). xs, sm, md, lg, xl and og are reserved. Leave height empty to fit width only, and leave quality empty to follow the image quality setting.",
+          "placeholder": {
+            "name": "e.g. banner_wide",
+            "height": "Auto"
+          }
+        }
+      },
       "orphan_cleanup": "Orphan Attachment Cleanup",
       "orphan_cleanup_desc": "Clean up attachments left without an owner because a form was abandoned before saving.",
       "orphan_cleanup_enabled": "Auto cleanup orphan attachments",
@@ -2520,6 +2657,13 @@
         "driver": "Search Engine Driver",
         "driver_desc": "The built-in MySQL FULLTEXT (ngram) engine supports Korean search without additional configuration.",
         "plugin_notice": "Additional drivers will appear when search engine plugins (Meilisearch, Elasticsearch, etc.) are installed."
+      },
+      "image": {
+        "title": "Image Processing",
+        "desc": "Choose the image processing engine used to downscale uploads and generate thumbnails.",
+        "driver": "Image Processing Engine",
+        "driver_desc": "GD is available on most servers. Imagick appears only on servers with the PHP imagick extension installed.",
+        "plugin_notice": "Additional engines appear when image processing plugins are installed. If the selected engine becomes unavailable, GD is used."
       },
       "test_connection": "Test Connection",
       "testing": "Testing...",
@@ -4816,7 +4960,9 @@
       "core_changelog_modal": "Core Changelog",
       "core_update_guide_modal": "Core Update Guide",
       "core_update_result_modal": "Core Update Check Result",
-      "cron_token_rotate_modal": "Web cron call number reissue modal"
+      "cron_token_rotate_modal": "Web cron call number reissue modal",
+      "settings_thumbnail_purge_all_modal": "Purge All Thumbnails Confirmation",
+      "settings_thumbnail_pregenerate_modal": "Generate Thumbnails for Existing Images"
     },
     "admin_template_list": {
       "template_activate_modal": "Activate Template",

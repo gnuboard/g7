@@ -987,6 +987,17 @@ class TemplateManager implements TemplateManagerInterface
             );
         }
 
+        // 켜진 템플릿은 비활성화(직전·완료 훅 포함)를 먼저 거친다 — 종전에는 바로 제거해 비활성화 훅이 돌지 않았다.
+        // 진행 중 상태 가드를 지난 뒤에만 끈다. 유형의 마지막 활성 템플릿 거절은 TemplateService 가 이 메서드보다 먼저 한다.
+        // 비활성화는 아래 제거 트랜잭션 밖에서 끝나므로 제거가 실패해 롤백돼도 템플릿은 꺼진 상태로 남는다.
+        if ($existingRecord && $existingRecord->status === ExtensionStatus::Active->value) {
+            if (! $this->deactivateTemplate($templateName, failureReason: $deactivationFailure)) {
+                throw new \Exception(__('templates.errors.deactivation_failed', [
+                    'error' => $deactivationFailure ?? __('templates.errors.unknown_error'),
+                ]));
+            }
+        }
+
         // after_uninstall 훅에 실을 정보는 파괴 단계(DB 행 삭제·디렉토리 삭제) 이전에 캡처한다.
         $templateInfo = $this->getTemplateInfo($templateName) ?? [];
 
@@ -3561,6 +3572,19 @@ class TemplateManager implements TemplateManagerInterface
 
         // 상태 가드 (멈춘 업데이트로 보이면 --force 를 안내한다)
         StuckUpdateRecovery::assertNotInProgress($identifier, $record);
+
+        // 행은 있는데 활성 디렉토리만 없으면(파일만 지워진 사이트) 원본(_pending·_bundled)을 복사해 되살린 뒤 업데이트를 잇는다.
+        // 종전에는 업데이트는 「찾을 수 없습니다」, 설치는 「이미 설치되어 있습니다」로 막혀 되돌릴 길이 없었다.
+        // GitHub·ZIP 소스는 원본 사본이 아니므로 이 복구를 하지 않는다(그 경로는 종전대로 실패한다).
+        if ($zipPath === null && $sourceOverride !== 'github'
+            && ! File::isDirectory($this->templatesPath.DIRECTORY_SEPARATOR.$identifier)) {
+            try {
+                $this->copyToActiveFromSource($identifier, $onProgress);
+                Log::warning('활성 디렉토리가 없는 설치 템플릿을 원본에서 되살렸습니다', ['template' => $identifier]);
+            } catch (\RuntimeException) {
+                // 원본도 없으면 종전 흐름이 그대로 실패를 알린다
+            }
+        }
 
         $previousStatus = $record->status;
         $fromVersion = $record->version;

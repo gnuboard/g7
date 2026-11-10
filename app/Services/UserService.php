@@ -1471,7 +1471,8 @@ class UserService
             'name' => $user->name,
             'status' => $user->status,
             'status_label' => $status?->label() ?? $user->status,
-            'avatar' => $showAvatar ? $user->avatar_url : null,
+            // `avatar_url` 은 접근자가 없어 늘 null 이었다 — 아바타 주소의 SSoT 는 getAvatarUrl() 이다 (#869)
+            'avatar' => $showAvatar ? $user->getAvatarUrl() : null,
             'bio' => $showBio ? $user->bio : null,
             'created_at' => $showCreatedAt ? TimezoneHelper::toUserDateString($user->created_at) : null,
             'is_withdrawn' => false,

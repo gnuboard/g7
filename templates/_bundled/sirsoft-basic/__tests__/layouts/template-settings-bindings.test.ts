@@ -6,9 +6,9 @@
  * - 편집기와 겹치는 값(게시판 개수·저작권 문구·홈 섹션·상품 개수)은 템플릿 설정이 유일한 주인이다
  * - 선언(defaults.json)의 노출 칸·편집기 샘플(sampleGlobal)·봇 화면(seo-config)이 같은 이름을 쓴다
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects template_settings_exposed_to_global
+ * 효과: template_settings_exposed_to_global
  */
 
 import fs from 'node:fs';

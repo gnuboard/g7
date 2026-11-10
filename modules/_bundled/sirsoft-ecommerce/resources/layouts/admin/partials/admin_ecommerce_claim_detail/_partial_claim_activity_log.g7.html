@@ -39,7 +39,8 @@
           </select>
         </div>
       </div>
-      <div data-ref="log_table_header" class="ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+      <div data-ref="log_table_header" class="ecommerce:hidden ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+        <responsive on="768-" class="ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
         <div class="ecommerce-text-tertiary ecommerce:flex ecommerce:gap-4 ecommerce:font-medium ecommerce:uppercase">
           <span class="ecommerce:w-40 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.columns.date</span>
           <span class="ecommerce:w-40 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.columns.actor</span>
@@ -51,7 +52,8 @@
       <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
       <div data-ref="log_empty" data-if="{{claim_logs !== undefined &amp;&amp; claim_logs !== null &amp;&amp; (claim_logs.data?.data ?? []).length === 0}}" class="ecommerce:py-12 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.empty</div>
       <div data-ref="log_rows_{{logIdx}}" data-each="log, logIdx in {{claim_logs.data?.data ?? []}}">
-        <div class="ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800">
+        <div class="ecommerce:hidden ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800">
+          <responsive on="768-" class="ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800"/>
           <div class="ecommerce-flex-center ecommerce:gap-4">
             <span class="ecommerce:w-40 ecommerce:shrink-0 ecommerce-text-label">{{log.created_at ?? ''}}</span>
             <div class="ecommerce:w-40 ecommerce:shrink-0">
@@ -105,7 +107,8 @@
             </div>
           </div>
         </div>
-        <div class="ecommerce:md:hidden ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1">
+        <div class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1">
+          <responsive on="768-" class="ecommerce:hidden ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1"/>
           <div class="ecommerce-flex-between ecommerce:gap-2">
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <!-- 좁은 화면 카드의 행위자 메뉴 — 넓은 화면 행의 메뉴와 같은 동작이므로 한쪽을 고치면 다른 쪽도 함께 고친다. -->

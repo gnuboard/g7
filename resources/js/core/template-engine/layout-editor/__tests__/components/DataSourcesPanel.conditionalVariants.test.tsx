@@ -8,7 +8,6 @@
  * 매핑은 각 테스트 앞 주석에 둔다.
  */
 
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 

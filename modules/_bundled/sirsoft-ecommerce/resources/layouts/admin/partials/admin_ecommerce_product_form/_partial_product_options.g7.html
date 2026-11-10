@@ -405,7 +405,8 @@
         </div>
       </div>
       <div data-ref="additional_options_section" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-6 ecommerce:mt-6 ecommerce:space-y-4">
-        <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-4 ecommerce:sm:flex-row ecommerce:sm:items-center ecommerce:sm:justify-between">
+        <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-4">
+          <responsive on="640-" class="ecommerce:flex ecommerce:gap-4 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between"/>
           <div>
             <label class="ecommerce-form-label ecommerce:text-base ecommerce:font-medium">$t:sirsoft-ecommerce.admin.product.options.additional_title</label>
             <p class="ecommerce-form-hint ecommerce:mt-1">$t:sirsoft-ecommerce.admin.product.options.additional_hint</p>
@@ -434,7 +435,8 @@
               <!-- 그룹 사이 간격은 항목의 mb-3 이 맡는다 — sortable 노드는 자기 요소를 그리지 않고 항목을 부모에 곧바로 펼치므로 그 노드에 준 gap 클래스는 화면에 닿지 않는다. -->
               <div class="{{_local.errors?.['additional_options.' + addIdx + '.values'] ? 'ecommerce:flex ecommerce:flex-col ecommerce:gap-3 ecommerce:p-4 ecommerce:mb-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800/50 ecommerce:rounded-lg ecommerce:border-2 ecommerce:border-red-400 ecommerce:dark:border-red-500' : 'ecommerce:flex ecommerce:flex-col ecommerce:gap-3 ecommerce:p-4 ecommerce:mb-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800/50 ecommerce:rounded-lg'}}">
                 <!-- 그룹 헤더 — 드래그핸들 + 그룹명(다국어) + 필수 토글 + 그룹 삭제 -->
-                <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-end">
+                <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+                  <responsive on="640-" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-end"/>
                   <!-- 추가 옵션 드래그 손잡이 — 폼이 읽기 전용(수정 진입은 수정 권한, 등록·복사 진입은 등록 권한 없음)이면 숨긴다(형제 삭제 버튼과 같은 조건). -->
                   <div data-ref="additional_option_drag_handle" data-if="{{!_computed.isReadOnly}}" class="ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300 ecommerce:select-none" :data-drag-handle="true">
                     <icon name="grip-vertical" class="ecommerce:text-xl"/>
@@ -470,7 +472,8 @@
                 </div>
                 <!-- 선택지(values) 리스트 — 선택지명(다국어) + 추가금 + 다통화 환산(읽기전용) + 기본/활성/삭제 -->
                 <div class="ecommerce:pl-7 ecommerce:space-y-2">
-                  <div data-each="addVal, addValIdx in {{addOpt.values ?? []}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-start ecommerce:p-3 ecommerce:bg-white ecommerce:dark:bg-gray-900/40 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded" data-testid="additional-value-{{addIdx}}-{{addValIdx}}">
+                  <div data-each="addVal, addValIdx in {{addOpt.values ?? []}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:p-3 ecommerce:bg-white ecommerce:dark:bg-gray-900/40 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded" data-testid="additional-value-{{addIdx}}-{{addValIdx}}">
+                    <responsive on="640-" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-start ecommerce:p-3 ecommerce:bg-white ecommerce:dark:bg-gray-900/40 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded"/>
                     <!-- 선택지명 (다국어) -->
                     <div class="ecommerce:flex-1">
                       <div class="ecommerce-flex-center ecommerce:gap-1 ecommerce:mb-1">
@@ -485,7 +488,8 @@
                       </multilingual-input>
                     </div>
                     <!-- 추가금 (KRW, 0 이상) + 다통화 환산 읽기전용 -->
-                    <div class="ecommerce:w-full ecommerce:sm:w-40">
+                    <div class="ecommerce:w-full">
+                      <responsive on="640-" class="ecommerce:w-40"/>
                       <label class="ecommerce-form-label ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.product.options.additional_value_price_label</label>
                       <div class="ecommerce-flex-center ecommerce:gap-1">
                         <input type="number" aria-label="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_price_label')}}" class="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-full ecommerce:text-right' : 'ecommerce-input ecommerce:w-full ecommerce:text-right'}}" value="{{addVal.price_adjustment ?? 0}}" min="0" step="1" disabled="{{_computed.isReadOnly}}">
@@ -502,8 +506,9 @@
                       </div>
                       <span data-if="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment']}}" class="ecommerce-form-error-xs ecommerce:mt-0.5">{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment']?.[0]}}</span>
                     </div>
-                    <!-- 기본 선택지 (라디오 — 그룹당 1개). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋(라벨+인풋) baseline 에 정렬 -->
-                    <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:sm:mt-6 ecommerce:cursor-pointer">
+                    <!-- 기본 선택지 (라디오 — 그룹당 1개). 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on="640-">`)에서 mt-6 으로 인풋(라벨+인풋) baseline 에 정렬 -->
+                    <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
+                      <responsive on="640-" class="ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6 ecommerce:cursor-pointer"/>
                       <input type="radio" :autoBinding="false" name="additional_options_{{addIdx}}_default" aria-label="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_default')}}" checked="{{addVal.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 그룹에서 처음 골라져 있을 선택지 — 그룹당 하나다 -->
@@ -512,8 +517,9 @@
                       </input>
                       <span class="ecommerce-text-label ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_default</span>
                     </label>
-                    <!-- 활성 토글. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
-                    <div class="ecommerce-flex-center ecommerce:gap-1 ecommerce:sm:mt-6">
+                    <!-- 활성 토글. 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on="640-">`)에서 mt-6 으로 인풋 baseline 에 정렬 -->
+                    <div class="ecommerce-flex-center ecommerce:gap-1">
+                      <responsive on="640-" class="ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6"/>
                       <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_active" ariaLabel="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_active')}}" checked="{{addVal.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 이 선택지만 감춘다 -->
@@ -522,8 +528,9 @@
                       </toggle>
                       <label class="ecommerce-text-label ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_active</label>
                     </div>
-                    <!-- 직접입력 허용 토글 — 유저가 이 선택지 선택 시 자유 텍스트 입력 필수. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
-                    <div class="ecommerce-flex-center ecommerce:gap-1 ecommerce:sm:mt-6">
+                    <!-- 직접입력 허용 토글 — 유저가 이 선택지 선택 시 자유 텍스트 입력 필수. 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on="640-">`)에서 mt-6 으로 인풋 baseline 에 정렬 -->
+                    <div class="ecommerce-flex-center ecommerce:gap-1">
+                      <responsive on="640-" class="ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6"/>
                       <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text" ariaLabel="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_allow_custom_text')}}" checked="{{addVal.allow_custom_text === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 직접입력 허용 — 켜면 구매자가 이 선택지를 골랐을 때 글을 함께 적어야 한다(각인·문구 등) -->
@@ -532,8 +539,9 @@
                       </toggle>
                       <label class="ecommerce-text-label ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_allow_custom_text</label>
                     </div>
-                    <!-- 선택지 삭제 (최소 1개 유지). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
-                    <button data-if="{{!_computed.isReadOnly}}" type="button" class="ecommerce-btn ecommerce-btn-ghost ecommerce-btn-sm ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:sm:mt-6" aria-label="$t:common.delete">
+                    <!-- 선택지 삭제 (최소 1개 유지). 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on="640-">`)에서 mt-6 으로 인풋 baseline 에 정렬 -->
+                    <button data-if="{{!_computed.isReadOnly}}" type="button" class="ecommerce-btn ecommerce-btn-ghost ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300" aria-label="$t:common.delete">
+                      <responsive on="640-" class="ecommerce-btn ecommerce-btn-ghost ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:mt-6"/>
                       <on type="click">
                         <!-- 선택지 하나 빼기 — 그룹은 최소 하나를 남긴다 -->
                         <action handler="sirsoft-ecommerce.removeAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}"/>

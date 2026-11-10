@@ -23,7 +23,7 @@
  */
 @source "../../layouts/**/*.json";
 /* SAFELIST-START */
-@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-700 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-amber-900/50 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-emerald-400 dark:bg-emerald-900/20 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-orange-700 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/40 dark:bg-purple-900/50 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-rose-400 dark:bg-rose-900 dark:bg-slate-300 dark:bg-slate-600 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/20 dark:bg-yellow-900/30 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-emerald-800 dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:border-yellow-700 dark:border-yellow-800 dark:disabled:bg-blue-800 dark:disabled:bg-gray-600 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-amber-800 dark:hover:bg-blue-600 dark:hover:bg-blue-700 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-800 dark:hover:bg-orange-900/30 dark:hover:bg-red-600 dark:hover:bg-red-700 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-red-900/40 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-indigo-300 dark:hover:text-purple-200 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-300 dark:prose-invert dark:ring-gray-800 dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-300 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal h-[220px] hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-amber-800 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-800 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-800 hover:decoration-solid hover:no-underline hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-indigo-700 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start lg:col-span-2 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:mb-8 lg:px-8 max-h-[400px] max-h-[500px] max-h-[50vh] max-h-[560px] max-h-[70vh] max-w-[160px] max-w-[200px] md: md:col-span-2 md:flex md:flex-1 md:flex-row md:gap-2 md:gap-3 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:h-20 md:hidden md:items-center md:items-start md:justify-between md:mb-6 md:min-w-[200px] md:p-6 md:pb-0 md:rounded-2xl md:space-y-0 md:text-xl md:text-xs md:w-2/3 md:w-20 md:w-40 md:w-64 md:w-72 md:w-80 md:w-96 md:w-auto min-h-[200px] min-h-[420px] min-h-[480px] min-h-[60vh] min-w-[200px] min-w-[220px] min-w-[240px] min-w-[64px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl sm:flex-1 sm:flex-none sm:flex-row sm:gap-6 sm:grid-cols-2 sm:h-[260px] sm:inline sm:items-center sm:items-start sm:justify-between sm:mt-6 sm:px-6 sm:text-2xl sm:text-3xl sm:w-40 sm:w-80 sm:w-auto text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
+@source inline("bg-blue-600 bg-gray-100 bg-gray-50 bg-gray-800 bg-gray-900 bg-red-600 bg-white block border border-0 border-blue-600 border-dashed border-dotted border-gray-300 border-gray-500 border-gray-700 border-gray-900 border-green-600 border-red-600 border-solid border-white dark:bg-amber-500 dark:bg-amber-700 dark:bg-amber-900 dark:bg-amber-900/20 dark:bg-amber-900/30 dark:bg-amber-900/40 dark:bg-amber-900/50 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-900/20 dark:bg-blue-900/30 dark:bg-blue-900/40 dark:bg-blue-900/50 dark:bg-emerald-400 dark:bg-emerald-900/20 dark:bg-gray-100 dark:bg-gray-50 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-700/50 dark:bg-gray-800 dark:bg-gray-800/50 dark:bg-gray-900 dark:bg-gray-900/50 dark:bg-gray-950 dark:bg-green-900 dark:bg-green-900/20 dark:bg-green-900/30 dark:bg-indigo-500 dark:bg-indigo-900 dark:bg-orange-700 dark:bg-purple-900 dark:bg-purple-900/20 dark:bg-purple-900/30 dark:bg-purple-900/40 dark:bg-purple-900/50 dark:bg-red-600 dark:bg-red-700 dark:bg-red-900 dark:bg-red-900/20 dark:bg-red-900/30 dark:bg-rose-400 dark:bg-rose-900 dark:bg-slate-300 dark:bg-slate-600 dark:bg-slate-700 dark:bg-slate-800 dark:bg-white dark:bg-yellow-700 dark:bg-yellow-900 dark:bg-yellow-900/20 dark:bg-yellow-900/30 dark:block dark:border dark:border-0 dark:border-amber-400 dark:border-amber-600 dark:border-amber-700 dark:border-amber-800 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-dashed dark:border-dotted dark:border-emerald-800 dark:border-gray-300 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-900 dark:border-green-600 dark:border-green-700 dark:border-green-800 dark:border-indigo-400 dark:border-orange-600 dark:border-purple-600 dark:border-purple-700 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-solid dark:border-white dark:border-yellow-600 dark:border-yellow-700 dark:border-yellow-800 dark:disabled:bg-blue-800 dark:disabled:bg-gray-600 dark:disabled:hover:bg-indigo-500 dark:disabled:text-gray-600 dark:divide-gray-700 dark:flex dark:flex-1 dark:flex-auto dark:flex-col dark:flex-none dark:flex-row dark:flex-wrap dark:focus:ring-amber-400 dark:focus:ring-blue-400 dark:focus:ring-indigo-400 dark:focus:ring-offset-gray-900 dark:focus:ring-slate-500 dark:font-bold dark:font-medium dark:font-normal dark:from-blue-900 dark:hover:bg-amber-600 dark:hover:bg-amber-800 dark:hover:bg-blue-600 dark:hover:bg-blue-700 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-700/30 dark:hover:bg-indigo-600 dark:hover:bg-indigo-900/30 dark:hover:bg-orange-800 dark:hover:bg-orange-900/30 dark:hover:bg-red-600 dark:hover:bg-red-700 dark:hover:bg-red-800 dark:hover:bg-red-900/20 dark:hover:bg-red-900/30 dark:hover:bg-red-900/40 dark:hover:bg-slate-200 dark:hover:bg-slate-600 dark:hover:bg-yellow-800 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-indigo-300 dark:hover:text-purple-200 dark:hover:text-red-400 dark:hover:text-slate-800 dark:hover:text-white dark:italic dark:items-center dark:items-end dark:items-start dark:items-stretch dark:justify-around dark:justify-between dark:justify-center dark:justify-end dark:justify-start dark:opacity-0 dark:opacity-100 dark:opacity-25 dark:opacity-50 dark:opacity-75 dark:overflow-auto dark:overflow-hidden dark:overflow-visible dark:overflow-x-auto dark:overflow-y-auto dark:placeholder-gray-300 dark:prose-invert dark:ring-gray-800 dark:rounded dark:rounded-full dark:rounded-lg dark:rounded-none dark:rounded-sm dark:rounded-xl dark:self-center dark:self-end dark:self-start dark:self-stretch dark:shadow dark:shadow-2xl dark:shadow-lg dark:shadow-none dark:shadow-sm dark:shadow-xl dark:text-2xl dark:text-amber-200 dark:text-amber-300 dark:text-amber-400 dark:text-base dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-600 dark:text-center dark:text-emerald-300 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-900 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-600 dark:text-indigo-200 dark:text-indigo-300 dark:text-indigo-400 dark:text-justify dark:text-left dark:text-lg dark:text-orange-200 dark:text-orange-400 dark:text-orange-500 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-right dark:text-slate-300 dark:text-slate-400 dark:text-sm dark:text-white dark:text-xl dark:text-xs dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:to-indigo-900 dark:underline dark:whitespace-normal dark:whitespace-nowrap dark:whitespace-pre-wrap disabled:bg-blue-400 disabled:bg-gray-100 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 disabled:hover:bg-transparent disabled:no-underline disabled:opacity-50 disabled:text-gray-400 flex flex-1 flex-auto flex-col flex-none flex-row flex-wrap focus:border-blue-500 focus:border-indigo-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-blue-500 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-red-500 focus:ring-slate-400 font-bold font-medium font-normal h-[220px] h-[260px] hover:-translate-y-0.5 hover:bg-amber-50 hover:bg-amber-700 hover:bg-amber-800 hover:bg-blue-700 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-50 hover:bg-gray-800 hover:bg-indigo-50 hover:bg-indigo-700 hover:bg-orange-50 hover:bg-orange-800 hover:bg-red-100 hover:bg-red-50 hover:bg-red-700 hover:bg-slate-50 hover:bg-slate-700 hover:bg-yellow-800 hover:decoration-solid hover:no-underline hover:text-blue-600 hover:text-gray-600 hover:text-gray-700 hover:text-gray-900 hover:text-indigo-700 hover:text-purple-800 hover:text-purple-900 hover:text-red-500 hover:text-white hover:underline italic items-center items-end items-start items-stretch justify-around justify-between justify-center justify-end justify-start max-h-[400px] max-h-[500px] max-h-[50vh] max-h-[560px] max-h-[70vh] max-w-[160px] max-w-[200px] min-h-[200px] min-h-[420px] min-h-[480px] min-h-[60vh] min-w-[120px] min-w-[200px] min-w-[220px] min-w-[240px] min-w-[64px] min-w-[80px] opacity-0 opacity-100 opacity-25 opacity-50 opacity-75 overflow-auto overflow-hidden overflow-visible overflow-x-auto overflow-y-auto rounded rounded-full rounded-lg rounded-none rounded-sm rounded-xl self-center self-end self-start self-stretch shadow shadow-2xl shadow-lg shadow-none shadow-sm shadow-xl text-2xl text-[10px] text-[11px] text-base text-blue-600 text-center text-gray-500 text-gray-700 text-gray-900 text-green-600 text-justify text-left text-lg text-red-600 text-right text-sm text-white text-xl text-xs underline whitespace-normal whitespace-nowrap whitespace-pre-wrap");
 /* SAFELIST-END */
 @source "../../layouts/**/*.g7.html";
 
@@ -428,13 +428,6 @@
     @apply bg-gray-600 text-white hover:bg-gray-700;
     @apply dark:bg-gray-500 dark:hover:bg-gray-600;
   }
-  /*
-   * Small size modifier — .btn 의 px-4 py-2 보다 작은 px-3 py-1.5 변형.
-   * 일괄 작업 영역 같이 좁은 공간에 들어가는 액션 버튼용.
-   */
-  .btn-sm {
-    @apply px-3 py-1.5;
-  }
 
   /* ========================================
    * 2. UI ELEMENTS - 버튼, 인풋, 뱃지 등 기본 UI 스타일
@@ -458,6 +451,16 @@
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
     /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 (#757) */
     @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
+  }
+
+  /*
+   * Small size modifier — .btn 의 px-4 py-2 보다 작은 px-3 py-1.5 변형.
+   * 일괄 작업 영역 같이 좁은 공간에 들어가는 액션 버튼용.
+   * 반드시 .btn 뒤에 둔다 — 같은 층·같은 명시도라 원문 순서가 승패를 정한다. 앞에 두면
+   * `btn btn-sm` 에서 .btn 의 패딩이 이겨 작은 단추가 늘 기본 크기로 그려진다.
+   */
+  .btn-sm {
+    @apply px-3 py-1.5;
   }
 
   /* Primary Button (다운로드, 저장) */
@@ -895,25 +898,34 @@
     @apply dark:bg-gray-800 dark:text-gray-400;
   }
 
-  /* Search Bar Container */
+  /*
+   * Search Bar Container
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
+   */
   .search-bar {
     @apply flex flex-col gap-3;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:flex-row md:flex-wrap md:items-center;
   }
   .search-bar-select {
     @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
     @apply placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none;
     @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-300;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:w-32 md:shrink-0;
   }
   .search-bar-select-custom {
     @apply w-full;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:w-32 md:shrink-0;
   }
   .search-bar-input {
     @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
     @apply placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none;
     @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-300;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:flex-1 md:min-w-64;
   }
   .search-bar-reset {
@@ -921,6 +933,7 @@
     @apply bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50;
     @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
     @apply w-full shrink-0 gap-1.5;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:w-auto;
   }
 
@@ -937,14 +950,32 @@
    * Filter Row Container — 행 간 간격은 부모 .filter-grid 의 gap-4 가 처리하므로
    * 본 자산은 행 내부 정렬만 담당 (mb-4 제거됨).
    * .filter-row-last 는 같은 의도가 되어 .filter-row 와 통합.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
    */
   .filter-row {
     @apply flex flex-col gap-2;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:flex-row md:items-center;
   }
+  /*
+   * 필터 줄 라벨 — 폭과 무관한 기본 모양만 둔다. 768px 이상 모양(mb-0 w-14 shrink-0 flex items-center)은 레이아웃이
+   * 엔진 responsive 구간 값으로 준다. 클래스 이름은 입력 칸의 곁 라벨 잇기(`useAdjacentLabel`)가 찾는 표식이기도 하다.
+   */
+  .filter-field-label {
+    @apply text-sm text-gray-600 block mb-2;
+    @apply dark:text-gray-400;
+  }
+  /*
+   * 예전 필터 라벨 — 번들 레이아웃은 쓰지 않는다(`filter-field-label` + 엔진 responsive 구간 값으로 바꿨다). 폐지 예정:
+   * 사이트에서 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-filter-label`)의 호환을 위해 768px 이상 모양까지 남기고,
+   * 다음 출시 이후 제거한다. 곁 라벨 잇기도 이 표식을 계속 받는다. 새 레이아웃은 쓰지 않는다.
+   */
   .filter-label {
     @apply text-sm text-gray-600 block mb-2;
     @apply dark:text-gray-400;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply md:mb-0 md:w-14 md:shrink-0 md:flex md:items-center;
   }
   .filter-buttons {
@@ -1240,9 +1271,18 @@
     @apply px-6 py-4 overflow-y-auto max-h-[calc(90vh-140px)];
   }
   /*
-   * Modal Footer Row — Modal 의 `footer` prop 이 렌더되는 고정 하단 영역.
+   * Modal Footer Bar — Modal 의 `footer` prop 이 렌더되는 고정 하단 영역.
    * `.modal-body-content` 의 스크롤 밖에 있어 본문이 길어도 액션 버튼이 항상 보인다.
    * 자산 책임: 우측 정렬 + 버튼 간격 + 구분선. 호출처는 정렬/여백 토큰 명시 금지.
+   * 폭과 무관한 바탕만 둔다 — 640px 이하 세로 쌓기는 Modal 이 렌더 폭(편집기 미리보기에서는 기기 폭)으로 더한다.
+   */
+  .modal-footer-bar {
+    @apply flex justify-end gap-3 px-6 py-4 border-t border-gray-200;
+    @apply dark:border-gray-700;
+  }
+  /*
+   * 폐지 예정 — `.modal-footer-bar` 의 옛 이름. 아래 MEDIA QUERIES 의 640px 이하 규칙이 함께 걸려 있어 부품은 더 쓰지 않는다.
+   * 사이트에서 직접 쓴 화면이 그대로 보이도록 이번 출시에 남기고 다음 출시 이후 뺀다.
    */
   .modal-footer-row {
     @apply flex justify-end gap-3 px-6 py-4 border-t border-gray-200;
@@ -1365,7 +1405,8 @@
   }
 
   .card-clickable {
-    @apply rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden;
+    /* 눌러 쓰는 카드라 손 모양 커서를 준다(#869 κ) */
+    @apply rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden cursor-pointer;
     @apply dark:bg-gray-800 dark:border-gray-700;
   }
   .card-image {
@@ -1933,6 +1974,17 @@
   .page-actions > * {
     @apply shrink-0 whitespace-nowrap;
   }
+  /*
+   * PageHeader 액션 묶음 — `.page-actions` 와 같은 바탕이지만 폭 미디어가 걸리지 않는다. 640px 이하에서 한 줄을 다 쓰고
+   * 왼쪽부터 놓는 모양(w-full justify-start)은 PageHeader 가 렌더 폭(편집기 미리보기에서는 기기 폭)으로 더한다.
+   * `.page-actions` 는 아래 MEDIA QUERIES 의 640px 이하 규칙이 걸려 있어 부품이 더 쓰지 않는다(폐지 예정, 사이트 호환용으로 남김).
+   */
+  .page-action-group {
+    @apply flex flex-wrap items-center gap-3;
+  }
+  .page-action-group > * {
+    @apply shrink-0 whitespace-nowrap;
+  }
 
   /* Section Components */
   .section-card {
@@ -2037,20 +2089,6 @@
   }
   .flex-between {
     @apply flex items-center justify-between;
-  }
-
-  /*
-   * Flex Between (반응형) — 좁은 폭에서 라벨 위 / 값 아래로 쌓는다.
-   *
-   * `.flex-between` 은 한 줄에 라벨과 값을 양끝으로 민다. 값이 짧으면 문제가 없지만
-   * 「수신 중인 프록시 헤더」처럼 값이 긴 진단 행은 모바일 폭(~358px)에서 값 칸이
-   * 라벨에 밀려 글자 단위로 접히고, 그 상태가 오류로 드러나지 않아 그대로 남는다.
-   *
-   * sm 이상에서는 `.flex-between` 과 완전히 같은 모양이다 — 데스크톱 렌더는 불변.
-   */
-  .flex-between-responsive {
-    @apply flex flex-col gap-0.5;
-    @apply sm:flex-row sm:items-center sm:justify-between sm:gap-3;
   }
 
   .flex-center {
@@ -2243,8 +2281,12 @@
    * 탭 버튼 사이 간격(gap-1) + flex 가로 정렬. 하단 구분선(border-b) 은 두지
    * 않음 — 외부 sticky_header 의 시각 외곽이 책임.
    * 호출처 책임: TabNavigationScroll 컴포넌트의 className 으로 단독 사용.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
    */
   .sub-tab-nav {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply bg-white dark:bg-gray-800 flex gap-1 px-6 sm:px-8 lg:px-10;
   }
 
@@ -2367,8 +2409,14 @@
   .kv-list {
     @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
   }
+  /*
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
+   */
   .kv-list-2 {
     @apply grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1 items-baseline;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply sm:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)];
   }
   .kv-row {
@@ -2437,8 +2485,12 @@
   /*
    * 3 컬럼 반응형 그리드 — mobile 1 column → lg 3 columns 자산.
    * 기존 .grid-2col-responsive 와 짝. 카드 / 필드 그룹 3 열 배치용.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
    */
   .grid-3col-responsive {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply grid grid-cols-1 lg:grid-cols-3 gap-4 items-start;
   }
 
@@ -2546,8 +2598,12 @@
    * 행이 좁은 화면에서는 세로로, 넓은 화면에서는 2 열로 배치되는 영역 자산.
    * 자산 정의에 기본 gap-4 포함 — 호출처에서 gap-* 토큰 명시 금지.
    * 호출처 변형(gap-3 / gap-6 등) 잔존도 자산 단독으로 통일.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
    */
   .grid-2col-responsive {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply grid grid-cols-1 md:grid-cols-2 gap-4;
   }
 
@@ -2676,10 +2732,25 @@
     @apply hover:shadow-md;
   }
 
-  /* Page Header Actions */
+  /*
+   * Page Header Actions
+   * PageHeader 컴포넌트는 폭 미디어가 없는 `.page-heading` 을 쓰고 640px 이상 글자 크기를 렌더 폭으로 더한다.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
+   */
   .page-title {
     @apply text-xl font-semibold text-gray-900;
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply sm:text-2xl;
+    @apply dark:text-white;
+  }
+  /*
+   * PageHeader 제목 — 폭과 무관한 바탕만 둔다. 640px 이상 글자 크기(text-2xl)는 PageHeader 가 렌더 폭
+   * (편집기 미리보기에서는 기기 폭)으로 더한다.
+   */
+  .page-heading {
+    @apply text-xl font-semibold text-gray-900;
     @apply dark:text-white;
   }
   .page-description {
@@ -2759,8 +2830,12 @@
    * 풀-bleed 가 단계적 padding 분기와 일치하도록 -mx / px 도 동일 분기를
    * 적용 (게시판 설정 화면 등). 보강 — responsive padding 정책
    * 화면 전용 sticky 변종.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
    */
   .sticky-tab-nav-responsive {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b bg-gray-50 border-gray-200;
     @apply dark:bg-gray-900 dark:border-gray-700;
   }
@@ -2841,8 +2916,12 @@
    * .admin-page-content 의 Tailwind 직접 반응형 분기 변형 (mobile p-4, sm p-6,
    * lg p-8). 환경설정 / 설정 페이지 등 데스크톱·태블릿·모바일에서 padding 이
    * 단계적으로 커져야 하는 화면.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
    */
   .admin-page-content-responsive {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50;
     @apply dark:bg-gray-900;
   }
@@ -2851,8 +2930,12 @@
    * .admin-page-content-responsive 의 min-h-screen 미적용 변형. 대시보드처럼
    * 컨테이너 안에 카드/위젯이 자체 높이로 채워지고 페이지 자체 min-height 가
    * 필요 없는 화면.
+   * 번들 레이아웃은 이 클래스를 쓰지 않는다 — 폭 분기는 엔진 responsive 구간 값으로 펼쳤다. 폐지 예정: 사이트에서
+   * 직접 고친 레이아웃과 확장 생성 CSS 사본(`{ns}-`)의 호환을 위해 폭 부분까지 남기고, 다음 출시 이후 제거한다.
+   * 새 레이아웃은 쓰지 않는다.
    */
   .admin-page-content-responsive-fluid {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply p-4 sm:p-6 lg:p-8 bg-gray-50;
     @apply dark:bg-gray-900;
   }
@@ -3010,17 +3093,19 @@
     @apply dark:hover:bg-slate-700;
   }
 
+  /* 탭이 넘치면 단추째 다음 줄로 감긴다 — 단추를 찌그러뜨려 글자를 꺾지 않는다(#869, 설계 확정 2026-11-08) */
   .tab-nav-default {
-    @apply flex gap-2;
+    @apply flex flex-wrap gap-2;
   }
 
   .tab-nav-underline {
-    @apply flex gap-0 border-b border-gray-200;
+    @apply flex flex-wrap gap-0 border-b border-gray-200;
     @apply dark:border-gray-700;
   }
 
+  /* 단추 글자는 한 줄로 두고 제 폭을 지킨다(줄어들지 않음) */
   .tab-btn-base {
-    @apply flex items-center gap-2 px-4 py-2 font-medium text-sm transition-all;
+    @apply flex items-center gap-2 px-4 py-2 font-medium text-sm transition-all whitespace-nowrap shrink-0;
   }
 
   .tab-btn-default {
@@ -3115,7 +3200,19 @@
   .admin-footer {
     @apply px-6 py-4 mt-6;
   }
+  /*
+   * AdminFooter 줄 — 폭과 무관한 바탕(세로 쌓기)만 둔다. 768px 이상 가로 배치(flex-row)는 AdminFooter 가 렌더 폭
+   * (편집기 미리보기에서는 기기 폭)으로 더한다.
+   */
+  .admin-footer-bar {
+    @apply flex flex-col items-center justify-between gap-4;
+  }
+  /*
+   * 폐지 예정 — `.admin-footer-bar` 의 옛 이름. 768px 이상 가로 배치가 정의 안에 있어 부품은 더 쓰지 않는다.
+   * 사이트에서 직접 쓴 화면이 그대로 보이도록 이번 출시에 남기고 다음 출시 이후 뺀다.
+   */
   .admin-footer-row {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply flex flex-col md:flex-row items-center justify-between gap-4;
   }
   .admin-footer-group {
@@ -3191,9 +3288,11 @@
 
 /* Input Split Responsive */
 @media (max-width: 640px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .input-split {
     flex-wrap: wrap;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .input-split input {
     flex: 1;
     min-width: 0;
@@ -3202,8 +3301,11 @@
 
 /* Page Header Responsive — 세 헤더 변형을 함께 묶는다. 기본형만 걸면 여백형·풀블리드형 헤더(클레임 상세·주문 상세·
    상품 폼·쿠폰 폼·게시판 폼·회원 상세)가 375px 에서도 가로 한 줄로 남아 오른쪽 버튼 묶음이 눌린다.
-   반응형 접두 클래스(sm:)는 이 템플릿 빌드 CSS 에 없어 레이아웃에서 고칠 수 없다. */
+   번들 레이아웃은 이 규칙을 쓰지 않는다 — 640px 이하 모양을 엔진 responsive 구간 값으로 펼쳤다. 이 아래 폭 미디어 규칙
+   (입력 칸 묶음·머리말·버튼 묶음·반응형 격자·표 숨김)은 사이트에서 직접 고친 레이아웃의 호환을 위해 폐지 예정으로
+   남기고, 다음 출시 이후 제거한다. */
 @media (max-width: 640px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .page-header,
   .page-header-padded,
   .page-header-fullbleed {
@@ -3211,6 +3313,7 @@
     align-items: flex-start;
     gap: 1rem;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .page-actions {
     width: 100%;
     justify-content: flex-start;
@@ -3235,6 +3338,7 @@
 
 /* Responsive Grid - sm breakpoint */
 @media (min-width: 640px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .responsive-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3242,15 +3346,19 @@
 
 /* Responsive Grid - lg breakpoint */
 @media (min-width: 1024px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .responsive-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .grid-cols-1-lg-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .col-span-1-lg {
     grid-column: span 1 / span 1;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .col-span-2-lg {
     grid-column: span 2 / span 2;
   }
@@ -3258,6 +3366,7 @@
 
 /* Responsive Grid - 오버플로우 방지 */
 @media (max-width: 480px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .responsive-grid {
     grid-template-columns: 1fr !important;
   }
@@ -3265,19 +3374,24 @@
 
 /* Mobile Card View - 768px 이하에서 표시 */
 @media (max-width: 768px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .table-mobile-cards {
     display: block;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .table-mobile-cards > * + * {
     margin-top: 1rem;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .table-desktop {
     display: none !important;
   }
 }
 
-/* Modal Responsive */
+/* Modal Responsive — 번들 Modal 부품은 이 규칙이 걸린 클래스를 쓰지 않는다(바닥 줄은 `.modal-footer-bar` 에 렌더 폭으로
+   세로 쌓기를 더한다). 사이트에서 직접 쓴 화면의 호환을 위해 폐지 예정으로 남기고 다음 출시 이후 제거한다. */
 @media (max-width: 640px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .modal {
     margin-left: 1rem;
     margin-right: 1rem;
@@ -3285,16 +3399,19 @@
     max-height: calc(100vh - 2rem);
     overflow-y: auto;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .modal-overlay {
     padding: 1rem;
     align-items: flex-start;
     padding-top: 2rem;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .modal-footer,
   .modal-footer-row {
     flex-direction: column;
     gap: 0.5rem;
   }
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .modal-footer .btn,
   .modal-footer-row .btn {
     width: 100%;
@@ -3303,6 +3420,7 @@
 
 /* Card Account - 오버플로우 방지 */
 @media (max-width: 640px) {
+  /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
   .card-account {
     width: 100%;
   }

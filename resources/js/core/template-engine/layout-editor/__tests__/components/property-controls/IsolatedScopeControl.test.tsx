@@ -12,7 +12,6 @@
  *  ⑦ node.props.isolated* 미생성 가드(노드 최상위만)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { IsolatedScopeControl } from '../../../components/property-controls/IsolatedScopeControl';
@@ -23,6 +22,8 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('IsolatedScopeControl', () => {
+  // @scenario area=isolated_scope
+  // @effects isolated_scope_toggle_on_seeds_scopeid_off_removes_both_keys
   it('OFF→ON: 노드 최상위 isolatedState={} + scopeId 자동 시드', () => {
     const onPatch = vi.fn();
     const node: EditorNode = { name: 'Div', props: { id: 'slider' } };
@@ -35,6 +36,8 @@ describe('IsolatedScopeControl', () => {
     expect((patched.props as Record<string, unknown>).isolatedState).toBeUndefined();
   });
 
+  // @scenario area=isolated_scope
+  // @effects isolated_scope_toggle_on_seeds_scopeid_off_removes_both_keys
   it('ON→OFF: 두 키 삭제', () => {
     const onPatch = vi.fn();
     const node: EditorNode = { name: 'Div', isolatedState: { step: 1 }, isolatedScopeId: 'wizard' };
@@ -45,6 +48,8 @@ describe('IsolatedScopeControl', () => {
     expect('isolatedScopeId' in patched).toBe(false);
   });
 
+  // @scenario area=isolated_scope
+  // @effects isolated_scopeid_search_filters_and_selects
   it('scopeId 검색 드롭다운 후보 필터 + 선택', () => {
     const onPatch = vi.fn();
     const node: EditorNode = { name: 'Div', isolatedState: {}, isolatedScopeId: 'a' };
@@ -63,6 +68,8 @@ describe('IsolatedScopeControl', () => {
     expect((onPatch.mock.calls.at(-1)![0] as Record<string, unknown>).isolatedScopeId).toBe('product-slider');
   });
 
+  // @scenario area=isolated_scope
+  // @effects isolated_scopeid_free_text_accepts_new_name
   it('자유 텍스트 입력 병행 — 목록 밖 새 이름 허용', () => {
     const onPatch = vi.fn();
     const node: EditorNode = { name: 'Div', isolatedState: {}, isolatedScopeId: 'a' };
@@ -71,6 +78,8 @@ describe('IsolatedScopeControl', () => {
     expect((onPatch.mock.calls.at(-1)![0] as Record<string, unknown>).isolatedScopeId).toBe('brand-new-scope');
   });
 
+  // @scenario area=isolated_scope
+  // @effects isolated_scopeid_empty_input_keeps_auto_seed
   it('빈 scopeId → 자동 시드 유지(빈 문자열 저장 안 함)', () => {
     const onPatch = vi.fn();
     const node: EditorNode = { name: 'Div', props: { id: 'box' }, isolatedState: {}, isolatedScopeId: 'a' };
@@ -79,12 +88,16 @@ describe('IsolatedScopeControl', () => {
     expect((onPatch.mock.calls.at(-1)![0] as Record<string, unknown>).isolatedScopeId).toBe('box-scope');
   });
 
+  // @scenario area=isolated_scope
+  // @effects isolated_scopeid_duplicate_shows_notice_allows_share
   it('중복 scopeId ⓘ 안내(허용)', () => {
     const node: EditorNode = { name: 'Div', isolatedState: {}, isolatedScopeId: 'shared' };
     render(<IsolatedScopeControl node={node} onPatchNode={vi.fn()} t={t} usedScopeIds={['shared']} />);
     expect(screen.getByTestId('g7le-isolated-scopeid-dup')).toBeInTheDocument();
   });
 
+  // @scenario area=isolated_scope
+  // @effects isolated_scope_off_hides_scopeid_input
   it('OFF 상태에서는 scopeId 입력칸 미노출', () => {
     const node: EditorNode = { name: 'Div', props: {} };
     render(<IsolatedScopeControl node={node} onPatchNode={vi.fn()} t={t} />);

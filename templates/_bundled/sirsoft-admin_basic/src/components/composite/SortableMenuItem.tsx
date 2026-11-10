@@ -8,6 +8,7 @@ import { A } from '../basic/A';
 import { Icon } from '../basic/Icon';
 import { Toggle } from './Toggle';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 // G7Core 전역 객체의 스타일 헬퍼 접근
 const G7Core = () => (window as any).G7Core;
@@ -148,8 +149,10 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
     <Div
       ref={setNodeRef}
       style={style}
-      className={link ? `relative ${combinedClassName}` : combinedClassName}
+      className={link ? `relative ${combinedClassName}` : `${combinedClassName}${!selectable && onClick ? ` ${FOCUS_VISIBLE_RING}` : ''}`}
       onClick={onClick}
+      // 덮는 링크가 있으면 링크가, 선택 모드면 체크박스가 키보드를 받는다. 그 밖의 행은 행 자체가 단추다(#869 키보드 접근)
+      {...(!link && !selectable ? keyboardActivationProps(onClick) : {})}
     >
       {/* 드래그 핸들 - enableDrag가 true일 때만 표시 */}
       {enableDrag && (
@@ -198,6 +201,14 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
           }}
           onChange={() => onClick?.()}
           onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          // 체크박스는 Space 로만 토글된다 — 마우스 행 클릭과 같게 Enter 로도 고른다(#869 키보드 접근)
+          onKeyDown={(e: React.KeyboardEvent) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              onClick?.();
+            }
+          }}
           aria-label={item.name}
           className="flex-shrink-0 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
         />

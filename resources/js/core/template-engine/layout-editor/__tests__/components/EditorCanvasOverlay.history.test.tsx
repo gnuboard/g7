@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { EditorCanvasOverlay } from '../../components/EditorCanvasOverlay';
 import { LayoutEditorProvider, useLayoutEditor } from '../../LayoutEditorContext';
@@ -45,6 +45,11 @@ function buildDocCtx(initialComponents: EditorNode[]): {
     error: null,
     isDirty: false,
     saveSuccessCounter: 0,
+    patchDocumentRaw: () => {},
+    dirtyKeys: new Set<string>(),
+    dirtyLayoutNames: new Set<string>(),
+    invalidateCurrentCache: () => {},
+    reloadCounter: 0,
     reload: async () => {},
     patchLayout: (patcher) => {
       const current = (document.raw.components as EditorNode[]) ?? [];
@@ -112,6 +117,10 @@ describe('EditorCanvasOverlay — 이력 baseline + after 스냅샷 패턴 회�
     delete (window as any).__g7LayoutEditorHistory;
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_history
+   * @effects overlay_history_baseline_pushed_on_load
+   */
   it('문서 로드 시 baseline 이 push 되어 __g7LayoutEditorHistory 가 노출됨', async () => {
     mountOverlay([{ name: 'Header', type: 'basic' }]);
     await waitFor(() => {
@@ -121,6 +130,10 @@ describe('EditorCanvasOverlay — 이력 baseline + after 스냅샷 패턴 회�
     expect((window as any).__g7LayoutEditorHistory?.canUndo).toBe(false);
   });
 
+  /**
+   * @scenario subject=editor_canvas_overlay_history
+   * @effects overlay_history_baseline_repushed_on_route_change
+   */
   it('라우트 변경 시 baseline 재push (이력 라우트 단위 격리)', async () => {
     // 본 테스트는 EditorCanvasOverlay 내부 useEffect 의 layoutName 가드 회귀 방지.
     // 라우트 A → B 전환 시 history.clear + 새 baseline push 가 실행되어

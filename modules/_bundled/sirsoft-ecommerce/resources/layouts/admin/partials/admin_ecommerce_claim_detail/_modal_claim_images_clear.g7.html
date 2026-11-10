@@ -4,31 +4,31 @@
     <div class="ecommerce:space-y-4">
       <p data-ref="cic_001_message" class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.message|count={{_global.claimImagesClearContext?.count ?? 0}}</p>
       <p data-ref="cic_002_warning" class="ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-yellow-50 ecommerce:dark:bg-yellow-900/20 ecommerce:text-sm ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.warning</p>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2">
-        <button data-ref="cic_003_cancel" type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isProcessing}}">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:common.cancel
-        </button>
-        <!-- 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 막는다. 실패 사유 토스트는 핸들러가 이미 띄우므로 fail 은 진행 표식만 되돌리고 창을 남긴다 — 운영자가 그 자리에서 다시 누르거나 닫는다. -->
-        <button data-ref="cic_004_confirm" type="button" class="ecommerce-btn ecommerce-btn-danger" disabled="{{!_global.claimImagesClearContext || _global.isProcessing}}">
-          <on type="click">
-            <set-state target="global" :isProcessing="true"/>
-            <action handler="sirsoft-ecommerce.clearClaimImages" pathSegment="{{_global.claimImagesClearContext?.pathSegment ?? ''}}" claimType="{{_global.claimImagesClearContext?.claimType ?? ''}}" claimId="{{_global.claimImagesClearContext?.claimId ?? null}}">
-              <success>
-                <set-state target="global" :isProcessing="false" :claimImagesClearContext="null"/>
-                <close-modal/>
-              </success>
-              <fail>
-                <set-state target="global" :isProcessing="false"/>
-              </fail>
-            </action>
-          </on>
-          <icon data-if="{{_global.isProcessing}}" name="spinner" class="ecommerce-spinner-sm"/>
-          <span data-if="{{!_global.isProcessing}}">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.confirm</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button data-ref="cic_003_cancel" type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isProcessing}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <!-- 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 막는다. 실패 사유 토스트는 핸들러가 이미 띄우므로 fail 은 진행 표식만 되돌리고 창을 남긴다 — 운영자가 그 자리에서 다시 누르거나 닫는다. -->
+      <button data-ref="cic_004_confirm" type="button" class="ecommerce-btn ecommerce-btn-danger" disabled="{{!_global.claimImagesClearContext || _global.isProcessing}}">
+        <on type="click">
+          <set-state target="global" :isProcessing="true"/>
+          <action handler="sirsoft-ecommerce.clearClaimImages" pathSegment="{{_global.claimImagesClearContext?.pathSegment ?? ''}}" claimType="{{_global.claimImagesClearContext?.claimType ?? ''}}" claimId="{{_global.claimImagesClearContext?.claimId ?? null}}">
+            <success>
+              <set-state target="global" :isProcessing="false" :claimImagesClearContext="null"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isProcessing="false"/>
+            </fail>
+          </action>
+        </on>
+        <icon data-if="{{_global.isProcessing}}" name="spinner" class="ecommerce-spinner-sm"/>
+        <span data-if="{{!_global.isProcessing}}">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_clear_confirm.confirm</span>
+      </button>
+    </footer>
   </modal>
 </partial>

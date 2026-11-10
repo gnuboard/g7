@@ -177,8 +177,9 @@
   .sirsoft-basic-settings .tab-content {
     @apply pt-6;
   }
+  /* 여백(p-4·p-6·p-8)은 설정 화면 부품이 엔진 폭으로 고른다 — 의미 클래스에 폭 분기를 두지 않는다(#869) */
   .sirsoft-basic-settings .admin-page-content-responsive {
-    @apply p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50;
+    @apply min-h-screen bg-gray-50;
     @apply dark:bg-gray-900;
   }
   .sirsoft-basic-settings .toggle-container {

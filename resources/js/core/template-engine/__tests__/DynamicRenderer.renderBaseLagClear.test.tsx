@@ -82,6 +82,8 @@ const PAGE: Node[] = [
     show('cs', 'JSON.stringify(_local.currentSelection ?? {})'),
     show('items', "(_local.items ?? []).map(i => i.id + 'x' + i.qty).join(',')"),
     show('filters', 'JSON.stringify(_local.filters ?? null)'),
+    // 루트 다시 그리기 표지 — rootRerender 가 이 값으로 「그 전역 쓰기를 실은 렌더가 커밋됐다」를 확인한다
+    show('tick', 'String(_global.__probeTick ?? 0)'),
 ];
 
 /**
@@ -175,10 +177,19 @@ async function click(label: string): Promise<void> {
     fireEvent.click(b);
     await settle();
 }
-/** 운영의 「다른 전역 쓰기로 루트가 다시 그려짐」(데이터 도착·전역 setState) — 그 순간의 B 가 렌더 사본이 된다 */
+/**
+ * 운영의 「다른 전역 쓰기로 루트가 다시 그려짐」(데이터 도착·전역 setState) — 그 순간의 B 가 렌더 사본이 된다.
+ *
+ * 다시 그리기는 동적 import 뒤 startTransition 이라 커밋 시각이 일정하지 않다. 종전에는 60ms 를 기다렸는데, 여러 시험 파일을
+ * 함께 돌리는 부하에서는 그 안에 커밋되지 않아 화면 단언이 앞 렌더를 읽고 깨졌다. 같은 렌더가 그리는 표지(`tick`)가 이번 값이
+ * 될 때까지 기다린다.
+ *
+ * @param app 앱
+ * @param tick 이번 표지 값
+ */
 async function rootRerender(app: any, tick: number): Promise<void> {
     app.setGlobalState({ __probeTick: tick });
-    await settle(60);
+    await waitFor(() => expect(text('tick')).toBe(String(tick)), { timeout: 5_000 });
 }
 const liveB = (app: any): Record<string, any> => app.getGlobalState()._local;
 
@@ -238,8 +249,8 @@ describe('[case:state-setstate-50] 렌더 병합의 늦은 B 사본 — 비운 �
         expect(text('cs')).toBe('{}');
 
         await click('색상:블랙');
+        await waitFor(() => expect(JSON.parse(text('cs'))).toEqual({ 색상: '블랙' }));
         expect(text('items')).toBe('네이비_Lx2');
-        expect(JSON.parse(text('cs'))).toEqual({ 색상: '블랙' });
         await click('사이즈:M');
         await waitFor(() => expect(text('items')).toBe('네이비_Lx2,블랙_Mx1'));
         expect(text('cs')).toBe('{}');
@@ -256,7 +267,7 @@ describe('[case:state-setstate-50] 렌더 병합의 늦은 B 사본 — 비운 �
         await click('reset-deep');
 
         expect(liveB(m.app).currentSelection).toEqual({});
-        expect(text('cs')).toBe('{}');
+        await waitFor(() => expect(text('cs')).toBe('{}'));
     });
 
     /**
@@ -273,7 +284,7 @@ describe('[case:state-setstate-50] 렌더 병합의 늦은 B 사본 — 비운 �
 
         await click('pick-black-shallow');
         expect(liveB(m.app).currentSelection).toEqual({ 색상: '블랙' });
-        expect(JSON.parse(text('cs'))).toEqual({ 색상: '블랙' });
+        await waitFor(() => expect(JSON.parse(text('cs'))).toEqual({ 색상: '블랙' }));
     });
 
     /**
@@ -284,10 +295,9 @@ describe('[case:state-setstate-50] 렌더 병합의 늦은 B 사본 — 비운 �
         m = await mount();
         await click('색상:네이비');
         await click('setlocal-shallow-clear');
-        await settle(60);
 
         expect(liveB(m.app).currentSelection).toEqual({});
-        expect(text('cs')).toBe('{}');
+        await waitFor(() => expect(text('cs')).toBe('{}'));
     });
 
     /**
@@ -313,7 +323,7 @@ describe('[case:state-setstate-50] 렌더 병합의 늦은 B 사본 — 비운 �
     it('정본 B 에 있는 키(selfManaged 플러그인이 B 에만 쓴 값)는 저장소 A 가 `{}` 여도 화면에 남는다 (금지 「A 의 {} 가 B 서버 값을 지움」 회피)', async () => {
         m = await mount({ items: [], currentSelection: {}, filters: { brand: 'old' } });
         await click('clear-filters');
-        expect(text('filters')).toBe('{}');
+        await waitFor(() => expect(text('filters')).toBe('{}'));
 
         (window as any).G7Core.state.setLocal({ 'filters.brand': 'acme' }, { render: false, selfManaged: true });
         await rootRerender(m.app, 1);

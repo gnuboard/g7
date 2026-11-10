@@ -585,6 +585,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/errors/404.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/errors/500.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/errors/503.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/errors/default.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/errors/maintenance.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_identity_challenge_modal.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_changelog.g7.html',
@@ -738,6 +739,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/errors/404.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/errors/500.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/errors/503.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/errors/default.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/errors/maintenance.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/home.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/mypage/addresses.g7.html',
@@ -1026,6 +1028,11 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_update.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_cron_token_rotate.g7.html',
         'templates/_bundled/sirsoft-basic/settings/template_settings.g7.html',
+        // ── #869 이미지 썸네일이 새로 저작한 환경설정 업로드 탭 창 2건(두 곳 모두 비우기 확인·기존 이미지 썸네일 만들기).
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_thumbnail_purge_all.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_thumbnail_pregenerate.g7.html',
+        // ── #869 번들 CloudFront 플러그인(sirsoft-cdn_cloudfront)의 설정 화면 — 신규 플러그인이 처음부터 마크업으로 저작.
+        'plugins/_bundled/sirsoft-cdn_cloudfront/resources/layouts/admin/plugin_settings.g7.html',
     ];
 
     /**

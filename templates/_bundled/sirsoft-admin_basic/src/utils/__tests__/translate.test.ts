@@ -5,9 +5,9 @@
  * 설정 화면 묶음은 다른 관리자 템플릿 화면에 실려 이 템플릿 문구가 `{템플릿id}.{묶음}` 으로만 온다.
  * 기본 부품 묶음은 이름공간이 없어 종전과 같아야 한다.
  *
- * @scenario case=settings_bundle_load
+ * 시나리오: case=settings_bundle_load
  *
- * @effects settings_strings_wrapped_for_admin
+ * 효과: settings_strings_wrapped_for_admin
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';

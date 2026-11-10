@@ -9,7 +9,8 @@
         <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.mypage.title</h2>
       </div>
       <!-- 비밀번호 없는 계정 안내 — 비밀번호를 정하면 이메일로도 로그인할 수 있다 -->
-      <div data-if="{{socialAccounts?.data?.has_password === false}}" data-ref="social_accounts_no_password" class="sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center">
+      <div data-if="{{socialAccounts?.data?.has_password === false}}" data-ref="social_accounts_no_password" class="sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:flex-col sl:gap-2">
+        <responsive on="640-" class="sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"/>
         <p class="sl:flex-1 sl:text-sm sl:text-blue-700 sl:dark:text-blue-300">$t:sirsoft-social_login.mypage.no_password</p>
         <button type="button" class="sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-blue-600 sl:text-white sl:rounded sl:hover:bg-blue-700 sl:cursor-pointer">
           <on type="click">
@@ -45,7 +46,8 @@
         </li>
       </ul>
       <!-- 마지막 수단 해제 거절 안내 -->
-      <div data-if="{{_global.socialLoginUnlinkLastMethod === true}}" data-ref="social_accounts_last_method" class="sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center" role="alert">
+      <div data-if="{{_global.socialLoginUnlinkLastMethod === true}}" data-ref="social_accounts_last_method" class="sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:flex-col sl:gap-2" role="alert">
+        <responsive on="640-" class="sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"/>
         <p class="sl:flex-1 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300">$t:sirsoft-social_login.mypage.last_method</p>
         <button type="button" data-ref="social_accounts_set_password" class="sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-yellow-600 sl:text-white sl:rounded sl:hover:bg-yellow-700 sl:cursor-pointer">
           <on type="click">

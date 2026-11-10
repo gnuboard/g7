@@ -13,7 +13,8 @@
       <p data-if="{{ssoMyAccounts?.data?.enforced === true}}" data-ref="sso_accounts_enforced" class="sso:mb-4 sso:p-3 sso:rounded-lg sso:bg-blue-50 sso:dark:bg-blue-900/20 sso:border sso:border-blue-200 sso:dark:border-blue-800 sso:text-sm sso:text-blue-700 sso:dark:text-blue-300">$t:sirsoft-sso.mypage.enforced</p>
       <p data-if="{{(ssoMyAccounts?.data?.accounts ?? []).length === 0}}" class="sso:py-2 sso:text-sm sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.mypage.empty</p>
       <ul data-if="{{(ssoMyAccounts?.data?.accounts ?? []).length > 0}}" data-ref="sso_accounts_list" class="sso:divide-y sso:divide-gray-200 sso:dark:divide-gray-700">
-        <li data-each="account in ssoMyAccounts?.data?.accounts ?? []" data-key="{{account.id}}" class="sso:py-3 sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:sm:items-center sso:sm:gap-3">
+        <li data-each="account in ssoMyAccounts?.data?.accounts ?? []" data-key="{{account.id}}" class="sso:py-3 sso:flex sso:flex-col sso:gap-2">
+          <responsive on="640-" class="sso:py-3 sso:flex sso:flex-row sso:items-center sso:gap-3"/>
           <div class="sso:flex-1 sso:min-w-0">
             <p class="sso:text-sm sso:font-medium sso:text-gray-900 sso:dark:text-white">{{account.idp_label}}</p>
             <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">
@@ -37,14 +38,15 @@
             </on>
             $t:sirsoft-sso.mypage.unlink
           </button>
-          <p data-if="{{!!account.unlink_block}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:md:max-w-xs">{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}</p>
+          <p data-if="{{!!account.unlink_block}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"><responsive on="768-" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:max-w-xs"/>{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}</p>
         </li>
       </ul>
       <p data-if="{{!!_global.ssoUnlinkError}}" class="sso:mt-3 sso:text-sm sso:text-red-600 sso:dark:text-red-400" role="alert">{{_global.ssoUnlinkError ?? ''}}</p>
       <!-- 연결할 수 있는 회사 계정 -->
       <div data-if="{{(ssoMyAccounts?.data?.linkable ?? []).length > 0}}" data-ref="sso_accounts_linkable" class="sso:mt-4 sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700">
         <p class="sso:mb-3 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400">$t:sirsoft-sso.mypage.linkable</p>
-        <div class="sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:flex-wrap">
+        <div class="sso:flex sso:flex-col sso:gap-2 sso:flex-wrap">
+          <responsive on="640-" class="sso:flex sso:gap-2 sso:flex-row sso:flex-wrap"/>
           <button data-each="idp in ssoMyAccounts?.data?.linkable ?? []" data-key="{{idp.key}}" data-ref="sso_link_button_{{idp.key}}" type="button" class="sso:inline-flex sso:items-center sso:justify-center sso:gap-2 sso:px-4 sso:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-800 sso:dark:text-gray-200 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700 sso:cursor-pointer">
             <on type="click">
               <!-- 연결 시작 — API 가 시작 티켓 주소를 주면 그 회사 계정 로그인으로 이동한다 -->

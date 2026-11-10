@@ -11,12 +11,13 @@
  *  - 복합 셀(자식 Span) 텍스트 자손만 편집(구조 보존), 순수 구조 셀은 라벨
  *  - 셀 텍스트 평문 blur → createCustomKey → 텍스트 노드 `$t:custom.*` 치환
  *
- * @effects table_capability_declares_node_editor_kind_table_both_templates, table_editor_registered_via_registercoreeditors_kind_agnostic, property_modal_dispatches_table_node_editor_in_props_tab_by_kind, add_row_inserts_blank_row_keeps_col_count, remove_row_keeps_min_one_row, add_column_inserts_blank_col, remove_column_keeps_min_one_col, shift_select_range_then_merge_sets_origin_span_removes_absorbed, unmerge_clears_span_restores_blank_cells, cell_border_className_input_patches_cell_props, complex_cell_edits_text_descendant_preserves_structure, structural_only_cell_shows_label_not_input, plain_cell_blur_creates_custom_key_replaces_text_token, tree_to_grid_expands_thead_tbody_with_merge_coordinates, tree_to_grid_detects_overlap_and_hole_marks_invalid, params_role_mapping_neutral_div_grid_works_same_adapter, add_row_bumps_rowspan_origin_for_absorbed_cells, remove_row_decrements_crossing_rowspan, move_row_band_moves_merge_block_as_unit, move_row_section_boundary_disabled_with_reason, add_column_bumps_colspan_for_crossing_cell, remove_column_decrements_crossing_colspan, move_column_band_moves_merge_block_as_unit, move_column_table_edge_band_disabled_boundary, merge_rejects_non_rectangular_and_hole, live_add_row_col_merge_save_persists_to_user_page
+ * 효과 요약(마커 아님 — 평문, 시험별 표식이 잰다): table_capability_declares_node_editor_kind_table_both_templates, table_editor_registered_via_registercoreeditors_kind_agnostic, property_modal_dispatches_table_node_editor_in_props_tab_by_kind, add_row_inserts_blank_row_keeps_col_count, remove_row_keeps_min_one_row, add_column_inserts_blank_col, remove_column_keeps_min_one_col, shift_select_range_then_merge_sets_origin_span_removes_absorbed, unmerge_clears_span_restores_blank_cells, cell_border_className_input_patches_cell_props, complex_cell_edits_text_descendant_preserves_structure, structural_only_cell_shows_label_not_input, plain_cell_blur_creates_custom_key_replaces_text_token, tree_to_grid_expands_thead_tbody_with_merge_coordinates, tree_to_grid_detects_overlap_and_hole_marks_invalid, params_role_mapping_neutral_div_grid_works_same_adapter, add_row_bumps_rowspan_origin_for_absorbed_cells, remove_row_decrements_crossing_rowspan, move_row_band_moves_merge_block_as_unit, move_row_section_boundary_disabled_with_reason, add_column_bumps_colspan_for_crossing_cell, remove_column_decrements_crossing_colspan, move_column_band_moves_merge_block_as_unit, move_column_table_edge_band_disabled_boundary, merge_rejects_non_rectangular_and_hole, live_add_row_col_merge_save_persists_to_user_page
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
 vi.mock('../../LayoutEditorContext', () => ({
@@ -94,6 +95,8 @@ beforeEach(() => {
 });
 
 describe('TableEditor 렌더/구조', () => {
+  // @scenario area=table_editor
+  // @effects table_editor_renders_grid_with_gutters
   it('표 grid 와 행/열 거터를 렌더한다', () => {
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-table-editor-grid')).toBeInTheDocument();
@@ -103,7 +106,9 @@ describe('TableEditor 렌더/구조', () => {
     expect(screen.getByTestId('g7le-table-row-add-0')).toBeInTheDocument();
   });
 
-  it('행 추가 → onPatchNode 로 4행 패치', () => {
+  // @scenario area=table_editor
+  // @effects add_row_inserts_blank_row_keeps_col_count
+  it('행 추가 → onPatchNode 로 3행 패치(2행 + 1)', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={onPatch} />);
     fireEvent.click(screen.getByTestId('g7le-table-row-add-0'));
@@ -111,6 +116,8 @@ describe('TableEditor 렌더/구조', () => {
     expect(treeToGrid(patched, params).rows.length).toBe(3);
   });
 
+  // @scenario area=table_editor
+  // @effects add_column_inserts_blank_col
   it('열 추가 → 3열 패치', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={onPatch} />);
@@ -119,6 +126,8 @@ describe('TableEditor 렌더/구조', () => {
     expect(treeToGrid(patched, params).colCount).toBe(3);
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_remove_row_patches_grid
   it('행 삭제 → 1행 패치', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={onPatch} />);
@@ -150,6 +159,8 @@ describe('이동 버튼 활성/비활성 피드백 (밴드 모델)', () => {
     ],
   };
 
+  // @scenario area=table_editor
+  // @effects move_column_band_moves_merge_block_as_unit
   it('병합 블록 밴드는 인접 밴드와 이동 가능(버튼 활성)', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} node={bandedTable} onPatchNode={onPatch} />);
@@ -162,6 +173,8 @@ describe('이동 버튼 활성/비활성 피드백 (밴드 모델)', () => {
     expect(body).toEqual(['3', '1', '2']); // 밴드 통째 이동
   });
 
+  // @scenario area=table_editor
+  // @effects move_column_table_edge_band_disabled_boundary
   it('표 끝 밴드의 바깥 방향 이동은 boundary 로 비활성', () => {
     render(<TableEditor {...baseProps} node={bandedTable} onPatchNode={vi.fn()} />);
     // 첫 밴드(col0) 왼쪽 = 표 끝 → 비활성.
@@ -170,6 +183,8 @@ describe('이동 버튼 활성/비활성 피드백 (밴드 모델)', () => {
     expect(left0.style.cursor).toBe('not-allowed');
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_move_buttons_enabled_except_edge
   it('병합 없는 표는 이동 버튼 활성(경계 제외)', () => {
     // component table2x2 = Tbody only 2행(grid 0,1).
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={vi.fn()} />);
@@ -181,6 +196,8 @@ describe('이동 버튼 활성/비활성 피드백 (밴드 모델)', () => {
     expect(down1.disabled).toBe(true);
   });
 
+  // @scenario area=table_editor
+  // @effects move_row_section_boundary_disabled_with_reason
   it('Thead↔Tbody 섹션 경계 행 이동은 비활성 + section 사유', () => {
     const withHead: EditorNode = {
       type: 'basic',
@@ -199,6 +216,8 @@ describe('이동 버튼 활성/비활성 피드백 (밴드 모델)', () => {
 });
 
 describe('셀 병합/해제 UI', () => {
+  // @scenario area=table_editor
+  // @effects shift_select_range_then_merge_sets_origin_span_removes_absorbed
   it('셀 클릭 + Shift 클릭 → 병합 버튼 활성 → 병합 패치', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={onPatch} />);
@@ -214,6 +233,8 @@ describe('셀 병합/해제 UI', () => {
     expect(o.rowSpan).toBe(2);
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_cell_input_click_selects_keeps_focus
   it('셀 텍스트 input 단일 클릭(mousedown) → 셀 선택(앵커) + 편집 포커스 비차단', () => {
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={vi.fn()} />);
     // 앵커를 input 클릭으로 잡고, 다른 셀 Shift 클릭 → 병합 활성 = 선택 성립.
@@ -223,6 +244,8 @@ describe('셀 병합/해제 UI', () => {
     expect((screen.getByTestId('g7le-table-merge') as HTMLButtonElement).disabled).toBe(false);
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_cell_input_shift_click_selects_only
   it('셀 텍스트 input Shift+클릭(mousedown) → preventDefault(편집 포커스 차단, 선택만)', () => {
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={vi.fn()} />);
     fireEvent.click(screen.getByTestId('g7le-table-cell-0-0')); // 앵커
@@ -231,6 +254,8 @@ describe('셀 병합/해제 UI', () => {
     expect((screen.getByTestId('g7le-table-merge') as HTMLButtonElement).disabled).toBe(false); // 영역 선택은 성립
   });
 
+  // @scenario area=table_editor
+  // @effects unmerge_clears_span_restores_blank_cells
   it('병합된 origin 선택 → 해제 버튼 활성', () => {
     const merged: EditorNode = {
       type: 'basic',
@@ -260,6 +285,8 @@ describe('셀 병합/해제 UI', () => {
 });
 
 describe('셀 테두리/텍스트', () => {
+  // @scenario area=table_editor
+  // @effects cell_border_className_input_patches_cell_props
   it('셀 선택 후 테두리 className 입력 → 셀 props 패치', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={onPatch} />);
@@ -271,6 +298,8 @@ describe('셀 테두리/텍스트', () => {
     expect(cellRefAt(grid, 0, 0)!.cell.props?.className).toBe('border border-red-500');
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_range_border_color_all_cells
   it('Shift 영역 다중 선택 후 색 적용 → 영역 전 셀에 borderColor(하나만 적용되던 결함)', () => {
     const catalog = {
       sides: [{ value: 'all', prefix: 'border' }],
@@ -305,6 +334,8 @@ describe('셀 테두리/텍스트', () => {
     expect(color(1, 1)).toBe('#ff0000');
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_preview_td_reflects_border
   it('미리보기 td 가 셀 실제 테두리(두께/색)를 반영(고정 회색 1px 아님)', () => {
     // cellBorder 카탈로그 공급 + border-2(2px) + 인라인 빨강 셀.
     const catalog = {
@@ -329,6 +360,8 @@ describe('셀 테두리/텍스트', () => {
     expect(cellTd.style.borderTopColor).toBe('rgb(255, 0, 0)');
   });
 
+  // @scenario area=table_editor
+  // @effects structural_only_cell_shows_label_not_input
   it('순수 구조 셀(Icon만)은 텍스트 입력 대신 구조 라벨', () => {
     const t2: EditorNode = {
       type: 'basic',
@@ -352,6 +385,8 @@ describe('셀 테두리/텍스트', () => {
     expect(screen.queryByTestId('g7le-table-cell-input-0-0')).not.toBeInTheDocument();
   });
 
+  // @scenario area=table_editor
+  // @effects complex_cell_edits_text_descendant_preserves_structure
   it('복합 셀(Span 텍스트) 편집 → 텍스트 자손만 키화(구조 보존)', async () => {
     createCustomKey.mockResolvedValue({
       kind: 'ok',
@@ -381,6 +416,8 @@ describe('셀 테두리/텍스트', () => {
     expect((cell.children as EditorNode[])[1]!.text).toBe('$t:custom.login.9');
   });
 
+  // @scenario area=table_editor
+  // @effects plain_cell_blur_creates_custom_key_replaces_text_token
   it('평문 직접-text 셀 blur → createCustomKey → 토큰 치환', async () => {
     createCustomKey.mockResolvedValue({
       kind: 'ok',
@@ -399,6 +436,8 @@ describe('셀 테두리/텍스트', () => {
 });
 
 describe('선택 셀 다국어 섹션(I18nTextField ko/en/ja 펼침)', () => {
+  // @scenario area=table_editor
+  // @effects table_editor_selected_cell_i18n_section
   it('셀 선택 시 선택 셀 다국어 섹션 + I18nTextField 미리보기(셀 텍스트) 노출', () => {
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={vi.fn()} />);
     // 미선택 상태에서는 섹션 미노출.
@@ -412,6 +451,8 @@ describe('선택 셀 다국어 섹션(I18nTextField ko/en/ja 펼침)', () => {
     expect(screen.getByTestId('g7le-table-cell-i18n-toggle')).toBeInTheDocument();
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_structural_cell_hides_i18n
   it('순수 구조 셀(Icon만) 선택 시 다국어 섹션 미노출', () => {
     const t2: EditorNode = {
       type: 'basic', name: 'Table',
@@ -426,6 +467,8 @@ describe('선택 셀 다국어 섹션(I18nTextField ko/en/ja 펼침)', () => {
     expect(screen.queryByTestId('g7le-table-cell-i18n-section')).not.toBeInTheDocument();
   });
 
+  // @scenario area=table_editor
+  // @effects plain_cell_blur_creates_custom_key_replaces_text_token
   it('다국어 섹션 평문 입력 blur → createCustomKey → 선택 셀 직접-text 토큰 치환', async () => {
     createCustomKey.mockResolvedValue({ kind: 'ok', resource: { translation_key: 'custom.login.7' } });
     const onPatch = vi.fn();
@@ -440,6 +483,8 @@ describe('선택 셀 다국어 섹션(I18nTextField ko/en/ja 펼침)', () => {
     expect(cellRefAt(grid, 0, 1)!.cell.text).toBe('$t:custom.login.7');
   });
 
+  // @scenario area=table_editor
+  // @effects complex_cell_edits_text_descendant_preserves_structure
   it('다국어 섹션 복합 셀(Span) 입력 → 텍스트 자손만 토큰화(구조 보존)', async () => {
     createCustomKey.mockResolvedValue({ kind: 'ok', resource: { translation_key: 'custom.login.8' } });
     const complexCell = td(undefined, [
@@ -470,6 +515,8 @@ describe('선택 셀 다국어 섹션(I18nTextField ko/en/ja 펼침)', () => {
     path: 'name', shape: 'scalar' as const, preview: '홍길동',
   };
 
+  // @scenario area=table_editor
+  // @effects table_editor_cell_plus_data_follows_candidates
   it('candidates 전달 시 선택 셀 텍스트 칸에 +데이터 버튼 노출', () => {
     render(
       <TableEditor {...baseProps} node={table2x2()} onPatchNode={vi.fn()} candidates={[scalarCandidate]} />,
@@ -478,6 +525,8 @@ describe('선택 셀 다국어 섹션(I18nTextField ko/en/ja 펼침)', () => {
     expect(screen.getByTestId('g7le-table-cell-i18n-plus-data-btn')).toBeInTheDocument();
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_cell_plus_data_follows_candidates
   it('candidates 미전달 시 +데이터 버튼 미노출 (디그레이드)', () => {
     render(<TableEditor {...baseProps} node={table2x2()} onPatchNode={vi.fn()} />);
     fireEvent.click(screen.getByTestId('g7le-table-cell-0-0'));
@@ -500,6 +549,8 @@ describe('그리드 셀 미니맵 — custom param 키 셀 raw 미노출 + 편�
     ] }],
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_param_key_cell_editable_no_raw
   it('custom param 키 셀 → raw `$t:custom...` 미노출 + 편집 input 표시', () => {
     render(<TableEditor {...baseProps} node={paramCellTable()} onPatchNode={vi.fn()} />);
     // 그리드 셀에 raw 키 문자열이 노출되지 않는다.
@@ -509,6 +560,8 @@ describe('그리드 셀 미니맵 — custom param 키 셀 raw 미노출 + 편�
     expect(screen.getByTestId('g7le-table-cell-input-0-0')).toBeInTheDocument();
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_pure_binding_cell_not_editable
   it('순수 데이터 바인딩 셀(`{{...}}` only)은 종전대로 편집 비대상(raw 표시 유지)', () => {
     const boundTable = (): EditorNode => ({
       type: 'basic', name: 'Table',
@@ -529,6 +582,8 @@ describe('셀 배경색/여백(인라인 style)', () => {
     cellPadding: { steps: [{ value: 'none' }, { value: 'narrow', px: 4 }, { value: 'normal', px: 8 }] },
   };
 
+  // @scenario area=table_editor
+  // @effects table_editor_cell_fill_padding_controls
   it('셀 선택 → 배경/여백 컨트롤 행 노출', () => {
     render(<TableEditor {...baseProps} params={paramsFill} node={table2x2()} onPatchNode={vi.fn()} />);
     fireEvent.click(screen.getByTestId('g7le-table-cell-0-0'));
@@ -536,6 +591,8 @@ describe('셀 배경색/여백(인라인 style)', () => {
     expect(screen.getByTestId('g7le-table-cell-padding-row')).toBeInTheDocument();
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_fill_preset_inline_background
   it('배경 프리셋 클릭 → 선택 셀만 인라인 backgroundColor', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} params={paramsFill} node={table2x2()} onPatchNode={onPatch} />);
@@ -546,6 +603,8 @@ describe('셀 배경색/여백(인라인 style)', () => {
     expect((cellRefAt(grid, 1, 1)!.cell.props?.style as Record<string, unknown> | undefined)?.backgroundColor).toBeUndefined();
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_padding_step_inline_padding
   it('여백 단계 클릭 → 선택 셀 인라인 padding', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} params={paramsFill} node={table2x2()} onPatchNode={onPatch} />);
@@ -555,6 +614,8 @@ describe('셀 배경색/여백(인라인 style)', () => {
     expect((cellRefAt(grid, 0, 0)!.cell.props?.style as Record<string, unknown>)?.padding).toBe('8px');
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_fill_preset_inline_background
   it('Shift 영역 다중 선택 → 배경색이 영역 전 셀에 적용', () => {
     const onPatch = vi.fn();
     render(<TableEditor {...baseProps} params={paramsFill} node={table2x2()} onPatchNode={onPatch} />);
@@ -567,6 +628,8 @@ describe('셀 배경색/여백(인라인 style)', () => {
     }
   });
 
+  // @scenario area=table_editor
+  // @effects table_editor_preview_td_reflects_background
   it('미리보기 td 가 셀 인라인 배경색을 반영', () => {
     const node: EditorNode = {
       type: 'basic', name: 'Table',
@@ -580,5 +643,21 @@ describe('셀 배경색/여백(인라인 style)', () => {
     render(<TableEditor {...baseProps} params={paramsFill} node={node} onPatchNode={vi.fn()} />);
     const cellTd = screen.getByTestId('g7le-table-cell-0-0') as HTMLTableCellElement;
     expect(cellTd.style.backgroundColor).toBe('rgb(254, 249, 195)');
+  });
+});
+
+describe('Table capability 선언(두 템플릿)', () => {
+  // @scenario area=table_editor
+  // @effects table_capability_declares_node_editor_kind_table_both_templates
+  it('sirsoft-basic 과 sirsoft-admin_basic 의 Table 이 nodeEditor kind=table 과 표 어휘 params 를 선언한다', () => {
+    for (const tpl of ['sirsoft-basic', 'sirsoft-admin_basic']) {
+      const caps = JSON.parse(
+        readFileSync(resolve(process.cwd(), `templates/_bundled/${tpl}/editor-spec/componentCapabilities.json`), 'utf8'),
+      );
+      expect(caps.Table?.nodeEditor, tpl).toMatchObject({
+        kind: 'table',
+        params: { rowContainer: 'Tbody', row: 'Tr', cell: 'Td' },
+      });
+    }
   });
 });

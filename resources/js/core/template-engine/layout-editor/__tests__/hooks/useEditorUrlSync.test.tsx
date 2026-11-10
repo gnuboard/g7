@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import {
   LayoutEditorProvider,
@@ -82,6 +82,8 @@ describe('useEditorUrlSync — 초기 ?route= 복원', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario area=url_restore
+  // @effects url_sync_initial_route_param_selects_route
   it('routeTree 로드 후 ?route= 매칭 노드로 SELECT_ROUTE', async () => {
     const { findByTestId } = renderHarness('?route=%2Fboard%2Flist');
     const el = await findByTestId('harness-state');
@@ -93,6 +95,8 @@ describe('useEditorUrlSync — 초기 ?route= 복원', () => {
     expect(el.textContent).toContain('"layoutName":"board/list"');
   });
 
+  // @scenario area=url_restore
+  // @effects url_sync_unmatched_or_missing_route_stays_null
   it('?route= 가 트리에 없는 path → SELECT_ROUTE 미발화 (selectedRoute null)', async () => {
     const { findByTestId } = renderHarness('?route=%2Fnonexistent');
     const el = await findByTestId('harness-state');
@@ -102,6 +106,8 @@ describe('useEditorUrlSync — 초기 ?route= 복원', () => {
     expect(el.textContent).toContain('"selected":null');
   });
 
+  // @scenario area=url_restore
+  // @effects url_sync_unmatched_or_missing_route_stays_null
   it('?route= 없음 → selectedRoute null 유지', async () => {
     const { findByTestId } = renderHarness('');
     const el = await findByTestId('harness-state');
@@ -118,6 +124,8 @@ describe('useEditorUrlSync — popstate 처리', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario area=url_popstate
+  // @effects url_sync_popstate_reapplies_route_from_url
   it('popstate 발생 시 새 URL 의 ?route= 로 갱신', async () => {
     const { findByTestId } = renderHarness('?route=%2Fboard%2Flist');
     const el = await findByTestId('harness-state');
@@ -141,6 +149,8 @@ describe('useEditorUrlSync — popstate 처리', () => {
     expect(el.textContent).toContain('"path":"/mypage"');
   });
 
+  // @scenario area=url_popstate
+  // @effects url_sync_popstate_reapplies_route_from_url
   it('popstate + ?route= 사라짐 → selectedRoute null', async () => {
     const { findByTestId } = renderHarness('?route=%2Fmypage');
     const el = await findByTestId('harness-state');
@@ -172,6 +182,8 @@ describe('useEditorUrlSync — URL 다이렉트 진입 시 returnRoute 합성', 
   // 반복 항목 편집 URL 다이렉트 진입(?edit=__iteration__/…&host=board/list) 시, 사용자가 트리에서
   // 라우트를 고른 적 없어 selectedRoute=null 이지만 host(layoutName)로부터 호스트 라우트를 찾아
   // returnRoute 를 합성해야 한다 — 그래야 편집 종료 시 "라우트 선택" 화면이 아니라 호스트로 복귀.
+  // @scenario area=url_direct_entry
+  // @effects url_sync_direct_edit_entry_builds_return_route
   it('?edit=__iteration__/…&host= 다이렉트 진입 → iteration_item 모드 + host 라우트 returnRoute 합성', async () => {
     const { findByTestId } = renderHarness(
       '?edit=__iteration__%2F2.children.5&host=board%2Flist',
@@ -185,6 +197,8 @@ describe('useEditorUrlSync — URL 다이렉트 진입 시 returnRoute 합성', 
     expect(el.textContent).toContain('"returnRoute":{"path":"/board/list","layoutName":"board/list"}');
   });
 
+  // @scenario area=url_direct_entry
+  // @effects url_sync_direct_edit_entry_builds_return_route
   it('확장 편집 URL 다이렉트 진입(?edit=__extension__/…&host=) → returnRoute 합성', async () => {
     const { findByTestId } = renderHarness('?edit=__extension__%2F9&host=board%2Flist');
     const el = await findByTestId('harness-state');
@@ -195,6 +209,8 @@ describe('useEditorUrlSync — URL 다이렉트 진입 시 returnRoute 합성', 
     expect(el.textContent).toContain('"returnRoute":{"path":"/board/list","layoutName":"board/list"}');
   });
 
+  // @scenario area=url_direct_entry
+  // @effects url_sync_direct_edit_entry_builds_return_route
   it('공통 레이아웃 편집 URL 다이렉트 진입(?edit=__base__/…&host=) → returnRoute 합성', async () => {
     const { findByTestId } = renderHarness('?edit=__base__%2F_user_base&host=mypage');
     const el = await findByTestId('harness-state');
@@ -207,6 +223,8 @@ describe('useEditorUrlSync — URL 다이렉트 진입 시 returnRoute 합성', 
 
   // host 가 트리의 어느 라우트와도 매칭 안 되면 returnRoute 는 null(reducer 가 selectedRoute 폴백) —
   // 회귀 없음(잘못된 host 로 진입 시 종전과 동일하게 종료 시 라우트 선택 화면).
+  // @scenario area=url_direct_entry
+  // @effects url_sync_unknown_host_return_route_null
   it('host 가 트리에 없으면 returnRoute=null (회귀 없음)', async () => {
     const { findByTestId } = renderHarness(
       '?edit=__iteration__%2F0&host=nonexistent%2Flayout',
@@ -217,5 +235,94 @@ describe('useEditorUrlSync — URL 다이렉트 진입 시 returnRoute 합성', 
     });
     expect(el.textContent).toContain('"editMode":"iteration_item"');
     expect(el.textContent).toContain('"returnRoute":null');
+  });
+});
+
+// 상태 → URL 보정(훅의 세 번째 effect). 머리말이 약속한 「selectedRoute 가 바뀌면 replaceState 로 URL
+// 보정」을 직접 잰다. 라우트 모드에서 별도 편집 모드로 들어갈 때만 pushState 로 history 항목을 남긴다.
+describe('useEditorUrlSync — 상태 변경 시 URL 보정', () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  /** SyncHarness 와 같지만 바깥에서 dispatch 를 쓸 수 있게 넘겨 준다. */
+  function DispatchHarness({
+    tree,
+    onDispatch,
+  }: {
+    tree: RouteTreeNode[];
+    onDispatch: (d: ReturnType<typeof useLayoutEditor>['dispatch']) => void;
+  }) {
+    const { dispatch } = useLayoutEditor();
+    useEditorUrlSync('sirsoft-basic');
+    React.useEffect(() => {
+      dispatch({ type: 'SET_ROUTE_TREE', tree });
+    }, [tree, dispatch]);
+    React.useEffect(() => {
+      onDispatch(dispatch);
+    }, [dispatch, onDispatch]);
+    return null;
+  }
+
+  async function mountWithDispatch(initialSearch: string) {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...window.location,
+        pathname: '/admin/layout-editor/sirsoft-basic',
+        search: initialSearch,
+        href: `http://localhost/admin/layout-editor/sirsoft-basic${initialSearch}`,
+      },
+    });
+    let dispatchRef: ReturnType<typeof useLayoutEditor>['dispatch'] | null = null;
+    render(
+      <LayoutEditorProvider templateIdentifier="sirsoft-basic" initialLocale="ko">
+        <DispatchHarness tree={SAMPLE_TREE} onDispatch={(d) => { dispatchRef = d; }} />
+      </LayoutEditorProvider>,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    return () => dispatchRef!;
+  }
+
+  // @scenario area=url_write
+  // @effects url_sync_route_change_replaces_url
+  it('선택 라우트가 바뀌면 replaceState 로 ?route= 를 보정한다(history 항목 추가 없음)', async () => {
+    const replaceSpy = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+    const pushSpy = vi.spyOn(window.history, 'pushState').mockImplementation(() => {});
+    const getDispatch = await mountWithDispatch('?route=%2Fboard%2Flist');
+    // 마운트 중 초기 복원의 기록 동작은 useEditorUrlSync.initialRestoreHistory.test.tsx 가 잰다.
+    // 여기서는 상태 변경 뒤의 호출만 잰다.
+    replaceSpy.mockClear();
+    pushSpy.mockClear();
+
+    await act(async () => {
+      getDispatch()({ type: 'SELECT_ROUTE', route: { path: '/mypage', layoutName: 'mypage' } });
+    });
+
+    expect(replaceSpy).toHaveBeenCalledTimes(1);
+    expect(replaceSpy.mock.calls[0][2]).toBe('/admin/layout-editor/sirsoft-basic?route=%2Fmypage');
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
+  // @scenario area=url_write
+  // @effects url_sync_edit_mode_entry_pushes_history
+  it('라우트 모드에서 별도 편집 모드로 들어가면 pushState 로 ?edit= 항목을 남긴다', async () => {
+    const replaceSpy = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+    const pushSpy = vi.spyOn(window.history, 'pushState').mockImplementation(() => {});
+    const getDispatch = await mountWithDispatch('?route=%2Fmypage');
+    replaceSpy.mockClear();
+    pushSpy.mockClear();
+
+    await act(async () => {
+      getDispatch()({ type: 'ENTER_BASE_EDIT', layoutName: '_user_base' });
+    });
+
+    expect(pushSpy).toHaveBeenCalledTimes(1);
+    // 복귀 라우트(/mypage)의 레이아웃 이름이 &host= 로 실려 새로고침 뒤에도 복귀 대상이 남는다.
+    expect(pushSpy.mock.calls[0][2]).toBe('/admin/layout-editor/sirsoft-basic?edit=__base__%2F_user_base&host=mypage');
+    expect(replaceSpy).not.toHaveBeenCalled();
   });
 });

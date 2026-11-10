@@ -76,7 +76,9 @@
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-`plugin.json` 의 assets 는 JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `sl` — 버튼 손 CSS `sl-*` 와 레이아웃용 접두 유틸리티 `sl:*`)입니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-social_login --production` 으로 다시 굽습니다. 테스트 결과 화면과 모의 동의 화면은 서버가 그리는 단독 HTML 입니다.
+`plugin.json` 의 assets 는 JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `sl` — 버튼 손 CSS `sl-*` 와 레이아웃용 접두 유틸리티 `sl:*`)입니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-social_login --production` 으로 다시 굽습니다. 화면 폭에 따라 클래스가 달라지는 자리는 Tailwind 반응형 접두(`sl:sm:py-2` 같은 꼴)를 쓰지 않고, 노드의 `<responsive on="…">` 구간(`desktop`, `640-` 등)에 그 폭에서 쓸 className 전체를 둡니다 — 가입 모달의 작은 동작 단추는 기본 `sl:py-3`(휴대폰 손가락 크기), `640-` 구간에서 `sl:py-2` 입니다. 테스트 결과 화면과 모의 동의 화면은 서버가 그리는 단독 HTML 입니다.
+
+폭 미디어를 품은 의미 클래스 사본(`sl-grid-3col-responsive`·`sl-grid-2col-responsive`·`sl-page-title`·`sl-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"` 에 `<responsive on="1024-" class="sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`sl:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 컴포넌트

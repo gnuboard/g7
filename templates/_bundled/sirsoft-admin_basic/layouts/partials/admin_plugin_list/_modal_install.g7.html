@@ -12,6 +12,7 @@
     <data-source id="pluginInstallPreview" label_key="$t:editor.data_source.pluginInstallPreview" type="api" endpoint="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/install-preview" :auth_required="true" initGlobal="installPreview"/>
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_install_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다) -->
         <img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
         <icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
       </span><span>$t:admin.plugins.modals.install_confirm|name={{_global.selectedPlugin.name}}</span></p>
@@ -166,7 +167,7 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isPluginInstalling}}">
         <on type="click">
           <close-modal/>
@@ -212,6 +213,6 @@
         <icon data-if="{{_global.isPluginInstalling}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isPluginInstalling ? '$t:admin.plugins.installing' : '$t:admin.plugins.actions.install'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

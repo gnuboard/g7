@@ -11,9 +11,9 @@
  * 실행하지 않으므로 어떤 주문도 처리되지 않는다. 이미 보유기간 기능을 켜 둔 사이트는 건드리지 않고
  * 건너뛴다. 설정을 바꾸는 spec 이라 직렬로 돈다(#42 — 확장 config 는 로컬 병렬).
  *
- * @scenario order_state=confirmed, toggle=on, mode=delete
+ * 조합 요약(마커 아님, 평문): order_state=confirmed, toggle=on, mode=delete
  *
- * @effects order_retention_settings_tab_binds_saved_keys, order_retention_settings_warn_per_mode, order_retention_preview_api_counts_while_off
+ * 효과 요약(마커 아님, 평문): order_retention_settings_tab_binds_saved_keys, order_retention_settings_warn_per_mode, order_retention_preview_api_counts_while_off
  */
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -200,7 +200,8 @@ test('기능이 꺼져 있어도 대상 주문 건수가 보이고 「대상 주
     await expect(firstLink).toHaveAttribute('target', '_blank');
     await expect(firstLink).toHaveAttribute('href', /^\/admin\/ecommerce\/orders\//);
 
-    await page.locator('#privacy_targets_footer button').click();
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {
     artisanSeed('playwright:seed-order-retention --teardown');

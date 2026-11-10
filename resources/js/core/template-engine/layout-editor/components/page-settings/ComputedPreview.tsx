@@ -19,7 +19,7 @@ import {
   evaluateComputedPreview,
   type ComputedPreviewType,
 } from '../../spec/computedRecipeEngine';
-import type { BindingContext } from '../../DataBindingEngine';
+import type { BindingContext } from '../../../DataBindingEngine';
 
 /** 화면효과 토글 신호 이벤트 — 캔버스가 수신해 그 계산값 켠 상태 미리보기 */
 export const COMPUTED_EFFECT_PREVIEW_EVENT = 'g7le:computed-effect-preview';

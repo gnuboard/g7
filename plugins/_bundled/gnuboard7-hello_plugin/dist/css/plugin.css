@@ -28,11 +28,13 @@
 /* ① 기본값 칸 — 의미(색·테두리·배경·글자) */
 @layer g7-extension {
     /* 설정 화면 바탕 */
-    .helloplugin-page {
+    .helloplugin-page,
+    .helloplugin-settings {
         background-color: oklch(98.5% 0.002 247.839); /* gray-50 */
     }
 
-    .helloplugin-page:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    .helloplugin-page:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])),
+    .helloplugin-settings:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
         background-color: oklch(21% 0.034 264.665); /* gray-900 */
     }
 
@@ -190,19 +192,32 @@
 
 /* ② 일반 칸 — 배치(여백·정렬·간격·위치) */
 
-/* 설정 화면 — 좁은 화면부터 넓은 화면까지 바깥 여백을 키운다 */
-.helloplugin-page {
+/* 설정 화면 — 좁은 화면부터 넓은 화면까지 바깥 여백을 키운다. 폭 구간은 레이아웃의 엔진 responsive 가 고르고
+   (640~1023px `helloplugin-settings--md`, 1024px 이상 `helloplugin-settings--lg`), 이 CSS 는 화면 폭을 보지 않는다.
+   `.helloplugin-page` 는 폭 미디어로 여백을 바꾸던 옛 클래스다. */
+.helloplugin-page,
+.helloplugin-settings {
     min-height: 100vh;
     padding: 1rem;
 }
 
+.helloplugin-settings--md {
+    padding: 1.5rem;
+}
+
+.helloplugin-settings--lg {
+    padding: 2rem;
+}
+
 @media (min-width: 40rem) {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     .helloplugin-page {
         padding: 1.5rem;
     }
 }
 
 @media (min-width: 64rem) {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     .helloplugin-page {
         padding: 2rem;
     }

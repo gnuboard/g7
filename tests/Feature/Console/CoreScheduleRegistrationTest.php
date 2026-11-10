@@ -74,6 +74,8 @@ class CoreScheduleRegistrationTest extends TestCase
             'analytics:prune' => '10 5 * * *',
             'auth:process-password-expiry' => '15 5 * * *',
             'identity:expire-challenges' => '0 * * * *',
+            // 썸네일 파생본 정리 (7.2.0 신규, #869) — 04:00~05:15 칸이 차 있어 05:20
+            'thumbnails:prune' => '20 5 * * *',
         ];
 
         $this->assertEqualsCanonicalizing(array_keys($expected), $this->gcCommandNames(), '카탈로그의 정리 예약 목록이 기대 표와 다릅니다.');

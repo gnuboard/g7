@@ -22,10 +22,8 @@ import type {
   ErrorCode,
   ErrorContext,
   ErrorHandlerConfig,
-  ErrorHandlingLevel,
   ErrorHandlingMap,
   ErrorHandlingResult,
-  ErrorHandlingSource,
   OnErrorHandler,
 } from '../types/ErrorHandling';
 import {

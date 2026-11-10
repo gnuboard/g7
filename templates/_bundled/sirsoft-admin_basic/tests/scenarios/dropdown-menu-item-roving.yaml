@@ -1,0 +1,17 @@
+feature: DropdownMenuItem — 메뉴 안에서는 로빙 포커스, 메뉴 밖에서는 Tab 으로 닿는다
+
+description: |
+  메뉴(role="menu") 안 항목은 화살표로 옮기는 자리라 Tab 순서에 들지 않는다(tabIndex -1, WAI-ARIA 메뉴 관례, #869 키보드 접근).
+  번들에는 메뉴 밖 사용처가 없지만 등록된 부품이라 사이트 레이아웃이 메뉴 밖에 둘 수 있어, 부모 메뉴가 있을 때만 -1 로 한다.
+  메뉴 안에서도 포커스를 받고 Enter 로 고르는 동작은 그대로다.
+
+# axis 의미:
+#   context — in_menu 부모가 role="menu", standalone 메뉴 밖.
+axes:
+  context: [in_menu, standalone]
+
+effects:
+  - menu_item_roving_tabindex   # 메뉴 안은 tabIndex -1(화살표 이동), 메뉴 밖은 tabIndex 0
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DropdownMenuItem.roving.test.tsx

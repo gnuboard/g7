@@ -1,0 +1,19 @@
+feature: 알림(Toast) 닫기 — 포커스를 알림 직전 자리로 돌린다(sirsoft-basic)
+
+description: |
+  닫기 단추로 알림을 닫으면 단추가 사라지며 포커스가 body 로 빠졌다(#869 키보드 접근). 알림이 뜨기 직전에 포커스가 있던
+  요소가 아직 문서에 있고 보이면 그리로, 없으면 본문 시작점(main, role=main, #main_content, h1 순)으로 돌린다. 닫는 순간
+  포커스가 그 알림 안에 있을 때만 돌리고, 알림 밖으로 옮겼으면 건드리지 않는다. 시간이 다 돼 사라질 때도 같고, 쌓인 알림은
+  각자 자기 직전 포커스를 기억한다.
+
+# axis 의미:
+#   case — previous 직전 요소로, landmark 직전 요소가 사라져 본문 시작점으로, moved_away 알림 밖으로 옮김(그대로),
+#          auto_dismiss 시간 만료, stacked 쌓인 알림.
+axes:
+  case: [previous, landmark, moved_away, auto_dismiss, stacked]
+
+effects:
+  - toast_close_returns_focus   # 알림을 닫으면 포커스가 알림 직전 요소나 본문 시작점으로 돌아간다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/Toast.focusReturn.test.tsx

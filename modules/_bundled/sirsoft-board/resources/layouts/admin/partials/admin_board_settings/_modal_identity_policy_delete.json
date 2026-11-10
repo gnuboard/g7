@@ -9,7 +9,118 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.identity.policies.delete_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "board_identity_policy_delete_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.boardIdentityPolicyDeleting}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "삭제 실행 — 성공하면 대상 id 까지 함께 비워, 창이 다시 열렸을 때 지워진 정책을 가리키지 않게 한다. 목록은 다시 읽어 사라진 줄을 반영한다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "boardIdentityPolicyDeleting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-board/admin/identity-policies/{{_global.boardIdentityPolicyDeleteId}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "boardIdentityPolicyDeleting": false,
+                                            "boardIdentityPolicyDeleteId": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.identity.policies.delete_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "boardIdentityPolicies"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "board_identity_policy_delete_modal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "boardIdentityPolicyDeleting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.identity.policies.delete_failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-600 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.boardIdentityPolicyDeleting || boardIdentityPolicies?.data?.abilities?.can_delete !== true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.boardIdentityPolicyDeleting}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "board-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.boardIdentityPolicyDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -19,124 +130,6 @@
                 "className": "board:text-gray-700 board:dark:text-gray-300"
             },
             "text": "$t:admin.identity.policies.delete_confirm"
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "board-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "board_identity_policy_delete_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.boardIdentityPolicyDeleting}}"
-                    },
-                    "text": "$t:common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "삭제 실행 — 성공하면 대상 id 까지 함께 비워, 창이 다시 열렸을 때 지워진 정책을 가리키지 않게 한다. 목록은 다시 읽어 사라진 줄을 반영한다",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "boardIdentityPolicyDeleting": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-board/admin/identity-policies/{{_global.boardIdentityPolicyDeleteId}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "DELETE"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "boardIdentityPolicyDeleting": false,
-                                                "boardIdentityPolicyDeleteId": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.identity.policies.delete_success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "boardIdentityPolicies"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal",
-                                            "target": "board_identity_policy_delete_modal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "boardIdentityPolicyDeleting": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.identity.policies.delete_failed'}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-600 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.boardIdentityPolicyDeleting || boardIdentityPolicies?.data?.abilities?.can_delete !== true}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.boardIdentityPolicyDeleting}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "board-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.boardIdentityPolicyDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
-                        }
-                    ]
-                }
-            ]
         }
     ]
 }

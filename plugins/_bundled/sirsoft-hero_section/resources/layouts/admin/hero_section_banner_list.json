@@ -190,8 +190,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "hs:text-2xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "hs-page-title"
+                                            "className": "hs:text-xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.title"
                                     },
@@ -385,8 +392,15 @@
                         "id": "top_cards",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "hs:grid hs:grid-cols-3 hs:gap-4 hs:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "hs:grid hs:grid-cols-1 hs:lg:grid-cols-3 hs:gap-4 hs:mb-6"
+                            "className": "hs:grid hs:grid-cols-1 hs:gap-4 hs:mb-6"
                         },
                         "children": [
                             {
@@ -394,9 +408,16 @@
                                 "id": "preview_card",
                                 "type": "basic",
                                 "name": "Section",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
+                                        }
+                                    }
+                                },
                                 "props": {
                                     "aria-labelledby": "hero_preview_heading",
-                                    "className": "hs:lg:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
+                                    "className": "hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
                                 },
                                 "children": [
                                     {
@@ -1708,11 +1729,13 @@
                                     "width": "120px",
                                     "cellChildren": [
                                         {
+                                            "comment": "배너는 가로로 긴 이미지(3:1 안팎) — 이 플러그인 확장 규격 sirsoft-hero_section.list(가로 240, 가로만 맞춤) 한 장. 정사각 자르기(sm)는 배너 가운데 1/3 만 남긴다",
                                             "type": "basic",
                                             "name": "Img",
                                             "if": "{{!!row.thumbnail}}",
                                             "props": {
-                                                "src": "{{row.thumbnail?.url}}",
+                                                "src": "{{row.thumbnail?.url | thumb('sirsoft-hero_section.list')}}",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "hs:w-24 hs:h-8 hs:object-cover hs:rounded hs:border hs:border-gray-200 hs:dark:border-gray-700",
                                                 "loading": "lazy"
@@ -1887,7 +1910,123 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-hero_section.admin.delete.title",
-                "size": "medium"
+                "size": "medium",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "hs-btn hs-btn-secondary",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "삭제 확정 — 처리 중 잠금. 성공하면 대상·선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeleting": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-hero_section/admin/banners/{{_global.targetBanner?.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false,
+                                                    "targetBanner": null,
+                                                    "bulkSelectedIds": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "banners"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "preview"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isDeleting}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "hs-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1931,129 +2070,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "hs-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "hs-btn hs-btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "삭제 확정 — 처리 중 잠금. 성공하면 대상·선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeleting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-hero_section/admin/banners/{{_global.targetBanner?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false,
-                                                        "targetBanner": null,
-                                                        "bulkSelectedIds": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{response.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "banners"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "preview"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isDeleting}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "hs-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -2064,7 +2080,125 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-hero_section.admin.delete.bulk_title",
-                "size": "medium"
+                "size": "medium",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "hs-btn hs-btn-secondary",
+                            "disabled": "{{_global.isBulkWorking}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "일괄 삭제 확정 — 고른 배너 전부를 한 번에 지우고, 성공하면 선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isBulkWorking": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-hero_section/admin/banners/bulk",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE",
+                                            "body": {
+                                                "ids": "{{_global.bulkSelectedIds}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkWorking": false,
+                                                    "bulkSelectedIds": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "banners"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "preview"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkWorking": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50",
+                            "disabled": "{{_global.isBulkWorking}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isBulkWorking}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "hs-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -2108,131 +2242,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "hs-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "hs-btn hs-btn-secondary",
-                                "disabled": "{{_global.isBulkWorking}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "일괄 삭제 확정 — 고른 배너 전부를 한 번에 지우고, 성공하면 선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isBulkWorking": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-hero_section/admin/banners/bulk",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE",
-                                                "body": {
-                                                    "ids": "{{_global.bulkSelectedIds}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkWorking": false,
-                                                        "bulkSelectedIds": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{response.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "banners"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "preview"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkWorking": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50",
-                                "disabled": "{{_global.isBulkWorking}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isBulkWorking}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "hs-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -2265,7 +2274,171 @@
             ],
             "props": {
                 "title": "$t:sirsoft-hero_section.admin.reorder.title",
-                "size": "md"
+                "size": "md",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "취소 — 창을 닫고 순서 작업본·원본·오류를 비운다(저장하지 않음)",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "hero_reorder_modal"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "reorderItems": null,
+                                            "reorderOriginal": null,
+                                            "reorderError": null
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "hs-btn hs-btn-secondary",
+                            "disabled": "{{_global.reorderSaving}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "reorderSaving": true,
+                                            "reorderError": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-hero_section/admin/banners/order",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PUT",
+                                            "body": {
+                                                "position": "{{_computed.currentPosition}}",
+                                                "ids": "{{(_global.reorderItems ?? []).map(i => i.id)}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "reorderSaving": false,
+                                                    "reorderItems": null,
+                                                    "reorderOriginal": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "target": "hero_reorder_modal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "banners"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "preview"
+                                                }
+                                            }
+                                        ],
+                                        "onError": {
+                                            "handler": "conditions",
+                                            "conditions": [
+                                                {
+                                                    "if": "{{error.status === 422}}",
+                                                    "then": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "reorderSaving": false,
+                                                            "reorderError": "{{error.errors?.ids?.[0] ?? error.message}}"
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "then": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "reorderSaving": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "data-testid": "hero-reorder-save",
+                            "type": "button",
+                            "lockRepeatClick": true,
+                            "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-2",
+                            "disabled": "{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i => i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.reorderSaving}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "hs-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-hero_section.admin.reorder.save"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -2315,11 +2488,18 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "hs:flex hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
                                                     "data-drag-handle": true,
                                                     "aria-hidden": "true",
                                                     "title": "{{$t('sirsoft-hero_section.admin.reorder.drag_handle', { name: row.title })}}",
-                                                    "className": "hs:hidden hs-hidden hs:md:flex hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300"
+                                                    "className": "hs:hidden hs-hidden hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300"
                                                 },
                                                 "children": [
                                                     {
@@ -2341,11 +2521,14 @@
                                                 "text": "{{row._idx + 1}}"
                                             },
                                             {
+                                                "comment": "배너는 가로로 긴 이미지(3:1 안팎) — 이 플러그인 확장 규격 sirsoft-hero_section.list(가로 240, 가로만 맞춤) 한 장. 정사각 자르기(sm)는 배너 가운데 1/3 만 남긴다",
                                                 "type": "basic",
                                                 "name": "Img",
                                                 "if": "{{!!row.thumbnail}}",
                                                 "props": {
-                                                    "src": "{{row.thumbnail}}",
+                                                    "src": "{{row.thumbnail | thumb('sirsoft-hero_section.list')}}",
+                                                    "loading": "lazy",
+                                                    "decoding": "async",
                                                     "alt": "",
                                                     "className": "hs:w-16 hs:h-6 hs:object-cover hs:rounded"
                                                 }
@@ -2463,177 +2646,6 @@
                                 "className": "hs:rounded-lg hs:border hs:border-red-200 hs:dark:border-red-800 hs:bg-red-50 hs:dark:bg-red-900/20 hs:px-4 hs:py-3 hs:text-sm hs:text-red-700 hs:dark:text-red-300"
                             },
                             "text": "{{_global.reorderError}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "hs-modal-footer-buttons"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "취소 — 창을 닫고 순서 작업본·원본·오류를 비운다(저장하지 않음)",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "hero_reorder_modal"
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reorderItems": null,
-                                                        "reorderOriginal": null,
-                                                        "reorderError": null
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "hs-btn hs-btn-secondary",
-                                        "disabled": "{{_global.reorderSaving}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:common.cancel"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reorderSaving": true,
-                                                        "reorderError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "/api/plugins/sirsoft-hero_section/admin/banners/order",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "PUT",
-                                                        "body": {
-                                                            "position": "{{_computed.currentPosition}}",
-                                                            "ids": "{{(_global.reorderItems ?? []).map(i => i.id)}}"
-                                                        }
-                                                    },
-                                                    "onSuccess": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "reorderSaving": false,
-                                                                "reorderItems": null,
-                                                                "reorderOriginal": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "closeModal",
-                                                            "target": "hero_reorder_modal"
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "success",
-                                                                "message": "{{response.message}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "banners"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "preview"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": {
-                                                        "handler": "conditions",
-                                                        "conditions": [
-                                                            {
-                                                                "if": "{{error.status === 422}}",
-                                                                "then": {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "reorderSaving": false,
-                                                                        "reorderError": "{{error.errors?.ids?.[0] ?? error.message}}"
-                                                                    }
-                                                                }
-                                                            },
-                                                            {
-                                                                "then": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "reorderSaving": false
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message}}"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ]
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "data-testid": "hero-reorder-save",
-                                        "type": "button",
-                                        "lockRepeatClick": true,
-                                        "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-2",
-                                        "disabled": "{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i => i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{_global.reorderSaving}}",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "hs-spinner-sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-hero_section.admin.reorder.save"
-                                        }
-                                    ]
-                                }
-                            ]
                         }
                     ]
                 }

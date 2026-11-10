@@ -8,7 +8,8 @@
   <div data-ref="country_basic_fields_section" data-if="{{_computed.activeCountrySetting}}" class="ecommerce-admin-card">
     <h2 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_basic</h2>
     <div data-ref="country_basic_content">
-      <div data-ref="country_basic_fields" class="ecommerce-grid-2col-responsive">
+      <div data-ref="country_basic_fields" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+        <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
         <div data-ref="field_country_shipping_method">
           <div>
             <label class="ecommerce-form-label">
@@ -34,7 +35,8 @@
           </div>
         </div>
       </div>
-      <div data-ref="country_currency_fields" class="ecommerce-grid-2col-responsive">
+      <div data-ref="country_currency_fields" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+        <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
         <div data-ref="field_country_currency">
           <div>
             <label class="ecommerce-form-label">

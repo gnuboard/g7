@@ -58,8 +58,15 @@
                     "id": "page_header",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "flex gap-2 flex-row items-center justify-between mb-6"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6"
+                        "className": "flex flex-col gap-2 mb-6"
                     },
                     "children": [
                         {
@@ -216,14 +223,28 @@
                     "id": "filter_card",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex gap-2 flex-row items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center"
+                        "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2"
                     },
                     "children": [
                         {
                             "comment": "필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다.",
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "범위 필터 — 빈 값은 쿼리에서 빼고 페이지를 1로 되돌린다.\n                 대기 표시는 표 카드에만 걸고, 이동 뒤 이 구획 머리로 스크롤을 되돌린다.",
@@ -254,7 +275,7 @@
                                 "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
-                                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
                                 "options": [
                                     {
                                         "value": "",
@@ -278,6 +299,13 @@
                         {
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "출처 필터(코어/모듈/플러그인/운영자) — 범위 필터와 같은 형태다.",
@@ -308,7 +336,7 @@
                                 "aria-label": "$t:admin.identity.policies.col.source_type",
                                 "autoBinding": false,
                                 "value": "{{query.source_type ?? ''}}",
-                                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
+                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
                                 "options": [
                                     {
                                         "value": "",
@@ -337,6 +365,13 @@
                             "comment": "검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다.",
                             "type": "basic",
                             "name": "Input",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "input flex-1 min-w-[200px]"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "검색어는 로컬 상태에만 담아 둔다(자동바인딩을 끈 대신 직접 받는다) — 실제 조회는 아래 Enter 블록이 이 값을 쿼리로 실을 때 일어난다.",
@@ -378,7 +413,7 @@
                                 "autoBinding": false,
                                 "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
-                                "className": "input md:flex-1 md:min-w-[200px]"
+                                "className": "input"
                             }
                         },
                         {

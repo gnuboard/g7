@@ -7,7 +7,7 @@
     <div data-if="{{!!_global.qnaProductImage || !!_global.qnaProductName}}" class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4 border border-gray-100 dark:border-gray-600">
       <!-- 상품 썸네일 -->
       <div data-if="{{!!_global.qnaProductImage}}" class="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600">
-        <img src="{{_global.qnaProductImage}}" alt="{{_global.qnaProductName ?? ''}}" class="w-full h-full object-cover"/>
+        <img src="{{_global.qnaProductImage}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{_global.qnaProductName ?? ''}}" class="w-full h-full object-cover"/>
       </div>
       <!-- 이미지 없을 때 아이콘 placeholder -->
       <div data-if="{{!_global.qnaProductImage &amp;&amp; !!_global.qnaProductName}}" class="shrink-0 w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-600 flex items-center justify-center">

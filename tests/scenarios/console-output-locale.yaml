@@ -8,11 +8,13 @@ description: |
   함께 확인해, 번역이 빠져 폴백 ko 가 나오면 실패한다.
   그 밖의 운영자 명령(확장 빌드·IP 접근 제한·방문 기록 익명화 등)도 ja·en 으로 출력하고, 코어·번들 확장의 콘솔 명령과 시더가
   쓰는 번역 키는 ko·en 원본과 번들 ja 언어팩에 모두 있으며 치환 자리가 같다.
+  이미지 썸네일 실측 시더(개발 DB 전용 샘플 시더)는 옵트인 없이 부르면 데이터에 손대기 전에 사이트 언어의 사유로 멈추고,
+  표 머리글과 정리 건수 이름도 번역 키에서 온다.
 
 coverage_strategy: full
 
 axes:
-  surface: [refresh_layout_commands, layout_markup_commands, progress_bar, boot_hook_cache_warning, operator_commands, console_translation_catalog]
+  surface: [refresh_layout_commands, layout_markup_commands, progress_bar, boot_hook_cache_warning, operator_commands, console_translation_catalog, thumbnail_measure_seeders]
 
 effects:
   - command_output_uses_site_locale
@@ -23,3 +25,4 @@ test_files:
   - tests/Feature/Console/ConsoleOutputJaLocaleTest.php
   - tests/Feature/Console/ConsoleOutputOperatorLocaleTest.php
   - tests/Feature/Console/ConsoleOutputTranslationCatalogTest.php
+  - tests/Feature/Seeders/ThumbnailMeasureSeederOutputTest.php

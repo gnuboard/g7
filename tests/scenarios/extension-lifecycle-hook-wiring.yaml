@@ -13,7 +13,9 @@ description: |
     - update 는 "업데이트할 것 없음" 조기 리턴에서도 정규 훅을 발화한다(구훅은 발화하지 않음).
     - 구훅 9건은 identifier 1개로 계속 발화한다(deprecated, 사외 확장 호환).
     - 제거 훅의 정보는 파괴 단계 이전에 캡처한다. 플러그인 제거만 인자 순서가 (id, deleteData, result).
-    - 큐 재시작 리스너는 모듈·플러그인의 설치·활성화·업데이트에만 반응하고 동기 실행한다.
+    - 큐 재시작 리스너는 세 확장 종류(모듈·플러그인·템플릿)의 설치·활성화·업데이트·제거에 반응하고 동기 실행한다(제거와 템플릿은 설계 확정 2026-11-08).
+    - 켜진 확장을 제거하면 진행 중 상태 가드·의존 확장 검사(템플릿은 서비스의 마지막 활성 템플릿 거절)를 지난 뒤
+      비활성화(직전·완료 훅 포함)를 먼저 거친다. 비활성화는 제거 트랜잭션 밖이라 제거가 롤백돼도 꺼진 채 남는다(설계 확정 2026-11-08).
     - 죽은 구독 2건(단수형 훅 이름)과 템플릿 언어팩 오결선(after_update → after_version_update)을 교정한다.
 
 axes:
@@ -36,11 +38,18 @@ effects:
   - template_activate_filter_runs_once_after_before_hook
   - no_lifecycle_hook_fires_on_failure_path
   - uninstall_blocked_while_active_dependents_exist
+  - active_uninstall_deactivates_first_with_hooks        # before_uninstall → before_deactivate → after_deactivate → after_uninstall
+  - uninstall_guards_run_before_deactivation             # 진행 중 상태·의존 확장·마지막 활성 템플릿에 막히면 끄지 않는다
+  - update_restores_missing_active_directory_from_bundled  # 행은 있고 활성 디렉토리만 없으면 번들 업데이트가 원본을 복사해 되살린다
+  - uninstall_rollback_keeps_extension_deactivated       # 제거 트랜잭션이 롤백되면 행은 남고 꺼진 상태다
   # 소비자
   - queue_restart_listener_subscribes_code_intake_events_sync
   - queue_restart_runs_on_install_or_activate
   - queue_restart_runs_on_successful_update
   - queue_restart_skipped_when_update_not_successful
+  - queue_restart_runs_on_template_install_activate_update  # 템플릿 활성화 훅은 정보 배열 하나, 버전 업데이트는 success 일 때만
+  - queue_restart_runs_on_uninstall                      # 모듈·플러그인·템플릿 제거 완료
+  - queue_restart_skipped_when_uninstall_failed          # 플러그인 제거 완료 훅은 실패에도 발화 — 결과가 true 일 때만
   - queue_restart_failure_does_not_break_extension_operation
   - dashboard_listeners_subscribe_plural_hook_names
   - template_language_pack_syncs_on_version_update_with_real_version

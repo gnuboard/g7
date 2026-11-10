@@ -16,6 +16,7 @@ use App\Exceptions\TemplateNotFoundException;
 use App\Exceptions\TemplateOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Helpers\TemplateLastActiveGuard;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Template\TemplateSettingsSchema;
@@ -601,8 +602,9 @@ class TemplateService
      * 것으로만 바꾸게 한다 — API 도 같은 조건으로 받아야 화면과 서버의 판정이 어긋나지 않는다.
      * 비활성 템플릿이나, 같은 유형에 다른 활성 템플릿이 남는 경우는 통과한다.
      *
-     * 관리자 API 경로에만 적용한다. 코어 비호환 자동 비활성화(`CoreServiceProvider`)와 Artisan
-     * 커맨드는 매니저를 직접 호출하므로 이 가드를 거치지 않는다.
+     * 판정은 `TemplateLastActiveGuard` 한 곳이고 `template:uninstall` 명령도 같은 판정으로 거절한다. 코어 비호환 자동
+     * 비활성화는 매니저를 직접 호출하므로 거치지 않는다. `template:deactivate` 명령도 매니저를 직접 부르며, 끈 뒤 「활성
+     * 템플릿 없음」 경고를 낸다.
      *
      * @param  Template  $template  대상 템플릿 레코드
      * @param  string  $messageKey  거절 메시지 번역 키 (`:type` 치환)
@@ -612,19 +614,12 @@ class TemplateService
      */
     private function assertNotLastActiveOfType(Template $template, string $messageKey): void
     {
-        if ($template->status !== ExtensionStatus::Active->value) {
-            return;
-        }
-
-        $othersActive = $this->templateRepository->getActiveByType($template->type)
-            ->contains(fn (Template $active) => $active->identifier !== $template->identifier);
-
-        if ($othersActive) {
+        if (! TemplateLastActiveGuard::isLastActiveOfType($template, $this->templateRepository)) {
             return;
         }
 
         throw ValidationException::withMessages([
-            'template_name' => [__($messageKey, ['type' => __('templates.types.'.$template->type)])],
+            'template_name' => [TemplateLastActiveGuard::message($template, $messageKey)],
         ]);
     }
 

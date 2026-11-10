@@ -85,16 +85,40 @@
             "id": "commerce_section_wrapper",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "tablet": {
+                    "props": {
+                        "className": "ecommerce:mb-6"
+                    }
+                },
+                "desktop": {
+                    "props": {
+                        "className": "ecommerce:mb-8"
+                    }
+                }
+            },
             "props": {
-                "className": "ecommerce:mb-4 ecommerce:md:mb-6 ecommerce:lg:mb-8"
+                "className": "ecommerce:mb-4"
             },
             "children": [
                 {
                     "id": "commerce_section_grid",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "tablet": {
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                            }
+                        },
+                        "desktop": {
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-5"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:lg:grid-cols-4 ecommerce:gap-3 ecommerce:md:gap-4 ecommerce:lg:gap-5"
+                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -105,8 +129,20 @@
                                 "enabled": true,
                                 "data_sources": "commerce_overview"
                             },
+                            "responsive": {
+                                "tablet": {
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-2"
+                                    }
+                                },
+                                "desktop": {
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:col-span-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:md:col-span-2 ecommerce:lg:col-span-4"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2"
                             },
                             "children": [
                                 {
@@ -253,16 +289,30 @@
                                     "commerce_sales_graph"
                                 ]
                             },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-6 ecommerce:rounded-2xl ecommerce:col-span-2 ecommerce:h-full ecommerce:flex ecommerce:flex-col"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:md:p-6 ecommerce:rounded-xl ecommerce:md:rounded-2xl ecommerce:md:col-span-2 ecommerce:h-full ecommerce:flex ecommerce:flex-col"
+                                "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"
                             },
                             "children": [
                                 {
                                     "id": "sales_graph_header",
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center ecommerce:md:justify-between ecommerce:mb-4 ecommerce:md:mb-6"
+                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:mb-4"
                                     },
                                     "children": [
                                         {
@@ -344,8 +394,15 @@
                                     "id": "sales_graph_stats",
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:flex ecommerce:gap-8 ecommerce:mb-6"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce:flex ecommerce:gap-4 ecommerce:md:gap-8 ecommerce:mb-4 ecommerce:md:mb-6"
+                                        "className": "ecommerce:flex ecommerce:gap-4 ecommerce:mb-4"
                                     },
                                     "children": [
                                         {
@@ -374,8 +431,15 @@
                                                             "id": "total_quantity_value",
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "responsive": {
+                                                                "768-": {
+                                                                    "props": {
+                                                                        "className": "ecommerce:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "ecommerce:text-lg ecommerce:md:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"
+                                                                "className": "ecommerce:text-lg ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"
                                                             },
                                                             "text": "{{commerce_sales_graph?.data?.total_quantity ?? 0 | number}}"
                                                         },
@@ -418,8 +482,15 @@
                                                             "id": "total_sales_value",
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "responsive": {
+                                                                "768-": {
+                                                                    "props": {
+                                                                        "className": "ecommerce:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "ecommerce:text-lg ecommerce:md:text-2xl ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"
+                                                                "className": "ecommerce:text-lg ecommerce:font-bold ecommerce:text-slate-900 ecommerce:dark:text-white"
                                                             },
                                                             "text": "₩ {{commerce_sales_graph?.data?.total_sales ?? 0 | number}}"
                                                         },
@@ -470,8 +541,15 @@
                                 "enabled": true,
                                 "data_sources": "commerce_recent_reviews"
                             },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-6 ecommerce:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:md:p-6 ecommerce:rounded-xl ecommerce:md:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"
+                                "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"
                             },
                             "children": [
                                 {
@@ -611,8 +689,15 @@
                                 "enabled": true,
                                 "data_sources": "commerce_pending_inquiries"
                             },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-6 ecommerce:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:md:p-6 ecommerce:rounded-xl ecommerce:md:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"
+                                "className": "ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"
                             },
                             "children": [
                                 {

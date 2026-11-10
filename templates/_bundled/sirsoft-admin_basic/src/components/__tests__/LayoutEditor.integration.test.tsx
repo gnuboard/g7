@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { axe } from 'vitest-axe';
 import { ThreeColumnLayout } from '../layout/ThreeColumnLayout';
 import { LayoutEditorHeader } from '../composite/LayoutEditorHeader';
 import { LayoutFileList, LayoutFileItem } from '../composite/LayoutFileList';
@@ -133,7 +132,7 @@ const IntegratedLayoutEditor: React.FC = () => {
         centerSlot={
           <CodeEditor
             value={editorContent}
-            onChange={(value) => setEditorContent(value || '')}
+            onChange={(event) => setEditorContent(event.target.value)}
             language="json"
           />
         }
@@ -180,11 +179,17 @@ describe('레이아웃 에디터 통합 테스트', () => {
         expect(value).toContain('2');
       });
 
-      // 4. 저장 버튼 클릭
+      // 4. 직접 편집 — CodeEditor 는 { target: { value } } 모양으로 알리므로 고친 글이 그대로 남아야 한다
+      fireEvent.change(screen.getByTestId('editor-textarea'), { target: { value: '{"edited": true}' } });
+      await waitFor(() => {
+        expect((screen.getByTestId('editor-textarea') as HTMLTextAreaElement).value).toBe('{"edited": true}');
+      });
+
+      // 5. 저장 버튼 클릭
       const saveButton = screen.getByRole('button', { name: /저장/i });
       await user.click(saveButton);
 
-      // 5. 성공 알림 확인
+      // 6. 성공 알림 확인
       await waitFor(() => {
         expect(screen.getByText('레이아웃이 저장되었습니다.')).toBeInTheDocument();
       });

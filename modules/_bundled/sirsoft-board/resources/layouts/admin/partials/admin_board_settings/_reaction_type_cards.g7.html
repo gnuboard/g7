@@ -8,7 +8,8 @@
     <div data-testid="reaction-type-row-m-{{row.code}}" data-each="row, rIdx in (_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => ({...r, _idx: i}))" class="board-excel-card board:mb-3">
       <div class="board-excel-card-header">
         <div class="board-flex-center board:gap-2 board:min-w-0">
-          <img data-testid="reaction-type-icon-m-{{row.code}}" data-if="{{!!row.icon_url}}" src="{{row.icon_url}}" alt="" class="board:w-5 board:h-5 board:object-contain board:shrink-0"/>
+          <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+          <img data-testid="reaction-type-icon-m-{{row.code}}" data-if="{{!!row.icon_url}}" src="{{row.icon_url}}" loading="lazy" decoding="async" alt="" class="board:w-5 board:h-5 board:object-contain board:shrink-0"/>
           <icon data-if="{{!row.icon_url}}" name="{{row.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
           <div class="board:min-w-0">
             <div class="board-excel-card-title board:font-mono">{{row.code}}</div>

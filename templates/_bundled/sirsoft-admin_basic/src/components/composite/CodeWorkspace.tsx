@@ -9,6 +9,7 @@ import { FileTabs, FileTabItem } from './FileTabs';
 import { useCodeEditorShortcuts, CodeShortcutHandlers } from '../../hooks/useCodeEditorShortcuts';
 import { useFileDrafts } from '../../hooks/useFileDrafts';
 import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { classAtWidth } from '../layout/widthBreakpoints';
 import {
   CODE_EDITOR_SHORTCUTS,
   CODE_SHORTCUT_GROUP_LABEL,
@@ -1165,7 +1166,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           onClick={toggleWordWrap}
         >
           <Icon name="fa-solid fa-arrow-turn-down" className="text-[11px]" />
-          <Span className="hidden sm:inline">{t('admin.templates.layout_edit.wordwrap.label')}</Span>
+          <Span className={classAtWidth(renderWidth, 'sm', 'inline', 'hidden')}>{t('admin.templates.layout_edit.wordwrap.label')}</Span>
         </Button>
         <Button
           type="button"
@@ -1348,7 +1349,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
                 <Icon name="fa-solid fa-xmark" className="text-xs" />
               </Button>
             </Div>
-            <Div className="grid grid-cols-1 sm:grid-cols-2 gap-x-7 px-5 py-4">
+            <Div className={`grid ${classAtWidth(renderWidth, 'sm', 'grid-cols-2', 'grid-cols-1')} gap-x-7 px-5 py-4`}>
               {CODE_SHORTCUT_GROUP_ORDER.map((group) => {
                 const specs = CODE_EDITOR_SHORTCUTS.filter((spec) => spec.group === group);
                 const owned = EDITOR_OWNED_SHORTCUTS.filter((entry) => entry.group === group);

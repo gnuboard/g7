@@ -61,40 +61,6 @@
         <div class="alert-success">
           <p class="text-success-soft">$t:admin.settings.info.update_available_message</p>
         </div>
-        <div class="flex gap-2 justify-end">
-          <button type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" disabled="{{_local.loadingChangelog}}">
-            <on type="click">
-              <!-- 변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로
-     창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고
-     이력 창이 그것을 `$parent` 로 읽는다.
-     같은 [변경사항 보기]가 정보 탭·업데이트 탭·이 결과 창 셋에 있어 세 자리 모두 같은 진행 표시를 건다(하나만 표시가 없으면
-     운영자가 그 자리에서만 다시 누른다). 이 창은 포털이라 `target: 'local'` 은 창 자신의 _local 이고, 진행 플래그도
-     부모의 같은 이름과 섞이지 않는다. -->
-              <sequence>
-                <set-state target="local" :loadingChangelog="true"/>
-                <api-call :auth_required="true" target="/api/admin/core-update/changelog" method="GET">
-                  <success>
-                    <set-state target="local" :loadingChangelog="false" coreChangelog="{{result.data.changelog ?? []}}"/>
-                    <open-modal target="core_changelog_modal"/>
-                  </success>
-                  <fail>
-                    <set-state target="local" :loadingChangelog="false" :coreChangelog="[]"/>
-                    <open-modal target="core_changelog_modal"/>
-                  </fail>
-                  <query from_version="{{$parent._local.coreUpdateInfo?.current_version ?? ''}}" to_version="{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"/>
-                </api-call>
-              </sequence>
-            </on>
-            <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="spinner-sm"/>
-            <span>$t:admin.settings.info.view_changelog</span>
-          </button>
-          <button type="button" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-            <on type="click">
-              <open-modal target="core_update_guide_modal"/>
-            </on>
-            $t:admin.settings.info.how_to_update
-          </button>
-        </div>
       </div>
       <div data-ref="no_update_section" data-if="{{!$parent._local.coreUpdateInfo?.update_available}}" class="">
         <div class="alert-info">
@@ -102,5 +68,40 @@
         </div>
       </div>
     </div>
+    <footer>
+      <!-- 변경 이력 보기와 업데이트 단추는 새 버전이 있을 때만 그린다. 둘 다 빠지면 Modal 이 빈 바닥 줄을 숨긴다(#869 C1) -->
+      <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors" disabled="{{_local.loadingChangelog}}">
+        <on type="click">
+          <!-- 변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로
+ 창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고
+ 이력 창이 그것을 `$parent` 로 읽는다.
+ 같은 [변경사항 보기]가 정보 탭·업데이트 탭·이 결과 창 셋에 있어 세 자리 모두 같은 진행 표시를 건다(하나만 표시가 없으면
+ 운영자가 그 자리에서만 다시 누른다). 이 창은 포털이라 `target: 'local'` 은 창 자신의 _local 이고, 진행 플래그도
+ 부모의 같은 이름과 섞이지 않는다. -->
+          <sequence>
+            <set-state target="local" :loadingChangelog="true"/>
+            <api-call :auth_required="true" target="/api/admin/core-update/changelog" method="GET">
+              <success>
+                <set-state target="local" :loadingChangelog="false" coreChangelog="{{result.data.changelog ?? []}}"/>
+                <open-modal target="core_changelog_modal"/>
+              </success>
+              <fail>
+                <set-state target="local" :loadingChangelog="false" :coreChangelog="[]"/>
+                <open-modal target="core_changelog_modal"/>
+              </fail>
+              <query from_version="{{$parent._local.coreUpdateInfo?.current_version ?? ''}}" to_version="{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="spinner-sm"/>
+        <span>$t:admin.settings.info.view_changelog</span>
+      </button>
+      <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+        <on type="click">
+          <open-modal target="core_update_guide_modal"/>
+        </on>
+        $t:admin.settings.info.how_to_update
+      </button>
+    </footer>
   </modal>
 </partial>

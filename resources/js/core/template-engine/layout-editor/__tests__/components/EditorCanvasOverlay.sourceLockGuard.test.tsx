@@ -78,6 +78,11 @@ function buildDocCtx(initialComponents: EditorNode[]): {
     error: null,
     isDirty: false,
     saveSuccessCounter: 0,
+    patchDocumentRaw: () => {},
+    dirtyKeys: new Set<string>(),
+    dirtyLayoutNames: new Set<string>(),
+    invalidateCurrentCache: () => {},
+    reloadCounter: 0,
     reload: async () => {},
     patchLayout: (patcher) => {
       patchSpy(patcher);

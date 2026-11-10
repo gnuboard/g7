@@ -25,7 +25,7 @@ function findById(node: any, id: string): any | null {
   if (node.id === id || node.id === `${id}_{{btIdx}}`) return node;
 
   if (node.children && Array.isArray(node.children)) {
-    for (const child of node.children) {
+    for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
       const found = findById(child, id);
       if (found) return found;
     }
@@ -57,7 +57,7 @@ function findByName(node: any, name: string): any[] {
   }
 
   if (node.children && Array.isArray(node.children)) {
-    for (const child of node.children) {
+    for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
       results.push(...findByName(child, name));
     }
   }
@@ -113,7 +113,7 @@ function findActions(node: any, handlerName: string): any[] {
   }
 
   if (node.children && Array.isArray(node.children)) {
-    for (const child of node.children) {
+    for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
       results.push(...findActions(child, handlerName));
     }
   }

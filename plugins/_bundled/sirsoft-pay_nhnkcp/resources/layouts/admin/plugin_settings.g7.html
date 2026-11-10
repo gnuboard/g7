@@ -32,7 +32,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paynhnkcp:p-4 paynhnkcp:sm:p-6 paynhnkcp:lg:p-8 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paynhnkcp:p-4 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900">
+      <responsive on="640-1023" class="paynhnkcp:p-6 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"/>
+      <responsive on="1024-" class="paynhnkcp:p-8 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nhnkcp.settings.title" description="$t:sirsoft-pay_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-nhnkcp-alert-warning paynhnkcp:mt-6">
         <icon name="lock" class="paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:flex-shrink-0"/>
@@ -60,7 +62,8 @@
           </button>
         </div>
         <!-- PC/모바일 카드/모바일 가상계좌 결제 가능 여부 요약 배지 -->
-        <div class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:sm:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+        <div class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+          <responsive on="640-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"/>
           <div class="{{health.data.summary.pc_payment_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}">
             <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
               <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="paynhnkcp:leading-none {{health.data.summary.pc_payment_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"/>
@@ -146,12 +149,15 @@
           <h3 class="pay-nhnkcp-section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_live_keys</h3>
         </div>
         <div class="paynhnkcp:p-6 paynhnkcp:space-y-6">
-          <div data-ref="field_live_site_cd" class="pay-nhnkcp-grid-3col-responsive">
-            <div class="paynhnkcp:lg:col-span-1">
+          <div data-ref="field_live_site_cd" class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start">
+            <responsive on="1024-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-1"/>
               <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_cd</label>
               <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_hint</p>
             </div>
-            <div class="paynhnkcp:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-2"/>
               <div class="paynhnkcp:flex paynhnkcp:rounded-lg paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:overflow-hidden paynhnkcp:focus-within:ring-2 paynhnkcp:focus-within:ring-blue-500 pay-nhnkcp-focus-group">
                 <span class="paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-3 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-600 paynhnkcp:border-r paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 pay-nhnkcp-text-body paynhnkcp:font-mono paynhnkcp:font-bold paynhnkcp:select-none">SR</span>
                 <input type="text" name="live_site_cd" placeholder="xxxxxx" class="paynhnkcp:flex-1 paynhnkcp:font-mono paynhnkcp:outline-none paynhnkcp:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
@@ -159,12 +165,15 @@
               <p class="paynhnkcp:mt-1.5 pay-nhnkcp-text-tertiary">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_example</p>
             </div>
           </div>
-          <div data-ref="field_live_site_key" class="pay-nhnkcp-grid-3col-responsive">
-            <div class="paynhnkcp:lg:col-span-1">
+          <div data-ref="field_live_site_key" class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start">
+            <responsive on="1024-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-1"/>
               <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_key</label>
               <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_key_hint</p>
             </div>
-            <div class="paynhnkcp:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-2"/>
               <input type="password" name="live_site_key" placeholder="••••••••••••••••" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent paynhnkcp:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -222,21 +231,27 @@
           <h3 class="pay-nhnkcp-section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_redirect</h3>
         </div>
         <div class="paynhnkcp:p-6 paynhnkcp:space-y-6">
-          <div data-ref="field_redirect_success_url" class="pay-nhnkcp-grid-3col-responsive">
-            <div class="paynhnkcp:lg:col-span-1">
+          <div data-ref="field_redirect_success_url" class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start">
+            <responsive on="1024-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-1"/>
               <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url</label>
               <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url_hint</p>
             </div>
-            <div class="paynhnkcp:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-2"/>
               <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_redirect_fail_url" class="pay-nhnkcp-grid-3col-responsive">
-            <div class="paynhnkcp:lg:col-span-1">
+          <div data-ref="field_redirect_fail_url" class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start">
+            <responsive on="1024-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-1"/>
               <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url</label>
               <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url_hint</p>
             </div>
-            <div class="paynhnkcp:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-2"/>
               <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -248,12 +263,15 @@
           <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.section_vbank_hint</p>
         </div>
         <div class="paynhnkcp:p-6">
-          <div data-ref="field_vbank_expire_days" class="pay-nhnkcp-grid-3col-responsive">
-            <div class="paynhnkcp:lg:col-span-1">
+          <div data-ref="field_vbank_expire_days" class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start">
+            <responsive on="1024-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-1"/>
               <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days</label>
               <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_hint</p>
             </div>
-            <div class="paynhnkcp:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-2"/>
               <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
                 <input type="number" name="vbank_expire_days" min="1" max="7" placeholder="3" class="paynhnkcp:w-24 paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
                 <span class="pay-nhnkcp-text-label-subtle">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_unit</span>
@@ -339,12 +357,15 @@
             </div>
             <toggle data-type="composite" name="use_escrow" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div data-if="{{_local.form.use_escrow &amp;&amp; _local.form.is_test_mode}}" class="pay-nhnkcp-grid-3col-responsive">
-            <div class="paynhnkcp:lg:col-span-1">
+          <div data-if="{{_local.form.use_escrow &amp;&amp; _local.form.is_test_mode}}" class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start">
+            <responsive on="1024-" class="paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-1"/>
               <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd</label>
               <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd_hint</p>
             </div>
-            <div class="paynhnkcp:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynhnkcp:col-span-2"/>
               <input type="text" name="escrow_test_site_cd" placeholder="T0007" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>

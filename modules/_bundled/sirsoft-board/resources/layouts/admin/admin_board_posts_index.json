@@ -1285,7 +1285,104 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-board.admin.posts.modals.delete_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "삭제 실행 — 지운 뒤 목록을 «같은 조건 그대로» 다시 읽는다(빈 `<query/>` 라 URL 은 그대로이고 이동만 다시 일어난다). 실패해도 토스트가 없는 자리다 — 오류 문구는 데이터소스의 공통 처리로 뜬다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "deleteModalLoading": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{_global.modal_data?.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteModalLoading": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/board/{{route.slug}}",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-board.admin.posts.modals.delete_success"
+                                                }
+                                            }
+                                        ],
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "deleteModalLoading": false
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.deleteModalLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1304,110 +1401,6 @@
                             "text": "$t:sirsoft-board.admin.posts.modals.delete_confirm"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "삭제 실행 — 지운 뒤 목록을 «같은 조건 그대로» 다시 읽는다(빈 `<query/>` 라 URL 은 그대로이고 이동만 다시 일어난다). 실패해도 토스트가 없는 자리다 — 오류 문구는 데이터소스의 공통 처리로 뜬다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "deleteModalLoading": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{_global.modal_data?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "deleteModalLoading": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/board/{{route.slug}}",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-board.admin.posts.modals.delete_success"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "deleteModalLoading": false
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.deleteModalLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -1418,7 +1411,273 @@
             "name": "Modal",
             "props": {
                 "title": "{{_global.bulkPostAction === 'delete' ? '$t:sirsoft-board.admin.posts.bulk.modal.delete_title' : _global.bulkPostAction === 'blind' ? '$t:sirsoft-board.admin.posts.bulk.modal.blind_title' : '$t:sirsoft-board.admin.posts.bulk.modal.restore_title'}}",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다.\n                 disabled(bulkPostLoading)는 다시 그려진 뒤에야 걸려 더블클릭의 두 번째 클릭이 요청을 한 번 더 보냈고,\n                 두 번째 응답이 방금 처리한 글을 「이미 블라인드된 글」로 건너뛰었다고 띄웠다 — 버튼이 첫 클릭 즉시 스스로 잠근다(lockRepeatClick)",
+                                "type": "click",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "bulkPostLoading": true
+                                }
+                            },
+                            {
+                                "comment": "실행 ②  갈래마다 메서드와 경로가 다르다. 실패는 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
+                                "type": "click",
+                                "handler": "switch",
+                                "params": {
+                                    "value": "{{_global.bulkPostAction}}"
+                                },
+                                "cases": {
+                                    "delete": {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_board_posts}}",
+                                                "reason": "{{_global.bulkPostReason}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostLoading": false,
+                                                    "selectedIds_board_posts": [],
+                                                    "bulkPostReason": "",
+                                                    "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "posts"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{result.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_skipped_modal",
+                                                "if": "{{(response?.data?.skipped ?? []).length > 0}}"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostLoading": false,
+                                                    "errorMessage": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "bulk_post_error_modal"
+                                            }
+                                        ]
+                                    },
+                                    "blind": {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-blind",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_board_posts}}",
+                                                "reason": "{{_global.bulkPostReason}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostLoading": false,
+                                                    "selectedIds_board_posts": [],
+                                                    "bulkPostReason": "",
+                                                    "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "posts"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{result.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_skipped_modal",
+                                                "if": "{{(response?.data?.skipped ?? []).length > 0}}"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostLoading": false,
+                                                    "errorMessage": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "bulk_post_error_modal"
+                                            }
+                                        ]
+                                    },
+                                    "restore": {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-restore",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_board_posts}}",
+                                                "reason": "{{_global.bulkPostReason}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostLoading": false,
+                                                    "selectedIds_board_posts": [],
+                                                    "bulkPostReason": "",
+                                                    "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "posts"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{result.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
+                                                "handler": "openModal",
+                                                "target": "bulk_post_skipped_modal",
+                                                "if": "{{(response?.data?.skipped ?? []).length > 0}}"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkPostLoading": false,
+                                                    "errorMessage": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "bulk_post_error_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "data-testid": "admin-post-bulk-confirm",
+                            "lockRepeatClick": true,
+                            "className": "board:px-4 board:py-2 board:text-white board:rounded-lg board:disabled:opacity-50 board:disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'board:bg-red-600 board:dark:bg-red-700 board:hover:bg-red-700 board:dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'board:bg-orange-700 board:dark:bg-orange-700 board:hover:bg-orange-800 board:dark:hover:bg-orange-800' : 'board:bg-blue-600 board:dark:bg-blue-700 board:hover:bg-blue-700 board:dark:hover:bg-blue-800'}}",
+                            "disabled": "{{_global.bulkPostLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!_global.bulkPostLoading}}",
+                                "text": "$t:common.confirm"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{_global.bulkPostLoading}}",
+                                "props": {
+                                    "className": "board-flex-center board:gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "board-spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.posts.bulk.modal.processing"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1502,279 +1761,6 @@
                                         "placeholder": "$t:sirsoft-board.admin.posts.bulk.modal.reason_placeholder",
                                         "value": "{{_global.bulkPostReason || ''}}"
                                     }
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "실행 ①  여러 건을 한 요청으로 처리하므로 응답이 늦다 — 그 사이 두 번 눌리면 같은 요청이 겹친다.\n                 disabled(bulkPostLoading)는 다시 그려진 뒤에야 걸려 더블클릭의 두 번째 클릭이 요청을 한 번 더 보냈고,\n                 두 번째 응답이 방금 처리한 글을 「이미 블라인드된 글」로 건너뛰었다고 띄웠다 — 버튼이 첫 클릭 즉시 스스로 잠근다(lockRepeatClick)",
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "bulkPostLoading": true
-                                    }
-                                },
-                                {
-                                    "comment": "실행 ②  갈래마다 메서드와 경로가 다르다. 실패는 오류 모달로 띄운다 — 여러 건을 다루는 자리라 사유를 스쳐 지나가게 두지 않는다",
-                                    "type": "click",
-                                    "handler": "switch",
-                                    "params": {
-                                        "value": "{{_global.bulkPostAction}}"
-                                    },
-                                    "cases": {
-                                        "delete": {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_board_posts}}",
-                                                    "reason": "{{_global.bulkPostReason}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bulkPostLoading": false,
-                                                        "selectedIds_board_posts": [],
-                                                        "bulkPostReason": "",
-                                                        "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "posts"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{result.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
-                                                    "handler": "openModal",
-                                                    "target": "bulk_post_skipped_modal",
-                                                    "if": "{{(response?.data?.skipped ?? []).length > 0}}"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bulkPostLoading": false,
-                                                        "errorMessage": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "bulk_post_error_modal"
-                                                }
-                                            ]
-                                        },
-                                        "blind": {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-blind",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_board_posts}}",
-                                                    "reason": "{{_global.bulkPostReason}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bulkPostLoading": false,
-                                                        "selectedIds_board_posts": [],
-                                                        "bulkPostReason": "",
-                                                        "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "posts"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{result.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
-                                                    "handler": "openModal",
-                                                    "target": "bulk_post_skipped_modal",
-                                                    "if": "{{(response?.data?.skipped ?? []).length > 0}}"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bulkPostLoading": false,
-                                                        "errorMessage": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "bulk_post_error_modal"
-                                                }
-                                            ]
-                                        },
-                                        "restore": {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/bulk-restore",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_board_posts}}",
-                                                    "reason": "{{_global.bulkPostReason}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bulkPostLoading": false,
-                                                        "selectedIds_board_posts": [],
-                                                        "bulkPostReason": "",
-                                                        "bulkPostSkipped": "{{response?.data?.skipped ?? []}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "posts"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{result.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "comment": "건너뛴 글이 있으면 어느 글이 왜 빠졌는지 바로 보인다 — 토스트의 「건너뜀 N개」만으로는 다시 고를 수 없다",
-                                                    "handler": "openModal",
-                                                    "target": "bulk_post_skipped_modal",
-                                                    "if": "{{(response?.data?.skipped ?? []).length > 0}}"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "bulkPostLoading": false,
-                                                        "errorMessage": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "bulk_post_error_modal"
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "data-testid": "admin-post-bulk-confirm",
-                                "lockRepeatClick": true,
-                                "className": "board:px-4 board:py-2 board:text-white board:rounded-lg board:disabled:opacity-50 board:disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'board:bg-red-600 board:dark:bg-red-700 board:hover:bg-red-700 board:dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'board:bg-orange-700 board:dark:bg-orange-700 board:hover:bg-orange-800 board:dark:hover:bg-orange-800' : 'board:bg-blue-600 board:dark:bg-blue-700 board:hover:bg-blue-700 board:dark:hover:bg-blue-800'}}",
-                                "disabled": "{{_global.bulkPostLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_global.bulkPostLoading}}",
-                                    "text": "$t:common.confirm"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_global.bulkPostLoading}}",
-                                    "props": {
-                                        "className": "board-flex-center board:gap-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "board-spinner-sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-board.admin.posts.bulk.modal.processing"
-                                        }
-                                    ]
                                 }
                             ]
                         }

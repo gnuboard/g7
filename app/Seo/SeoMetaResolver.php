@@ -6,6 +6,8 @@ use App\Seo\Concerns\LocalizesSeoValues;
 use App\Seo\Concerns\SubstitutesSeoVariables;
 use App\Services\SettingsService;
 use App\Support\AssetUrl;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailUrl;
 
 class SeoMetaResolver
 {
@@ -577,6 +579,8 @@ class SeoMetaResolver
             'image_width' => $this->resolveIntOrSetting($og['image_width'] ?? null, 'seo.og_image_default_width', $context),
             'image_height' => $this->resolveIntOrSetting($og['image_height'] ?? null, 'seo.og_image_default_height', $context),
             'image_type' => $this->safeEval($og['image_type'] ?? '', $context),
+            // 레이아웃이 이미지 크기를 직접 선언했으면 그 이미지는 이미 그 크기다 — 렌더가 og 썸네일로 바꾸지 않는다.
+            'image_size_declared' => isset($og['image_width']) || isset($og['image_height']),
             'image_alt' => $this->stripHtml($this->safeEval($og['image_alt'] ?? $og['title'] ?? '', $context)),
             'site_name' => $explicitSiteName !== '' ? $explicitSiteName : $this->resolveLocalizedValue($siteNameFallback),
             'locale' => $this->safeEval($og['locale'] ?? '', $context) ?: app()->getLocale(),
@@ -619,6 +623,7 @@ class SeoMetaResolver
             'image_alt' => isset($tw['image_alt'])
                 ? $this->stripHtml($this->safeEval($tw['image_alt'], $context))
                 : (string) ($ogData['image_alt'] ?? ''),
+            'image_size_declared' => ! isset($tw['image']) && (bool) ($ogData['image_size_declared'] ?? false),
             'extra' => is_array($tw['extra'] ?? null) ? $tw['extra'] : [],
         ];
     }
@@ -667,11 +672,11 @@ class SeoMetaResolver
             $tags .= '    <meta property="og:description" content="'.e($description).'">'."\n";
         }
 
-        $image = (string) ($og['image'] ?? '');
+        $image = $this->ogThumbnail((string) ($og['image'] ?? ''), $og);
         if ($image !== '') {
             $tags .= '    <meta property="og:image" content="'.e($image).'">'."\n";
 
-            $secure = (string) ($og['image_secure_url'] ?? '');
+            $secure = $this->ogThumbnail((string) ($og['image_secure_url'] ?? ''), $og);
             if ($secure !== '' && str_starts_with($secure, 'https://')) {
                 $tags .= '    <meta property="og:image:secure_url" content="'.e($secure).'">'."\n";
             }
@@ -713,6 +718,28 @@ class SeoMetaResolver
     }
 
     /**
+     * og·twitter 이미지 주소를 og 규격 썸네일 주소로 바꿉니다.
+     *
+     * 모든 og 경로(레이아웃 선언·사이트 기본·모듈 기본값 채우기·`core.seo.filter_og_data`)가 마지막에 이 렌더를
+     * 지나므로 여기 한 곳에서 바꾼다 — 선언한 `og:image:width/height`(SEO 탭 기본 1200×630)와 실제 이미지 크기가
+     * 맞게 된다. 레이아웃이 크기를 직접 선언했으면 바꾸지 않고, 등록된 서빙 경로가 아니면(외부·정적) 그대로다.
+     *
+     * 편집기 미리보기(`SeoOgPreviewService`)도 이 함수로 주소를 내 실제 카드와 같은 주소를 보인다.
+     *
+     * @param  string  $url  이미지 주소
+     * @param  array  $data  og 또는 twitter 데이터
+     * @return string 주소
+     */
+    public function ogThumbnail(string $url, array $data): string
+    {
+        if ($url === '' || (bool) ($data['image_size_declared'] ?? false)) {
+            return $url;
+        }
+
+        return ThumbnailUrl::for($url, ThumbnailPresetRegistry::OG);
+    }
+
+    /**
      * Twitter 데이터 배열을 HTML 메타태그로 렌더합니다.
      *
      * @param  array  $tw  Twitter 데이터 배열
@@ -729,6 +756,9 @@ class SeoMetaResolver
 
         foreach (['site', 'creator', 'title', 'description', 'image'] as $key) {
             $val = (string) ($tw[$key] ?? '');
+            if ($key === 'image') {
+                $val = $this->ogThumbnail($val, $tw);
+            }
             if ($val !== '') {
                 $tags .= '    <meta name="twitter:'.$key.'" content="'.e($val).'">'."\n";
             }

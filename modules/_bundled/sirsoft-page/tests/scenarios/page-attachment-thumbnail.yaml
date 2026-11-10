@@ -1,0 +1,45 @@
+feature: 페이지 첨부 미리보기 이미지 썸네일 (#869)
+
+description: |
+  첨부 미리보기(`/api/modules/sirsoft-page/pages/attachment/{hash}/preview`)에 `?size={규격}`·`?w={숫자}` 를
+  붙이면 발행상태 게이트(미발행은 `sirsoft-page.pages.read` 관리자·유효 서명만)를 지난 뒤 규격 크기로 줄인
+  파생본을 낸다. 코어 썸네일 헬퍼(`ThumbnailResponder`)를 컨트롤러의 게이트 바로 뒤·원본 응답 바로 앞에서
+  한 줄로 부른다.
+
+  - 파라미터가 없으면 종전 원본 응답과 같다(헤더 `X-G7-Thumbnail` 도 없다).
+  - 페이지 첨부는 게이트 원본이라 파생본은 비공개 썸네일 디스크·`private` 캐시다.
+  - 미발행 페이지의 원본도 `private` 캐시다(발행 페이지 원본은 종전처럼 공개 캐시).
+  - 서명은 `size`·`w` 를 빼고 검증한다(`hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure())`).
+    변조·만료는 그대로 404, 배열 파라미터(`size[]`)는 원본 + `bypass:unknown-preset`.
+  - 원본 정보(디스크·전체 경로)는 행 disk 를 따른다.
+  - 미리보기 주소는 필터 `core.thumbnail.filter_url_patterns` 로, 페이지 첨부는 필터
+    `core.thumbnail.filter_source_providers` 로 등록된다(권한 원본, 임시 첨부 제외). 제공자는 필터 호출마다
+    새로 만들지 않는다.
+  - 원본 파일만 사라진 첨부는 `?size=` 를 붙여도 무파라미터와 같은 404 다(남은 파생본으로 200 을 내지 않는다).
+  - 페이지 공유 카드의 og:image 는 끝에 `size=og` 가 붙는다.
+
+# 축은 하나다 — 파라미터·발행상태·서명은 곱해지는 조합이 아니라 경우마다 독립 계약이라, 경우마다 테스트 하나가 잰다.
+axes:
+  case: [no_param, preset, unpublished_gate, signed_size, tampered_or_expired, array_param, row_disk, registration, original_missing, provider_reuse, og_card, admin_detail_preset]
+
+effects:
+  - preview_without_size_serves_the_original_unchanged
+  - preview_with_size_serves_the_preset_dimensions
+  - gated_thumbnail_is_private_and_hardened
+  - unpublished_gate_applies_to_thumbnail
+  - signed_url_with_size_passes_unpublished_gate
+  - unpublished_original_is_private
+  - unpublished_download_is_private
+  - tampered_or_expired_signature_with_size_still_blocked
+  - array_size_with_valid_signature_serves_the_original_with_bypass
+  - bypassed_original_uses_thumbnail_ttl
+  - thumbnail_reads_the_disk_recorded_on_the_row
+  - preview_route_is_registered_as_thumbnail_pattern_and_gated_source
+  - missing_original_is_404_even_with_size
+  - source_provider_resolved_once
+  - page_og_image_uses_og_preset
+  - admin_detail_attachment_uses_sm_preset
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/User/PublicPageAttachmentThumbnailTest.php
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-detail-attachment-thumbnail.test.ts

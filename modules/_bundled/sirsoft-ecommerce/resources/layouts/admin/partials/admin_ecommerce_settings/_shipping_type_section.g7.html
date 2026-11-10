@@ -25,7 +25,9 @@
       </div>
     </div>
     <div data-if="{{_local.isAddingShippingType}}" class="ecommerce:p-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800/50">
-      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:lg:grid-cols-3 ecommerce:gap-3">
+      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3">
+        <responsive on="640-1023" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"/>
+        <responsive on="desktop" class="ecommerce:grid ecommerce:grid-cols-3 ecommerce:gap-3"/>
         <div>
           <label class="ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1">$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code</label>
           <input type="text" value="{{_local.shippingTypeForm?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code_placeholder" class="{{_local.shippingTypeFormErrors?.code ? 'ecommerce-input ecommerce-input-error ecommerce:font-mono' : 'ecommerce-input ecommerce:font-mono'}}" disabled="{{_computed.isReadOnly}}">

@@ -155,7 +155,8 @@
             <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint']}}" class="ecommerce-form-error-xs">{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ?? [])[0] ?? ''}}</span>
           </div>
         </div>
-        <div data-ref="field_api_http_method" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:gap-4">
+        <div data-ref="field_api_http_method" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="640-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_http_method</label>
             <select class="ecommerce:h-9 ecommerce:w-full" value="{{_computed.activeCountrySetting?.api_config?.http_method ?? 'POST'}}" options="{{_computed.apiHttpMethodOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
@@ -197,7 +198,8 @@
         <div data-ref="field_api_request_fields">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields</label>
           <!-- 후보 5종 체크박스 (자유 텍스트 대체 — silent drop 차단) -->
-          <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:gap-2">
+          <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2">
+            <responsive on="640-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-2"/>
             <label data-each="fieldOption, fieldOptionIdx in {{_computed.apiRequestFieldOptions ?? []}}" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce:text-sm">
               <input type="checkbox" class="ecommerce-checkbox" checked="{{(_computed.activeCountrySetting?.api_request_fields ?? []).includes(fieldOption.value)}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">

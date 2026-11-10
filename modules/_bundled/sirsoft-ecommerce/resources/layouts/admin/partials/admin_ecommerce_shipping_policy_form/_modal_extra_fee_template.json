@@ -10,7 +10,24 @@
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.title",
         "width": "900px",
-        "className": "ecommerce:max-w-[calc(100vw-2rem)]"
+        "className": "ecommerce:max-w-[calc(100vw-2rem)]",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-secondary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.close"
+            }
+        ]
     },
     "children": [
         {
@@ -1514,31 +1531,6 @@
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.no_templates"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "modal_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-secondary"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.close"
                 }
             ]
         }

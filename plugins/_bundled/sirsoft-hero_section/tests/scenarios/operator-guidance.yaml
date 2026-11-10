@@ -22,6 +22,9 @@ axes:
 
 effects:
   - accessible_names_present
+  - form_guides_operator_before_save   # 입력 순서·좁은 화면 미리보기 위치·버튼 주소 경고·링크 동작 요약으로 저장 전에 결과를 알린다
+  - row_readiness_flags_shown   # 목록 제목 칸에 모바일 이미지 없음·주소 없는 버튼·제목 빈 언어(언어 탭과 같은 이름)를 보인다
+  - site_link_opens_position_slot   # 사이트에서 보기는 그 위치 자리가 있는 사이트 주소를 새 창으로 열고, 자리가 없으면 안내만 보인다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx

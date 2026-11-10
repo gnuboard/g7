@@ -7,7 +7,7 @@
  * 그 값을 정확히 노출하고, 폭 매핑이 디바이스 프리셋 명세 와
  * 일치함을 가드한다.
   *
- * @effects preview_custom_width_clamped_320_to_1920, preview_non_custom_ignores_custom_width
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): preview_custom_width_clamped_320_to_1920, preview_non_custom_ignores_custom_width
 */
 
 import { describe, it, expect } from 'vitest';
@@ -18,14 +18,12 @@ import { LayoutEditorProvider } from '../../LayoutEditorContext';
 
 function wrap(): React.FC<{ children: React.ReactNode }> {
   return ({ children }) =>
-    React.createElement(
-      LayoutEditorProvider,
-      { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-      children,
-    );
+    // children 은 필수 prop — 세 번째 인자 대신 props 로 넘긴다(타입 일치, 실행 동작 동일).
+    React.createElement(LayoutEditorProvider, { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko', children });
 }
 
 describe('useDevicePreview', () => {
+  /** @effects preview_device_toggle_reflects_preset_width */
   it('초기 디바이스는 desktop, 폭은 DEVICE_PRESET_WIDTHS.desktop 와 일치', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
@@ -34,6 +32,7 @@ describe('useDevicePreview', () => {
     expect(result.current.deviceWidth).toBe(1280);
   });
 
+  /** @effects preview_device_toggle_reflects_preset_width */
   it('setDevice("mobile") 호출 시 state.previewDevice 가 반영되어 폭이 모바일 프리셋(390) 으로 전환', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
@@ -45,6 +44,7 @@ describe('useDevicePreview', () => {
     expect(result.current.deviceWidth).toBe(390);
   });
 
+  /** @effects preview_device_toggle_reflects_preset_width */
   it('setDevice("tablet") → 820, 다시 setDevice("desktop") → 1280', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
@@ -59,6 +59,7 @@ describe('useDevicePreview', () => {
     expect(result.current.deviceWidth).toBe(1280);
   });
 
+  /** @effects preview_zoom_clamped_0_5_to_1 */
   it('setZoom 은 0.5 ~ 1.0 범위로 클램프 (안전 범위 가드)', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 
@@ -78,13 +79,15 @@ describe('useDevicePreview', () => {
     expect(result.current.zoom).toBe(0.75);
   });
 
-  it('zoom < 1 + availableWidth 부족 시 scale 이 자동 축소 (가용폭 / deviceWidth)', () => {
+  /** @effects editor_preview_scale_fits_available_width */
+  it('availableWidth 부족 시 scale 이 자동 축소 (가용폭 / deviceWidth) — 줌 100% 포함', () => {
     const { result } = renderHook(() => useDevicePreview({ availableWidth: 600 }), {
       wrapper: wrap(),
     });
 
-    // desktop 1280px 인데 availableWidth=600 + zoom 1 → 가로 스크롤 모드 (scale=zoom 유지)
-    expect(result.current.scale).toBe(1);
+    // desktop 1280px 인데 availableWidth=600 + zoom 1 → 맞춤 줌(600/1280). 종전에는 줌 100% 를
+    // 가로 스크롤 모드로 보고 1 을 돌려줘 창 1280 에서 문서 폭이 1608px 이 됐다(#869 P3).
+    expect(result.current.scale).toBeCloseTo(600 / 1280, 10);
 
     act(() => {
       result.current.setZoom(0.9);
@@ -95,6 +98,7 @@ describe('useDevicePreview', () => {
   });
 
   // 결함 2 — custom width breakpoint
+  /** @effects preview_custom_device_uses_clamped_input_width_as_override */
   it('setDevice("custom") 후 deviceWidth 는 기본 customWidth(1024) 를 사용', () => {
     const { result } = renderHook(() => useDevicePreview(), { wrapper: wrap() });
 

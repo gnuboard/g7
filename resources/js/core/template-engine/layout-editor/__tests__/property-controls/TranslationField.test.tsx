@@ -7,7 +7,6 @@
  *  - 409 → 충돌 안내.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
@@ -61,6 +60,10 @@ beforeEach(() => {
 });
 
 describe('TranslationField', () => {
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_custom_key_form_with_untranslated_mark
+   */
   it('커스텀 키 노드 → 활성 로케일 입력 폼 + 미번역 마크', async () => {
     const fetchMock = vi.fn().mockResolvedValue(indexResponse({ ko: '환영합니다', en: '' }));
     vi.stubGlobal('fetch', fetchMock);
@@ -77,6 +80,10 @@ describe('TranslationField', () => {
     expect(screen.getByTestId('g7le-translation-missing-ja')).toBeTruthy();
   });
 
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_blur_puts_values_with_lock_version
+   */
   it('값 변경 후 blur → PUT (전체 values + expected_lock_version)', async () => {
     const fetchMock = vi
       .fn()
@@ -105,6 +112,10 @@ describe('TranslationField', () => {
     expect(body.expected_lock_version).toBe(3);
   });
 
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_plain_node_shows_not_key_notice
+   */
   it('커스텀 키 아닌 노드(평문) → "다국어 키 아님" 안내', () => {
     vi.stubGlobal('fetch', vi.fn());
     const node: EditorNode = { name: 'Span', text: '그냥 평문' };
@@ -113,6 +124,10 @@ describe('TranslationField', () => {
   });
 
   // 토큰 불변 가드 — 번역값의 `{{...}}` 보간 토큰은 보존돼야 한다.
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_keeps_tokens_and_saves
+   */
   it('보간 토큰 보존 시 저장 성공 (라벨/번역만 자유 편집)', async () => {
     const fetchMock = vi
       .fn()
@@ -132,6 +147,10 @@ describe('TranslationField', () => {
     expect(fetchMock.mock.calls[1][1].method).toBe('PUT');
   });
 
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_blocks_save_on_token_removal
+   */
   it('보간 토큰 삭제 시 저장 차단 + 안내(데이터 연결 무손상)', async () => {
     const fetchMock = vi.fn().mockResolvedValue(indexResponse({ ko: '작성자 {{user.name}}', en: '' }, 2));
     vi.stubGlobal('fetch', fetchMock);
@@ -164,6 +183,10 @@ describe('TranslationField', () => {
     fireEvent.input(span);
   };
 
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_param_key_uses_chip_widget
+   */
   it('param 키 노드($t:custom.X|p0=..) → 번역 탭이 칩 합성 위젯으로 키 값 노출(자리표시=칩)', async () => {
     const fetchMock = vi
       .fn()
@@ -180,6 +203,10 @@ describe('TranslationField', () => {
     expect(screen.getByTestId('g7le-chip-ko-p0')).toBeTruthy();
   });
 
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_param_key_buffers_exact_value
+   */
   it('param 키 저장 → 즉시 PUT 아님(버퍼 기록, 자리표시 보존)', async () => {
     // param 키 저장은 저장-지연 버퍼에 기록(레이아웃 저장 시 flush). 즉시 PUT 없음(GET index 1회만).
     const fetchMock = vi.fn().mockResolvedValue(indexResponse({ ko: '{p0} 님 환영합니다', en: '' }, 2));
@@ -191,12 +218,17 @@ describe('TranslationField', () => {
 
     setChipText('ko', 2, ' 님 안녕'); // 칩 뒤 평문(인덱스 2) 편집 — 칩(자리표시) 보존.
     fireEvent.click(screen.getByTestId('g7le-translation-save'));
-    // 즉시 PUT 없음 — GET index(1회)만. 값은 버퍼에.
-    await waitFor(() => expect(getPendingValue('custom.home.1', 'ko')).toContain('{p0}'));
+    // 즉시 PUT 없음 — GET index(1회)만. 값은 버퍼에. 편집한 평문까지 정확히 재합성돼야 한다
+    // (자리표시만 보면 옛 값을 그대로 버퍼에 넣어도 통과한다).
+    await waitFor(() => expect(getPendingValue('custom.home.1', 'ko')).toBe('{p0} 님 안녕'));
     expect(fetchMock.mock.calls.every((c) => (c[1]?.method ?? 'GET') !== 'PUT')).toBe(true);
     expect(screen.queryByTestId('g7le-translation-save-error')).toBeNull();
   });
 
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_chip_atomic_keeps_placeholder
+   */
   it('칩(자리표시)은 원자 — 평문만 비워도 {p0} 보존되어 저장(버퍼) 허용', async () => {
     const fetchMock = vi.fn().mockResolvedValue(indexResponse({ ko: '{p0} 님 환영합니다', en: '' }, 2));
     vi.stubGlobal('fetch', fetchMock);
@@ -207,10 +239,15 @@ describe('TranslationField', () => {
 
     setChipText('ko', 2, ''); // 칩 뒤 평문 전삭제 — 칩 원자라 {p0} 남음.
     fireEvent.click(screen.getByTestId('g7le-translation-save'));
-    await waitFor(() => expect(getPendingValue('custom.home.1', 'ko')).toContain('{p0}'));
+    // 평문 전삭제가 반영돼 자리표시 하나만 남아야 한다(옛 평문 잔존 차단).
+    await waitFor(() => expect(getPendingValue('custom.home.1', 'ko')).toBe('{p0}'));
     expect(screen.queryByTestId('g7le-translation-save-error')).toBeNull();
   });
 
+  /**
+   * @scenario surface=translation_field
+   * @effects translation_field_409_shows_conflict
+   */
   it('409 응답 → 충돌 안내', async () => {
     const fetchMock = vi
       .fn()

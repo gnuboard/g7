@@ -6,16 +6,25 @@
  * 현재 번호를 useState(startIndex) 초기값으로만 잡으면 매번 첫 사진으로 열린다.
  * 실제 ImageGallery(yet-another-react-lightbox)를 렌더해 카운터 「N / M」 으로 잠근다.
  *
+ * 시간 예산(#869): 부하가 걸린 실행에서 첫 시험이 5초 제한에 걸렸다. 잰 결과(단독) 시험 안의 동적 import 가 320ms,
+ * `getByRole` 한 번이 70~260ms(역할과 이름 계산, 숨김 판정용 getComputedStyle), 확대 창 열기가 320~450ms 였다.
+ * 모듈은 파일 수집 때 한 번 읽고(제품 모듈이 읽힐 때 G7Core.t 를 잡으므로 vi.hoisted 로 먼저 심는다),
+ * 단추는 aria-label 로 찾는다(단추로 좁혀 같은 단추를 고른다). 닫힘은 라이트박스 페이드(250ms)를 기다렸는데, 라이트박스는
+ * `prefers-reduced-motion: reduce` 이면 페이드를 0 으로 두므로 그 질의만 「움직임 줄임」으로 답한다.
+ * 시험이 재는 것(고른 사진에서 열리는가)은 그대로다.
+ *
  * @scenario-manifest tests/scenarios/product-image-viewer-lightbox-start-index.yaml
  */
 
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-beforeAll(() => {
-  (window as any).G7Core = { t: (key: string) => key };
+// ProductImageViewer 는 모듈이 읽힐 때 window.G7Core 를 잡는다 — import 보다 먼저 심는다
+vi.hoisted(() => {
+  Object.assign(window, { G7Core: { t: (key: string) => key } });
 });
+
+import { ProductImageViewer } from '../ProductImageViewer';
 
 const images = [1, 2, 3, 4, 5].map((n) => ({
   id: n,
@@ -25,11 +34,30 @@ const images = [1, 2, 3, 4, 5].map((n) => ({
   sort_order: n - 1,
 }));
 
-const loadViewer = async () => (await import('../ProductImageViewer')).ProductImageViewer;
+/**
+ * 이름(aria-label)이 같은 단추를 찾는다.
+ *
+ * @param name 단추 이름
+ * @returns 단추 요소
+ */
+const buttonNamed = (name: string) => screen.getByLabelText(name, { selector: 'button' });
 
 const openFromMainImage = () => {
-  fireEvent.click(screen.getByRole('button', { name: 'shop.view_image' }));
+  fireEvent.click(buttonNamed('shop.view_image'));
 };
+
+// 라이트박스 페이드를 끈다 — 움직임 줄임 질의만 참으로 답하고 나머지는 시험 준비 파일의 가짜에 맡긴다
+let originalMatchMedia: typeof window.matchMedia;
+beforeEach(() => {
+  originalMatchMedia = window.matchMedia;
+  window.matchMedia = (query: string) => {
+    const result = originalMatchMedia(query);
+    return query === '(prefers-reduced-motion: reduce)' ? { ...result, matches: true } : result;
+  };
+});
+afterEach(() => {
+  window.matchMedia = originalMatchMedia;
+});
 
 const counterText = () =>
   document.querySelector('.yarl__counter')?.textContent?.replace(/\s+/g, ' ').trim();
@@ -44,10 +72,9 @@ describe('ProductImageViewer 확대 창 시작 사진 (#821)', () => {
    * @effects lightbox_opens_at_selected_image
    */
   it('3번째 썸네일을 고른 뒤 큰 사진을 누르면 확대 창이 「3 / 5」 로 열린다', async () => {
-    const ProductImageViewer = await loadViewer();
     render(<ProductImageViewer images={images} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '사진 3' }));
+    fireEvent.click(buttonNamed('사진 3'));
     openFromMainImage();
 
     await waitFor(() => expect(counterText()).toBe('3 / 5'));
@@ -58,17 +85,16 @@ describe('ProductImageViewer 확대 창 시작 사진 (#821)', () => {
    * @effects lightbox_opens_at_selected_image
    */
   it('닫은 뒤 다른 썸네일로 다시 열면 그 사진에서 시작한다', async () => {
-    const ProductImageViewer = await loadViewer();
     render(<ProductImageViewer images={images} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '사진 4' }));
+    fireEvent.click(buttonNamed('사진 4'));
     openFromMainImage();
     await waitFor(() => expect(counterText()).toBe('4 / 5'));
 
     closeLightbox();
     await waitFor(() => expect(document.querySelector('.yarl__counter')).toBeNull());
 
-    fireEvent.click(screen.getByRole('button', { name: '사진 1' }));
+    fireEvent.click(buttonNamed('사진 1'));
     openFromMainImage();
     await waitFor(() => expect(counterText()).toBe('1 / 5'));
   });

@@ -19,7 +19,7 @@
       <!-- 상품 정보 -->
       <div class="flex gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-          <img data-if="{{$parent._local.optionModal.targetItem?.thumbnail}}" src="{{$parent._local.optionModal.targetItem?.thumbnail}}" alt="{{$parent._local.optionModal.targetItem?.product_name}}" class="w-full h-full object-cover"/>
+          <img data-if="{{$parent._local.optionModal.targetItem?.thumbnail}}" src="{{$parent._local.optionModal.targetItem?.thumbnail}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$parent._local.optionModal.targetItem?.product_name}}" class="w-full h-full object-cover"/>
           <div data-if="{{!$parent._local.optionModal.targetItem?.thumbnail}}" class="w-full h-full flex items-center justify-center">
             <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
           </div>
@@ -132,8 +132,7 @@
         <p data-if="{{$parent._local.optionErrors?.quantity}}" class="text-sm text-red-600 dark:text-red-400 mt-1">{{Array.isArray($parent._local.optionErrors.quantity) ? $parent._local.optionErrors.quantity[0] : $parent._local.optionErrors.quantity}}</p>
       </div>
     </div>
-    <!-- 모달 푸터 -->
-    <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+    <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isUpdatingOption}}">
         <on type="click">
           <!-- 취소해도 오류 표시는 남으므로 걷어 낸 뒤 닫는다 — 다음에 열었을 때 지난 빨간 줄이 그대로 뜨지 않게 -->
@@ -179,6 +178,6 @@
         <icon data-if="{{_global.isUpdatingOption}}" name="spinner" :spin="true" size="sm"/>
         <span>{{_global.isUpdatingOption ? '$t:common.processing' : '$t:shop.cart.option_modal.apply'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

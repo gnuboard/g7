@@ -12,7 +12,7 @@
 5. 삭제/위험 작업 버튼은 로딩 중 흐림 + 스피너 + 텍스트 변경 필수
 6. $parent._local 은 모달 마운트 시점의 스냅샷 — 모달이 열린 뒤의 부모 변경은 반영되지 않음
 7. `_local`(target 생략 포함)·부모 상태($parent._local · setParentLocal)를 고치는 setState 는 closeModal 보다 먼저 — `_global`·`_isolated` 정리는 closeModal 뒤여도 된다(§주의사항 1, §편집 모달 표준 예)
-8. 하단 버튼이 **방금 입력한 값**을 읽어야 하면 props.footer 가 아니라 본문 맨 아래 줄에 둔다 (§Footer 예외)
+8. 하단 버튼은 입력값을 읽든 안 읽든 props.footer(`<footer>`)에 둔다 — 고정 하단은 본문과 같은 데이터 컨텍스트로 그려지고 640px 이하에서 세로로 쌓인다 (§Footer 버튼 배치). 확장 지점을 품은 줄도 같다 (§확장 지점을 품은 바닥 줄도 `props.footer` 에 둔다)
 9. 부모 **폼**(저장이 실어 보내는 값)을 고칠 때는 $parent._local 만으로 부족하다 — §부모 폼 커밋 참조
 10. 창 이름 공간이 개인정보·비밀값을 담으면 닫히는 모든 갈래(X·바깥 클릭·Esc 포함)에서 비운다 — 창 본문 노드의 `lifecycle.onUnmount` (§창을 닫을 때 이름 공간 비우기)
 ```
@@ -156,7 +156,7 @@
 | `props.titleSuffix` | ❌ | 제목 **뒤**에 렌더링할 컴포넌트 배열. `.g7.html` 마크업은 `<title-suffix>…</title-suffix>` |
 | `props.footer` | ❌ | 본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 **배열** (취소/확인 버튼). `.g7.html` 마크업은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer). ⚠️ **취소/확인 버튼을 `children` 마지막에 두지 말 것** — `Modal` 은 `props.footer` 를 별도 표면으로 렌더한다(S8 신설, F5) |
 
-`titlePrefix`·`titleSuffix`·`footer` 3표면은 `sirsoft-admin_basic` 의 `Modal` 에만 있다. `sirsoft-basic` 의 `Modal` 은 이 props 를 구조분해하지 않고 rest spread 도 없어 값이 소멸한다 — 사용자 템플릿 모달에서는 제목 장식과 고정 하단 영역을 쓸 수 없다.
+`footer` 는 두 번들 템플릿(`sirsoft-admin_basic`, `sirsoft-basic`)의 `Modal` 이 모두 같은 계약으로 그린다(사용자 템플릿은 7.2.0 부터, #869). `titlePrefix`·`titleSuffix` 는 `sirsoft-admin_basic` 의 `Modal` 에만 있다 — `sirsoft-basic` 의 `Modal` 은 이 둘을 구조분해하지 않고 rest spread 도 없어 값이 소멸한다.
 
 ### 금지 속성
 
@@ -564,14 +564,42 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 > **회귀 배경 (F5)**: 이전에는 `Modal` 에 `footer` 표면이 없어 `props.footer` 가 렌더되지 않았고, 마크업이 버튼을 `children` 마지막 Div 로 우회 배치했다. S8 이 `props.footer` 표면을 신설(S16 F5 로 12개 모달 버튼 복원)했으므로 이제 `props.footer` 가 정본이다.
 >
-> **적용 범위 — 관리자 템플릿 한정**: `props.footer` 를 렌더하는 것은 `sirsoft-admin_basic` 의 `Modal` 뿐이다. `sirsoft-basic`(사용자 템플릿)의 `Modal` 은 이 prop 을 받지 않으므로 넘겨도 **조용히 사라진다** — 사용자측 모달의 하단 버튼은 `children` 안에 둔다. props 표면 대조: [component-props.md §Modal](component-props.md#modal-컴포넌트).
+> **적용 범위 — 두 번들 템플릿**: `props.footer` 는 `sirsoft-admin_basic` 과 `sirsoft-basic` 의 `Modal` 이 같은 계약(본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은 데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기)으로 그린다. 사용자 템플릿 `Modal` 은 7.2.0 전까지 이 prop 을 받지 않아 넘기면 조용히 사라졌다(#869 에서 지원) — 7.2.0 전 사용자 템플릿과 함께 쓰는 확장은 하단 버튼을 `children` 안에 둔다. props 표면 대조: [component-props.md §Modal](component-props.md#modal-컴포넌트).
 
-### 예외 — 하단 버튼이 **방금 입력한 값**을 읽어야 하는 창
+### 하단 버튼이 방금 입력한 값을 읽는 창도 `props.footer` 를 쓴다
 
-고정 하단(`props.footer`)의 버튼은 `Modal` 이 자기 렌더러로 그리며, 그 데이터 컨텍스트에는 **창이 열린 시점의 `_global`** 이 실린 채로 남는다. 그래서 그 자리의 액션이 `if` 나 `params` 에서 `_global.{창}.form.*` 를 읽으면 **사용자가 방금 친 값이 아니라 창을 열 때의 빈 값**을 본다 — 본문은 새 값으로 다시 그려지므로 화면만 보면 이상한 데가 없고, 「확인」만 영원히 "입력하세요" 로 되돌아간다(#636 에서 브라우저 실측으로 확인).
+`Modal` 은 고정 하단(`props.footer`)을 본문 자식과 **같은 데이터 컨텍스트·상태 범위**로 그린다 — 엔진이 넘겨 주는
+Modal 노드의 확장 컨텍스트(`__componentContext.parentDataContext`)와 컴포넌트 컨텍스트를 그대로 쓴다. 그래서 고정 하단의
+`disabled`·`if`·액션 인자가 창을 연 뒤 본문에서 바뀐 `_global.{창}.form.*`·`_local.*` 를 읽는다.
 
-- **닫기·확인만 하는 창**(삭제 확인, 안내)은 종전대로 `props.footer` 를 쓴다. 읽을 입력값이 없다.
-- **입력을 받아 그 값으로 분기하는 창**은 버튼을 **본문 맨 아래 줄**에 둔다. 선례: [`_modal_identity_policy_form.g7.html`](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_policy_form.g7.html) 의 `policy_form_footer`, [`_modal_ip_restriction_rule_form.g7.html`](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_ip_restriction_rule_form.g7.html) 의 `ip_rule_form_footer`. 클래스는 `flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800` 로 고정 하단과 같은 모양을 낸다(본문과 함께 스크롤되는 점만 다르다).
+> **회귀 배경**: 7.2.0 전까지 `Modal` 은 고정 하단을 빈 데이터 컨텍스트·자기 상태 범위로 그렸다. 입력을 받아 그 값으로
+> 분기하는 창(IP 접근 제한 규칙·본인인증 정책 편집 등)의 「적용」이 늘 "입력하세요" 로 되돌아가(#636 브라우저 실측) 단추를
+> 본문 맨 아래 줄로 우회했고, 그 줄은 640px 이하에서 세로로 쌓이지 않았다. Modal 을 고쳐 모든 확인 창의 단추를 고정 하단으로
+> 모았다(#869). 회귀 시험: `admin-settings-ip-restriction.test.tsx`(진짜 Modal 로 창을 그려 고정 하단 「적용」이 방금 친 값을
+> 읽는지 잰다), `admin_plugin_list._modal_update.force.test.tsx`(창을 연 뒤 켠 체크박스로 진행 단추가 풀린다).
+
+### 확장 지점을 품은 바닥 줄도 `props.footer` 에 둔다
+
+서버의 확장 처리(레이아웃 확장 주입)는 `children` 과 함께 Modal 의 `footer`·`titlePrefix`·`titleSuffix` 도 걷는다 —
+고정 하단 안의 `<extension-point>` 에도 조각이 주입되고, 오버레이(`target_id` 주입·`inject_props`)도 고정 하단 안의 단추를
+찾는다(#869). 그래서 알림 템플릿 편집 창처럼 바닥 줄에 확장 지점이 있는 창도 단추를 `<footer>` 에 둔다.
+
+왼쪽에 떨어져 놓일 단추(미리보기 등)는 `mr-auto`(확장은 `{접두}:mr-auto`)로 오른쪽 묶음과 떨어뜨리고, 640px 이하에서는
+Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로 준다.
+
+```html
+<footer>
+  <button data-if="{{…}}" type="button" class="… mr-auto">
+    <responsive on="-640" class="…"/>
+    …미리보기
+  </button>
+  <button type="button" class="…">…취소</button>
+  <extension-point name="notification_template_form_footer_actions" …/>
+  <button data-if="{{…}}" type="button" class="…">…저장</button>
+</footer>
+```
+
+> 오버레이는 레이아웃 `components` 트리를 걷는다 — `modals` 갈래에 둔 창의 노드는 오버레이 대상이 아니다(확장 지점은 두 갈래 모두 채운다).
 
 부모 폼 배열을 고칠 때는 **고칠 자리를 `target` 에 적고 값을 `value` 로 준다** — `target="$parent._local"` 에 점 찍은 이름(`form.security.rules`)을 주면 그 이름이 통째로 한 칸이 되어 화면에 아무것도 반영되지 않는다.
 
@@ -642,7 +670,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 | 요소 | 클래스 |
 |------|--------|
-| Footer 컨테이너 | **작성하지 않는다** — `Modal` 이 `props.footer` 를 `modal-footer-row` 로 감싼다. 배열 요소로 버튼만 나열 |
+| Footer 컨테이너 | **작성하지 않는다** — `Modal` 이 `props.footer` 를 `modal-footer-bar` 로 감싼다(옛 이름 `modal-footer-row` 는 폐지 예정). 배열 요소로 버튼만 나열 |
 | 취소 버튼 | `px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700` |
 | 위험 버튼 (삭제) | `px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700` |
 | 주요 버튼 (확인) | `px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700` |
@@ -1214,7 +1242,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 □ slots 속성이 없는가?
 □ 본문 내용이 children에 있는가?
 □ 취소/확인 버튼이 `props.footer` 배열에 있는가? (children 마지막 Div 아님 — Modal 이 별도 하단 표면으로 렌더)
-   ↳ **예외**: 버튼이 창에서 방금 입력한 값을 읽어 분기한다면 본문 맨 아래 줄에 둔다 ([§예외](#예외--하단-버튼이-방금-입력한-값을-읽어야-하는-창))
+   ↳ 입력값을 읽는 창도 같다. 확장 지점을 품은 줄도 같다 ([§확장 지점을 품은 바닥 줄도 `props.footer` 에 둔다](#확장-지점을-품은-바닥-줄도-propsfooter-에-둔다))
 □ 부모 **폼 값**을 고치는 창이라면 저장이 읽는 자리에도 함께 썼는가? ([§부모 폼 커밋](#부모-폼-커밋--두-자리에-같은-값을-쓴다))
 □ 취소 버튼에 closeModal 핸들러가 있는가?
 ```

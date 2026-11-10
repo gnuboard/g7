@@ -61,7 +61,9 @@
     <set-state target="local" tempKey="{{$uuid()}}"/>
   </init>
   <slot name="content">
-    <div data-ref="page_form_content" data-key="form" data-track-changes :data-blur-until-loaded="true" class="page-admin-page-content-responsive-fluid">
+    <div data-ref="page_form_content" data-key="form" data-track-changes :data-blur-until-loaded="true" class="page:p-4 page:bg-gray-50 page:dark:bg-gray-900">
+      <responsive on="640-1023" class="page:p-6 page:bg-gray-50 page:dark:bg-gray-900"/>
+      <responsive on="1024-" class="page:p-8 page:bg-gray-50 page:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}" description="{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"/>
       <div data-ref="error_message_box" data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).length > 0}}" class="page-alert-danger page:mb-6">
         <div class="page-flex-start page:gap-3">
@@ -87,7 +89,8 @@
           <h3 class="page-section-heading">$t:sirsoft-page.admin.page.form.sections.basic_info</h3>
         </div>
         <div data-ref="basic_info_fields" class="page-row-stack">
-          <div data-ref="slug_published_grid" class="page-grid-2col-responsive">
+          <div data-ref="slug_published_grid" class="page:grid page:grid-cols-1 page:gap-4">
+            <responsive on="768-" class="page:grid page:grid-cols-2 page:gap-4"/>
             <div data-ref="slug_field">
               <label class="page-form-label">
                 <span>$t:sirsoft-page.admin.page.form.fields.slug</span>
@@ -288,7 +291,11 @@
                 <set-state target="local" :saving="true" :errors="null"/>
                 <!-- FileUploader 업로드 트리거 (대기 중인 첨부를 temp_key 로 업로드 → 저장 시 백엔드가 연결) -->
                 <emit-event event="upload:page_attachments"/>
-                <api-call :auth_required="true" target="{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}">
+                <set-state target="local" uploadFailedCount="{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
+                <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다. -->
+                <set-state if="{{(_local.uploadFailedCount ?? 0) > 0}}" target="local" :saving="false"/>
+                <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
+                <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" :auth_required="true" target="{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}">
                   <success>
                     <set-state target="local" :saving="false"/>
                     <toast type="success" message="{{route?.id ? '$t:sirsoft-page.admin.page.form.update_success' : '$t:sirsoft-page.admin.page.form.create_success'}}"/>

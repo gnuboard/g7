@@ -171,7 +171,7 @@ describe('채널 추가 창 — 확정 전 입력 검증', () => {
    */
   async function confirmButtonFor(editingChannel: Record<string, unknown>, channels: any[] = SAVED_CHANNELS) {
     utils = createLayoutTest(
-      { version: '1.0.0', layout_name: 'marketing_channel_edit', components: editModal.children } as any,
+      { version: '1.0.0', layout_name: 'marketing_channel_edit', components: [...editModal.children, ...(editModal.props?.footer ?? [])] } as any, // 고정 하단(props.footer)의 확정 단추도 함께 그린다(#869 P1)
       { initialState: { _global: { editingChannel, channels } }, initialData: { $locale: 'ko' }, locale: 'ko' },
     );
     const { container } = await utils.render();
@@ -225,7 +225,7 @@ describe('채널 추가 창 — 항목명 안내는 입력칸을 떠나거나 �
    */
   async function mountModal(editingChannel: Record<string, unknown>) {
     utils = createLayoutTest(
-      { version: '1.0.0', layout_name: 'marketing_channel_edit', components: editModal.children } as any,
+      { version: '1.0.0', layout_name: 'marketing_channel_edit', components: [...editModal.children, ...(editModal.props?.footer ?? [])] } as any, // 고정 하단(props.footer)의 확정 단추도 함께 그린다(#869 P1)
       { initialState: { _global: { editingChannel, channels: SAVED_CHANNELS } }, initialData: { $locale: 'ko' }, locale: 'ko' },
     );
     const { container } = await utils.render();

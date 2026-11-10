@@ -31,28 +31,28 @@
       <p data-ref="ciq_008_split_hint" data-if="{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable === true)}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_split_hint</p>
       <!-- 잠긴 행이 하나라도 있으면 이유를 적는다 — 비활성 입력만 두면 운영자는 화면이 고장 난 줄 안다. -->
       <p data-ref="ciq_003_not_splittable_hint" data-if="{{(_global.claimItemQuantityContext?.rows ?? []).some(r => r.splittable !== true &amp;&amp; r.quantity > 1)}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_not_splittable</p>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2">
-        <button data-ref="ciq_004_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:common.cancel
-        </button>
-        <!-- 실행은 일괄 바와 **같은 핸들러**다 — 두 발신처가 각자 요청을 만들면 본문 계약이 갈리고, 한쪽만 고쳐졌을 때 그 경로로만 422 가 난다(형제 결함 R10 이 그것이다). -->
-        <button data-ref="ciq_005_confirm" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true}}">
-          <on type="click">
-            <action handler="sirsoft-ecommerce.executeClaimItemBulkStatus" pathSegment="{{_global.claimItemQuantityContext?.pathSegment ?? ''}}" claimType="{{_global.claimItemQuantityContext?.claimType ?? ''}}" claimId="{{_global.claimItemQuantityContext?.claimId ?? null}}" claimNumber="{{_global.claimItemQuantityContext?.claimNumber ?? ''}}" requesterName="{{_global.claimItemQuantityContext?.requesterName ?? ''}}" itemIds="{{_global.claimItemQuantityContext?.itemIds ?? []}}" itemQuantities="{{_global.claimItemQuantityContext?.quantities ?? {} }}" status="{{_global.claimItemQuantityContext?.status ?? ''}}" trackingOnly="{{_global.claimItemQuantityContext?.trackingOnly === true}}" direction="{{_global.claimItemQuantityContext?.direction ?? ''}}" rejectReason="{{_global.claimItemQuantityContext?.rejectReason ?? ''}}" carrierId="{{_global.claimItemQuantityContext?.carrierId ?? ''}}" trackingNumber="{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}" rows="{{_global.claimItemQuantityContext?.detailRows ?? []}}" completeDefaults="{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}">
-              <fail>
-                <!-- 사유 토스트는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다. -->
-                <suppress/>
-              </fail>
-            </action>
-          </on>
-          <icon data-if="{{_local.isUpdatingClaimItems}}" name="spinner" class="ecommerce-spinner-sm ecommerce:mr-1"/>
-          <span data-if="{{_global.claimItemQuantityContext?.trackingOnly !== true}}">$t:sirsoft-ecommerce.admin.claim.bulk.apply</span>
-          <span data-if="{{_global.claimItemQuantityContext?.trackingOnly === true}}">$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button data-ref="ciq_004_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <!-- 실행은 일괄 바와 **같은 핸들러**다 — 두 발신처가 각자 요청을 만들면 본문 계약이 갈리고, 한쪽만 고쳐졌을 때 그 경로로만 422 가 난다(형제 결함 R10 이 그것이다). -->
+      <button data-ref="ciq_005_confirm" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.executeClaimItemBulkStatus" pathSegment="{{_global.claimItemQuantityContext?.pathSegment ?? ''}}" claimType="{{_global.claimItemQuantityContext?.claimType ?? ''}}" claimId="{{_global.claimItemQuantityContext?.claimId ?? null}}" claimNumber="{{_global.claimItemQuantityContext?.claimNumber ?? ''}}" requesterName="{{_global.claimItemQuantityContext?.requesterName ?? ''}}" itemIds="{{_global.claimItemQuantityContext?.itemIds ?? []}}" itemQuantities="{{_global.claimItemQuantityContext?.quantities ?? {} }}" status="{{_global.claimItemQuantityContext?.status ?? ''}}" trackingOnly="{{_global.claimItemQuantityContext?.trackingOnly === true}}" direction="{{_global.claimItemQuantityContext?.direction ?? ''}}" rejectReason="{{_global.claimItemQuantityContext?.rejectReason ?? ''}}" carrierId="{{_global.claimItemQuantityContext?.carrierId ?? ''}}" trackingNumber="{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}" rows="{{_global.claimItemQuantityContext?.detailRows ?? []}}" completeDefaults="{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}">
+            <fail>
+              <!-- 사유 토스트는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다. -->
+              <suppress/>
+            </fail>
+          </action>
+        </on>
+        <icon data-if="{{_local.isUpdatingClaimItems}}" name="spinner" class="ecommerce-spinner-sm ecommerce:mr-1"/>
+        <span data-if="{{_global.claimItemQuantityContext?.trackingOnly !== true}}">$t:sirsoft-ecommerce.admin.claim.bulk.apply</span>
+        <span data-if="{{_global.claimItemQuantityContext?.trackingOnly === true}}">$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only</span>
+      </button>
+    </footer>
   </modal>
 </partial>

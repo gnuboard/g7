@@ -1,0 +1,21 @@
+feature: 폼 컨텍스트(FormContext)와 자동 바인딩 도우미
+
+description: |
+  FormContext 공급자가 값을 넘기는지, 자동 바인딩이 dataKey, name, setState 가 모두 있을 때만 켜지는지,
+  getNestedValue 와 setNestedValue 가 중첩 경로와 배열 인덱스, 빈 배열의 문자열 키(PHP {} 가 [] 로 오는 경우)를
+  다루는지 본다. trackChanges 는 hasChanges 갱신만 다스리고, hasExplicitSetStateForField 는 change 이벤트의
+  같은 필드 setState(sequence 안 포함)만 찾는다. 축 area 는 기능 묶음 하나씩이다.
+
+axes:
+  area: [basic, auto_binding, nested_get, nested_set, track_changes, explicit_set_state]
+
+effects:
+  - form_context_provides_value
+  - form_auto_binding_requires_all_conditions
+  - form_nested_value_read
+  - form_nested_value_written
+  - form_track_changes_controls_has_changes
+  - form_explicit_set_state_detected
+
+test_files:
+  - resources/js/core/template-engine/__tests__/FormContext.test.tsx

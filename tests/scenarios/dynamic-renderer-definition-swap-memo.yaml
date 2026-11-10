@@ -1,0 +1,23 @@
+feature: 편집기가 노드 정의를 바꿔 끼우면(props 참조는 그대로, 다른 필드만 바뀜) 조건과 props 해석을 다시 계산한다 (engine-v1.89.0)
+
+description: |
+  DynamicRenderer 의 조건 메모(shouldRender)는 condition 을, props 메모(resolvedProps)는 type·slot·component_layout·children 을
+  의존성에 두지 않았다. 편집기는 노드를 불변 갱신(`{ ...node, condition }`)으로 고치므로 그 필드만 바뀐 정의를 받아도 이전
+  결과를 그대로 썼다. 축 field 는 바뀐 정의 필드다. name 은 컴포넌트 문맥 메모를 거쳐 종전에도 다시 계산됐고(잠금으로 둔다),
+  children 은 basic·layout 이 `__` props 를 DOM 앞에서 걸러내고 composite 는 늘 문맥을 받아 화면 차이가 없어 의존성만 맞췄다.
+
+axes:
+  field: [condition, type, component_layout, name]
+
+effects:
+  - definition_swap_recomputes_condition  # condition 만 바뀐 정의를 받으면 표시 여부를 다시 판정한다
+  - definition_swap_recomputes_props      # type·component_layout·name 만 바뀐 정의를 받으면 props 를 다시 해석한다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.definitionSwapMemo.test.tsx
+
+validation:
+  browser_check: 레이아웃 편집기에서 노드의 조건(condition)을 바꾸면 미리보기에서 바로 숨겨지고 되돌리면 다시 보이는지
+  note: |
+    fail-first: 수정 전 코드에서 condition·type·component_layout 3건과 children(관찰 불가로 제거 전) 1건 red, name 은 green.
+    같은 구간 폭 변경의 항목 렌더 0 잠금(DynamicRenderer.iterationResponsiveResize.test.tsx same_branch_resize)은 수정 뒤에도 green.

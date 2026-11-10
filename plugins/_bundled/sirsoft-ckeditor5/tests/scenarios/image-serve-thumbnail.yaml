@@ -1,0 +1,50 @@
+feature: 본문 이미지 서빙의 썸네일 (`?size=` · `?w=`)
+
+description: |
+  에디터 본문 이미지(`/api/plugins/sirsoft-ckeditor5/images/{hash}`)는 인증 없이 보이는 완전 공개 원본이다.
+  컨트롤러가 해시 조회(게이트) 뒤·원본 응답 바로 앞에서 코어 `ThumbnailResponder` 를 부르고, 낼 수 없으면
+  원본에 `X-G7-Thumbnail: bypass:{사유}` 를 붙인다. 서비스 `serve()` 안에서 부르지 않는 것은 원본의 304 판정을
+  컨트롤러가 하기 때문이다 — 서비스가 썸네일을 돌려주면 원본 검증자로 다시 싸인다.
+
+  리스너(`ThumbnailRegistrationListener`)가 서빙 경로 패턴과 공개 원본 제공자를 코어 목록에 더한다. 패턴이
+  빠지면 화면·SEO 가 본문 이미지 주소에 규격을 붙이지 않아 오류 없이 원본만 나간다.
+
+  회귀 불변식:
+    1. 파라미터 없는 요청은 이전과 같은 원본 바이트이고 썸네일 헤더·파생본이 생기지 않는다.
+    2. `?size=sm` 은 160×160 파생본(첫 요청 miss, 다음 hit) + nosniff. 키는 `thumbnails/{디스크}/sirsoft-ckeditor5/{file_path}/sm_…`.
+    3. `?w=300` 은 숫자 요청 대상 중 가로 ≥ 300 최소(md 640)로 올려 맞춘다.
+    4. 운영 환경에서 공개 원본 썸네일의 캐시는 `public`(권한 원본의 `private` 와 반대).
+    5. 미정의 규격·원본보다 큰 규격(확대 끔)은 원본 + `bypass:{사유}`.
+    6. 공개 썸네일 저장 위치가 공개 자산 디스크(public)면 302 직접 주소, 비공개 디스크에는 쓰지 않는다.
+    7. 리스너가 경로 패턴과 제공자를 등록하고, 제공자는 `images` 카테고리만 원본으로 분류한다(임시·설정·그 밖의 카테고리와 다른 확장 경로는 아니다).
+    8. 원본 파일만 사라진 행은 `?size=` 를 붙여도 무파라미터와 같은 404 다(남은 파생본으로 200 을 내지 않는다).
+    9. 제공자 목록 필터는 필터 호출마다 제공자를 새로 만들지 않고 같은 인스턴스를 돌려준다.
+    10. 앞선 리스너가 배열이 아닌 값을 넘기면 그 값을 그대로 돌려준다. 나눠 읽는 상한은 최소 1 이다.
+    11. 업로드 목록 이미지는 sm 규격이고, 본문 표시 확장은 호출자가 준 imageSizes 를 HtmlContent 에 넘긴다.
+
+axes:
+  thumbnail_query: [none, size, w, size_production_cache, bypass, size_public_disk, registration, original_missing, provider_reuse, layout_binding]
+
+effects:
+  - ckeditor_image_serve_without_size_returns_original_unchanged
+  - ckeditor_image_serve_size_returns_preset_dimensions
+  - ckeditor_image_serve_thumbnail_is_hardened
+  - ckeditor_image_serve_w_rounds_up_to_numeric_preset
+  - ckeditor_image_serve_thumbnail_cache_is_public
+  - ckeditor_image_serve_bypass_marks_original
+  - ckeditor_image_serve_bypass_original_uses_thumbnail_ttl
+  - ckeditor_image_serve_public_thumbnail_disk_redirects
+  - ckeditor_thumbnail_listener_registers_url_pattern_and_provider
+  - ckeditor_image_serve_missing_original_is_404_with_size
+  - ckeditor_thumbnail_provider_resolved_once
+  - ckeditor_thumbnail_listener_keeps_non_array_filter_value
+  - ckeditor_image_chunk_reads_at_least_one_row
+  - ckeditor_uploads_list_uses_sm_preset
+  - ckeditor_html_content_forwards_image_sizes
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/Http/Controllers/ImageServeThumbnailTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/thumbnail-layouts.test.ts
+
+notes: |
+  조건부 요청(304) 계약은 image-serve-conditional-request.yaml 이 소유한다 — 이 매니페스트의 변경 뒤에도 그 시나리오가 green 이어야 한다.

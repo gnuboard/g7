@@ -167,8 +167,15 @@
                     "id": "log_table_header",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
+                        "className": "ecommerce:hidden ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -242,8 +249,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800"
+                                "className": "ecommerce:hidden ecommerce:py-3 ecommerce:px-2 ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800"
                             },
                             "children": [
                                 {
@@ -559,8 +573,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:hidden ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:md:hidden ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1"
+                                "className": "ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:py-3 ecommerce:px-2 ecommerce:space-y-1"
                             },
                             "children": [
                                 {

@@ -123,6 +123,10 @@ return [
         'search' => [
             'mysql-fulltext' => 'MySQL Full-Text',
         ],
+        'image' => [
+            'gd' => 'GD',
+            'imagick' => 'Imagick (ImageMagick)',
+        ],
     ],
 
     // Driver connection test messages
@@ -168,6 +172,14 @@ return [
     'driver_unusable_s3_adapter' => 'S3 storage adapter (league/flysystem-aws-s3-v3) is not installed.',
     'driver_unusable_redis_client' => 'Neither the phpredis extension nor the predis library is available.',
     'driver_unusable_memcached_extension' => 'The memcached PHP extension is not installed.',
+    'driver_unusable_gd_extension' => 'The gd PHP extension is not installed.',
+    'driver_unusable_imagick_extension' => 'The imagick PHP extension is not installed.',
+
+    // Thumbnail storage options on the upload tab (ThumbnailDiskOptions)
+    'thumbnail_disks' => [
+        'thumbnails' => 'Private server storage (default)',
+        's3' => 'Amazon S3 (private, streamed through the server)',
+    ],
     'websocket_invalid_host' => 'The Websocket host setting is invalid. Enter the address only — credentials (@) and protocols other than http/https are not allowed.',
     'websocket_connection_refused' => 'Could not connect to Websocket server. Please check if the server is running.',
 

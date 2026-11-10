@@ -56,7 +56,7 @@ _등록하는 메뉴가 없습니다._
 설정 화면(`plugin_settings.g7.html`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
 접근합니다 — IDV provider 마다 전용 사이드바 메뉴를 만들면 provider 를 여러 개 설치했을
 때 메뉴가 난립합니다.
-화면의 입력 줄은 관리자 템플릿 의미 클래스 `grid-3col-responsive`(넓은 화면에서 라벨·설명 1칸, 입력 2칸), 섹션 제목은
+화면의 입력 줄은 3열 그리드(접두 유틸 + `responsive` 의 `1024-` 구간 — 넓은 화면에서 라벨·설명 1칸, 입력 2칸), 섹션 제목은
 `section-heading-md`, 저장 오류 상자는 제목 `text-error-strong`·목록 줄 `text-error-soft` 를 씁니다(테스트
 `resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.ts` 가 위치를 고정합니다).
 <!-- @intent END -->

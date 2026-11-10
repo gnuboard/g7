@@ -41,6 +41,16 @@ const DEFAULT_MAX_DELAY_MS = 2000;
 const DEFAULT_TIMEOUT_MS = 15000;
 
 /**
+ * 레이아웃 요청(`LayoutLoader.fetchLayout`)의 시도별 상한 — 다른 API 요청(`ApiClient` axios 기본 30초)과 같다.
+ *
+ * 공용 기본값 15초를 쓰던 때는 첫 요청이 16~18초 걸리는 느린 서버에서 정상 응답이 세 번 모두 끊겨 「페이지 로딩 실패」 로
+ * 끝났고 서버는 같은 요청을 세 번 받았다(설계 확정 2026-11-09, #869). 라우트·컴포넌트·언어 파일 같은 다른 요청은 기본값 그대로다.
+ *
+ * @since engine-v1.89.0
+ */
+export const LAYOUT_REQUEST_TIMEOUT_MS = 30000;
+
+/**
  * 취소(AbortError) 여부를 판별합니다.
  *
  * `instanceof DOMException` 을 쓰지 않는 이유: jsdom 등 테스트 환경에서 DOMException 이

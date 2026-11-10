@@ -100,7 +100,8 @@
             </div>
             <div slot="content" class="board:px-4 board:py-4">
               <p class="board-text-tertiary board:mb-3">$t:sirsoft-board.admin.form.permissions.admin_permissions_description</p>
-              <div data-if="{{_local.form?.permissions !== undefined}}" class="board:space-y-2 board-grid-2col-responsive">
+              <div data-if="{{_local.form?.permissions !== undefined}}" class="board:space-y-2 board:grid board:grid-cols-1 board:gap-4">
+                <responsive on="768-" class="board:space-y-2 board:grid board:grid-cols-2 board:gap-4"/>
                 <div data-each="perm, permIdx in Object.entries(_local.form?.permissions ?? {}).filter(([key]) => key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))">
                   <div data-ref="admin_perm_row_{{permIdx}}" class="{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'board:bg-red-50 board:dark:bg-red-900/20 board:rounded-lg board:px-3 board:py-2 board:border board:border-red-300 board:dark:border-red-700' : 'board:bg-gray-50 board:dark:bg-gray-700 board:rounded-lg board:px-3 board:py-2 board:border board:border-gray-200 board:dark:border-gray-600' }}">
                     <div class="board:mb-2">
@@ -133,7 +134,8 @@
             </div>
             <div slot="content" class="board:px-4 board:py-4">
               <p class="board-text-tertiary board:mb-3">$t:sirsoft-board.admin.form.permissions.user_permissions_description</p>
-              <div data-if="{{_local.form?.permissions !== undefined}}" class="board:space-y-2 board-grid-2col-responsive">
+              <div data-if="{{_local.form?.permissions !== undefined}}" class="board:space-y-2 board:grid board:grid-cols-1 board:gap-4">
+                <responsive on="768-" class="board:space-y-2 board:grid board:grid-cols-2 board:gap-4"/>
                 <div data-each="perm, permIdx in Object.entries(_local.form?.permissions ?? {}).filter(([key]) => !key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))">
                   <div data-ref="user_perm_row_{{permIdx}}" class="{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'board:bg-red-50 board:dark:bg-red-900/20 board:rounded-lg board:px-3 board:py-2 board:border board:border-red-300 board:dark:border-red-700' : 'board:bg-gray-50 board:dark:bg-gray-700 board:rounded-lg board:px-3 board:py-2 board:border board:border-gray-200 board:dark:border-gray-600' }}">
                     <div class="board:mb-2">

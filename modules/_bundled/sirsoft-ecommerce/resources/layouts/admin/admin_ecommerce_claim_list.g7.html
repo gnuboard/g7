@@ -148,7 +148,8 @@
   </init>
   <slot name="content">
     <div data-ref="claim_list_content" class="ecommerce-admin-page-content">
-      <div data-ref="page_header" class="ecommerce-page-header">
+      <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+        <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div class="ecommerce-flex-center ecommerce:gap-3">
           <!-- 모바일 뒤로가기 -->
           <button aria-label="$t:common.back" data-ref="mb_001_back_button" type="button" class="ecommerce-btn ecommerce-btn-ghost ecommerce-btn-icon ecommerce:hidden ecommerce-hidden">
@@ -160,12 +161,13 @@
             <icon name="arrow-left" class="ecommerce:text-xl"/>
           </button>
           <div>
-            <h1 data-ref="h_002_page_title" class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.claim.title</h1>
+            <h1 data-ref="h_002_page_title" class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.claim.title</h1>
             <p data-ref="h_003_page_description" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.claim.description</p>
           </div>
         </div>
-        <div class="ecommerce-page-actions">
-          <button aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="h_004_refresh_button" type="button" class="ecommerce-btn ecommerce-btn-icon">
+        <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
+          <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
+          <button aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="h_004_refresh_button" type="button" class="ecommerce-btn ecommerce-btn-icon ecommerce:shrink-0 ecommerce:whitespace-nowrap">
             <on type="click">
               <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 유형 서브탭과 걸어둔 필터를 유지한다. -->
               <navigate path="/admin/ecommerce/claims" :mergeQuery="true">

@@ -39,6 +39,8 @@ return [
         'reorder_success' => 'Attachment order has been changed.',
         'settings_success' => 'Attachment settings loaded.',
         'reorder_failed' => 'Failed to change attachment order.',
+        // Source name in Settings > Upload "Generate thumbnails for existing images"
+        'thumbnail_source' => 'Page attachment images',
     ],
 
     // Error messages (Exception)

@@ -69,6 +69,20 @@ class MigrateSettingsToJsonCommand extends Command
         'image_max_width' => 'upload',
         'image_max_height' => 'upload',
         'image_quality' => 'upload',
+        // 이미지 썸네일 (#869) — 옛 system_configs 에 있었을 리 없는 키지만, 같은 이름이 남아 있으면 upload 로 옮긴다
+        'thumbnail_enabled' => 'upload',
+        'thumbnail_presets' => 'upload',
+        'thumbnail_content_preset' => 'upload',
+        'thumbnail_disk_public' => 'upload',
+        'thumbnail_disk_gated' => 'upload',
+        'thumbnail_prune_enabled' => 'upload',
+        'thumbnail_animated_original' => 'upload',
+        'thumbnail_generate_per_minute' => 'upload',
+        'thumbnail_lock_wait_seconds' => 'upload',
+        'thumbnail_max_source_pixels' => 'upload',
+        'thumbnail_pregenerate_batch' => 'upload',
+        'thumbnail_pregenerate_time_budget' => 'upload',
+        'thumbnail_purge_time_budget' => 'upload',
 
         // seo
         'meta_title_suffix' => 'seo',

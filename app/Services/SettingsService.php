@@ -12,6 +12,8 @@ use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
+use App\Jobs\PurgeRetiredThumbnailDiskJob;
+use App\Jobs\PurgeThumbnailsOnReenableJob;
 use App\Models\User;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\Auth\ReauthenticationService;
@@ -28,8 +30,14 @@ use App\Support\ProcessOutputEncoding;
 use App\Support\SettingsVersion;
 use App\Support\TrustedProxyDiagnostic;
 use App\Support\TrustedProxySetting;
+use App\Thumbnails\ThumbnailConfig;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailPresetSettings;
+use App\Thumbnails\ThumbnailStore;
+use App\Thumbnails\ThumbnailUrl;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -535,6 +543,10 @@ class SettingsService
             'format_extensions' => $this->formatExtensions($sourceValue),
             'first_image_url' => $this->getFirstImageUrl($sourceValue),
             'favicon_url' => $this->getFaviconUrl($sourceValue),
+            // 프론트 URL 유틸·편집기 규격 선택이 읽는 값 — 저장 행이 아니라 레지스트리가 합친 결과(고정·og·확장·운영자)다.
+            'thumbnail_presets' => app(ThumbnailPresetRegistry::class)->forFrontend(),
+            // `size` 를 붙여도 되는 서빙 경로 — 기능이 꺼져 있으면 빈 목록(프론트는 아무 주소도 바꾸지 않는다).
+            'thumbnail_url_patterns' => (bool) ($sourceValue ?? true) ? ThumbnailUrl::patterns() : [],
             default => $sourceValue,
         };
     }
@@ -794,6 +806,13 @@ class SettingsService
 
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
+
+            // 이미지 썸네일 규격 표(#869) — 저장소는 카테고리 1단계만 병합해 목록을 통째로 바꾸므로, 화면이 보낸 표를
+            // 그대로 두면 고정 슬롯이 빠지거나 꺼진 확장의 수정값이 사라진다. 저장 목록으로 바꿔 넣는다.
+            if ($tab === 'upload') {
+                $tabSettings = $this->prepareUploadThumbnailSettings($tabSettings, $existingSettings);
+            }
+
             $mergedSettings = array_merge($existingSettings, $tabSettings);
 
             // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486).
@@ -801,6 +820,10 @@ class SettingsService
             $assetUrlModeChanged = $tab === 'general'
                 && array_key_exists('asset_url_mode', $tabSettings)
                 && ($existingSettings['asset_url_mode'] ?? null) !== $tabSettings['asset_url_mode'];
+
+            // 썸네일 설정이 실제로 바뀌는지도 저장 전에 판정한다 — 바뀌었을 때만 큐 워커 재시작 신호를 보낸다.
+            $thumbnailSettingsChanged = $tab === 'upload'
+                && $this->thumbnailSettingsDiffer($existingSettings, $mergedSettings);
 
             // 해당 카테고리 설정 저장
             $result = $this->configRepository->saveCategory($tab, $mergedSettings);
@@ -825,8 +848,14 @@ class SettingsService
                 // drivers 탭은 queue/broadcasting/cache 등 long-running worker에 영향
                 // SettingsServiceProvider는 worker boot 시점에 한 번만 config 적용하므로
                 // 워커가 정상 종료 후 재시작되도록 신호 전송 (cache 기반, 즉시 종료 X)
-                if ($tab === 'drivers') {
+                // 썸네일 미리 만들기·옛 디스크 비우기는 큐 작업이다 — 썸네일 설정(업로드 탭)이 바뀌면 워커가 옛 값으로
+                // 계속 돌지 않게 같은 신호를 보낸다. 다른 업로드 키만 바뀌었거나 같은 값이면 보내지 않는다.
+                if ($tab === 'drivers' || $thumbnailSettingsChanged) {
                     $this->restartQueueWorkers();
+                }
+
+                if ($tab === 'upload' || $tab === 'drivers') {
+                    $this->applyThumbnailConfigInProcess($tab, $mergedSettings);
                 }
             }
 
@@ -839,6 +868,116 @@ class SettingsService
                 'settings' => [__('settings.save_failed').': '.$e->getMessage()],
             ]);
         }
+    }
+
+    /**
+     * 두 업로드 설정의 썸네일 값이 다른지 — 워커가 실제로 읽는 config 값(`ThumbnailConfig::fromUploadSettings()`)으로 비교한다.
+     *
+     * 화면은 켜고 끄는 값을 '1'·'0' 문자열로, API 는 bool 로 보낸다. 저장 원형으로 비교하면 같은 값을 다시 저장해도 바뀐
+     * 것으로 보이므로 config 로 바꾼 뒤 비교한다. 썸네일 키가 아닌 업로드 키는 보지 않는다.
+     *
+     * @param  array<string, mixed>  $before  지금 저장된 업로드 설정
+     * @param  array<string, mixed>  $after  저장할 업로드 설정
+     * @return bool 썸네일 값이 하나라도 다르면 true
+     */
+    private function thumbnailSettingsDiffer(array $before, array $after): bool
+    {
+        return ThumbnailConfig::fromUploadSettings($before) != ThumbnailConfig::fromUploadSettings($after);
+    }
+
+    /**
+     * 업로드 탭 저장분의 썸네일 값을 저장 형태로 바꿉니다 (#869).
+     *
+     *  - 응답 전용 값(`thumbnail_presets_rows`, `thumbnail_presets_public`, `thumbnail_url_patterns`)은 저장하지 않는다.
+     *    화면은 응답으로 받은 업로드 탭 객체를 통째로 되돌려 보내므로, 거르지 않으면 계산 결과가 upload.json 에 쌓이고
+     *    다음 조회 때 계산 값 대신 그 낡은 값이 보인다.
+     *  - `thumbnail_presets` 는 `ThumbnailPresetSettings::mergeForSave()` 를 거친다. 고정 슬롯을 늘 보충하고, og 행은 빼고
+     *    (크기는 SEO 탭 소유), 지금 꺼진 확장의 수정값은 기존 저장본에서 이어 붙인다. null 은 「보내지 않음」으로 본다.
+     *
+     * @param  array<string, mixed>  $tabSettings  업로드 탭 저장분 (원본 키)
+     * @param  array<string, mixed>  $existingSettings  지금 저장된 업로드 설정
+     * @return array<string, mixed> 저장할 업로드 탭 값
+     */
+    private function prepareUploadThumbnailSettings(array $tabSettings, array $existingSettings): array
+    {
+        unset(
+            $tabSettings['thumbnail_presets_rows'],
+            $tabSettings['thumbnail_presets_public'],
+            $tabSettings['thumbnail_url_patterns'],
+        );
+
+        // 서버 보호 값(「고급」 칸)은 정수로 저장한다 — 화면은 숫자 칸 값을 문자열로 보내기도 한다. 빈 칸은 null(서버 기본값).
+        foreach (ThumbnailConfig::SERVER_LIMIT_KEYS as $limitKey) {
+            $settingKey = 'thumbnail_'.$limitKey;
+
+            if (array_key_exists($settingKey, $tabSettings)) {
+                $tabSettings[$settingKey] = is_numeric($tabSettings[$settingKey]) ? (int) $tabSettings[$settingKey] : null;
+            }
+        }
+
+        if (! array_key_exists('thumbnail_presets', $tabSettings)) {
+            return $tabSettings;
+        }
+
+        if (! is_array($tabSettings['thumbnail_presets'])) {
+            unset($tabSettings['thumbnail_presets']);
+
+            return $tabSettings;
+        }
+
+        $previous = is_array($existingSettings['thumbnail_presets'] ?? null) ? array_values($existingSettings['thumbnail_presets']) : [];
+
+        $tabSettings['thumbnail_presets'] = app(ThumbnailPresetSettings::class)->mergeForSave(
+            array_values($tabSettings['thumbnail_presets']),
+            $previous
+        );
+
+        return $tabSettings;
+    }
+
+    /**
+     * 저장한 썸네일 설정과 이미지 엔진 선택을 이 프로세스의 config 에도 반영합니다 (#869).
+     *
+     * `SettingsServiceProvider` 의 주입(applyUploadConfig, applyDriverConfig)은 다음 부팅에서야 일어난다.
+     * 그런데 저장 응답(`SettingsController::store`)이 같은 요청 안에서 규격 표(`presentRows`)와 엔진 유무를 다시 만들므로,
+     * 여기서 넣지 않으면 저장 직후 화면이 옛 표로 되돌아간다. 키 대응은 Provider 와 같게 둔다 — 업로드 탭의 서버 보호 값은
+     * `.env` 대응 키라 Provider 처럼 잠긴 키를 빼고 넣는다(저장본에 남은 옛 값이 `.env` 값을 덮지 않게). 레지스트리의 요청 안
+     * 캐시도 비운다.
+     *
+     * @param  string  $tab  저장한 탭 (upload 또는 drivers)
+     * @param  array<string, mixed>  $mergedSettings  저장한 카테고리 전체 값
+     * @return void 반환값 없음
+     */
+    private function applyThumbnailConfigInProcess(string $tab, array $mergedSettings): void
+    {
+        if ($tab === 'drivers') {
+            if (! empty($mergedSettings['image_driver'])) {
+                Config::set('core.image.driver', (string) $mergedSettings['image_driver']);
+            }
+        } else {
+            $store = app(ThumbnailStore::class);
+            $previousDisks = $store->disks();
+            $wasEnabled = (bool) config('core.thumbnail.enabled', true);
+
+            foreach (ThumbnailConfig::fromUploadSettings(EnvPriority::filterLocked('upload', $mergedSettings)) as $configKey => $value) {
+                Config::set($configKey, $value);
+            }
+
+            // 끈 동안 저장소 계층은 원본 put 의 파생본 무효화를 건너뛰었다(업로드마다 원격 확인 요청을 내지 않게).
+            // 그 사이 덮어쓴 원본의 옛 파생본이 다시 켜자마자 나가지 않도록 지금 쓰는 썸네일 디스크를 비운다(큐 또는 응답 뒤).
+            if (! $wasEnabled && (bool) config('core.thumbnail.enabled', true)) {
+                PurgeThumbnailsOnReenableJob::schedule();
+            }
+
+            // 저장 위치를 바꾸면 옛 디스크의 파생본은 어떤 경로로도 지워지지 않는다(원본 삭제·정리·비우기가 모두
+            // 「지금 설정된」 디스크만 본다). 썸네일은 캐시이므로 옛 디스크의 `thumbnails/` 를 비우되, 파일 수만큼
+            // 걸리는 삭제가 저장 요청을 붙잡지 않게 큐로 넘긴다(큐가 없으면 응답을 보낸 뒤).
+            foreach (array_diff($previousDisks, $store->disks()) as $retired) {
+                PurgeRetiredThumbnailDiskJob::schedule($retired);
+            }
+        }
+
+        app(ThumbnailPresetRegistry::class)->flush();
     }
 
     /**
@@ -1197,6 +1336,8 @@ class SettingsService
             $assetUrlModeChanged = $key === 'general.asset_url_mode'
                 && $this->configRepository->get($key) !== $value;
 
+            $thumbnailSettingsChanged = $this->singleKeyChangesThumbnailSettings($key, $value);
+
             $result = $this->configRepository->set($key, $value);
 
             if ($result) {
@@ -1209,7 +1350,7 @@ class SettingsService
                     $this->bumpExtensionCacheForAssetUrlMode();
                 }
 
-                if (str_starts_with($key, 'drivers.') || $key === 'drivers') {
+                if (str_starts_with($key, 'drivers.') || $key === 'drivers' || $thumbnailSettingsChanged) {
                     $this->restartQueueWorkers();
                 }
             }
@@ -1223,6 +1364,36 @@ class SettingsService
                 'setting' => [__('settings.save_individual_failed', ['error' => $e->getMessage()])],
             ]);
         }
+    }
+
+    /**
+     * 단건 저장이 썸네일 설정 값을 바꾸는지 — 큐 워커 재시작 신호 판정 (벌크 저장의 `thumbnailSettingsDiffer()` 와 같은 기준).
+     *
+     * `upload` 카테고리 통째, `upload.{썸네일 키}`, 그 아래 깊은 키(`upload.thumbnail_presets.0.width` 등)를 본다.
+     *
+     * @param  string  $key  설정 키 (예: 'upload.thumbnail_enabled')
+     * @param  mixed  $value  저장할 값
+     * @return bool 썸네일 값이 바뀌면 true
+     */
+    private function singleKeyChangesThumbnailSettings(string $key, mixed $value): bool
+    {
+        if ($key === 'upload') {
+            return is_array($value) && $this->thumbnailSettingsDiffer((array) $this->configRepository->getCategory('upload'), $value);
+        }
+
+        $segments = explode('.', $key, 3);
+
+        if ($segments[0] !== 'upload' || ! isset($segments[1]) || ! array_key_exists($segments[1], ThumbnailConfig::SETTING_KEYS)) {
+            return false;
+        }
+
+        $before = $this->configRepository->get($key);
+
+        if (isset($segments[2])) {
+            return $before != $value;
+        }
+
+        return $this->thumbnailSettingsDiffer([$segments[1] => $before], [$segments[1] => $value]);
     }
 
     /**

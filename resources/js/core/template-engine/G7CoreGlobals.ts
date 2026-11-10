@@ -35,6 +35,17 @@ import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { basePrefix, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
+import {
+  contentSrcset,
+  contentSrcsetWithin,
+  type ContentSrcsetWithinOptions,
+  getContentPreset,
+  getThumbnailPresets,
+  isThumbnailableUrl,
+  stripThumbnailSize,
+  thumbnailSrcset,
+  withThumbnailSize,
+} from '../support/thumbnailUrl';
 import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
@@ -42,7 +53,7 @@ import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 // DiagnosticEngine/ServerConnector/StyleTracker/DevToolsPanel 은 정적 import 하지 않는다 —
 // 디버그 전용 무거운 모듈은 별도 lazy 번들(devtools.min.js)로 분리되어 initDevToolsAPI() 가
 // isEnabled() 참일 때만 런타임 <script> 주입으로 로드한다. @since engine-v1.51.0
-import type { DiagnosticCategory } from '../devtools/types';
+import type { ComputedDependencyType, ComputedRecalcTrigger, DiagnosticCategory } from '../devtools/types';
 import {
   renderItemChildren,
   createChangeEvent,
@@ -138,7 +149,8 @@ export interface G7DevToolsInterface {
     result: any;
     resultType: string;
     duration?: number;
-    method: 'resolve' | 'resolveBindings' | 'evaluateExpression';
+    /** 평가 진입점 — 파이프 식은 evaluatePipeExpression 으로 기록된다 */
+    method: 'resolve' | 'resolveBindings' | 'evaluateExpression' | 'evaluatePipeExpression';
     componentId?: string;
     componentName?: string;
     propName?: string;
@@ -178,7 +190,8 @@ export interface G7DevToolsInterface {
   /** 액션 로그 기록 */
   logAction(action: {
     id: string;
-    type: string;
+    /** 핸들러 이름 — actionRef 를 풀지 못한 액션은 비어 있다 */
+    type: string | undefined;
     params?: Record<string, any>;
     resolvedParams?: Record<string, any>;
     context?: Record<string, any>;
@@ -342,7 +355,8 @@ export interface G7DevToolsInterface {
    */
   trackAction?(info: {
     handler: string;
-    type: string;
+    /** 이벤트 타입 — `event` 만 적은 진입점 액션은 비어 있다 */
+    type: string | undefined;
     status: 'pending' | 'success' | 'error' | 'cancelled';
     params?: Record<string, any>;
     debounce?: {
@@ -583,7 +597,7 @@ export interface G7DevToolsInterface {
   trackComputedProperty?(
     name: string,
     expression: string,
-    dependencies: Array<{ type: string; path: string; value?: any }>,
+    dependencies: Array<{ type: ComputedDependencyType; path: string; value?: any }>,
     value: any,
     computationTime: number,
     componentId?: string,
@@ -603,12 +617,12 @@ export interface G7DevToolsInterface {
    */
   trackComputedRecalc?(
     computedName: string,
-    trigger: 'dependency-change' | 'manual' | 'init',
+    trigger: ComputedRecalcTrigger,
     previousValue: any,
     newValue: any,
     computationTime: number,
     triggeredBy?: {
-      type: string;
+      type: ComputedDependencyType;
       path: string;
       oldValue?: any;
       newValue?: any;
@@ -626,7 +640,8 @@ export interface G7DevToolsInterface {
   /** actionRef 해석 이력 기록 */
   trackNamedActionRef?(log: {
     actionRefName: string;
-    resolvedHandler: string;
+    /** 풀린 named action 의 핸들러 이름 — 정의에 handler 가 없으면 비어 있다 */
+    resolvedHandler: string | undefined;
     timestamp: number;
   }): void;
 
@@ -2999,6 +3014,48 @@ function initUrlAPI(G7Core: any): void {
 }
 
 /**
+ * 이미지 썸네일 주소 API 초기화 — 템플릿·확장 컴포넌트가 쓰는 **공식 수단**.
+ *
+ * 확장 번들은 코어와 별도 IIFE 라 `support/thumbnailUrl` 을 import 할 수 없다. 사본을 두면 대상 판정
+ * (같은 출처 + 등록된 서빙 경로)과 쿼리 덧붙임 규칙이 갈려 서명 URL 이 깨지거나 외부 주소에 `size` 가 붙는다.
+ * 그래서 판정은 코어 한 곳에 두고 여기서 이름만 준다.
+ *
+ * ```ts
+ * const src = window.G7Core.thumbnail.url(image.url, 'sm');
+ * const srcSet = window.G7Core.thumbnail.srcset(image.url, 'md');
+ * ```
+ *
+ * @param G7Core - window.G7Core 전역 객체
+ * @since engine-v1.89.0
+ */
+function initThumbnailAPI(G7Core: any): void {
+  G7Core.thumbnail = {
+    /** 썸네일을 붙여도 되는 주소인지 (같은 출처 + 등록된 서빙 경로) */
+    isThumbnailable: (url: unknown): boolean => isThumbnailableUrl(url),
+    /** 주소에 규격을 붙인다 (대상이 아니면 그대로) */
+    url: (url: unknown, preset: unknown): unknown => withThumbnailSize(url, preset),
+    /** 고정 규격의 1x·2x srcset (대상이 아니면 빈 문자열) */
+    srcset: (url: unknown, preset: unknown): string => thumbnailSrcset(url, preset),
+    /** 본문 이미지 srcset — 숫자 요청 대상 규격 전부를 `w` 기술자로 */
+    contentSrcset: (url: unknown): string => contentSrcset(url),
+    /**
+     * 원본 가로를 넘지 않는 본문 srcset — `includeOriginal` 이면 원본보다 작은 후보 + 원본, 아니면 원본 가로 이하 후보
+     * @since engine-v1.89.0
+     */
+    contentSrcsetWithin: (url: unknown, maxWidth: unknown, options?: ContentSrcsetWithinOptions | null): string =>
+      contentSrcsetWithin(url, maxWidth, options),
+    /** 본문 이미지 규격 이름 (`upload.thumbnail_content_preset`) */
+    contentPreset: (): string => getContentPreset(),
+    /** 썸네일 쿼리를 걷어낸 원본 주소 (확대 보기용) */
+    strip: (url: unknown): unknown => stripThumbnailSize(url),
+    /** 서버가 내려 준 공개 규격 목록 */
+    presets: () => getThumbnailPresets(),
+  };
+
+  logger.log('전역 객체 window.G7Core.thumbnail에 노출됨');
+}
+
+/**
  * 로케일 관리 API 초기화
  */
 function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
@@ -3745,6 +3802,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   initStateAPI(G7Core);
   initDataSourceAPI(G7Core);
   initUrlAPI(G7Core);
+  initThumbnailAPI(G7Core);
   initLocaleAPI(G7Core, deps);
   initToastAPI(G7Core);
   initModalAPI(G7Core);
@@ -4315,7 +4373,7 @@ export function initDevToolsInterface(): void {
     trackComputedProperty: (name, expression, dependencies, value, computationTime, componentId, error) => {
       try {
         if (getDevTools().isEnabled()) {
-          getDevTools().trackComputedProperty(name, expression, dependencies as any, value, computationTime, componentId, error);
+          getDevTools().trackComputedProperty(name, expression, dependencies, value, computationTime, componentId, error);
         }
       } catch (e) {
         // DevTools 추적 실패해도 실행은 계속
@@ -4325,7 +4383,7 @@ export function initDevToolsInterface(): void {
     trackComputedRecalc: (computedName, trigger, previousValue, newValue, computationTime, triggeredBy, componentId) => {
       try {
         if (getDevTools().isEnabled()) {
-          getDevTools().trackComputedRecalc(computedName, trigger as any, previousValue, newValue, computationTime, triggeredBy as any, componentId);
+          getDevTools().trackComputedRecalc(computedName, trigger, previousValue, newValue, computationTime, triggeredBy, componentId);
         }
       } catch (e) {
         // DevTools 추적 실패해도 실행은 계속

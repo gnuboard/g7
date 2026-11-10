@@ -4,21 +4,25 @@ namespace App\Http\Controllers\Api\Public;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
-use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Controllers\Concerns\ServesRewritableCssAssets;
+use App\Http\Requests\Public\Template\ServeEditorSpecBundleRequest;
 use App\Http\Requests\Public\Template\ServeTemplateAssetRequest;
 use App\Models\TemplateLayoutAttachment;
+use App\Services\EditorSpecBundleService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Support\LayoutMarkup\EmptyMap;
+use App\Thumbnails\Providers\LayoutAttachmentSourceProvider;
+use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * 공개 템플릿 API 컨트롤러
@@ -33,10 +37,14 @@ class PublicTemplateController extends PublicBaseController
      *
      * @param  TemplateService  $templateService  템플릿 서비스
      * @param  TemplateLayoutAttachmentService  $layoutAttachmentService  레이아웃 첨부 서비스
+     * @param  ThumbnailResponder  $thumbnails  썸네일 응답기 (size·w 요청을 원본 응답보다 먼저 받는다)
+     * @param  EditorSpecBundleService  $editorSpecBundleService  편집기 스펙 묶음 서비스
      */
     public function __construct(
         private TemplateService $templateService,
         private TemplateLayoutAttachmentService $layoutAttachmentService,
+        private ThumbnailResponder $thumbnails,
+        private EditorSpecBundleService $editorSpecBundleService,
     ) {
         parent::__construct();
     }
@@ -354,9 +362,8 @@ class PublicTemplateController extends PublicBaseController
         // 활성 디렉토리만 기준으로 합본한 단일 spec 을 반환한다(_bundled 폴백 없음).
         // 합본 결과는 분할 전 단일 파일과 동일 형태(프론트엔드 로더 무영향).
         // 미분할 파일은 원본 반환(하위 호환), 미존재 시 null.
-        $spec = EditorSpecAssembler::assemble(
-            base_path("templates/{$identifier}/editor-spec.json")
-        );
+        // 묶음 엔드포인트(serveEditorSpecBundle)와 같은 판정 메서드를 쓴다 — 두 경로의 내용이 갈라지지 않게.
+        $spec = $this->editorSpecBundleService->templateEditorSpec($identifier);
 
         $message = $spec === null
             ? __('templates.messages.editor_spec_empty')
@@ -372,6 +379,40 @@ class PublicTemplateController extends PublicBaseController
     }
 
     /**
+     * 편집기 스펙 묶음 조회 — 활성 모듈·플러그인과 템플릿의 editor-spec 을 한 응답으로 반환
+     *
+     * 레이아웃 편집기가 확장마다 개별 엔드포인트를 부르던 것을 한 요청으로 묶는다. 항목마다
+     * 개별 엔드포인트와 같은 판정을 한다(모듈·플러그인은 활성만, 설치본만 읽기, 템플릿은 설치본만).
+     * 한 항목이 실패해도 나머지는 낸다 — 항목의 `status`(200·404·500)와 `error` 로 부분 실패를 표시하고
+     * 응답 자체는 200 이다. 개별 엔드포인트(`{identifier}/editor-spec`)는 서드파티 호환을 위해 그대로 둔다.
+     *
+     * @param  ServeEditorSpecBundleRequest  $request  검증된 요청 (`modules[]`·`plugins[]`)
+     * @param  string  $identifier  편집 대상 템플릿 식별자
+     * @return JsonResponse 편집기 스펙 묶음 응답 (`data.items`)
+     */
+    public function serveEditorSpecBundle(ServeEditorSpecBundleRequest $request, string $identifier): JsonResponse
+    {
+        $moduleIds = $request->moduleIdentifiers();
+        $pluginIds = $request->pluginIdentifiers();
+
+        $this->logApiUsage('templates.editor_spec_bundle', [
+            'identifier' => $identifier,
+            'modules' => count($moduleIds),
+            'plugins' => count($pluginIds),
+        ]);
+
+        $items = $this->editorSpecBundleService->buildBundle($identifier, $moduleIds, $pluginIds);
+
+        return $this->success(
+            __('templates.messages.editor_spec_retrieved'),
+            [
+                'identifier' => $identifier,
+                'items' => $items,
+            ]
+        );
+    }
+
+    /**
      * 레이아웃 첨부 이미지 파일 서빙.
      *
      * 발행된 배경 이미지는 일반 사이트 방문자에게도 로드되어야 하므로 인증 불필요한
@@ -379,16 +420,26 @@ class PublicTemplateController extends PublicBaseController
      * 공개 URL 이 없어, 본 라우트가 파일을 캐싱 헤더와 함께 인라인 스트림한다.
      * 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404.
      *
+     * `?size={규격}`·`?w={숫자}` 가 붙으면 래스터 이미지는 썸네일로 낸다(완전 공개 원본 — 공개 썸네일 디스크).
+     * 낼 수 없으면 원본에 `X-G7-Thumbnail: bypass:{사유}` 를 붙인다.
+     *
+     * @param  Request  $request  요청 (`size`·`w`)
      * @param  string  $identifier  템플릿 식별자
      * @param  TemplateLayoutAttachment  $attachment  라우트 모델 바인딩된 첨부
-     * @return StreamedResponse|Response|JsonResponse 파일 응답 또는 404
+     * @return SymfonyResponse|JsonResponse 파일·썸네일 응답(200·304·302) 또는 404
      */
-    public function serveFile(string $identifier, TemplateLayoutAttachment $attachment): StreamedResponse|Response|JsonResponse
+    // audit:allow controller-base-request-injection reason: 썸네일 파라미터(size·w)를 원문 쿼리로 판정한다(중복 키·배열 키 거부)
+    public function serveFile(Request $request, string $identifier, TemplateLayoutAttachment $attachment): SymfonyResponse|JsonResponse
     {
         $serveInfo = $this->layoutAttachmentService->getServableResponse($identifier, $attachment);
 
         if ($serveInfo === null) {
             return $this->notFound('templates.layout_attachments.errors.not_found');
+        }
+
+        // 게이트(템플릿 소속 확인)를 지난 뒤, 원본 응답 바로 앞
+        if ($thumbnail = $this->thumbnails->respond($request, LayoutAttachmentSourceProvider::sourceFor($attachment))) {
+            return $thumbnail;
         }
 
         // 캐싱 헤더와 함께 응답 (레이아웃 캐시 TTL, 기본 24시간).
@@ -429,6 +480,9 @@ class PublicTemplateController extends PublicBaseController
             return $response;
         }
 
-        return InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_name);
+        return ThumbnailResponder::markBypass(
+            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_name),
+            $request
+        );
     }
 }

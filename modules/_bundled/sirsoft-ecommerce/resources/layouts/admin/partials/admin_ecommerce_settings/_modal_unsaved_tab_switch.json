@@ -9,7 +9,71 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "머무르기 — 옮기려던 탭을 지우고 창만 닫는다(고친 값과 「변경 있음」은 그대로)",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "pendingEcommerceSettingsTab": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal",
+                                "target": "modal_ecommerce_settings_unsaved_tab"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "ecommerce-settings-unsaved-tab-stay",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.btn_stay"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "저장하지 않고 옮기기 — 창을 먼저 닫고(이동이 끝날 때까지 창이 떠 있지 않게) 탭 전환 이벤트만 보낸다. 정리(「변경 있음」 끄기·오류·인라인 추가 폼)와 전역 탭·URL 갱신은 탭 본문 틀의 이벤트 받기가 한다 — 그 받기는 페이지 문맥이라 페이지 폼 렌더러 상태에 닿는다. 설정을 다시 받으며 고친 값은 저장된 값으로 돌아간다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "modal_ecommerce_settings_unsaved_tab"
+                            },
+                            {
+                                "handler": "emitEvent",
+                                "params": {
+                                    "event": "sirsoft-ecommerce:settings-switch-tab",
+                                    "data": {
+                                        "tab": "{{_global.pendingEcommerceSettingsTab}}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "ecommerce-settings-unsaved-tab-leave",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-orange-700 ecommerce:dark:bg-orange-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-orange-800 ecommerce:dark:hover:bg-orange-800"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.btn_leave"
+            }
+        ]
     },
     "children": [
         {
@@ -19,77 +83,6 @@
                 "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.message"
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "머무르기 — 옮기려던 탭을 지우고 창만 닫는다(고친 값과 「변경 있음」은 그대로)",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "pendingEcommerceSettingsTab": null
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal",
-                                    "target": "modal_ecommerce_settings_unsaved_tab"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "data-testid": "ecommerce-settings-unsaved-tab-stay",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.btn_stay"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "저장하지 않고 옮기기 — 창을 먼저 닫고(이동이 끝날 때까지 창이 떠 있지 않게) 탭 전환 이벤트만 보낸다. 정리(「변경 있음」 끄기·오류·인라인 추가 폼)와 전역 탭·URL 갱신은 탭 본문 틀의 이벤트 받기가 한다 — 그 받기는 페이지 문맥이라 페이지 폼 렌더러 상태에 닿는다. 설정을 다시 받으며 고친 값은 저장된 값으로 돌아간다",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "closeModal",
-                                    "target": "modal_ecommerce_settings_unsaved_tab"
-                                },
-                                {
-                                    "handler": "emitEvent",
-                                    "params": {
-                                        "event": "sirsoft-ecommerce:settings-switch-tab",
-                                        "data": {
-                                            "tab": "{{_global.pendingEcommerceSettingsTab}}"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "data-testid": "ecommerce-settings-unsaved-tab-leave",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-orange-700 ecommerce:dark:bg-orange-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-orange-800 ecommerce:dark:hover:bg-orange-800"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.unsaved_tab_modal.btn_leave"
-                }
-            ]
         }
     ]
 }

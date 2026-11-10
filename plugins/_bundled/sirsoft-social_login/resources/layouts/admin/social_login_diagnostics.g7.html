@@ -48,7 +48,7 @@
     <div data-ref="social_login_diagnostics_content" class="sl-admin-page-content">
       <div data-ref="page_header" class="sl-flex-between sl:mb-6">
         <div>
-          <h1 class="sl-page-title">$t:sirsoft-social_login.admin.diagnostics.title</h1>
+          <h1 class="sl:text-xl sl:font-semibold sl:text-gray-900 sl:dark:text-white"><responsive on="640-" class="sl:text-2xl sl:font-semibold sl:text-gray-900 sl:dark:text-white"/>$t:sirsoft-social_login.admin.diagnostics.title</h1>
           <p class="sl-text-label-subtle sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.description</p>
         </div>
         <div class="sl-flex-center sl:gap-2">
@@ -70,7 +70,9 @@
       <!-- 요약 응답 전에는 값 자리를 비우고 불러오는 중을, 받기에 실패하면 오류를 알린다 — 아직 오지 않은 값을 「메일 안 나감」, 「연결 회원 0명」으로 그리지 않는다 -->
       <p data-ref="diagnostics_loading" data-if="{{diagnostics === undefined}}" role="status" class="sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3">$t:common.loading</p>
       <p data-ref="diagnostics_load_failed" data-if="{{diagnostics === null}}" role="alert" class="sl:text-sm sl:text-red-700 sl:dark:text-red-300 sl:mb-3">$t:common.error_occurred</p>
-      <div data-ref="summary_cards" class="sl:grid sl:grid-cols-1 sl:md:grid-cols-2 sl:xl:grid-cols-4 sl:gap-4 sl:mb-6">
+      <div data-ref="summary_cards" class="sl:grid sl:grid-cols-1 sl:gap-4 sl:mb-6">
+        <responsive on="768-1279" class="sl:grid sl:grid-cols-2 sl:gap-4 sl:mb-6"/>
+        <responsive on="1280-" class="sl:grid sl:grid-cols-4 sl:gap-4 sl:mb-6"/>
         <div data-ref="queue_card" class="sl-admin-card">
           <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.queue.title</h2>
           <div data-ref="queue_values" data-if="{{!!diagnostics?.data}}">

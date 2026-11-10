@@ -253,6 +253,8 @@
                                 "name": "Img",
                                 "props": {
                                     "src": "{{category?.data?.images?.[0]?.download_url ?? ''}}",
+                                    "thumbPreset": "lg",
+                                    "loading": "eager",
                                     "alt": "{{category?.data?.images?.[0]?.alt_text ?? category?.data?.name_localized ?? ''}}",
                                     "className": "w-full h-auto object-cover max-h-64"
                                 }

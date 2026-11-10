@@ -10,7 +10,25 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.schedules.security.title",
-        "size": "lg"
+        "size": "lg",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "schedule_security_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "text": "$t:common.close"
+            }
+        ]
     },
     "children": [
         {
@@ -727,31 +745,6 @@
                             ]
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "schedule_security_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "text": "$t:common.close"
                 }
             ]
         }

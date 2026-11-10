@@ -30,6 +30,11 @@ import { I } from '../../basic/I';
 import { SortableThumbnailItem } from './SortableThumbnailItem';
 import type { Attachment, PendingFile } from './types';
 import { t } from './utils';
+import { gridColsClass, resolveGridCols, type GridResponsiveCols } from '../../layout/gridColumns';
+import { useViewportWidth } from '../../layout/viewportWidth';
+
+/** 썸네일 격자 구간별 열 수 (기본 2열) */
+const THUMBNAIL_COLS: GridResponsiveCols = { sm: 3, md: 4, lg: 5 };
 
 export interface FileListProps {
   /** 모든 파일 목록 (기존 + 대기) */
@@ -81,6 +86,11 @@ export const FileList: React.FC<FileListProps> = ({
   primaryFileId,
   onPrimaryChange,
 }) => {
+  // 썸네일 열 수 — 640 미만 2·640 이상 3·768 이상 4·1024 이상 5열. 엔진 폭으로 골라 편집기 미리보기 폭도 따른다
+  // (예전에는 Tailwind 반응형 접두로 나눴는데, 접두는 창 폭으로 판정되어 미리보기 폭을 따르지 못한다)
+  const viewportWidth = useViewportWidth();
+  const thumbnailColsClass = gridColsClass(resolveGridCols(2, THUMBNAIL_COLS, viewportWidth));
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -93,7 +103,7 @@ export const FileList: React.FC<FileListProps> = ({
           items={allItems.map((item) => ('hash' in item ? item.hash : item.id))}
           strategy={rectSortingStrategy}
         >
-          <Div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <Div className={`grid ${thumbnailColsClass} gap-3`}>
             {/* 파일 썸네일들 */}
             {allItems.map((item) => {
               const isExisting = 'hash' in item;

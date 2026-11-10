@@ -101,7 +101,7 @@
         </div>
       </div>
     </div>
-    <div data-ref="order_datagrid_card" class="ecommerce:p-0 ecommerce:md:p-0">
+    <div data-ref="order_datagrid_card" class="ecommerce:p-0">
       <data-grid data-type="composite" data-ref="order_datagrid" pageHref="/admin/ecommerce/orders?page={page}" :pageHrefMergeQuery="true" rowLabelField="order_number" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="{{orders === undefined ? '' : $t('sirsoft-ecommerce.admin.order.message.no_orders')}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <blur-until-loaded sources="orders"/>
         <column field="no" header="NO" width="60px" :sortable="false" :required="false">
@@ -130,7 +130,7 @@
         <column field="product" header="$t:sirsoft-ecommerce.admin.order.column.product" width="auto" :sortable="false" :required="false">
           <cell>
             <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-2">
-              <img data-if="{{row.first_option?.thumbnail_url}}" src="{{row.first_option?.thumbnail_url}}" alt="{{row.first_option?.product_name}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700"/>
+              <img data-if="{{row.first_option?.thumbnail_url}}" src="{{row.first_option?.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.first_option?.product_name}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700"/>
               <div data-if="{{!row.first_option?.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                 <icon name="image" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
               </div>

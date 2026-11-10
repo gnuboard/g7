@@ -36,6 +36,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Board\Support\BoardReadScope;
 use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Support\ReadHookContext;
@@ -52,6 +53,7 @@ class BoardService
 {
     use ClearsTemplateCaches;
     use FormatsBoardDate;
+    use ResolvesRowStorage;
     use ResolvesSortSpec;
 
     /**
@@ -839,9 +841,9 @@ class BoardService
 
         // 그누보드7 규정: DB CASCADE 금지 → 어플리케이션에서 명시적 삭제
         DB::transaction(function () use ($board) {
-            // 1. 첨부파일 스토리지 일괄 삭제 (물리 파일)
+            // 1. 첨부파일 스토리지 일괄 삭제 (물리 파일) — 행 disk 별, 행 삭제(2) 전에
             // 첨부파일 저장 경로: attachments/{slug}/...
-            $this->deleteAttachmentFiles($board->slug);
+            $this->deleteAttachmentFiles($board);
 
             // 2. 연관 데이터 영구 삭제 (board_id 기준)
             // 게시판을 영구 삭제하므로 하위 게시글·댓글·첨부 DB 레코드도 함께 영구 삭제한다
@@ -1985,18 +1987,44 @@ class BoardService
      * 따라서 StorageInterface::deleteDirectory('attachments', '{slug}') 로
      * 해당 게시판의 최종·임시 첨부 파일을 한 번에 삭제합니다.
      *
-     * @param  string  $slug  게시판 슬러그
+     * 디렉토리는 **행 disk 별로** 지운다. 디스크를 전환한 사이트에서는 한 게시판의 첨부가 여러
+     * 디스크에 흩어져 있는데, 종전에는 주입 디스크 하나만 지워 옛 디스크의 파일이 게시판 삭제 뒤에도
+     * 영구 잔류했다(형제 이커머스 `ProductImageService::deleteByProductId()` 는 이미 행 disk 별이다).
+     * 주입 디스크는 행이 없어도 항상 지운다(행 disk 가 비어 있는 구 데이터 · 행 없이 남은 파일).
+     * 스토리지 드라이버로 지우므로 그 아래 썸네일 파생본도 함께 지워진다.
+     *
+     * 행을 지우기 전에 불러야 한다 — 디스크 목록을 행에서 읽는다.
+     *
+     * @param  Board  $board  게시판
      * @return void 반환값 없음
      */
-    private function deleteAttachmentFiles(string $slug): void
+    private function deleteAttachmentFiles(Board $board): void
     {
+        $slug = $board->slug;
+        $storages = [$this->storage->getDisk() => $this->storage];
+
         try {
-            $this->storage->deleteDirectory('attachments', $slug);
+            foreach ($this->attachmentRepository->getDistinctDisksByBoard($board->id, $slug) as $disk) {
+                $storage = $this->storageForRow($disk);
+                $storages[$storage->getDisk()] ??= $storage;
+            }
         } catch (\Exception $e) {
-            Log::warning('게시판 첨부파일 스토리지 삭제 실패 (계속 진행)', [
+            Log::warning('게시판 첨부 디스크 목록 조회 실패 — 주입 디스크만 정리 (계속 진행)', [
                 'slug' => $slug,
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        foreach ($storages as $disk => $storage) {
+            try {
+                $storage->deleteDirectory('attachments', $slug);
+            } catch (\Exception $e) {
+                Log::warning('게시판 첨부파일 스토리지 삭제 실패 (계속 진행)', [
+                    'slug' => $slug,
+                    'disk' => $disk,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 

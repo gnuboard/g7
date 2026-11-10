@@ -9,7 +9,206 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-board.admin.settings.bulk_apply_modal.title",
-        "size": "lg"
+        "size": "lg",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{$parent._local.isBulkApplying}}",
+                    "className": "board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "bulk_apply_confirm_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "일괄 적용 실행 — 뿌리기는 전부-아니면-전무다. 한 게시판에서 막히면 서버가 통째로 되돌리고(`rolled_back`) 그때는 창을 닫지 않은 채 어디서 막혔는지 알린다. 성공했을 때만 스냅숏을 지우고 창을 닫는다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "comment": "스냅샷은 모달 열기 전(탭 버튼 클릭 시) 이미 _global에 저장됨 - 여기서는 진행 상태 변경 + 직전 롤백 안내 초기화(재시도 대비)",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "$parent._local",
+                                    "isBulkApplying": true,
+                                    "bulkApplySaveError": false,
+                                    "bulkApplyAborted": false,
+                                    "bulkApplyAbortedBoard": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-board/admin/settings",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PUT",
+                                    "body": "{{(function() { const snap = _global.bulkApplySnapshot || {}; const tab = snap.tab || 'basic_defaults'; const form = snap.form || {}; if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "$parent._local",
+                                            "hasChanges": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-board/admin/settings/bulk-apply",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": "{{(function() { const snap = _global.bulkApplySnapshot || {}; return { fields: snap.fields ?? [], apply_all: snap.applyAll !== false, board_ids: snap.applyAll !== false ? [] : (snap.boardIds ?? []) }; })()}}"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "comment": "성공/롤백 공통 — 진행 상태 해제",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "$parent._local",
+                                                    "isBulkApplying": false
+                                                }
+                                            },
+                                            {
+                                                "comment": "성공(rolled_back=false): 적용 완료 → 상태 초기화 + 스냅샷 정리 + 모달 닫고 success 토스트",
+                                                "handler": "setState",
+                                                "if": "{{!response?.data?.rolled_back}}",
+                                                "params": {
+                                                    "target": "$parent._local",
+                                                    "bulkApplyFields": [],
+                                                    "bulkApplyAll": true,
+                                                    "bulkApplyAborted": false,
+                                                    "bulkApplyAbortedBoard": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "if": "{{!response?.data?.rolled_back}}",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkApplySnapshot": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "if": "{{!response?.data?.rolled_back}}"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "if": "{{!response?.data?.rolled_back}}",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-board.admin.settings.bulk_apply_modal.success|count={{response?.data?.updated_count ?? 0}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "롤백(rolled_back=true): 전체 취소됨 → 모달 유지 + 안내 박스 표시(board 유무로 문구 분기) + warning 토스트",
+                                                "handler": "setState",
+                                                "if": "{{response?.data?.rolled_back}}",
+                                                "params": {
+                                                    "target": "$parent._local",
+                                                    "bulkApplyAborted": true,
+                                                    "bulkApplyAbortedBoard": "{{response?.data?.board?.name ?? null}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "if": "{{response?.data?.rolled_back}}",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_toast"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "comment": "실패(권한 부여 상한 403 등) — 창이 떠 있으므로 스냅숏은 두어 방금 시도한 항목·게시판을 그대로 보여 준다(지우면 「0개 · 전체 게시판」으로 바뀐다). 사유는 서버 메시지 토스트로",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "$parent._local",
+                                                    "isBulkApplying": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.error'}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "comment": "저장 실패(기본 권한 상한 403 등) — 창의 안내 박스는 「저장 실패로 중단」만 말하므로 거부 사유를 토스트로 함께 알린다. 스냅숏은 두어 시도한 내용을 그대로 보여 준다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "$parent._local",
+                                            "isBulkApplying": false,
+                                            "bulkApplySaveError": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.save_error'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}",
+                    "className": "board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-amber-700 board:dark:bg-amber-700 board:text-white board:rounded-lg board:hover:bg-amber-800 board:dark:hover:bg-amber-800 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{$parent._local.isBulkApplying}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "board-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!$parent._local.isBulkApplying}}",
+                        "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.confirm"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{$parent._local.isBulkApplying}}",
+                        "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.processing"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -369,212 +568,6 @@
                                 "className": "board:text-red-700 board:dark:text-red-300"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_generic"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board:flex board:justify-end board:gap-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{$parent._local.isBulkApplying}}",
-                                "className": "board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "bulk_apply_confirm_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "일괄 적용 실행 — 뿌리기는 전부-아니면-전무다. 한 게시판에서 막히면 서버가 통째로 되돌리고(`rolled_back`) 그때는 창을 닫지 않은 채 어디서 막혔는지 알린다. 성공했을 때만 스냅숏을 지우고 창을 닫는다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "comment": "스냅샷은 모달 열기 전(탭 버튼 클릭 시) 이미 _global에 저장됨 - 여기서는 진행 상태 변경 + 직전 롤백 안내 초기화(재시도 대비)",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "$parent._local",
-                                                "isBulkApplying": true,
-                                                "bulkApplySaveError": false,
-                                                "bulkApplyAborted": false,
-                                                "bulkApplyAbortedBoard": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-board/admin/settings",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PUT",
-                                                "body": "{{(function() { const snap = _global.bulkApplySnapshot || {}; const tab = snap.tab || 'basic_defaults'; const form = snap.form || {}; if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "$parent._local",
-                                                        "hasChanges": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "/api/modules/sirsoft-board/admin/settings/bulk-apply",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "POST",
-                                                        "body": "{{(function() { const snap = _global.bulkApplySnapshot || {}; return { fields: snap.fields ?? [], apply_all: snap.applyAll !== false, board_ids: snap.applyAll !== false ? [] : (snap.boardIds ?? []) }; })()}}"
-                                                    },
-                                                    "onSuccess": [
-                                                        {
-                                                            "comment": "성공/롤백 공통 — 진행 상태 해제",
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "$parent._local",
-                                                                "isBulkApplying": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "comment": "성공(rolled_back=false): 적용 완료 → 상태 초기화 + 스냅샷 정리 + 모달 닫고 success 토스트",
-                                                            "handler": "setState",
-                                                            "if": "{{!response?.data?.rolled_back}}",
-                                                            "params": {
-                                                                "target": "$parent._local",
-                                                                "bulkApplyFields": [],
-                                                                "bulkApplyAll": true,
-                                                                "bulkApplyAborted": false,
-                                                                "bulkApplyAbortedBoard": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "setState",
-                                                            "if": "{{!response?.data?.rolled_back}}",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "bulkApplySnapshot": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "closeModal",
-                                                            "if": "{{!response?.data?.rolled_back}}"
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "if": "{{!response?.data?.rolled_back}}",
-                                                            "params": {
-                                                                "type": "success",
-                                                                "message": "$t:sirsoft-board.admin.settings.bulk_apply_modal.success|count={{response?.data?.updated_count ?? 0}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "comment": "롤백(rolled_back=true): 전체 취소됨 → 모달 유지 + 안내 박스 표시(board 유무로 문구 분기) + warning 토스트",
-                                                            "handler": "setState",
-                                                            "if": "{{response?.data?.rolled_back}}",
-                                                            "params": {
-                                                                "target": "$parent._local",
-                                                                "bulkApplyAborted": true,
-                                                                "bulkApplyAbortedBoard": "{{response?.data?.board?.name ?? null}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "if": "{{response?.data?.rolled_back}}",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_toast"
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": [
-                                                        {
-                                                            "comment": "실패(권한 부여 상한 403 등) — 창이 떠 있으므로 스냅숏은 두어 방금 시도한 항목·게시판을 그대로 보여 준다(지우면 「0개 · 전체 게시판」으로 바뀐다). 사유는 서버 메시지 토스트로",
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "$parent._local",
-                                                                "isBulkApplying": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.error'}}"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "comment": "저장 실패(기본 권한 상한 403 등) — 창의 안내 박스는 「저장 실패로 중단」만 말하므로 거부 사유를 토스트로 함께 알린다. 스냅숏은 두어 시도한 내용을 그대로 보여 준다",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "$parent._local",
-                                                        "isBulkApplying": false,
-                                                        "bulkApplySaveError": true
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.save_error'}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}",
-                                "className": "board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-amber-700 board:dark:bg-amber-700 board:text-white board:rounded-lg board:hover:bg-amber-800 board:dark:hover:bg-amber-800 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{$parent._local.isBulkApplying}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "board-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!$parent._local.isBulkApplying}}",
-                                    "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.confirm"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{$parent._local.isBulkApplying}}",
-                                    "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.processing"
-                                }
-                            ]
                         }
                     ]
                 }

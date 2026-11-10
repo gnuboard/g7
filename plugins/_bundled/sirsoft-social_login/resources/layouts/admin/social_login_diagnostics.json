@@ -112,8 +112,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sl:text-2xl sl:font-semibold sl:text-gray-900 sl:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "sl-page-title"
+                                            "className": "sl:text-xl sl:font-semibold sl:text-gray-900 sl:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-social_login.admin.diagnostics.title"
                                     },
@@ -233,8 +240,20 @@
                         "id": "summary_cards",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "768-1279": {
+                                "props": {
+                                    "className": "sl:grid sl:grid-cols-2 sl:gap-4 sl:mb-6"
+                                }
+                            },
+                            "1280-": {
+                                "props": {
+                                    "className": "sl:grid sl:grid-cols-4 sl:gap-4 sl:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "sl:grid sl:grid-cols-1 sl:md:grid-cols-2 sl:xl:grid-cols-4 sl:gap-4 sl:mb-6"
+                            "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:mb-6"
                         },
                         "children": [
                             {

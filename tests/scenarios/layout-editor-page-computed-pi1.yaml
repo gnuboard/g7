@@ -1,0 +1,102 @@
+# 레이아웃 편집기 페이지 설정 계산값과 조건 값 편집기 (π1)
+# #869 이월 0 회차(π1): tsc 정리 때 건드린 편집기 시험의 시나리오 표식 누락을 채우며 만든 매니페스트다.
+# 축 subject 는 각 시험 파일이 재는 대상(컴포넌트 또는 함수)이고, effects 는 시험 하나하나가 단언하는 동작이다.
+feature: layout_editor_page_computed_pi1
+
+description: |
+  페이지 설정의 계산값(computed) 폼과 미리보기, 직접 만들기 빌더, 부모/자식 상속 매트릭스(C1~C14)를 다룬다.
+  조건 값 편집기(ConditionalValueEditor), 분기 목록(conditions 액션), 세그먼트 값 편집기(SegmentedValueEditor)의
+  조각 편집, 재결합, 드래그 재배치, 데이터 후보 연동, 읽기전용 디그레이드를 시험 단위로 잠근다.
+
+axes:
+  subject: [computed_inheritance, computed_form, computed_preview, custom_computed_builder, conditional_value_editor, conditions_branch_list, segmented_value_editor]
+
+effects:
+  - computed_inherit_parent_only_common_badge_editable
+  - computed_inherit_child_only_no_badge_editable
+  - computed_inherit_distinct_keys_badge_by_source
+  - computed_inherit_child_override_promoted_badge
+  - computed_inherit_pure_child_key_no_override_badge
+  - computed_inherit_edit_parent_key_shows_override_notice
+  - computed_inherit_edit_parent_key_patches_child_expr
+  - computed_inherit_revert_button_calls_on_revert
+  - computed_inherit_revert_hidden_without_on_revert
+  - computed_inherit_delete_child_key_keeps_parent
+  - computed_inherit_new_key_same_as_parent_allowed
+  - computed_inherit_save_payload_has_override_expr
+  - computed_inherit_base_mode_no_common_badge
+  - computed_inherit_parent_advanced_key_readonly_preview
+  - computed_inherit_three_level_nearest_layer_wins
+  - computed_inherit_cross_ref_preview_uses_merged
+  - computed_form_preset_card_with_preview
+  - computed_form_code_toggle_shows_source_expr
+  - computed_form_advanced_card_code_preview
+  - computed_form_add_preset_creates_key
+  - computed_form_custom_builder_creates_key
+  - computed_form_unparsed_expr_kept_advanced
+  - computed_form_delete_removes_key
+  - computed_form_inherited_badge_and_override_notice
+  - computed_form_no_recipes_keeps_custom_builder
+  - computed_preview_number_value_and_type
+  - computed_preview_string_value
+  - computed_preview_list_length_summary
+  - computed_preview_eval_failure_shows_error
+  - computed_preview_effect_toggle_dispatches_signal
+  - computed_preview_no_effect_toggle_without_is_effect
+  - cond_value_tree_renders_condition_and_branches
+  - cond_value_left_blur_commits_serialized_expr
+  - cond_value_left_typing_defers_on_change
+  - cond_value_left_enter_commits
+  - cond_value_compare_condition_shows_op_right
+  - cond_value_branch_leaf_edit_updates_branch
+  - cond_value_fallback_node_renders_both_branches
+  - cond_value_concat_node_renders_parts
+  - cond_value_concat_part_handle_remove_add
+  - cond_value_concat_reorder_emits_expr
+  - cond_value_concat_remove_part_emits_expr
+  - cond_value_complex_condition_readonly_code
+  - cond_value_raw_node_readonly_code
+  - cond_value_source_toggle_shows_serialized
+  - cond_value_source_toggle_hidden_when_disabled
+  - cond_value_candidates_show_data_search_toggle
+  - cond_value_candidate_pick_sets_plain_left_path
+  - cond_value_truthy_condition_no_right_search
+  - cond_branch_conditions_action_matches_preset
+  - cond_branch_edit_renders_if_then_and_add
+  - cond_branch_add_pushes_empty_branch
+  - cond_branch_remove_drops_branch
+  - cond_branch_then_handler_shown_as_card
+  - cond_branch_checkout_sequence_is_preset_card
+  - cond_branch_checkout_sequence_expands_api_call
+  - cond_branch_checkout_reaches_pg_entry_card
+  - custom_computed_verb_select_switches_inputs
+  - custom_computed_count_condition_rows_add_remove
+  - custom_computed_duplicate_key_warning
+  - custom_computed_count_expr_generation
+  - custom_computed_key_input_updates_model
+  - custom_computed_sum_field_uses_data_chip_input
+  - custom_computed_condition_fields_use_data_chip
+  - custom_computed_candidates_show_value_picker
+  - custom_computed_nth_index_stays_plain_input
+  - seg_value_initial_split_renders_part_cards
+  - seg_value_edit_part_recombines_others_kept
+  - seg_value_add_text_part_appends_empty
+  - seg_value_add_condition_part_seeds_ternary
+  - seg_value_add_fallback_part_seeds_nullish
+  - seg_value_remove_part_recombines
+  - seg_value_remove_all_keeps_one_empty_part
+  - seg_value_drag_handle_reorders_parts
+  - seg_value_drag_shows_single_drop_line
+  - seg_value_single_source_toggle_shows_joined
+  - seg_value_add_data_part_opens_picker
+  - seg_value_candidate_pick_fills_safe_binding
+  - seg_value_no_candidates_data_part_fallback
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/computed-inheritance.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ComputedForm.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ComputedPreview.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/CustomComputedBuilder.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ConditionalValueEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ConditionsBranchList.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/SegmentedValueEditor.test.tsx

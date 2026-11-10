@@ -8,7 +8,7 @@
 "모듈이 필요로 하는 계층을 **하나씩만** 담는다" 가 이 확장의 유일한 설계 목표입니다. 도메인은
 메모 하나, 필드는 셋뿐이고, 그 위에 Model · Migration · Factory · Seeder · Repository(인터페이스
 + 구현) · Service · FormRequest · Resource · Controller · Listener · Layout · Test · 다국어가
-각 1개씩 있습니다. 실제 모듈은 이 계층을 엔티티 수만큼 늘린 것입니다.
+각 1개씩 있습니다(리스너만 둘 — 액션 하나, 필터 하나). 실제 모듈은 이 계층을 엔티티 수만큼 늘린 것입니다.
 
 **짧게 유지하는 것이 기능보다 우선입니다.** 샘플의 가치는 완결성이 아니라 한눈에 읽히는
 것이므로, 기능을 더하면 계층 구조를 보러 온 사람이 도메인 로직을 읽게 됩니다.
@@ -41,6 +41,7 @@ Models/Memo                             gnuboard7_hello_module_memos
 
 Http/Resources/MemoResource             응답 형태 (컨트롤러가 조립하지 않는다)
 Listeners/LogMemoCreatedListener        memo.created 구독 — 부가 작업은 여기
+Listeners/ThumbnailPresetListener       core.thumbnail.filter_presets 구독 — 확장 썸네일 규격 1개
 resources/layouts/                      admin 2 + user 1
 ```
 

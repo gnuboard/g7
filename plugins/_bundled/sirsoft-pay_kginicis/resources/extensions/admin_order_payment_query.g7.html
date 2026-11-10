@@ -15,15 +15,16 @@
       </div>
       <p data-if="{{kginicis_cbt_reconciliation.data?.status === 'manual_refund_required'}}" class="paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300 paykginicis:leading-relaxed">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_manual_hint</p>
       <p data-if="{{kginicis_cbt_reconciliation.data?.status === 'auto_refunded'}}" class="paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300 paykginicis:leading-relaxed">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refunded_hint</p>
-      <div class="paykginicis:grid paykginicis:grid-cols-[100px_1fr] paykginicis:sm:grid-cols-[120px_1fr_120px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs">
+      <div class="paykginicis:grid paykginicis:grid-cols-[100px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs">
+        <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[120px_1fr_120px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"/>
         <span class="paykginicis:font-semibold paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_tid</span>
         <span class="paykginicis:font-mono paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:break-all pay-kginicis-break-all">{{kginicis_cbt_reconciliation.data?.tid ?? '-'}}</span>
         <span class="paykginicis:font-semibold paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_amount</span>
         <span class="paykginicis:font-mono paykginicis:text-red-950 paykginicis:dark:text-red-100">{{kginicis_cbt_reconciliation.data?.amount ?? '-'}}</span>
         <span class="paykginicis:font-semibold paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_reason</span>
-        <span class="paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:sm:col-span-3 paykginicis:break-all pay-kginicis-break-all">{{kginicis_cbt_reconciliation.data?.reason ?? '-'}}</span>
+        <span class="paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:break-all pay-kginicis-break-all"><responsive on="640-" class="paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"/>{{kginicis_cbt_reconciliation.data?.reason ?? '-'}}</span>
         <span data-if="{{kginicis_cbt_reconciliation.data?.refund_error}}" class="paykginicis:font-semibold paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refund_error</span>
-        <span data-if="{{kginicis_cbt_reconciliation.data?.refund_error}}" class="paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:sm:col-span-3 paykginicis:break-all pay-kginicis-break-all">{{kginicis_cbt_reconciliation.data?.refund_error}}</span>
+        <span data-if="{{kginicis_cbt_reconciliation.data?.refund_error}}" class="paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:break-all pay-kginicis-break-all"><responsive on="640-" class="paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"/>{{kginicis_cbt_reconciliation.data?.refund_error}}</span>
         <span class="paykginicis:font-semibold paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_updated_at</span>
         <span class="paykginicis:font-mono paykginicis:text-red-950 paykginicis:dark:text-red-100">{{kginicis_cbt_reconciliation.data?.updated_at ?? '-'}}</span>
         <span class="paykginicis:font-semibold paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_count</span>
@@ -64,7 +65,8 @@
         <span data-if="{{kginicis_cbt_cvs.data?.is_test_mode === true}}" class="paykginicis:px-2 paykginicis:py-0.5 paykginicis:rounded-full paykginicis:text-xs paykginicis:font-semibold paykginicis:bg-orange-100 paykginicis:dark:bg-orange-900/40 paykginicis:text-orange-800 paykginicis:dark:text-orange-200">$t:sirsoft-pay_kginicis.admin.test_mode_badge</span>
       </div>
       <p class="paykginicis:text-xs pay-kginicis-tone-info-strong paykginicis:leading-relaxed">$t:sirsoft-pay_kginicis.admin.cbt_cvs_ops_description</p>
-      <div class="paykginicis:grid paykginicis:grid-cols-[110px_1fr] paykginicis:sm:grid-cols-[130px_1fr_130px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs">
+      <div class="paykginicis:grid paykginicis:grid-cols-[110px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs">
+        <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[130px_1fr_130px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"/>
         <span class="paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_payment_status</span>
         <span class="paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100">{{kginicis_cbt_cvs.data?.payment_status ?? '-'}}</span>
         <span class="paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_cvs_status</span>
@@ -78,13 +80,14 @@
         <span class="paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_last_recheck</span>
         <span class="paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:break-all pay-kginicis-break-all">{{(kginicis_cbt_cvs.data?.last_recheck_at ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_recheck_result ?? '-')}}</span>
         <span class="paykginicis:text-xs paykginicis:text-blue-700 paykginicis:dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_notify_url</span>
-        <span class="paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:col-span-1 paykginicis:sm:col-span-3 paykginicis:break-all pay-kginicis-break-all">{{kginicis_cbt_cvs.data?.notify_url ?? '-'}}</span>
+        <span class="paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:col-span-1 paykginicis:break-all pay-kginicis-break-all"><responsive on="640-" class="paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"/>{{kginicis_cbt_cvs.data?.notify_url ?? '-'}}</span>
       </div>
       <div class="paykginicis:space-y-1">
         <div class="paykginicis:text-xs paykginicis:font-semibold paykginicis:text-blue-900 paykginicis:dark:text-blue-200">$t:sirsoft-pay_kginicis.admin.cbt_cvs_history_title</div>
         <div data-if="{{(kginicis_cbt_cvs.data?.notify_history ?? []).length === 0}}" class="paykginicis:text-xs pay-kginicis-tone-info">$t:sirsoft-pay_kginicis.admin.cbt_cvs_history_empty</div>
         <div data-if="{{(kginicis_cbt_cvs.data?.notify_history ?? []).length > 0}}" data-each="notify, notifyIdx in {{kginicis_cbt_cvs.data?.notify_history ?? []}}" class="paykginicis:space-y-1">
-          <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[150px_90px_1fr_80px] paykginicis:gap-x-2 paykginicis:gap-y-1 paykginicis:rounded-md paykginicis:bg-white/70 paykginicis:dark:bg-gray-900/30 paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-[11px]">
+          <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-2 paykginicis:gap-y-1 paykginicis:rounded-md paykginicis:bg-white/70 paykginicis:dark:bg-gray-900/30 paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-[11px]">
+            <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[150px_90px_1fr_80px] paykginicis:gap-x-2 paykginicis:gap-y-1 paykginicis:rounded-md paykginicis:bg-white/70 paykginicis:dark:bg-gray-900/30 paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-[11px]"/>
             <span class="paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100">{{notify.received_at ?? '-'}}</span>
             <span class="paykginicis:font-semibold pay-kginicis-tone-info-strong">{{notify.result ?? '-'}}</span>
             <span class="paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:break-all pay-kginicis-break-all">{{(notify.reason ?? '-') + ' / ' + (notify.tid ?? '-')}}</span>
@@ -176,7 +179,7 @@
       <div data-ref="kginicis_verify_header" class="paykginicis:flex paykginicis:items-center paykginicis:gap-2 paykginicis:mb-4">
         <div class="paykginicis:w-1.5 paykginicis:h-4 paykginicis:bg-blue-500 paykginicis:rounded-full paykginicis:flex-shrink-0"/>
         <h3 class="paykginicis:text-sm paykginicis:font-semibold paykginicis:text-gray-800 paykginicis:dark:text-gray-200">$t:sirsoft-pay_kginicis.admin.order_verify_title</h3>
-        <span class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden paykginicis:sm:inline">$t:sirsoft-pay_kginicis.admin.order_verify_description</span>
+        <span class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"><responsive on="640-" class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"/>$t:sirsoft-pay_kginicis.admin.order_verify_description</span>
       </div>
       <div data-ref="kginicis_payments_list_{{pIdx}}" data-each="payment, pIdx in {{order.data?.payments?.filter(p => p.transaction_id &amp;&amp; p.pg_provider === 'kginicis') ?? []}}" class="paykginicis:space-y-3">
         <div class="paykginicis:rounded-lg paykginicis:border paykginicis:border-gray-100 paykginicis:dark:border-gray-700 paykginicis:p-3 paykginicis:bg-gray-50 paykginicis:dark:bg-gray-800/50">
@@ -217,7 +220,8 @@
               </span>
               <span data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._is_test_mode === true}}" class="paykginicis:inline-flex paykginicis:items-center paykginicis:px-2 paykginicis:py-0.5 paykginicis:rounded-full paykginicis:text-xs paykginicis:font-semibold paykginicis:bg-orange-100 paykginicis:text-orange-800 paykginicis:dark:bg-orange-900/30 paykginicis:dark:text-orange-300">$t:sirsoft-pay_kginicis.admin.test_mode_badge</span>
             </div>
-            <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+            <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+              <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"/>
               <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_pay_method</span>
               <span class="paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:font-medium">{{(_local._kginicisResult ?? kginicis_status.data)?._pay_method_label ?? '-'}}</span>
               <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_total_price</span>
@@ -231,11 +235,12 @@
               <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_inquiry_at</span>
               <span class="paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:font-mono">{{(_local._kginicisResult ?? kginicis_status.data)?._inquiry_at ?? '-'}}</span>
               <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_result_code</span>
-              <span class="paykginicis:font-mono paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:col-span-1 paykginicis:sm:col-span-3">{{((_local._kginicisResult ?? kginicis_status.data)?.resultCode ?? '') + ' ' + ((_local._kginicisResult ?? kginicis_status.data)?.resultMsg ?? '')}}</span>
+              <span class="paykginicis:font-mono paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:col-span-1"><responsive on="640-" class="paykginicis:font-mono paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:col-span-3"/>{{((_local._kginicisResult ?? kginicis_status.data)?.resultCode ?? '') + ' ' + ((_local._kginicisResult ?? kginicis_status.data)?.resultMsg ?? '')}}</span>
             </div>
             <div data-if="{{['Card','WCard','card','wcard'].includes((_local._kginicisResult ?? kginicis_status.data)?._pay_method ?? '')}}" class="paykginicis:mt-3 paykginicis:pt-3 paykginicis:border-t paykginicis:border-dashed paykginicis:border-gray-200 paykginicis:dark:border-gray-700">
               <div class="paykginicis:text-xs paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:mb-2">$t:sirsoft-pay_kginicis.admin.section_card</div>
-              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+                <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"/>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_card_name</span>
                 <span class="paykginicis:text-gray-900 paykginicis:dark:text-gray-100">{{(_local._kginicisResult ?? kginicis_status.data)?._card_name ?? '-'}}</span>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_card_num</span>
@@ -252,7 +257,8 @@
                 <span data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._vbank_status === '1'}}" class="paykginicis:inline-flex paykginicis:items-center paykginicis:px-2 paykginicis:py-0.5 paykginicis:rounded-full paykginicis:text-[10px] paykginicis:font-semibold paykginicis:bg-green-100 paykginicis:text-green-800 paykginicis:dark:bg-green-900/30 paykginicis:dark:text-green-300">$t:sirsoft-pay_kginicis.admin.vbank_status_paid</span>
                 <span data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._vbank_status === '0' || !(_local._kginicisResult ?? kginicis_status.data)?._vbank_status}}" class="paykginicis:inline-flex paykginicis:items-center paykginicis:px-2 paykginicis:py-0.5 paykginicis:rounded-full paykginicis:text-[10px] paykginicis:font-semibold paykginicis:bg-amber-100 paykginicis:text-amber-800 paykginicis:dark:bg-amber-900/30 paykginicis:dark:text-amber-300">$t:sirsoft-pay_kginicis.admin.vbank_status_unpaid</span>
               </div>
-              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+                <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"/>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_vbank_bank_name</span>
                 <span class="paykginicis:text-gray-900 paykginicis:dark:text-gray-100">{{((_local._kginicisResult ?? kginicis_status.data)?._vbank_bank_name ?? '-') + ' (' + ((_local._kginicisResult ?? kginicis_status.data)?._vbank_bank_code ?? '') + ')'}}</span>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_vbank_num</span>
@@ -267,7 +273,8 @@
             </div>
             <div data-if="{{['DirectBank','iniBank','directbank','inibank','BankTransfer','banktransfer'].includes((_local._kginicisResult ?? kginicis_status.data)?._pay_method ?? '') || (_local._kginicisResult ?? kginicis_status.data)?._bank_acnt_num}}" class="paykginicis:mt-3 paykginicis:pt-3 paykginicis:border-t paykginicis:border-dashed paykginicis:border-gray-200 paykginicis:dark:border-gray-700">
               <div class="paykginicis:text-xs paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:mb-2">$t:sirsoft-pay_kginicis.admin.section_directbank</div>
-              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+                <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"/>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_bank_name</span>
                 <span class="paykginicis:text-gray-900 paykginicis:dark:text-gray-100">{{((_local._kginicisResult ?? kginicis_status.data)?._bank_name ?? '-') + ' (' + ((_local._kginicisResult ?? kginicis_status.data)?._bank_code ?? '') + ')'}}</span>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_bank_acnt_num</span>
@@ -276,7 +283,8 @@
             </div>
             <div data-if="{{['HPP','Mobile','hpp','mobile'].includes((_local._kginicisResult ?? kginicis_status.data)?._pay_method ?? '') || (_local._kginicisResult ?? kginicis_status.data)?._hpp_num}}" class="paykginicis:mt-3 paykginicis:pt-3 paykginicis:border-t paykginicis:border-dashed paykginicis:border-gray-200 paykginicis:dark:border-gray-700">
               <div class="paykginicis:text-xs paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:mb-2">$t:sirsoft-pay_kginicis.admin.section_hpp</div>
-              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+                <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"/>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_hpp_num</span>
                 <span class="paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:font-mono">{{(_local._kginicisResult ?? kginicis_status.data)?._hpp_num ?? '-'}}</span>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_hpp_corp</span>
@@ -285,7 +293,8 @@
             </div>
             <div data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._buyer_name || (_local._kginicisResult ?? kginicis_status.data)?._buyer_email || (_local._kginicisResult ?? kginicis_status.data)?._buyer_tel}}" class="paykginicis:mt-3 paykginicis:pt-3 paykginicis:border-t paykginicis:border-dashed paykginicis:border-gray-200 paykginicis:dark:border-gray-700">
               <div class="paykginicis:text-xs paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:mb-2">$t:sirsoft-pay_kginicis.admin.section_buyer</div>
-              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+                <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"/>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_buyer_name</span>
                 <span class="paykginicis:text-gray-900 paykginicis:dark:text-gray-100">{{(_local._kginicisResult ?? kginicis_status.data)?._buyer_name ?? '-'}}</span>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_buyer_email</span>
@@ -296,7 +305,8 @@
             </div>
             <div data-if="{{(_local._kginicisResult ?? kginicis_status.data)?._cancel_price &amp;&amp; Number((_local._kginicisResult ?? kginicis_status.data)._cancel_price) > 0}}" class="paykginicis:mt-3 paykginicis:pt-3 paykginicis:border-t paykginicis:border-dashed paykginicis:border-gray-200 paykginicis:dark:border-gray-700">
               <div class="paykginicis:text-xs paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:mb-2">$t:sirsoft-pay_kginicis.admin.section_cancel</div>
-              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+              <div class="paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs">
+                <responsive on="640-" class="paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"/>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_cancel_price</span>
                 <span class="pay-kginicis-tone-danger paykginicis:font-mono paykginicis:font-semibold">{{(_local._kginicisResult ?? kginicis_status.data)?._cancel_price ?? '-'}}</span>
                 <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.result_cancel_date</span>
@@ -346,7 +356,7 @@
       <div class="paykginicis:flex paykginicis:items-center paykginicis:gap-2 paykginicis:mb-4">
         <div class="paykginicis:w-1.5 paykginicis:h-4 paykginicis:bg-purple-500 paykginicis:rounded-full paykginicis:flex-shrink-0"/>
         <h3 class="paykginicis:text-sm paykginicis:font-semibold paykginicis:text-gray-800 paykginicis:dark:text-gray-200">$t:sirsoft-pay_kginicis.admin.escrow_delivery_title</h3>
-        <span class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden paykginicis:sm:inline">$t:sirsoft-pay_kginicis.admin.escrow_delivery_description</span>
+        <span class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"><responsive on="640-" class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"/>$t:sirsoft-pay_kginicis.admin.escrow_delivery_description</span>
       </div>
       <div data-if="{{kginicis_escrow_delivery.data?.registered_delivery}}" class="paykginicis:mb-4 paykginicis:p-3 paykginicis:rounded-lg paykginicis:bg-purple-50 paykginicis:dark:bg-purple-900/20 paykginicis:border paykginicis:border-purple-100 paykginicis:dark:border-purple-700/50">
         <div class="paykginicis:flex paykginicis:items-center paykginicis:gap-2 paykginicis:mb-2">
@@ -432,7 +442,7 @@
       <div class="paykginicis:flex paykginicis:items-center paykginicis:gap-2 paykginicis:mb-4">
         <div class="paykginicis:w-1.5 paykginicis:h-4 paykginicis:bg-red-500 paykginicis:rounded-full paykginicis:flex-shrink-0"/>
         <h3 class="paykginicis:text-sm paykginicis:font-semibold paykginicis:text-gray-800 paykginicis:dark:text-gray-200">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_title</h3>
-        <span class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden paykginicis:sm:inline">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description</span>
+        <span class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"><responsive on="640-" class="paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"/>$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description</span>
       </div>
       <div class="paykginicis:mb-4 paykginicis:p-3 paykginicis:rounded-lg paykginicis:bg-red-50 paykginicis:dark:bg-red-900/20 paykginicis:border paykginicis:border-red-100 paykginicis:dark:border-red-700/50 paykginicis:text-xs">
         <div class="paykginicis:flex paykginicis:items-center paykginicis:gap-2 paykginicis:mb-2">

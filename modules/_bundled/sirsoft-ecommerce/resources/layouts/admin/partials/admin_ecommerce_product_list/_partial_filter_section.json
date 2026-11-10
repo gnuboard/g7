@@ -30,12 +30,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -62,8 +62,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.category"
                         },
@@ -250,8 +257,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 2,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -278,8 +292,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.date"
                         },
@@ -617,8 +638,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('salesStatus') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 3,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -645,8 +673,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.sales_status"
                         },
@@ -837,8 +872,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('displayStatus') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 4,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -865,8 +907,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.display_status"
                         },
@@ -998,8 +1047,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('brand') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 5,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1026,8 +1082,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.brand"
                         },
@@ -1104,8 +1167,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('taxStatus') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 6,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1132,8 +1202,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.tax_status"
                         },
@@ -1302,8 +1379,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 7,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1330,21 +1414,39 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.price"
                         },
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "ecommerce:md:flex-row ecommerce:md:items-center"
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:flex-row ecommerce:items-center"
+                                    }
+                                }
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Select",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:w-28"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "정가와 판매가 중 **어느 값에** 아래 범위를 걸지 고른다 — 할인 중인 상품은 둘이 다르므로 기준을 바꾸면 결과가 달라진다.",
@@ -1359,7 +1461,7 @@
                                     "props": {
                                         "name": "priceType",
                                         "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.price_type_select",
-                                        "className": "ecommerce:w-full ecommerce:md:w-28",
+                                        "className": "ecommerce:w-full",
                                         "value": "{{_local.filter.priceType || 'selling_price'}}",
                                         "options": [
                                             {
@@ -1448,8 +1550,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('stock') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 8,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1476,8 +1585,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.stock"
                         },
@@ -1491,6 +1607,13 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce-input ecommerce:w-28"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "재고는 옵션 단위로 잡히므로 이 범위는 상품 기준 합계에 걸린다. 가격 칸과 달리 `type=\"text\"` 라 숫자 아닌 입력도 들어올 수 있고 판정은 서버가 한다.",
@@ -1507,7 +1630,7 @@
                                         "type": "text",
                                         "value": "{{_local.filter?.minStock ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.filter.min",
-                                        "className": "ecommerce-input ecommerce:md:w-28"
+                                        "className": "ecommerce-input"
                                     }
                                 },
                                 {
@@ -1521,6 +1644,13 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce-input ecommerce:w-28"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "최소 재고와 같은 이유로 묶는다. 0 을 넣으면 품절만 보는 것과 비슷하지만 품절 상태와 재고 0 이 항상 같지는 않다.",
@@ -1537,7 +1667,7 @@
                                         "type": "text",
                                         "value": "{{_local.filter?.maxStock ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.filter.max",
-                                        "className": "ecommerce-input ecommerce:md:w-28"
+                                        "className": "ecommerce-input"
                                     }
                                 },
                                 {
@@ -1558,8 +1688,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 9,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1586,8 +1723,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-32"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-32"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.filter.shipping_policy"
                         },
@@ -1614,6 +1758,7 @@
                                     ],
                                     "props": {
                                         "name": "shippingPolicy",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.shipping_policy",
                                         "className": "ecommerce:!w-48",
                                         "value": "{{_local.filter.shippingPolicy || ''}}",
                                         "options": "{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}"

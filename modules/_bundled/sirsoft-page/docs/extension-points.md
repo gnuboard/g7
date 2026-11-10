@@ -9,13 +9,13 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:348` |
-| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:476` |
-| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:232` |
-| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:335` |
-| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:472` |
-| `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:174` |
-| `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:176` |
+| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:349` |
+| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:477` |
+| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:233` |
+| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:336` |
+| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:473` |
+| `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:175` |
+| `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:177` |
 | `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:106` |
 | `sirsoft-page.page.after_delete` | action | — | `src/Services/PageService.php:190` |
 | `sirsoft-page.page.after_publish` | action | — | `src/Services/PageService.php:223` 외 1곳 |
@@ -61,6 +61,8 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 | `core.search.build_response` | filter | `SearchPagesListener` | `buildPagesResponse` | 10 |
 | `core.search.index_validation_rules` | filter | `SearchPagesListener` | `addValidationRules` | 10 |
 | `core.search.results` | filter | `SearchPagesListener` | `searchPages` | 10 |
+| `core.thumbnail.filter_source_providers` | filter | `ThumbnailServingListener` | `addSourceProviders` | 10 |
+| `core.thumbnail.filter_url_patterns` | filter | `ThumbnailServingListener` | `addUrlPatterns` | 10 |
 | `sirsoft-ckeditor5.image.filter_reference_sources` | filter | `Ckeditor5ReferenceSourcesListener` | `addPageSources` | 10 |
 | `sirsoft-page.attachment.after_delete` | action (미선언) | `PageActivityLogListener` | `handleAttachmentAfterDelete` | 20 |
 | `sirsoft-page.attachment.after_upload` | action (미선언) | `PageActivityLogListener` | `handleAttachmentAfterUpload` | 20 |
@@ -105,10 +107,11 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 | `PageActivityLogListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/PageActivityLogListener.php` |
 | `SearchPagesListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SearchPagesListener.php` |
 | `SeoPageCacheListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/SeoPageCacheListener.php` |
+| `ThumbnailServingListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ThumbnailServingListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-5개 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을 선언합니다.
+6개 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을 선언합니다.
 
 | 리스너 | 역할 |
 |---|---|
@@ -117,6 +120,7 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 | `SeoPageCacheListener` | 내용이 바뀌면 봇 화면 캐시 무효화 |
 | `SearchPagesListener` | 코어 통합 검색에 페이지 결과 편입 |
 | `Ckeditor5ReferenceSourcesListener` | 편집기 이미지 출처에 페이지 첨부 제공 |
+| `ThumbnailServingListener` | 첨부 미리보기 경로와 첨부 원본 제공자(권한 원본)를 코어 썸네일 목록에 더함. 제공자는 필터마다 새로 만들지 않고 컨테이너에 공유 바인딩으로 묶어 다시 씀 |
 
 새 활동 로그 항목을 더할 때는 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨과 description
 본문이 함께 필요합니다 — **모듈 lang 파일에 넣으면 해석되지 않습니다.** 번들 일본어 팩도 같은

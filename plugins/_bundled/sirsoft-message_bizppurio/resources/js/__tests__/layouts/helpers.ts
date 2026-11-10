@@ -26,7 +26,7 @@ export function findById(node: AnyNode | undefined | null, id: string): AnyNode 
     if (node.id === id) return node;
 
     if (Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...((node.props?.footer as AnyNode[] | undefined) ?? [])]) {
             const found = findById(child, id);
             if (found) return found;
         }
@@ -63,7 +63,7 @@ export function findAllByName(node: AnyNode | undefined | null, name: string): A
     if (node.name === name) results.push(node);
 
     if (Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...((node.props?.footer as AnyNode[] | undefined) ?? [])]) {
             results.push(...findAllByName(child, name));
         }
     }

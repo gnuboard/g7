@@ -9,7 +9,8 @@
       <params page="{{_global.ecommerceExportDownloadsPage ?? 1}}" :per_page="10"/>
     </data-source>
     <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-4">
-      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm">
+      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm">
+        <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm"/>
         <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:min-w-0">
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.file</span>
           <span class="ecommerce-text-primary ecommerce:font-medium ecommerce:break-all ecommerce-break-all">{{_global.ecommerceExportTarget?.file_name ?? '-'}}</span>
@@ -20,7 +21,8 @@
           <span class="ecommerce-text-primary">{{_global.ecommerceExportTarget?.requester?.name ?? '-'}}</span>
           <span class="ecommerce:text-gray-600 ecommerce:dark:text-gray-400">{{_global.ecommerceExportTarget?.requested_at ?? '-'}}</span>
         </div>
-        <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2">
+        <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:col-span-2"/>
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.conditions</span>
           <span class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300">
             <span>{{[_global.ecommerceExportTarget?.summary?.scope, _global.ecommerceExportTarget?.summary?.period, _global.ecommerceExportTarget?.summary?.row_unit, _global.ecommerceExportTarget?.summary?.locale_mode].filter(Boolean).join(' · ')}}</span>
@@ -28,11 +30,13 @@
             <span>· $t:sirsoft-ecommerce.admin.export.sub_row.totals {{_global.ecommerceExportTarget?.summary?.include_totals ? $t('sirsoft-ecommerce.admin.export.sub_row.yes') : $t('sirsoft-ecommerce.admin.export.sub_row.no')}}</span>
           </span>
         </div>
-        <div data-if="{{_global.ecommerceExportTarget?.reason}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2">
+        <div data-if="{{_global.ecommerceExportTarget?.reason}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:col-span-2"/>
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.reason</span>
           <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all">{{_global.ecommerceExportTarget?.reason}}</span>
         </div>
-        <div data-if="{{(_global.ecommerceExportTarget?.warnings ?? []).length > 0}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap ecommerce:md:col-span-2">
+        <div data-if="{{(_global.ecommerceExportTarget?.warnings ?? []).length > 0}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap">
+          <responsive on="768-" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap ecommerce:col-span-2"/>
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.warnings</span>
           <span data-each="warning in _global.ecommerceExportTarget?.warnings ?? []" class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:bg-yellow-100 ecommerce:text-yellow-800 ecommerce:dark:bg-yellow-900/30 ecommerce:dark:text-yellow-300">{{warning.label}}</span>
         </div>
@@ -82,13 +86,13 @@
         </button>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.export.modal.close
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

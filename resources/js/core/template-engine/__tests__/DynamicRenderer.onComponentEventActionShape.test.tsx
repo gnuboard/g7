@@ -316,7 +316,7 @@ describe('DynamicRenderer — onComponentEvent 액션 통째 실행 (#753)', () 
    * @effects event_result_reports_listener_failure
    */
   it('리스너의 실제 apiCall 이 404 로 실패하면 자기 onError 가 돌고 결과가 success:false 다', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ success: false, message: 'not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } }));
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({ success: false, message: 'not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } }));
     vi.stubGlobal('fetch', fetchMock);
     try {
       mount([{ event: 'p:api', handler: 'apiCall', target: '/api/__probe753_missing', params: { method: 'GET' }, onError: { handler: 'rec', params: { v: 'api-fail' } } }]);

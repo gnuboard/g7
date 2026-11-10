@@ -53,7 +53,7 @@ export const NamedActionsTab: React.FC<NamedActionsTabProps> = ({ devTools }) =>
 
     const filteredRefs = refLogs.filter(log =>
         !filter || log.actionRefName.toLowerCase().includes(filter.toLowerCase()) ||
-        log.resolvedHandler.toLowerCase().includes(filter.toLowerCase())
+        (log.resolvedHandler ?? '').toLowerCase().includes(filter.toLowerCase())
     );
 
     return (

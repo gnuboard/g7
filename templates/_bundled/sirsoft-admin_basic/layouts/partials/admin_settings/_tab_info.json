@@ -10,12 +10,13 @@
     "if": "{{(_global.activeSettingsTab || query.tab) === 'info'}}",
     "children": [
         {
+            "comment": "아래 정보 격자와의 간격은 직접 준다(격자가 의미 클래스였을 때는 `.alert-*:has(+ …)` 형제 규칙이 줬다).",
             "id": "opcache_warning",
             "type": "basic",
             "name": "Div",
             "if": "{{systemInfo?.data?.opcache?.enabled === false}}",
             "props": {
-                "className": "alert-warning"
+                "className": "alert-warning mb-4"
             },
             "children": [
                 {
@@ -48,8 +49,15 @@
         {
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "grid grid-cols-2 gap-4"
+                    }
+                }
+            },
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "grid grid-cols-1 gap-4"
             },
             "children": [
                 {
@@ -705,8 +713,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -764,8 +779,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -885,8 +907,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-6"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                                "className": "grid grid-cols-1 gap-6"
                             },
                             "children": [
                                 {

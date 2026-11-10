@@ -161,7 +161,7 @@ test.describe('회원관리 목록 필터', () => {
   // @effects admin_user_list_edit_mode_layout_persists
   test('검색편집으로 상세 필터를 기본으로 옮기면 새로고침 뒤에도 유지된다', async ({ page }) => {
     await gotoUsers(page);
-    await expect(page.locator('#basic_filters_section .filter-row')).toHaveCount(3);
+    await expect(page.locator('#basic_filters_section :is([id$="_filter_row"], [id*="_filter_row__"])')).toHaveCount(3);
 
     await page.click('#edit_search_button_pc');
     await page.locator('[id^="last_login_filter_row"] > input[type="checkbox"]').check();
@@ -175,7 +175,7 @@ test.describe('회원관리 목록 필터', () => {
     await page.reload();
     await page.waitForSelector('#filter_card');
     await page.waitForTimeout(1500);
-    const basic = await page.locator('#basic_filters_section .filter-row').evaluateAll((els) => els.map((e) => e.id.replace(/__.*$/, '')));
+    const basic = await page.locator('#basic_filters_section :is([id$="_filter_row"], [id*="_filter_row__"])').evaluateAll((els) => els.map((e) => e.id.replace(/__.*$/, '')));
     expect(basic).toContain('last_login_filter_row');
 
     // 원복 — 다음 실행을 오염시키지 않는다
@@ -302,7 +302,7 @@ test.describe('회원관리 목록 필터', () => {
     await clickRowMenuItem(page, '삭제');
     const [deleted] = await Promise.all([
       page.waitForResponse((r) => r.url().includes(`/api/admin/users/${uuid}`) && r.request().method() === 'DELETE'),
-      page.locator('.modal-footer-buttons button.bg-red-600').click(),
+      page.locator('.modal-footer-bar button.bg-red-600').click(), // 고정 하단(#869 P1)
     ]);
     expect(deleted.status()).toBe(200);
     await expect(page.locator('#users_data_grid__body tbody tr', { hasText: tag })).toHaveCount(0, { timeout: 20_000 });

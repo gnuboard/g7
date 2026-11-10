@@ -10,7 +10,7 @@
  *  - 404 복원 → not_found 메시지
  *  - 모든 fetch 에 Authorization: Bearer 첨부 + URL 규칙(raw layoutName)
  *
- * @effects version_modal_lists_saved_versions_with_change_summary, version_modal_empty_state_when_no_versions,
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): version_modal_lists_saved_versions_with_change_summary, version_modal_empty_state_when_no_versions,
  *   version_modal_error_state_on_load_failure, version_restore_confirm_posts_restore_then_reloads_document_and_closes,
  *   version_restore_cancel_does_not_post, version_restore_not_found_shows_message_keeps_modal_open,
  *   version_and_preview_fetch_attach_bearer_token, version_fetch_url_preserves_raw_layout_name_slashes,
@@ -21,7 +21,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
 import { VersionHistoryModal } from '../../components/VersionHistoryModal';
-import { VERSION_MAX_LIMIT } from '../../hooks/useLayoutVersions';
 
 const t = (k: string, params?: Record<string, string | number>) =>
   params ? `${k}(${JSON.stringify(params)})` : k;
@@ -85,6 +84,8 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof VersionHisto
 }
 
 describe('VersionHistoryModal — 목록/상태', () => {
+  // @scenario area=version_list
+  // @effects version_modal_lists_saved_versions_with_change_summary
   it('버전 목록을 렌더하고 변경량(추가/삭제 라인 + 문자수)을 항상 표시한다', async () => {
     mockFetch(() => listOk());
     renderModal();
@@ -104,6 +105,8 @@ describe('VersionHistoryModal — 목록/상태', () => {
     expect(screen.getByTestId('g7le-version-added-10').textContent).toContain('"count":0');
   });
 
+  // @scenario area=version_list
+  // @effects version_row_shows_creator_name_or_unknown_fallback
   it('저장자 이름을 표시하고, 없으면(null) unknown 폴백', async () => {
     mockFetch(() => listOk());
     renderModal();
@@ -116,6 +119,8 @@ describe('VersionHistoryModal — 목록/상태', () => {
     );
   });
 
+  // @scenario area=version_list
+  // @effects version_latest_row_badged_without_restore
   it('첫 행(최신)에 최신 배지 + 복원 버튼 숨김, 비최신 행은 복원 버튼 노출', async () => {
     mockFetch(() => listOk());
     renderModal();
@@ -128,6 +133,8 @@ describe('VersionHistoryModal — 목록/상태', () => {
     expect(screen.getByTestId('g7le-version-restore-10')).toBeInTheDocument();
   });
 
+  // @scenario area=version_list
+  // @effects version_fetch_url_preserves_raw_layout_name_slashes, version_and_preview_fetch_attach_bearer_token
   it('목록 fetch URL 은 raw layoutName(슬래시 보존) + Bearer 토큰', async () => {
     const fetchFn = mockFetch(() => listOk());
     renderModal();
@@ -138,12 +145,16 @@ describe('VersionHistoryModal — 목록/상태', () => {
     expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer TESTTOKEN');
   });
 
+  // @scenario area=version_list
+  // @effects version_modal_empty_state_when_no_versions
   it('빈 목록이면 empty 안내', async () => {
     mockFetch(() => listOk([]));
     renderModal();
     await screen.findByTestId('g7le-version-history-empty');
   });
 
+  // @scenario area=version_list
+  // @effects version_modal_error_state_on_load_failure
   it('목록 fetch 실패 시 에러 표시', async () => {
     mockFetch(() => ({ ok: false, status: 500, json: async () => ({ message: 'boom' }) }));
     renderModal();
@@ -153,9 +164,11 @@ describe('VersionHistoryModal — 목록/상태', () => {
 });
 
 describe('VersionHistoryModal — 복원', () => {
+  // @scenario area=version_restore
+  // @effects version_restore_confirm_posts_restore_then_reloads_document_and_closes
   it('복원 확인 시 POST restore 호출 → onRestored + 모달 닫기', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const fetchFn = mockFetch((url, init) => {
+    const fetchFn = mockFetch((_url, init) => {
       if (init?.method === 'POST') {
         return { ok: true, status: 200, json: async () => ({ success: true, data: { version: 4 } }) };
       }
@@ -174,6 +187,8 @@ describe('VersionHistoryModal — 복원', () => {
     confirmSpy.mockRestore();
   });
 
+  // @scenario area=version_restore
+  // @effects version_restore_cancel_does_not_post
   it('복원 confirm 취소 시 POST 미호출', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const fetchFn = mockFetch(() => listOk());
@@ -186,9 +201,11 @@ describe('VersionHistoryModal — 복원', () => {
     confirmSpy.mockRestore();
   });
 
+  // @scenario area=version_restore
+  // @effects version_restore_not_found_shows_message_keeps_modal_open
   it('404 복원 → not_found 메시지', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    mockFetch((url, init) => {
+    mockFetch((_url, init) => {
       if (init?.method === 'POST') return { ok: false, status: 404, json: async () => ({}) };
       return listOk();
     });
@@ -233,6 +250,8 @@ describe('VersionHistoryModal — 비교(diff)', () => {
     };
   }
 
+  // @scenario area=version_compare
+  // @effects version_compare_fetches_prev_and_current_then_shows_unified_diff
   it('비교 버튼 클릭 시 직전 버전과 fetch 후 diff 뷰 전환', async () => {
     const fetchFn = mockFetch((url) => {
       // GET .../versions/3 또는 .../versions/2 (단건 detail)
@@ -255,6 +274,8 @@ describe('VersionHistoryModal — 비교(diff)', () => {
     expect(detailCalls.length).toBe(2);
   });
 
+  // @scenario area=version_compare
+  // @effects version_diff_back_returns_to_list
   it('diff 뷰에서 목록(back)으로 복귀', async () => {
     mockFetch((url) => {
       const m = /\/versions\/(\d+)$/.exec(url);
@@ -270,6 +291,8 @@ describe('VersionHistoryModal — 비교(diff)', () => {
     expect(screen.queryByTestId('g7le-version-diff')).not.toBeInTheDocument();
   });
 
+  // @scenario area=version_compare
+  // @effects version_compare_first_version_diffs_against_empty_baseline
   it('최초 버전(직전 없음)은 빈 기준과 비교 → 전체 추가 diff', async () => {
     // v1 만 존재하도록 목록 교체 + detail
     mockFetch((url) => {
@@ -303,6 +326,8 @@ describe('VersionHistoryModal — 비교(diff)', () => {
 });
 
 describe('VersionHistoryModal — 확장 타겟', () => {
+  // @scenario area=extension_target
+  // @effects extension_version_list_and_restore_use_extension_api
   it('extension 타겟이면 layout-extensions 버전 API 로 목록을 조회한다', async () => {
     const calls: string[] = [];
     mockFetch((url: string) => {
@@ -318,6 +343,8 @@ describe('VersionHistoryModal — 확장 타겟', () => {
     ).toBe(true);
   });
 
+  // @scenario area=extension_target
+  // @effects extension_version_list_and_restore_use_extension_api
   it('extension 타겟 복원은 layout-extensions restore API 를 호출하고 onRestored 에 새 버전을 전달한다', async () => {
     const calls: Array<{ url: string; method?: string }> = [];
     mockFetch((url: string, init?: RequestInit) => {
@@ -349,23 +376,8 @@ describe('VersionHistoryModal — 확장 타겟', () => {
 });
 
 describe('VersionHistoryModal — 더 보기 (#518 / 공개 #76)', () => {
-  /**
-   * 버전 상한만큼 채워진 목록을 만든다.
-   *
-   * @param count 만들 건수
-   * @param startId 시작 id
-   */
-  function makeVersions(count: number, startId = 1000) {
-    return Array.from({ length: count }, (_, i) => ({
-      id: startId + i,
-      layout_id: 1,
-      version: count - i,
-      changes_summary: { added_count: 1, removed_count: 0, char_diff: 5 },
-      created_at: '2026-06-01T00:00:00+00:00',
-      created_by_name: null,
-    }));
-  }
-
+  // @scenario area=load_more
+  // @effects version_load_more_only_when_limit_filled
   it('첫 조회에 기본 상한을 붙이고, 상한 미만이면 더 보기 버튼이 없다', async () => {
     const fetchMock = mockFetch(() => listOk(sampleVersions));
     renderModal();
@@ -375,74 +387,7 @@ describe('VersionHistoryModal — 더 보기 (#518 / 공개 #76)', () => {
     expect(screen.queryByTestId('g7le-version-history-load-more')).toBeNull();
   });
 
-  it('응답이 상한을 채우면 더 보기 버튼이 나타난다', async () => {
-    mockFetch(() => listOk(makeVersions(100)));
-    renderModal();
-    await screen.findByTestId('g7le-version-history-load-more');
-  });
-
-  it('더 보기를 누르면 상한을 넓혀 다시 조회한다 (이어붙이기 아님)', async () => {
-    const fetchMock = mockFetch((url: string) => {
-      const limit = Number(new URL(url, 'https://example.test').searchParams.get('limit'));
-
-      return listOk(makeVersions(Math.min(limit, 150)));
-    });
-
-    renderModal();
-    const button = await screen.findByTestId('g7le-version-history-load-more');
-
-    fireEvent.click(button);
-
-    // 상한을 한 묶음 넓혀 재조회 — 서버가 최신순 상한 조회만 지원하므로 append 하지 않는다
-    await waitFor(() => {
-      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('limit=200'))).toBe(true);
-    });
-
-    // 150건(상한 미만)이 왔으므로 더 이상 남은 것이 없다고 판정 → 버튼 사라짐
-    await waitFor(() => {
-      expect(screen.queryByTestId('g7le-version-history-load-more')).toBeNull();
-    });
-  });
-
-  it('서버 최대 상한을 넘겨 요청하지 않는다 (초과 시 422 로 목록이 통째로 비어 버린다)', async () => {
-    // 매번 요청한 만큼 꽉 채워 돌려준다 — "아직 남았다" 판정이 계속 참이라
-    // 클램프가 없으면 더 보기를 누를 때마다 limit 이 무한히 커진다.
-    const fetchMock = mockFetch((url: string) => {
-      const limit = Number(new URL(url, 'https://example.test').searchParams.get('limit'));
-
-      return listOk(makeVersions(limit));
-    });
-
-    renderModal();
-
-    await screen.findByTestId('g7le-version-history-load-more');
-
-    // 상한(500)에 닿을 때까지 계속 누른다. 클램프가 있으면 버튼이 사라져 루프가 끝난다.
-    for (let attempt = 0; attempt < 10; attempt++) {
-      const button = screen.queryByTestId('g7le-version-history-load-more');
-      if (!button) break;
-
-      fireEvent.click(button);
-      // 조회 중에는 버튼이 disabled — 끝날 때까지 기다린 뒤 다음 클릭
-      await waitFor(() => {
-        const pending = screen.queryByTestId('g7le-version-history-load-more');
-        expect(pending === null || !(pending as HTMLButtonElement).disabled).toBe(true);
-      });
-    }
-
-    const requestedLimits = fetchMock.mock.calls
-      .map((c) => Number(new URL(String(c[0]), 'https://example.test').searchParams.get('limit')))
-      .filter((n) => !Number.isNaN(n));
-
-    expect(Math.max(...requestedLimits)).toBe(VERSION_MAX_LIMIT);
-    expect(requestedLimits.every((n) => n <= VERSION_MAX_LIMIT)).toBe(true);
-
-    // 상한에 도달하면 더 넓힐 수 없으므로 버튼은 사라진다
-    expect(screen.queryByTestId('g7le-version-history-load-more')).toBeNull();
-    // 이 케이스만 예산을 따로 준다 — `hasMore` 판정이 `rows.length >= nextLimit` 이라
-    // 응답을 요청한 만큼 꽉 채워야 하고, 그래서 100→200→300→400→500 행을 차례로 렌더한다
-    // (누적 1,500행). 표본을 줄이면 판정이 성립하지 않아 단언 자체가 무의미해지므로
-    // 줄이는 것은 답이 아니다. 기본 5초는 단독 실행에서도 아슬아슬하고 병렬 실행에서는
-    // 넘어간다 — 통과/실패가 동시 실행 부하로 갈리면 게이트 구실을 못 한다.
-  }, 30_000);
+  // 상한 논리(상한을 채운 응답의 hasMore, loadMore 의 상한 확장과 재조회, 서버 최대 상한 클램프)는 행을 그리지 않는
+  // __tests__/hooks/useLayoutVersions.loadMore.test.tsx 가, 단추 연결은 VersionHistoryModal.loadMore.test.tsx 가 잰다.
+  // 종전에는 여기서 상한만큼 행을 jsdom 에 그려(최대 누적 1,500행) 동시 실행 부하에서 제한 시간을 넘겼다(#869).
 });

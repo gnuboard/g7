@@ -9,6 +9,7 @@ import { scrollToSectionHandler } from '../../handlers/scrollToSectionHandler';
 import type { EditorAttrs } from '../../types';
 import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -110,8 +111,9 @@ export interface TabNavigationScrollProps {
  * - 내부 상태로 활성 탭 관리 (React useState)
  * - scrollToSectionHandler를 사용하여 자동 스크롤
  * - 탭 클릭 시 즉시 UI 업데이트 + 스크롤 이동
- * - 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여 768px 미만 시
- *   Select 드롭다운으로 자동 전환 (Tailwind hidden md:flex 분기 미사용 — 위지윅 미리보기 호환)
+ * - 반응형: 렌더 폭(useRenderWidth — G7Core.useResponsive Provider 폭 우선)이 768px 미만이면
+ *   Select 드롭다운으로 자동 전환 (Tailwind 반응형 접두 분기 미사용 — 위지윅 미리보기 호환).
+ *   두 모양 모두 감싸개 여백은 레이아웃이 준 className 을 따른다
  *
  * @example
  * ```json
@@ -127,6 +129,9 @@ export interface TabNavigationScrollProps {
  * }
  * ```
  */
+/** 이 폭(px)부터 탭 버튼을 그린다 — 미만이면 선택 상자 하나로 바꾼다 */
+const MOBILE_MIN_DESKTOP_WIDTH = 768;
+
 export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   tabs: rawTabs,
   activeTabId,
@@ -152,17 +157,13 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
     activeTabId ?? (tabs.length > 0 ? tabs[0].id : '')
   );
 
-  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
-  const G7Core = (window as any).G7Core;
-  const useResponsive = G7Core?.useResponsive;
-  const responsiveValue = useResponsive?.();
-  const isMobile = responsiveValue
-    ? responsiveValue.width < 768
-    : typeof window !== 'undefined' && window.innerWidth < 768;
+  // 모바일 판정은 렌더 폭으로 한다 — `G7Core.useResponsive()` 의 Provider 폭(편집기 미리보기에서는 기기 폭)이 우선이고,
+  // 훅이 없을 때만 창 폭을 따라간다(창 크기를 바꾸면 다시 고른다).
+  const isMobile = useRenderWidth() < MOBILE_MIN_DESKTOP_WIDTH;
 
   // Scroll Spy 일시 중지를 위한 ref
   const isScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /**
    * 사용자가 누른 탭 — 사용자가 직접 스크롤(휠·터치·스크롤 키)할 때까지 Scroll Spy 가 활성 탭을 바꾸지 않는다.
    *
@@ -465,7 +466,9 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   // 모바일: Select 드롭다운 단일 렌더
   if (isMobile) {
     return (
-      <Div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3" id={id} {...editorAttrs}>
+      // 감싸개는 레이아웃이 준 className 을 그대로 쓰고 선택 상자 둘레 위아래 여백만 더한다 — 종전에는 자기 클래스(px-4)로
+      // 갈아 끼워 레이아웃이 준 좌우 여백(게시판 설정 하위 탭 막대 24px)이 640 이하에서 16px 로 줄었다(#869 P2).
+      <Div className={`${className} py-3`} style={style} id={id} {...editorAttrs}>
         <Select
           value={String(activeTab)}
           onChange={handleSelectChange}

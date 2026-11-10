@@ -11,7 +11,52 @@
     "props": {
         "title": "{{_global.isEditMode ? '$t:admin.schedules.modals.edit_title' : '$t:admin.schedules.modals.create_title'}}",
         "size": "lg",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "schedule_form_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isSubmitting}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                    "type": "submit",
+                    "form": "schedule_form_modal",
+                    "className": "btn btn-primary flex-center gap-2",
+                    "disabled": "{{_global.isSubmitting}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isSubmitting}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isSubmitting ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -371,8 +416,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -583,8 +635,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -809,8 +868,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -944,8 +1010,15 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.scheduleForm?.dispatch_mode === 'queue'}}",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -1379,58 +1452,6 @@
                                     }
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons pt-4 border-t border-gray-200 dark:border-gray-700"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "schedule_form_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isSubmitting}}"
-                    },
-                    "text": "$t:common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "props": {
-                        "type": "submit",
-                        "form": "schedule_form_modal",
-                        "className": "btn btn-primary flex-center gap-2",
-                        "disabled": "{{_global.isSubmitting}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isSubmitting}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isSubmitting ? '$t:common.saving' : '$t:common.save'}}"
                         }
                     ]
                 }

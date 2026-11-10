@@ -198,7 +198,7 @@
         <column field="product_info" header="$t:sirsoft-ecommerce.admin.claim.detail.items.columns.product" width="auto" :sortable="false" :required="true">
           <cell>
             <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-3">
-              <img data-if="{{!!row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.product_name ?? ''}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:object-cover ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
+              <img data-if="{{!!row.thumbnail_url}}" src="{{row.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.product_name ?? ''}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:object-cover ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
               <div data-if="{{!row.thumbnail_url}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:flex-shrink-0 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                 <icon name="image" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
               </div>

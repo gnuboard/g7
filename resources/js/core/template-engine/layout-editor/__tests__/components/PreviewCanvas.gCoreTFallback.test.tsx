@@ -104,18 +104,15 @@ describe('PreviewCanvas — G7Core.t fallback wrapper', () => {
   function renderCanvas() {
     const engine = new TranslationEngine();
     return render(
-      React.createElement(
-        TranslationProvider,
-        {
-          translationEngine: engine,
-          translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-        },
-        React.createElement(
-          LayoutEditorProvider,
-          { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-          React.createElement(PreviewCanvas),
-        ),
-      ),
+      React.createElement(TranslationProvider, {
+        translationEngine: engine,
+        translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+        children: React.createElement(LayoutEditorProvider, {
+          templateIdentifier: 'sirsoft-basic',
+          initialLocale: 'ko',
+          children: React.createElement(PreviewCanvas),
+        }),
+      }),
     );
   }
 

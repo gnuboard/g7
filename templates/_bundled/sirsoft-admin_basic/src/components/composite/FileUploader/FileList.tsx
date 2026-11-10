@@ -30,6 +30,11 @@ import { I } from '../../basic/I';
 import { SortableThumbnailItem } from './SortableThumbnailItem';
 import type { Attachment, PendingFile } from './types';
 import { t } from './utils';
+import { useRenderWidth } from '../../../hooks/useRenderWidth';
+import { gridColsClass, resolveGridCols, type GridResponsiveCols } from '../../layout/gridColumns';
+
+/** 기본 크기 썸네일 격자의 구간 열 수 — 640 미만 2열, 640 이상 3열, 768 이상 4열, 1024 이상 5열 */
+const THUMBNAIL_GRID_COLS: GridResponsiveCols = { sm: 3, md: 4, lg: 5 };
 
 export interface FileListProps {
   /** 모든 파일 목록 (기존 + 대기) */
@@ -91,6 +96,8 @@ export const FileList: React.FC<FileListProps> = ({
   size = 'md',
 }) => {
   const isCompact = size === 'xs';
+  // 썸네일 열 수를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -104,7 +111,7 @@ export const FileList: React.FC<FileListProps> = ({
           items={allItems.map((item) => ('hash' in item ? item.hash : item.id))}
           strategy={rectSortingStrategy}
         >
-          <Div className={isCompact ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3'}>
+          <Div className={isCompact ? 'grid grid-cols-2 gap-2' : `grid ${gridColsClass(resolveGridCols(2, THUMBNAIL_GRID_COLS, renderWidth))} gap-3`}>
             {/* 파일 썸네일들 */}
             {allItems.map((item) => {
               const isExisting = 'hash' in item;

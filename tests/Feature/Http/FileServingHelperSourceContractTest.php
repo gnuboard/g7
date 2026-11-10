@@ -82,7 +82,9 @@ class FileServingHelperSourceContractTest extends TestCase
     // 45 → 47: develop-7.2.0 4차 병합으로 히어로섹션·팝업 플러그인의 공개 이미지 서빙
     // (`BannerImageController::show()`·`PopupImageController::show()`)이 들어왔다 — 둘 다 코어 헬퍼
     // (`streamedFileResponseFromMeta`·`fileResponse`)를 지나도록 고친 뒤 모집단에 남는다(실측).
-    private const MIN_FILE_SERVING_METHODS = 47;
+    // 47 → 48: #434 파비콘 공개 서빙(`FaviconController`)이 들어왔다 — issue869 → develop-7.2.0 리베이스 트리 실측
+    // (파일별 집계에서 한쪽에만 있는 서빙 메서드는 이것 하나다).
+    private const MIN_FILE_SERVING_METHODS = 48;
 
     /**
      * 컨트롤러 소스 파일 전수 (코어 + 번들 확장).
@@ -268,13 +270,13 @@ class FileServingHelperSourceContractTest extends TestCase
         $source = (string) file_get_contents(base_path('app/Http/Controllers/Api/Public/PublicAttachmentController.php'));
         $this->assertArrayHasKey('download', $this->fileServingMethodBodies($source), '변이 전 원본이 모집단에 없다 — 픽스처가 잘못됐다');
 
-        $mutated = preg_replace('/\):\s*BinaryFileResponse\|StreamedResponse\|Response\|JsonResponse/', '): Response', $source, 1, $count);
+        $mutated = preg_replace('/\):\s*SymfonyResponse\|JsonResponse/', '): Response', $source, 1, $count);
         $this->assertSame(1, $count, '변이 대상 시그니처를 찾지 못했다 — 원본이 바뀌었으면 픽스처를 갱신한다');
 
         $this->assertArrayHasKey('download', $this->fileServingMethodBodies((string) $mutated), '반환 타입을 넓히자 모집단에서 빠졌다 — 본문 신호 도출이 죽었다');
 
         // 반환 타입을 **아예 없앤** 형태도 같다 (`serveEditorCss()` 가 그 형태였다).
-        $untyped = preg_replace('/\):\s*BinaryFileResponse\|StreamedResponse\|Response\|JsonResponse/', ')', $source, 1);
+        $untyped = preg_replace('/\):\s*SymfonyResponse\|JsonResponse/', ')', $source, 1);
         $this->assertArrayHasKey('download', $this->fileServingMethodBodies((string) $untyped));
     }
 

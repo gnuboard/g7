@@ -62,7 +62,9 @@
     <refetch-data-source if="{{(query.tab ?? 'connection') === 'templates'}}" dataSourceId="bizppurio_templates_list"/>
   </init>
   <slot name="content">
-    <div data-ref="plugin_settings_page" class="bizppurio-admin-page-content-responsive">
+    <div data-ref="plugin_settings_page" class="bizppurio:p-4 bizppurio:min-h-screen bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900">
+      <responsive on="640-1023" class="bizppurio:p-6 bizppurio:min-h-screen bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900"/>
+      <responsive on="1024-" class="bizppurio:p-8 bizppurio:min-h-screen bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-message_bizppurio.settings.title" description="$t:sirsoft-message_bizppurio.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="bizppurio-alert-warning bizppurio:mt-6">
         <icon name="lock" class="bizppurio:text-xl bizppurio:leading-none bizppurio:text-amber-600 bizppurio:dark:text-amber-400 bizppurio:flex-shrink-0"/>
@@ -106,7 +108,8 @@
             </a>
           </div>
           <!-- 구분선 아래 — 문자·카카오 채널별 사전 준비 목록 (PC lg 이상 2단, 모바일 1단) -->
-          <div class="bizppurio:mt-3 bizppurio:pt-3 bizppurio:border-t bizppurio:border-blue-100 bizppurio:dark:border-blue-900 bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-2 bizppurio:gap-4">
+          <div class="bizppurio:mt-3 bizppurio:pt-3 bizppurio:border-t bizppurio:border-blue-100 bizppurio:dark:border-blue-900 bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4">
+            <responsive on="desktop" class="bizppurio:mt-3 bizppurio:pt-3 bizppurio:border-t bizppurio:border-blue-100 bizppurio:dark:border-blue-900 bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-4"/>
             <!-- 문자(SMS/LMS) — 카드 + 아이콘 라벨 + 발신번호 등록 1줄 -->
             <div class="bizppurio:space-y-2 bizppurio:rounded-lg bizppurio:bg-blue-100 bizppurio:dark:bg-blue-900 bizppurio:border bizppurio:border-blue-200 bizppurio:dark:border-blue-800 bizppurio:p-3">
               <p class="bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:text-sm bizppurio:font-semibold bizppurio:text-blue-900 bizppurio:dark:text-blue-100">
@@ -177,32 +180,41 @@
             <p class="bizppurio-form-hint bizppurio:mt-1">$t:sirsoft-message_bizppurio.settings.sections.api.description</p>
           </div>
           <div class="bizppurio:p-6 bizppurio:space-y-6">
-            <div data-ref="field_bizppurio_id" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start">
-              <div class="bizppurio:lg:col-span-4">
+            <div data-ref="field_bizppurio_id" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start">
+              <responsive on="desktop" class="bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"/>
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-4"/>
                 <label class="bizppurio-form-label">$t:sirsoft-message_bizppurio.settings.fields.bizppurio_id.label</label>
                 <p class="bizppurio-form-hint">$t:sirsoft-message_bizppurio.settings.fields.bizppurio_id.hint</p>
               </div>
-              <div class="bizppurio:lg:col-span-8">
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-8"/>
                 <input type="text" name="bizppurio_id" autoComplete="off" class="{{_local.errors?.bizppurio_id ? 'bizppurio-input bizppurio:border-red-500 bizppurio:dark:border-red-500 bizppurio:focus:ring-red-500 bizppurio:dark:focus:ring-red-400' : 'bizppurio-input'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <p data-ref="field_bizppurio_id_error" data-if="{{_local.errors?.bizppurio_id}}" class="bizppurio:mt-1 bizppurio:text-sm bizppurio:text-red-600 bizppurio:dark:text-red-400">{{_local.errors?.bizppurio_id?.[0] ?? ''}}</p>
               </div>
             </div>
-            <div data-ref="field_password" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start">
-              <div class="bizppurio:lg:col-span-4">
+            <div data-ref="field_password" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start">
+              <responsive on="desktop" class="bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"/>
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-4"/>
                 <label class="bizppurio-form-label">$t:sirsoft-message_bizppurio.settings.fields.password.label</label>
                 <p class="bizppurio-form-hint">$t:sirsoft-message_bizppurio.settings.fields.password.hint</p>
               </div>
-              <div class="bizppurio:lg:col-span-8">
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-8"/>
                 <input type="password" name="password" autoComplete="new-password" placeholder="••••••••" class="{{_local.errors?.password ? 'bizppurio-input bizppurio:font-mono bizppurio:border-red-500 bizppurio:dark:border-red-500 bizppurio:focus:ring-red-500 bizppurio:dark:focus:ring-red-400' : 'bizppurio-input bizppurio:font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <p data-ref="field_password_error" data-if="{{_local.errors?.password}}" class="bizppurio:mt-1 bizppurio:text-sm bizppurio:text-red-600 bizppurio:dark:text-red-400">{{_local.errors?.password?.[0] ?? ''}}</p>
               </div>
             </div>
-            <div data-ref="field_connection_check" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start">
-              <div class="bizppurio:lg:col-span-4">
+            <div data-ref="field_connection_check" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start">
+              <responsive on="desktop" class="bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"/>
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-4"/>
                 <label class="bizppurio-form-label">$t:sirsoft-message_bizppurio.settings.fields.connection_check.label</label>
                 <p class="bizppurio-form-hint">$t:sirsoft-message_bizppurio.settings.fields.connection_check.hint</p>
               </div>
-              <div class="bizppurio:lg:col-span-8 bizppurio:flex bizppurio:lg:justify-end">
+              <div class="bizppurio:flex">
+                <responsive on="desktop" class="bizppurio:col-span-8 bizppurio:flex bizppurio:justify-end"/>
                 <button data-ref="connection_check_button" type="button" disabled="{{_computed.isMessagingReadOnly || (_local.tokenChecking)}}" class="bizppurio-btn bizppurio-btn-outline bizppurio-btn-sm bizppurio-flex-center bizppurio:gap-1.5">
                   <on type="click">
                     <!-- 연결 확인 — 저장하지 않은 변경이 있으면 요청하지 않고 경고만 낸다(서버는 저장된 자격증명으로 토큰을 받으므로 화면의 값과 어긋난 결과가 나온다). 확인 중 플래그로 버튼을 잠근다. -->
@@ -228,12 +240,15 @@
                 </button>
               </div>
             </div>
-            <div data-ref="field_api_key" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start">
-              <div class="bizppurio:lg:col-span-4">
+            <div data-ref="field_api_key" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start">
+              <responsive on="desktop" class="bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"/>
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-4"/>
                 <label class="bizppurio-form-label">$t:sirsoft-message_bizppurio.settings.fields.api_key.label</label>
                 <p class="bizppurio-form-hint">$t:sirsoft-message_bizppurio.settings.fields.api_key.hint</p>
               </div>
-              <div class="bizppurio:lg:col-span-8">
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-8"/>
                 <input type="password" name="api_key" autoComplete="new-password" placeholder="••••••••" class="{{_local.errors?.api_key ? 'bizppurio-input bizppurio:font-mono bizppurio:border-red-500 bizppurio:dark:border-red-500 bizppurio:focus:ring-red-500 bizppurio:dark:focus:ring-red-400' : 'bizppurio-input bizppurio:font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <p data-ref="field_api_key_error" data-if="{{_local.errors?.api_key}}" class="bizppurio:mt-1 bizppurio:text-sm bizppurio:text-red-600 bizppurio:dark:text-red-400">{{_local.errors?.api_key?.[0] ?? ''}}</p>
               </div>
@@ -246,22 +261,28 @@
             <p class="bizppurio-form-hint bizppurio:mt-1">$t:sirsoft-message_bizppurio.settings.sections.sending.description</p>
           </div>
           <div class="bizppurio:p-6 bizppurio:space-y-6">
-            <div data-ref="field_sender_number" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start">
-              <div class="bizppurio:lg:col-span-4">
+            <div data-ref="field_sender_number" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start">
+              <responsive on="desktop" class="bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"/>
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-4"/>
                 <label class="bizppurio-form-label">$t:sirsoft-message_bizppurio.settings.fields.sender_number.label</label>
                 <p class="bizppurio-form-hint">$t:sirsoft-message_bizppurio.settings.fields.sender_number.hint</p>
               </div>
-              <div class="bizppurio:lg:col-span-8">
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-8"/>
                 <input type="text" name="sender_number" autoComplete="off" class="{{_local.errors?.sender_number ? 'bizppurio-input bizppurio:border-red-500 bizppurio:dark:border-red-500 bizppurio:focus:ring-red-500 bizppurio:dark:focus:ring-red-400' : 'bizppurio-input'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <p data-ref="field_sender_number_error" data-if="{{_local.errors?.sender_number}}" class="bizppurio:mt-1 bizppurio:text-sm bizppurio:text-red-600 bizppurio:dark:text-red-400">{{_local.errors?.sender_number?.[0] ?? ''}}</p>
               </div>
             </div>
-            <div data-ref="field_sender_key" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:lg:grid-cols-12 bizppurio:gap-4 bizppurio:items-start">
-              <div class="bizppurio:lg:col-span-4">
+            <div data-ref="field_sender_key" class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start">
+              <responsive on="desktop" class="bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-4 bizppurio:items-start"/>
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-4"/>
                 <label class="bizppurio-form-label">$t:sirsoft-message_bizppurio.settings.fields.sender_key.label</label>
                 <p class="bizppurio-form-hint">$t:sirsoft-message_bizppurio.settings.fields.sender_key.hint</p>
               </div>
-              <div class="bizppurio:lg:col-span-8">
+              <div>
+                <responsive on="desktop" class="bizppurio:col-span-8"/>
                 <input type="password" name="sender_key" autoComplete="new-password" placeholder="••••••••" class="{{_local.errors?.sender_key ? 'bizppurio-input bizppurio:font-mono bizppurio:border-red-500 bizppurio:dark:border-red-500 bizppurio:focus:ring-red-500 bizppurio:dark:focus:ring-red-400' : 'bizppurio-input bizppurio:font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
                 <p data-ref="field_sender_key_error" data-if="{{_local.errors?.sender_key}}" class="bizppurio:mt-1 bizppurio:text-sm bizppurio:text-red-600 bizppurio:dark:text-red-400">{{_local.errors?.sender_key?.[0] ?? ''}}</p>
               </div>
@@ -723,7 +744,8 @@
             <li data-each="msg in {{Object.values(_global.bz_tpl_modal?.errors ?? []).flat()}}" class="bizppurio:text-xs bizppurio:text-red-800 bizppurio:dark:text-red-200">{{msg}}</li>
           </ul>
         </div>
-        <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-3">
+        <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-3">
+          <responsive on="640-" class="bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-3"/>
           <div>
             <label class="bizppurio-text-secondary bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1">$t:sirsoft-message_bizppurio.template.form.sender_profile</label>
             <select class="bizppurio:w-full bizppurio:text-sm" value="{{_global.bz_tpl_modal?.sender_profile ?? ''}}" options="{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.sender_profile_placeholder')}, ...((bizppurioProfiles?.data?.profiles ?? []).map(pr => ({value: pr.senderKey ?? '', label: (pr.name ?? pr.senderKey ?? '')})))]}}" disabled="{{_computed.isMessagingReadOnly}}">
@@ -1000,7 +1022,8 @@
                 <icon name="trash-can" size="sm"/>
               </button>
             </div>
-            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5">
+            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-1.5">
+              <responsive on="640-" class="bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"/>
               <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}" data-if="{{buttonsItem.linkType === 'WL'}}" class="bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{buttonsItem.linkMo ?? ''}}" disabled="{{_computed.isMessagingReadOnly}}">
                 <on type="change">
                   <!-- 버튼 모바일 웹 링크(linkMo) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
@@ -1073,7 +1096,8 @@
                 <icon name="trash-can" size="sm"/>
               </button>
             </div>
-            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5">
+            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-1.5">
+              <responsive on="640-" class="bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"/>
               <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}" data-if="{{quickRepliesItem.linkType === 'WL'}}" class="bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{quickRepliesItem.linkMo ?? ''}}" disabled="{{_computed.isMessagingReadOnly}}">
                 <on type="change">
                   <!-- 바로연결 모바일 웹 링크(linkMo) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->
@@ -1128,7 +1152,7 @@
           <p class="bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1">$t:sirsoft-message_bizppurio.template.form.request_comment_hint</p>
         </div>
       </div>
-      <div class="bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700">
+      <footer>
         <button type="button" class="bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50" disabled="{{_global.bz_tpl_modal?.isSaving ?? false}}">
           <on type="click">
             <close-modal target="modal_bizppurio_template"/>
@@ -1235,7 +1259,7 @@
           </on>
           $t:sirsoft-message_bizppurio.template.form.btn_save_request
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -1273,7 +1297,7 @@
           </div>
         </div>
       </div>
-      <div class="bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700">
+      <footer>
         <button type="button" class="bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50" disabled="{{_global.bz_sms_modal?.isSaving ?? false}}">
           <on type="click">
             <close-modal target="modal_bizppurio_sms"/>
@@ -1302,7 +1326,7 @@
           </on>
           $t:sirsoft-message_bizppurio.template.sms.btn_save
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -1312,7 +1336,7 @@
         <icon name="triangle-exclamation" class="bizppurio:text-amber-600 bizppurio:flex-shrink-0"/>
         <p class="bizppurio:text-sm bizppurio:text-gray-700 bizppurio:dark:text-gray-200">$t:sirsoft-message_bizppurio.template.cancel_approval.warning|name={{_global.bz_cancel_approval?.notification_name ?? ''}}</p>
       </div>
-      <div class="bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700">
+      <footer>
         <button type="button" class="bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50" disabled="{{_global.bz_cancel_approval?.isSaving ?? false}}">
           <on type="click">
             <close-modal target="modal_bizppurio_cancel_approval"/>
@@ -1340,7 +1364,7 @@
           </on>
           $t:sirsoft-message_bizppurio.template.cancel_approval.btn_confirm
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -1367,7 +1391,7 @@
     <!-- 템플릿 삭제 확인 모달(#597 §3.2 DELETE). 카카오측 코드는 삭제 가능 상태(R+REG/REJ)일 때만 동반 삭제되며, 그 외에는 DB 행만 삭제되고 사유가 응답에 실린다. -->
     <modal data-type="composite" data-ref="modal_bizppurio_delete" title="$t:sirsoft-message_bizppurio.manage.delete.modal_title" size="sm" :closeOnOverlayClick="false">
       <p class="bizppurio:text-sm bizppurio:text-gray-700 bizppurio:dark:text-gray-200">$t:sirsoft-message_bizppurio.manage.delete.warning|name={{_global.bz_delete_modal?.notification_name ?? ''}}</p>
-      <div class="bizppurio:flex bizppurio:justify-end bizppurio:gap-2 bizppurio:pt-4 bizppurio:mt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700">
+      <footer>
         <button type="button" class="bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50" disabled="{{_global.bz_delete_modal?.isSaving ?? false}}">
           <on type="click">
             <close-modal target="modal_bizppurio_delete"/>
@@ -1396,7 +1420,7 @@
           </on>
           $t:sirsoft-message_bizppurio.manage.delete.btn_confirm
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

@@ -50,7 +50,8 @@ axes:
 effects:
   - tab_navigation_behaves
   - tabnavigation_emits_item_path_marker_only_in_editor_mode
-  - core_measures_data_editor_item_path_markers_into_cellboxes
+  # 코어가 그 마커를 측정해 cellBoxes 로 넘기는 효과(core_measures_data_editor_item_path_markers_into_cellboxes)는
+  # 이 부품 시험이 재지 않는다. tests/scenarios/layout-editor-tabnav-inplace.yaml 이 선언하고 tabnav-inplace.spec.ts 가 잰다.
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigation.test.tsx

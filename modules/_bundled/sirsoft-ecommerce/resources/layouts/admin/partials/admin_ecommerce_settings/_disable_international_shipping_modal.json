@@ -9,7 +9,94 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "comment": "취소 버튼",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "comment": "해외배송을 끈 지점이 배송가능국가 추가 폼도 함께 내렸다(그 폼이 도달 불가가 되기 때문). [취소] 는 그 결정을 되돌리는 경로이므로 입력 중이던 국가도 함께 되살린다 — 되살리지 않으면 \"끄지 않겠다\" 를 고른 운영자의 입력이 안내 없이 사라진다.",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "$parent._local",
+                                    "isAddingCountry": "{{$parent._local.disableIntlWasAddingCountry === true}}",
+                                    "newCountry": "{{$parent._local.disableIntlCountryBuffer}}",
+                                    "disableIntlWasAddingCountry": false,
+                                    "disableIntlCountryBuffer": null,
+                                    "form": {
+                                        "shipping": {
+                                            "international_shipping_enabled": true
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-secondary"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel"
+                    }
+                ]
+            },
+            {
+                "comment": "확인 버튼 — 해외배송 비활성화 + 외국 국가 비활성화",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "$parent._local",
+                                    "hasChanges": true,
+                                    "disableIntlWasAddingCountry": false,
+                                    "disableIntlCountryBuffer": null,
+                                    "form": {
+                                        "shipping": {
+                                            "international_shipping_enabled": false,
+                                            "available_countries": "{{($parent._local.form?.shipping?.available_countries ?? []).map(c => c.code === ($parent._local.form?.shipping?.default_country ?? 'KR') ? c : {...c, is_active: false})}}"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-danger"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -39,101 +126,6 @@
                                 "className": "ecommerce-tone-warning-soft ecommerce:text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message"
-                        }
-                    ]
-                },
-                {
-                    "comment": "버튼 영역",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2"
-                    },
-                    "children": [
-                        {
-                            "comment": "취소 버튼",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "comment": "해외배송을 끈 지점이 배송가능국가 추가 폼도 함께 내렸다(그 폼이 도달 불가가 되기 때문). [취소] 는 그 결정을 되돌리는 경로이므로 입력 중이던 국가도 함께 되살린다 — 되살리지 않으면 \"끄지 않겠다\" 를 고른 운영자의 입력이 안내 없이 사라진다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "$parent._local",
-                                                "isAddingCountry": "{{$parent._local.disableIntlWasAddingCountry === true}}",
-                                                "newCountry": "{{$parent._local.disableIntlCountryBuffer}}",
-                                                "disableIntlWasAddingCountry": false,
-                                                "disableIntlCountryBuffer": null,
-                                                "form": {
-                                                    "shipping": {
-                                                        "international_shipping_enabled": true
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-secondary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "확인 버튼 — 해외배송 비활성화 + 외국 국가 비활성화",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "$parent._local",
-                                                "hasChanges": true,
-                                                "disableIntlWasAddingCountry": false,
-                                                "disableIntlCountryBuffer": null,
-                                                "form": {
-                                                    "shipping": {
-                                                        "international_shipping_enabled": false,
-                                                        "available_countries": "{{($parent._local.form?.shipping?.available_countries ?? []).map(c => c.code === ($parent._local.form?.shipping?.default_country ?? 'KR') ? c : {...c, is_active: false})}}"
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-danger"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm"
-                                }
-                            ]
                         }
                     ]
                 }

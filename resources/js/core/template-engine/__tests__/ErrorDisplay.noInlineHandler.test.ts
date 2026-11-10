@@ -28,7 +28,7 @@ describe('ErrorDisplay 인라인 핸들러 제거 (#158)', () => {
    * @effects error_screen_reload_without_inline_handler
    */
   it('렌더 HTML 에 on* 속성이 없고 버튼 click 이 reload 를 부른다', () => {
-    ErrorDisplay.render('app', { title: '페이지 로딩 실패', message: '오류', showReloadButton: true, debug: false });
+    ErrorDisplay.render('app', { title: '페이지 로딩 실패', message: '오류', icon: 'fa-circle-exclamation', showStack: false, showReloadButton: true, debug: false });
 
     const app = document.getElementById('app')!;
     expect(app.innerHTML).not.toMatch(/\son[a-z]+\s*=/i);
@@ -44,7 +44,7 @@ describe('ErrorDisplay 인라인 핸들러 제거 (#158)', () => {
    * @effects error_screen_reload_without_inline_handler
    */
   it('hover 색 전환은 mouseenter/mouseleave 리스너로 동작한다', () => {
-    ErrorDisplay.render('app', { title: 't', message: 'm', showReloadButton: true, debug: false });
+    ErrorDisplay.render('app', { title: 't', message: 'm', icon: 'fa-circle-exclamation', showStack: false, showReloadButton: true, debug: false });
 
     const button = document.querySelector('#app button') as HTMLButtonElement;
     button.dispatchEvent(new Event('mouseenter'));

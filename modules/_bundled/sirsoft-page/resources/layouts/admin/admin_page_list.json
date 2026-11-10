@@ -924,7 +924,134 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-page.admin.page.modals.bulk_publish_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-secondary",
+                            "disabled": "{{_global.isBulkPublishing}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "선택한 페이지를 한꺼번에 게시 — 처리 중 플래그를 세워 버튼을 잠근 뒤 호출하고, 성공·실패 어느 쪽이든 그 플래그를 반드시 내린다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isBulkPublishing": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-page/admin/pages/bulk-publish",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_admin_pages}}",
+                                                "published": true
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkPublishing": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "selectedIds_admin_pages": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-page.admin.page.modals.bulk_publish_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkPublishing": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-primary",
+                            "disabled": "{{_global.isBulkPublishing}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isBulkPublishing}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "page-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -943,140 +1070,6 @@
                             "text": "$t:sirsoft-page.admin.page.modals.bulk_publish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "page-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-secondary",
-                                "disabled": "{{_global.isBulkPublishing}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "선택한 페이지를 한꺼번에 게시 — 처리 중 플래그를 세워 버튼을 잠근 뒤 호출하고, 성공·실패 어느 쪽이든 그 플래그를 반드시 내린다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isBulkPublishing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-page/admin/pages/bulk-publish",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_admin_pages}}",
-                                                    "published": true
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkPublishing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "selectedIds_admin_pages": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/pages",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-page.admin.page.modals.bulk_publish_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkPublishing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-primary",
-                                "disabled": "{{_global.isBulkPublishing}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isBulkPublishing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "page-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -1087,7 +1080,134 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-page.admin.page.modals.bulk_unpublish_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-secondary",
+                            "disabled": "{{_global.isBulkPublishing}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "선택한 페이지를 한꺼번에 게시 해제 — 게시 흐름과 같은 엔드포인트에 published=false 로 보낸다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isBulkPublishing": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-page/admin/pages/bulk-publish",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_admin_pages}}",
+                                                "published": false
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkPublishing": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "selectedIds_admin_pages": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-page.admin.page.modals.bulk_unpublish_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkPublishing": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-primary",
+                            "disabled": "{{_global.isBulkPublishing}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isBulkPublishing}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "page-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1106,140 +1226,6 @@
                             "text": "$t:sirsoft-page.admin.page.modals.bulk_unpublish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "page-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-secondary",
-                                "disabled": "{{_global.isBulkPublishing}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "선택한 페이지를 한꺼번에 게시 해제 — 게시 흐름과 같은 엔드포인트에 published=false 로 보낸다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isBulkPublishing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-page/admin/pages/bulk-publish",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_admin_pages}}",
-                                                    "published": false
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkPublishing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "selectedIds_admin_pages": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/pages",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-page.admin.page.modals.bulk_unpublish_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkPublishing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-primary",
-                                "disabled": "{{_global.isBulkPublishing}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isBulkPublishing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "page-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -1250,7 +1236,128 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-page.admin.page.modals.delete_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-secondary",
+                            "disabled": "{{_global.isDeletingPage}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "페이지 삭제 확정 — 목록만 다시 받고(refetch) 페이지 이동은 하지 않아 현재 필터·페이지가 유지된다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeletingPage": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/modules/sirsoft-page/admin/pages/{{_global.deletePageId}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingPage": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deletePageId": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "pages"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-page.admin.page.modals.delete_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingPage": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "page-btn page-btn-danger",
+                            "disabled": "{{_global.isDeletingPage}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isDeletingPage}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "page-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1267,134 +1374,6 @@
                                 "className": "page:text-gray-700 page:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-page.admin.page.modals.delete_confirm"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "page-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-secondary",
-                                "disabled": "{{_global.isDeletingPage}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "페이지 삭제 확정 — 목록만 다시 받고(refetch) 페이지 이동은 하지 않아 현재 필터·페이지가 유지된다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeletingPage": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-page/admin/pages/{{_global.deletePageId}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingPage": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "deletePageId": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "pages"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-page.admin.page.modals.delete_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeletingPage": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "page-btn page-btn-danger",
-                                "disabled": "{{_global.isDeletingPage}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isDeletingPage}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "page-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}"
-                                }
-                            ]
                         }
                     ]
                 }

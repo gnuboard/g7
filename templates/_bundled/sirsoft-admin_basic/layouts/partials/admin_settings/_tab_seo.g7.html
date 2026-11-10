@@ -239,11 +239,15 @@
         </div>
         <div data-ref="sitemap_last_updated_block" class="space-y-2">
           <span class="text-heading block">$t:admin.settings.seo.sitemap_last_updated_at</span>
-          <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
-            <input type="text" :disabled="true" value="{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+          <div class="flex flex-col gap-2">
+            <responsive on="768-" class="flex gap-2 flex-row items-center"/>
+            <input type="text" :disabled="true" value="{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}" class="dark:bg-gray-900 text-gray-700 dark:text-gray-300">
+              <responsive on="768-" class="flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+            </input>
             <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다.
                  즉시 실행(sync) 큐는 요청 안에서 생성을 끝내므로 응답까지 몇 초~수십 초가 걸린다 — 요청 중에도 잠그고 스피너를 보인다 -->
-            <button type="button" disabled="{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2">
+            <button type="button" disabled="{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2">
+              <responsive on="768-" class="w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"/>
               <on type="click">
                 <sequence>
                   <set-state target="local" :isRegeneratingSitemap="true"/>

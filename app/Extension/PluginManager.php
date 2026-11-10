@@ -74,6 +74,7 @@ use App\Support\AssetUrl;
 use App\Support\ExtensionStoragePath;
 use App\Support\LocalizedValue;
 use App\Support\RouteCacheHelper;
+use App\Thumbnails\ThumbnailStore;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -1206,6 +1207,20 @@ class PluginManager implements PluginManagerInterface
                 'plugin' => $pluginName,
                 'extensions' => implode(', ', $activeDependents),
             ]));
+        }
+
+        // 켜진 플러그인은 비활성화(직전·완료 훅 포함)를 먼저 거친다 — 종전에는 바로 제거해 비활성화 훅이 돌지 않았고,
+        // 끌 때 하던 정리(디스크 정의, 캐시, 언어팩 cascade 등)를 구독자가 제거 경로에 따로 들고 있어야 했다.
+        // 진행 중 상태 가드와 의존 확장 검사를 지난 뒤에만 끈다(막힌 제거는 켜진 채로 남는다). 비활성화는 아래 제거 트랜잭션
+        // 밖에서 끝나므로 제거가 실패해 롤백돼도 플러그인은 꺼진 상태로 남는다.
+        if ($existingRecord && $existingRecord->status === ExtensionStatus::Active->value) {
+            $deactivation = $this->deactivatePlugin($pluginName);
+
+            if (! ($deactivation['success'] ?? false)) {
+                throw new \Exception(__('plugins.deactivation_failed', [
+                    'error' => $deactivation['reason'] ?? $deactivation['message'] ?? __('plugins.errors.unknown_error'),
+                ]));
+            }
         }
 
         // Phase 1: 데이터 삭제 옵션이 true인 경우 동적 데이터 정리 및 마이그레이션 롤백 (DDL - 트랜잭션 외부)
@@ -3163,6 +3178,10 @@ class PluginManager implements PluginManagerInterface
         $identifier = $plugin->getIdentifier();
         $pluginStorageDir = ExtensionStoragePath::plugin($identifier);
 
+        // 원본이 원격 디스크에 있거나 로컬 폴더가 이미 없어도 썸네일은 남아 있을 수 있다 — 폴더 검사보다 먼저 지운다.
+        // 드라이버를 거치지 않는 삭제라 저장소 계층 무효화가 닿지 않는다.
+        app(ThumbnailStore::class)->purgeIdentifier($identifier);
+
         if (File::isDirectory($pluginStorageDir)) {
             File::deleteDirectory($pluginStorageDir);
 
@@ -4276,6 +4295,34 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
+     * 활성 디렉토리가 없는 설치 플러그인을 `_pending`·`_bundled` 원본으로 되살리고 메모리에 다시 읽습니다.
+     *
+     * 활성 디렉토리가 이미 있으면(불완전 디렉토리 포함) 건드리지 않는다 — 그 경우는 `plugin:install --force` 가 맡는다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
+     */
+    protected function restoreMissingActiveDirectory(string $pluginName, ?\Closure $onProgress = null): void
+    {
+        $activePath = $this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName;
+
+        if (File::isDirectory($activePath)) {
+            return;
+        }
+
+        $this->copyFromPendingOrBundled($pluginName, $onProgress);
+
+        if (! File::isDirectory($activePath)) {
+            return;
+        }
+
+        ExtensionManager::registerExtensionAutoloadPaths('plugins', $pluginName);
+        $this->reloadPlugin($pluginName);
+        Log::warning('활성 디렉토리가 없는 설치 플러그인을 원본에서 되살렸습니다', ['plugin' => $pluginName]);
+    }
+
+    /**
      * 플러그인 인스턴스를 재로드합니다.
      *
      * 업데이트 후 새 파일에서 플러그인을 다시 로드합니다.
@@ -4843,6 +4890,13 @@ class PluginManager implements PluginManagerInterface
 
         // 상태 가드 (멈춘 업데이트로 보이면 --force 를 안내한다)
         StuckUpdateRecovery::assertNotInProgress($identifier, $record);
+
+        // 행은 있는데 활성 디렉토리만 없으면(파일만 지워진 사이트) 원본(_pending·_bundled)을 복사해 되살린 뒤 업데이트를 잇는다.
+        // 종전에는 업데이트는 「찾을 수 없습니다」, 설치는 「이미 설치되어 있습니다」로 막혀 되돌릴 길이 없었다.
+        // GitHub·ZIP 소스는 원본 사본이 아니므로 이 복구를 하지 않는다(그 경로는 종전대로 실패한다).
+        if (! $this->getPlugin($identifier) && $zipPath === null && $sourceOverride !== 'github') {
+            $this->restoreMissingActiveDirectory($identifier, $onProgress);
+        }
 
         $plugin = $this->getPlugin($identifier);
         if (! $plugin) {

@@ -1,0 +1,19 @@
+feature: thumbnail_measure_seeders
+
+description: |
+  이커머스 이미지 썸네일 실측 시더(개발 DB 전용 샘플 시더, `--sample` 밖)는 생성, 정리 모두 run() 첫머리에서 사이트 언어의
+  시작 안내를 찍고, 옵트인(G7_PLAYWRIGHT_BYPASS=1)이 없으면 데이터에 손대기 전에 멈춘다. 정리 시더는 주문번호 접두만 같은
+  남의 주문을 지우지 않는다 — 실측 작성자 회원의 주문이거나 주문자 이름에 실측 표지가 있어야 한다. 배송정책은 관리자 화면과
+  같은 서비스로 만들고 지운다(생성, 삭제 훅). 실측 데이터 표의 이미지 행과 주문, 신청서 행의 열 수는 머리글 수(7)와 같다.
+
+axes:
+  seeder: [generate, cleanup]
+
+effects:
+  - start_message_printed_first
+  - cleanup_keeps_foreign_orders
+  - shipping_policy_goes_through_service
+  - table_rows_match_headers
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seeders/ThumbnailMeasureSeederTest.php

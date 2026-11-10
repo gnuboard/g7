@@ -61,13 +61,24 @@ auth_type 결정 (명시 또는 경로 기반)
          ↓
 AuthManager.checkAuth(authType)
          ↓
-    ┌────┴────┐
-    ↓         ↓
- 인증됨    미인증
-    ↓         ↓
- 렌더링    로그인 페이지로 리다이렉트
+    ┌────┴─────────────┐
+    ↓         ↓        ↓
+ 인증됨    미인증    확인 불가(5xx·네트워크 오류)
+    ↓         ↓        ↓
+ 렌더링    로그인 페이지로 리다이렉트   중립 오류 화면 (토큰 유지)
            (?redirect 파라미터 포함)
 ```
+
+### 서버 일시 오류와 인증 확인 (engine-v1.89.0+)
+
+라우트 캐시를 다시 만드는 순간처럼 서버가 잠깐 5xx 를 내거나 네트워크가 끊기면, 사용자 조회 실패는 「로그인 안 됨」이 아니다.
+
+- `checkAuth()` 는 5xx 와 응답 없는 HTTP 오류(axios 의 네트워크·시간 초과)를 250ms, 750ms, 1500ms 간격으로 세 번 더 묻는다. 401 은 토큰 갱신 뒤 다시 묻고, 그 밖의 4xx(403·419 등)는 다시 묻지 않고 미인증이다. 요청 취소(`ERR_CANCELED`)와 HTTP 오류가 아닌 예외도 다시 묻지 않는다. `authStateChange` 구독자가 던진 예외는 기록만 하고 인증 결과에 영향을 주지 않는다.
+- 다시 물어도 안 되면: 이미 같은 타입으로 인증된 세션이면 그대로 유지하고 true, 아니면 상태를 건드리지 않고 false 다. 어느 쪽이든 토큰은 지우지 않는다.
+- 마지막 결론은 `AuthManager.getLastCheckStatus(type)` 이 `'authenticated' | 'unauthenticated' | 'unavailable'` 로 돌려준다(확인 전 null).
+- 라우터는 `unavailable` 이면 로그인으로 보내지 않고 `authUnavailable` 이벤트(`{ path, authType }`)를 낸다. TemplateApp 은 코어 기본 오류 표시로 「요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.」(`core.errors.api_request_failed`)와 새로고침 단추만 그린다. 템플릿 503 오류 레이아웃은 쓰지 않는다 — base 를 상속해 머리글이 `current_user` 로 로그인 분기를 하므로, 서버가 계속 실패하면 로그인돼 있는 사람에게 비로그인 머리글을 보인다. 로그인 여부를 모르는 상태라 로그인 상태를 단정하는 요소가 없는 화면이 맞다. 서버가 돌아오면 새로고침으로 같은 화면이 이어진다. `authUnavailable` 을 받는 쪽이 없으면 종전처럼 로그인으로 보낸다. 다시 묻는 사이 주소가 바뀌었거나(뒤로 가기) 문서를 떠나는 중이면 오류 화면을 그리지 않는다.
+- 확인이 「확인 불가」로 끝난 뒤 `AuthManager.UNAVAILABLE_REUSE_MS`(5초) 안에는 라우터가 다시 묻지 않는다(`isRecentlyUnavailable(type)`). 부팅 때 `preloadAuth` 가 재시도 끝에 확인 불가면 라우터가 그 결론을 그대로 써서, 서버가 계속 5xx 여도 요청 시간 외에 약 2.5초 뒤 오류 화면이 뜬다. 5초는 재시도 창(2.5초)의 두 배다 — 방금 그 창 내내 답하지 못한 서버에 곧바로 다시 물어도 같은 장애일 가능성이 크고, 한참 뒤의 이동은 새로 묻는다.
+- 확인이 0.5초 안에 끝나지 않거나 다시 묻기 시작하면 화면 위쪽에 코어 기본 확인 중 표시(`role=status`, 「로그인 상태를 확인하는 중입니다. 잠시만 기다려 주세요.」, 내장 문구 `core.errors.auth_checking`)가 뜬다. 인증·미인증으로 끝나면 바로 걷히고, 확인 불가로 끝나면 오류 화면을 그릴 때까지 남는다(공개 화면·경로 없음·초기화 오류 화면이 그려지면 그때 걷힘). `AuthManager` 는 모든 확인의 시작과 끝에 `authCheckStart`(`{ type }`)·`authCheckEnd`(`{ type, status }`)를, 재시도 구간에 `authCheckRetry`(`{ type, attempt }`)·`authCheckRetryEnd`(`{ type, status }`)를 낸다.
 
 ---
 

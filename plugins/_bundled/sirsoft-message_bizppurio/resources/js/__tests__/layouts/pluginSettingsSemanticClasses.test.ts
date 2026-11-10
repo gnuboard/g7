@@ -47,6 +47,15 @@ function flatten(node: unknown): LayoutNode[] {
 
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props.className : '');
+
+/**
+ * 3열 그리드 입력 줄인지 — 좁은 폭 1열, 1024px 이상 3열을 접두 유틸과 엔진 responsive(`1024-` 구간)로 쓴다.
+ * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
+ */
+const GRID3_BASE = 'bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start';
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
+    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('bizppurio:grid-cols-3');
 const HEADINGS = ['H2', 'H3', 'H4'];
 
 describe('비즈뿌리오 환경설정 — 의미 클래스 위치', () => {
@@ -87,7 +96,7 @@ describe('비즈뿌리오 환경설정 — 의미 클래스 위치', () => {
         const headingMisuse = nodes.filter((n) => cls(n) === 'bizppurio-section-heading-md' && !HEADINGS.includes(n.name ?? ''));
         expect(headingMisuse.map((n) => n.id ?? n.name)).toEqual([]);
 
-        const gridOnLi = nodes.filter((n) => n.name === 'Li' && cls(n).startsWith('bizppurio-grid-3col-responsive'));
+        const gridOnLi = nodes.filter((n) => n.name === 'Li' && isGrid3col(n));
         expect(gridOnLi.map((n) => n.text)).toEqual([]);
     });
 });

@@ -19,15 +19,17 @@
     <!-- 슬롯 등록 영역 - 모든 필터 행 정의 (hidden) -->
     <div data-ref="slot_registration_area" class="ecommerce:hidden ecommerce-hidden ecommerce-filter-grid" aria-hidden="true">
       <!-- 신청일 필터 (기간 컬럼은 created_at 단일 — dateType 축 없음) -->
-      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — date -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.date" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"/>
           </on>
         </input>
-        <span data-ref="f_010_date_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.date</span>
+        <span data-ref="f_010_date_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.date</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <!-- 달력에서 직접 고른 날짜는 어느 빠른 기간 버튼과도 맞지 않으므로 버튼 강조를 함께 끈다. 신청일 기준이며 고른 날의 0시부터 포함한다. -->
           <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.claim.filter.date')}}" data-ref="f_020_start_date" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.filter.start_date" class="ecommerce-input ecommerce:w-36">
@@ -95,15 +97,17 @@
         </div>
       </div>
       <!-- 상태 필터 — 유형별 어휘(교환 14 / 반품 11 / 환불 7 / 취소 2, D28). 활성 유형의 칩만 등록된다 -->
-      <div data-ref="claimStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="claimStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — claimStatus -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.claim_status" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimStatus')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claimStatus') ? (_local.visibleFilters || []).filter(f => f !== 'claimStatus') : [...(_local.visibleFilters || []), 'claimStatus']}}"/>
           </on>
         </input>
-        <span data-ref="f_440_claimStatus_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.claim_status</span>
+        <span data-ref="f_440_claimStatus_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.claim_status</span>
         <!-- exchange 상태 칩 14종 -->
         <div data-ref="claim_status_chips_exchange" data-if="{{(query.type || 'exchange') === 'exchange'}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <!-- 새로 접수돼 아직 승인·보류·반려 어느 쪽으로도 처리되지 않은 교환을 고른다. 상태 조건은 유형마다 어휘가 달라 서브탭 건수 뱃지에는 반영되지 않는다. -->
@@ -322,15 +326,17 @@
         </div>
       </div>
       <!-- 귀책 필터 — 취소 유형은 귀책 컬럼이 없어 게이트가 prohibited 로 거절하므로 행을 등록하지 않는다 -->
-      <div data-ref="faultType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('faultType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" data-if="{{(query.type || 'exchange') !== 'cancel'}}" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="faultType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('faultType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" data-if="{{(query.type || 'exchange') !== 'cancel'}}" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — faultType -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.fault_type" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('faultType')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('faultType') ? (_local.visibleFilters || []).filter(f => f !== 'faultType') : [...(_local.visibleFilters || []), 'faultType']}}"/>
           </on>
         </input>
-        <span data-ref="f_450_faultType_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.fault_type</span>
+        <span data-ref="f_450_faultType_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.fault_type</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <label data-ref="f_460_faultTypes_customer" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
             <!-- 고객 사정(기본 사유로는 단순 변심·사이즈 불일치 등)으로 잡힌 건. 교환·반품 배송비가 고객에게 청구되는 것은 이 귀책뿐이다. -->
@@ -362,15 +368,17 @@
         </div>
       </div>
       <!-- 청구방식 필터 — 환불·취소 유형은 청구 컬럼이 없어 게이트가 prohibited 로 거절하므로 행을 등록하지 않는다 -->
-      <div data-ref="chargeMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargeMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="chargeMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargeMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — chargeMethod -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.charge_method" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargeMethod')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('chargeMethod') ? (_local.visibleFilters || []).filter(f => f !== 'chargeMethod') : [...(_local.visibleFilters || []), 'chargeMethod']}}"/>
           </on>
         </input>
-        <span data-ref="f_490_chargeMethod_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.charge_method</span>
+        <span data-ref="f_490_chargeMethod_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.charge_method</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <label data-ref="f_500_chargeMethods_pay_on_request" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
             <!-- 신청과 함께 고객이 배송비·차액을 결제하는 건으로, 접수 직후 결제대기로 들어간다. 청구액이 없는 건은 방식 자체가 비어 있어 세 칸 어디에도 걸리지 않는다. -->
@@ -402,34 +410,38 @@
         </div>
       </div>
       <!-- 사유 필터 — 사유 카탈로그 코드 단건. 취소는 저장 컬럼(cancel_reason_type)이 환불 사유 코드를 담는다 -->
-      <div data-ref="reasonCode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('reasonCode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="reasonCode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('reasonCode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — reasonCode -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.reason" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('reasonCode')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('reasonCode') ? (_local.visibleFilters || []).filter(f => f !== 'reasonCode') : [...(_local.visibleFilters || []), 'reasonCode']}}"/>
           </on>
         </input>
-        <span data-ref="f_530_reasonCode_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.reason</span>
+        <span data-ref="f_530_reasonCode_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.reason</span>
         <!-- 선택지는 지금 탭 유형의 사용 중인 사유만 받아 오므로 사용 중지한 사유로 접수된 옛 건은 여기서 고를 수 없다. 사유 목록 조회에 설정 조회 권한이 필요해 그 권한이 없는 운영자에게는 전체 하나만 남는다. -->
-        <select data-ref="f_540_reason_select" name="reasonCode" class="ecommerce:!w-48" value="{{_local.filter.reasonCode || ''}}" options="{{_computed.claimReasonOptions ?? []}}">
+        <select data-ref="f_540_reason_select" name="reasonCode" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.reason" class="ecommerce:!w-48" value="{{_local.filter.reasonCode || ''}}" options="{{_computed.claimReasonOptions ?? []}}">
           <on type="change">
             <set-state target="_local" filter.reasonCode="{{$event.target.value}}"/>
           </on>
         </select>
       </div>
       <!-- 회원 구분 필터 — 신청자 컬럼의 NULL 여부가 회원/비회원의 단일 근거 -->
-      <div data-ref="requesterType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('requesterType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="requesterType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('requesterType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — requesterType -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.requester_type" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('requesterType')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('requesterType') ? (_local.visibleFilters || []).filter(f => f !== 'requesterType') : [...(_local.visibleFilters || []), 'requesterType']}}"/>
           </on>
         </input>
-        <span data-ref="f_550_requesterType_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.requester_type</span>
+        <span data-ref="f_550_requesterType_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.requester_type</span>
         <!-- 유형과 무관한 조건이라 서브탭 건수 뱃지에도 함께 걸린다. 환불 탭에서는 운영자가 대신 접수한 환불도 신청자 칸이 비어 있어 회원 주문이라도 비회원 쪽에 걸린다. -->
-        <select data-ref="f_560_requester_type_select" name="requesterType" class="ecommerce:w-32" value="{{_local.filter.requesterType || ''}}">
+        <select data-ref="f_560_requester_type_select" name="requesterType" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.requester_type" class="ecommerce:w-32" value="{{_local.filter.requesterType || ''}}">
           <options>
             <option value="">$t:sirsoft-ecommerce.admin.claim.filter.requester_type_option.all</option>
             <option value="member">$t:sirsoft-ecommerce.admin.claim.filter.requester_type_option.member</option>
@@ -441,15 +453,17 @@
         </select>
       </div>
       <!-- 금액 범위 필터 — 목록 금액 컬럼과 같은 축. 통화는 운영자가 등록한 통화 목록에서 고른다 -->
-      <div data-ref="amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('amount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('amount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — amount -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.amount" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('amount')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('amount') ? (_local.visibleFilters || []).filter(f => f !== 'amount') : [...(_local.visibleFilters || []), 'amount']}}"/>
           </on>
         </input>
-        <span data-ref="f_570_amount_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.amount</span>
+        <span data-ref="f_570_amount_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.amount</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <!-- 교환·반품은 청구액, 환불·취소는 환불액과 환불 마일리지를 더한 값으로 비교한다. 취소 탭에서는 환불 없이 끝난 취소가 금액 조건을 걸면 빠진다. -->
           <input data-ref="f_580_min_amount" type="number" name="minAmount" min="0" value="{{_local.filter.minAmount || ''}}" placeholder="$t:sirsoft-ecommerce.admin.claim.filter.min_amount" class="ecommerce-input ecommerce:w-32 ecommerce:text-right">
@@ -473,15 +487,17 @@
         </div>
       </div>
       <!-- 청구 결제수단 필터 — 추가결제(claim_payments)가 성립하는 교환·반품에만 있다. 환불·취소는 게이트가 prohibited 로 거절한다 -->
-      <div data-ref="chargePaymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargePaymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="chargePaymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargePaymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — chargePaymentMethod -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargePaymentMethod')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('chargePaymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'chargePaymentMethod') : [...(_local.visibleFilters || []), 'chargePaymentMethod']}}"/>
           </on>
         </input>
-        <span data-ref="f_610_chargePaymentMethod_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method</span>
+        <span data-ref="f_610_chargePaymentMethod_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <fragment data-each="method, methodIdx in _computed.claimChargePaymentMethods || []">
             <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
@@ -497,15 +513,17 @@
         </div>
       </div>
       <!-- 접수 출처·회수 지연·환불 미접수 필터 (§3-11 D8 · 선교환 · D9). 유형마다 축이 달라 게이트(`ClaimListRequest`)가 밖의 유형에서 prohibited 로 거절하므로, 아래 조회 파라미터는 그 축을 가진 유형에서만 싣는다. -->
-      <div data-ref="claimFlags_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="claimFlags_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- 편집모드 체크박스 — claimFlags -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.claim_flags" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimFlags')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claimFlags') ? (_local.visibleFilters || []).filter(f => f !== 'claimFlags') : [...(_local.visibleFilters || []), 'claimFlags']}}"/>
           </on>
         </input>
-        <span data-ref="f_620_claimFlags_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
+        <span data-ref="f_620_claimFlags_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <select data-ref="f_630_request_source_select" data-if="{{(query.type || 'exchange') !== 'cancel'}}" name="requestSource" class="ecommerce:w-36" value="{{_local.filter.requestSource || ''}}">
             <options>
@@ -582,8 +600,9 @@
         {{preset.name}}
       </button>
     </div>
-    <!-- 검색 영역 — 검색 필드와 버튼 영역 분리 (D21 ②). `flex flex-col` 은 기준 display 다 — 빼면 md:flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다. -->
-    <div data-ref="search_row_wrapper" class="ecommerce:flex ecommerce:flex-col ecommerce:md:flex-row ecommerce:md:items-center ecommerce:gap-3">
+    <!-- 검색 영역 — 검색 필드와 버튼 영역 분리 (D21 ②). `flex flex-col` 은 기준 display 다 — 768px 이상 구간 값에도 `flex` 를 함께 적는다(구간 값은 className 을 통째로 바꾼다). 빼면 flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다. -->
+    <div data-ref="search_row_wrapper" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-3">
+      <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:items-center ecommerce:gap-3"/>
       <!-- 검색 필드 + 검색어 입력 -->
       <div data-ref="search_row_line1" class="ecommerce:flex-1 ecommerce-flex-center ecommerce:gap-2">
         <!-- 검색 드롭다운 4종 (D27) — 이 4축은 상세 필터에 중복 배치하지 않는다. 게이트(`search_field`)에 'all' 이 없으므로 전체 옵션도 두지 않는다 -->

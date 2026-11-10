@@ -9,7 +9,7 @@
  *  - 미선언 축 핸들 pointerdown 무시
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useResizeHandles } from '../../hooks/useResizeHandles';
 import type { EditorControlSpec } from '../../spec/specTypes';
@@ -26,6 +26,10 @@ function dispatchPointer(type: string, x: number, y: number): void {
 }
 
 describe('useResizeHandles — enabledAxes', () => {
+  /**
+   * @scenario layer=hook
+   * @effects resize_axes_follow_declared_width_height_controls
+   */
   it('width/height 컨트롤 선언 여부로 축 활성', () => {
     const { result } = renderHook(() =>
       useResizeHandles({
@@ -42,13 +46,17 @@ describe('useResizeHandles — enabledAxes', () => {
 
 describe('useResizeHandles — styleProp 연속 px (scale 보정)', () => {
   let node: EditorNode;
-  let onResize: ReturnType<typeof vi.fn>;
+  let onResize: Mock<(patched: EditorNode, axis: 'width' | 'height' | 'both') => void>;
 
   beforeEach(() => {
     node = { name: 'Div', props: { style: { width: '100px', height: '50px' } } };
     onResize = vi.fn();
   });
 
+  /**
+   * @scenario layer=hook
+   * @effects resize_e_handle_grows_width_by_delta_over_scale
+   */
   it('e 핸들 드래그 → width 가 델타/scale 만큼 증가 (px)', () => {
     const { result } = renderHook(() =>
       useResizeHandles({
@@ -71,6 +79,10 @@ describe('useResizeHandles — styleProp 연속 px (scale 보정)', () => {
     expect((patched.props?.style as Record<string, unknown>).width).toBe('150px');
   });
 
+  /**
+   * @scenario layer=hook
+   * @effects resize_s_handle_changes_height_only
+   */
   it('s 핸들 드래그 → height 만 변경, width 불변', () => {
     const { result } = renderHook(() =>
       useResizeHandles({ node, widthControl: widthStyleProp, heightControl: heightStyleProp, scale: 1, onResize }),
@@ -88,6 +100,10 @@ describe('useResizeHandles — styleProp 연속 px (scale 보정)', () => {
 });
 
 describe('useResizeHandles — 옵션 스냅 / 클램프 / 미선언 축', () => {
+  /**
+   * @scenario layer=hook
+   * @effects resize_select_control_snaps_to_nearest_option
+   */
   it('select 옵션 컨트롤 — 목표 px 에 가장 가까운 옵션 value 로 스냅', () => {
     const onResize = vi.fn();
     const widthSelect: EditorControlSpec = {
@@ -114,8 +130,28 @@ describe('useResizeHandles — 옵션 스냅 / 클램프 / 미선언 축', () =>
       dispatchPointer('pointerup', 75, 0);
     });
     expect(onResize).toHaveBeenCalled();
+    // 스냅 결과 — 'l' 옵션의 토큰만 붙고 다른 단계 토큰은 없다.
+    const snappedL = String((onResize.mock.calls.at(-1)![0] as EditorNode).props?.className ?? '').split(/\s+/);
+    expect(snappedL).toContain('w-96');
+    expect(snappedL).not.toContain('w-32');
+    expect(snappedL).not.toContain('w-64');
+
+    // 반대 방향 대조 — 가상 px 15 는 's'(0)에 가장 가깝다.
+    act(() => {
+      result.current.onHandlePointerDown('e', { clientX: 0, clientY: 0 });
+      dispatchPointer('pointermove', 15, 0);
+      dispatchPointer('pointerup', 15, 0);
+    });
+    const snappedS = String((onResize.mock.calls.at(-1)![0] as EditorNode).props?.className ?? '').split(/\s+/);
+    expect(snappedS).toContain('w-32');
+    expect(snappedS).not.toContain('w-64');
+    expect(snappedS).not.toContain('w-96');
   });
 
+  /**
+   * @scenario layer=hook
+   * @effects resize_clamps_to_min_max
+   */
   it('min/max 클램프 — styleProp width 가 max 를 넘지 않는다', () => {
     const onResize = vi.fn();
     const clamped: EditorControlSpec = {
@@ -141,6 +177,10 @@ describe('useResizeHandles — 옵션 스냅 / 클램프 / 미선언 축', () =>
     expect((patched.props?.style as Record<string, unknown>).width).toBe('120px');
   });
 
+  /**
+   * @scenario layer=hook
+   * @effects resize_undeclared_axis_handle_ignored
+   */
   it('미선언 축(height 없음)에서 n 핸들 pointerdown 은 무시', () => {
     const onResize = vi.fn();
     const { result } = renderHook(() =>
@@ -178,6 +218,10 @@ describe('useResizeHandles — dimension 컨트롤(options + control-level apply
     options: [{ value: '100%' }, { value: '50%' }],
   };
 
+  /**
+   * @scenario layer=hook
+   * @effects resize_e_handle_patches_style_width_px
+   */
   it('e 핸들 드래그 → onResize 패치 노드의 style.width 가 px 로 갱신', () => {
     const node: EditorNode = { name: 'Button', props: { style: { width: '100px' } } };
     const onResize = vi.fn();
@@ -209,6 +253,10 @@ describe('useResizeHandles — dimension 컨트롤(options + control-level apply
 // 렌더 크기를 공급하면 그 값을 시작점으로 쓴다(명시 style px 가 있으면 그게 우선).
 // ============================================================================
 describe('useResizeHandles — 시작 크기는 실측 현재 크기', () => {
+  /**
+   * @scenario layer=hook
+   * @effects resize_starts_from_measured_size_when_no_style
+   */
   it('style.width 없음 + measureStartSize=116 → 드래그 시작이 116 기준(0 아님)', () => {
     const onResize = vi.fn();
     const node: EditorNode = { name: 'Button' }; // style.width 없음
@@ -237,6 +285,10 @@ describe('useResizeHandles — 시작 크기는 실측 현재 크기', () => {
     expect((patched.props?.style as Record<string, unknown>)?.width).toBe('156px');
   });
 
+  /**
+   * @scenario layer=hook
+   * @effects resize_explicit_style_width_wins_over_measure
+   */
   it('style.width 명시 px 가 있으면 그것이 우선(measure 무시)', () => {
     const onResize = vi.fn();
     const node: EditorNode = { name: 'Div', props: { style: { width: '200px' } } };
@@ -268,6 +320,10 @@ describe('useResizeHandles — 시작 크기는 실측 현재 크기', () => {
 // 안 움직임)이면 발화하지 않는다.
 // ============================================================================
 describe('useResizeHandles — onResizeEnd 로 종료 시 1회 발화', () => {
+  /**
+   * @scenario layer=hook
+   * @effects resize_pointerup_fires_resize_end_once
+   */
   it('드래그 후 pointerup → onResizeEnd 1회 + 최종 노드 전달', () => {
     const node: EditorNode = { name: 'Div', props: { style: { width: '100px' } } };
     const onResize = vi.fn();
@@ -292,6 +348,10 @@ describe('useResizeHandles — onResizeEnd 로 종료 시 1회 발화', () => {
     expect(axis).toBe('width');
   });
 
+  /**
+   * @scenario layer=hook
+   * @effects resize_zero_delta_skips_resize_end
+   */
   it('핸들만 누르고 움직이지 않으면 onResizeEnd 미발화(델타 0)', () => {
     const node: EditorNode = { name: 'Div', props: { style: { width: '100px' } } };
     const onResizeEnd = vi.fn();

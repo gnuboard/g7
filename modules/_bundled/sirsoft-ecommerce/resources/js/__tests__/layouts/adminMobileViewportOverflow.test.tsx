@@ -231,13 +231,23 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
    * @scenario area=settings
    * @effects settings_fields_fit_narrow_viewport
    */
-  it('탭바는 sticky-tab-nav-responsive 를 쓴다 (단계적 패딩과 일치)', () => {
+  it('탭바의 좌우 여백이 콘텐츠 래퍼의 단계적 패딩과 같은 구간으로 바뀐다', () => {
     const layout = load('admin_ecommerce_settings.json');
     const nav = collect(layout, (n) => n.id === 'tab_navigation')[0];
+    const content = collect(layout, (n) => n.id === 'settings_content')[0];
     expect(nav).toBeTruthy();
-    // 콘텐츠 래퍼가 p-4 sm:p-6 lg:p-8 이라 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)는
-    // 폰에서 좌우 8px 씩 과다 bleed 된다.
-    expect(nav.props.className).toBe('ecommerce-sticky-tab-nav-responsive');
+    expect(content).toBeTruthy();
+    // 콘텐츠 래퍼가 폰 p-4 · 640~1023 p-6 · 1024 이상 p-8 이라, 탭바도 같은 구간에서 같은 폭만큼 바깥으로
+    // 나가야 한다. 고정 24px(-mx-6 px-6)를 가정하면 폰에서 좌우 8px 씩 과다 bleed 된다.
+    expect(cls(content)).toContain('ecommerce:p-4');
+    expect(cls(nav)).toContain('ecommerce:-mx-4');
+    expect(cls(nav)).toContain('ecommerce:px-4');
+    const steps: Array<[string, string]> = [['640-1023', '6'], ['1024-', '8']];
+    for (const [range, n] of steps) {
+      expect(content.responsive?.[range]?.props?.className).toContain(`ecommerce:p-${n}`);
+      expect(nav.responsive?.[range]?.props?.className).toContain(`ecommerce:-mx-${n}`);
+      expect(nav.responsive?.[range]?.props?.className).toContain(`ecommerce:px-${n}`);
+    }
   });
 
   /**

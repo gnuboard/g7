@@ -2,10 +2,13 @@
 
 namespace Tests\Unit\Seo;
 
+use App\Extension\HookManager;
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\ExpressionEvaluator;
 use App\Seo\SeoUrl;
 use App\Support\AssetUrl;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class ComponentHtmlMapperTest extends TestCase
@@ -6696,5 +6699,373 @@ class ComponentHtmlMapperTest extends TestCase
         $html = $this->mapper->render($components, $context, $this->evaluator);
 
         $this->assertStringContainsString('<img src="https://cdn.test/a.png" alt="이미지">', $html);
+    }
+
+    // =========================================================================
+    // 이미지 썸네일 (#869) — 템플릿 Img 의 thumbPreset·HtmlContent 본문 이미지 패리티
+    // =========================================================================
+
+    /**
+     * 썸네일 설정을 고정하고 srcset·loading·decoding 을 허용 속성에 넣습니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function prepareThumbnailRendering(): void
+    {
+        Config::set('app.url', 'http://localhost');
+        Config::set('core.thumbnail.presets', null);
+        Config::set('core.thumbnail.enabled', true);
+        Config::set('core.thumbnail.content_preset', 'lg');
+        Config::set('g7_settings.core.seo.og_image_default_width', 1200);
+        Config::set('g7_settings.core.seo.og_image_default_height', 630);
+        HookManager::clearFilter('core.thumbnail.filter_presets');
+        HookManager::clearFilter('core.thumbnail.filter_url_patterns');
+        HookManager::clearFilter('core.thumbnail.filter_url');
+        app(ThumbnailPresetRegistry::class)->flush();
+
+        $this->mapper->setAllowedAttrs(array_merge($this->getDefaultAllowedAttrs(), ['srcset', 'sizes', 'loading', 'decoding']));
+        $this->mapper->setAttrMap(array_merge($this->getDefaultAttrMap(), ['srcSet' => 'srcset']));
+    }
+
+    /**
+     * Img 의 thumbPreset 은 src·srcset 으로 바뀌고 그 자체는 속성으로 나가지 않는다.
+     *
+     * @scenario render_concern=basic_tags
+     *
+     * @effects img_thumb_preset_renders_thumbnail_src
+     *
+     * @return void 반환값 없음
+     */
+    public function test_img_thumb_preset_renders_thumbnail_src_and_srcset(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $html = $this->render([
+            ['name' => 'Img', 'props' => ['src' => '{{user.avatar}}', 'alt' => '아바타', 'thumbPreset' => 'md']],
+        ], ['user' => ['avatar' => '/api/attachment/abc']]);
+
+        // 봇 화면 src 는 사이트 절대 주소가 된다(siteAssetUrl) — 같은 출처라 썸네일 대상 판정은 그대로다
+        $this->assertStringContainsString(
+            '<img src="http://localhost/api/attachment/abc?size=md" srcset="http://localhost/api/attachment/abc?size=md 1x, http://localhost/api/attachment/abc?size=lg 2x" alt="아바타" loading="lazy" decoding="async">',
+            $html
+        );
+        $this->assertStringNotContainsString('thumbPreset', $html);
+        $this->assertStringNotContainsString('thumbpreset', $html);
+    }
+
+    /**
+     * 패턴 밖 주소는 thumbPreset 이 있어도 원본 그대로이고 srcset 도 없다. 명시한 loading 은 존중한다.
+     *
+     * @scenario render_concern=basic_tags
+     *
+     * @effects img_thumb_preset_renders_thumbnail_src
+     *
+     * @return void 반환값 없음
+     */
+    public function test_img_thumb_preset_leaves_external_url_unchanged(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $html = $this->render([
+            ['name' => 'Img', 'props' => ['src' => 'https://cdn.test/a.jpg', 'thumbPreset' => 'sm', 'loading' => 'eager']],
+        ]);
+
+        $this->assertStringContainsString('src="https://cdn.test/a.jpg"', $html);
+        $this->assertStringNotContainsString('size=', $html);
+        $this->assertStringNotContainsString('srcset', $html);
+        $this->assertStringContainsString('loading="eager"', $html);
+        $this->assertStringNotContainsString('loading="lazy"', $html);
+    }
+
+    /**
+     * 레이아웃이 srcSet 을 직접 적었으면 그 값을 쓰고 자동 srcset 을 만들지 않는다.
+     *
+     * @scenario render_concern=basic_tags
+     *
+     * @effects img_thumb_preset_renders_thumbnail_src
+     *
+     * @return void 반환값 없음
+     */
+    public function test_img_thumb_preset_respects_explicit_srcset(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $html = $this->render([
+            ['name' => 'Img', 'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => 'sm', 'srcSet' => '/x.png 2x']],
+        ]);
+
+        $this->assertStringContainsString('src="http://localhost/api/attachment/abc?size=sm"', $html);
+        $this->assertSame(1, substr_count($html, 'srcset='));
+        $this->assertStringContainsString('srcset="/x.png 2x"', $html);
+    }
+
+    /**
+     * HtmlContent 본문 이미지는 렌더 시점에 썸네일 주소·srcset·sizes(imageSizes prop)·지연 로딩을 받는다.
+     *
+     * @scenario render_concern=basic_tags
+     *
+     * @effects content_image_uses_thumbnail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_html_content_image_gets_thumbnail_with_image_sizes_prop(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $html = $this->render([
+            ['name' => 'HtmlContent', 'props' => [
+                'content' => '{{post.content}}',
+                'imageSizes' => '(min-width: 640px) 600px, 100vw',
+            ]],
+        ], ['post' => ['content' => '<p><img src="/api/attachment/abc" width="1600"><img src="https://cdn.test/b.jpg"></p>']]);
+
+        $this->assertStringContainsString('src="/api/attachment/abc?size=lg"', $html);
+        $this->assertStringContainsString('sizes="(min-width: 640px) 600px, 100vw"', $html);
+        $this->assertStringContainsString('1280w', $html);
+        $this->assertStringContainsString('<img src="https://cdn.test/b.jpg">', $html);
+    }
+
+    // =========================================================================
+    // 이미지 썸네일 × responsive (#869) — 봇 화면은 데스크톱 폭(1024px) 한 구간의 규격을 쓴다
+    // =========================================================================
+
+    /**
+     * 봇 HTML 의 img 를 data-testid 별로 모읍니다 (src·srcset 원문).
+     *
+     * @param  string  $html  렌더 결과
+     * @return array<string, list<array{src: string|null, srcset: string|null}>> data-testid → img 목록
+     */
+    private function imagesByTestId(string $html): array
+    {
+        preg_match_all('/<img\b[^>]*>/', $html, $tags);
+        $images = [];
+        foreach ($tags[0] as $tag) {
+            preg_match('/\sdata-testid="([^"]*)"/', $tag, $id);
+            preg_match('/\ssrc="([^"]*)"/', $tag, $src);
+            preg_match('/\ssrcset="([^"]*)"/', $tag, $srcset);
+            $images[$id[1] ?? ''][] = ['src' => $src[1] ?? null, 'srcset' => $srcset[1] ?? null];
+        }
+
+        return $images;
+    }
+
+    /**
+     * 같은 주소에 규격을 responsive 없이 바로 준 Img 의 src·srcset — responsive 로 고른 규격과 비교할 기준.
+     *
+     * @param  string  $preset  규격 이름
+     * @param  string  $url  원 주소
+     * @return array{src: string|null, srcset: string|null} 기준 img
+     */
+    private function staticThumbnail(string $preset, string $url = '/api/attachment/abc'): array
+    {
+        $html = $this->render([
+            ['name' => 'Img', 'props' => ['src' => $url, 'thumbPreset' => $preset, 'data-testid' => 'static']],
+        ]);
+
+        $image = $this->imagesByTestId($html)['static'][0];
+        $this->assertStringContainsString('size='.$preset, (string) $image['src'], "기준 규격 {$preset} 이 src 에 붙어야 한다");
+
+        return $image;
+    }
+
+    /**
+     * responsive 를 가진 이미지 노드.
+     *
+     * @param  string  $testId  이미지 식별자(data-testid 값)
+     * @param  string  $preset  기본 규격
+     * @param  array  $responsive  구간별 오버라이드 맵
+     * @param  array  $extra  노드에 덧붙일 속성
+     * @return array 노드
+     */
+    private function responsiveImg(string $testId, string $preset, array $responsive, array $extra = []): array
+    {
+        return array_merge([
+            'type' => 'basic',
+            'name' => 'Img',
+            'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => $preset, 'data-testid' => $testId],
+            'responsive' => $responsive,
+        ], $extra);
+    }
+
+    /**
+     * 프리셋 구간: desktop 값이 쓰이고 mobile·tablet·portable 은 쓰이지 않는다.
+     *
+     * @scenario render_concern=responsive_props
+     *
+     * @effects img_thumb_preset_responsive_uses_desktop_breakpoint
+     *
+     * @return void 반환값 없음
+     */
+    public function test_img_thumb_preset_responsive_preset_breakpoints_use_desktop_value(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $images = $this->imagesByTestId($this->render([
+            $this->responsiveImg('three', 'md', [
+                'mobile' => ['props' => ['thumbPreset' => 'xs']],
+                'tablet' => ['props' => ['thumbPreset' => 'sm']],
+                'desktop' => ['props' => ['thumbPreset' => 'lg']],
+            ]),
+            $this->responsiveImg('portableOnly', 'xl', ['portable' => ['props' => ['thumbPreset' => 'md']]]),
+            $this->responsiveImg('narrowOnly', 'md', [
+                'mobile' => ['props' => ['thumbPreset' => 'xs']],
+                'tablet' => ['props' => ['thumbPreset' => 'sm']],
+            ]),
+        ]));
+
+        $this->assertSame([$this->staticThumbnail('lg')], $images['three']);
+        $this->assertSame([$this->staticThumbnail('xl')], $images['portableOnly']);
+        $this->assertSame([$this->staticThumbnail('md')], $images['narrowOnly']);
+        $this->assertStringNotContainsString('thumbPreset', json_encode($images));
+    }
+
+    /**
+     * 커스텀 구간: 1024px 을 포함하는 키만 쓰이고, 커스텀 > 프리셋, 좁은 범위 우선(선언 순서 무관).
+     *
+     * 봇 폭은 정확히 1024px 이라 `1025-`·`1200-` 처럼 1024 를 넘는 구간은 적용되지 않는다(1024px 브라우저와 같다).
+     *
+     * @scenario render_concern=responsive_props
+     *
+     * @effects img_thumb_preset_responsive_custom_ranges_follow_desktop_width
+     *
+     * @return void 반환값 없음
+     */
+    public function test_img_thumb_preset_responsive_custom_ranges_follow_desktop_width(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $images = $this->imagesByTestId($this->render([
+            $this->responsiveImg('openEnded', 'md', ['1024-' => ['props' => ['thumbPreset' => 'xl']]]),
+            $this->responsiveImg('customOverPreset', 'md', [
+                'desktop' => ['props' => ['thumbPreset' => 'lg']],
+                '1024-' => ['props' => ['thumbPreset' => 'xl']],
+            ]),
+            $this->responsiveImg('customOverPresetReversed', 'md', [
+                '1024-' => ['props' => ['thumbPreset' => 'xl']],
+                'desktop' => ['props' => ['thumbPreset' => 'lg']],
+            ]),
+            $this->responsiveImg('narrowerCustom', 'md', [
+                '1024-' => ['props' => ['thumbPreset' => 'lg']],
+                '1024-1279' => ['props' => ['thumbPreset' => 'sm']],
+            ]),
+            $this->responsiveImg('straddling', 'md', ['1000-1100' => ['props' => ['thumbPreset' => 'xs']]]),
+            $this->responsiveImg('maxOnly', 'md', ['-1023' => ['props' => ['thumbPreset' => 'xs']]]),
+            $this->responsiveImg('maxOnlyIncluding', 'md', ['-1024' => ['props' => ['thumbPreset' => 'sm']]]),
+            $this->responsiveImg('aboveBotWidth', 'md', [
+                '1025-' => ['props' => ['thumbPreset' => 'xl']],
+                '1200-' => ['props' => ['thumbPreset' => 'lg']],
+            ]),
+        ]));
+
+        $this->assertSame([$this->staticThumbnail('xl')], $images['openEnded']);
+        $this->assertSame([$this->staticThumbnail('xl')], $images['customOverPreset']);
+        $this->assertSame([$this->staticThumbnail('xl')], $images['customOverPresetReversed']);
+        $this->assertSame([$this->staticThumbnail('sm')], $images['narrowerCustom']);
+        $this->assertSame([$this->staticThumbnail('xs')], $images['straddling']);
+        $this->assertSame([$this->staticThumbnail('md')], $images['maxOnly']);
+        $this->assertSame([$this->staticThumbnail('sm')], $images['maxOnlyIncluding']);
+        $this->assertSame([$this->staticThumbnail('md')], $images['aboveBotWidth']);
+    }
+
+    /**
+     * responsive 안의 식과 기본 규격의 식이 봇 화면 데이터로 평가된다.
+     *
+     * @scenario render_concern=responsive_props
+     *
+     * @effects img_thumb_preset_responsive_uses_desktop_breakpoint
+     *
+     * @return void 반환값 없음
+     */
+    public function test_img_thumb_preset_responsive_expressions_are_evaluated(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $images = $this->imagesByTestId($this->render([
+            $this->responsiveImg('desktopExpr', '{{cfg.base}}', ['desktop' => ['props' => ['thumbPreset' => '{{cfg.wide}}']]]),
+            $this->responsiveImg('baseExpr', '{{cfg.base}}', ['mobile' => ['props' => ['thumbPreset' => '{{cfg.narrow}}']]]),
+        ], ['cfg' => ['base' => 'md', 'wide' => 'xl', 'narrow' => 'xs']]));
+
+        $this->assertSame([$this->staticThumbnail('xl')], $images['desktopExpr']);
+        $this->assertSame([$this->staticThumbnail('md')], $images['baseExpr']);
+    }
+
+    /**
+     * 반복·children 교체·if 오버라이드 안의 Img 도 데스크톱 구간 규격을 쓴다.
+     *
+     * @scenario render_concern=responsive_props
+     *
+     * @effects img_thumb_preset_responsive_node_grammar_on_bot_html
+     *
+     * @return void 반환값 없음
+     */
+    public function test_img_thumb_preset_responsive_inside_iteration_children_and_if(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $items = ['items' => [['url' => '/api/attachment/a1'], ['url' => '/api/attachment/a2']]];
+        $html = $this->render([
+            // 반복하는 Img 자신의 responsive
+            [
+                'type' => 'basic',
+                'name' => 'Img',
+                'iteration' => ['source' => '{{items}}', 'item_var' => 'it'],
+                'props' => ['src' => '{{it.url}}', 'thumbPreset' => 'md', 'data-testid' => 'selfLoop'],
+                'responsive' => [
+                    'mobile' => ['props' => ['thumbPreset' => 'xs']],
+                    'desktop' => ['props' => ['thumbPreset' => 'lg']],
+                ],
+            ],
+            // 반복 안 자식 Img 의 responsive
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'iteration' => ['source' => '{{items}}', 'item_var' => 'it'],
+                'children' => [[
+                    'type' => 'basic',
+                    'name' => 'Img',
+                    'props' => ['src' => '{{it.url}}', 'thumbPreset' => 'xs', 'data-testid' => 'childLoop'],
+                    'responsive' => ['1024-' => ['props' => ['thumbPreset' => 'xl']]],
+                ]],
+            ],
+            // responsive 가 반복 원천과 규격을 함께 바꾼다
+            [
+                'type' => 'basic',
+                'name' => 'Img',
+                'iteration' => ['source' => '{{items}}', 'item_var' => 'it'],
+                'props' => ['src' => '{{it.url}}', 'thumbPreset' => 'xs', 'data-testid' => 'iterSwap'],
+                'responsive' => [
+                    'desktop' => [
+                        'iteration' => ['source' => '{{wideItems}}', 'item_var' => 'it'],
+                        'props' => ['thumbPreset' => 'lg'],
+                    ],
+                ],
+            ],
+            // children 교체 안의 Img
+            [
+                'type' => 'basic',
+                'name' => 'Div',
+                'children' => [['type' => 'basic', 'name' => 'Img', 'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => 'xs', 'data-testid' => 'swapBase']]],
+                'responsive' => [
+                    'desktop' => [
+                        'children' => [['type' => 'basic', 'name' => 'Img', 'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => 'lg', 'data-testid' => 'swapChild']]],
+                    ],
+                ],
+            ],
+            // if 오버라이드 — 데스크톱용 이미지만 남는다
+            $this->responsiveImg('wideOnly', 'lg', ['portable' => ['if' => '{{true}}']], ['if' => '{{true}}']),
+            $this->responsiveImg('narrowOnly', 'xs', ['desktop' => ['if' => '{{false}}']], ['if' => '{{true}}']),
+            $this->responsiveImg('desktopShown', 'md', ['desktop' => ['if' => '{{true}}', 'props' => ['thumbPreset' => 'xl']]], ['if' => '{{false}}']),
+        ], $items + ['wideItems' => [['url' => '/api/attachment/w1']]]);
+
+        $images = $this->imagesByTestId($html);
+
+        $this->assertSame([$this->staticThumbnail('lg', '/api/attachment/a1'), $this->staticThumbnail('lg', '/api/attachment/a2')], $images['selfLoop']);
+        $this->assertSame([$this->staticThumbnail('xl', '/api/attachment/a1'), $this->staticThumbnail('xl', '/api/attachment/a2')], $images['childLoop']);
+        $this->assertSame([$this->staticThumbnail('lg', '/api/attachment/w1')], $images['iterSwap']);
+        $this->assertSame([$this->staticThumbnail('lg')], $images['swapChild']);
+        $this->assertArrayNotHasKey('swapBase', $images);
+        $this->assertSame([$this->staticThumbnail('lg')], $images['wideOnly']);
+        $this->assertArrayNotHasKey('narrowOnly', $images);
+        $this->assertSame([$this->staticThumbnail('xl')], $images['desktopShown']);
     }
 }

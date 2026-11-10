@@ -110,6 +110,8 @@ sub_flows:
       - unclassified_node_key_is_detected
       - node_rooted_partials_are_scanned
       - key_classification_is_unambiguous
+      # 썸네일 표기(Img thumbPreset·파이프 thumb 계열)는 노드 키가 아니라 따로 잰다 — img 태그 매핑·SEO 파이프 표·코어 규격 이름 (#869)
+      - thumbnail_notations_resolved_by_seo_renderer
 
   - id: bot_html_sanitization
     description: |
@@ -121,6 +123,26 @@ sub_flows:
       - event_handler_attributes_are_stripped
       - dangerous_url_schemes_are_blocked
       - safe_markup_and_text_are_preserved
+
+  - id: bot_image_thumbnail
+    description: |
+      봇 화면의 이미지 썸네일 계약(#869). Img 의 thumbPreset 변환은 seo-component-html-mapper.yaml 이 소유한다. 사람 화면은 Img 의 `thumbPreset`·파이프 `thumb`·
+      HtmlContent 본문 처리가 같은 출처 + 등록된 서빙 경로의 이미지에만 `size` 를 붙인다.
+      봇 화면이 같은 판정을 하지 않으면 봇만 원본을 받거나(미러 누락) 외부 주소에 `size` 가
+      붙는다. 저장된 본문 HTML 은 바꾸지 않고 렌더 시점에만 바꾼다. 본문 srcset 은 img width(정수) 이하 후보만
+      넣고 width 를 모르면 넣지 않는다(사람 화면 contentImages.ts 와 같은 규칙).
+    effects:
+      - content_image_uses_thumbnail
+      - content_image_srcset_limited_to_original_width
+      - content_image_outside_patterns_unchanged
+      - thumb_pipes_mirror_frontend
+
+  - id: bot_pipe_parity
+    description: |
+      봇 화면 표현식의 파이프(`{{x | date}}` 등)는 프론트 내장 파이프의 PHP 미러가 같은 값을 낸다.
+      미러가 없는 파이프는 봇 화면에서만 조용히 원래 값을 내므로, 내장 파이프를 늘릴 때 짝을 함께 둔다.
+    effects:
+      - builtin_pipes_mirror_frontend
 
   - id: stale_bot_cache_invalidation
     description: |
@@ -140,6 +162,8 @@ test_files:
   # 6차 병합(develop) — $switch prop 값이 봇 렌더에서 해석되는지의 패리티 표본
   - tests/Unit/Seo/SeoSwitchValueParityTest.php
   - tests/Unit/Seo/HtmlSanitizerTest.php
+  # #869 — 봇 화면 썸네일 파이프(thumb·thumbSrcset) 미러
+  - tests/Unit/Seo/PipeRegistryTest.php
   - tests/Unit/Seo/SeoLayoutDataSourceDeclarationTest.php
   - tests/Unit/Upgrades/ClearSeoPageCacheAfterRendererParityFixTest.php
   - tests/Playwright/specs/seo-bot-rendering.spec.ts

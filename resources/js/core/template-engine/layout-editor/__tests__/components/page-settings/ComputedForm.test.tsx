@@ -12,7 +12,6 @@
  *  ⑦ 디그레이드(recipes 없음) → 직접 만들기 잔존
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ComputedForm } from '../../../components/page-settings/ComputedForm';
@@ -47,6 +46,10 @@ beforeEach(() => {
 });
 
 describe('ComputedForm', () => {
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_preset_card_with_preview
+   */
   it('프리셋 매칭 카드 + 미리보기를 표시한다', () => {
     const computed = { searchField: "{{ _local.search ?? query.q ?? '' }}" };
     render(<ComputedForm computed={computed} onChange={vi.fn()} recipes={RECIPES} t={t} sampleContext={sampleContext} />);
@@ -56,6 +59,10 @@ describe('ComputedForm', () => {
     expect(screen.getByTestId('g7le-computed-preview-searchField')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_code_toggle_shows_source_expr
+   */
   it('각 카드 [</>] 토글 → 원본 식(코드) 미리보기 노출', () => {
     const computed = { searchField: "{{ _local.search ?? query.q ?? '' }}" };
     render(<ComputedForm computed={computed} onChange={vi.fn()} recipes={RECIPES} t={t} sampleContext={sampleContext} />);
@@ -67,6 +74,10 @@ describe('ComputedForm', () => {
     expect(code.textContent).toBe("{{ _local.search ?? query.q ?? '' }}");
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_advanced_card_code_preview
+   */
   it('고급(미환원) 카드도 [</>] 코드 미리보기 제공 — 식 확인 경로 유일', () => {
     // 프리셋/틀로 환원 안 되는 식 → 고급 카드. 편집 버튼은 없지만 코드 보기는 있어야 한다.
     const computed = { weird: '{{ products.data.reduce((a, b) => a + b.qty, 0) * taxRate }}' };
@@ -76,6 +87,10 @@ describe('ComputedForm', () => {
     expect(screen.getByTestId('g7le-computed-code-block-weird').textContent).toContain('reduce');
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_add_preset_creates_key
+   */
   it('9종 보기 추가(common/more 그룹) → computed 키 생성', () => {
     const onChange = vi.fn();
     render(<ComputedForm computed={{}} onChange={onChange} recipes={RECIPES} t={t} sampleContext={sampleContext} />);
@@ -88,6 +103,10 @@ describe('ComputedForm', () => {
     expect(next.filterDefault).toMatch(/^\{\{/);
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_custom_builder_creates_key
+   */
   it('직접 만들기로 computed 키를 만든다', () => {
     const onChange = vi.fn();
     render(<ComputedForm computed={{}} onChange={onChange} recipes={RECIPES} t={t} sampleContext={sampleContext} />);
@@ -102,6 +121,10 @@ describe('ComputedForm', () => {
     expect(next.cnt).toContain('.length');
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_unparsed_expr_kept_advanced
+   */
   it('미환원 식은 [고급] 보존(편집 부재, 평가값 표시)', () => {
     const computed = { weird: '{{ custom.weird && tree(x) }}' };
     render(<ComputedForm computed={computed} onChange={vi.fn()} recipes={RECIPES} t={t} sampleContext={sampleContext} />);
@@ -111,6 +134,10 @@ describe('ComputedForm', () => {
     expect(screen.getByTestId('g7le-computed-preview-weird')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_delete_removes_key
+   */
   it('삭제 시 computed 키를 제거한다', () => {
     const onChange = vi.fn();
     const computed = { a: '{{ 1 }}', b: '{{ 2 }}' };
@@ -119,6 +146,10 @@ describe('ComputedForm', () => {
     expect(onChange).toHaveBeenCalledWith({ b: '{{ 2 }}' });
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_inherited_badge_and_override_notice
+   */
   it('부모 상속(__computedSource=base) 〔공통〕 배지 + 편집 시 덮어쓰기 안내', () => {
     const computed = { isReadOnly: "{{ _local.x ?? query.y ?? '' }}" };
     render(
@@ -136,6 +167,10 @@ describe('ComputedForm', () => {
     expect(screen.getByTestId('g7le-computed-override-notice-isReadOnly')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_form
+   * @effects computed_form_no_recipes_keeps_custom_builder
+   */
   it('디그레이드(recipes 없음) — 직접 만들기는 잔존', () => {
     render(<ComputedForm computed={{}} onChange={vi.fn()} recipes={{}} t={t} sampleContext={sampleContext} />);
     fireEvent.click(screen.getByTestId('g7le-computed-add'));

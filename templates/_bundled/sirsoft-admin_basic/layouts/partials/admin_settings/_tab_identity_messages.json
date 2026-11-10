@@ -29,8 +29,15 @@
             "id": "identity_messages_moved_notice",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "admin-card flex gap-3 flex-row items-center justify-between"
+                    }
+                }
+            },
             "props": {
-                "className": "admin-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                "className": "admin-card flex flex-col gap-3"
             },
             "children": [
                 {

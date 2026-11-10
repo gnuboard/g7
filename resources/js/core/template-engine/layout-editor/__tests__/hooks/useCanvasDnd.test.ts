@@ -12,7 +12,7 @@
  * jsdom 기하 모킹 — frame 요소 + getBoundingClientRect + elementsFromPoint.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCanvasDnd } from '../../hooks/useCanvasDnd';
 import type { EditorNode } from '../../utils/layoutTreeUtils';
@@ -114,8 +114,8 @@ function collectIds(nodes: EditorNode[]): string[] {
 }
 
 describe('useCanvasDnd — block flow 재배치', () => {
-  let patchSpy: ReturnType<typeof vi.fn>;
-  let pushSpy: ReturnType<typeof vi.fn>;
+  let patchSpy: Mock<(patcher: (current: EditorNode[]) => EditorNode[]) => void>;
+  let pushSpy: Mock<(snapshot: EditorNode[], label: string) => void>;
   let components: EditorNode[];
 
   beforeEach(() => {

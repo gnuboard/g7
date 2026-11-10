@@ -39,6 +39,7 @@ effects:
   - code_editor_keeps_one_monaco_model_per_file           # 브라우저에서 파일마다 되돌리기 기록이 따로다
   - code_editor_shows_open_files_as_tabs                  # 브라우저에서 연 파일이 탭으로 보인다
   - custom_asset_editor_keeps_unsaved_draft_across_files  # 커스텀 자산 모달도 같은 규칙 (D2)
+  - custom_asset_editor_refreshes_clean_file_from_server  # 고치지 않은 파일은 다시 열 때 서버 최신본을 받는다 (D2 의 clean 갈래)
   - custom_asset_editor_confirms_before_discarding_on_target_switch # 대상 전환 시 확인 (D3)
   - custom_asset_editor_indents_with_tab                  # 코드 입력칸의 Tab 은 들여쓰기 (§4.7)
   - code_workspace_trims_drafts_to_byte_cap_oldest_first  # 초안 전체 상한(2MB) 초과 시 오래된 것부터 버린다 (§9.2)

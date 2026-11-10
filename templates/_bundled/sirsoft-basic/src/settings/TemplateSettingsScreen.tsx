@@ -21,6 +21,7 @@ import { TemplateSettingsFields } from './TemplateSettingsFields';
 import type { TemplateSettingSection, TemplateSettingsValue } from './TemplateSettingsFields';
 import type { TemplateMenuRoleOption } from './TemplateMenuField';
 import { translate } from '../support/translate';
+import { BREAKPOINTS, pickByWidth, useViewportWidth } from '../components/layout/viewportWidth';
 
 /**
  * 문구를 번역합니다 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
@@ -192,6 +193,12 @@ export const TemplateSettingsScreen: React.FC<TemplateSettingsScreenProps> = ({
 }) => {
   const [pending, setPending] = useState<Pending>(null);
 
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  // 본문 여백은 폭마다 통째로 고른다(640 미만 4, 1024 미만 6, 그 이상 8) — 묶음 CSS 의 여백 규칙은 폭과 무관한 부분만 둔다.
+  const viewportWidth = useViewportWidth();
+  const pagePadding = pickByWidth<'p-4' | 'p-6' | 'p-8'>(viewportWidth, 'p-4', { sm: 'p-6', lg: 'p-8' });
+  const headerRow = viewportWidth >= BREAKPOINTS.sm ? 'flex-row items-start justify-between' : 'flex-col';
+
   // 되돌리기가 끝나면(성공·실패) 확인 창을 닫는다
   const wasResetting = useRef(resetting);
   useEffect(() => {
@@ -221,8 +228,8 @@ export const TemplateSettingsScreen: React.FC<TemplateSettingsScreenProps> = ({
   };
 
   return (
-    <Div className="sirsoft-basic-settings admin-page-content-responsive" data-testid="template-settings-screen">
-      <Div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <Div className={`sirsoft-basic-settings admin-page-content-responsive ${pagePadding}`} data-testid="template-settings-screen">
+      <Div className={`mb-4 flex gap-2 ${headerRow}`}>
         <Div>
           <Button type="button" className="mb-1 inline-flex items-center gap-1 border-0 bg-transparent p-0 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => onBack?.()}>
             <Icon name="arrow-left" className="text-xs" />

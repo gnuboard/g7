@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\HeroSection\Repositories;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
@@ -153,5 +154,47 @@ class BannerImageRepository implements BannerImageRepositoryInterface
             ->orderBy('id')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록
+     * @return int 개수
+     */
+    public function countAttachedImages(array $mimeTypes): int
+    {
+        return $this->attachedImages($mimeTypes)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 id 다음부터
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, BannerImage> 이미지 목록
+     */
+    public function chunkAttachedImages(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->attachedImages($mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
+     * 배너에 붙은 이미지 종류 행 쿼리
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록
+     * @return Builder<BannerImage> 쿼리
+     */
+    private function attachedImages(array $mimeTypes): Builder
+    {
+        return BannerImage::query()
+            ->whereNotNull('banner_id')
+            ->where('kind', 'image')
+            ->whereIn('mime', $mimeTypes);
     }
 }

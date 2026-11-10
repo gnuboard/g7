@@ -167,6 +167,9 @@
     "img_alt": {
       "label": "대체 텍스트"
     },
+    "img_thumb_preset": {
+      "label": "썸네일 규격"
+    },
     "link_href": {
       "label": "링크 주소"
     },
@@ -1680,6 +1683,7 @@
     "admin_menu": "관리자 메뉴",
     "appKey": "앱 키",
     "auto_deactivated_banner": "자동 비활성 알림",
+    "thumbnailStats": "썸네일 저장 위치별 사용량",
     "unplaced_bundled_notice": "미배치 공식 번들 안내",
     "availableChannels": "사용 가능 채널",
     "clone_source": "복제 원본",

@@ -30,7 +30,10 @@ use App\Services\SettingsService;
 use App\Services\TrustedProxyProbe;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
+use App\Support\ThumbnailDiskOptions;
 use App\Support\TrustedProxyDiagnostic;
+use App\Thumbnails\ImageProcessorResolver;
+use App\Thumbnails\ThumbnailPresetSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -84,6 +87,10 @@ class SettingsController extends AdminBaseController
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
      * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts}` (#158)
+     * - `thumbnail_engine_available`: 이 서버에 쓸 수 있는 이미지 처리 엔진이 있는지 (없으면 업로드 탭이 「썸네일 없이 원본」 안내, #869)
+     * - `thumbnail_disk_options`: 썸네일 저장 위치 선택지 `{public: [{id, label}], gated: [{id, label}]}` — label 은 로케일 맵 (#869)
+     * - `thumbnail_server_defaults`: 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓸 값 — `.env` G7_THUMBNAIL_* 가 있으면 그 값,
+     *   없으면 기본값. 화면은 이 값을 칸의 placeholder 로 보인다 (#869)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -108,6 +115,9 @@ class SettingsController extends AdminBaseController
             'csp' => $this->buildCspMeta(),
             // 파비콘 우선순위 안내(#434) — 일반 탭 파비콘 칸 아래 「현재 ○○ 화면은 △△ 템플릿 설정의 파비콘이 우선 적용됩니다」
             'favicon' => $this->buildFaviconMeta(),
+            'thumbnail_engine_available' => app(ImageProcessorResolver::class)->resolve() !== null,
+            'thumbnail_disk_options' => app(ThumbnailDiskOptions::class)->all(),
+            'thumbnail_server_defaults' => array_map('intval', (array) config('core.thumbnail_server_defaults', [])),
         ];
     }
 
@@ -151,6 +161,12 @@ class SettingsController extends AdminBaseController
      * `drivers.queue_names` 는 연결 => 큐 목록 맵이다 — 비었을 때 PHP 배열 그대로 내면 `[]` 가 돼 화면이 키를
      * 붙여도 저장 본문에서 사라진다(#758 과 같은 결함군). 그래서 늘 객체로 낸다.
      *
+     * 업로드 탭 썸네일 규격 표(#869)는 저장 행 그대로가 아니라 레지스트리가 합친 표(고정·og·켜진 확장·운영자, 행마다
+     * `kind`)로 낸다. 저장 행에는 og 와 확장 기본값이 없고, 키가 없는 기존 설치는 아예 비어 있기 때문이다.
+     * `thumbnail_presets` 와 `thumbnail_presets_rows` 에 같은 표를 싣는다 — 화면이 어느 쪽에 묶어도 저장 본문
+     * (`upload.thumbnail_presets`)과 오류 키(`upload.thumbnail_presets.{i}.name`)의 행 번호가 표와 같다.
+     * `thumbnail_presets_rows` 는 응답 전용이라 저장 때 버린다(SettingsService::prepareUploadThumbnailSettings).
+     *
      * @param  array<string, mixed>  $settings  getAllSettings() 결과
      * @return array<string, mixed> 응답용 설정
      */
@@ -159,6 +175,14 @@ class SettingsController extends AdminBaseController
         if (isset($settings['drivers']) && is_array($settings['drivers'])) {
             $settings['drivers']['queue_names'] = (object) (is_array($settings['drivers']['queue_names'] ?? null) ? $settings['drivers']['queue_names'] : []);
         }
+
+        if (! isset($settings['upload']) || ! is_array($settings['upload'])) {
+            $settings['upload'] = [];
+        }
+
+        $thumbnailRows = app(ThumbnailPresetSettings::class)->presentRows();
+        $settings['upload']['thumbnail_presets'] = $thumbnailRows;
+        $settings['upload']['thumbnail_presets_rows'] = $thumbnailRows;
 
         $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
         $settings['_meta'] = $this->buildSettingsMeta();

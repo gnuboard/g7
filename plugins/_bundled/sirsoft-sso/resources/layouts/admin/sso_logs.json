@@ -121,8 +121,15 @@
                             {
                                 "type": "basic",
                                 "name": "H1",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "sso:text-2xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "sso-page-title"
+                                    "className": "sso:text-xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                                 },
                                 "text": "$t:sirsoft-sso.admin.logs.title"
                             },

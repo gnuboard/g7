@@ -63,6 +63,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SystemActorContextListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ThumbnailSourcesListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserEcommerceDataInfoListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserListAddressFilterListener;
@@ -3941,6 +3942,8 @@ class Module extends AbstractModule
             ProvideNecessaryStorageKeysListener::class,
             // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
             EcommerceScopeLedgerListener::class,
+            // 이미지 썸네일 — 서빙 경로 패턴·원본 제공자 (core.thumbnail.filter_* 필터, #869)
+            ThumbnailSourcesListener::class,
         ];
     }
 

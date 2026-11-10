@@ -42,6 +42,10 @@ class SeoMetaResolverTest extends TestCase
         // 실려 들어오므로, 미고정 시 og site_name fallback 단언이 환경에 좌우된다.
         Config::set('g7_settings.core.seo.og_default_site_name', '');
         Config::set('g7_settings.core.general.site_name', '그누보드7 쇼핑몰');
+        // og:image 썸네일 변환(ThumbnailUrl::for(…, 'og'))이 보는 키 — 로컬 업로드 탭 저장값이 스며들지 않게 고정
+        Config::set('core.thumbnail.enabled', true);
+        Config::set('g7_settings.core.seo.og_image_default_width', 1200);
+        Config::set('g7_settings.core.seo.og_image_default_height', 630);
     }
 
     /**
@@ -2210,5 +2214,90 @@ class SeoMetaResolverTest extends TestCase
         $this->assertSame('', SeoMetaResolver::composeTitleSuffix('가죽 크로스백', ''));
         $this->assertSame('', SeoMetaResolver::composeTitleSuffix('', '  '));
         $this->assertSame('', SeoMetaResolver::composeTitleSuffix('', '| '));
+    }
+
+    /**
+     * og 이미지가 코어 첨부 주소면 og 규격 썸네일 주소(`size=og`)로 렌더한다 — og:image·secure_url·twitter:image 셋 다.
+     *
+     * 선언 크기(SEO 탭 1200×630)와 실제 이미지 크기를 맞춘다(D40). 데이터(`og.image`)는 바꾸지 않고 렌더에서만 바꾼다.
+     *
+     * @effects og_image_rendered_as_og_thumbnail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_attachment_og_image_renders_as_og_thumbnail(): void
+    {
+        Config::set('app.url', 'https://site.test');
+
+        $result = $this->resolver->resolve([
+            'og' => [
+                'title' => '글',
+                'image' => '/api/attachment/abcdefabcdef',
+                'image_secure_url' => 'https://site.test/api/attachment/abcdefabcdef',
+            ],
+        ], [], null, null, []);
+
+        $this->assertStringContainsString('og:image" content="https://site.test/api/attachment/abcdefabcdef?size=og"', $result['ogTags']);
+        $this->assertStringContainsString('og:image:secure_url" content="https://site.test/api/attachment/abcdefabcdef?size=og"', $result['ogTags']);
+        $this->assertStringContainsString('og:image:width" content="1200"', $result['ogTags']);
+        $this->assertStringContainsString('twitter:image" content="https://site.test/api/attachment/abcdefabcdef?size=og"', $result['twitterTags']);
+        $this->assertStringNotContainsString('size=og', (string) $result['og']['image'], '해석 데이터는 원 주소 그대로');
+    }
+
+    /**
+     * 레이아웃이 og 이미지 크기를 직접 선언했으면 변환하지 않는다(선언 존중). 트위터가 따로 이미지를 주면 그것은 변환한다.
+     *
+     * @effects og_image_declared_size_respected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_size_skips_the_thumbnail(): void
+    {
+        Config::set('app.url', 'https://site.test');
+
+        $declared = $this->resolver->resolve([
+            'og' => [
+                'image' => '/api/templates/sirsoft-basic/layout-attachments/3/file',
+                'image_width' => 800,
+                'image_height' => 800,
+            ],
+        ], [], null, null, []);
+
+        $this->assertStringContainsString('og:image" content="https://site.test/api/templates/sirsoft-basic/layout-attachments/3/file"', $declared['ogTags']);
+        $this->assertStringContainsString('og:image:width" content="800"', $declared['ogTags']);
+        $this->assertStringNotContainsString('size=og', $declared['ogTags'].$declared['twitterTags'], '트위터도 og 선언 크기를 승계한다');
+
+        $ownTwitterImage = $this->resolver->resolve([
+            'og' => [
+                'image' => '/api/attachment/abcdefabcdef',
+                'image_width' => 800,
+            ],
+            'twitter' => ['image' => '/api/attachment/bbbbbbbbbbbb'],
+        ], [], null, null, []);
+
+        $this->assertStringNotContainsString('abcdefabcdef?size=og', $ownTwitterImage['ogTags']);
+        $this->assertStringContainsString('twitter:image" content="https://site.test/api/attachment/bbbbbbbbbbbb?size=og"', $ownTwitterImage['twitterTags']);
+    }
+
+    /**
+     * 외부 주소·정적 주소·기능 꺼짐은 그대로 둔다.
+     *
+     * @effects og_image_external_untouched
+     *
+     * @return void 반환값 없음
+     */
+    public function test_external_or_static_og_image_is_untouched(): void
+    {
+        Config::set('app.url', 'https://site.test');
+
+        $external = $this->resolver->resolve(['og' => ['image' => 'https://cdn.example.com/api/attachment/abcdefabcdef']], [], null, null, []);
+        $this->assertStringContainsString('og:image" content="https://cdn.example.com/api/attachment/abcdefabcdef"', $external['ogTags']);
+
+        $static = $this->resolver->resolve(['og' => ['image' => '/storage/og/default.png']], [], null, null, []);
+        $this->assertStringNotContainsString('size=og', $static['ogTags']);
+
+        Config::set('core.thumbnail.enabled', false);
+        $disabled = $this->resolver->resolve(['og' => ['image' => '/api/attachment/abcdefabcdef']], [], null, null, []);
+        $this->assertStringNotContainsString('size=og', $disabled['ogTags'].$disabled['twitterTags']);
     }
 }

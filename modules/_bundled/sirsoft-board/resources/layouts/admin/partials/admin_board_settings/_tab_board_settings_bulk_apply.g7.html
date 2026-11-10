@@ -18,7 +18,8 @@
         <label class="board-form-label">
           <span>$t:sirsoft-board.admin.settings.bulk_apply.target_boards</span>
         </label>
-        <div class="board:grid board:grid-cols-1 board:sm:grid-cols-2 board:gap-3 board:mt-2">
+        <div class="board:grid board:grid-cols-1 board:gap-3 board:mt-2">
+          <responsive on="640-" class="board:grid board:grid-cols-2 board:gap-3 board:mt-2"/>
           <div data-ref="bulk_apply_target_all" class="{{_local.bulkApplyAll !== false ? 'board-flex-center board:gap-2 board:p-3 board:rounded-lg board:border-2 board:border-blue-500 board:bg-blue-50 board:dark:bg-blue-900/20 board:cursor-pointer' : 'board-flex-center board:gap-2 board:p-3 board:rounded-lg board:border-2 board:border-gray-200 board:dark:border-gray-700 board:bg-white board:dark:bg-gray-800 board:cursor-pointer board:hover:border-gray-300 board:dark:hover:border-gray-600'}}">
             <on type="click">
               <!-- 전체 게시판에 적용. 라디오 자체가 아니라 감싼 자리를 눌러도 고르게 하려고 클릭으로 값을 세운다. 일괄 적용 권한이 없으면 카드를 눌러도 바뀌지 않는다 -->

@@ -8,7 +8,6 @@
  *  - 서식이 텍스트 컴포넌트 전체에 적용(substring 부분 서식 미지원 — 노드 props/className).
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InlineTextToolbar } from '../../components/InlineTextToolbar';
@@ -53,6 +52,10 @@ const spec: EditorSpec = {
 afterEach(() => cleanup());
 
 describe('InlineTextToolbar', () => {
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_shows_declared_style_controls
+   */
   it('styleControls 에 선언된 서식 버튼만 노출', () => {
     const node: EditorNode = { name: 'H1', text: '제목' };
     render(<InlineTextToolbar node={node} spec={spec} t={t} onApplyControl={vi.fn()} box={box} />);
@@ -62,6 +65,10 @@ describe('InlineTextToolbar', () => {
     expect(screen.getByTestId('g7le-inline-format-textColor')).toBeTruthy();
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_shows_declared_style_controls
+   */
   it('Span 은 fontWeight 만 선언 → 굵기 버튼만, 나머지 부재', () => {
     const node: EditorNode = { name: 'Span', text: '글' };
     render(<InlineTextToolbar node={node} spec={spec} t={t} onApplyControl={vi.fn()} box={box} />);
@@ -70,6 +77,10 @@ describe('InlineTextToolbar', () => {
     expect(screen.queryByTestId('g7le-inline-format-fontSize')).toBeNull();
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_absent_without_style_controls
+   */
   it('styleControls 미선언 컴포넌트 → 툴바 자체 부재(null)', () => {
     const node: EditorNode = { name: 'Icon' };
     const { container } = render(
@@ -78,6 +89,10 @@ describe('InlineTextToolbar', () => {
     expect(container.querySelector('[data-testid="g7le-inline-toolbar"]')).toBeNull();
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_no_element_add_buttons
+   */
   it('목록/표/이미지 같은 요소-추가 버튼은 노출하지 않는다', () => {
     const node: EditorNode = { name: 'H1', text: '제목' };
     render(<InlineTextToolbar node={node} spec={spec} t={t} onApplyControl={vi.fn()} box={box} />);
@@ -86,6 +101,10 @@ describe('InlineTextToolbar', () => {
     expect(screen.queryByTestId('g7le-inline-format-image')).toBeNull();
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_bold_applies_token_on_fresh_node
+   */
   it('굵기 버튼 클릭 → applyFn 을 fresh 노드에 적용 시 font-bold 토큰 (substring 아님)', () => {
     const node: EditorNode = { name: 'Span', text: '글' };
     const onApplyControl = vi.fn();
@@ -99,6 +118,10 @@ describe('InlineTextToolbar', () => {
     expect((patched.props?.className as string) ?? '').toContain('font-bold');
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_bold_toggle_on_off
+   */
   it('연속 토글 — applyFn 이 매번 fresh 노드 기준 (켜기 → 끄기)', () => {
     const node: EditorNode = { name: 'Span', text: '글' };
     const onApplyControl = vi.fn();
@@ -113,6 +136,10 @@ describe('InlineTextToolbar', () => {
     expect((unbolded.props?.className as string) ?? '').not.toContain('font-bold');
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_bold_jumps_to_bold_and_toggles
+   */
   it('3지 세그먼트(normal/semibold/bold)에서 B 버튼은 bold 로 직행(semibold 거치지 않음) + 재클릭 해제', () => {
     // 미적용 노드에서 B 클릭 → font-bold (옵션 순환으로 font-normal 이 되면 안 됨).
     const node: EditorNode = { name: 'Span', text: '글' };
@@ -130,6 +157,10 @@ describe('InlineTextToolbar', () => {
     expect((unbolded.props?.className as string) ?? '').not.toContain('font-bold');
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_bold_replaces_semibold
+   */
   it('이미 semibold 인 노드에서 B 클릭 → bold 로 전환(semibold 교체) — 옵션 순환 아님', () => {
     const node: EditorNode = { name: 'Span', text: '글', props: { className: 'font-semibold' } };
     const onApplyControl = vi.fn();
@@ -142,6 +173,10 @@ describe('InlineTextToolbar', () => {
     expect(cls).not.toContain('font-semibold');
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_align_opens_popover_and_applies
+   */
   it('정렬 버튼 클릭 → popover 열림(단순 토글/순환 아님), 옵션 선택 시 그 값 적용', () => {
     const node: EditorNode = { name: 'H1', text: '제목' };
     const onApplyControl = vi.fn();
@@ -160,6 +195,10 @@ describe('InlineTextToolbar', () => {
     expect((patched.props?.className as string) ?? '').toContain('text-center');
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_size_popover_free_value_applies
+   */
   it('크기 버튼(옵션 없는 dimension) 클릭 → popover 열림, 자유값 입력칸 + Enter 적용 (단순 토글 아님)', () => {
     const node: EditorNode = { name: 'H1', text: '제목' };
     const onApplyControl = vi.fn();
@@ -180,6 +219,10 @@ describe('InlineTextToolbar', () => {
     expect((patched.props?.style as Record<string, unknown> | undefined)?.fontSize).toBe('24px');
   });
 
+  /**
+   * @scenario subject=inline_text_toolbar
+   * @effects inline_toolbar_reselect_same_option_clears
+   */
   it('선택형(정렬/크기/색) 옵션 재선택 시 해제(toggle off) — 같은 값 클릭', () => {
     // 이미 text-center 인 노드.
     const node: EditorNode = { name: 'H1', text: '제목', props: { className: 'text-center' } };
@@ -192,5 +235,42 @@ describe('InlineTextToolbar', () => {
     const patched = applyFn(node);
     // 현재값(center)과 같은 값 선택 → 해제 → text-center 제거.
     expect((patched.props?.className as string) ?? '').not.toContain('text-center');
+
+    // 크기와 색도 옵션 목록을 가진 선택형이면 같은 규칙이다 — 현재값과 같은 옵션을 고르면 해제.
+    cleanup();
+    const optionSpec = {
+      controls: {
+        fontSize: {
+          widget: 'segmented',
+          group: 'font-size',
+          options: [
+            { value: 'text-lg', apply: { type: 'classToken', tokens: ['text-lg'] } },
+            { value: 'text-xl', apply: { type: 'classToken', tokens: ['text-xl'] } },
+          ],
+        },
+        textColor: {
+          widget: 'segmented',
+          group: 'text-color',
+          options: [
+            { value: 'text-red-600', apply: { type: 'classToken', tokens: ['text-red-600'] } },
+            { value: 'text-blue-600', apply: { type: 'classToken', tokens: ['text-blue-600'] } },
+          ],
+        },
+      },
+      componentCapabilities: { H2: { styleControls: ['fontSize', 'textColor'] } },
+    } as unknown as EditorSpec;
+    const styled: EditorNode = { name: 'H2', text: '부제', props: { className: 'text-lg text-red-600' } };
+    const onApplyOption = vi.fn();
+    render(<InlineTextToolbar node={styled} spec={optionSpec} t={t} onApplyControl={onApplyOption} box={box} />);
+    fireEvent.click(screen.getByTestId('g7le-inline-format-fontSize'));
+    fireEvent.click(screen.getByTestId('g7le-inline-option-fontSize-text-lg'));
+    fireEvent.click(screen.getByTestId('g7le-inline-format-textColor'));
+    fireEvent.click(screen.getByTestId('g7le-inline-option-textColor-text-red-600'));
+    const sizeCls = String((onApplyOption.mock.calls[0][1] as (n: EditorNode) => EditorNode)(styled).props?.className ?? '');
+    const colorCls = String((onApplyOption.mock.calls[1][1] as (n: EditorNode) => EditorNode)(styled).props?.className ?? '');
+    expect(sizeCls.split(/\s+/)).not.toContain('text-lg');
+    expect(sizeCls.split(/\s+/)).toContain('text-red-600');
+    expect(colorCls.split(/\s+/)).not.toContain('text-red-600');
+    expect(colorCls.split(/\s+/)).toContain('text-lg');
   });
 });

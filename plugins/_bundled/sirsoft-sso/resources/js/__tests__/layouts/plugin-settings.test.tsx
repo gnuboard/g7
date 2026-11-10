@@ -178,3 +178,56 @@ describe('SSO 설정 화면', () => {
     expect(JSON.stringify(notice)).toContain('sirsoft-sso.admin.settings.policy.deactivate_notice');
   });
 });
+
+describe('SSO IdP 편집 — 화면 폭에 따라 바뀌는 칸', () => {
+  const nodes = flatten(edit);
+  const tokens = (cls: unknown): string[] => (typeof cls === 'string' ? cls.split(/\s+/).filter(Boolean) : []);
+  const byLabel = (key: string): any[] => nodes.filter((n) => n?.props?.['aria-label'] === `$t:sirsoft-sso.${key}`);
+
+  /**
+   * @scenario screen=plugin_settings, tab=connection
+   * @effects sp_info_copy_label_shown_from_640
+   */
+  it('SP 정보의 「복사」 글자는 휴대폰 폭에서 숨고 640px 이상에서 보인다', () => {
+    const labels = nodes.filter((n) => n?.name === 'Span' && n?.text === '$t:sirsoft-sso.admin.common.copy');
+    expect(labels.length).toBeGreaterThanOrEqual(1);
+    for (const label of labels) {
+      expect(tokens(label.props?.className)).toContain('sso:hidden');
+      const wide = tokens(label.responsive?.['640-']?.props?.className);
+      expect(wide).toContain('sso:inline');
+      expect(wide).not.toContain('sso:hidden');
+    }
+  });
+
+  /**
+   * @scenario screen=plugin_settings, tab=attributes|roles
+   * @effects mapping_inputs_fixed_width_from_768
+   */
+  it('속성 매핑의 필드·원천 칸과 역할 매핑의 역할 칸은 768px 이상에서 12rem(w-48) 폭이다', () => {
+    const inputs = ['admin.settings.idp.fields.attribute_field', 'admin.settings.idp.fields.attribute_source', 'admin.settings.idp.fields.role_role'].flatMap(byLabel);
+    expect(inputs).toHaveLength(3);
+    for (const input of inputs) {
+      expect(tokens(input.props?.className)).toContain('sso-input');
+      expect(tokens(input.props?.className)).not.toContain('sso:w-48');
+      const wide = tokens(input.responsive?.['768-']?.props?.className);
+      expect(wide).toContain('sso-input');
+      expect(wide).toContain('sso:w-48');
+    }
+  });
+
+  /**
+   * @scenario screen=plugin_settings, tab=diagnostics
+   * @effects ldap_test_inputs_third_width_from_640
+   */
+  it('LDAP 연결 시험의 아이디·비밀번호 칸은 640px 이상에서 3분의 1 폭이다', () => {
+    const inputs = ['admin.idp.ldap_test_identifier', 'admin.idp.ldap_test_password'].flatMap(byLabel);
+    expect(inputs).toHaveLength(2);
+    for (const input of inputs) {
+      expect(tokens(input.props?.className)).toContain('sso-input');
+      expect(tokens(input.props?.className)).not.toContain('sso:w-1/3');
+      const wide = tokens(input.responsive?.['640-']?.props?.className);
+      expect(wide).toContain('sso-input');
+      expect(wide).toContain('sso:w-1/3');
+    }
+  });
+});

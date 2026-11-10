@@ -20,7 +20,8 @@
       <div data-ref="privacy_retention_targets" data-if="{{(boardPrivacyRetentionPreview?.data?.ip !== null &amp;&amp; boardPrivacyRetentionPreview?.data?.ip !== undefined) || privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.can_run}}" class="board:mt-4 board:space-y-2">
         <div class="board:rounded-lg board:border board:border-gray-200 board:dark:border-gray-700 board:divide-y board:divide-gray-100 board:dark:divide-gray-700">
           <div data-ref="ip_target_row" class="board:px-4 board:py-3">
-            <div class="board:flex board:flex-col board:gap-2 board:sm:flex-row board:sm:items-center board:sm:justify-between">
+            <div class="board:flex board:flex-col board:gap-2">
+              <responsive on="640-" class="board:flex board:gap-2 board:flex-row board:items-center board:justify-between"/>
               <div class="board-flex-wrap-center board:gap-2 board:min-w-0">
                 <span class="board-text-heading">$t:sirsoft-board.admin.settings.privacy_retention.targets.row_ip</span>
                 <span data-if="{{boardPrivacyRetentionPreview?.data?.ip !== null &amp;&amp; boardPrivacyRetentionPreview?.data?.ip !== undefined}}" class="board-badge board-badge-yellow">$t:sirsoft-board.admin.settings.privacy_retention.targets.count|count={{boardPrivacyRetentionPreview?.data?.ip ?? 0}}</span>
@@ -68,7 +69,8 @@
             </div>
           </div>
           <div data-ref="guest_target_row" class="board:px-4 board:py-3">
-            <div class="board:flex board:flex-col board:gap-2 board:sm:flex-row board:sm:items-center board:sm:justify-between">
+            <div class="board:flex board:flex-col board:gap-2">
+              <responsive on="640-" class="board:flex board:gap-2 board:flex-row board:items-center board:justify-between"/>
               <div class="board-flex-wrap-center board:gap-2 board:min-w-0">
                 <span class="board-text-heading">$t:sirsoft-board.admin.settings.privacy_retention.targets.row_guest</span>
                 <span data-if="{{boardPrivacyRetentionPreview?.data?.guest !== null &amp;&amp; boardPrivacyRetentionPreview?.data?.guest !== undefined}}" class="board-badge board-badge-yellow">$t:sirsoft-board.admin.settings.privacy_retention.targets.count|count={{boardPrivacyRetentionPreview?.data?.guest ?? 0}}</span>

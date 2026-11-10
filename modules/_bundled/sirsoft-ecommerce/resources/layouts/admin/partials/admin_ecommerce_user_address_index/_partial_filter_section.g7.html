@@ -67,9 +67,11 @@
       </div>
     </div>
     <div data-ref="filter_rows" class="ecommerce-filter-grid">
-      <div data-ref="member_filter_row" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.member</span>
+      <div data-ref="member_filter_row" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.user_addresses.filter.member</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:flex-1">
           <searchable-dropdown data-type="composite" data-ref="member_filter_dropdown" aria-label="$t:sirsoft-ecommerce.admin.user_addresses.filter.member" :multiple="true" options="{{(_local.memberSearchResultsKeyword ?? null) === (_local.memberSearchKeyword ?? '').trim() ? (_local.memberSearchResults ?? []) : []}}" value="{{_local.filter.memberUuids ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_select" selectedCountLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_selected_count" searchPlaceholder="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_initial" class="ecommerce:w-64">
             <on event="onSearch">
@@ -113,9 +115,11 @@
           </div>
         </div>
       </div>
-      <div data-ref="created_at_filter_row" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.created_at</span>
+      <div data-ref="created_at_filter_row" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.user_addresses.filter.created_at</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <div class="ecommerce-flex-center ecommerce:gap-2">
             <icon name="calendar" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
@@ -177,9 +181,11 @@
           </div>
         </div>
       </div>
-      <div data-ref="is_default_filter_row" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default</span>
+      <div data-ref="is_default_filter_row" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
             <input type="radio" :autoBinding="false" name="isDefault" value="all" checked="{{(_local.filter.isDefault || 'all') === 'all'}}" class="ecommerce-radio">

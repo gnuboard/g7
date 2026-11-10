@@ -43,6 +43,8 @@ exclusions:
   - { entry_point: self_withdraw_api, confirm_action: cancel, reason: "본인 탈퇴 모달은 이번 변경 대상이 아님" }
   - { entry_point: admin_bulk_status, confirm_action: cancel, reason: "일괄 탈퇴 확인 모달은 기존 구현 유지" }
   - { target_account: already_withdrawn, failure_injection: last_write_fails, reason: "멱등 가드로 쓰기 자체가 발생하지 않음" }
+  - { entry_point: admin_form_ui, target_account: already_withdrawn, confirm_action: cancel, reason: "이미 탈퇴한 회원을 저장하면 확인 창이 다시 뜨지 않아 취소할 창이 없다 (admin-user-form-withdraw-confirm.test.tsx 「이미 탈퇴한 회원을 저장할 때는 다이얼로그를 다시 띄우지 않는다」)" }
+  - { entry_point: admin_form_ui, target_account: already_withdrawn, confirm_action: submit, reason: "동일 사유 — 확인 창이 없어 처리 단추도 없다" }
 
 effects:
   - withdraw_is_atomic_all_or_nothing

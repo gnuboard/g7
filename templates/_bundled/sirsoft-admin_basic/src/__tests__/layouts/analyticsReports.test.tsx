@@ -744,7 +744,7 @@ describe('CSV 저장 파일명', () => {
       const ctx: Record<string, any> = { query, route: { key: 'abc123' }, _computed: {} };
       ctx._computed.csvUrl = evalComputed(layout, 'csvUrl', ctx);
       ctx._computed.csvFilename = evalComputed(layout, 'csvFilename', ctx);
-      const [nameExpr] = scanBindings(String(download.params?.filename ?? '')).map((b) => b.expr);
+      const [nameExpr] = scanBindings(String(download?.params?.filename ?? '')).map((b) => b.expr);
       return { url: String(ctx._computed.csvUrl), name: evaluateSafeExpression(nameExpr, ctx) };
     };
 

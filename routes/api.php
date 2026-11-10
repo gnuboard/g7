@@ -59,6 +59,7 @@ use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController
 use App\Http\Controllers\Api\Admin\SystemExecutionController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
+use App\Http\Controllers\Api\Admin\ThumbnailController as AdminThumbnailController;
 use App\Http\Controllers\Api\Admin\UnplacedBundledNoticeController as AdminUnplacedBundledNoticeController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
@@ -155,6 +156,12 @@ Route::group([], function () use ($publicDataThrottle) {
         Route::get('{identifier}/editor-spec', [PublicTemplateController::class, 'serveEditorSpec'])
             ->middleware($publicDataThrottle)
             ->name('api.public.templates.editor_spec');
+
+        // 레이아웃 편집기 스펙 묶음 조회 — 활성 모듈·플러그인 + 템플릿 editor-spec 을 한 요청으로.
+        // 편집기가 확장마다 위 개별 엔드포인트를 부르던 것을 묶는다(개별 엔드포인트는 서드파티 호환용으로 유지).
+        Route::get('{identifier}/editor-spec-bundle', [PublicTemplateController::class, 'serveEditorSpecBundle'])
+            ->middleware($publicDataThrottle)
+            ->name('api.public.templates.editor_spec_bundle');
 
         // 템플릿 정적 파일 서빙 (확장자 없는 형태는 ?file= 로 경로 수신)
         Route::dualAsset('assets/{identifier}', [PublicTemplateController::class, 'serveAsset'])
@@ -1019,6 +1026,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('sitemap/regenerate', [AdminSeoCacheController::class, 'regenerateSitemap'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.sitemap.regenerate');
         Route::get('sitemap/status', [AdminSeoCacheController::class, 'sitemapStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.sitemap.status');
         Route::get('cached-urls', [AdminSeoCacheController::class, 'cachedUrls'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.cached-urls');
+    });
+
+    // 이미지 썸네일 캐시 관리 (환경설정 > 업로드 탭 「저장 위치 · 캐시」)
+    Route::prefix('thumbnails')->group(function () {
+        Route::get('stats', [AdminThumbnailController::class, 'stats'])->middleware('permission:admin,core.settings.read')->name('api.admin.thumbnails.stats');
+        Route::post('purge', [AdminThumbnailController::class, 'purge'])->middleware('permission:admin,core.settings.update')->name('api.admin.thumbnails.purge');
+        Route::post('pregenerate', [AdminThumbnailController::class, 'pregenerate'])->middleware('permission:admin,core.settings.update')->name('api.admin.thumbnails.pregenerate');
     });
 
     // 알림 정의 관리

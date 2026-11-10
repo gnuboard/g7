@@ -277,8 +277,15 @@
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "641-": {
+                                "props": {
+                                    "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "ecommerce-page-header"
+                            "className": "ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4"
                         },
                         "children": [
                             {
@@ -331,8 +338,15 @@
                                                 "id": "h_002_page_title",
                                                 "type": "basic",
                                                 "name": "H1",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce-page-title"
+                                                    "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.title"
                                             },
@@ -352,8 +366,15 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "641-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-page-actions"
+                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full"
                                 },
                                 "children": [
                                     {
@@ -376,7 +397,7 @@
                                             "aria-label": "$t:common.refresh",
                                             "title": "$t:common.refresh",
                                             "type": "button",
-                                            "className": "ecommerce-btn ecommerce-btn-icon"
+                                            "className": "ecommerce-btn ecommerce-btn-icon ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                         },
                                         "children": [
                                             {

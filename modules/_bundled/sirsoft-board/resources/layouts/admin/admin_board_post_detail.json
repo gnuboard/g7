@@ -287,7 +287,122 @@
             "name": "Modal",
             "props": {
                 "title": "{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-board.common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "deleteModalLoading": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.modal_data?.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.modal_data?.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteModalLoading": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "if": "{{_global.modal_data?.type === 'comment'}}",
+                                                "params": {
+                                                    "dataSourceId": "post"
+                                                }
+                                            },
+                                            {
+                                                "comment": "삭제 후 복귀 — 게시글이면 목록으로, 답변이면 원글 상세로 돌아간다. 어느 쪽이든 목록 클러스터 안이므로 목록 상태를 유지한다. 종전에는 mergeQuery 가 분기 표현식이라 답변 삭제 경로에서만 페이지/검색이 조용히 사라졌다 (#75).",
+                                                "handler": "navigate",
+                                                "if": "{{_global.modal_data?.type !== 'comment'}}",
+                                                "params": {
+                                                    "path": "{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.success_post'}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteModalLoading": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-600 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.deleteModalLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -315,128 +430,6 @@
                             "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-board.common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "deleteModalLoading": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.modal_data?.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.modal_data?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "deleteModalLoading": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "if": "{{_global.modal_data?.type === 'comment'}}",
-                                                    "params": {
-                                                        "dataSourceId": "post"
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "삭제 후 복귀 — 게시글이면 목록으로, 답변이면 원글 상세로 돌아간다. 어느 쪽이든 목록 클러스터 안이므로 목록 상태를 유지한다. 종전에는 mergeQuery 가 분기 표현식이라 답변 삭제 경로에서만 페이지/검색이 조용히 사라졌다 (#75).",
-                                                    "handler": "navigate",
-                                                    "if": "{{_global.modal_data?.type !== 'comment'}}",
-                                                    "params": {
-                                                        "path": "{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.success_post'}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "deleteModalLoading": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-600 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.deleteModalLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -451,7 +444,150 @@
             "name": "Modal",
             "props": {
                 "title": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.title_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.title'}}",
-                "size": "medium"
+                "size": "medium",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{!_local.report_reason_type || _local.report_reason_type === ''}}",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_required"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && !_local.report_reason?.trim()}}",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_required"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
+                                        "params": {
+                                            "target": "global",
+                                            "reportSubmitting": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}",
+                                        "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "reason_type": "{{_local.report_reason_type}}",
+                                                "reason_detail": "{{_local.report_reason}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "reportSubmitting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "report_reason_type": "",
+                                                    "report_reason": ""
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "post"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.success_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.success'}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "reportSubmitting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.reportSubmitting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.reportSubmitting}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "board-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.reportSubmitting ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.detail.report_modal.submit'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -586,156 +722,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "toast",
-                                            "if": "{{!_local.report_reason_type || _local.report_reason_type === ''}}",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_required"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && !_local.report_reason?.trim()}}",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_required"
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
-                                            "params": {
-                                                "target": "global",
-                                                "reportSubmitting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}",
-                                            "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "reason_type": "{{_local.report_reason_type}}",
-                                                    "reason_detail": "{{_local.report_reason}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reportSubmitting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "report_reason_type": "",
-                                                        "report_reason": ""
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "post"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.success_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.success'}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reportSubmitting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.reportSubmitting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.reportSubmitting}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "board-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.reportSubmitting ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.detail.report_modal.submit'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -750,7 +736,114 @@
             "name": "Modal",
             "props": {
                 "title": "{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_title' : '$t:sirsoft-board.admin.posts.modals.blind_title'}}",
-                "size": "medium"
+                "size": "medium",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다)",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "blindModalLoading": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "{{_global.blind_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.blind_modal_data?.id + '/blind' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.blind_modal_data?.id + '/blind'}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "reason": "{{_global.blindReason}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "blindModalLoading": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "post"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_success' : '$t:sirsoft-board.admin.posts.modals.blind_success'}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "blindModalLoading": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.blindModalLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.blindModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.blind'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -812,120 +905,6 @@
                             }
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다)",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "blindModalLoading": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "{{_global.blind_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.blind_modal_data?.id + '/blind' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.blind_modal_data?.id + '/blind'}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "reason": "{{_global.blindReason}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "blindModalLoading": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "post"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_success' : '$t:sirsoft-board.admin.posts.modals.blind_success'}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "blindModalLoading": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.blindModalLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.blindModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.blind'}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -940,7 +919,111 @@
             "name": "Modal",
             "props": {
                 "title": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다)",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "restoreModalLoading": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "{{_global.restore_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.restore_modal_data?.id + '/restore' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.restore_modal_data?.id + '/restore'}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "restoreModalLoading": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "post"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_success' : '$t:sirsoft-board.admin.posts.modals.restore_success'}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "restoreModalLoading": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-green-700 board:dark:bg-green-700 board:text-white board:rounded-lg board:hover:bg-green-800 board:dark:hover:bg-green-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                            "disabled": "{{_global.restoreModalLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.restoreModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.restore'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -957,117 +1040,6 @@
                                 "className": "board:text-gray-700 board:dark:text-gray-300 board:mb-4"
                             },
                             "text": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다)",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "restoreModalLoading": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "{{_global.restore_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.restore_modal_data?.id + '/restore' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.restore_modal_data?.id + '/restore'}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "restoreModalLoading": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "post"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_success' : '$t:sirsoft-board.admin.posts.modals.restore_success'}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "restoreModalLoading": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-green-700 board:dark:bg-green-700 board:text-white board:rounded-lg board:hover:bg-green-800 board:dark:hover:bg-green-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.restoreModalLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.restoreModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.restore'}}"
-                                }
-                            ]
                         }
                     ]
                 }

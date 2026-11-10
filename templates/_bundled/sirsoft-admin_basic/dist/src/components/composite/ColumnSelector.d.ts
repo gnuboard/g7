@@ -1,24 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
 import { EditorAttrs } from '../../types';
-/**
- * 전역 window 타입 확장
- * 그누보드7 Core의 AuthManager에 접근하기 위한 타입 선언
- */
-declare global {
-    interface Window {
-        G7Core?: {
-            AuthManager?: {
-                getInstance: () => {
-                    getUser: () => {
-                        uuid: string;
-                        [key: string]: any;
-                    } | null;
-                };
-            };
-        };
-    }
-}
 export interface ColumnItem {
     field: string;
     header: string;

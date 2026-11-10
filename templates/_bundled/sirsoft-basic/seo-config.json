@@ -4,12 +4,14 @@
     "text_props": ["text", "label", "value", "title"],
     "attr_map": {
         "className": "class",
-        "htmlFor": "for"
+        "htmlFor": "for",
+        "srcSet": "srcset"
     },
     "allowed_attrs": [
         "class", "id", "href", "src", "alt", "title", "name", "type",
         "placeholder", "for", "target", "rel", "width", "height",
-        "role", "aria-label", "aria-describedby", "data-testid", "style"
+        "role", "aria-label", "aria-describedby", "data-testid", "style",
+        "srcset", "sizes", "loading", "decoding"
     ],
     "stylesheets": [
         "vendor/font-awesome/6.4.0/css/all.inlined.css"

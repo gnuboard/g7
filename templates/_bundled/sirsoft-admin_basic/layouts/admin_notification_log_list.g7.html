@@ -66,7 +66,7 @@
     <div data-ref="notification_log_list_content" class="admin-page-content">
       <div data-ref="page_header" class="flex-between mb-6">
         <div>
-          <h1 class="page-title">$t:admin.notification_log.page_title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.notification_log.page_title</h1>
           <p class="text-label-subtle mt-1">$t:admin.notification_log.page_description</p>
         </div>
         <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
@@ -147,7 +147,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.notification_log.delete.confirm_message</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
@@ -183,7 +183,7 @@
           </on>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -193,7 +193,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.notification_log.delete.bulk_confirm_message</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
@@ -231,7 +231,7 @@
           </on>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

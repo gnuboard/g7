@@ -2,10 +2,12 @@
 
 namespace App\Extension\Storage;
 
+use App\Contracts\Extension\ProvidesThumbnailSource;
 use App\Contracts\Extension\StorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
+use App\Extension\Storage\Concerns\SyncsThumbnails;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -15,10 +17,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 코어 서비스(AttachmentService 등)에서 사용하는 파일 저장소를 제공합니다.
  * 모듈/플러그인과 달리 identifier 없이 {category}/{path} 경로 패턴을 사용합니다.
  */
-class CoreStorageDriver implements StorageInterface
+class CoreStorageDriver implements ProvidesThumbnailSource, StorageInterface
 {
     use GuardsStoragePaths;
     use ResolvesPublicUrl;
+    use SyncsThumbnails;
 
     /**
      * 사용할 디스크 이름
@@ -71,8 +74,12 @@ class CoreStorageDriver implements StorageInterface
     public function put(string $category, string $path, mixed $content): bool
     {
         $fullPath = $this->resolvePath($category, $path);
+        $this->syncThumbnailsBeforePut($fullPath);
 
-        return Storage::disk($this->disk)->put($fullPath, $content);
+        $written = Storage::disk($this->disk)->put($fullPath, $content);
+        $this->syncThumbnailsAfterPut($fullPath, $written);
+
+        return $written;
     }
 
     /**
@@ -106,7 +113,10 @@ class CoreStorageDriver implements StorageInterface
     {
         $fullPath = $this->resolvePath($category, $path);
 
-        return Storage::disk($this->disk)->delete($fullPath);
+        $deleted = Storage::disk($this->disk)->delete($fullPath);
+        $this->syncThumbnailsAfterDelete($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**
@@ -146,7 +156,10 @@ class CoreStorageDriver implements StorageInterface
 
         $this->assertNotDestructiveOnRoot($fullPath, [], 'deleteDirectory', $category);
 
-        return Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $deleted = Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $this->syncThumbnailsAfterDeleteDirectory($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**
@@ -180,7 +193,10 @@ class CoreStorageDriver implements StorageInterface
 
         $this->assertNotDestructiveOnRoot($fullPath, [], 'deleteAll', $category);
 
-        return Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $deleted = Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $this->syncThumbnailsAfterDeleteDirectory($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**

@@ -49,7 +49,7 @@
         <span data-ref="preview_fixed" data-if="{{(_local.bulkPriceMethod || 'increase') === 'fixed'}}" class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_fixed|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency))}}</span>
       </div>
     </div>
-    <div data-ref="bulk_price_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6">
+    <footer>
       <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal/>
@@ -66,6 +66,6 @@
         </on>
         $t:sirsoft-ecommerce.admin.product.modal.common.change
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

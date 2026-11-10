@@ -73,11 +73,6 @@
     line-height: 1;
   }
 
-  .pay-tosspayments-btn-sm {
-    padding-inline: calc(.25rem * 3);
-    padding-block: calc(.25rem * 1.5);
-  }
-
   .pay-tosspayments-button {
     cursor: pointer;
     justify-content: center;
@@ -114,6 +109,11 @@
   .pay-tosspayments-btn[aria-disabled=true] {
     cursor: not-allowed;
     opacity: .5;
+  }
+
+  .pay-tosspayments-btn-sm {
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 1.5);
   }
 
   .pay-tosspayments-btn-primary {

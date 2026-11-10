@@ -255,7 +255,13 @@ abstract class ModuleTestCase extends TestCase
             foreach ($listenerClass::getSubscribedHooks() as $hookName => $config) {
                 $method = is_array($config) ? ($config['method'] ?? 'handle') : 'handle';
                 $priority = is_array($config) ? ($config['priority'] ?? 10) : 10;
-                $hookManager->addAction($hookName, [new $listenerClass, $method], $priority);
+
+                // 필터 구독은 필터로 건다 — 액션으로 걸면 applyFilters 가 그 리스너를 보지 못한다
+                if (is_array($config) && ($config['type'] ?? 'action') === 'filter') {
+                    $hookManager->addFilter($hookName, [new $listenerClass, $method], $priority);
+                } else {
+                    $hookManager->addAction($hookName, [new $listenerClass, $method], $priority);
+                }
             }
         }
     }

@@ -11,7 +11,7 @@
  * - 내려받기·복사 핸들러 버튼이 있다
  * - 판본 복원이 HTML 버퍼까지 갈아 끼운다
  *
- * @effects code_editor_markup_tab_is_default, code_editor_json_tab_is_read_only, code_editor_saves_markup_format
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -367,7 +367,10 @@ describe('코드 편집기 — 휴대폰 폭에서 위쪽 정보 접기 (7.1.0 P
   it('토글 버튼은 md 이상에서 숨고, aria-expanded·aria-controls 를 갖고, 누르면 codeEditorInfoOpen 을 뒤집는다', () => {
     expect(toggle, 'toggle').toBeDefined();
     expect(toggle.name).toBe('Button');
-    expect(toggle.props.className).toContain('md:hidden');
+    // 폭 분기는 Tailwind 반응형 접두가 아니라 엔진 responsive 로 한다 — 768 이상 구간에서만 hidden
+    expect(toggle.props.className.split(/\s+/)).not.toContain('hidden');
+    expect(toggle.props.className).not.toMatch(/(^|\s)md:/);
+    expect(toggle.responsive?.['768-']?.props?.className.split(/\s+/)).toContain('hidden');
     expect(toggle.props['aria-expanded']).toBe("{{_global.codeEditorInfoOpen ? 'true' : 'false'}}");
     expect(toggle.props['aria-controls']).toBe('code_editor_file_desc code_editor_file_meta code_editor_inline_notice');
     const flip = flattenActions(toggle.actions).find((a: any) => a.handler === 'setState');
@@ -384,8 +387,14 @@ describe('코드 편집기 — 휴대폰 폭에서 위쪽 정보 접기 (7.1.0 P
       // aria-controls 가 가리키는 DOM id — 노드 id(data-ref)가 아니라 props.id 다
       const node = findAll(layoutJson, (n) => n.props?.id === id)[0];
       expect(node, id).toBeDefined();
+      // 기본(768 미만): 닫혀 있으면 hidden. 768 이상 구간(responsive)은 닫혀 있어도 block/flex 로 보인다
       expect(node.props.className, id).toContain('_global.codeEditorInfoOpen');
-      expect(node.props.className, id).toMatch(/hidden md:(block|flex)/);
+      expect(node.props.className, id).toMatch(/: 'hidden'\}\}/);
+      expect(node.props.className, id).not.toMatch(/md:/);
+      const wide = node.responsive?.['768-']?.props?.className ?? '';
+      expect(wide, id).toContain('_global.codeEditorInfoOpen');
+      expect(wide, id).not.toContain('hidden');
+      expect(wide, id).toMatch(/: '(block|flex items-center)'\}\}/);
     }
   });
 });

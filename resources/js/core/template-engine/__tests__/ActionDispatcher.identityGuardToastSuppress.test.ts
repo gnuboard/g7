@@ -55,12 +55,17 @@ describe('ActionDispatcher — IDV 가드 토스트 중복 억제', () => {
     },
   };
 
+  /**
+   * @scenario case=signal_guard_error
+   *
+   * @effects guard_error_toast_skipped_when_domain_notice_signaled
+   */
   it('도메인 안내 신호가 있으면 IDV 가드 error 토스트를 skip', async () => {
     // provider 가 고유 사유(성인인증 실패)를 표출했음을 신호
     IdentityGuardInterceptor.markDomainNoticeShown();
 
     await dispatcher.dispatchAction(
-      { handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
+      { type: 'click', handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
       identityGuardErrorContext as any,
     );
 
@@ -70,11 +75,16 @@ describe('ActionDispatcher — IDV 가드 토스트 중복 억제', () => {
     expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
   });
 
+  /**
+   * @scenario case=no_signal_guard_error
+   *
+   * @effects guard_error_toast_shown_without_signal
+   */
   it('신호가 없으면 IDV 가드 error 토스트를 그대로 표출 (일반 본인인증 실패)', async () => {
     // markDomainNoticeShown 미호출 (일반 본인인증 실패류)
 
     await dispatcher.dispatchAction(
-      { handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
+      { type: 'click', handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
       identityGuardErrorContext as any,
     );
 
@@ -83,12 +93,18 @@ describe('ActionDispatcher — IDV 가드 토스트 중복 억제', () => {
     expect(toasts[0].message).toBe('본인 확인이 필요합니다.');
   });
 
+  /**
+   * @scenario case=signal_non_guard_error
+   *
+   * @effects non_guard_error_toast_not_skipped
+   */
   it('신호가 있어도 IDV 가드가 아닌 error 토스트는 skip 하지 않음', async () => {
     IdentityGuardInterceptor.markDomainNoticeShown();
 
     // error_code 가 IDV 가드가 아닌 일반 에러 토스트
     await dispatcher.dispatchAction(
       {
+        type: 'click',
         handler: 'toast',
         params: { type: 'error', message: '서버 오류가 발생했습니다.' },
       },
@@ -101,11 +117,17 @@ describe('ActionDispatcher — IDV 가드 토스트 중복 억제', () => {
     expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(true);
   });
 
+  /**
+   * @scenario case=signal_success_toast
+   *
+   * @effects success_toast_not_skipped
+   */
   it('신호가 있어도 success 토스트는 skip 하지 않음 (error 타입만 대상)', async () => {
     IdentityGuardInterceptor.markDomainNoticeShown();
 
     await dispatcher.dispatchAction(
       {
+        type: 'click',
         handler: 'toast',
         params: { type: 'success', message: '저장되었습니다.' },
       },
@@ -116,19 +138,24 @@ describe('ActionDispatcher — IDV 가드 토스트 중복 억제', () => {
     expect(toasts[0].message).toBe('저장되었습니다.');
   });
 
+  /**
+   * @scenario case=signal_consumed_once
+   *
+   * @effects domain_notice_signal_consumed_once
+   */
   it('skip 은 1회만 — 신호 소비 후 두 번째 가드 토스트는 표출', async () => {
     IdentityGuardInterceptor.markDomainNoticeShown();
 
     // 첫 번째 가드 토스트 → skip
     await dispatcher.dispatchAction(
-      { handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
+      { type: 'click', handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
       identityGuardErrorContext as any,
     );
     expect(toasts).toHaveLength(0);
 
     // 두 번째 가드 토스트 → 신호 소비됨, 표출
     await dispatcher.dispatchAction(
-      { handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
+      { type: 'click', handler: 'toast', params: { type: 'error', message: '본인 확인이 필요합니다.' } },
       identityGuardErrorContext as any,
     );
     expect(toasts).toHaveLength(1);

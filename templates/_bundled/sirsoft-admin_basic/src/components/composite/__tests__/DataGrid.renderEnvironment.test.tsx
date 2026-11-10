@@ -94,7 +94,7 @@ describe('DataGrid — 렌더 환경 전달 6경로 잠금 (#141)', () => {
       <DataGrid
         columns={columns}
         data={[{ id: 1, name: 'A' }]}
-        mobileBreakpoint={768}
+        responsiveBreakpoint={768}
         footerCells={[{ field: 'name', text: 'x' } as any]}
         footerCardChildren={[{ type: 'basic', name: 'Span', text: '{{row.name}}' }] as any}
         __componentContext={ctx as any}

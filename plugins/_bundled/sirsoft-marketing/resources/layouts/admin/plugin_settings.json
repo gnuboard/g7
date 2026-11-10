@@ -84,8 +84,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "marketing:p-6 marketing:min-h-screen marketing:bg-gray-50 marketing:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "marketing:p-8 marketing:min-h-screen marketing:bg-gray-50 marketing:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "marketing-admin-page-content-responsive"
+                    "className": "marketing:p-4 marketing:min-h-screen marketing:bg-gray-50 marketing:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -230,15 +242,26 @@
                                         "id": "field_marketing_consent_enabled",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "marketing-grid-2col marketing:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
+                                            "className": "marketing-grid-2col marketing:items-center marketing:px-6 marketing:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -262,8 +285,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-1 marketing:flex marketing:justify-end"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "marketing:lg:col-span-1 marketing:flex marketing:justify-end"
+                                                    "className": "marketing:flex marketing:justify-end"
                                                 },
                                                 "children": [
                                                     {
@@ -282,15 +312,26 @@
                                         "id": "field_marketing_consent_terms_slug",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "marketing:grid marketing:grid-cols-3 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
+                                            "className": "marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -314,8 +355,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -446,32 +491,60 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "marketing:col-span-4"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "marketing:col-span-6 marketing:sm:col-span-4"
+                                                                    "className": "marketing:col-span-6"
                                                                 },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_label"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "marketing-hidden marketing:block marketing:col-span-4"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "marketing:hidden marketing-hidden marketing:sm:block marketing:sm:col-span-4"
+                                                                    "className": "marketing:hidden marketing-hidden"
                                                                 },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_slug"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "marketing:col-span-2 marketing:text-center"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "marketing:col-span-4 marketing:sm:col-span-2 marketing:text-center"
+                                                                    "className": "marketing:col-span-4 marketing:text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_enabled"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "marketing:col-span-2 marketing-hidden marketing:block"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "marketing:col-span-2 marketing:hidden marketing-hidden marketing:sm:block"
+                                                                    "className": "marketing:col-span-2 marketing:hidden marketing-hidden"
                                                                 }
                                                             }
                                                         ]
@@ -499,8 +572,15 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
+                                                                        "responsive": {
+                                                                            "640-": {
+                                                                                "props": {
+                                                                                    "className": "marketing:col-span-4"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "marketing:col-span-6 marketing:sm:col-span-4"
+                                                                            "className": "marketing:col-span-6"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -542,8 +622,15 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "if": "{{!!channel.page_slug}}",
+                                                                                "responsive": {
+                                                                                    "640-": {
+                                                                                        "props": {
+                                                                                            "className": "marketing:hidden marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:font-mono marketing:mt-0.5"
+                                                                                        }
+                                                                                    }
+                                                                                },
                                                                                 "props": {
-                                                                                    "className": "marketing:block marketing:sm:hidden marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:font-mono marketing:mt-0.5"
+                                                                                    "className": "marketing:block marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:font-mono marketing:mt-0.5"
                                                                                 },
                                                                                 "text": "{{channel.page_slug}}"
                                                                             }
@@ -552,8 +639,15 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
+                                                                        "responsive": {
+                                                                            "640-": {
+                                                                                "props": {
+                                                                                    "className": "marketing-hidden marketing:block marketing:col-span-4"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "marketing:hidden marketing-hidden marketing:sm:block marketing:sm:col-span-4"
+                                                                            "className": "marketing:hidden marketing-hidden"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -569,8 +663,15 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
+                                                                        "responsive": {
+                                                                            "640-": {
+                                                                                "props": {
+                                                                                    "className": "marketing:col-span-2 marketing:flex marketing:justify-center"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "marketing:col-span-4 marketing:sm:col-span-2 marketing:flex marketing:justify-center"
+                                                                            "className": "marketing:col-span-4 marketing:flex marketing:justify-center"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -611,8 +712,15 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
+                                                                        "responsive": {
+                                                                            "640-": {
+                                                                                "props": {
+                                                                                    "className": "marketing:col-span-2 marketing:flex marketing:justify-end marketing:gap-2"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "marketing:col-span-2 marketing:flex marketing:justify-end marketing:gap-1 marketing:sm:gap-2"
+                                                                            "className": "marketing:col-span-2 marketing:flex marketing:justify-end marketing:gap-1"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -761,15 +869,26 @@
                                         "id": "field_third_party_consent_enabled",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "marketing-grid-2col marketing:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
+                                            "className": "marketing-grid-2col marketing:items-center marketing:px-6 marketing:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -793,8 +912,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-1 marketing:flex marketing:justify-end"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "marketing:lg:col-span-1 marketing:flex marketing:justify-end"
+                                                    "className": "marketing:flex marketing:justify-end"
                                                 },
                                                 "children": [
                                                     {
@@ -813,15 +939,26 @@
                                         "id": "field_third_party_consent_terms_slug",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "marketing:grid marketing:grid-cols-3 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
+                                            "className": "marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -845,8 +982,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -868,15 +1009,26 @@
                                         "id": "field_info_disclosure_enabled",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "marketing-grid-2col marketing:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
+                                            "className": "marketing-grid-2col marketing:items-center marketing:px-6 marketing:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -900,8 +1052,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-1 marketing:flex marketing:justify-end"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "marketing:lg:col-span-1 marketing:flex marketing:justify-end"
+                                                    "className": "marketing:flex marketing:justify-end"
                                                 },
                                                 "children": [
                                                     {
@@ -920,15 +1079,26 @@
                                         "id": "field_info_disclosure_terms_slug",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "marketing:grid marketing:grid-cols-3 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
+                                            "className": "marketing:grid marketing:grid-cols-1 marketing:gap-4 marketing:items-start marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -952,8 +1122,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "marketing:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "marketing:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1172,7 +1346,88 @@
             "props": {
                 "title": "$t:sirsoft-marketing.settings.channel_modal.title",
                 "width": "min(500px, 95vw)",
-                "closeOnBackdropClick": false
+                "closeOnBackdropClick": false,
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "marketing-btn marketing-btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "channel_edit_confirm",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "편집 확정 — 지금 화면 언어의 이름이 비었으면 목록에 붙이지 않고 이름 필수 안내만 세운다. 그 밖에는 새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다(키 형식·중복은 버튼 잠금으로 막는다)",
+                                "type": "click",
+                                "handler": "conditions",
+                                "conditions": [
+                                    {
+                                        "if": "{{String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}",
+                                        "then": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingChannel._labelTouched": true
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "then": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "channels": "{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "if": "{{!_computed.isPluginReadOnly}}",
+                                                "params": {
+                                                    "target": "$parent._local",
+                                                    "hasChanges": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_computed.isPluginReadOnly || !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
+                            "className": "marketing-btn marketing-btn-primary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.save"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1392,94 +1647,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "marketing:flex marketing:justify-end marketing:gap-2 marketing:mt-4"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "marketing-btn marketing-btn-secondary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "channel_edit_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "편집 확정 — 지금 화면 언어의 이름이 비었으면 목록에 붙이지 않고 이름 필수 안내만 세운다. 그 밖에는 새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다(키 형식·중복은 버튼 잠금으로 막는다)",
-                                    "type": "click",
-                                    "handler": "conditions",
-                                    "conditions": [
-                                        {
-                                            "if": "{{String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}",
-                                            "then": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "editingChannel._labelTouched": true
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "then": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "channels": "{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "if": "{{!_computed.isPluginReadOnly}}",
-                                                    "params": {
-                                                        "target": "$parent._local",
-                                                        "hasChanges": true
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_computed.isPluginReadOnly || !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
-                                "className": "marketing-btn marketing-btn-primary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.save"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -1494,7 +1661,82 @@
             "props": {
                 "title": "$t:sirsoft-marketing.settings.channel_deactivate_modal.title",
                 "width": "min(400px, 95vw)",
-                "closeOnBackdropClick": false
+                "closeOnBackdropClick": false,
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "marketing-btn marketing-btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "비활성 채널 되살리기 — 서버가 막은 키의 채널을 저장본에서 꺼내 꺼진 채로 원래 자리에 되돌린다(저장본 순서를 따르고, 새로 더한 채널은 뒤에 둔다). 반영은 저장을 다시 눌러야 한다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "channels": "{{[...(_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channels ?? []).some((c) => c.key === ch.key) || (_global.channelDeactivation?.keys ?? []).includes(ch.key)).map((ch) => (_global.channels ?? []).find((c) => c.key === ch.key) ?? { ...ch, enabled: false }), ...(_global.channels ?? []).filter((c) => !(_global.channelDeactivation?.saved ?? []).some((ch) => ch.key === c.key))]}}",
+                                            "channelDeactivation": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{!_computed.isPluginReadOnly}}",
+                                        "params": {
+                                            "target": "$parent._local",
+                                            "hasChanges": true,
+                                            "errors": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "info",
+                                            "message": "$t:sirsoft-marketing.settings.channel_deactivate_modal.restored"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "marketing-btn marketing-btn-primary",
+                            "disabled": "{{_computed.isPluginReadOnly}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1530,88 +1772,6 @@
                                         "className": "marketing-text-heading"
                                     },
                                     "text": "{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : ($localized(blockedChannel.label) || blockedChannel.key)}} ({{blockedChannel.key}})"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "marketing:flex marketing:justify-end marketing:gap-2 marketing:mt-4"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "marketing-btn marketing-btn-secondary"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:common.cancel"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "비활성 채널 되살리기 — 서버가 막은 키의 채널을 저장본에서 꺼내 꺼진 채로 원래 자리에 되돌린다(저장본 순서를 따르고, 새로 더한 채널은 뒤에 둔다). 반영은 저장을 다시 눌러야 한다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "channels": "{{[...(_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channels ?? []).some((c) => c.key === ch.key) || (_global.channelDeactivation?.keys ?? []).includes(ch.key)).map((ch) => (_global.channels ?? []).find((c) => c.key === ch.key) ?? { ...ch, enabled: false }), ...(_global.channels ?? []).filter((c) => !(_global.channelDeactivation?.saved ?? []).some((ch) => ch.key === c.key))]}}",
-                                                        "channelDeactivation": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "if": "{{!_computed.isPluginReadOnly}}",
-                                                    "params": {
-                                                        "target": "$parent._local",
-                                                        "hasChanges": true,
-                                                        "errors": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "info",
-                                                        "message": "$t:sirsoft-marketing.settings.channel_deactivate_modal.restored"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "marketing-btn marketing-btn-primary",
-                                        "disabled": "{{_computed.isPluginReadOnly}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm"
-                                        }
-                                    ]
                                 }
                             ]
                         }

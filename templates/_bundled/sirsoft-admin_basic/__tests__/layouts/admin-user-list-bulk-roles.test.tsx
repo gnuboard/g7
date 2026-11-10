@@ -11,10 +11,21 @@
 import React from 'react';
 import fs from 'fs';
 import path from 'path';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { createLayoutTest, screen, fireEvent, waitFor } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { makeHarnessModal } from './harnessModal';
+
+// 엔진(코어)은 저장소 루트의 react 를, 진짜 Modal 은 이 템플릿 node_modules 의 react 를 읽어 사본이 둘이 된다 — 이 파일에서만
+// 템플릿 쪽 react 를 루트 사본으로 바꿔 낀다(productFormRouteSwitchInputResidue.test.tsx 와 같은 방식)
+vi.mock('react', async () => {
+  const p = await import('path');
+  const u = await import('url');
+  const dir = p.dirname(u.fileURLToPath(import.meta.url));
+
+  return import(/* @vite-ignore */ u.pathToFileURL(p.resolve(dir, '../../../../../node_modules/react/index.js')).href);
+});
 
 const read = (relative: string) => JSON.parse(fs.readFileSync(path.resolve(__dirname, relative), 'utf-8'));
 
@@ -42,9 +53,8 @@ const TestIcon: React.FC<{ name?: string }> = ({ name }) => <i data-icon={name} 
 const TestTagInput: React.FC<{ id?: string; value?: any[] }> = ({ id, value }) => (
   <div data-testid={id} data-value={JSON.stringify(value ?? [])} />
 );
-const TestModal: React.FC<{ id?: string; children?: React.ReactNode }> = ({ id, children }) => (
-  <div data-testid={`modal-${id}`} role="dialog">{children}</div>
-);
+// 진짜 Modal — 적용·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다(#869 P1)
+const TestModal = makeHarnessModal({ forceOpen: true, testId: (props) => `modal-${props.id}` });
 
 function setupTestRegistry(): ComponentRegistry {
   const registry = ComponentRegistry.getInstance();

@@ -90,6 +90,57 @@ function getCurrentUser(): any {
   }
 }
 
+/** 서버가 받는 장바구니 키 형식 — `ck_` + 영숫자 32자 (이커머스 CartController::validateGuestCartKey) */
+const CART_KEY_PATTERN = /^ck_[a-zA-Z0-9]{32}$/;
+
+/**
+ * 저장된 장바구니 키를 읽는다 — 서버 형식에 맞지 않으면(망가진 키) 지우고 없는 것으로 본다 (#869 ρ 8부 L1).
+ * 종전에는 망가진 키를 그대로 실어 목록 조회가 방문 내내 형식 오류 400 을 받았다. 없는 것으로 보면 새로 발급받는다.
+ *
+ * @returns 쓸 수 있는 키, 없으면 null
+ */
+function readStoredCartKey(): string | null {
+  let stored: string | null = null;
+  try {
+    stored = localStorage.getItem(CART_KEY_STORAGE_NAME);
+  } catch {
+    return null;
+  }
+  if (stored && !CART_KEY_PATTERN.test(stored)) {
+    logger.warn('Stored cartKey has an invalid format — discarding it and issuing a new one');
+    try {
+      localStorage.removeItem(CART_KEY_STORAGE_NAME);
+    } catch {
+      // localStorage 접근 불가 시 무시
+    }
+
+    return null;
+  }
+
+  return stored || null;
+}
+
+/**
+ * 백엔드 API 로 키를 발급받아 localStorage 에 저장한다 — 응답이 올 때까지 기다린다(출시본과 같음, 설계 확정 2026-11-10).
+ *
+ * @returns 발급된 키(실패하면 null)
+ */
+async function issueAndStoreCartKey(): Promise<string | null> {
+  const issued = await issueCartKeyFromApi();
+  if (issued) {
+    try {
+      localStorage.setItem(CART_KEY_STORAGE_NAME, issued);
+      logger.log('New cartKey issued from API:', issued);
+    } catch {
+      // localStorage 저장 실패 시 무시
+    }
+  } else {
+    logger.error('Failed to issue cartKey from API');
+  }
+
+  return issued;
+}
+
 /**
  * 장바구니 키 초기화
  *
@@ -106,28 +157,12 @@ export async function initCartKeyHandler(
   _context?: any
 ): Promise<void> {
   // 로그인/비로그인 사용자 모두 cartKey 필요 (API 헤더에 포함)
-  // localStorage에서 기존 cartKey 확인
-  let cartKey: string | null = null;
-  try {
-    cartKey = localStorage.getItem(CART_KEY_STORAGE_NAME);
-  } catch {
-    // localStorage 접근 불가 시 무시
-  }
+  // localStorage에서 기존 cartKey 확인 — 형식이 망가진 저장 키는 버리고 새로 발급받는다 (#869 ρ 8부 L1)
+  let cartKey: string | null = readStoredCartKey();
 
-  // 없으면 백엔드 API를 통해 새로 발급
+  // 없으면 백엔드 API를 통해 새로 발급 — 응답이 올 때까지 기다린다(출시본과 같음, 설계 확정 2026-11-10)
   if (!cartKey) {
-    cartKey = await issueCartKeyFromApi();
-
-    if (cartKey) {
-      try {
-        localStorage.setItem(CART_KEY_STORAGE_NAME, cartKey);
-        logger.log('New cartKey issued from API:', cartKey);
-      } catch {
-        // localStorage 저장 실패 시 무시
-      }
-    } else {
-      logger.error('Failed to issue cartKey from API');
-    }
+    cartKey = await issueAndStoreCartKey();
   } else {
     logger.log('Existing cartKey loaded:', cartKey);
   }
@@ -174,6 +209,37 @@ export function clearCartKeyHandler(
   }
 
   setGlobalState({ cartKey: null });
+}
+
+/**
+ * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다 (#869 ρ J2).
+ *
+ * 저장된 키가 있으면 그것을 싣고, 없으면(init 의 발급이 실패한 경우) 새로 요청해 응답을 기다린다. 레이아웃은 담기, 바로 구매처럼 키가
+ * 필요한 동작의 sequence 맨 앞에 둔다. 받지 못하면 null 로 끝나고 동작은 종전처럼 서버 응답대로 처리된다.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ * @returns 갖춘 키(받지 못하면 null)
+ */
+export async function ensureCartKeyHandler(
+  _action?: any,
+  _context?: any
+): Promise<string | null> {
+  const stored = readStoredCartKey();
+  if (stored) {
+    if ((window as any).G7Core?.state?.get?.()?.cartKey !== stored) {
+      setGlobalState({ cartKey: stored });
+    }
+
+    return stored;
+  }
+
+  const issued = await issueAndStoreCartKey();
+  if (issued) {
+    setGlobalState({ cartKey: issued });
+  }
+
+  return issued;
 }
 
 /**

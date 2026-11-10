@@ -80,7 +80,8 @@
             </td>
             <td class="board:px-4 board:py-2">
               <div class="board-flex-center board:gap-2">
-                <img data-testid="reaction-type-icon-{{row.code}}" data-if="{{!!row.icon_url}}" src="{{row.icon_url}}" alt="" class="board:w-5 board:h-5 board:object-contain"/>
+                <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+                <img data-testid="reaction-type-icon-{{row.code}}" data-if="{{!!row.icon_url}}" src="{{row.icon_url}}" loading="lazy" decoding="async" alt="" class="board:w-5 board:h-5 board:object-contain"/>
                 <icon data-if="{{!row.icon_url}}" name="{{row.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <div data-testid="reaction-type-uploader-{{row.code}}" class="board:flex-1 board:min-w-0">
                   <file-uploader data-type="composite" collection="reaction_type_icon" :maxFiles="1" :maxSize="1" accept=".png,.jpg,.jpeg,.gif,.webp" initialFiles="{{row.icon_attachment ? [row.icon_attachment] : []}}" :autoUpload="true" size="xs" disabled="{{_computed.isReadOnly}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_title" confirmRemoveMessage="$t:sirsoft-board.admin.settings.reaction_types.icon_remove_confirm_message">

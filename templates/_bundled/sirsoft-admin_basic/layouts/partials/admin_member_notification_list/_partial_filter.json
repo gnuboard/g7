@@ -125,15 +125,29 @@
                     "id": "read_filter",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "flex flex-row gap-2 items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-col gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.member_notification.filter.read_label"
                         },
@@ -186,15 +200,29 @@
                     "id": "created_range_filter",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "flex flex-row gap-2 items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "filter-row"
+                        "className": "flex flex-col gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "filter-label w-32"
+                                "className": "filter-field-label w-32"
                             },
                             "text": "$t:admin.member_notification.filter.created_label"
                         },

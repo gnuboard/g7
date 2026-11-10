@@ -13,7 +13,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InitialStateForm } from '../../../components/page-settings/InitialStateForm';
@@ -23,7 +22,12 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('initial-state-isolated-inheritance — 격리 상속 매트릭스 (I16~I18)', () => {
-  it('I16: 부모 initIsolated + 자식 initIsolated → shallow merge·🔗상속 배지·덮기·되돌림·strip(initLocal 과 동일 정책)', () => {
+  /**
+   * @scenario subject=initial_state_isolated_inheritance
+   * @effects init_state_isolated_inherit_badge_and_revert, init_state_isolated_inherit_override_patches_child
+   */
+  // 미덮은 부모 키 strip 은 저장 시 호스트 몫이라(initial-state-inheritance I10 과 같은 경계) 이 폼 시험의 대상이 아니다.
+  it('I16: 부모 initIsolated + 자식 initIsolated → shallow merge 표시, 🔗상속 배지, 덮기, 되돌림(initLocal 과 동일 정책)', () => {
     const patch = vi.fn();
     render(
       <InitialStateForm
@@ -38,11 +42,18 @@ describe('initial-state-isolated-inheritance — 격리 상속 매트릭스 (I16
     // 부모 키 🔗 상속 배지, 자식 키 무배지.
     expect(screen.getByTestId('g7le-initstate-inherited-fromParent')).toBeInTheDocument();
     expect(screen.queryByTestId('g7le-initstate-inherited-fromChild')).not.toBeInTheDocument();
+    // 덮기 → 상속 키 값 변경이 initIsolated 로 자식 값을 싣는다(병합본 + 덮은 값).
+    fireEvent.change(screen.getByTestId('g7le-initstate-value-fromParent'), { target: { value: '7' } });
+    expect(patch).toHaveBeenLastCalledWith('initIsolated', { fromParent: 7, fromChild: 1 });
     // 되돌림 → initIsolated 자기 분만(상속분 제거).
     fireEvent.click(screen.getByTestId('g7le-initstate-revert-fromParent'));
     expect(patch).toHaveBeenLastCalledWith('initIsolated', { fromChild: 1 });
   });
 
+  /**
+   * @scenario subject=initial_state_isolated_inheritance
+   * @effects init_state_isolated_inherit_no_orphan_with_node
+   */
   it('I17: 상속 initIsolated 키 + 자식 isolatedState 노드 존재 → orphan 경고 없음(짝 충족)', () => {
     render(
       <InitialStateForm
@@ -60,6 +71,10 @@ describe('initial-state-isolated-inheritance — 격리 상속 매트릭스 (I16
     expect(screen.queryByTestId('g7le-initstate-isolated-orphan-scrollIdx')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_isolated_inheritance
+   * @effects init_state_isolated_inherit_orphan_without_node
+   */
   it('I18: 상속 initIsolated 키 + isolatedState 노드 0개 → ⚠ orphan(상속이어도 짝 없으면 죽은 값), 삭제 미강제', () => {
     render(
       <InitialStateForm

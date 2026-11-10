@@ -110,7 +110,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "ecommerce:p-0 ecommerce:md:p-0"
+                "className": "ecommerce:p-0"
             },
             "children": [
                 {

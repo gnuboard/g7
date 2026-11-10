@@ -42,6 +42,14 @@ use Illuminate\Support\Facades\Log;
  */
 class LayoutExtensionService
 {
+    /**
+     * Modal 이 `children` 밖에서 그리는 컴포넌트 배열 props — 고정 하단과 제목 앞뒤 붙임.
+     *
+     * 확장점 채우기와 오버레이 대상 찾기가 이 자리도 걷는다. 걷지 않으면 확인 창 바닥 단추 줄의 확장점과
+     * 그 단추를 겨눈 오버레이가 조용히 빠진다(#869).
+     */
+    private const MODAL_SURFACE_PROPS = ['footer', 'titlePrefix', 'titleSuffix'];
+
     use ClearsTemplateCaches;
     use CollectsFragmentSources;
     use ComputesLayoutContentHash;
@@ -408,6 +416,13 @@ class LayoutExtensionService
                 $resultComponent['children'] = $this->applySourceMetaRecursively($component['children'], $sourceMeta);
             }
 
+            // 주입된 Modal 의 고정 하단·제목 앞뒤 붙임 자식도 같은 확장의 노드다(#869 C3)
+            foreach (self::MODAL_SURFACE_PROPS as $surface) {
+                if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])) {
+                    $resultComponent['props'][$surface] = $this->applySourceMetaRecursively($component['props'][$surface], $sourceMeta);
+                }
+            }
+
             $result[] = $resultComponent;
         }
 
@@ -763,7 +778,8 @@ class LayoutExtensionService
      * 컴포넌트 props 안에 박힌 반복 렌더 템플릿의 확장점을 처리합니다.
      *
      * DataGrid·CardGrid 의 셀 템플릿(`columns[].cellChildren`·`cardColumns[].cellChildren`)과
-     * 확장 행·하위 행 템플릿(`expandChildren`·`subRowChildren`)은 `children` 이 아니라 props 에 실린다.
+     * 확장 행·하위 행 템플릿(`expandChildren`·`subRowChildren`), Modal 의 고정 하단·제목 앞뒤 붙임
+     * (`footer`·`titlePrefix`·`titleSuffix`)은 `children` 이 아니라 props 에 실린다.
      * `children` 만 따라 내려가면 그 안에 둔 확장점이 채워지지 않은 빈 자리로 남아, 주입한 조각과
      * `default` 폴백이 함께 화면에서 사라진다. 템플릿은 행마다 렌더되므로 주입 노드는 `row` 문맥을
      * 그대로 받는다(주입 데이터 소스는 레이아웃에 한 번만 병합된다).
@@ -799,7 +815,9 @@ class LayoutExtensionService
             }
         }
 
-        foreach (['expandChildren', 'subRowChildren'] as $templateKey) {
+        // 확장 행·하위 행 템플릿과 Modal 의 고정 하단·제목 앞뒤 붙임(`footer`·`titlePrefix`·`titleSuffix`)도
+        // 컴포넌트 배열이 props 에 실린다 — 고정 하단의 확장점(알림 템플릿 편집 창 바닥 단추 등)이 비지 않게 한다(#869)
+        foreach (['expandChildren', 'subRowChildren', ...self::MODAL_SURFACE_PROPS] as $templateKey) {
             if (isset($props[$templateKey]) && is_array($props[$templateKey]) && array_is_list($props[$templateKey])) {
                 $props[$templateKey] = $this->processExtensionPointsRecursive(
                     $props[$templateKey],
@@ -893,12 +911,13 @@ class LayoutExtensionService
                         ? $this->buildInjectedPropsMeta($overlay, $propsToInject)
                         : null;
 
+                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창을 찾는다 — 첫 일치 노드 하나에만 주입(#869 C2)
                     $injected = $this->injectPropsAtTarget(
                         $layout['components'],
                         $targetId,
                         $propsToInject,
                         $injectMeta
-                    );
+                    ) || ($modals !== [] && $this->injectPropsAtTarget($modals, $targetId, $propsToInject, $injectMeta));
                 } else {
                     // 기존 컴포넌트 주입 로직
                     $components = $injection['components'] ?? [];
@@ -917,12 +936,13 @@ class LayoutExtensionService
                         );
                     }
 
+                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창(본문·고정 하단·제목 붙임)을 찾는다(#869 C2)
                     $injected = $this->injectAtTarget(
                         $layout['components'],
                         $targetId,
                         $position,
                         $components
-                    );
+                    ) || ($modals !== [] && $this->injectAtTarget($modals, $targetId, $position, $components));
                 }
 
                 if (! $injected) {
@@ -1021,6 +1041,14 @@ class LayoutExtensionService
                     return true;
                 }
             }
+
+            // Modal 고정 하단·제목 앞뒤 붙임 — 확인 창 바닥 단추가 여기 놓인다(#869)
+            foreach (self::MODAL_SURFACE_PROPS as $surface) {
+                if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])
+                    && $this->injectAtTarget($component['props'][$surface], $targetId, $position, $newComponents)) {
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -1112,6 +1140,14 @@ class LayoutExtensionService
 
             if (isset($component['children']) && is_array($component['children'])) {
                 if ($this->injectPropsAtTarget($component['children'], $targetId, $propsToInject, $injectMeta)) {
+                    return true;
+                }
+            }
+
+            // Modal 고정 하단·제목 앞뒤 붙임 안의 노드도 대상이 된다(#869)
+            foreach (self::MODAL_SURFACE_PROPS as $surface) {
+                if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])
+                    && $this->injectPropsAtTarget($component['props'][$surface], $targetId, $propsToInject, $injectMeta)) {
                     return true;
                 }
             }

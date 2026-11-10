@@ -2,10 +2,12 @@
 
 namespace App\Extension\Storage;
 
+use App\Contracts\Extension\ProvidesThumbnailSource;
 use App\Contracts\Extension\StorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
+use App\Extension\Storage\Concerns\SyncsThumbnails;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -15,10 +17,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 플러그인별로 격리된 파일 저장소를 제공합니다.
  * 경로 패턴: storage/app/plugins/{identifier}/{category}/{path}
  */
-class PluginStorageDriver implements StorageInterface
+class PluginStorageDriver implements ProvidesThumbnailSource, StorageInterface
 {
     use GuardsStoragePaths;
     use ResolvesPublicUrl;
+    use SyncsThumbnails;
 
     /**
      * 플러그인 식별자
@@ -101,8 +104,12 @@ class PluginStorageDriver implements StorageInterface
     {
         $fullPath = $this->resolvePath($category, $path);
         $this->ensurePreservationMarker();
+        $this->syncThumbnailsBeforePut($fullPath);
 
-        return Storage::disk($this->disk)->put($fullPath, $content);
+        $written = Storage::disk($this->disk)->put($fullPath, $content);
+        $this->syncThumbnailsAfterPut($fullPath, $written);
+
+        return $written;
     }
 
     /**
@@ -136,7 +143,10 @@ class PluginStorageDriver implements StorageInterface
     {
         $fullPath = $this->resolvePath($category, $path);
 
-        return Storage::disk($this->disk)->delete($fullPath);
+        $deleted = Storage::disk($this->disk)->delete($fullPath);
+        $this->syncThumbnailsAfterDelete($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**
@@ -181,7 +191,10 @@ class PluginStorageDriver implements StorageInterface
             $category
         );
 
-        return Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $deleted = Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $this->syncThumbnailsAfterDeleteDirectory($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**
@@ -215,7 +228,10 @@ class PluginStorageDriver implements StorageInterface
 
         $this->assertNotDestructiveOnRoot($fullPath, [$this->identifier], 'deleteAll', $category);
 
-        return Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $deleted = Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $this->syncThumbnailsAfterDeleteDirectory($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**

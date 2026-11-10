@@ -5,7 +5,8 @@ import type { Swiper as SwiperInstance, SwiperOptions } from 'swiper';
 // Swiper CSS 는 확장 CSS 에 넣지 않고 동봉 자산으로 따로 싣는다 — support/swiperStyles 참조
 import { useSwiperStyles } from '../../support/swiperStyles';
 import { sitePath } from '../../apiUrl';
-import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useMarketingConsent, type HeroVideo } from '../../support/media';
+import { responsiveSrcset, sliderImageSizes, type SliderBox } from '../../support/thumbnail';
+import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useHeroScreen, useMarketingConsent, type HeroVideo } from '../../support/media';
 import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
 export type { HeroVideo } from '../../support/media';
@@ -156,7 +157,10 @@ export interface HeroSliderProps {
   /** 위치 키 (`home_hero`·`shop_hero`) — 오버라이드·테스트 식별용 */
   position?: string;
 
-  /** 미리보기용 기기 고정 — 지정하면 화면 폭과 관계없이 그 기기 이미지를 쓴다 */
+  /**
+   * 미리보기용 기기 고정 — 지정하면 화면 폭과 관계없이 그 기기 이미지·영상·모양을 쓴다(mobile 이면 루트에 `hs-slider--mobile`·
+   * `hs-slider--portable`, pc 면 둘 다 없음). 없으면 엔진 반응형 폭으로 판정한다.
+   */
   forceDevice?: 'pc' | 'mobile';
 
   /**
@@ -311,7 +315,7 @@ function linkProps(banner: HeroBanner): { href: string; target?: string; rel?: s
 /**
  * 배너의 이미지·영상 주소(대표 이미지·모바일 이미지·영상 파일)에 사이트 마운트 접두사를 붙입니다.
  *
- * `<img src>`·`<source srcset>`·`<video src|poster>` 는 라우터를 거치지 않고 브라우저가 그대로 받는 주소라, 하위 폴더 설치
+ * `<img src|srcset>`·`<video src|poster>` 는 라우터를 거치지 않고 브라우저가 그대로 받는 주소라, 하위 폴더 설치
  * (`https://host/g7/`)에서 접두사가 없으면 사이트 밖을 부른다. 서버도 접두사를 붙여 내지만, 붙이기 전에 담긴 공개 캐시와
  * 다른 확장이 필터로 넣은 값이 있으므로 여기서도 붙인다(`sitePath` 는 멱등이고 바깥 주소는 그대로 둔다).
  *
@@ -337,7 +341,7 @@ function withSiteMedia(banner: HeroBanner): HeroBanner {
  * 이 컴포넌트가 그리고, 일시정지 단추·화면 읽기용 장 번호·캐러셀 접근성 표시도 이 컴포넌트가 그린다. 화살표는 데스크톱(1024px
  * 이상)에서만 보인다 — 좁은 화면에서는 문구를 가리므로 손가락 넘기기와 점으로 넘긴다.
  * 배너가 없으면 아무것도 그리지 않는다(구좌 숨김). 1장이면 컨트롤·자동 재생·넘기기가 없다. PC·모바일 이미지는
- * `<picture>` 로 바꾸고, 기기별 고정 표시 비율로 영역 높이를 잡아 화면 밀림을 막는다. 첫 장은 즉시, 나머지는 지연
+ * 기기 판정(`useHeroScreen` — 미리보기 기기 고정, 다음 엔진 반응형 폭)으로 하나를 고르고, 기기별 고정 표시 비율로 영역 높이를 잡아 화면 밀림을 막는다. 첫 장은 즉시, 나머지는 지연
  * 로딩하되 다음 장은 전환 전에 미리 받는다. 자동 재생은 마우스·포커스·일시정지 단추·움직임 줄이기에서 멈추고,
  * 자동으로 넘어가는 동안에는 장 번호를 화면 읽기 프로그램이 매번 읽지 않게 한다.
  * 표시 폭(`settings.width`)이 본문 폭이면 확장점이 넘긴 본문 상자(`contentClass`) 안에 그리고, 화면 전체면 끝까지 그리되
@@ -458,6 +462,33 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     const doc = regionRef.current?.ownerDocument;
     setFramed(!!doc && doc !== document);
   }, [count > 0, stylesReady]);
+  // 이미지 sizes 에 줄 실제 상자 크기 — 본문 폭이면 템플릿이 정한 상자라 재어야 안다. 재기 전(undefined)에는 장이 이미지 주소를 붙이지 않아
+  // 화면 폭(100vw)으로 받기 시작하지 않는다(layout effect 라 칠하기 전에 같은 작업에서 잰 값으로 다시 그린다). 못 재면 null → 100vw.
+  const [sliderBox, setSliderBox] = useState<SliderBox | null | undefined>(undefined);
+  useLayoutEffect(() => {
+    const element = regionRef.current;
+    if (!element) {
+      return undefined;
+    }
+    // 변환(확대·축소 미리보기)과 무관한 배치 크기를 쓴다
+    const measure = () => {
+      const width = Math.round(element.offsetWidth);
+      const height = Math.round(element.offsetHeight);
+      setSliderBox((previous) => {
+        if (!(width > 0)) {
+          return previous ?? null;
+        }
+        return previous && previous.width === width && previous.height === height ? previous : { width, height };
+      });
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [count > 0, stylesReady]);
   /** Swiper 를 불러도 되는지 — 파기되지 않았고 요소에 실제로 붙었을 때만 */
   const swiperReady = (instance: SwiperInstance | null): instance is SwiperInstance => !!instance && !instance.destroyed && instance.initialized !== false;
 
@@ -531,6 +562,11 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     ? (paused ? t('sirsoft-hero_section.slider.media_play', '배너 다시 재생') : t('sirsoft-hero_section.slider.media_pause', '배너 일시정지'))
     : (paused ? t('sirsoft-hero_section.slider.play', '자동 넘김 다시 시작') : t('sirsoft-hero_section.slider.pause', '자동 넘김 일시정지'));
 
+  // 기기 모양(영역 비율·초점·문구 자리·탭·화살표)은 CSS 폭 미디어가 아니라 엔진 폭 판정의 루트 클래스로 고른다 — 레이아웃 편집기
+  // 미리보기 기기 폭·엔진 responsive 와 같은 경계(휴대폰 0~767px, 휴대 기기 0~1023px). 미리보기 기기 고정이 먼저다
+  const heroScreen = useHeroScreen(forceDevice);
+  const deviceClass = `${heroScreen.mobile ? ' hs-slider--mobile' : ''}${heroScreen.portable ? ' hs-slider--portable' : ''}`;
+
   const pcRatio = FALLBACK_RATIO.pc;
   const mobileRatio = FALLBACK_RATIO.mobile;
   const style = {
@@ -549,7 +585,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     const wide = count > 0 ? full : skeletonFull;
     const skeleton = (
       <section
-        className={`hs-slider hs-slider--skeleton${wide ? ' hs-slider--full' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
+        className={`hs-slider hs-slider--skeleton${wide ? ' hs-slider--full' : ''}${deviceClass}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
         style={style}
         aria-hidden="true"
         data-position={position}
@@ -603,7 +639,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs-slider hs-slider--${effect}${full ? ' hs-slider--full' : ''} hs-slider--pagination-${pagination}${framed ? ' hs-slider--static' : ''}${count > 1 ? ' hs-slider--controlled' : ''}${autoplaying ? ' hs-slider--autoplaying' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
+      className={`hs-slider hs-slider--${effect}${full ? ' hs-slider--full' : ''} hs-slider--pagination-${pagination}${framed ? ' hs-slider--static' : ''}${deviceClass}${count > 1 ? ' hs-slider--controlled' : ''}${autoplaying ? ' hs-slider--autoplaying' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription={t('sirsoft-hero_section.slider.carousel_role', '캐러셀')}
@@ -652,6 +688,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               active={i === index}
               eager={i === 0 || i === (index + 1) % count}
               forceDevice={forceDevice}
+              mobileScreen={heroScreen.mobile}
+              box={sliderBox ?? null}
+              boxPending={sliderBox === undefined}
               textBox={textBox}
               playing={i === index && !paused && mediaRuns(banner)}
               loop={count === 1}
@@ -736,8 +775,17 @@ interface HeroSlideProps {
   active: boolean;
   eager: boolean;
   forceDevice?: 'pc' | 'mobile';
+
+  /** 휴대폰 화면인지 — 슬라이더의 기기 판정(`useHeroScreen`: 기기 고정 → 엔진 반응형 폭 → 창 폭). 주 이미지를 이 판정으로 고른다 */
+  mobileScreen?: boolean;
   /** 화면 전체 폭일 때 문구를 맞출 본문 상자 클래스 (비우면 감싸지 않는다) */
   textBox?: string;
+
+  /** 슬라이더 상자의 잰 크기 — 이미지 sizes 를 정한다. 없으면(잴 수 없음) 화면 폭 상한(100vw)을 준다 */
+  box?: SliderBox | null;
+
+  /** 상자를 아직 재기 전인지 — 그동안은 이미지 주소를 붙이지 않는다(곧 같은 작업 안에서 잰 값으로 다시 그린다) */
+  boxPending?: boolean;
 
   /** 영상·유튜브를 지금 재생할지 */
   playing?: boolean;
@@ -862,7 +910,7 @@ function wrapBox(box: string, node: React.ReactNode): React.ReactNode {
  * @returns 슬라이드
  */
 const HeroSlide: React.FC<HeroSlideProps> = ({
-  banner, index, count, active, eager, forceDevice, textBox = '',
+  banner, index, count, active, eager, forceDevice, mobileScreen = forceDevice === 'mobile', box = null, boxPending = false, textBox = '',
   playing = false, loop = false, youtubeAllowed = false, onAllowYoutube = noop, onMediaEnded = noop, onMediaFailed = noop,
   reduced = false, replay = 0, onTextMove,
 }) => {
@@ -907,17 +955,24 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const point = (device: 'pc' | 'mobile') => `${focus?.[`${device}_x`] ?? 50}% ${focus?.[`${device}_y`] ?? 50}%`;
   const imageStyle = { '--hs-focus-pc': point(forceDevice ?? 'pc'), '--hs-focus-mobile': point(forceDevice ?? 'mobile') } as React.CSSProperties;
 
-  const main = forceDevice === 'mobile' ? (mobile ?? pc) : pc;
+  // 주 이미지는 기기 판정으로 고른다 — 창 폭 `<source media>` 에 맡기면 편집기 미리보기(엔진 폭)가 좁아도 창이 넓으면
+  // 모바일 비율 영역에 PC 이미지가 들어간다. 실제 브라우저에서는 엔진 폭이 창 폭이라 경계(767px)와 결과가 같다.
+  const main = mobileScreen ? (mobile ?? pc) : pc;
   const media = mediaOf(banner);
+  // PC·모바일 이미지는 기기별로 따로 올린 각자의 원본이라 srcset 도 고른 이미지의 가로로 만든다(코어 썸네일 `?size=`, 대상이 아니면 없음)
+  const mainSrcSet = main ? responsiveSrcset(main.url, main.width) : undefined;
+  // srcset 이 있으면 상자를 잰 뒤에만 주소를 붙인다 — 재기 전 sizes(100vw)로 큰 후보를 받기 시작했다가 잰 값으로 다시 받지 않게
+  const measuring = !!mainSrcSet && boxPending;
   const image = main ? (
     <picture className="hs-slider__picture">
-      {!forceDevice && mobile && (
-        <source media="(max-width: 767px)" srcSet={mobile.url} width={mobile.width ?? undefined} height={mobile.height ?? undefined} />
-      )}
       <img
         className="hs-slider__image"
         style={imageStyle}
-        src={main.url}
+        // 속성 순서 sizes → srcSet → src 를 지킨다 — React 는 처음 만들 때만 srcSet·src 를 맨 뒤에 붙이고, 갱신(잰 뒤 주소를 붙일 때,
+        // 기기가 바뀔 때)은 이 순서대로 붙인다. WebKit 은 srcset 이 sizes 보다 먼저 붙으면 기본 100vw 로 원본을 한 번 더 받는다
+        sizes={mainSrcSet && !measuring ? sliderImageSizes(box, main) : undefined}
+        srcSet={measuring ? undefined : mainSrcSet}
+        src={measuring ? undefined : main.url}
         alt={imageAlt}
         width={main.width ?? undefined}
         height={main.height ?? undefined}

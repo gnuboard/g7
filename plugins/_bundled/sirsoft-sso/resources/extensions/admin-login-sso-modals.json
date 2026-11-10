@@ -652,6 +652,13 @@
                                             "id": "sso_admin_link_request_code",
                                             "type": "basic",
                                             "name": "Button",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed"
+                                                    }
+                                                }
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "인증번호 받기 — 기존 계정 메일로 보낸다",
@@ -705,7 +712,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "sso:w-full sso:px-3 sso:py-3 sso:sm:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
+                                                "className": "sso:w-full sso:px-3 sso:py-3 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.ssoBusy}}"
                                             },
                                             "children": [
