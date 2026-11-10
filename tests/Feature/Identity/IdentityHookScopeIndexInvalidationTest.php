@@ -242,7 +242,10 @@ class IdentityHookScopeIndexInvalidationTest extends TestCase
     }
 
     /**
-     * 태그를 지원하지 않는 캐시에서는 route 색인 키와 hook 색인 키를 따로 지운다.
+     * 태그를 지원하지 않는 캐시에서는 route 색인 키와 hook 색인 키, hook 대상 목록 키를 따로 지운다.
+     *
+     * hook 쪽 키는 둘이다 — 리스너가 정책 표 조회를 건너뛰는 근거인 색인(`HOOK_SCOPE_CACHE_KEY`)과 부팅 때 훅 구독 범위를
+     * 정하는 대상 목록(`HOOK_TARGETS_CACHE_KEY`). 하나라도 남으면 켠 정책이 캐시 수명 동안 걸리지 않는다.
      *
      * @scenario surface=hook_index
      *
@@ -256,6 +259,7 @@ class IdentityHookScopeIndexInvalidationTest extends TestCase
         $cache->shouldReceive('supportsTags')->andReturn(false);
         $cache->shouldReceive('forget')->with(IdentityPolicy::ROUTE_SCOPE_CACHE_KEY)->once();
         $cache->shouldReceive('forget')->with(IdentityPolicy::HOOK_SCOPE_CACHE_KEY)->once();
+        $cache->shouldReceive('forget')->with(IdentityPolicy::HOOK_TARGETS_CACHE_KEY)->once();
         $this->app->instance(CacheInterface::class, $cache);
 
         IdentityPolicy::flushRouteScopeCache();

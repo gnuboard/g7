@@ -228,5 +228,5 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sso_admin_withdraw_skipped` | `sirsoft-sso.account.admin_withdraw_skipped` | 최고관리자 전원 | 퇴사 처리된 관리자 계정이 탈퇴 기한을 넘겼지만 자동 탈퇴하지 않음(직접 판단) |
 | `sso_password_reset_redirect` | `sirsoft-sso.auth.password_reset_redirected` | 요청한 회원(메일만) | 회사 계정으로 로그인해야 하는 회원의 비밀번호 찾기 요청 |
 
-받는 사람 규칙은 운영자가 코어 알림 설정 화면에서 바꿀 수 있습니다. 본문 자리(`{idp_label}` 등) 값은 `NotificationDataListener` 가 필터 `sirsoft-sso.notification.extract_data` 로 채웁니다. IdP 이름, 대체 문구, 퇴사 확인 경로 이름은 언어별 값으로 넘겨 받는 사람 언어로 들어갑니다(IdP 라벨에 그 언어 값이 없으면 사이트 기본 언어).
+받는 사람 규칙은 운영자가 코어 알림 설정 화면에서 바꿀 수 있습니다. 본문 자리(`{idp_label}` 등) 값은 `NotificationDataListener` 가 필터 `sirsoft-sso.notification.extract_data` 로 채웁니다. IdP 이름, 대체 문구, 퇴사 확인 경로 이름은 언어별 값으로 넘겨 받는 사람 언어로 들어갑니다(IdP 라벨에 그 언어 값이 없으면 사이트 기본 언어). 비상 로그인 알림의 로그인 시각(`{login_at}`)과 인증서 만료 알림의 만료일(`{expires_at}`)은 사이트 시간대(환경설정의 시간대)로 바꿔 넣습니다.
 <!-- @intent END -->

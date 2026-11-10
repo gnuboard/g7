@@ -31,12 +31,15 @@ function rawTarget(overrides: Record<string, unknown> = {}): Record<string, unkn
   };
 }
 
+/** ApiClient 의 post 와 같은 인자 모양 (응답 본문은 사례마다 다르다) */
+type PostFn = (url: string, data?: unknown, config?: Record<string, unknown>) => Promise<any>;
+
 describe('ContentMediaRuntime', () => {
-  let post: ReturnType<typeof vi.fn>;
+  let post: ReturnType<typeof vi.fn<PostFn>>;
   let runtime: ContentMediaRuntime;
 
   beforeEach(() => {
-    post = vi.fn();
+    post = vi.fn<PostFn>();
     runtime = new ContentMediaRuntime({ getHttpClient: () => ({ post }) });
   });
 
@@ -115,7 +118,7 @@ describe('ContentMediaRuntime', () => {
     expect(url).toBe('/modules/sirsoft-board/boards/free/content-media');
     expect((form as FormData).get('temp_key')).toBe('k-1');
     expect((form as FormData).get('file')).toBe(file);
-    expect(config.headers).toEqual({ 'X-Board-Post-Verify-Token': 'v', 'Content-Type': 'multipart/form-data' });
+    expect(config?.headers).toEqual({ 'X-Board-Post-Verify-Token': 'v', 'Content-Type': 'multipart/form-data' });
   });
 
   /**

@@ -217,7 +217,7 @@ return [
         'reorder_success' => '첨부파일 순서가 변경되었습니다.',
         'reorder_failed' => '첨부파일 순서 변경에 실패했습니다.',
         // 환경설정 > 업로드 「기존 이미지 썸네일 만들기」의 원본 종류 이름
-        'thumbnail_source' => '게시판 첨부 이미지',
+        'thumbnail_source' => '게시판 첨부 및 본문 이미지',
     ],
 
     // 권한 메시지 (Role-Permission 시스템)

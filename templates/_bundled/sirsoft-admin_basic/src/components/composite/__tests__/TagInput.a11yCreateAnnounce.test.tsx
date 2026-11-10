@@ -20,7 +20,6 @@ vi.hoisted(() => {
   }) as typeof document.createEvent;
 });
 
-import React from 'react';
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

@@ -98,6 +98,7 @@ class ScheduleNotificationDataListener implements HookListenerInterface
 
         $failedAt = Carbon::instance($history?->ended_at ?? $history?->started_at ?? Carbon::now())
             ->setTimezone((string) (config('app.schedule_timezone') ?? config('app.timezone', 'UTC')))
+            // audit:allow datetime-display-user-timezone reason: 바로 위 줄에서 스케줄 시간대(사이트 설정 시간대)로 옮긴 Carbon — 변환을 마친 값
             ->format('Y-m-d H:i');
 
         return [

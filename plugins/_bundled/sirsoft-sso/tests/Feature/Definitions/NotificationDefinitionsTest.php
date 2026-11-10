@@ -7,6 +7,7 @@ use App\Models\NotificationTemplate;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationTemplateService;
+use Carbon\Carbon;
 use Plugins\Sirsoft\Sso\Bootstrap\Notifications;
 use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Plugin;
@@ -108,6 +109,37 @@ class NotificationDefinitionsTest extends PluginTestCase
         $this->assertSame('6', $failing['data']['failure_count']);
         $this->assertStringContainsString('/admin/plugins/sirsoft-sso/settings?idp='.$idp->id, $failing['data']['settings_url']);
         $this->assertInstanceOf(IdentityProvider::class, $idp);
+    }
+
+    /**
+     * 비상 로그인 시각과 인증서 만료일이 알림 본문에 서버 시간대(UTC)가 아니라 사이트 시간대로 들어가는지 확인한다.
+     *
+     * UTC 15:30 은 서울의 다음 날 00:30 이다 — 변환이 빠지면 관리자는 하루 이른 만료일과 9시간 이른 로그인 시각을 받는다.
+     *
+     * @scenario type=sso_emergency_login|sso_cert_expiring, site_timezone=Asia/Seoul
+     *
+     * @effects notification_dates_in_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dates_are_rendered_in_site_timezone(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+        $idp = $this->makeIdp('corp');
+        $idp->forceFill(['cert_expires_at' => Carbon::parse('2026-12-31 15:30:00', 'UTC')])->save();
+        $base = ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
+
+        $expiring = HookManager::applyFilters('sirsoft-sso.notification.extract_data', $base, 'sso_cert_expiring', [$idp->fresh(), 7]);
+        $this->assertSame('2027-01-01', $expiring['data']['expires_at']);
+
+        $super = $this->makeSuper();
+        $this->travelTo(Carbon::parse('2026-11-11 15:30:00', 'UTC'));
+        try {
+            $emergency = HookManager::applyFilters('sirsoft-sso.notification.extract_data', $base, 'sso_emergency_login', [$super]);
+        } finally {
+            $this->travelBack();
+        }
+        $this->assertSame('2026-11-12 00:30:00', $emergency['data']['login_at']);
     }
 
     /**

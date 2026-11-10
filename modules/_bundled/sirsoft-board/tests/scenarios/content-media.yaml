@@ -8,6 +8,8 @@ description: |
   `attachments.upload` 권한(D26). 서빙에는 권한 미들웨어가 없고 서명 또는 글 읽기 권한 + 삭제·비밀·블라인드 게이트가 맡는다.
   글 응답은 본문 주소를 서명 주소로 내보내고(봇 렌더는 정식 주소), 저장 때 서명 쿼리를 뗀다. 첨부 목록·첨부 개수·목록
   썸네일에 들지 않는다.
+  본문 이미지 서빙 주소에 `?size=`·`?w=` 를 붙이면 같은 게이트를 지난 뒤 줄인 이미지를 낸다(권한 원본 — private). 서명은 그 두
+  파라미터를 빼고 검증한다. 본문 미디어 이미지는 게시판 첨부 썸네일 원본 제공자가 함께 맡아 한 번만 센다(#869 와의 접합).
 
 axes:
   case:
@@ -25,6 +27,7 @@ axes:
     - temp_row
     - read_permission_and_status
     - not_found
+    - thumbnail
 
 effects:
   - temp_row_created
@@ -53,8 +56,16 @@ effects:
   - read_permission_required
   - deleted_and_blinded_denied
   - unknown_hash_404
+  - content_image_size_serves_thumbnail
+  - content_image_unknown_preset_bypasses
+  - cached_content_thumbnail_still_gated
+  - content_image_thumbnail_follows_gate
+  - signed_content_image_accepts_thumbnail_param
+  - content_media_route_is_thumbnail_pattern
+  - content_image_counted_once_by_attachment_provider
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/ContentMediaUploadTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/PostContentMediaSyncTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/User/ContentMediaServeGateTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ContentMediaThumbnailTest.php

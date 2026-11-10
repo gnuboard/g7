@@ -72,6 +72,7 @@ class FailureStreakMonitor
             return;
         }
 
+        // audit:allow datetime-display-user-timezone reason: 캐시 키의 하루 버킷 — 기계값
         $notifiedKey = 'notified:provider_failing:'.$providerKey.':'.now()->format('Ymd');
         if ($this->cache->get($notifiedKey) !== null) {
             return;

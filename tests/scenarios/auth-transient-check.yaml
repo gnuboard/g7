@@ -17,6 +17,7 @@ effects:
   - real_auth_failure_still_unauthenticated       # 401·419·HTTP 아닌 예외·토큰 없음은 다시 묻지 않고 미인증이다
   - recent_unavailable_reused                     # 확인 불가 결론은 UNAVAILABLE_REUSE_MS 동안만 최근 결론이고 라우터는 그동안 다시 묻지 않는다
   - auth_check_progress_announced                 # 다시 묻는 동안 확인 중 표시(시작, 끝 이벤트), 화면 언어 ko/en/ja
+  - auth_unavailable_keeps_scroll_record          # 새로고침으로 확인 불가 화면이 떠도 복원 표를 버리고 그 항목에 기억한 스크롤 위치를 오류 화면 위치로 덮지 않는다
   - auth_unavailable_renders_503_page             # 확인 불가면 템플릿 레이아웃(base 머리글) 없이 중립 안내와 새로고침 단추만 그린다, 문서 이탈 중이면 그리지 않는다
 
 test_files:

@@ -4,11 +4,11 @@ namespace Plugins\Sirsoft\VerificationKginicis\Tests\Unit\Identity;
 
 use App\Contracts\Extension\CacheInterface;
 use Mockery;
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisChallengeMappingRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Services\InicisGatewayInterface;
+use Tests\PureTestCase;
 
 /**
  * 라이브 MID 프리픽스(LIVE_MID_PREFIX) 회귀 테스트.
@@ -20,8 +20,13 @@ use Plugins\Sirsoft\VerificationKginicis\Services\InicisGatewayInterface;
  *   상수값이 실제 프리픽스 부착·검증에 일관되게 적용되는지 고정한다 (다음 정책 변경 시
  *   상수만 바꾸면 이 스위트가 전 지점을 함께 검증).
  */
-class InicisLiveMidPrefixTest extends TestCase
+class InicisLiveMidPrefixTest extends PureTestCase
 {
+    /**
+     * 목을 닫고 부모 정리를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -31,7 +36,11 @@ class InicisLiveMidPrefixTest extends TestCase
     /**
      * 프리픽스 상수는 현재 정책값 SRB 여야 한다.
      *
-     * @return void
+     * @scenario case=prefix_constant
+     *
+     * @effects live_mid_prefix_constant_is_srb
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mid_prefix_constant_is_srb(): void
     {
@@ -41,7 +50,11 @@ class InicisLiveMidPrefixTest extends TestCase
     /**
      * buildLiveMid 는 프리픽스 미포함 입력값 앞에 상수 프리픽스를 부착해야 한다.
      *
-     * @return void
+     * @scenario case=mid_without_prefix
+     *
+     * @effects live_mid_prefix_prepended_when_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_build_live_mid_prepends_prefix_when_absent(): void
     {
@@ -54,7 +67,11 @@ class InicisLiveMidPrefixTest extends TestCase
     /**
      * buildLiveMid 는 이미 프리픽스를 포함한 입력값에 중복 부착하지 않아야 한다.
      *
-     * @return void
+     * @scenario case=mid_with_prefix
+     *
+     * @effects live_mid_prefix_not_prepended_twice
+     *
+     * @return void 반환값 없음
      */
     public function test_build_live_mid_does_not_double_prepend_prefix(): void
     {
@@ -66,7 +83,11 @@ class InicisLiveMidPrefixTest extends TestCase
     /**
      * buildLiveMid 는 빈 입력값(공백 포함)을 빈 문자열로 반환해야 한다.
      *
-     * @return void
+     * @scenario case=blank_mid
+     *
+     * @effects blank_live_mid_stays_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_build_live_mid_returns_empty_for_blank_input(): void
     {
@@ -77,7 +98,11 @@ class InicisLiveMidPrefixTest extends TestCase
     /**
      * 라이브 모드에서 프리픽스가 부착된 라이브 MID + API 키가 있으면 운영 가능해야 한다.
      *
-     * @return void
+     * @scenario case=live_mode_with_credentials
+     *
+     * @effects live_mode_available_with_mid_and_api_key
+     *
+     * @return void 반환값 없음
      */
     public function test_is_available_true_in_live_mode_with_prefixed_mid(): void
     {
@@ -93,7 +118,11 @@ class InicisLiveMidPrefixTest extends TestCase
     /**
      * 라이브 모드에서 API 키가 비어 있으면 운영 불가여야 한다.
      *
-     * @return void
+     * @scenario case=live_mode_without_api_key
+     *
+     * @effects live_mode_unavailable_without_api_key
+     *
+     * @return void 반환값 없음
      */
     public function test_is_available_false_in_live_mode_without_api_key(): void
     {
@@ -109,8 +138,8 @@ class InicisLiveMidPrefixTest extends TestCase
     /**
      * 라이브 MID 를 리플렉션으로 protected buildLiveMid() 에 통과시킨다.
      *
-     * @param  string  $value
-     * @return string
+     * @param  string  $value  운영자가 입력한 라이브 MID
+     * @return string 프리픽스를 붙인 라이브 MID
      */
     protected function invokeBuildLiveMid(string $value): string
     {
@@ -123,8 +152,10 @@ class InicisLiveMidPrefixTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>  $config
-     * @return InicisIdentityProvider
+     * 의존 객체를 목으로 채운 본인인증 제공자를 만듭니다.
+     *
+     * @param  array<string, mixed>  $config  플러그인 설정
+     * @return InicisIdentityProvider 제공자
      */
     protected function makeProvider(array $config): InicisIdentityProvider
     {

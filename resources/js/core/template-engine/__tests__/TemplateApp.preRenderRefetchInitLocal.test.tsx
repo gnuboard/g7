@@ -37,6 +37,8 @@ vi.mock('../../api/ApiClient', () => ({
             if (body && body.__reject) return Promise.reject(Object.assign(new Error('Request failed'), { response: body.__reject }));
             // 끝나지 않는 요청(응답 없는 서버)
             if (body && body.__hang) return new Promise(() => {});
+            // 늦게 오는 응답
+            if (body && body.__delay) return new Promise((resolve) => setTimeout(() => resolve(body.body), body.__delay));
 
             return Promise.resolve(body);
         },
@@ -53,6 +55,8 @@ import * as engine from '../../template-engine';
 import { initializeG7CoreGlobals } from '../G7CoreGlobals';
 import { ComponentRegistry } from '../ComponentRegistry';
 import { AuthManager } from '../../auth/AuthManager';
+import { installScrollMemory, markScrollNavigation, resetScrollMemoryForTesting, type ScrollNavigationType } from '../../routing/ScrollMemory';
+import { resetDataSourceSnapshotsForTesting } from '../dataSourceSnapshot';
 
 type Node = Record<string, any>;
 
@@ -132,6 +136,48 @@ const LAYOUTS: Record<string, Node> = {
             span('or-left', "{{'left:' + (_local.leftover ?? 'none')}}"),
         ]),
     },
+    // 폼 화면(상품 수정 꼴) — blocking initLocal 이 `form` 을 세운다. 폼이 비면 새로 붙는 조건부 구역을 둔다: 떠나는 동안 `_local` 이
+    // 비워진 채 이 트리가 다시 그려지면 그 구역의 렌더러가 새로 붙어, 문맥에 남은 이 화면의 `_localInit` 슬롯을 받는다
+    form_like: {
+        layout_name: 'form_like',
+        data_sources: [
+            src('product', '/api/test/product', { loading_strategy: 'blocking', initLocal: 'form' }),
+        ],
+        components: root('root-fm', [
+            span('fm-name', "{{'name:' + (_local.form?.name ?? 'none') + ' changed:' + (_local.hasChanges === true)}}"),
+            { id: 'fm_empty_zone', type: 'basic', name: 'Div', if: '{{!_local.form}}', props: { 'data-testid': 'fm-empty' }, children: [span('fm-empty-text', 'empty')] },
+        ]),
+    },
+    // blocking onSuccess 안 다시 받기가 늦게 끝나는 화면 — 미뤄진 onSuccess 가 도는 동안 떠나는 화면 트리가 남아 다시 그려진다
+    onsuccess_refetch_slow: {
+        layout_name: 'onsuccess_refetch_slow',
+        data_sources: [
+            src('claim', '/api/test/claims/{{route.claim_number}}', {
+                loading_strategy: 'blocking',
+                onSuccess: [{ handler: 'refetchDataSource', params: { dataSourceId: 'detail' } }],
+            }),
+            src('detail', '/api/test/detail-slow', { auto_fetch: false, initLocal: { detailName: 'name' } }),
+        ],
+        components: root('root-os', [
+            span('os-local', "{{'local:' + (_local.detailName ?? 'none')}}"),
+            span('os-form', "{{'form:' + (_local.form?.name ?? 'none') + ' changed:' + (_local.hasChanges === true)}}"),
+        ]),
+    },
+    // 더보기 목록 꼴 — 진행 상태(다음 쪽 번호)를 `_local.page` 로 두고 스냅샷과 함께 기억한다. 같은 키를 init_actions 안 다시 받기의
+    // initLocal 이 1로 세운다(쪽 정보 소스)
+    list_like: {
+        layout_name: 'list_like',
+        meta: { scroll_restoration: { snapshot: { state: ['_local.page'] } } },
+        data_sources: [
+            src('items', '/api/test/items'),
+            src('paging', '/api/test/paging', { auto_fetch: false, initLocal: { page: 'page' } }),
+        ],
+        init_actions: [{ handler: 'refetchDataSource', params: { dataSourceId: 'paging' } }],
+        components: root('root-ls', [
+            span('ls-page', "{{'page:' + (_local.page ?? 'none')}}"),
+            span('ls-count', "{{'count:' + (items?.data ?? []).length}}"),
+        ]),
+    },
 };
 
 /** 서버 응답 — 모양은 실제 API 꼴(`{ success, data }`) */
@@ -141,6 +187,10 @@ function respond(url: string): any {
     if (url === '/test/detail') return { success: true, data: { name: '상세' } };
     if (url === '/test/base') return { success: true, data: { a: 'A' } };
     if (url === '/test/extra') return { success: true, data: { b: 'B' } };
+    if (url === '/test/product') return { success: true, data: { id: 80, name: '텀블러' } };
+    if (url === '/test/detail-slow') return { __delay: 200, body: { success: true, data: { name: '상세' } } };
+    if (url === '/test/items') return { success: true, data: [{ id: 1 }, { id: 2 }] };
+    if (url === '/test/paging') return { success: true, data: { page: 1 } };
 
     return { success: true, data: {} };
 }
@@ -157,6 +207,9 @@ const ROUTES = {
     sharedKey: { path: '/mypage/shared', layout: 'shared_key' },
     refetchThenSet: { path: '/mypage/profile-set', layout: 'init_refetch_then_set' },
     onsuccessRefetch: { path: '/mypage/claims/RT-1', layout: 'onsuccess_refetch', params: { claim_number: 'RT-1' } },
+    form: { path: '/mypage/products/80/edit', layout: 'form_like' },
+    onsuccessRefetchSlow: { path: '/mypage/claims/RT-1/slow', layout: 'onsuccess_refetch_slow', params: { claim_number: 'RT-1' } },
+    list: { path: '/mypage/items', layout: 'list_like' },
 } satisfies Record<string, RouteSpec>;
 
 const settle = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -214,6 +267,8 @@ describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌�
         delete (window as any).G7Core;
         vi.restoreAllMocks();
         document.body.innerHTML = '';
+        resetScrollMemoryForTesting();
+        resetDataSourceSnapshotsForTesting();
     });
 
     /**
@@ -342,5 +397,123 @@ describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌�
         await waitLong(() => expect(text('sk-state')).toBe('a:A b:B'));
         await settle(50);
         expect(text('sk-state')).toBe('a:A b:B');
+    });
+
+    /**
+     * 폼 화면 → blocking onSuccess 안 다시 받기가 늦는 화면(SPA). 떠나는 폼 화면의 `_localInit` 슬롯은 전환에서 은퇴하고
+     * (engine-v1.88.0), 미뤄진 onSuccess(engine-v1.94.0)가 도는 동안 폼 화면 트리가 남아 다시 그려진다 — 그 사이 새로 붙는 렌더러가
+     * 은퇴한 슬롯을 받아도, 다시 받기가 initLocal 을 실어도, 앞 화면 `form`·`hasChanges` 가 새 화면 `_local` 에 되살아나지 않는다.
+     * 두 수정은 따로 들어와 병합에서 처음 만났다(은퇴 뒤에 미룬 onSuccess 가 놓임).
+     *
+     * @scenario case=retired_slot_with_deferred_onsuccess_refetch
+     * @effects deferred_onsuccess_refetch_does_not_revive_retired_form, deferred_onsuccess_refetch_initlocal_on_first_render
+     */
+    it('폼 화면을 떠나 미룬 onSuccess 가 다시 받는 동안 앞 화면이 다시 그려져도 앞 폼과 hasChanges 가 새 화면 _local 에 되살아나지 않는다', async () => {
+        const { app, go } = await mount(ROUTES.form);
+        await waitLong(() => expect(text('fm-name')).toBe('name:텀블러 changed:false'));
+        // 사용자가 폼을 고쳤다(실제 쓰기 경로)
+        (window as any).G7Core.state.setLocal({ hasChanges: true });
+        await waitLong(() => expect(text('fm-name')).toBe('name:텀블러 changed:true'));
+        expect(app.getGlobalState()._local.form?.id).toBe(80);
+
+        const leaving = go(ROUTES.onsuccessRefetchSlow);
+        // 미뤄진 onSuccess 의 다시 받기가 나갔고 아직 끝나지 않았다 — 폼 화면 트리가 남아 있고 `_local` 은 이미 비워졌다
+        await waitLong(() => expect(net.calls).toContain('/test/detail-slow'));
+        expect(document.querySelector('[data-testid="root-fm"]')).not.toBeNull();
+        expect(app.getGlobalState()._local.form).toBeUndefined();
+        // 그 사이 전역 상태가 바뀌어 폼 화면 트리가 다시 그려진다 — 폼이 빈 조건부 구역의 렌더러가 새로 붙는다
+        app.setGlobalState({ transitionPing: 1 });
+        await settle(60);
+        expect(app.getGlobalState()._local.form).toBeUndefined();
+        expect('hasChanges' in app.getGlobalState()._local).toBe(false);
+
+        await leaving;
+        await waitLong(() => expect(document.querySelector('[data-testid="root-os"]')).not.toBeNull());
+        await waitLong(() => expect(text('os-local')).toBe('local:상세'));
+        await settle(80);
+        // 새 화면: 다시 받기의 initLocal 은 서고, 앞 화면 폼은 없다 (저장소 A 가 그린 값과 정본 B 모두)
+        expect(text('os-form')).toBe('form:none changed:false');
+        expect(app.getGlobalState()._local.form).toBeUndefined();
+        // 새 화면 자신의 initLocal 적용이 `hasChanges` 를 false 로 세운다 — 앞 화면의 true 가 넘어오지 않았는지를 본다
+        expect(app.getGlobalState()._local.hasChanges).not.toBe(true);
+        expect(app.getGlobalState()._local.detailName).toBe('상세');
+    });
+
+    /**
+     * 더보기 목록 꼴에서 2쪽까지 본 뒤 다른 화면에 갔다가 뒤로 온다. 진행 상태 `_local.page` 는 스냅샷과 함께 2로 되돌아와야 하는데,
+     * 같은 키를 init_actions 안 다시 받기의 initLocal 이 1로 세운다. 렌더 전 수집(engine-v1.94.0)이 그 1을 `_localInit` 에 싣고,
+     * 스냅샷 되돌리기(engine-v1.85.0)는 정본 B 만 2로 바꾸면, 마운트 뒤 `_localInit` 적용이 A 와 B 를 다시 1로 돌린다 —
+     * 다음 더보기가 이미 받은 2쪽을 다시 받는다. 두 수정은 병합에서 처음 만났다.
+     *
+     * @scenario case=snapshot_state_same_key_as_pre_render_initlocal
+     * @effects snapshot_state_survives_pre_render_initlocal
+     */
+    it('스냅샷과 함께 되돌린 진행 상태(_local.page)를 같은 키의 렌더 전 다시 받기 initLocal 이 초기값으로 되돌리지 않는다', async () => {
+        resetScrollMemoryForTesting();
+        resetDataSourceSnapshotsForTesting();
+        window.history.replaceState({}, '', '/');
+        // 라우터 생성 자리 — 항목별 기억을 켠다. 이동 종류는 라우터처럼 주소를 바꾼 직후 표시한다
+        installScrollMemory();
+        const { app } = await mount(ROUTES.start);
+        const move = async (r: RouteSpec, type: ScrollNavigationType): Promise<void> => {
+            window.history.pushState({}, '', r.path);
+            markScrollNavigation(type);
+            await (app as any).handleRouteChange({ path: r.path, layout: r.layout, params: {}, query: {} });
+        };
+
+        await move(ROUTES.list, 'push');
+        await waitLong(() => expect(text('ls-page')).toBe('page:1'));
+        await waitLong(() => expect(text('ls-count')).toBe('count:2'));
+        // 더보기 — 2쪽을 덧붙이고 다음 쪽 번호를 올린다(실제 쓰기 경로)
+        expect((window as any).G7Core.dataSource.updateData('items', 'data', [{ id: 3 }, { id: 4 }], 'append')).toBe(true);
+        (window as any).G7Core.state.setLocal({ page: 2 });
+        await waitLong(() => expect(text('ls-count')).toBe('count:4'));
+        await waitLong(() => expect(text('ls-page')).toBe('page:2'));
+
+        await move(ROUTES.start, 'push');
+        await waitLong(() => expect(text('s-left')).toBe('left:start-only'));
+
+        await move(ROUTES.list, 'pop');
+        await waitLong(() => expect(document.querySelector('[data-testid="root-ls"]')).not.toBeNull());
+        // 스냅샷으로 4개가 선다
+        await waitLong(() => expect(text('ls-count')).toBe('count:4'));
+        await settle(150);
+        expect(text('ls-count')).toBe('count:4');
+        // 진행 상태는 목록 길이와 맞는 2 — 그린 값(저장소 A)과 정본 B 모두
+        expect(text('ls-page')).toBe('page:2');
+        expect(app.getGlobalState()._local.page).toBe(2);
+        expect((window as any).G7Core.state.getLocal().page).toBe(2);
+    });
+
+    /**
+     * 되돌린 상태를 `_localInit` 에 싣는 자리가 받는 모양 — 최상위 원시값, 객체 안 경로, 통째 교체, `_localInit` 에 없는 키,
+     * `_global` 경로, `_localInit` 없음. 받은 응답 객체를 제자리에서 고치지 않는다.
+     *
+     * @scenario case=snapshot_state_same_key_as_pre_render_initlocal
+     * @effects snapshot_state_survives_pre_render_initlocal
+     */
+    it('되돌린 _local 상태는 _localInit 이 같은 최상위 키를 품을 때만 그 경로에 실리고, 원래 객체는 바뀌지 않는다', async () => {
+        const { app } = await mount(ROUTES.start);
+        const carry = (localInit: unknown, state: Record<string, unknown>): any => (app as any).carryScrollSnapshotStateIntoLocalInit(localInit, state);
+
+        // 최상위 원시값
+        expect(carry({ page: 1, keep: 'k' }, { '_local.page': 2 })).toEqual({ page: 2, keep: 'k' });
+
+        // 객체 안 경로 — 응답 객체(form)는 그대로 두고 경로만 복사해 바꾼다
+        const responseForm = { name: '텀블러', paging: { page: 1, size: 20 } };
+        const nested = carry({ form: responseForm, _forceLocalInit: 7 }, { '_local.form.paging.page': 3 });
+        expect(nested).toEqual({ form: { name: '텀블러', paging: { page: 3, size: 20 } }, _forceLocalInit: 7 });
+        expect(responseForm.paging.page).toBe(1);
+
+        // 통째 교체
+        expect(carry({ infiniteScroll: { currentPage: 1 } }, { '_local.infiniteScroll': { currentPage: 4, hasMore: false } }))
+            .toEqual({ infiniteScroll: { currentPage: 4, hasMore: false } });
+
+        // `_localInit` 에 없는 키와 `_global` 경로는 싣지 않는다(받은 객체 그대로)
+        const untouched = { form: { name: 'a' } };
+        expect(carry(untouched, { '_local.page': 2, '_global.infiniteScroll': { currentPage: 2 } })).toBe(untouched);
+
+        // `_localInit` 이 없으면 만들지 않는다
+        expect(carry(undefined, { '_local.page': 2 })).toBeUndefined();
     });
 });

@@ -5,12 +5,11 @@
  * 키보드만 쓰는 운영자가 관리자 화면 선택칸(설정·상품 등록 등)을 고를 수 없었다. 사용자 템플릿 Basic 의 Select 와 같은 방식으로
  * 항목에 실제 초점을 옮긴다 — ↓↑ 순환·Home/End·Esc 닫고 단추로·Tab 닫고 단추 다음으로.
  *
- * @scenario key_path=trigger_arrow_down
- * @effects option_focusable_by_keyboard
+ * 축 요약(마커 아님 — 평문): key_path 열 가지, 시험 하나가 값 하나를 잰다
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): option_focusable_by_keyboard, disabled_option_skipped, escape_does_not_close_outer_modal, tab_returns_to_trigger, aria_controls_only_when_open
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import React from 'react';
 import { Select } from '../Select';
 
 const OPTIONS = [

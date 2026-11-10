@@ -10,7 +10,7 @@
  * 한 곳에서 걸고, 본 테스트가 **위젯 종류와 무관하게** 걸리는 것을 잠근다 — 새 위젯을
  * 등록해도 자동 적용된다는 계약이다.
  *
- * @effects bound_value_protection_is_a_single_shared_gate_for_every_widget, restore_affordance_recovers_the_original_binding_after_replacement, bound_value_shows_expression_badge_and_locks_destructive_controls, replace_affordance_reopens_editing_without_emitting_a_change
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): bound_value_protection_is_a_single_shared_gate_for_every_widget, restore_affordance_recovers_the_original_binding_after_replacement, bound_value_shows_expression_badge_and_locks_destructive_controls, replace_affordance_reopens_editing_without_emitting_a_change
  * @since engine-v1.66.0
  */
 
@@ -180,6 +180,27 @@ describe('ControlRenderer — 템플릿 설정 연결 값 (#434)', () => {
     expect(open.getAttribute('target')).toBe('_blank');
     expect(open.getAttribute('rel')).toBe('noopener noreferrer');
     expect(open.textContent).toBe('layout_editor.control.bound_value.open_template_settings');
+  });
+
+  /**
+   * 새 창 링크는 브라우저가 그대로 여는 주소라, 하위 폴더 설치(`https://host/g7/`)에서는 설치 폴더가 붙어야 한다.
+   *
+   * @effects bound_value_shows_expression_badge_and_locks_destructive_controls
+   */
+  it('하위 폴더 설치에서는 [설정 열기] 주소에 설치 폴더가 붙는다', () => {
+    (window as any).G7Config = { ...((window as any).G7Config ?? {}), basePath: '/g7' };
+    try {
+      const node: EditorNode = { type: 'basic', name: 'Header', props: { maxVisibleBoards: TS_EXPR } };
+      render(
+        <LayoutEditorProvider templateIdentifier="sirsoft-basic" initialLocale="ko">
+          <ControlRenderer controlKey="hdrMax" control={numberCtrl} node={node} t={t} onPatch={vi.fn()} />
+        </LayoutEditorProvider>,
+      );
+
+      expect(screen.getByTestId('g7le-control-hdrMax-template-settings-open').getAttribute('href')).toBe('/g7/admin/templates/sirsoft-basic/settings');
+    } finally {
+      delete (window as any).G7Config.basePath;
+    }
   });
 
   /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */

@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Console\Commands;
 
+use App\Helpers\TimezoneHelper;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Plugins\Sirsoft\SocialLogin\Listeners\RegisterMockProvidersListener;
 use Plugins\Sirsoft\SocialLogin\Mock\MockGate;
@@ -50,7 +52,7 @@ class MockCommand extends Command
             }
 
             $until = $gate->enable($minutes);
-            $this->info(__('sirsoft-social_login::messages.mock_cli.enabled', ['until' => date('Y-m-d H:i:s', $until)]));
+            $this->info(__('sirsoft-social_login::messages.mock_cli.enabled', ['until' => $this->siteTime($until)]));
             $this->line(implode(', ', array_keys(RegisterMockProvidersListener::configs())));
 
             return self::SUCCESS;
@@ -66,8 +68,19 @@ class MockCommand extends Command
         $until = $gate->until();
         $this->info($until === null
             ? __('sirsoft-social_login::messages.mock_cli.status_off')
-            : __('sirsoft-social_login::messages.mock_cli.status_on', ['until' => date('Y-m-d H:i:s', $until)]));
+            : __('sirsoft-social_login::messages.mock_cli.status_on', ['until' => $this->siteTime($until)]));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * 만료 시각을 사이트 시간대 문자열로 바꿉니다 (운영자가 콘솔에서 읽는 값).
+     *
+     * @param  int  $until  만료 시각 (unix 초)
+     * @return string 사이트 시간대 `Y-m-d H:i:s`
+     */
+    private function siteTime(int $until): string
+    {
+        return (string) TimezoneHelper::toSiteDateTimeString(Carbon::createFromTimestamp($until));
     }
 }

@@ -207,7 +207,7 @@ php artisan sirsoft-sso:mock-saml --seed-idp         # 모의 SAML IdP 행(mock_
 php artisan sirsoft-sso:mock --disable               # 끄기
 ```
 
-꺼져 있으면 모의 IdP 주소는 404 이고 로그인 화면에도 모의 IdP 버튼이 보이지 않습니다. 모의 IdP 키는 `mock_` 으로 시작하며 실제 IdP 키로 쓸 수 없습니다.
+꺼져 있으면 모의 IdP 주소는 404 이고 로그인 화면에도 모의 IdP 버튼이 보이지 않습니다. 모의 IdP 키는 `mock_` 으로 시작하며 실제 IdP 키로 쓸 수 없습니다. 명령이 콘솔에 찍는 만료 시각은 사이트 시간대(환경설정의 시간대) 기준입니다.
 
 ## 13. 플러그인을 끄거나 지울 때
 

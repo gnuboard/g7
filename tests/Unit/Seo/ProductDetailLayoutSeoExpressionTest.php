@@ -14,7 +14,7 @@ use Tests\TestCase;
  * `$localized(meta_title) ?? $localized(name)` 이면 화면 `$localized` 는 빈 값을 빈 글자로 돌려줘 `??` 가 다음 후보로
  * 넘어가지 않았다 — 서버는 상품명을, 화면은 빈 값을 냈다. 빈 다국어 값(`{ko: ''}`)은 서버도 멈췄다. 두 구현이 같은 답을
  * 내도록 레이아웃 식은 빈 글자도 건너뛰는 `||` 로 잇는다. 화면 쪽 짝 시험은 템플릿의
- * `__tests__/layouts/shop-product-document-title.test.ts` 다.
+ * `templates/_bundled/sirsoft-basic/__tests__/layouts/shop-product-document-title.test.ts` 다.
  *
  * @scenario-manifest templates/_bundled/sirsoft-basic/tests/scenarios/shop-product-document-title.yaml
  */

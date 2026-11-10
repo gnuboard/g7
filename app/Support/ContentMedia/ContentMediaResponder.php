@@ -6,6 +6,8 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\StreamingStorageInterface;
 use App\Enums\ContentMediaKind;
 use App\Helpers\InlineMediaPolicy;
+use App\Thumbnails\DTO\ThumbnailSource;
+use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +29,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 켬)이고 재생 가능 형식일 때만 `hardenPlayable`(inline + `media-src 'self'`), 아니면 `harden`(다운로드). 게이트 콘텐츠는
  * `Cache-Control: private`.
  *
+ * 썸네일: 래스터 이미지에 `?size={규격}`·`?w={숫자}` 가 붙으면 다른 업로드 이미지 서빙 지점과 같은 헬퍼(`ThumbnailResponder`)로
+ * 줄인 이미지를 낸다. 게이트를 지난 뒤에만 이 클래스가 불리므로 원본을 못 보는 요청은 썸네일에도 닿지 못한다. 본문 미디어는
+ * 문서 공개 여부가 바뀔 수 있어 늘 권한 원본(`gated`)으로 다룬다 — 파생본은 비공개 썸네일 디스크에 두고 `private` 로 낸다.
+ * 낼 수 없으면 원본에 `X-G7-Thumbnail: bypass:{사유}` 를 붙인다. 동영상·오디오와 `Range` 요청은 썸네일 분기를 지나지 않는다.
+ *
  * @since 7.1.5
  */
 final class ContentMediaResponder
@@ -37,14 +44,28 @@ final class ContentMediaResponder
      * @param  StorageInterface  $storage  확장 저장소
      * @param  string  $category  카테고리
      * @param  string  $path  상대 경로
-     * @param  array{mime_type: string, filename: string, playable?: bool, private?: bool, max_age?: int}  $spec  응답 사양
-     * @param  Request  $request  요청 (Range 헤더)
+     * @param  array{mime_type: string, filename: string, playable?: bool, private?: bool, max_age?: int, thumbnail_source?: ThumbnailSource|null}  $spec  응답 사양 (`thumbnail_source` 를 주지 않으면 저장소와 경로로 만든다)
+     * @param  Request  $request  요청 (Range 헤더, 썸네일 `size`·`w`)
      * @return Response|null 응답 (파일이 없으면 null)
      */
     public static function respond(StorageInterface $storage, string $category, string $path, array $spec, Request $request): ?Response
     {
         $mime = (string) ($spec['mime_type'] ?? 'application/octet-stream');
         $filename = (string) ($spec['filename'] ?? basename($path));
+        $image = InlineMediaPolicy::isInlineImage($mime);
+
+        // 게이트는 호출자가 이미 지났다 — 래스터 이미지에 size·w 가 오면 원본 응답 앞에서 썸네일로 낸다.
+        // Range 요청은 원본 통로의 구간 응답 그대로 둔다(동영상·오디오는 이 분기에 들어오지 않는다).
+        if ($image && ! $request->headers->has('Range')) {
+            $source = array_key_exists('thumbnail_source', $spec)
+                ? ($spec['thumbnail_source'] instanceof ThumbnailSource ? $spec['thumbnail_source'] : null)
+                : self::thumbnailSource($storage, $category, $path, $mime, maxAge: self::thumbnailMaxAge($spec));
+            $thumbnail = app(ThumbnailResponder::class)->respond($request, $source);
+
+            if ($thumbnail !== null) {
+                return $thumbnail;
+            }
+        }
 
         if ($storage instanceof StreamingStorageInterface) {
             $local = $storage->localPath($category, $path);
@@ -62,7 +83,53 @@ final class ContentMediaResponder
             return null;
         }
 
-        return self::applyHeaders($response, $mime, $filename, $spec);
+        if (! $image && ! empty($spec['playable']) && InlineMediaPolicy::isInlinePlayable($mime)) {
+            InlineMediaPolicy::hardenPlayable($response, $mime, $filename);
+        } else {
+            InlineMediaPolicy::harden($response, $mime, $filename);
+        }
+
+        self::applyCacheHeaders($response, $spec);
+
+        // 썸네일을 요청했는데 원본을 낼 때만 사유 헤더를 붙이고 그 주소의 캐시를 맞춘다(그 밖의 응답은 그대로)
+        return ThumbnailResponder::markBypass($response, $request);
+    }
+
+    /**
+     * 본문 미디어 파일의 썸네일 원본 — 늘 권한 원본이다.
+     *
+     * 문서가 지금 공개여도 나중에 비공개가 될 수 있다(게시글 비밀 전환, 페이지 발행 취소, 상품 전시 중단). 같은 원본의 파생본이
+     * 문서 상태에 따라 공개·비공개 두 저장 위치로 갈리지 않게 상태와 무관하게 고정한다.
+     *
+     * @param  StorageInterface  $storage  그 행이 저장된 디스크의 저장소
+     * @param  string  $category  카테고리
+     * @param  string  $path  카테고리 기준 경로
+     * @param  string|null  $mime  MIME
+     * @param  int|null  $width  원본 가로 (알면)
+     * @param  int|null  $height  원본 세로 (알면)
+     * @param  int|null  $maxAge  썸네일 캐시 유지 상한(초) — 원본 통로의 수명 (null 이면 코어 기본값)
+     * @return ThumbnailSource|null 원본 (래스터 이미지가 아니거나 저장소가 원본 정보를 낼 수 없으면 null)
+     */
+    public static function thumbnailSource(StorageInterface $storage, string $category, string $path, ?string $mime, ?int $width = null, ?int $height = null, ?int $maxAge = null): ?ThumbnailSource
+    {
+        if (! InlineMediaPolicy::isInlineImage($mime)) {
+            return null;
+        }
+
+        return ThumbnailSource::fromStorage($storage, $category, $path, $mime, gated: true, width: $width, height: $height, maxAge: $maxAge);
+    }
+
+    /**
+     * 응답 사양에서 썸네일 캐시 유지 상한을 정합니다 — 썸네일이 원본보다 오래 캐시되지 않게 원본 통로의 수명을 따른다.
+     *
+     * @param  array<string, mixed>  $spec  응답 사양 (`private`·`max_age`)
+     * @return int|null 상한(초). 수명을 정하지 않은 공개 응답은 null(코어 기본값)
+     */
+    public static function thumbnailMaxAge(array $spec): ?int
+    {
+        $maxAge = max(0, (int) ($spec['max_age'] ?? 0));
+
+        return (! empty($spec['private']) || $maxAge > 0) ? $maxAge : null;
     }
 
     /**
@@ -195,24 +262,14 @@ final class ContentMediaResponder
     }
 
     /**
-     * 보안·캐시 헤더를 붙입니다.
+     * 구간 지원·캐시 헤더를 붙입니다(보안 헤더는 `respond()` 가 원본 응답을 만든 자리에서 붙인다).
      *
      * @param  Response  $response  응답
-     * @param  string  $mime  MIME
-     * @param  string  $filename  파일명
      * @param  array<string, mixed>  $spec  응답 사양
-     * @return Response 같은 응답
+     * @return void 반환값 없음
      */
-    private static function applyHeaders(Response $response, string $mime, string $filename, array $spec): Response
+    private static function applyCacheHeaders(Response $response, array $spec): void
     {
-        if (InlineMediaPolicy::isInlineImage($mime)) {
-            InlineMediaPolicy::harden($response, $mime, $filename);
-        } elseif (! empty($spec['playable']) && InlineMediaPolicy::isInlinePlayable($mime)) {
-            InlineMediaPolicy::hardenPlayable($response, $mime, $filename);
-        } else {
-            InlineMediaPolicy::harden($response, $mime, $filename);
-        }
-
         if (! $response->headers->has('Accept-Ranges') && $response instanceof BinaryFileResponse) {
             $response->headers->set('Accept-Ranges', 'bytes');
         }
@@ -223,7 +280,5 @@ final class ContentMediaResponder
         } elseif ($maxAge > 0) {
             $response->headers->set('Cache-Control', 'public, max-age='.$maxAge);
         }
-
-        return $response;
     }
 }

@@ -53,7 +53,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=resource_meta
      *
-     * @effects resource_meta_title_used, core_title_suffix_returned, meta_title_tier_chain_resolves_in_priority_order
+     * @effects resource_meta_title_used, core_title_suffix_returned
      *
      * @return void 반환값 없음
      */
@@ -80,7 +80,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects module_template_title_used_without_resource_meta, core_title_suffix_returned, meta_title_tier_chain_resolves_in_priority_order
+     * @effects module_template_title_used_without_resource_meta, core_title_suffix_returned
      *
      * @return void 반환값 없음
      */
@@ -118,7 +118,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=description, source=core_settings
      *
-     * @effects core_description_used_as_last_fallback, core_title_suffix_returned, meta_title_tier_chain_resolves_in_priority_order
+     * @effects core_description_used_as_last_fallback, core_title_suffix_returned
      *
      * @return void 반환값 없음
      */
@@ -147,7 +147,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=resource_meta
      *
-     * @effects resource_meta_title_used, core_title_suffix_returned, meta_title_tier_chain_resolves_in_priority_order
+     * @effects resource_meta_title_used, core_title_suffix_returned
      *
      * @return void 반환값 없음
      */
@@ -174,7 +174,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=page_seo_meta
      *
-     * @effects page_seo_meta_title_used, core_title_suffix_returned, meta_title_tier_chain_resolves_in_priority_order
+     * @effects page_seo_meta_title_used, core_title_suffix_returned
      *
      * @return void 반환값 없음
      */
@@ -203,7 +203,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=description, source=core_settings
      *
-     * @effects core_description_used_as_last_fallback, core_title_suffix_returned, meta_title_tier_chain_resolves_in_priority_order
+     * @effects core_description_used_as_last_fallback, core_title_suffix_returned
      *
      * @return void 반환값 없음
      */
@@ -229,7 +229,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title_suffix, source=none
      *
-     * @effects empty_core_suffix_yields_no_suffix, title_suffix_is_composed_with_one_separator_space
+     * @effects empty_core_suffix_yields_no_suffix
      *
      * @return void 반환값 없음
      */
@@ -256,7 +256,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects template_vars_substituted_into_extension_title, seo_vars_resolve_from_declared_sources
+     * @effects template_vars_substituted_into_extension_title
      *
      * @return void 반환값 없음
      */
@@ -291,7 +291,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=keywords, source=resource_meta
      *
-     * @effects resource_meta_keywords_used, keywords_and_description_follow_resource_then_core_fallback
+     * @effects resource_meta_keywords_used
      *
      * @return void 반환값 없음
      */
@@ -315,7 +315,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=keywords, source=resource_meta
      *
-     * @effects resource_keyword_list_joined_with_comma, keywords_and_description_follow_resource_then_core_fallback
+     * @effects resource_keyword_list_joined_with_comma
      *
      * @return void 반환값 없음
      */
@@ -339,7 +339,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=keywords, source=core_settings
      *
-     * @effects core_keywords_used_as_fallback, keywords_and_description_follow_resource_then_core_fallback
+     * @effects core_keywords_used_as_fallback
      *
      * @return void 반환값 없음
      */
@@ -363,7 +363,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=analytics, source=core_settings
      *
-     * @effects analytics_id_read_from_core_settings, google_analytics_id_is_exposed
+     * @effects analytics_id_read_from_core_settings
      *
      * @return void 반환값 없음
      */
@@ -379,7 +379,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=og, source=layout_declaration
      *
-     * @effects og_image_tag_emitted_when_declared, og_tags_are_built_from_resolved_meta
+     * @effects og_image_tag_emitted_when_declared
      *
      * @return void 반환값 없음
      */
@@ -418,7 +418,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=og, source=layout_declaration
      *
-     * @effects og_image_tag_omitted_without_image, og_tags_are_built_from_resolved_meta
+     * @effects og_image_tag_omitted_without_image
      *
      * @return void 반환값 없음
      */
@@ -443,7 +443,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=structured_data, source=layout_declaration
      *
-     * @effects json_ld_rendered_with_schema_context, structured_data_json_ld_is_safe_and_well_formed
+     * @effects json_ld_rendered_with_schema_context
      *
      * @return void 반환값 없음
      */
@@ -484,7 +484,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=structured_data, source=layout_declaration
      *
-     * @effects json_ld_escapes_script_tags, structured_data_json_ld_is_safe_and_well_formed
+     * @effects json_ld_escapes_script_tags
      *
      * @return void 반환값 없음
      */
@@ -516,7 +516,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=structured_data, source=none
      *
-     * @effects json_ld_null_without_declaration, structured_data_json_ld_is_safe_and_well_formed
+     * @effects json_ld_null_without_declaration
      *
      * @return void 반환값 없음
      */
@@ -532,7 +532,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects module_template_ignores_enabled_flag, meta_title_tier_chain_resolves_in_priority_order
+     * @effects module_template_ignores_enabled_flag
      *
      * @return void 반환값 없음
      */
@@ -570,7 +570,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=keywords, source=page_seo_meta
      *
-     * @effects page_seo_meta_keywords_used, keywords_and_description_follow_resource_then_core_fallback
+     * @effects page_seo_meta_keywords_used
      *
      * @return void 반환값 없음
      */
@@ -596,7 +596,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=description, source=page_seo_meta
      *
-     * @effects page_seo_meta_description_used, keywords_and_description_follow_resource_then_core_fallback
+     * @effects page_seo_meta_description_used
      *
      * @return void 반환값 없음
      */
@@ -647,7 +647,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=result_contract, source=core_settings
      *
-     * @effects null_core_settings_yield_strings, seo_meta_resolution_tolerates_null_and_multilingual_values
+     * @effects null_core_settings_yield_strings
      *
      * @return void 반환값 없음
      */
@@ -679,7 +679,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=og, source=layout_declaration
      *
-     * @effects og_description_html_stripped, og_tags_are_built_from_resolved_meta
+     * @effects og_description_html_stripped
      *
      * @return void 반환값 없음
      */
@@ -718,7 +718,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=description, source=layout_declaration
      *
-     * @effects description_falls_back_to_layout_og_description, keywords_and_description_follow_resource_then_core_fallback
+     * @effects description_falls_back_to_layout_og_description
      *
      * @return void 반환값 없음
      */
@@ -755,7 +755,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=layout_declaration
      *
-     * @effects localized_var_value_resolved_to_current_locale, template_vars_substituted_into_extension_title, seo_vars_resolve_from_declared_sources
+     * @effects localized_var_value_resolved_to_current_locale, template_vars_substituted_into_extension_title
      *
      * @return void 반환값 없음
      */
@@ -791,7 +791,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=structured_data, source=layout_declaration
      *
-     * @effects json_ld_description_html_stripped, structured_data_json_ld_is_safe_and_well_formed
+     * @effects json_ld_description_html_stripped
      *
      * @return void 반환값 없음
      */
@@ -828,7 +828,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=result_contract, source=none
      *
-     * @effects result_contains_required_keys, seo_meta_result_has_every_required_key
+     * @effects result_contains_required_keys
      *
      * @return void 반환값 없음
      */
@@ -862,7 +862,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=layout_declaration
      *
-     * @effects var_expression_bound_from_context, seo_vars_resolve_from_declared_sources
+     * @effects var_expression_bound_from_context
      *
      * @return void 반환값 없음
      */
@@ -894,7 +894,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=extension_settings
      *
-     * @effects var_module_settings_prefix_resolved, seo_vars_resolve_from_declared_sources
+     * @effects var_module_settings_prefix_resolved
      *
      * @return void 반환값 없음
      */
@@ -928,7 +928,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=core_settings
      *
-     * @effects var_core_settings_prefix_resolved, seo_vars_resolve_from_declared_sources
+     * @effects var_core_settings_prefix_resolved
      *
      * @return void 반환값 없음
      */
@@ -961,7 +961,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=request_query
      *
-     * @effects var_query_prefix_resolved, seo_vars_resolve_from_declared_sources
+     * @effects var_query_prefix_resolved
      *
      * @return void 반환값 없음
      */
@@ -990,7 +990,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects template_vars_substituted_into_extension_title, seo_vars_resolve_from_declared_sources
+     * @effects template_vars_substituted_into_extension_title
      *
      * @return void 반환값 없음
      */
@@ -1024,7 +1024,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects page_type_selects_extension_template_key, meta_title_tier_chain_resolves_in_priority_order
+     * @effects page_type_selects_extension_template_key
      *
      * @return void 반환값 없음
      */
@@ -1057,7 +1057,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects template_kept_verbatim_without_vars, seo_vars_resolve_from_declared_sources
+     * @effects template_kept_verbatim_without_vars
      *
      * @return void 반환값 없음
      */
@@ -1088,7 +1088,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=none
      *
-     * @effects extension_template_skipped_without_page_type, core_description_used_as_last_fallback, meta_title_tier_chain_resolves_in_priority_order
+     * @effects extension_template_skipped_without_page_type, core_description_used_as_last_fallback
      *
      * @return void 반환값 없음
      */
@@ -1122,7 +1122,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=none
      *
-     * @effects var_missing_context_path_yields_empty, seo_vars_resolve_from_declared_sources
+     * @effects var_missing_context_path_yields_empty
      *
      * @return void 반환값 없음
      */
@@ -1149,7 +1149,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=layout_declaration
      *
-     * @effects localized_var_value_resolved_to_current_locale, seo_vars_resolve_from_declared_sources
+     * @effects localized_var_value_resolved_to_current_locale
      *
      * @return void 반환값 없음
      */
@@ -1188,7 +1188,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects plugin_template_title_used, plugin_seo_templates_resolve_like_module_templates
+     * @effects plugin_template_title_used
      *
      * @return void 반환값 없음
      */
@@ -1215,7 +1215,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=description, source=extension_template
      *
-     * @effects plugin_template_description_used, plugin_seo_templates_resolve_like_module_templates
+     * @effects plugin_template_description_used
      *
      * @return void 반환값 없음
      */
@@ -1240,7 +1240,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=extension_settings
      *
-     * @effects var_plugin_settings_prefix_resolved, plugin_seo_templates_resolve_like_module_templates
+     * @effects var_plugin_settings_prefix_resolved
      *
      * @return void 반환값 없음
      */
@@ -1266,7 +1266,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects plugin_template_title_used, core_title_suffix_returned, plugin_seo_templates_resolve_like_module_templates
+     * @effects plugin_template_title_used, core_title_suffix_returned
      *
      * @return void 반환값 없음
      */
@@ -1299,7 +1299,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=extension_settings
      *
-     * @effects var_explicit_module_id_resolved, seo_vars_resolve_from_declared_sources
+     * @effects var_explicit_module_id_resolved
      *
      * @return void 반환값 없음
      */
@@ -1328,7 +1328,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=extension_settings
      *
-     * @effects var_module_settings_prefix_resolved, seo_vars_resolve_from_declared_sources
+     * @effects var_module_settings_prefix_resolved
      *
      * @return void 반환값 없음
      */
@@ -1448,7 +1448,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=structured_data, source=layout_declaration
      *
-     * @effects json_ld_filled_sub_object_kept, structured_data_json_ld_is_safe_and_well_formed
+     * @effects json_ld_filled_sub_object_kept
      *
      * @return void 반환값 없음
      */
@@ -1486,7 +1486,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects seo_context_title_and_description_used, meta_title_tier_chain_resolves_in_priority_order
+     * @effects seo_context_title_and_description_used
      *
      * @return void 반환값 없음
      */
@@ -1518,7 +1518,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=resource_meta
      *
-     * @effects resource_meta_wins_over_extension_template, meta_title_tier_chain_resolves_in_priority_order
+     * @effects resource_meta_wins_over_extension_template
      *
      * @return void 반환값 없음
      */
@@ -1555,7 +1555,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=none
      *
-     * @effects empty_title_when_no_tier_matches, meta_title_tier_chain_resolves_in_priority_order
+     * @effects empty_title_when_no_tier_matches
      *
      * @return void 반환값 없음
      */
@@ -1581,7 +1581,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=og, source=layout_declaration
      *
-     * @effects og_data_returned_as_array, og_tags_are_built_from_resolved_meta
+     * @effects og_data_returned_as_array
      *
      * @return void 반환값 없음
      */
@@ -1951,7 +1951,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=structured_data, source=layout_declaration
      *
-     * @effects structured_data_array_rerenderable_after_hook, structured_data_json_ld_is_safe_and_well_formed
+     * @effects structured_data_array_rerenderable_after_hook
      *
      * @return void 반환값 없음
      */
@@ -2072,7 +2072,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=og, source=core_settings
      *
-     * @effects multilingual_core_setting_resolved_without_error, og_site_name_emitted_from_core_setting, seo_meta_resolution_tolerates_null_and_multilingual_values
+     * @effects multilingual_core_setting_resolved_without_error, og_site_name_emitted_from_core_setting
      *
      * @return void 반환값 없음
      */
@@ -2110,7 +2110,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=description, source=resource_meta
      *
-     * @effects multilingual_resource_meta_resolved_without_error, seo_meta_resolution_tolerates_null_and_multilingual_values
+     * @effects multilingual_resource_meta_resolved_without_error
      *
      * @return void 반환값 없음
      */
@@ -2142,7 +2142,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=page_seo_meta
      *
-     * @effects multilingual_page_seo_meta_resolved_without_error, seo_meta_resolution_tolerates_null_and_multilingual_values
+     * @effects multilingual_page_seo_meta_resolved_without_error
      *
      * @return void 반환값 없음
      */
@@ -2180,7 +2180,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title, source=extension_template
      *
-     * @effects multilingual_var_value_substituted_without_error, seo_meta_resolution_tolerates_null_and_multilingual_values
+     * @effects multilingual_var_value_substituted_without_error
      *
      * @return void 반환값 없음
      */
@@ -2224,7 +2224,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=template_var, source=extension_settings
      *
-     * @effects multilingual_extension_setting_var_resolved_without_error, seo_meta_resolution_tolerates_null_and_multilingual_values
+     * @effects multilingual_extension_setting_var_resolved_without_error
      *
      * @return void 반환값 없음
      */
@@ -2260,7 +2260,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=og, source=layout_declaration
      *
-     * @effects multilingual_layout_og_field_resolved, seo_meta_resolution_tolerates_null_and_multilingual_values
+     * @effects multilingual_layout_og_field_resolved
      *
      * @return void 반환값 없음
      */
@@ -2292,7 +2292,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title_suffix, source=core_settings
      *
-     * @effects suffix_space_restored_after_trimmed_save, title_suffix_is_composed_with_one_separator_space
+     * @effects suffix_space_restored_after_trimmed_save
      *
      * @return void 반환값 없음
      */
@@ -2306,7 +2306,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title_suffix, source=core_settings
      *
-     * @effects suffix_explicit_leading_space_kept, title_suffix_is_composed_with_one_separator_space
+     * @effects suffix_explicit_leading_space_kept
      *
      * @return void 반환값 없음
      */
@@ -2320,7 +2320,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title_suffix, source=core_settings
      *
-     * @effects suffix_dangling_separator_stripped_without_title, title_suffix_is_composed_with_one_separator_space
+     * @effects suffix_dangling_separator_stripped_without_title
      *
      * @return void 반환값 없음
      */
@@ -2335,7 +2335,7 @@ class SeoMetaResolverTest extends TestCase
      *
      * @scenario field=title_suffix, source=none
      *
-     * @effects blank_suffix_composes_empty, title_suffix_is_composed_with_one_separator_space
+     * @effects blank_suffix_composes_empty
      *
      * @return void 반환값 없음
      */

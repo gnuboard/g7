@@ -70,11 +70,14 @@ class BundledLangPackPhaseIsolationTest extends PureTestCase
         $lines = file($ref->getFileName());
         $source = implode('', array_slice($lines, $ref->getStartLine() - 1, $ref->getEndLine() - $ref->getStartLine() + 1));
 
-        $templatesLoop = strpos($source, 'foreach ($templates as $entry)');
+        // 반복 머리는 잠금 저장소 장애로 멈췄을 때 빈 목록을 돌도록 `$aborted ? [] : $목록` 모양이다 — 목록 이름과 `as $entry` 로 찾는다
+        $templatesLoop = strpos($source, '$templates as $entry)');
         $decision = strpos($source, 'self::langPackPhaseNeedsFreshProcess(');
         $spawn = strpos($source, '$this->runLangPackPhaseInFreshProcess(');
-        $inProcessLoop = strpos($source, 'foreach ($langPacks as $entry)');
+        $inProcessLoop = strpos($source, '$langPacks as $entry)');
 
+        $this->assertNotFalse($templatesLoop, '템플릿 갱신 반복을 찾지 못했다');
+        $this->assertNotFalse($inProcessLoop, '같은 프로세스 언어팩 반복을 찾지 못했다');
         $this->assertNotFalse($decision, '언어팩 단계 분리 판정이 없다');
         $this->assertNotFalse($spawn, '언어팩 단계를 새 프로세스로 돌리지 않는다');
         $this->assertTrue($templatesLoop < $decision && $decision < $spawn && $spawn < $inProcessLoop, '확장 갱신 → 분리 판정 → 새 프로세스 위임 → (위임 못 했을 때) 같은 프로세스 순서여야 한다');

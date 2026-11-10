@@ -89,7 +89,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=serve
      *
-     * @effects module_asset_serves_js_file_from_active_module, serves_js_file_from_active
+     * @effects module_asset_serves_js_file_from_active_module
      *
      * @return void 반환값 없음
      */
@@ -112,7 +112,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=serve
      *
-     * @effects module_asset_serves_css_file_from_active_module, serves_css_file_from_active
+     * @effects module_asset_serves_css_file_from_active_module
      *
      * @return void 반환값 없음
      */
@@ -193,7 +193,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=missing
      *
-     * @effects module_asset_returns_404_for_nonexistent_file, returns_404_for_nonexistent_file
+     * @effects module_asset_returns_404_for_nonexistent_file
      *
      * @return void 반환값 없음
      */
@@ -214,7 +214,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=traversal
      *
-     * @effects module_asset_blocks_path_traversal_attack, blocks_path_traversal_attack
+     * @effects module_asset_blocks_path_traversal_attack
      *
      * @return void 반환값 없음
      */
@@ -232,7 +232,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=traversal
      *
-     * @effects module_asset_blocks_path_traversal_with_backslash, blocks_path_traversal_with_backslash
+     * @effects module_asset_blocks_path_traversal_with_backslash
      *
      * @return void 반환값 없음
      */
@@ -250,7 +250,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=traversal
      *
-     * @effects module_asset_blocks_url_encoded_path_traversal, blocks_url_encoded_path_traversal
+     * @effects module_asset_blocks_url_encoded_path_traversal
      *
      * @return void 반환값 없음
      */
@@ -276,7 +276,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=traversal
      *
-     * @effects module_asset_blocks_windows_absolute_path, blocks_windows_absolute_path
+     * @effects module_asset_blocks_windows_absolute_path
      *
      * @return void 반환값 없음
      */
@@ -294,7 +294,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=traversal
      *
-     * @effects module_asset_blocks_linux_absolute_path, blocks_linux_absolute_path
+     * @effects module_asset_blocks_linux_absolute_path
      *
      * @return void 반환값 없음
      */
@@ -312,7 +312,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=traversal
      *
-     * @effects module_asset_blocks_null_byte_attack, blocks_null_byte_attack
+     * @effects module_asset_blocks_null_byte_attack
      *
      * @return void 반환값 없음
      */
@@ -330,7 +330,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=file_type
      *
-     * @effects module_asset_blocks_disallowed_file_types, blocks_disallowed_file_types
+     * @effects module_asset_blocks_disallowed_file_types
      *
      * @return void 반환값 없음
      */
@@ -352,7 +352,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=file_type
      *
-     * @effects module_asset_blocks_various_disallowed_file_types, blocks_various_disallowed_file_types
+     * @effects module_asset_blocks_various_disallowed_file_types
      *
      * @return void 반환값 없음
      */
@@ -371,7 +371,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=file_type
      *
-     * @effects module_asset_allows_all_whitelisted_file_types, allows_all_whitelisted_file_types
+     * @effects module_asset_allows_all_whitelisted_file_types
      *
      * @return void 반환값 없음
      */
@@ -416,7 +416,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=caching
      *
-     * @effects module_asset_sets_caching_headers, sets_caching_headers
+     * @effects module_asset_sets_caching_headers
      *
      * @return void 반환값 없음
      */
@@ -440,7 +440,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=caching
      *
-     * @effects module_asset_generates_etag_header, generates_etag_header
+     * @effects module_asset_generates_etag_header
      *
      * @return void 반환값 없음
      */
@@ -468,7 +468,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=caching
      *
-     * @effects module_asset_returns_304_when_etag_matches, returns_304_when_etag_matches
+     * @effects module_asset_returns_304_when_etag_matches
      *
      * @return void 반환값 없음
      */
@@ -504,7 +504,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=caching
      *
-     * @effects module_asset_applies_immutable_caching_in_production, applies_immutable_caching_in_production
+     * @effects module_asset_applies_immutable_caching_in_production
      *
      * @return void 반환값 없음
      */
@@ -564,7 +564,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=caching
      *
-     * @effects module_asset_applies_no_cache_in_development, applies_no_cache_in_development
+     * @effects module_asset_applies_no_cache_in_development
      *
      * @return void 반환값 없음
      */
@@ -589,7 +589,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=nested_path
      *
-     * @effects module_asset_handles_nested_path, handles_nested_path
+     * @effects module_asset_handles_nested_path
      *
      * @return void 반환값 없음
      */
@@ -616,7 +616,7 @@ class ModuleAssetServingTest extends TestCase
      *
      * @scenario case=sourcemap
      *
-     * @effects module_sourcemap_asset_request_rejected_even_when_file_exists, rejects_sourcemap_file
+     * @effects module_sourcemap_asset_request_rejected_even_when_file_exists
      *
      * @return void 반환값 없음
      */

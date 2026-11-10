@@ -393,7 +393,8 @@ describe('HtmlContent 본문 이미지', () => {
       fireEvent.keyDown(first, { key: 'Enter' });
     });
     await waitFor(() => expect(document.querySelector('.yarl__root')).not.toBeNull());
-    const close = document.querySelector('.yarl__toolbar button[aria-label="Close"]') as HTMLButtonElement;
+    // 확대 창 단추 이름은 다국어 라벨(common.lightbox.*)이다 — 이 시험의 t 는 키를 그대로 돌려준다
+    const close = document.querySelector('.yarl__toolbar button[aria-label="common.lightbox.close"]') as HTMLButtonElement;
     expect(close).not.toBeNull();
     close.focus();
     await act(async () => {

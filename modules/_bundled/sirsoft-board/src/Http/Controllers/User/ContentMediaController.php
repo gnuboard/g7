@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Controllers\User;
 use App\Exceptions\ContentMediaLimitExceededException;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Controllers\Concerns\RespondsWithContentMediaTarget;
+use App\Thumbnails\ThumbnailQuery;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -132,19 +133,22 @@ class ContentMediaController extends PublicBaseController
     /**
      * 본문 미디어 서빙 (Range 지원).
      *
-     * @param  Request  $request  요청 (한시 서명·Range)
+     * 이미지 주소에 `?size={규격}`·`?w={숫자}` 가 붙으면 게이트(`findServable`)를 지난 뒤 코어 골격이 썸네일로 낸다. 서명은
+     * `size`·`w` 를 빼고 검증한다 — 화면이 서명 주소 뒤에 규격을 덧붙여도 서명이 깨지지 않게(썸네일은 같은 게이트를 지난 뒤 크기만 바꾼다).
+     *
+     * @param  Request  $request  요청 (한시 서명·Range·썸네일 파라미터)
      * @param  string  $slug  게시판 슬러그
      * @param  string  $hash  해시 (12자)
      * @return Response|JsonResponse 파일 응답 또는 오류
      */
-    // audit:allow controller-base-request-injection reason: GET 미디어 서빙. 요청 URL 서명 검증(hasValidSignature)과 Range 헤더만 읽는다(검증할 본문 없음)
+    // audit:allow controller-base-request-injection reason: GET 미디어 서빙. 요청 URL 서명 검증과 Range 헤더, 썸네일 쿼리(size·w)만 읽는다(검증할 본문 없음)
     public function show(Request $request, string $slug, string $hash): Response|JsonResponse
     {
         try {
             $attachment = $this->contentMediaService->findServable(
                 $slug,
                 $hash,
-                signatureVerified: $request->hasValidSignature(absolute: false)
+                signatureVerified: $request->hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure())
             );
 
             $response = $this->contentMediaService->respond($slug, $attachment, $request);

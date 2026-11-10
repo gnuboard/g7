@@ -10,11 +10,22 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import path from 'path';
 import fs from 'fs';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { makeHarnessModal } from './harnessModal';
+
+// 엔진(코어)은 저장소 루트의 react 를, 진짜 Modal 은 이 템플릿 node_modules 의 react 를 읽어 사본이 둘이 된다 — 이 파일에서만
+// 템플릿 쪽 react 를 루트 사본으로 바꿔 낀다(admin_plugin_list._modal_update.force.test.tsx 와 같은 방식)
+vi.mock('react', async () => {
+  const p = await import('path');
+  const u = await import('url');
+  const dir = p.dirname(u.fileURLToPath(import.meta.url));
+
+  return import(/* @vite-ignore */ u.pathToFileURL(p.resolve(dir, '../../../../../node_modules/react/index.js')).href);
+});
 
 type Json = Record<string, any>;
 
@@ -46,12 +57,8 @@ const TestA: React.FC<any> = ({ href, target, className, children }) => (
     {children}
   </a>
 );
-const TestModal: React.FC<any> = ({ title, children }) => (
-  <div role="dialog">
-    <h2>{title}</h2>
-    {children}
-  </div>
-);
+// 진짜 Modal — 취소·실행 단추가 고정 하단(props.footer)에 있어, 본문만 그리는 가짜 Modal 로는 실행 단추가 보이지 않는다
+const TestModal = makeHarnessModal({ forceOpen: true });
 const TestFragment: React.FC<any> = ({ children }) => <>{children}</>;
 
 function setupRegistry(): ComponentRegistry {
@@ -140,10 +147,11 @@ function buildLayout(kind: 'module' | 'plugin' | 'template', row: Json): Json {
   };
 }
 
-/** 실행 버튼 — 주황(amber-700) 배경으로 식별한다. */
+/** 실행 버튼 — 주황(amber-700) 배경으로 식별한다. Modal 고정 하단(props.footer)에 그려진다. */
 function confirmButton(): HTMLButtonElement {
   const button = Array.from(document.querySelectorAll('button')).find((b) => b.className.includes('bg-amber-700')) as HTMLButtonElement | undefined;
   expect(button, '실행 버튼이 있어야 합니다').toBeTruthy();
+  expect(button!.closest('.modal-footer-bar'), '실행 버튼은 Modal 고정 하단에 있어야 합니다').not.toBeNull();
   return button!;
 }
 

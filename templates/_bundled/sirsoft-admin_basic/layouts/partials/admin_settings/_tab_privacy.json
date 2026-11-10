@@ -1460,8 +1460,15 @@
                                                 "item_var": "row",
                                                 "index_var": "idx"
                                             },
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "px-4 py-3 flex flex-row gap-3 items-start justify-between"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "px-4 py-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
+                                                "className": "px-4 py-3 flex flex-col gap-3"
                                             },
                                             "children": [
                                                 {
@@ -1651,8 +1658,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "flex flex-row gap-2 items-center justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                        "className": "flex flex-col gap-2"
                                                     },
                                                     "children": [
                                                         {

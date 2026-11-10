@@ -13,9 +13,12 @@ axes:
   locale: [ko, en, ja]
   # 모의 제공자에 거는 조작
   action: [revoke]
+  # 명령이 만료 시각을 알릴 때 따르는 사이트 시간대
+  site_timezone: [Asia/Seoul]
 effects:
   - reenabled_gate_rotates_kid
   - mock_cli_on_off_status
+  - mock_cli_expiry_shown_in_site_timezone
   - mock_gate_accepts_numeric_string_from_cache
   - mock_routes_404_when_off
   - mock_refuses_foreign_redirect

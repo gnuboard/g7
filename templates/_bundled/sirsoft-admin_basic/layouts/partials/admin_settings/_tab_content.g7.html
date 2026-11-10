@@ -52,7 +52,8 @@
       <div class="card-description">$t:admin.settings.content.embed.description</div>
       <div class="row-stack">
         <span class="form-label">$t:admin.settings.content.embed.presets</span>
-        <div data-ref="content_embed_presets" class="grid-2col-responsive">
+        <div data-ref="content_embed_presets" class="grid grid-cols-1 gap-4">
+          <responsive on="768-" class="grid grid-cols-2 gap-4"/>
           <div data-each="preset in ['youtube', 'vimeo', 'tiktok']" class="flex-between gap-3 py-1">
             <span class="text-body">$t:admin.settings.content.embed.preset_names.{{preset}}</span>
             <toggle data-type="composite" ariaLabel="$t:admin.settings.content.embed.preset_names.{{preset}}" checked="{{_local.form?.content?.embed_presets?.[preset] === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
@@ -66,7 +67,8 @@
         <div data-ref="content_embed_extension" data-if="{{(_local.form?._meta?.embed_extension_providers ?? []).length > 0}}" class="row-stack mt-2">
           <span class="form-label">$t:admin.settings.content.embed.extension</span>
           <p class="form-hint">$t:admin.settings.content.embed.extension_hint</p>
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-each="ext in _local.form?._meta?.embed_extension_providers ?? []" class="flex-between gap-3 py-1">
               <span class="text-body">{{ext.name + ' (' + ext.extension + ')'}}</span>
               <toggle data-type="composite" ariaLabel="{{ext.name}}" checked="{{_local.form?.content?.embed_presets?.[ext.key] === true}}" size="sm" disabled="{{_computed.isReadOnly}}">

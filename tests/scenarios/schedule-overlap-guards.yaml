@@ -17,13 +17,13 @@ description: |
 axis_notes:
   case: |
     ext_schedule_* 는 확장 예약 선언이 등록부 행 속성으로 바뀌는 자리(옛 형식 정규화), run_* 는 「지금 실행」 경로다.
-    ScheduleServiceTest 의 종전 조회·삭제 시험은 `schedule-admin-screen.yaml` 의 `case=service_crud` 로 조합을 달고
-    효과만 이 매니페스트에도 귀속한다.
+    service_query·service_delete 는 ScheduleServiceTest 의 종전 조회·삭제 시험이다(이 매니페스트만 소유한다).
 
 axes:
   case: [ext_schedule_default, ext_schedule_overlap_opt_out, ext_schedule_overlap_minutes, ext_schedule_one_server_opt_out,
          run_rejected_while_running, run_overlap_allowed, run_failed_releases_lock, run_lock_store_error,
-         admin_history_list, admin_bulk_status, admin_bulk_delete, admin_unauthenticated]
+         admin_history_list, admin_bulk_status, admin_bulk_delete, admin_unauthenticated,
+         service_query, service_delete]
 
 effects:
   # 확장 예약 등록 기본값 (F3)

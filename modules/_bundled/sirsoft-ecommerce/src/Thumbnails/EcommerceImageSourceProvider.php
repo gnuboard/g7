@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * 상품·카테고리·리뷰·클레임 이미지는 모두 모듈 스토리지 `images` 카테고리에 있다. 드라이버가 디스크 위에 쓰는
  * 전체 경로는 `sirsoft-ecommerce/images/{행 path}` 이고, 행 path 의 첫 조각(`products/`·`category/`·
  * `reviews/`·`claims/`)이 종류를 가른다 — 그래서 `matches()` 는 경로 접두로 판정한다.
+ * 본문 미디어처럼 다른 카테고리에 두는 종류는 `storageCategory()` 를 바꿔 같은 판정을 쓴다.
  *
  * 디스크 이름으로는 거르지 않는다. 운영자가 이미지 디스크를 바꿔도 이전 행은 옛 disk 를 그대로 기록하고 그
  * 자리에서 계속 서빙되므로(`ResolvesRowStorage`), 지금 디스크만 내 것으로 치면 옛 행의 파생본이 어느 분류에도
@@ -23,8 +24,18 @@ use Illuminate\Database\Eloquent\Model;
  */
 abstract class EcommerceImageSourceProvider implements ThumbnailSourceProvider
 {
-    /** 모듈 스토리지 `images` 카테고리의 디스크 위 접두 — imagesRoot() 가 처음 쓸 때 드라이버에서 얻는다 */
+    /** 이 종류가 쓰는 카테고리의 디스크 위 접두 — imagesRoot() 가 처음 쓸 때 드라이버에서 얻는다 */
     private ?string $imagesRoot = null;
+
+    /**
+     * 이 종류의 파일을 두는 모듈 스토리지 카테고리
+     *
+     * @return string 카테고리 (기본 `images`)
+     */
+    protected function storageCategory(): string
+    {
+        return 'images';
+    }
 
     /**
      * 이 종류의 행 path 접두 (예: `products/`)
@@ -98,13 +109,13 @@ abstract class EcommerceImageSourceProvider implements ThumbnailSourceProvider
     }
 
     /**
-     * `images` 카테고리의 디스크 위 접두 — 저장 경로 규칙은 드라이버가 소유하므로 그 값을 받는다(디스크와 무관하다).
+     * 이 종류 카테고리(기본 `images`)의 디스크 위 접두 — 저장 경로 규칙은 드라이버가 소유하므로 그 값을 받는다(디스크와 무관하다).
      *
      * @return string 접두 (끝 `/` 포함)
      */
     private function imagesRoot(): string
     {
-        return $this->imagesRoot ??= (new ModuleStorageDriver('sirsoft-ecommerce'))->thumbnailSourceKey('images', '')['path'].'/';
+        return $this->imagesRoot ??= (new ModuleStorageDriver('sirsoft-ecommerce'))->thumbnailSourceKey($this->storageCategory(), '')['path'].'/';
     }
 
     /**

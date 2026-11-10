@@ -76,7 +76,8 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
      */
     private function uploadTextAttachment(): object
     {
-        $postId = $this->createTestPost([
+        // 기존 글에 붙이는 업로드는 그 글을 고칠 수 있는 사람만 — 비회원 글은 검증 토큰을 싣는다(#883)
+        [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken([
             'title' => '다운로드 캐시 계약',
             'status' => 'published',
         ]);
@@ -85,7 +86,8 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
 
         $response = $this->postJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
-            ['file' => $file, 'post_id' => $postId]
+            ['file' => $file, 'post_id' => $postId],
+            $uploadHeaders
         );
 
         $response->assertStatus(201);
@@ -338,11 +340,12 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
      */
     public function test_preview_of_a_normal_post_image_stays_public_in_production(): void
     {
-        $postId = $this->createTestPost(['title' => '미리보기 캐시 대조', 'status' => 'published']);
+        [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken(['title' => '미리보기 캐시 대조', 'status' => 'published']);
 
         $this->postJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
-            ['file' => UploadedFile::fake()->image('photo.jpg', 40, 40), 'post_id' => $postId]
+            ['file' => UploadedFile::fake()->image('photo.jpg', 40, 40), 'post_id' => $postId],
+            $uploadHeaders
         )->assertStatus(201);
 
         $row = DB::table('board_attachments')->orderByDesc('id')->first();

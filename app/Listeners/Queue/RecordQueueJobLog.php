@@ -163,6 +163,7 @@ class RecordQueueJobLog
                     ? Str::limit($exception->getMessage(), QueueJobLog::EXCEPTION_MESSAGE_LIMIT, '')
                     : null,
                 'schedule_id' => $parsed['schedule_id'],
+                // audit:allow datetime-display-user-timezone reason: DB 저장값(앱 시간대) — 기계값, 표시는 Resource 가 변환
                 'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
             ];
 
@@ -253,6 +254,7 @@ class RecordQueueJobLog
     {
         return Carbon::createFromTimestampMs((int) round($seconds * 1000))
             ->setTimezone(config('app.timezone'))
+            // audit:allow datetime-display-user-timezone reason: DB 저장값(앱 시간대, timestamp(3) 컬럼) — 기계값
             ->format('Y-m-d H:i:s.v');
     }
 }

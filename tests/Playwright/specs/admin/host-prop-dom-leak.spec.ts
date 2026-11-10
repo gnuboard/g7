@@ -1,8 +1,8 @@
 /**
  * E2E: 호스트 DOM 으로 새면 안 되는 props (engine-v1.55.1)
  *
- * @scenario leak_path=extension_point_host, prop_shape=object
- * @effects extension_point_host_clean, icon_not_autobound, address_search_still_works
+ * 조합 요약(마커 아님 — 평문): leak_path=extension_point_host 와 form_auto_binding, screen 은 시험별 표식에 있음
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): extension_point_host_clean, icon_not_autobound, address_search_still_works, html_content_host_clean, html_editor_host_clean, extension_point_host_class_expression_evaluated
  *
  * 배경: 브라우저 실측에서 관리자 두 화면에 객체 값이 DOM 속성으로 문자열화되어 남아 있었다.
  *   - 쇼핑몰 설정 기본정보: `<div id="address_search_slot" targetfields="[object Object]">`

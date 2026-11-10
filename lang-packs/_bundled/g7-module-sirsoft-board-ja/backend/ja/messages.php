@@ -144,7 +144,7 @@ return [
         'preview_failed' => '画像プレビューに失敗しました。',
         'reorder_success' => '添付ファイルの順序が変更されました。',
         'reorder_failed' => '添付ファイル順序変更に失敗しました。',
-        'thumbnail_source' => '掲示板の添付画像',
+        'thumbnail_source' => '掲示板の添付画像と本文画像',
     ],
     'permission' => [
         'denied' => 'アクセス権限がありません。',

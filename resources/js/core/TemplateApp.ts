@@ -448,6 +448,12 @@ export class TemplateApp {
     private templateScrollRestoration: unknown = null;
     /** 지금 화면의 합친 스크롤 복원 설정 — 떠날 때 스냅샷과 함께 기억할 상태 경로를 읽는다 @since engine-v1.85.0 */
     private currentScrollConfig: ScrollRestorationConfig | null = null;
+    /**
+     * 인증 확인 불가 화면이 스크롤 기억을 멈춘 채 두었는지 — 그 화면은 뒤로 가기·새로고침 표시가 멈춘 저장을 다시 켜지 않는다(오류 화면
+     * 위치가 그 히스토리 항목의 기억을 덮지 않게). 이동 표시 없이 이어지는 다음 화면 처리(언어 전환 재진입)가 저장을 다시 켠다
+     * @since engine-v1.94.0
+     */
+    private scrollSavingHeldByErrorScreen = false;
     /** 현재 WebSocket 구독 키 (라우트 변경 시 해제용) */
     private currentWebSocketSubscriptions: string[] = [];
     /** 확장 기능 캐시 버전 (모듈/플러그인 활성화 시 갱신됨) */
@@ -1227,6 +1233,10 @@ export class TemplateApp {
     private async handleRouteChange(route: Route): Promise<void> {
         // 이 이동의 스크롤 복원 정보(뒤로/앞으로 가기·새로고침이면 기억한 위치) — 라우터가 표시한 직후 동기로 가져간다 (@since engine-v1.85.0)
         const scrollTicket = takeScrollRestoreTicket();
+        // 인증 확인 불가 화면이 멈춘 채 둔 스크롤 기억 — 이 화면 처리가 이동 표시 없이 왔으면(언어 전환 재진입) 끝에서 다시 켠다.
+        // 표시가 있으면 그 이동이 정한다(새 이동은 라우터가 이미 켰고, 뒤로 가기·새로고침은 복원이 켠다) (@since engine-v1.94.0)
+        const scrollSavingHeld = this.scrollSavingHeldByErrorScreen;
+        this.scrollSavingHeldByErrorScreen = false;
         let scrollConfig: ScrollRestorationConfig | null = null;
         // 떠나는 화면에서 더보기로 늘어난 데이터소스를 그 항목 키로 기억한다 — 돌아오면 그 데이터로 먼저 그린다 (@since engine-v1.85.0)
         if (scrollTicket !== null) {
@@ -2086,6 +2096,13 @@ export class TemplateApp {
                 if (this.globalState._local) {
                     (initialDataContext as any)._local = this.globalState._local;
                 }
+                // 첫 렌더에 실린 `_localInit`(blocking initLocal, 렌더 전 다시 받기의 initLocal)이 같은 `_local` 키를 품고 있으면 그 자리에도
+                // 되돌린 값을 싣는다 — 싣지 않으면 마운트 뒤 `_localInit` 적용이 저장소 A·B 를 초기화 값으로 되돌려, 되살린 목록 길이와
+                // 진행 상태가 어긋난다(다음 더보기가 받은 쪽을 다시 받음) (@since engine-v1.94.0)
+                (initialDataContext as any)._localInit = this.carryScrollSnapshotStateIntoLocalInit(
+                    (initialDataContext as any)._localInit,
+                    dataSnapshots.state,
+                );
             }
 
             // 바인딩 값 캐시는 경로 글자가 키라 컨텍스트가 바뀌어도 그대로 맞는다 — 새 화면을 그리기 직전에 비운다.
@@ -2428,8 +2445,9 @@ export class TemplateApp {
             }
             this.showRouteError(error as Error);
         } finally {
-            // 복원을 시작하지 못하고 끝났다(밀림·실패) — 이 화면에서 스크롤 기억을 다시 켠다 (@since engine-v1.85.0)
-            if (!scrollRestoreStarted && scrollTicket !== null && routeChangeId === this.currentRouteChangeId) {
+            // 복원을 시작하지 못하고 끝났다(밀림·실패) — 이 화면에서 스크롤 기억을 다시 켠다 (@since engine-v1.85.0).
+            // 인증 확인 불가 화면이 멈춘 채 둔 기억도 이동 표시 없이 온 이 화면에서 다시 켠다 (@since engine-v1.94.0)
+            if (!scrollRestoreStarted && (scrollTicket !== null || scrollSavingHeld) && routeChangeId === this.currentRouteChangeId) {
                 resumeScrollSaving();
             }
         }
@@ -4038,7 +4056,9 @@ export class TemplateApp {
         documentTitle.showError(this.notFoundTitle());
 
         // 경로 없음 화면 — 복원할 화면이 없으니 이 이동의 복원 정보를 버리고 스크롤 기억을 다시 켠다 (@since engine-v1.85.0)
-        if (takeScrollRestoreTicket() !== null) {
+        // 인증 확인 불가 화면이 멈춘 채 둔 기억도 여기서 다시 켠다 (@since engine-v1.94.0)
+        if (takeScrollRestoreTicket() !== null || this.scrollSavingHeldByErrorScreen) {
+            this.scrollSavingHeldByErrorScreen = false;
             resumeScrollSaving();
         }
 
@@ -4103,9 +4123,14 @@ export class TemplateApp {
             return;
         }
 
-        // 경로 없음과 같다 — 복원할 화면이 없으니 이 이동의 스크롤 복원 정보를 버리고 스크롤 기억을 다시 켠다
-        if (takeScrollRestoreTicket() !== null) {
-            resumeScrollSaving();
+        // 이 이동의 스크롤 복원 정보는 버린다 — 남기면 다음 화면 처리가 가져가 엉뚱한 화면을 복원한다. 경로 없음과 달리 스크롤 기억은
+        // 다시 켜지 않는다: 이 화면은 「새로고침하면 같은 화면이 이어진다」가 설계라, 뒤로 가기·새로고침 표시가 멈춘 저장을 켜면 오류 화면의
+        // 위치(맨 위)가 그 히스토리 항목의 기억을 덮어(스크롤 이벤트, 새로고침의 pagehide) 복구 뒤 새로고침이 원래 위치로 돌아오지 못한다.
+        // 새 이동(push)으로 온 경우는 라우터가 이미 저장을 켰고 그 항목은 새 항목이라 덮을 기억이 없다. 멈춘 저장은 다음 이동 표시
+        // (새 이동은 켜고, 뒤로 가기는 복원이 켠다)나 이동 표시 없는 다음 화면 처리(언어 전환 재진입)가 다시 켠다
+        const droppedScrollTicket = takeScrollRestoreTicket();
+        if (droppedScrollTicket !== null) {
+            this.scrollSavingHeldByErrorScreen = droppedScrollTicket.type === 'pop' || droppedScrollTicket.type === 'reload';
         }
 
         // 경로 없음과 같다 — 이 경로도 화면 처리(handleRouteChange)를 거치지 않으므로 밀린 화면 처리가 켜 둔 전환 상태를 걷는다
@@ -5495,6 +5520,45 @@ export class TemplateApp {
             target[last] = value;
         }
         logger.log('Scroll snapshot state restored:', Object.keys(state));
+    }
+
+    /**
+     * 스냅샷과 함께 되돌린 `_local.…` 상태를, 첫 렌더에 실릴 `_localInit` 이 같은 최상위 키를 품고 있으면 그 경로에도 싣습니다.
+     *
+     * `_localInit` 은 마운트 뒤 저장소 A·B 에 최상위 키 단위로 적용된다. 같은 키가 초기화 값(데이터소스 initLocal)을 품은 채면
+     * {@link applyScrollSnapshotState} 가 정본 B 에 되돌린 값을 그 적용이 다시 덮는다. `_localInit` 에 없는 키는 건드리지 않는다
+     * (없는 키를 만들면 initLocal 을 선언하지 않은 화면에 `_localInit` 적용이 새로 생긴다). 값은 받은 응답 객체일 수 있어 제자리에서
+     * 고치지 않고 경로를 따라 얕게 복사한다.
+     *
+     * @param localInit 첫 렌더에 실릴 `_localInit` (없으면 그대로 돌려준다)
+     * @param state 되돌린 상태 경로 → 값
+     * @returns 되돌린 값을 실은 `_localInit` (바뀐 것이 없으면 받은 객체 그대로)
+     * @since engine-v1.94.0
+     */
+    private carryScrollSnapshotStateIntoLocalInit(localInit: unknown, state: Record<string, unknown>): unknown {
+        if (!localInit || typeof localInit !== 'object') {
+            return localInit;
+        }
+        const writeAt = (node: unknown, parts: string[], value: unknown): unknown => {
+            if (parts.length === 0) {
+                return value;
+            }
+            const [head, ...tail] = parts;
+            const copy: any = Array.isArray(node) ? [...node] : (node !== null && typeof node === 'object' ? { ...(node as object) } : {});
+            copy[head] = writeAt(copy[head], tail, value);
+
+            return copy;
+        };
+        let next = localInit as Record<string, unknown>;
+        for (const [path, value] of Object.entries(state)) {
+            const [root, ...rest] = path.split('.');
+            if (root !== '_local' || rest.length === 0 || !Object.prototype.hasOwnProperty.call(next, rest[0])) {
+                continue;
+            }
+            next = writeAt(next, rest, value) as Record<string, unknown>;
+        }
+
+        return next;
     }
 
     /**

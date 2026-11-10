@@ -4,10 +4,12 @@ namespace Tests\Feature\Console;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
 use App\Extension\Helpers\ExtensionOperationLock;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Tests\Concerns\SimulatesOperationLockStore;
+use Tests\Support\Console\NoSpawnExecuteBundledUpdatesCommand;
 use Tests\TestCase;
 
 /**
@@ -192,13 +194,26 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
      */
     private function resultPayload(string $output): array
     {
-        foreach (preg_split('/\R/', $output) as $line) {
+        foreach (preg_split('~\r\n|\r|\n~', $output) as $line) {
             if (str_starts_with(trim($line), ExecuteBundledUpdatesCommand::RESULT_PREFIX)) {
                 return json_decode(substr(trim($line), strlen(ExecuteBundledUpdatesCommand::RESULT_PREFIX)), true) ?? [];
             }
         }
 
         return [];
+    }
+
+    /**
+     * 일괄 업데이트 명령을 같은 프로세스에서 도는 판으로 바꿔 끼웁니다.
+     *
+     * 항목이 둘 이상이면 명령은 항목마다 새 PHP 프로세스를 띄운다. 새 프로세스는 이 시험이 바꿔 둔 잠금 저장소(장애 흉내)와
+     * 이 프로세스가 쥔 잠금을 물려받지 않으므로, 잠금 장애 중단과 진행 중 항목 처리는 같은 프로세스 경로에서 본다.
+     *
+     * @return void 반환값 없음
+     */
+    private function runItemsInThisProcess(): void
+    {
+        $this->app[Kernel::class]->registerCommand($this->app->make(NoSpawnExecuteBundledUpdatesCommand::class));
     }
 
     /**
@@ -217,6 +232,7 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
             'plugins' => [['identifier' => 'acme-i161-c', 'strategy' => 'keep']],
             'templates' => [['identifier' => 'acme-i161-t', 'strategy' => 'keep']],
         ]);
+        $this->runItemsInThisProcess();
         $this->breakLockStore();
 
         $exit = Artisan::call('core:execute-bundled-updates', ['--manifest' => $path]);
@@ -243,6 +259,7 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
         $path = $this->writeManifest([
             'modules' => [['identifier' => 'acme-i161-busy', 'strategy' => 'keep'], ['identifier' => 'acme-i161-next', 'strategy' => 'keep']],
         ]);
+        $this->runItemsInThisProcess();
         $held = Cache::lock(ExtensionOperationLock::key('module', 'acme-i161-busy'), 60);
         $this->assertTrue($held->get());
 

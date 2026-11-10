@@ -72,3 +72,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 활동 로그: 회사 계정 로그인과 실패, 연결과 해제, 자동 가입, 퇴사 처리와 재활성, 역할 동기화, IdP 와 정책 변경, SP 키와 SCIM 토큰 발급, 비상 계정 로그인, 사전 등록, CSV 가져오기
 - 스케줄 4종(`sirsoft-sso:deprovision-check`, `sirsoft-sso:withdraw-deprovisioned`, `sirsoft-sso:metadata-refresh`, `sirsoft-sso:prune`)과 LDAP 연결 진단 명령 `sirsoft-sso:ldap-test`
 - 개발과 검수용 모의 IdP(OpenID Connect, SAML) — `sirsoft-sso:mock --enable --minutes=N`(최대 240분), `sirsoft-sso:mock-saml` 으로만 켜고 운영 환경에서는 켜지지 않는다
+- 비상 로그인 알림의 로그인 시각, 인증서 만료 알림의 만료일, 모의 IdP 명령이 알리는 만료 시각은 서버 시간대(UTC)가 아니라 사이트 시간대로 보인다

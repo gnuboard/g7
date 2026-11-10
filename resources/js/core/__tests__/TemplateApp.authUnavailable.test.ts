@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TemplateApp } from '../TemplateApp';
 import { installUnloadGuard, resetUnloadGuardForTesting } from '../template-engine/networkResilience';
 import { AuthManager } from '../auth/AuthManager';
+import { getScrollRecord, installScrollMemory, resetScrollMemoryForTesting, takeScrollRestoreTicket } from '../routing/ScrollMemory';
 
 const { removeToken } = vi.hoisted(() => ({ removeToken: vi.fn() }));
 
@@ -74,6 +75,49 @@ describe('TemplateApp — 인증 확인 불가', () => {
       expect(showRouteError).not.toHaveBeenCalled();
       expect(document.getElementById('app')!.textContent).toBe('');
     } finally {
+      resetUnloadGuardForTesting();
+      installUnloadGuard();
+    }
+  });
+
+  // 「서버가 돌아오면 새로고침으로 같은 화면이 이어진다」 — 스크롤 위치도 이어져야 한다. 새로고침 부팅은 복원 표를 세우고 저장을
+  // 멈춘다. 확인 불가 화면이 저장을 다시 켜면 오류 화면의 위치(0)가 그 히스토리 항목의 기억을 덮어, 복구 뒤 새로고침이 맨 위에서 시작했다
+  // (develop 5차 병합이 「경로 없음과 같은 꼴」로 넣은 2줄).
+  // @scenario failure=server_5xx_persistent
+  // @effects auth_unavailable_keeps_scroll_record
+  it('새로고침으로 들어와 확인 불가 화면이 떠도 복원 표를 남기지 않고, 그 항목에 기억한 스크롤 위치를 오류 화면 위치로 덮지 않는다', async () => {
+    const key = 'url:/admin/dashboard';
+    resetScrollMemoryForTesting();
+    window.history.replaceState({}, '', '/admin/dashboard');
+    // 새로고침 직전 문서가 pagehide 로 남긴 기억
+    window.sessionStorage.setItem('g7_scroll_positions', JSON.stringify([[key, { y: 2200 }]]));
+    const navigationType = vi.spyOn(performance, 'getEntriesByType').mockReturnValue([{ type: 'reload' } as any]);
+    // 오류 화면은 짧아 브라우저가 맨 위에 둔다
+    Object.defineProperty(window, 'scrollY', { configurable: true, get: () => 0 });
+    window.requestAnimationFrame = ((cb: FrameRequestCallback) => { cb(0); return 0; }) as typeof window.requestAnimationFrame;
+    // 라우터 생성 자리 — 기억을 읽고, 새로고침 표시와 함께 저장을 멈춘다
+    installScrollMemory();
+
+    try {
+      expect(getScrollRecord(key)?.y).toBe(2200);
+
+      await (app as any).handleAuthUnavailable('/admin/dashboard');
+
+      // ① 표는 남지 않는다 — 남으면 다음 화면 처리가 가져가 엉뚱한 화면을 복원한다
+      expect(takeScrollRestoreTicket()).toBeNull();
+
+      // ② 오류 화면에서 생긴 스크롤 이벤트와, [새로고침] 의 pagehide 가 그 항목의 기억을 0 으로 덮지 않는다
+      window.dispatchEvent(new Event('scroll'));
+      expect(getScrollRecord(key)?.y).toBe(2200);
+      window.dispatchEvent(new Event('pagehide'));
+      expect(getScrollRecord(key)?.y).toBe(2200);
+      const persisted = new Map<string, { y: number }>(JSON.parse(window.sessionStorage.getItem('g7_scroll_positions') ?? '[]'));
+      expect(persisted.get(key)?.y).toBe(2200);
+    } finally {
+      navigationType.mockRestore();
+      resetScrollMemoryForTesting();
+      window.sessionStorage.clear();
+      window.history.replaceState({}, '', '/');
       resetUnloadGuardForTesting();
       installUnloadGuard();
     }

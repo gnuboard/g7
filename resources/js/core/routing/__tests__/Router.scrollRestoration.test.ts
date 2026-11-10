@@ -163,6 +163,57 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     expect(getScrollRecord('url:/')?.y).toBe(1200);
   });
 
+  // 하위 폴더 설치(`https://host/g7/`) — 라우터는 히스토리에 접두사를 붙인 주소를 싣고(#609 withBasePrefix), 스크롤 기억은
+  // 브라우저 주소를 그대로 항목 키로 쓴다. 떠날 때 적는 키와 돌아와 찾는 키가 접두사 유무로 어긋나면 복원할 기억을 찾지 못한다.
+  // @scenario entry=popstate, content_timing=already_tall, config_layer=engine_default
+  // @effects subpath_mount_scroll_keys_match_history_address
+  it('하위 폴더 설치(/g7)에서 새 이동으로 떠났다가 뒤로, 다시 앞으로 가도 접두사 붙은 주소의 기억으로 위치를 되돌린다', async () => {
+    const config = ((globalThis as any).G7Config ??= {});
+    const previousBasePath = config.basePath;
+    config.basePath = '/g7';
+    try {
+      // 하위 폴더 홈에서 부팅한 것처럼 스크롤 기억과 라우터를 다시 세운다
+      window.removeEventListener('popstate', (router as any).handlePopState);
+      resetScrollMemoryForTesting();
+      window.history.replaceState({}, '', '/g7/');
+      router = createRouter();
+      const rendered: string[] = [];
+      subscribeScreen(router, (path) => {
+        rendered.push(path);
+        page.height = 5000;
+      });
+      page.height = 5000;
+      userScrollTo(1500);
+
+      // push — 히스토리 주소에는 접두사가 붙고, 떠나는 홈의 기억은 접두사 붙은 주소 키에 남는다
+      router.navigate('/shop/products/7');
+      await vi.waitFor(() => expect(window.location.pathname).toBe('/g7/shop/products/7'));
+      expect(getScrollRecord('url:/g7/')?.y).toBe(1500);
+      userScrollTo(300);
+      expect(getScrollRecord('url:/g7/shop/products/7')?.y).toBe(300);
+
+      // 뒤로 — 홈이 떠날 때 위치로
+      traverseTo('/g7/');
+      userScrollTo(0);
+      await vi.waitFor(() => expect(page.y).toBe(1500), { timeout: 3000 });
+
+      // 앞으로 — 상품이 떠날 때 위치로
+      traverseTo('/g7/shop/products/7');
+      await vi.waitFor(() => expect(page.y).toBe(300), { timeout: 3000 });
+
+      // 라우트 대조는 접두사를 벗긴 경로로 했고, 접두사 없는 키로는 아무것도 적지 않았다
+      expect(rendered).toEqual(['/shop/products/7', '/', '/shop/products/7']);
+      expect(getScrollRecord('url:/')).toBeUndefined();
+      expect(getScrollRecord('url:/shop/products/7')).toBeUndefined();
+    } finally {
+      if (previousBasePath === undefined) {
+        delete config.basePath;
+      } else {
+        config.basePath = previousBasePath;
+      }
+    }
+  });
+
   // @scenario entry=popstate, content_timing=grows_late, user_input=during_restore
   // @effects user_input_stops_restore
   it('복원을 기다리는 중 사용자가 화면을 만지면 복원을 멈춘다', async () => {
@@ -460,7 +511,7 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     await leaveCheckoutAndTraverseBack();
 
     await new Promise((r) => setTimeout(r, 80));
-    await dispatcher.executeAction({ type: 'click', handler: 'scrollIntoView', params: { selector: '#review-section', behavior: 'instant' } } as any, {} as any);
+    await dispatcher['executeAction']({ type: 'click', handler: 'scrollIntoView', params: { selector: '#review-section', behavior: 'instant' } } as any, {} as any);
     await new Promise((r) => setTimeout(r, 700));
 
     expect(page.y).toBe(700);
@@ -488,7 +539,7 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
 
     // 복원 중(문서가 아직 짧아 1,800 에 닿지 못함)에 화면이 리뷰 영역으로 옮긴다
     await new Promise((r) => setTimeout(r, 100));
-    await dispatcher.executeAction({ type: 'click', handler: 'scrollIntoView', params: { selector: '#review-section', behavior: 'instant' } } as any, {} as any);
+    await dispatcher['executeAction']({ type: 'click', handler: 'scrollIntoView', params: { selector: '#review-section', behavior: 'instant' } } as any, {} as any);
     await new Promise((r) => setTimeout(r, 900));
 
     expect(page.y).toBe(700);

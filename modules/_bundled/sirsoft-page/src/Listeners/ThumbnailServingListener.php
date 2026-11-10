@@ -8,7 +8,7 @@ use Modules\Sirsoft\Page\Support\AttachmentThumbnailSourceProvider;
 /**
  * 페이지 첨부 미리보기를 코어 이미지 썸네일에 등록하는 리스너
  *
- * - `core.thumbnail.filter_url_patterns`: 화면·SEO 가 `?size=` 를 붙여도 되는 서빙 경로에 미리보기 주소를 더한다.
+ * - `core.thumbnail.filter_url_patterns`: 화면·SEO 가 `?size=` 를 붙여도 되는 서빙 경로에 미리보기 주소와 본문 미디어 서빙 주소를 더한다.
  *   패턴 밖 주소는 화면이 원본 그대로 쓰므로, 빠지면 첨부 목록·업로더가 조용히 원본을 받는다.
  * - `core.thumbnail.filter_source_providers`: 썸네일 캐시 관리(분류별 집계·비우기)와 「기존 이미지 썸네일
  *   만들기」, 업로드 직후 미리 생성이 페이지 첨부를 권한이 걸린 원본으로 알아보게 한다.
@@ -19,6 +19,14 @@ class ThumbnailServingListener implements HookListenerInterface
 {
     /** 미리보기 서빙 경로 (`*` 는 해시 한 조각) */
     public const PREVIEW_PATTERN = '/api/modules/sirsoft-page/pages/attachment/*/preview';
+
+    /**
+     * 본문 미디어 서빙 경로 (`*` 는 해시 한 조각) — 편집기 본문 이미지.
+     *
+     * 썸네일은 코어 본문 미디어 골격이 발행 게이트 뒤에서 낸다. 이 경로를 올리려면 서빙 컨트롤러의 서명 검증이 `size`·`w` 를
+     * 빼야 한다(화면이 서명 주소 뒤에 규격을 덧붙인다).
+     */
+    public const CONTENT_MEDIA_PATTERN = '/api/modules/sirsoft-page/pages/content-media/*';
 
     /**
      * 구독할 훅 목록 반환
@@ -53,7 +61,7 @@ class ThumbnailServingListener implements HookListenerInterface
     public function handle(...$args): void {}
 
     /**
-     * 썸네일 서빙 경로에 페이지 첨부 미리보기를 더합니다.
+     * 썸네일 서빙 경로에 페이지 첨부 미리보기와 본문 미디어 서빙 주소를 더합니다.
      *
      * @param  mixed  $patterns  기존 패턴 목록
      * @return mixed 미리보기 경로가 더해진 목록 (배열이 아니면 그대로)
@@ -65,6 +73,7 @@ class ThumbnailServingListener implements HookListenerInterface
         }
 
         $patterns[] = self::PREVIEW_PATTERN;
+        $patterns[] = self::CONTENT_MEDIA_PATTERN;
 
         return $patterns;
     }

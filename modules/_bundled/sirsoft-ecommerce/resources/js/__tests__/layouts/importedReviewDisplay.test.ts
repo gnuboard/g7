@@ -76,8 +76,8 @@ function columnOf(layout: any, field: string): any {
 }
 
 /**
- * @scenario content_mode=html, existing_row=none
- * @effects imported_review_screens_render_author_and_missing_order
+ * 조합 요약(마커 아님 — 평문): content_mode=text 와 html, existing_row=none
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): imported_review_screens_render_author_and_missing_order
  */
 describe('관리자 상품 후기 관리 — 회원·주문 없는 후기 표시', () => {
     const layout = readJson(ADMIN_REVIEW_INDEX);
@@ -143,8 +143,8 @@ describe('관리자 상품 후기 관리 — 회원·주문 없는 후기 표시
 });
 
 /**
- * @scenario content_mode=text, existing_row=none
- * @effects imported_review_screens_render_author_and_missing_order
+ * 조합 요약(마커 아님 — 평문): content_mode=text 와 html, existing_row=none
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): imported_review_screens_render_author_and_missing_order
  */
 describe('공개 상품 상세 후기 탭 — 회원·주문 없는 후기 표시', () => {
     const layout = readJson(PUBLIC_REVIEW_TAB);

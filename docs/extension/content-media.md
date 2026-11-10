@@ -149,7 +149,8 @@ ContentMediaRegistrar::register($this->app->make(NoteContentMediaStore::class));
 | `syncWithContent($ctx, $content, $isHtml)` | 본문(문자열·로케일 배열) 참조 추출 → 개수 판정(복제분 포함, 바꾸기 전에) → **연결 → 복제 → 제거**. 반환 `{linked, removed, cloned, content}` — 복제가 있으면 `content` 를 문서에 다시 저장한다 |
 | `normalizeContent($ctx, $content)` · `presentContent($ctx, $content, $signAll = false, $documentPublic = null)` | 저장 전 서명 쿼리 떼기 / 응답 서명(아래 규칙 4). `$documentPublic` 은 호출자가 문서 공개 여부를 이미 알 때 넘긴다(null 이면 어댑터 `isPublic` 으로 판정) |
 | `signedUrl($ctx, $hash)` · `uploadTarget($ctx, $admin)` | 서명 주소 / 편집기 계약 |
-| `findServable($ctx, $hash, $signatureVerified)` · `respond($ctx, $row, $request)` | 서빙 게이트 / 응답 — 캐시는 아무나 볼 수 있을 때만 `public`, 아니면 `private` |
+| `findServable($ctx, $hash, $signatureVerified)` · `respond($ctx, $row, $request)` | 서빙 게이트 / 응답 — 캐시는 아무나 볼 수 있을 때만 `public`, 아니면 `private`. 이미지에 `?size=`·`?w=` 가 붙으면 썸네일로 낸다(아래 규칙 8) |
+| `thumbnailSourceFor($row)` | 행의 썸네일 원본 정보(행 디스크, 늘 권한 원본) — 서빙과 확장의 썸네일 원본 제공자(`ThumbnailSourceProvider::chunk()`)가 함께 쓴다 |
 | `purgeRows($ctx, $rows)` · `pruneStale($days, $limit, $dryRun)` | 문서 영구 삭제 때 행 정리 / 정리 명령 — 행마다 `before_delete` 뒤 파일·행 삭제 |
 | `storageFor($row)` | 행에 기록된 디스크의 저장소(`App\Extension\Storage\RowDiskStorage::resolve`) — 서빙·복제 원본·제거·정리가 모두 이것을 쓴다. 설정에 없는 디스크는 기본 저장소로 물러난다 |
 
@@ -234,6 +235,37 @@ ContentMediaRegistrar::register($this->app->make(NoteContentMediaStore::class));
    | 게시판 | 휴지통 — 첨부와 같은 연쇄 소프트 삭제(복원하면 돌아옴), 파일은 소프트 삭제 첨부 영구 정리(운영자 옵트인)가 지움 | `sirsoft-board:prune-attachments`(매일)의 임시 정리 파트 |
    | 페이지 | 첨부와 같이 파일(커밋 뒤)·행 삭제(버전도 함께) | `sirsoft-page:prune-temp-attachments`(매일, 기본 보존 2일) |
    | 쇼핑몰 | 상품(영구 삭제)·상품 공통 정보 삭제 때 행(본문에서 빠진 것 포함)·파일(커밋 뒤) 삭제 | `sirsoft-ecommerce:prune-temp-product-images`(매일, 기본 보존 2일) — 본문에서 빠져 소프트 삭제된 지 보존기간이 지난 것도 파일째 지움 |
+
+8. **본문 이미지는 다른 업로드 이미지와 같은 썸네일 계약을 따릅니다**([이미지 썸네일](../backend/image-thumbnails.md)). 이미지 행의 서빙
+   주소에 `?size={규격}`·`?w={숫자}` 가 붙으면 골격 `respond()` 가 원본 응답 앞에서 줄인 이미지를 냅니다.
+   - 썸네일은 게이트 뒤에 있습니다. `respond()` 는 `findServable()` 을 지난 행만 받으므로 원본을 볼 수 없는 요청(비밀글, 미발행 페이지,
+     숨긴 상품, 서명 없는 임시 행)은 썸네일도 받지 못합니다. 파생본이 이미 만들어져 있어도 같습니다.
+   - 서빙 컨트롤러는 서명을 `size`·`w` 를 빼고 검증합니다 — 화면이 서명 주소 뒤에 규격을 덧붙이기 때문입니다. 그 밖의 파라미터가 붙으면
+     서명은 깨집니다.
+
+     ```php
+     use App\Thumbnails\ThumbnailQuery;
+
+     $row = $this->media->findServable($context, $hash, $request->hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure()));
+     ```
+
+   - 본문 미디어 썸네일은 문서 공개 여부와 무관하게 권한 원본입니다 — 비공개 썸네일 디스크에 두고 `Cache-Control: private` 로 내며, 캐시
+     수명은 원본 응답(`cacheMaxAge`)보다 길지 않습니다. 낼 수 없으면(정의되지 않은 규격, 규격보다 작은 원본, 움직이는 이미지 등) 원본에
+     `X-G7-Thumbnail: bypass:{사유}` 를 붙입니다.
+   - 동영상·오디오 행과 `Range` 요청은 썸네일 분기를 지나지 않습니다(종전 응답 그대로).
+   - 화면이 본문 이미지에 규격을 붙이게 하려면 서빙 주소를 필터 `core.thumbnail.filter_url_patterns` 에 더합니다(예:
+     `/api/modules/vendor-notes/content-media/*` — `upload.thumbnail_url_patterns` 로 화면에 내려갑니다). 그러면 화면(`HtmlContent`)과 봇 렌더가
+     본문 이미지를 본문 이미지 규격과 크기별 `srcset` 주소로 바꿉니다. 서명 검증을 위처럼 고친 뒤에 올립니다 — 먼저 올리면 서명 주소에 규격이
+     붙어 비공개 문서의 본문 이미지가 403 이 됩니다. 저장된 본문은 바뀌지 않고, 규격이 붙은 주소가 편집기를 거쳐 돌아와도
+     `normalizeContent()` 가 쿼리를 떼어 정식 주소로 저장합니다.
+   - 환경설정 > 업로드의 썸네일 캐시 집계·비우기와 「기존 이미지 썸네일 만들기」에 넣으려면 본문 미디어 이미지를 썸네일 원본 제공자
+     하나에 넣습니다(`gated()` = `true`, 원본 정보는 `thumbnailSourceFor($row)`). 한 행을 두 제공자가 세지 않게 합니다.
+
+   | 확장 | 본문 이미지의 썸네일 원본 제공자 |
+   | --- | --- |
+   | 게시판 | 게시판 첨부 제공자가 함께 맡음(같은 표·같은 저장 위치) — 이름 「게시판 첨부 및 본문 이미지」 |
+   | 페이지 | 페이지 첨부 제공자가 함께 맡음(같은 표·같은 저장 위치) — 이름 「페이지 첨부 및 본문 이미지」 |
+   | 쇼핑몰 | 전용 제공자(`content-media` 카테고리, 소유자에 이어진 행만) — 이름 「상품 설명과 공통정보 본문 이미지」 |
 
 번들 확장의 저장 표: 게시판 `board_attachments`, 페이지 `page_attachments`, 쇼핑몰 `ecommerce_attachments` — 모두 `collection = content_media`
 행입니다. 각 확장 문서의 API 레퍼런스를 보세요.

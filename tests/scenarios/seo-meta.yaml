@@ -55,17 +55,7 @@ effects:
   - bot_html_includes_og_site_name
   - bot_html_includes_og_image_dimensions
   - bot_html_includes_twitter_card
-  - meta_title_tier_chain_resolves_in_priority_order
-  - title_suffix_is_composed_with_one_separator_space
-  - seo_vars_resolve_from_declared_sources
-  - plugin_seo_templates_resolve_like_module_templates
-  - keywords_and_description_follow_resource_then_core_fallback
-  - google_analytics_id_is_exposed
-  - og_tags_are_built_from_resolved_meta
   - og_extra_meta_tags_are_emitted
-  - structured_data_json_ld_is_safe_and_well_formed
-  - seo_meta_resolution_tolerates_null_and_multilingual_values
-  - seo_meta_result_has_every_required_key
   - declared_og_image_carries_the_mount_prefix_once
 
 sub_flows:

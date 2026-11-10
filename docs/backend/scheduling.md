@@ -162,18 +162,21 @@ job 유형을 바로 실행으로 두면 `Bus::dispatchSync()` 로 그 자리에
 | `url` | `Http` Facade GET. 기본 timeout 30초. 내부망 주소 차단 |
 | `job` | 허용 Job 클래스만. 바로 실행 = `dispatchSync`, 큐로 보내기 = `dispatch` |
 
-종료 코드가 0이 아니거나 예외가 나면 실패입니다. 실행 전 거부만 예외(`ScheduleExecutionException`)로 올라옵니다.
+종료 코드가 0이 아니거나 예외가 나면 실패입니다. 실행 전 거부만 예외로 올라옵니다. 거부된 실행은 이력을 만들지 않습니다.
 
-| 거부 사유 (`reasonCode`) | 상황 | 수동 실행 응답 |
-| --- | --- | --- |
-| `owner_inactive` | 소유 확장이 비활성 | 422 |
-| `already_running` | 수동 실행인데 앞선 실행이 잠금을 잡고 있음 (예약 실행은 조용히 건너뜀) | 422 |
+| 거부 사유 | 예외 | 상황 | 수동 실행 응답 |
+| --- | --- | --- | --- |
+| `owner_inactive` | `ScheduleExecutionException` (`reasonCode`) | 소유 확장이 비활성 | 422 |
+| `already_running` | `ScheduleExecutionException` (`reasonCode`). `ScheduleService::runNow()` 가 `ScheduleAlreadyRunningException` 으로 바꾼다 | 수동 실행인데 앞선 실행이 잠금을 잡고 있음 (예약 실행은 조용히 건너뜀) | 409 (`schedule.already_running`) |
+| 잠금 저장소 장애 | `ScheduleRunLockUnavailableException` | 수동 실행인데 중복 방지 잠금을 잡으려다 캐시가 오류를 냄 (예약 실행은 경고 로그를 남기고 잠금 없이 실행) | 503 (`schedule.run_lock_unavailable`) |
+
+응답 형식은 [api/schedules.md](api/schedules.md) 를 봅니다.
 
 ---
 
 ## 5. 중복 방지·다중 서버·점검 모드
 
-- **중복 방지** — `without_overlapping > 0` 이면 실행기가 캐시 잠금 `schedule:run:{id}` 를 그 분만큼 잡습니다. 틱·수동·큐 모든 경로가 이 잠금 하나를 씁니다(Laravel `withoutOverlapping` 은 쓰지 않는다 — 큐 모드는 투입 직후 잠금이 풀리기 때문). 앞 실행이 유지 시간 안에 끝나지 않으면 잠금이 풀립니다. 캐시가 잠금을 주지 못하면 잠금 없이 실행합니다.
+- **중복 방지** — `without_overlapping > 0` 이면 실행기가 캐시 잠금 `schedule:run:{id}` 를 그 분만큼 잡습니다. 틱·수동·큐 모든 경로가 이 잠금 하나를 씁니다(Laravel `withoutOverlapping` 은 쓰지 않는다 — 큐 모드는 투입 직후 잠금이 풀리기 때문). 실행이 끝나면 잠금을 바로 풉니다. 앞 실행이 유지 시간 안에 끝나지 않으면 잠금이 만료로 풀립니다. 큐 워커가 실행 도중 죽으면(timeout·kill) 작업의 실패 처리(`RunScheduledTaskJob::failed()`)가 `ScheduleExecutor::markAbandoned()` 로 그 실행을 실패로 마감하면서 잠금을 강제로 풉니다. 캐시가 잠금을 주지 못하면(저장소 오류) 예약 실행은 잠금 없이 실행하고, 수동 실행은 실행하지 않고 503 으로 거절합니다.
 - **한 서버에서만 실행** — `on_one_server` 는 Laravel `onOneServer()` 입니다. 서버들이 같은 캐시(redis 등)를 써야 의미가 있습니다.
 - **점검 모드** — `run_in_maintenance` 가 켜진 행만 점검 모드에서 돕니다.
 - **30초 주기** — `frequency = everyThirtySeconds` 행은 한 분에 두 번 돕니다. 대시보드 리소스·현재 접속자 브로드캐스트가 이 주기이고, 둘 다 「실패만 기록」으로 이력을 쌓지 않습니다.

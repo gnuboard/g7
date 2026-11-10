@@ -78,12 +78,18 @@ class AttachmentServiceTest extends ModuleTestCase
     /**
      * 테스트 환경을 정리합니다.
      *
+     * 목 기대가 어긋나면 `Mockery::close()` 가 예외를 던진다. 그때도 부모 정리(시험 트랜잭션 롤백, 앱 정리)는 해야 한다 —
+     * 건너뛰면 열린 트랜잭션이 잠금을 쥔 채 남아, 뒤따르는 시험들의 준비 단계가 잠금 대기 시간 초과(1205)로 줄줄이 실패한다.
+     *
      * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
@@ -1118,6 +1124,8 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->disk = self::ROW_DISK;
         $attachment->path = "{$slug}/temp/{$tempKey}/uuid1.jpg";
         $attachment->stored_filename = 'uuid1.jpg';
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->once()->andReturn(true);
 
         $this->repository->shouldReceive('getByTempKey')
@@ -1165,6 +1173,8 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->id = 1;
         $attachment->path = "{$slug}/temp/{$tempKey}/gone.jpg";
         $attachment->stored_filename = 'gone.jpg';
+        // 올린 사람 = 로그인 회원 — 소유 필터(#883)에서 빠지면 읽기 실패 경로에 닿지 않는다
+        $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->never();
 
         $this->repository->shouldReceive('getByTempKey')
@@ -1201,6 +1211,8 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->id = 1;
         $attachment->path = "{$slug}/temp/{$tempKey}/empty.txt";
         $attachment->stored_filename = 'empty.txt';
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->once()->andReturn(true);
 
         $this->repository->shouldReceive('getByTempKey')

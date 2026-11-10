@@ -102,7 +102,7 @@ effects:
   - error_layout_declared_code_gets_row
   - error_shell_passes_template_config_codes_not_merged_keys
   # 페이지 설정 셸(PageSettingsModal) — 이 파일을 건드리며 표식 부채를 함께 채웠다
-  - shell_renders_eight_tabs_meta_default
+  - shell_renders_nine_tabs_meta_default
   - shell_tab_click_switches_panel
   - shell_initial_tab_opens_that_tab
   - shell_tab_underline_longhand_only

@@ -6,7 +6,7 @@
  * 회귀 배경(7.1.0 실측 M1-O11): 팝업 너비 -10 이 저장됐고(스키마에 범위 없음), 서버 오류는 상단 상자에만
  * 나와 어느 칸을 고쳐야 하는지 칸에서는 보이지 않았다. 범위는 플러그인 설정 스키마(min 100 · max 2000)와 같다.
  *
- * @effects postcode_settings_field_error_under_input, postcode_popup_size_input_range_matches_schema
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): postcode_settings_field_error_under_input, postcode_popup_size_input_range_matches_schema
  */
 
 import { describe, it, expect } from 'vitest';

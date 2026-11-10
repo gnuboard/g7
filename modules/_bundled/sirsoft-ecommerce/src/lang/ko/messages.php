@@ -1926,6 +1926,7 @@ return [
         'category_image' => '카테고리 이미지',
         'review_image' => '리뷰 이미지',
         'claim_image' => '교환/반품/환불 첨부 이미지',
+        'content_media' => '상품 설명과 공통정보 본문 이미지',
     ],
     // 최근 검색어 범위 이름 (module.json search_scopes.products.label — 관리자 환경설정 > 개인정보 「최근 검색어」 카드)
     'search_history' => [

@@ -1129,6 +1129,7 @@ public function getSchedules(): array
 - 7.1.x 형식(`schedule`·`enabled_config`·`description` 문자열)은 `normalizeLegacySchedules()` 가 새 형식으로 바꾼다. 이때 `name` 은 명령 문자열에서 만들어진다(`sirsoft-ecommerce:sync-stock` → `sirsoft-ecommerce-sync-stock`)
 - 7.1.x 형식 선언은 중복 실행 방지가 기본으로 걸린다(7.1.5 와 같은 기본값). `without_overlapping` 을 적지 않으면 잠금 유지 1440분으로, `on_one_server` 를 적지 않으면 한 서버에서만 실행으로 행이 만들어진다. 이전 회차가 끝나지 않았으면 다음 회차를 건너뛴다
   - `'without_overlapping' => false` 로 끈다. 정수(분)를 주면 그 시간 뒤 잠금이 만료된다
+  - 잠금은 실행이 끝나면 바로 풀린다. 끝나지 않은 실행의 잠금은 유지 시간이 지나면 만료되고, 큐 워커가 실행 도중 죽으면 작업의 실패 처리가 `ScheduleExecutor::markAbandoned()` 로 그 실행을 실패로 마감하면서 잠금을 강제로 푼다
   - `'on_one_server' => false` 로 끈다. 서버 사이 배제는 공유 캐시 스토어에서만 효력이 있다
   - 새 형식(`name` 이 있는 선언)은 `without_overlapping` 을 적지 않으면 0(끔)이다 — [module-schedules.md](module-schedules.md)
 

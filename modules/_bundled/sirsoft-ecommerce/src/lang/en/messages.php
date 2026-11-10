@@ -1937,6 +1937,7 @@ return [
         'category_image' => 'Category images',
         'review_image' => 'Review images',
         'claim_image' => 'Exchange/return/refund attachments',
+        'content_media' => 'Product description and common information content images',
     ],
     // Recent search scope name (module.json search_scopes.products.label — admin Settings > Privacy "Recent searches" card)
     'search_history' => [

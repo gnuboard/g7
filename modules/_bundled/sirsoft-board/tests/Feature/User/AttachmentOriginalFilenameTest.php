@@ -75,11 +75,13 @@ class AttachmentOriginalFilenameTest extends BoardTestCase
      */
     private function uploadQuotedAttachment(): array
     {
-        $postId = $this->createTestPost(['title' => '원래 파일 이름', 'status' => 'published']);
+        // 기존 글에 붙이는 업로드는 그 글을 고칠 수 있는 사람만 — 비회원 글은 검증 토큰을 싣는다(#883)
+        [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken(['title' => '원래 파일 이름', 'status' => 'published']);
 
         $response = $this->postJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
-            ['file' => UploadedFile::fake()->createWithContent(self::SENT_NAME, 'plain text fixture'), 'post_id' => $postId]
+            ['file' => UploadedFile::fake()->createWithContent(self::SENT_NAME, 'plain text fixture'), 'post_id' => $postId],
+            $uploadHeaders
         );
 
         $response->assertStatus(201);

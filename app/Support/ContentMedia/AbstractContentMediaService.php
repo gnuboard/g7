@@ -13,6 +13,8 @@ use App\Rules\ContentMediaFile;
 use App\Seo\SeoRenderRequest;
 use App\Support\Files\FileContentSniffer;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -51,6 +53,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *   영구 삭제 때만 `before_delete`.
  * - 응답: 이 문서 소유 해시만 서명(관리자 증거 열람 화면만 `signAll`). 봇 렌더·공개 문서는 정식 주소.
  * - 서빙: 서명이면 통과, 아니면 임시 행 403, 어댑터 `canView`. 캐시는 아무나 볼 수 있을 때만 public.
+ *   이미지에 `?size=`·`?w=` 가 붙으면 게이트를 지난 뒤 썸네일로 낸다(`ContentMediaResponder`). 서명 검증은 그 두 파라미터를 빼고 한다.
  * - 모든 파일 접근(서빙·복제 원본·제거·정리)은 행에 기록된 디스크(`RowDiskStorage`)로 한다.
  *
  * @since 7.1.5
@@ -158,7 +161,7 @@ abstract class AbstractContentMediaService
 
         $row = $this->store->createRow($context, [
             'temp_key' => $context->tempKey,
-            'original_filename' => $file->getClientOriginalName(),
+            'original_filename' => UploadedFileName::original($file),
             'stored_filename' => $storedFilename,
             'disk' => $this->storage->getDisk(),
             'path' => $path,
@@ -445,6 +448,9 @@ abstract class AbstractContentMediaService
      *
      * 캐시는 서명 없이 아무나 볼 수 있는 행(`isPublic`)만 public, 그 밖(임시 행·비공개 문서·권한이 필요한 문서)은 private 다.
      *
+     * 게이트(`findServable()`)를 지난 행만 넘긴다 — 이미지에 `?size=`·`?w=` 가 붙은 요청은 여기서 썸네일로 나가므로, 게이트를 건너뛰고
+     * 부르면 원본과 썸네일이 함께 샌다.
+     *
      * @param  ContentMediaContext  $context  문맥
      * @param  Model  $row  행
      * @param  Request  $request  요청 (Range 헤더)
@@ -454,14 +460,42 @@ abstract class AbstractContentMediaService
     {
         $public = ! $this->store->isTemp($row) && $this->store->isPublic($context, $row);
         $mime = (string) $row->getAttribute('mime_type');
-
-        return ContentMediaResponder::respond($this->storageFor($row), $this->store->storageCategory(), $this->store->storagePathOf($row), [
+        $spec = [
             'mime_type' => $mime,
             'filename' => (string) $row->getAttribute('original_filename'),
             'playable' => ContentMediaResponder::playableUnder($this->policy($context), $mime),
             'private' => ! $public,
             'max_age' => $this->store->cacheMaxAge($public),
-        ], $request);
+        ];
+        $spec['thumbnail_source'] = $this->thumbnailSourceFor($row, ContentMediaResponder::thumbnailMaxAge($spec));
+
+        return ContentMediaResponder::respond($this->storageFor($row), $this->store->storageCategory(), $this->store->storagePathOf($row), $spec, $request);
+    }
+
+    /**
+     * 본문 미디어 행의 썸네일 원본 — 서빙(`respond()`)과 확장의 썸네일 원본 제공자(`ThumbnailSourceProvider::chunk()`)가 함께 쓴다.
+     *
+     * 디스크는 행이 정하고(`storageFor()`), 가로·세로는 행 meta 의 `width`·`height` 를 쓴다. 본문 미디어는 문서 공개 여부가 바뀔 수
+     * 있어 늘 권한 원본이다 — 파생본은 비공개 썸네일 디스크에 두고 `private` 로 낸다(`ContentMediaResponder::thumbnailSource()`).
+     *
+     * @param  Model  $row  본문 미디어 행
+     * @param  int|null  $maxAge  썸네일 캐시 유지 상한(초) — 서빙이 원본 통로의 수명을 넘긴다 (null 이면 코어 기본값)
+     * @return ThumbnailSource|null 원본 (래스터 이미지가 아니거나 저장소가 원본 정보를 낼 수 없으면 null)
+     */
+    public function thumbnailSourceFor(Model $row, ?int $maxAge = null): ?ThumbnailSource
+    {
+        $meta = $row->getAttribute('meta');
+        $meta = is_array($meta) ? $meta : [];
+
+        return ContentMediaResponder::thumbnailSource(
+            $this->storageFor($row),
+            $this->store->storageCategory(),
+            $this->store->storagePathOf($row),
+            (string) $row->getAttribute('mime_type'),
+            isset($meta['width']) ? (int) $meta['width'] : null,
+            isset($meta['height']) ? (int) $meta['height'] : null,
+            $maxAge,
+        );
     }
 
     /**

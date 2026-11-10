@@ -150,7 +150,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=auth_guard
      *
-     * @effects unauthenticated_request_returns_401, index_without_authentication_returns_401
+     * @effects unauthenticated_request_returns_401
      *
      * @return void 반환값 없음
      */
@@ -166,7 +166,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=auth_guard
      *
-     * @effects missing_permission_returns_403, index_without_read_permission_returns_403
+     * @effects missing_permission_returns_403
      *
      * @return void 반환값 없음
      */
@@ -211,7 +211,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=auth_guard
      *
-     * @effects missing_permission_returns_403, store_without_update_permission_returns_403
+     * @effects missing_permission_returns_403
      *
      * @return void 반환값 없음
      */
@@ -246,7 +246,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=index_read
      *
-     * @effects index_returns_settings_payload, index_returns_settings_successfully
+     * @effects index_returns_settings_payload
      *
      * @return void 반환값 없음
      */
@@ -263,7 +263,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=index_read
      *
-     * @effects index_returns_settings_payload, index_response_has_success_message_data_structure
+     * @effects index_returns_settings_payload
      *
      * @return void 반환값 없음
      */
@@ -288,7 +288,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=index_read
      *
-     * @effects abilities_can_update_reflects_update_permission, index_abilities_can_update_true_with_update_permission
+     * @effects abilities_can_update_reflects_update_permission
      *
      * @return void 반환값 없음
      */
@@ -312,7 +312,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=index_read
      *
-     * @effects abilities_can_update_reflects_update_permission, index_abilities_can_update_false_for_read_only_user
+     * @effects abilities_can_update_reflects_update_permission
      *
      * @return void 반환값 없음
      */
@@ -347,7 +347,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects tab_settings_saved, store_saves_general_tab
+     * @effects tab_settings_saved
      *
      * @return void 반환값 없음
      */
@@ -373,7 +373,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects tab_settings_saved, store_saves_security_tab
+     * @effects tab_settings_saved
      *
      * @return void 반환값 없음
      */
@@ -399,7 +399,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects tab_settings_saved, store_saves_advanced_tab
+     * @effects tab_settings_saved
      *
      * @return void 반환값 없음
      */
@@ -434,7 +434,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects tab_settings_saved, store_accepts_identity_tab
+     * @effects tab_settings_saved
      *
      * @return void 반환값 없음
      */
@@ -477,7 +477,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects identity_tab_accepts_nested_purpose_providers, store_accepts_nested_purpose_provider_for_dotted_purpose_id
+     * @effects identity_tab_accepts_nested_purpose_providers
      *
      * @return void 반환값 없음
      */
@@ -511,7 +511,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_nested_purpose_provider_value_over_max_length
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -539,7 +539,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_identity_challenge_ttl_out_of_range
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -563,7 +563,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_identity_max_attempts_out_of_range
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -587,7 +587,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_requires_site_name_for_general_tab
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -613,7 +613,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_invalid_site_url
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -639,7 +639,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_invalid_admin_email
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -665,7 +665,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_unsupported_timezone
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -691,7 +691,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_auth_token_lifetime_out_of_range
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -716,7 +716,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_layout_cache_ttl_over_max
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -746,7 +746,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_unknown_tab
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -770,7 +770,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=single_key
      *
-     * @effects single_setting_read_and_update, show_returns_key_and_value
+     * @effects single_setting_read_and_update
      *
      * @return void 반환값 없음
      */
@@ -795,7 +795,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=single_key
      *
-     * @effects single_setting_read_and_update, show_returns_default_for_nonexistent_key
+     * @effects single_setting_read_and_update
      *
      * @return void 반환값 없음
      */
@@ -817,7 +817,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=single_key
      *
-     * @effects single_setting_read_and_update, update_saves_single_setting_by_dotted_key
+     * @effects single_setting_read_and_update
      *
      * @return void 반환값 없음
      */
@@ -837,7 +837,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=single_key
      *
-     * @effects invalid_tab_input_rejected_with_422, update_requires_value
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -1031,7 +1031,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=system_info
      *
-     * @effects system_info_payload_shape_is_stable, system_info_memory_usage_has_disk_like_structure
+     * @effects system_info_payload_shape_is_stable
      *
      * @return void 반환값 없음
      */
@@ -1062,7 +1062,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=system_info
      *
-     * @effects system_info_payload_shape_is_stable, system_info_cpu_info_excludes_shell_error_tail
+     * @effects system_info_payload_shape_is_stable
      *
      * @return void 반환값 없음
      */
@@ -1088,7 +1088,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=system_info
      *
-     * @effects system_info_hardware_cached_but_server_time_fresh, system_info_caches_hardware_payload_and_refreshes_server_time
+     * @effects system_info_hardware_cached_but_server_time_fresh
      *
      * @return void 반환값 없음
      */
@@ -1126,7 +1126,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=maintenance
      *
-     * @effects clear_cache_succeeds_and_invalidates_system_info, clear_cache_invalidates_system_info_cache
+     * @effects clear_cache_succeeds_and_invalidates_system_info
      *
      * @return void 반환값 없음
      */
@@ -1157,7 +1157,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=maintenance
      *
-     * @effects clear_cache_succeeds_and_invalidates_system_info, clear_cache_returns_success
+     * @effects clear_cache_succeeds_and_invalidates_system_info
      *
      * @return void 반환값 없음
      */
@@ -1178,7 +1178,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=maintenance
      *
-     * @effects app_key_masked_and_regeneration_guarded, app_key_is_returned_masked
+     * @effects app_key_masked_and_regeneration_guarded
      *
      * @return void 반환값 없음
      */
@@ -1206,7 +1206,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=maintenance
      *
-     * @effects app_key_masked_and_regeneration_guarded, app_key_regeneration_by_super_admin_requires_password
+     * @effects app_key_masked_and_regeneration_guarded
      *
      * @return void 반환값 없음
      */
@@ -1229,7 +1229,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=maintenance
      *
-     * @effects app_key_masked_and_regeneration_guarded, app_key_regeneration_rejects_wrong_password_with_401
+     * @effects app_key_masked_and_regeneration_guarded
      *
      * @return void 반환값 없음
      */
@@ -1254,7 +1254,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=maintenance
      *
-     * @effects app_key_masked_and_regeneration_guarded, missing_permission_returns_403, app_key_regeneration_requires_super_admin
+     * @effects app_key_masked_and_regeneration_guarded, missing_permission_returns_403
      *
      * @return void 반환값 없음
      */
@@ -1275,7 +1275,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=maintenance
      *
-     * @effects app_key_masked_and_regeneration_guarded, app_key_regeneration_succeeds_for_super_admin
+     * @effects app_key_masked_and_regeneration_guarded
      *
      * @return void 반환값 없음
      */
@@ -1311,7 +1311,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=test_mail
      *
-     * @effects unauthenticated_request_returns_401, test_mail_without_authentication_returns_401
+     * @effects unauthenticated_request_returns_401
      *
      * @return void 반환값 없음
      */
@@ -1329,7 +1329,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=test_mail
      *
-     * @effects test_mail_validates_recipient_and_sends, test_mail_requires_to_email
+     * @effects test_mail_validates_recipient_and_sends
      *
      * @return void 반환값 없음
      */
@@ -1346,7 +1346,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=test_mail
      *
-     * @effects test_mail_validates_recipient_and_sends, test_mail_rejects_invalid_to_email
+     * @effects test_mail_validates_recipient_and_sends
      *
      * @return void 반환값 없음
      */
@@ -1365,7 +1365,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=test_mail
      *
-     * @effects test_mail_validates_recipient_and_sends, test_mail_succeeds_with_valid_email
+     * @effects test_mail_validates_recipient_and_sends
      *
      * @return void 반환값 없음
      */
@@ -1395,7 +1395,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects tab_settings_saved, store_accepts_europe_paris_timezone
+     * @effects tab_settings_saved
      *
      * @return void 반환값 없음
      */
@@ -1421,7 +1421,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects timezone_setting_keeps_app_timezone_utc, store_timezone_keeps_app_timezone_utc
+     * @effects timezone_setting_keeps_app_timezone_utc
      *
      * @return void 반환값 없음
      */
@@ -1451,7 +1451,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects core_update_settings_persisted_and_readable, store_saves_core_update_settings_and_index_reflects_them
+     * @effects core_update_settings_persisted_and_readable
      *
      * @return void 반환값 없음
      */
@@ -1492,7 +1492,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_invalid_core_update_github_url
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -1523,7 +1523,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects invalid_tab_input_rejected_with_422, store_rejects_core_update_github_token_over_max_length
+     * @effects invalid_tab_input_rejected_with_422
      *
      * @return void 반환값 없음
      */
@@ -1554,7 +1554,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects tab_settings_saved, store_allows_empty_core_update_settings
+     * @effects tab_settings_saved
      *
      * @return void 반환값 없음
      */
@@ -1586,7 +1586,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects core_update_settings_persisted_and_readable, store_persists_core_update_category_in_config_repository
+     * @effects core_update_settings_persisted_and_readable
      *
      * @return void 반환값 없음
      */
@@ -1632,7 +1632,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects site_logo_accepts_attachment_objects_and_ids, store_accepts_site_logo_as_attachment_objects
+     * @effects site_logo_accepts_attachment_objects_and_ids
      *
      * @return void 반환값 없음
      */
@@ -1676,7 +1676,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects site_logo_accepts_attachment_objects_and_ids, store_accepts_site_logo_as_integer_ids
+     * @effects site_logo_accepts_attachment_objects_and_ids
      *
      * @return void 반환값 없음
      */
@@ -1711,7 +1711,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_validation
      *
-     * @effects websocket_credentials_required_only_when_enabled, store_requires_websocket_credentials_when_enabled
+     * @effects websocket_credentials_required_only_when_enabled
      *
      * @return void 반환값 없음
      */
@@ -1743,7 +1743,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects websocket_credentials_required_only_when_enabled, store_allows_empty_websocket_credentials_when_disabled
+     * @effects websocket_credentials_required_only_when_enabled
      *
      * @return void 반환값 없음
      */
@@ -1774,7 +1774,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects tab_settings_saved, websocket_credentials_required_only_when_enabled, store_saves_websocket_settings_with_credentials
+     * @effects tab_settings_saved, websocket_credentials_required_only_when_enabled
      *
      * @return void 반환값 없음
      */
@@ -1808,7 +1808,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=tab_store
      *
-     * @effects drivers_roundtrip_keeps_s3_keys, store_drivers_roundtrip_includes_s3_endpoint_and_path_style
+     * @effects drivers_roundtrip_keeps_s3_keys
      *
      * @return void 반환값 없음
      */
@@ -2218,7 +2218,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=restore
      *
-     * @effects unauthenticated_request_returns_401, restore_without_authentication_returns_401
+     * @effects unauthenticated_request_returns_401
      *
      * @return void 반환값 없음
      */
@@ -2234,7 +2234,7 @@ class SettingsControllerTest extends TestCase
      *
      * @scenario case=restore
      *
-     * @effects missing_permission_returns_403, restore_without_update_permission_returns_403
+     * @effects missing_permission_returns_403
      *
      * @return void 반환값 없음
      */

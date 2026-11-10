@@ -23,6 +23,7 @@
 | [categories.md](categories.md) | `categories` | 14 |
 | [category-image.md](category-image.md) | `category-image` | 1 |
 | [checkout.md](checkout.md) | `checkout` | 5 |
+| [content-media.md](content-media.md) | `content-media` | 3 |
 | [claim-image.md](claim-image.md) | `claim-image` | 1 |
 | [claim-payments.md](claim-payments.md) | `claim-payments` | 2 |
 | [claim-reasons.md](claim-reasons.md) | `claim-reasons` | 8 |

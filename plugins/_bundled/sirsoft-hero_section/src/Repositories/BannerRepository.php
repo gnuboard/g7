@@ -404,6 +404,7 @@ class BannerRepository implements BannerRepositoryInterface
     public function applyStatusSort(Builder $query, string $direction, CarbonInterface $now): Builder
     {
         $range = DisplayPeriod::Range->value;
+        // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
         $at = $now->copy()->utc()->format('Y-m-d H:i:s');
         $direction = $direction === 'desc' ? 'DESC' : 'ASC';
 

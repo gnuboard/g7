@@ -13,7 +13,13 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { computeTitleInput, hasMissingRequiredSeoVar, resolveDocumentTitle, substituteSeoVars } from '../DocumentTitle';
 
-const fixture = JSON.parse(
+/** 판정 사례 한 건 — 이름과 사례별 입력·기대값 */
+type TitleRuleCase = { name: string } & Record<string, any>;
+
+/** `it.each` 에 넘길 [이름, 사례] 짝 */
+const named = (cases: TitleRuleCase[]): Array<[string, TitleRuleCase]> => cases.map((c) => [c.name, c]);
+
+const fixture: { rule: TitleRuleCase[]; substitute: TitleRuleCase[]; required_vars: TitleRuleCase[] } = JSON.parse(
   readFileSync(resolve(__dirname, '../../../../../tests/fixtures/seo/title-rule-cases.json'), 'utf8'),
 );
 
@@ -24,7 +30,7 @@ afterEach(() => {
 describe('DocumentTitle 제목 규칙 — 서버와 같은 판정 사례', () => {
   // @scenario case=rule_fixture_engine
   // @effects engine_title_rule_matches_fixture
-  it.each(fixture.rule.map((c: any) => [c.name, c]))('%s', (_name, c: any) => {
+  it.each(named(fixture.rule))('%s', (_name, c) => {
     (window as any).G7Config = { appConfig: c.input.site_locale ? { siteLocale: c.input.site_locale } : {} };
 
     expect(resolveDocumentTitle(c.input)).toEqual(c.expected);
@@ -32,13 +38,13 @@ describe('DocumentTitle 제목 규칙 — 서버와 같은 판정 사례', () =>
 
   // @scenario case=substitute_fixture_engine
   // @effects engine_substitute_matches_fixture
-  it.each(fixture.substitute.map((c: any) => [c.name, c]))('틀 치환 — %s', (_name, c: any) => {
+  it.each(named(fixture.substitute))('틀 치환 — %s', (_name, c) => {
     expect(substituteSeoVars(c.template, c.vars)).toBe(c.expected);
   });
 
   // @scenario case=required_vars_engine
   // @effects required_var_empty_template_skipped
-  it.each(fixture.required_vars.map((c: any) => [c.name, c]))('필수 변수 — %s', (_name, c: any) => {
+  it.each(named(fixture.required_vars))('필수 변수 — %s', (_name, c) => {
     expect(hasMissingRequiredSeoVar(c.definitions, c.vars)).toBe(c.expected);
   });
 });

@@ -76,7 +76,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      */
     private function uploadImageAttachment(): object
     {
-        $postId = $this->createTestPost([
+        // 기존 글에 붙이는 업로드는 그 글을 고칠 수 있는 사람만 — 비회원 글은 검증 토큰을 싣는다(#883)
+        [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken([
             'title' => '미리보기 캐시 계약',
             'status' => 'published',
         ]);
@@ -85,7 +86,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
 
         $response = $this->postJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
-            ['file' => $file, 'post_id' => $postId]
+            ['file' => $file, 'post_id' => $postId],
+            $uploadHeaders
         );
 
         $response->assertStatus(201);
@@ -223,14 +225,15 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
             'attachment.image_max_height' => 32,
         ]);
 
-        $postId = $this->createTestPost(['title' => '축소 경로', 'status' => 'published']);
+        [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken(['title' => '축소 경로', 'status' => 'published']);
 
         // 상한을 넘는 크기 — 축소가 실제로 일어난다.
         $file = UploadedFile::fake()->image('big.jpg', 200, 200);
 
         $upload = $this->postJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
-            ['file' => $file, 'post_id' => $postId]
+            ['file' => $file, 'post_id' => $postId],
+            $uploadHeaders
         );
         $upload->assertStatus(201);
 
@@ -306,14 +309,15 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
             'posts.read', 'posts.write', 'attachments.upload', 'attachments.download',
         ]);
 
-        $postId = $this->createTestPost(['title' => '따옴표 파일명', 'status' => 'published']);
+        [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken(['title' => '따옴표 파일명', 'status' => 'published']);
 
         // 따옴표가 든 이름 — `getClientOriginalName()` 은 basename 만 하고 따옴표를 지우지 않는다.
         $file = UploadedFile::fake()->createWithContent('a";x.txt', 'hello');
 
         $upload = $this->postJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
-            ['file' => $file, 'post_id' => $postId]
+            ['file' => $file, 'post_id' => $postId],
+            $uploadHeaders
         );
         $upload->assertStatus(201);
 
@@ -373,14 +377,15 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
             'posts.read', 'posts.write', 'attachments.upload', 'attachments.download',
         ]);
 
-        $postId = $this->createTestPost(['title' => '한글 파일명', 'status' => 'published']);
+        [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken(['title' => '한글 파일명', 'status' => 'published']);
 
         $originalName = '문서 파일.txt';
         $file = UploadedFile::fake()->createWithContent($originalName, 'hello');
 
         $upload = $this->postJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
-            ['file' => $file, 'post_id' => $postId]
+            ['file' => $file, 'post_id' => $postId],
+            $uploadHeaders
         );
         $upload->assertStatus(201);
 

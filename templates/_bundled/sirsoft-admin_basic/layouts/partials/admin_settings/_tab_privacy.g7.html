@@ -282,7 +282,8 @@
           <p class="text-hint mt-1">$t:admin.settings.privacy.search_history.scopes_desc</p>
           <p data-ref="search_history_scopes_empty" data-if="{{!!_local.form?._meta &amp;&amp; (_local.form?.privacy?.search_history_scopes ?? []).length === 0}}" class="text-hint mt-2">$t:admin.settings.privacy.search_history.empty</p>
           <div data-ref="search_history_scope_list" data-if="{{(_local.form?.privacy?.search_history_scopes ?? []).length &gt; 0}}" class="mt-2 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-            <div data-each="row, idx in _local.form?.privacy?.search_history_scopes ?? []" data-ref="search_history_scope_row_{{idx}}" class="px-4 py-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div data-each="row, idx in _local.form?.privacy?.search_history_scopes ?? []" data-ref="search_history_scope_row_{{idx}}" class="px-4 py-3 flex flex-col gap-3">
+              <responsive on="768-" class="px-4 py-3 flex flex-row gap-3 items-start justify-between"/>
               <div class="min-w-0">
                 <span class="text-heading wrap-anywhere">{{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.label ?? row.scope}}</span>
                 <p class="text-hint wrap-anywhere">$t:admin.settings.privacy.search_history.scope_meta|owner={{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.owner_label ?? ''}}|scope={{row.scope}}</p>
@@ -319,7 +320,8 @@
         <div data-ref="search_history_target_list_row" data-if="{{privacyPreview?.data?.retention?.['search-history'] || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}">
           <div data-ref="search_history_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700">
             <div data-ref="search_history_target_row" class="px-4 py-3">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-col gap-2">
+                <responsive on="640-" class="flex flex-row gap-2 items-center justify-between"/>
                 <div class="flex-wrap-center gap-2 min-w-0">
                   <span class="text-heading">$t:admin.settings.privacy.targets.rows.search_history</span>
                   <span data-if="{{privacyPreview?.data?.retention?.['search-history']?.count !== null &amp;&amp; privacyPreview?.data?.retention?.['search-history']?.count !== undefined}}" class="badge badge-yellow">$t:admin.settings.privacy.search_history.target_count|count={{privacyPreview?.data?.retention?.['search-history']?.count ?? 0}}</span>

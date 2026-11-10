@@ -3,7 +3,7 @@
  *
  * @scenario-manifest tests/scenarios/content-render-policy.yaml
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 // 코어에는 DOMPurify 의존성이 없다 — 런타임은 템플릿이 넘긴 DOMPurify 를 쓰므로, 시험도 템플릿이 실제로 쓰는 판을 쓴다
 // @ts-ignore - 템플릿 의존성 경로
 import DOMPurify from '../../../../../templates/_bundled/sirsoft-basic/node_modules/dompurify';
@@ -167,6 +167,44 @@ describe('ContentPolicyRuntime', () => {
     const without = document.createElement('div');
     without.innerHTML = runtimeWith().sanitize(DOMPurify, sample, BASE) ?? '';
     expect(without.querySelectorAll('svg')).toHaveLength(0);
+  });
+
+  /**
+   * 정화한 조각은 비활성 문서 안에서만 다룬다 — 화면 문서의 요소에 `<img src>` 가 든 조각을 옮기면 문서에 붙이지 않아도
+   * 브라우저가 원본 주소를 받기 시작해, 호출자(HtmlContent)가 썸네일 주소로 바꾸기 전에 원본 요청이 먼저 나간다.
+   * DOMPurify 가 인스턴스를 만들 때 한 번 부르는 `createElement('template')`(비활성 문서를 얻는 용도, 조각을 담지 않는다)만 예외다.
+   *
+   * @scenario case=runtime_sanitize
+   * @effects runtime_sanitizes_with_policy
+   */
+  it('정화 결과를 화면 문서의 요소에 옮기지 않는다 (본문 이미지 원본 요청이 먼저 나가지 않게)', () => {
+    const createElement = vi.spyOn(document, 'createElement');
+    const importNode = vi.spyOn(document, 'importNode');
+    const adoptNode = vi.spyOn(document, 'adoptNode');
+    const appendChild = vi.spyOn(Node.prototype, 'appendChild');
+    // 선언형 섀도 루트 속성이 허용 목록에 들어와도(템플릿 기본·운영자 규칙) DOMPurify 가 조각을 화면 문서로 가져오지 않아야 한다
+    const runtime = runtimeWith({ attributes: { ...fixture.render_policy.attributes, template: ['shadowrootmode'] } });
+
+    try {
+      const html = runtime.sanitize(
+        DOMPurify,
+        '<p>본문</p><img src="/api/modules/sirsoft-board/boards/free/content-media/AAAAAAAAAAAA" alt="a">',
+        { ...BASE, ADD_ATTR: ['target', 'shadowroot'] },
+      );
+
+      expect(html).toContain('<img');
+      expect(createElement.mock.calls.map(([tag]) => String(tag).toLowerCase()).filter((tag) => tag !== 'template')).toEqual([]);
+      expect(importNode).not.toHaveBeenCalled();
+      expect(adoptNode).not.toHaveBeenCalled();
+      // 화면 문서에 속한 그릇에 이미지가 든 노드가 붙은 적이 없다
+      const movedIntoLiveDocument = appendChild.mock.contexts.some((parent) => (parent as Node).ownerDocument === document);
+      expect(movedIntoLiveDocument).toBe(false);
+    } finally {
+      createElement.mockRestore();
+      importNode.mockRestore();
+      adoptNode.mockRestore();
+      appendChild.mockRestore();
+    }
   });
 
   /**

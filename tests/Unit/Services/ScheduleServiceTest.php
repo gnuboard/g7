@@ -60,9 +60,9 @@ class ScheduleServiceTest extends TestCase
      * 회귀 배경: LengthAwarePaginator 를 import 하지 않아 반환 타입이
      * App\Services\LengthAwarePaginator 로 해석되어 목록 API 가 500 을 반환했다.
      *
-     * @scenario case=service_crud
+     * @scenario case=service_query
      *
-     * @effects schedule_service_crud_contract, schedule_service_returns_paginators
+     * @effects schedule_service_returns_paginators
      *
      * @return void 반환값 없음
      */
@@ -85,9 +85,9 @@ class ScheduleServiceTest extends TestCase
     /**
      * 실행 이력이 존재할 때 이력 조회가 TypeError 없이 페이지네이터를 반환하는지 확인
      *
-     * @scenario case=service_crud
+     * @scenario case=service_query
      *
-     * @effects schedule_service_crud_contract, schedule_service_returns_paginators
+     * @effects schedule_service_returns_paginators
      *
      * @return void 반환값 없음
      */
@@ -162,9 +162,9 @@ class ScheduleServiceTest extends TestCase
     /**
      * 스케줄 삭제 시 실행 이력이 삭제되는지 확인
      *
-     * @scenario case=service_crud
+     * @scenario case=service_delete
      *
-     * @effects schedule_service_crud_contract, schedule_delete_removes_histories_and_fires_hooks
+     * @effects schedule_delete_removes_histories_and_fires_hooks
      *
      * @return void 반환값 없음
      */
@@ -199,9 +199,9 @@ class ScheduleServiceTest extends TestCase
     /**
      * 스케줄 삭제 시 before_delete/after_delete 훅이 호출되는지 확인
      *
-     * @scenario case=service_crud
+     * @scenario case=service_delete
      *
-     * @effects schedule_service_crud_contract, schedule_delete_removes_histories_and_fires_hooks
+     * @effects schedule_delete_removes_histories_and_fires_hooks
      *
      * @return void 반환값 없음
      */

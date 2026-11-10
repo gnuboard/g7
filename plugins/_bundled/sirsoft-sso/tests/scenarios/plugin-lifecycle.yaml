@@ -12,7 +12,8 @@ axes:
   fk: [delete_rule]
   gate: ["off|on", off, on, enable]
   minutes: [999]
-  command: ["enable+seed-idp|disable", "enable+seed-idp", disable, enable, backchannel]
+  command: ["enable+seed-idp|disable", "enable+seed-idp", disable, enable, backchannel, status]
+  site_timezone: [Asia/Seoul]
   tls: [self_signed]
   env: [production]
   redirect_uri: [foreign]
@@ -37,6 +38,7 @@ effects:
   - mock_routes_404_when_off
   - capped_at_240
   - gate_toggled
+  - mock_expiry_shown_in_site_timezone
   - mock_idp_seeded
   - refused
   - bad_request

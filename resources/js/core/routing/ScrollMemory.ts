@@ -140,6 +140,7 @@ export function currentScrollEntryKey(): string {
     return `entry:${key}`;
   }
 
+  // base-path:allow 기록할 때와 찾을 때 모두 이 함수로 브라우저 주소를 그대로 읽어 키로 쓴다(라우트 대조가 아니다)
   return `url:${window.location.pathname}${window.location.search}${window.location.hash}`;
 }
 

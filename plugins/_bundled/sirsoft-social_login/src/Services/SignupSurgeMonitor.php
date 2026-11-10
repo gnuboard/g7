@@ -39,6 +39,7 @@ class SignupSurgeMonitor
             return;
         }
 
+        // audit:allow datetime-display-user-timezone reason: 캐시 키의 시간 버킷 — 기계값
         $counterKey = 'surge:'.$providerKey.':'.now()->format('YmdH');
         $stored = $this->cache->get($counterKey);
         $count = (is_array($stored) ? (int) ($stored['n'] ?? 0) : 0) + 1;
@@ -48,6 +49,7 @@ class SignupSurgeMonitor
             return;
         }
 
+        // audit:allow datetime-display-user-timezone reason: 캐시 키의 하루 버킷 — 기계값
         $notifiedKey = 'notified:signup_surge:'.$providerKey.':'.now()->format('Ymd');
         if ($this->cache->get($notifiedKey) !== null) {
             return;

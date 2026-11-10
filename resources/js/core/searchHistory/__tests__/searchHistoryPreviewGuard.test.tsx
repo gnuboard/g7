@@ -9,9 +9,8 @@
  * @scenario-manifest tests/scenarios/search-history.yaml
  */
 
-import React from 'react';
 import { act, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 
 import { ActionDispatcher } from '../../template-engine/ActionDispatcher';
 import { initializeG7CoreGlobals } from '../../template-engine/G7CoreGlobals';
@@ -78,8 +77,8 @@ function RecordButton() {
 
 describe('편집기 미리보기 — 최근 검색어 쓰기 차단', () => {
     let dispatcher: ActionDispatcher;
-    let setItem: ReturnType<typeof vi.spyOn>;
-    let removeItem: ReturnType<typeof vi.spyOn>;
+    let setItem: MockInstance<Storage['setItem']>;
+    let removeItem: MockInstance<Storage['removeItem']>;
 
     beforeEach(() => {
         vi.clearAllMocks();

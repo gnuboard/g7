@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Thumbnails\CategoryImageSourceProvider;
 use Modules\Sirsoft\Ecommerce\Thumbnails\ClaimImageSourceProvider;
+use Modules\Sirsoft\Ecommerce\Thumbnails\ContentMediaSourceProvider;
 use Modules\Sirsoft\Ecommerce\Thumbnails\ProductImageSourceProvider;
 use Modules\Sirsoft\Ecommerce\Thumbnails\ReviewImageSourceProvider;
 
@@ -13,9 +14,10 @@ use Modules\Sirsoft\Ecommerce\Thumbnails\ReviewImageSourceProvider;
  *
  * - `core.thumbnail.filter_url_patterns`: 화면·SEO 가 `?size=` 를 붙여도 되는 주소. 화면이 받는 이미지 주소
  *   (`ProductImage::apiDownloadUrl()` 등 — 하위 폴더 설치 접두는 코어가 벗긴다)와 같은 모양이어야 한다.
- *   공개 자산 디스크(CDN) 행의 직접 URL 은 이 경로가 아니라서 원본 그대로 나간다.
+ *   공개 자산 디스크(CDN) 행의 직접 URL 은 이 경로가 아니라서 원본 그대로 나간다. 본문 미디어(상품 설명·공통 정보
+ *   본문 이미지) 주소는 코어 본문 미디어 골격이 게이트 뒤에서 썸네일을 낸다 — 서빙 컨트롤러의 서명 검증이 `size`·`w` 를 뺀다.
  * - `core.thumbnail.filter_source_providers`: 등록 시 미리 생성·캐시 관리(분류별 집계·비우기)·기존 이미지 썸네일
- *   만들기가 쓰는 원본 제공자. 상품·카테고리는 공개, 리뷰·클레임은 게이트다.
+ *   만들기가 쓰는 원본 제공자. 상품·카테고리는 공개, 리뷰·클레임·본문 미디어는 게이트다.
  *
  * 모듈이 비활성이면 리스너가 등록되지 않아 패턴·제공자도 빠진다 — 그때 이 경로는 404 이므로 맞는 동작이다.
  */
@@ -31,6 +33,7 @@ class ThumbnailSourcesListener implements HookListenerInterface
         '/api/modules/sirsoft-ecommerce/category-image/*',
         '/api/modules/sirsoft-ecommerce/review-image/*',
         '/api/modules/sirsoft-ecommerce/claim-image/*',
+        '/api/modules/sirsoft-ecommerce/content-media/*',
     ];
 
     /**
@@ -43,6 +46,7 @@ class ThumbnailSourcesListener implements HookListenerInterface
         CategoryImageSourceProvider::class,
         ReviewImageSourceProvider::class,
         ClaimImageSourceProvider::class,
+        ContentMediaSourceProvider::class,
     ];
 
     /**

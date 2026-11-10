@@ -688,6 +688,9 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     /**
      * 썸네일 원본이 되는 첨부 행 쿼리 — 래스터 MIME, 글에 이어진 행(임시 첨부 제외), 소프트 삭제 제외.
      *
+     * 컬렉션으로 거르지 않는다 — 본문 미디어(`collection = content_media`) 이미지도 같은 제공자의 원본이다. 동영상과 오디오는
+     * MIME 조건에서 빠진다.
+     *
      * @param  list<string>  $mimeTypes  MIME 목록
      * @return Builder<Attachment> 쿼리
      */

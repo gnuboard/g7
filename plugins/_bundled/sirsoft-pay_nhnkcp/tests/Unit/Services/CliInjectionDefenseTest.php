@@ -2,9 +2,9 @@
 
 namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Services;
 
-use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
+use Tests\PureTestCase;
 
 /**
  * Phase 3 PoC — NHN KCP CLI command injection 침투 시뮬레이션
@@ -24,11 +24,15 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
  *
  * 정상 케이스: alphanumeric / URL / IP / base64-like 값은 통과.
  */
-class CliInjectionDefenseTest extends TestCase
+class CliInjectionDefenseTest extends PureTestCase
 {
     /**
      * Reflection 으로 private assertSafeCliValue 를 직접 호출.
      * Laravel/Container 의존성 없이 순수 단위 테스트로 진행.
+     *
+     * @param  string  $value  검사할 CLI 인수 값
+     * @param  string  $key  인수 이름 (오류 문구에 실린다)
+     * @return void 반환값 없음
      */
     private function invokeAssertSafeCliValue(string $value, string $key = 'test_field'): void
     {
@@ -42,8 +46,12 @@ class CliInjectionDefenseTest extends TestCase
     }
 
     /**
+     * 큰따옴표와 명령 주입 문자열이 든 encData 를 거절한다.
+     *
      * @scenario context=approvePayment_encData, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_double_quote, cli_arg_throws_runtime_exception_on_unsafe, cli_no_shell_executed_on_unsafe_input
+     *
+     * @return void 반환값 없음
      */
     public function test_double_quote_is_rejected(): void
     {
@@ -54,8 +62,12 @@ class CliInjectionDefenseTest extends TestCase
     }
 
     /**
+     * 백틱 명령 치환이 든 encInfo 를 거절한다.
+     *
      * @scenario context=approvePayment_encInfo, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_backtick, cli_arg_throws_runtime_exception_on_unsafe
+     *
+     * @return void 반환값 없음
      */
     public function test_backtick_is_rejected(): void
     {
@@ -66,8 +78,12 @@ class CliInjectionDefenseTest extends TestCase
     }
 
     /**
+     * 줄바꿈(LF)이 든 주문 번호를 거절한다.
+     *
      * @scenario context=approvePayment_ordrIdxx, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_control_char_low, cli_arg_throws_runtime_exception_on_unsafe
+     *
+     * @return void 반환값 없음
      */
     public function test_lf_is_rejected(): void
     {
@@ -78,8 +94,12 @@ class CliInjectionDefenseTest extends TestCase
     }
 
     /**
+     * NUL 바이트가 든 고객 IP 를 거절한다.
+     *
      * @scenario context=approvePayment_custIp, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_null_byte, cli_arg_throws_runtime_exception_on_unsafe
+     *
+     * @return void 반환값 없음
      */
     public function test_null_byte_is_rejected(): void
     {
@@ -90,8 +110,12 @@ class CliInjectionDefenseTest extends TestCase
     }
 
     /**
+     * 탭 문자가 든 주문 번호를 거절한다.
+     *
      * @scenario context=approvePayment_ordrIdxx, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_control_char_low, cli_arg_throws_runtime_exception_on_unsafe
+     *
+     * @return void 반환값 없음
      */
     public function test_tab_is_rejected(): void
     {
@@ -102,8 +126,12 @@ class CliInjectionDefenseTest extends TestCase
     }
 
     /**
+     * DEL(0x7F) 제어 문자가 든 encData 를 거절한다.
+     *
      * @scenario context=approvePayment_encData, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_control_char_high, cli_arg_throws_runtime_exception_on_unsafe
+     *
+     * @return void 반환값 없음
      */
     public function test_del_char_0x7f_is_rejected(): void
     {
@@ -114,8 +142,12 @@ class CliInjectionDefenseTest extends TestCase
     }
 
     /**
+     * 캐리지 리턴(CR)이 든 encData 를 거절한다.
+     *
      * @scenario context=approvePayment_encData, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_control_char_low, cli_arg_throws_runtime_exception_on_unsafe
+     *
+     * @return void 반환값 없음
      */
     public function test_cr_is_rejected(): void
     {
@@ -129,6 +161,8 @@ class CliInjectionDefenseTest extends TestCase
      * 추가 메타문자 케이스 — 큰따옴표/백틱 외 단일 변형
      * @scenario context=approvePayment_encData, threat=cli_injection, callback_state=cli_arg_unsafe
      * @effects cli_arg_rejects_double_quote, cli_arg_throws_runtime_exception_on_unsafe
+     *
+     * @return void 반환값 없음
      */
     public function test_simple_double_quote_alone_is_rejected(): void
     {
@@ -141,6 +175,8 @@ class CliInjectionDefenseTest extends TestCase
      * 정상 케이스: alnum + base64 padding 통과
      * @scenario context=approvePayment_normal, threat=cli_injection, callback_state=cli_arg_normal
      * @effects cli_arg_accepts_alnum_only, cli_exec_uses_escapeshellarg
+     *
+     * @return void 반환값 없음
      */
     public function test_normal_alphanumeric_passes(): void
     {
@@ -156,6 +192,8 @@ class CliInjectionDefenseTest extends TestCase
      * Korean label 도 control char 아니므로 통과 (한글은 UTF-8 multibyte 로 0x80+)
      * @scenario context=approvePayment_normal, threat=cli_injection, callback_state=cli_arg_normal
      * @effects cli_arg_accepts_normal_korean_label
+     *
+     * @return void 반환값 없음
      */
     public function test_korean_label_passes(): void
     {

@@ -66,12 +66,12 @@ function rejectedThroughRequestInterceptor(onRequest: (c: any) => any, url: stri
 
 describe('ApiClient — 토큰 없이 보낸 요청의 401 은 세션 만료가 아니다 (#883)', () => {
   let refreshToken: ReturnType<typeof vi.fn>;
-  let onUnauthorized: ReturnType<typeof vi.fn>;
+  let onUnauthorized: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     localStorage.clear();
     refreshToken = vi.fn(async () => false);
-    onUnauthorized = vi.fn();
+    onUnauthorized = vi.fn<() => void>();
     vi.spyOn(AuthManager, 'getInstance').mockReturnValue({ refreshToken } as unknown as AuthManager);
   });
 

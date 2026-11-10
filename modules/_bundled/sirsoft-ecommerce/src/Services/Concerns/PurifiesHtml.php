@@ -179,6 +179,7 @@ trait PurifiesHtml
 
         $types = [
             'src' => 'URI', 'poster' => 'URI', 'url' => 'URI', 'controls' => 'Bool', 'playsinline' => 'Bool', 'default' => 'Bool',
+            // audit:allow extension-class-self-contained reason: 'Class' 는 CSS 클래스가 아니라 HTML Purifier 의 속성 타입 이름이다(class 속성 값의 검증 규칙)
             'width' => 'Length', 'height' => 'Length', 'class' => 'Class',
         ];
         $content = ['figure' => 'Flow', 'figcaption' => 'Flow', 'video' => 'Optional: source | track | #PCDATA', 'audio' => 'Optional: source | #PCDATA',

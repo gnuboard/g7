@@ -46,7 +46,7 @@ return [
         'settings_success' => '첨부 설정을 조회했습니다.',
         'reorder_failed' => '첨부파일 순서 변경에 실패했습니다.',
         // 환경설정 > 업로드 「기존 이미지 썸네일 만들기」의 원본 종류 이름
-        'thumbnail_source' => '페이지 첨부 이미지',
+        'thumbnail_source' => '페이지 첨부 및 본문 이미지',
     ],
 
     // 오류 메시지 (Exception)

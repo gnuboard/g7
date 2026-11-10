@@ -82,6 +82,7 @@ class BannerImageService
         $mime = (string) $file->getMimeType();
         $video = $kind === MediaKind::Video->value;
         $hash = Str::random(64);
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $path = date('Y/m').'/'.$hash.'.'.(self::EXTENSIONS[$mime] ?? ($video ? 'mp4' : 'jpg'));
 
         if ($video) {

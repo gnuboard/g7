@@ -19,9 +19,9 @@ import { Logger } from '../../utils/Logger';
  * 증상은 전부 루트 설치에서는 보이지 않고 하위 폴더 설치에서만 드러난다 — 사이트 밖 이동, 늘 「다른 화면」으로 읽히는
  * 같은 화면, 걸러지지 않는 로그인 화면.
  *
- * @scenario base_path=subpath, navigation_direction=navigation
+ * 조합 요약(마커 아님 — 평문): base_path=subpath, navigation_direction=navigation
  *
- * @effects redirect_handler_stays_inside_the_site,
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): redirect_handler_stays_inside_the_site,
  *          same_origin_full_url_navigates_in_app,
  *          same_path_target_ignores_base_prefix,
  *          leave_guard_same_path_ignores_base_prefix,

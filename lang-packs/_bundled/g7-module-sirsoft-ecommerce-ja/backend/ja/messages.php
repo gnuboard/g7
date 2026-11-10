@@ -1791,6 +1791,7 @@ return [
         'category_image' => 'カテゴリ画像',
         'review_image' => 'レビュー画像',
         'claim_image' => '交換/返品/返金の添付画像',
+        'content_media' => '商品説明と共通情報の本文画像',
     ],
     // 最近の検索語の範囲名 (module.json search_scopes.products.label)
     'search_history' => [

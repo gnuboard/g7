@@ -184,7 +184,7 @@ beforeEach(() => {
 describe('PageSettingsModal 셸 — 9탭 라우팅/배지/패널', () => {
   /**
    * @scenario subject=page_settings_modal
-   * @effects shell_renders_eight_tabs_meta_default, shell_routes_nine_tabs_meta_seo_init_overlay_scroll_computed_state_error_data
+   * @effects shell_renders_nine_tabs_meta_default, shell_routes_nine_tabs_meta_seo_init_overlay_scroll_computed_state_error_data
    */
   it('9탭 헤더 전부 렌더(로딩 화면 다음 스크롤) + 기본 탭(meta) 패널 = MetaForm', () => {
     renderShell();

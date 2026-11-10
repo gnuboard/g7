@@ -121,11 +121,12 @@
 | 분류 | 원본 | 썸네일 저장 디스크 | 응답 |
 |---|---|---|---|
 | 완전 공개 | 레이아웃 첨부·상품·카테고리·에디터 본문 이미지 | `upload.thumbnail_disk_public` — 비공개 `thumbnails`(기본) 또는 공개 자산 디스크(public·S3·CDN) | 비공개면 스트림(`Cache-Control: public`), 공개 자산 디스크면 302 |
-| 권한이 걸림 | 코어 첨부·게시판 첨부·페이지 첨부·리뷰·클레임 | `upload.thumbnail_disk_gated` — `thumbnails` 또는 `s3` 만 | 항상 스트림, `Cache-Control: private` |
+| 권한이 걸림 | 코어 첨부·게시판 첨부·페이지 첨부·리뷰·클레임·본문 미디어(게시판·페이지·쇼핑몰 편집기 본문 이미지) | `upload.thumbnail_disk_gated` — `thumbnails` 또는 `s3` 만 | 항상 스트림, `Cache-Control: private` |
 
 - 파생본 키: `thumbnails/{원본 디스크}/{원본 전체 경로}/{규격명}_{지문}.{ext}` — 어느 디스크든 고정 루트 `thumbnails/` 아래라 「비우기」가 원본을 건드리지 않는다.
 - 두 분류가 같은 디스크를 써도 관리 화면의 「비우기」는 분류별로 지운다(원본 제공자로 판정).
 - 코어 첨부는 CDN 처리하지 않는다(권한 게이트 원본).
+- 본문 미디어는 문서가 지금 공개여도 권한 원본이다. 게시글의 비밀 전환, 페이지 발행 취소, 상품 전시 중단으로 공개 여부가 바뀌므로 같은 원본의 파생본이 두 저장 위치로 갈리지 않게 고정한다. 원본 응답의 `public`/`private` 는 종전대로 어댑터의 `isPublic` 을 따른다.
 - 원본 응답은 게이트가 실제로 걸린 경우에만 `private` 다: 비밀글·삭제글·블라인드 글 첨부, 미발행 페이지 첨부, 숨김 리뷰, 권한 훅이 매핑되었거나 켜진 본인인증 정책(hook 범위 `core.attachment.before_download_action`·route 범위 `api.attachment.download`)이 걸린 코어 첨부, 관리자 다운로드. 나머지 공개 첨부는 `public` 그대로다.
 
 ## 수명주기와 원본 변경 감지
@@ -267,7 +268,11 @@ public function preview(Request $request, int $id): Response|JsonResponse
   }
   ```
 
-- 제공자 `matches()` 는 임시 업로드를 뺀다. 다만 임시 파일과 정식 파일이 같은 경로에 저장되면(이커머스 카테고리 이미지) 경로로는 가를 수 없으므로 `count()`, `chunk()` 에서 행 기준으로 뺀다.
+- 제공자 `matches()` 는 임시 업로드를 뺀다. 다만 임시 파일과 정식 파일이 같은 경로에 저장되면(이커머스 카테고리 이미지, 본문 미디어) 경로로는 가를 수 없으므로 `count()`, `chunk()` 에서 행 기준으로 뺀다.
+- 본문 미디어(`AbstractContentMediaService` 로 서빙하는 편집기 본문 이미지)는 서빙 지점에 헬퍼를 따로 부르지 않는다. 코어 골격이 게이트(`findServable()`) 뒤의 `respond()` 에서 헬퍼를 부른다. 확장이 할 일은 셋이다.
+  - 서빙 컨트롤러의 서명 검증을 `hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure())` 로 한다.
+  - 그다음에 본문 미디어 서빙 주소를 `core.thumbnail.filter_url_patterns` 에 더한다(예: `/api/modules/vendor-module/content-media/*`). 서명 검증을 고치기 전에 주소부터 올리면 화면이 서명 주소 뒤에 규격을 덧붙여 비공개 문서의 본문 이미지가 403 이 된다.
+  - 본문 미디어 이미지를 원본 제공자 하나에 넣는다(`gated()` 는 `true`). 원본 정보는 골격의 `thumbnailSourceFor($row)` 로 만든다. 본문 미디어가 첨부와 같은 표, 같은 저장 위치를 쓰면(게시판, 페이지) 첨부 제공자가 함께 맡고, 따로 쓰면(쇼핑몰) 제공자를 따로 둔다. 한 파일을 두 제공자의 `matches()` 가 받거나 한 행을 두 제공자가 세면 안 된다.
 - 확장 저장 디렉터리를 드라이버 밖에서 `File::deleteDirectory()` 로 지우면 `app(ThumbnailStore::class)->purgeIdentifier($identifier)` 도 부른다.
 - 의존 확장은 `g7_version` 을 `>=7.2.0` 으로 선언한다.
 

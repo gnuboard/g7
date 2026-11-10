@@ -1,8 +1,8 @@
 /**
  * DynamicRenderer.hostPropLeak.test.tsx
  *
- * @scenario leak_path=extension_point_host, prop_shape=object
- * @effects extension_point_host_clean, extension_point_host_keeps_dom_standard_attributes, icon_not_autobound, unmarked_component_still_autobinds
+ * 조합 요약(마커 아님 — 평문): leak_path=extension_point_host 와 form_auto_binding, prop_shape=object 와 array 와 primitive 와 dom_standard
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): extension_point_host_clean, extension_point_host_keeps_dom_standard_attributes, extension_point_host_class_expression_evaluated, icon_not_autobound, unmarked_component_still_autobinds
  *
  * 호스트 DOM 으로 새면 안 되는 props 두 갈래를 잠근다.
  *

@@ -33,8 +33,8 @@
 | `sirsoft-popup.popup.store_validation_rules` | filter | 등록 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/StorePopupRequest.php:58` |
 | `sirsoft-popup.popup.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdatePopupRequest.php:90` |
 | `sirsoft-popup.popup_image.after_change` | action | 팝업 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Popup $popup, string $device, string $change — replaced·removed) | `src/Services/PopupService.php:191` |
-| `sirsoft-popup.popup_image.after_delete` | action | 팝업 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/PopupImageService.php:150` |
-| `sirsoft-popup.popup_image.after_upload` | action | 팝업 이미지 임시 업로드 직후(팝업에는 저장 때 붙는다). 인자: (PopupImage $image) | `src/Services/PopupImageService.php:130` |
+| `sirsoft-popup.popup_image.after_delete` | action | 팝업 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/PopupImageService.php:151` |
+| `sirsoft-popup.popup_image.after_upload` | action | 팝업 이미지 임시 업로드 직후(팝업에는 저장 때 붙는다). 인자: (PopupImage $image) | `src/Services/PopupImageService.php:131` |
 | `sirsoft-popup.popup_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/PopupImageService.php:74` |
 <!-- @generated:hooks-published END -->
 

@@ -75,6 +75,7 @@ class PopupImageService
 
         $mime = (string) $file->getMimeType();
         $hash = Str::random(64);
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $path = date('Y/m').'/'.$hash.'.'.(self::EXTENSIONS[$mime] ?? 'jpg');
 
         // GIF 는 다시 저장하면 움직임이 사라지므로 줄이지 않는다(크기 상한은 업로드 검증이 막는다)
@@ -274,6 +275,7 @@ class PopupImageService
         }
 
         $hash = Str::random(64);
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $path = date('Y/m').'/'.$hash.'.'.(self::EXTENSIONS[$source->mime] ?? 'jpg');
         $pending = app(PendingImageFiles::class);
         $tracked = false;

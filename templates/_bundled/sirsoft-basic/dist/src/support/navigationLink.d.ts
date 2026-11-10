@@ -39,9 +39,10 @@ export declare function useLocationSearch(enabled: boolean): string;
 /**
  * 현재 주소 경로를 구독합니다 — 화면을 옮겨도 다시 마운트되지 않는 머리글·서랍이 경로로 상태를 정할 때 쓴다.
  * 구독 경로는 {@link useLocationSearch} 의 옛 코어 대체와 같다(엔진 주소 교체 알림, 없으면 뒤로/앞으로).
+ * 돌려주는 값은 사이트 마운트 접두사를 벗긴 라우트 기준 경로다 — 받는 쪽은 접두사 없이 적힌 경로(`resultPath` 등)와 그대로 대조한다.
  *
  * @param enabled 구독하면 true
- * @return 현재 경로(`/search`, 구독하지 않으면 '')
+ * @return 현재 라우트 기준 경로(`/search`, 구독하지 않으면 '')
  */
 export declare function useLocationPath(enabled: boolean): string;
 /**

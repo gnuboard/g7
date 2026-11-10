@@ -19,6 +19,8 @@ axes:
     - post_render_refetch
     - init_refetch_then_setstate_parity
     - blocking_and_refetch_same_key
+    - retired_slot_with_deferred_onsuccess_refetch
+    - snapshot_state_same_key_as_pre_render_initlocal
 
 effects:
   - pre_render_refetch_direct_entry_unchanged            # 바로 열기는 종전처럼 initLocal·initGlobal 이 선다
@@ -30,6 +32,8 @@ effects:
   - pre_render_refetch_matches_direct_entry_order        # 다시 받은 뒤 같은 키를 setState 한 결과가 바로 열기와 SPA 에서 같다
   - pre_render_refetch_then_setstate_accumulates         # 다시 받은 form 위에 init 의 setState 하위 값이 쌓인다(어느 쪽도 사라지지 않음)
   - pre_render_refetch_and_blocking_initlocal_both_kept  # blocking initLocal 과 다시 받기 initLocal 이 같은 키를 채워도 두 하위 키가 남는다
+  - deferred_onsuccess_refetch_does_not_revive_retired_form  # 폼 화면을 떠나 미룬 onSuccess 가 다시 받는 동안 앞 화면이 다시 그려져도 은퇴한 슬롯의 form, hasChanges 가 새 화면 `_local` 에 되살아나지 않는다
+  - snapshot_state_survives_pre_render_initlocal         # 스냅샷과 함께 되돌린 `_local` 진행 상태를 같은 키의 렌더 전 다시 받기 initLocal 이 초기값으로 되돌리지 않는다
 
 test_files:
   - resources/js/core/template-engine/__tests__/TemplateApp.preRenderRefetchInitLocal.test.tsx

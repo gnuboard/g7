@@ -217,7 +217,7 @@ return [
         'reorder_success' => 'Attachment order has been updated.',
         'reorder_failed' => 'Failed to update attachment order.',
         // Source name in Settings > Upload "Generate thumbnails for existing images"
-        'thumbnail_source' => 'Board attachment images',
+        'thumbnail_source' => 'Board attachment and content images',
     ],
 
     // Permission messages (Role-Permission System)

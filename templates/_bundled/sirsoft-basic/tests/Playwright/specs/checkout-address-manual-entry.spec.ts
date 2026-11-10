@@ -16,8 +16,8 @@
  * 그래서 이 spec 은 "칸이 편집 가능한가" 가 아니라 **친 값이 주문 상태에 도달하는가** 를 잰다.
  * 편집 가능 여부만 보면 이 결함이 있는 채로도 통과한다.
  *
- * @scenario asset_class=service_sdk, outcome=failed
- * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice
+ * 조합 요약(마커 아님 — 평문): asset_class=service_sdk, outcome=failed
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -102,7 +102,7 @@ test.describe('#123 주소 검색 실패 시 직접 입력', () => {
   });
 
   // @scenario asset_class=service_sdk, outcome=failed
-  // @effects failed_asset_falls_back_to_plain_input, address_fields_editable_when_sdk_missing
+  // @effects failed_asset_falls_back_to_plain_input, address_fields_editable_when_sdk_missing, failed_asset_shows_retry_notice
   test('SDK 를 못 불러와도 직접 친 주소가 주문 상태에 도달하고 결제로 넘어갈 수 있다', async ({ page }) => {
     await page.route(POSTCODE_SDK, route => route.abort());
     await authenticatePage(page, issueToken());

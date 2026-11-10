@@ -2,7 +2,7 @@
 
 namespace Plugins\Sirsoft\PayNicepayments\Tests\Unit\Controllers;
 
-use PHPUnit\Framework\TestCase;
+use Tests\PureTestCase;
 
 /**
  * Phase 3 PoC — 나이스페이먼츠 AuthToken 60s dedupe 의 cache key 결정성 검증
@@ -23,8 +23,16 @@ use PHPUnit\Framework\TestCase;
  *   - mid 가 다르면 (= 다른 가맹점) 같은 token/tid 라도 충돌 안 함
  *   - txTid 가 다르면 (= 다른 PG 거래) 같은 token 이라도 충돌 안 함
  */
-class AuthTokenDedupeKeyTest extends TestCase
+class AuthTokenDedupeKeyTest extends PureTestCase
 {
+    /**
+     * 컨트롤러와 같은 방식으로 중복 판정 캐시 키를 만듭니다.
+     *
+     * @param  string  $mid  가맹점 ID
+     * @param  string  $authToken  인증 토큰
+     * @param  string  $txTid  PG 거래 ID
+     * @return string 캐시 키
+     */
     private function buildKey(string $mid, string $authToken, string $txTid): string
     {
         // PaymentCallbackController.php:113 와 동일한 산출 로직
@@ -32,8 +40,12 @@ class AuthTokenDedupeKeyTest extends TestCase
     }
 
     /**
+     * 같은 입력은 언제나 같은 키를 만든다.
+     *
      * @scenario context=authorize_card, threat=replay_token_short, callback_state=first_arrival
      * @effects auth_token_cache_key_uses_sha256_of_mid_token_txtid, auth_token_first_arrival_writes_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_key_is_deterministic_for_same_input(): void
     {
@@ -44,8 +56,12 @@ class AuthTokenDedupeKeyTest extends TestCase
     }
 
     /**
+     * 인증 토큰이 다르면 키가 다르다.
+     *
      * @scenario context=authorize_card, threat=replay_token_short, callback_state=second_arrival_within_60s
      * @effects auth_token_within_60s_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_key_differs_when_token_differs(): void
     {
@@ -56,8 +72,12 @@ class AuthTokenDedupeKeyTest extends TestCase
     }
 
     /**
+     * PG 거래 ID 가 다르면 키가 다르다.
+     *
      * @scenario context=authorize_card, threat=replay_token_short, callback_state=second_arrival_within_60s
      * @effects auth_token_within_60s_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_key_differs_when_tx_tid_differs(): void
     {
@@ -73,6 +93,8 @@ class AuthTokenDedupeKeyTest extends TestCase
      *
      * @scenario context=authorize_card, threat=replay_token_short, callback_state=first_arrival
      * @effects auth_token_cache_key_uses_sha256_of_mid_token_txtid
+     *
+     * @return void 반환값 없음
      */
     public function test_key_differs_when_mid_differs(): void
     {
@@ -83,8 +105,12 @@ class AuthTokenDedupeKeyTest extends TestCase
     }
 
     /**
+     * 키는 정해진 접두사로 시작한다.
+     *
      * @scenario context=naverpay_callback, threat=replay_token_short, callback_state=first_arrival
      * @effects auth_token_cache_key_uses_sha256_of_mid_token_txtid
+     *
+     * @return void 반환값 없음
      */
     public function test_key_has_expected_prefix(): void
     {
@@ -97,6 +123,8 @@ class AuthTokenDedupeKeyTest extends TestCase
      * sha256 hex = 64자.
      * @scenario context=authorize_card, threat=replay_token_short, callback_state=first_arrival
      * @effects auth_token_cache_key_uses_sha256_of_mid_token_txtid
+     *
+     * @return void 반환값 없음
      */
     public function test_key_has_stable_length(): void
     {
@@ -112,6 +140,8 @@ class AuthTokenDedupeKeyTest extends TestCase
      *
      * @scenario context=authorize_card, threat=replay_token_short, callback_state=first_arrival
      * @effects auth_token_cache_key_uses_sha256_of_mid_token_txtid
+     *
+     * @return void 반환값 없음
      */
     public function test_key_safe_with_metachars_in_input(): void
     {
@@ -121,8 +151,12 @@ class AuthTokenDedupeKeyTest extends TestCase
     }
 
     /**
+     * 구분자 덕분에 이어 붙인 결과가 같은 두 입력도 서로 다른 키를 만든다.
+     *
      * @scenario context=kakaopay_callback, threat=replay_token_short, callback_state=second_arrival_outside_60s
      * @effects auth_token_outside_60s_proceeds
+     *
+     * @return void 반환값 없음
      */
     public function test_key_collision_with_concatenation_blurring(): void
     {

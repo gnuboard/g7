@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Sso\Tests\Feature\Mock;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Plugins\Sirsoft\Sso\Console\Commands\MockCommand;
 use Plugins\Sirsoft\Sso\Mock\MockGate;
@@ -94,6 +95,29 @@ class MockGateTest extends PluginTestCase
         }
 
         $this->assertFalse(app(MockGate::class)->enabled());
+    }
+
+    /**
+     * 모의 명령이 만료 시각을 서버 시간대(UTC)가 아니라 사이트 시간대로 알리는지 확인한다.
+     *
+     * @scenario command=status, site_timezone=Asia/Seoul
+     *
+     * @effects mock_expiry_shown_in_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_command_reports_expiry_in_site_timezone(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+        $until = app(MockGate::class)->enable(10);
+        $site = Carbon::createFromTimestamp($until)->setTimezone('Asia/Seoul')->format('Y-m-d H:i:s');
+        $utc = Carbon::createFromTimestamp($until)->setTimezone('UTC')->format('Y-m-d H:i:s');
+        $this->assertNotSame($site, $utc);
+
+        $this->artisan('sirsoft-sso:mock', ['--status' => true])
+            ->expectsOutputToContain($site)
+            ->doesntExpectOutputToContain($utc)
+            ->assertSuccessful();
     }
 
     /**

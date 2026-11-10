@@ -6,7 +6,6 @@
  *
  * @scenario-manifest templates/_bundled/sirsoft-basic/tests/scenarios/html-content-policy.yaml
  */
-import React from 'react';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { HtmlContent } from '../HtmlContent';

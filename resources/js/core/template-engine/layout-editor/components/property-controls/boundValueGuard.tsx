@@ -23,6 +23,7 @@
 import React, { useCallback, useState } from 'react';
 import { hasInlineBinding, hasSettingsRef } from '../../spec/inlineBindingUtils';
 import { useOptionalLayoutEditor } from '../../LayoutEditorContext';
+import { withBasePrefix } from '../../../../support/assetUrl';
 
 /** 다국어 해석 함수 — `WidgetProps.t` 와 동일 시그니처 */
 export type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
@@ -154,7 +155,7 @@ export function TemplateSettingsOpenLink({
   return (
     <a
       data-testid={`${testIdPrefix}-template-settings-open`}
-      href={`/admin/templates/${encodeURIComponent(templateIdentifier)}/settings`}
+      href={withBasePrefix(`/admin/templates/${encodeURIComponent(templateIdentifier)}/settings`)}
       target="_blank"
       rel="noopener noreferrer"
       style={noticeLink}

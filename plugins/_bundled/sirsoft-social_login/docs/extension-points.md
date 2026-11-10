@@ -260,7 +260,8 @@ protected function normalizeProfile(array $body, TokenSet $tokens, Authorization
 실제 제공자 앱 없이 왕복 전체를 재기 위한 개발, 검수용 제공자 5종(`mock_kakao` `mock_naver` `mock_google` `mock_facebook` `mock_oidc`)입니다. 각 응답 모양은 원 제공자를 흉내 내고, 동의 화면에서 응답 변종(완비 검증, 완비 미검증, 이메일 없음, 마스킹 이메일, 별명만, 문자열 boolean, 기존 회원 이메일, 제공자 오류 본문, 거부)을 고릅니다.
 
 - 켜고 끄기는 서버 명령으로만 합니다: `php artisan sirsoft-social_login:mock --enable --minutes=30`(최대 240분), `--disable`, `--status`. 설정 화면이나 API 로 켜는 길은 없습니다. 꺼져 있으면 모의 주소(`/plugins/sirsoft-social_login/mock/*`)는 404 입니다.
-- 켜진 표지는 캐시에 만료 시각과 함께 두고, 시간이 지나면 저절로 꺼집니다. 정리 배치가 만료된 표지를 지웁니다.
+- 켜진 표지는 캐시에 만료 시각과 함께 두고, 시간이 지나면 저절로 꺼집니다. 정리 배치가 만료된 표지를 지웁니다. `--enable` 과 `--status` 가 콘솔에 찍는 만료 시각은 사이트 시간대(환경설정의 시간대) 기준 `Y-m-d H:i:s` 입니다.
+- 실패 연속 알림과 가입 급증 알림의 캐시 키에 들어가는 날짜, 시간 버킷(`Ymd`, `YmdH`)은 화면에 보이지 않는 기계값이라 서버 시간대 그대로 둡니다.
 - 모의 제공자는 이 플러그인이 자기 필터 훅을 구독해 더합니다(`RegisterMockProvidersListener`). 다른 확장이 드라이버를 더하는 경로를 그대로 쓰므로, 위 계약의 실증이기도 합니다.
 - 관리자 제공자 탭에는 읽기 전용 카드로, 진단 화면에는 켜짐 배지와 끝나는 시각으로 보입니다. 모의 키는 관리자 API 로 저장할 수 없습니다.
 - 연결을 해제할 때의 권한 회수는 모의 회수 주소(`/mock/revoke`, POST·DELETE)가 늘 성공으로 답합니다. 실제 드라이버의 회수 경로를 끝까지 타고, 모의 해제가 진단과 통계에 가짜 「회수 실패」를 남기지 않습니다.

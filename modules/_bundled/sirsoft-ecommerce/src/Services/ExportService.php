@@ -283,7 +283,9 @@ class ExportService
         return [
             'mode' => 'custom',
             'date_type' => array_key_first($type->dateTypes()),
+            // audit:allow datetime-display-user-timezone reason: 시간대를 지정해 만든 Carbon($today — 주문은 사이트, 그 밖은 보는 사람 시간대) — 날짜 키
             'start_date' => $today->subMonthNoOverflow()->toDateString(),
+            // audit:allow datetime-display-user-timezone reason: 시간대를 지정해 만든 Carbon($today) — 날짜 키
             'end_date' => $today->toDateString(),
         ];
     }
@@ -666,6 +668,7 @@ class ExportService
             $writer = null;
 
             $completedAt = CarbonImmutable::now();
+            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $path = $completedAt->format('Y/m').'/'.$export->uuid.'.'.$format->extension();
             $stream = fopen($tempPath, 'rb');
             try {

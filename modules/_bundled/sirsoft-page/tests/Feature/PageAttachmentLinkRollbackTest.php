@@ -41,9 +41,11 @@ class PageAttachmentLinkRollbackTest extends ModuleTestCase
         $tempKey = (string) Str::uuid();
         $tempPath = "temp/{$tempKey}/p.pdf";
         $storage->put('attachments', $tempPath, 'pdf');
+        // 이동은 행에 기록된 disk 의 저장소에서 한다 — 업로드가 기록하는 것과 같이 파일을 쓴 디스크를 행에 싣는다.
+        // 다른 값을 실으면 그 디스크에서 원본을 읽지 못해 이동을 건너뛰고, 롤백 단언은 이동 없이도 통과해 버린다.
         $attachment = PageAttachment::create([
             'page_id' => null, 'temp_key' => $tempKey, 'original_filename' => 'p.pdf', 'stored_filename' => 'p.pdf',
-            'disk' => 'local', 'path' => $tempPath, 'mime_type' => 'application/pdf', 'size' => 3,
+            'disk' => $storage->getDisk(), 'path' => $tempPath, 'mime_type' => 'application/pdf', 'size' => 3,
             'collection' => 'attachments', 'order' => 1,
         ]);
 

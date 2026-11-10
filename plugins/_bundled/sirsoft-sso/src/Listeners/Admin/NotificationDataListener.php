@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Sso\Listeners\Admin;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Notifications\NotificationVariables;
 use App\Support\ScreenUrl;
@@ -79,7 +80,7 @@ class NotificationDataListener implements HookListenerInterface
         return match ($type) {
             'sso_emergency_login' => $this->forAdmins($default, [
                 'user_name' => $this->userName($args[0] ?? null),
-                'login_at' => now()->format('Y-m-d H:i:s'),
+                'login_at' => (string) TimezoneHelper::toSiteDateTimeString(now()),
                 'ip_address' => (string) (request()?->ip() ?? ''),
                 'settings_url' => $this->settingsUrl(),
             ]),
@@ -92,7 +93,7 @@ class NotificationDataListener implements HookListenerInterface
             'sso_cert_expiring' => $this->forAdmins($default, [
                 'idp_label' => $this->idpLabel($args[0] ?? null),
                 'days_left' => (string) (int) ($args[1] ?? 0),
-                'expires_at' => ($args[0] ?? null) instanceof IdentityProvider ? (string) ($args[0]->cert_expires_at?->format('Y-m-d') ?? '') : '',
+                'expires_at' => ($args[0] ?? null) instanceof IdentityProvider ? (string) TimezoneHelper::toSiteDateString($args[0]->cert_expires_at) : '',
                 'settings_url' => $this->settingsUrl($args[0] ?? null),
             ]),
             'sso_email_conflict' => $this->forAdmins($default, [
