@@ -1,0 +1,21 @@
+feature: 템플릿 다국어 데이터와 코어·모듈·플러그인 다국어 병합
+
+description: |
+  TemplateService::getLanguageDataWithModules 가 코어 프론트엔드 다국어를 베이스 레이어로 깔고 그 위에 템플릿,
+  활성 모듈(모듈 식별자 키), 플러그인(다국어 파일이 있을 때만) 데이터를 깊은 병합(deep merge)으로 합치는 계약을 지킨다.
+  충돌하는 leaf 만 뒤 레이어가 덮고 같은 트리의 형제 키는 보존되며, 없는 템플릿·지원하지 않는 로케일은 오류 코드를 돌려준다.
+
+axes:
+  case: [template_only, module_merge, plugin_merge, core_base_layer, deep_merge, error]
+
+effects:
+  - template_language_data_returned
+  - module_language_merged_under_module_identifier
+  - plugin_without_language_file_adds_no_key
+  - core_frontend_lang_loaded_as_base_layer
+  - deep_merge_preserves_sibling_leaves
+  - nonexistent_template_returns_template_not_found
+  - unsupported_locale_returns_locale_not_supported
+
+test_files:
+  - tests/Feature/Services/TemplateServiceLanguageMergeTest.php

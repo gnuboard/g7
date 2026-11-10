@@ -72,6 +72,20 @@
             "comment": "첨부 상한·허용 형식. 신규 작성 화면에는 읽을 상세가 없어 이 조회가 유일한 출처다 — 화면이 리터럴로 적으면 운영자가 설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없다."
         },
         {
+            "id": "contentMediaTarget",
+            "label_key": "$t:sirsoft-page.editor.data_source.contentMediaTarget",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/content-media/target",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": null
+            },
+            "comment": "편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트(#887). 받는 종류가 없거나 올릴 권한이 없으면(읽기 전용 관리자 403) null 이라 편집기는 종전대로 동작한다"
+        },
+        {
             "id": "createAbility",
             "label_key": "$t:sirsoft-page.editor.data_source.createAbility",
             "type": "api",
@@ -680,8 +694,9 @@
                                                 "id": "content_editor",
                                                 "type": "extension_point",
                                                 "name": "html_editor",
-                                                "if": "{{route?.id ? _local.form?.content !== undefined : createAbility !== undefined}}",
+                                                "if": "{{contentMediaTarget !== undefined && (route?.id ? _local.form?.content !== undefined : createAbility !== undefined)}}",
                                                 "props": {
+                                                    "mediaUpload": "{{contentMediaTarget?.data ? Object.assign({}, contentMediaTarget.data, { fields: Object.assign({}, contentMediaTarget.data.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}",
                                                     "multilingual": true,
                                                     "value": "{{_local.form?.content}}",
                                                     "isHtml": "{{_local.form?.content_mode === 'html'}}",

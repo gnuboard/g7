@@ -1,0 +1,789 @@
+{
+    "comment": "e2e:allow 커밋 전 점검 후속(2026-11-09) — 허용 기능 목록을 원시 JSON 대신 <item> 표기로 바꿨을 뿐 굽기 JSON 무변경. 화면 동작은 5단계 브라우저 매트릭스 T1~T5 실측분 그대로.\n  본문 콘텐츠 탭 (#883) —게시글·페이지·상품 설명 본문에 남길 수 있는 것을 한 곳에서 정한다. 표시기(두 템플릿)·봇 정화기·쇼핑몰 저장 정화기·편집기가\n  모두 이 규칙을 읽는다(편집기 설정에 두면 편집기를 바꿀 때 표시 규칙이 사라진다). 카드 넷: 허용 후보 · 운영자 추가 태그 · 외부 영상 서비스 · 미디어 주소 유효 시간.\n  외부 영상 「직접 추가한 서비스」 표는 IP 접근 제한 규칙과 같은 방식이다 — 창이 폼의 배열만 고치고 저장은 하단 「저장」이 한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 본문 콘텐츠 탭 콘텐츠"
+    },
+    "id": "tab_content_content",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'content'}}",
+    "children": [
+        {
+            "id": "card_content_candidates",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.content.candidates.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.content.candidates.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_allow_figure_caption",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.figure_caption"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.figure_caption_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "content.allow_figure_caption",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_allow_uploaded_video",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.uploaded_video"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.uploaded_video_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "content.allow_uploaded_video",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_allow_uploaded_audio",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.uploaded_audio"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.uploaded_audio_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "content.allow_uploaded_audio",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_allow_external_embed",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.external_embed"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.content.candidates.external_embed_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "content.allow_external_embed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_content_custom_tags",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.content.custom_tags.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.content.custom_tags.description"
+                },
+                {
+                    "id": "content_custom_tags_warning",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning mb-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm"
+                            },
+                            "text": "$t:admin.settings.content.custom_tags.warning"
+                        }
+                    ]
+                },
+                {
+                    "id": "content_custom_tags_input",
+                    "type": "composite",
+                    "name": "TagInput",
+                    "props": {
+                        "name": "content.custom_tags",
+                        "creatable": true,
+                        "placeholder": "$t:admin.settings.content.custom_tags.placeholder",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.['content.custom_tags']}}",
+                    "props": {
+                        "className": "form-error"
+                    },
+                    "text": "{{_local.errors?.['content.custom_tags']?.[0] ?? ''}}"
+                }
+            ]
+        },
+        {
+            "id": "card_content_embed",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card {{_local.form?.content?.allow_external_embed === false ? 'opacity-60' : ''}}"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.content.embed.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.content.embed.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.content.embed.presets"
+                        },
+                        {
+                            "id": "content_embed_presets",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "['youtube', 'vimeo', 'tiktok']",
+                                        "item_var": "preset"
+                                    },
+                                    "props": {
+                                        "className": "flex-between gap-3 py-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.settings.content.embed.preset_names.{{preset}}"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "프리셋 켜고 끔 — 서비스 키 하나만 뒤집는다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.content.embed_presets": "{{({ ...(_local.form?.content?.embed_presets ?? {}), [preset]: !(_local.form?.content?.embed_presets?.[preset] === true) })}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "ariaLabel": "$t:admin.settings.content.embed.preset_names.{{preset}}",
+                                                "checked": "{{_local.form?.content?.embed_presets?.[preset] === true}}",
+                                                "size": "sm",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "content_embed_extension",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.form?._meta?.embed_extension_providers ?? []).length > 0}}",
+                            "props": {
+                                "className": "row-stack mt-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.extension"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.extension_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid-2col-responsive"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "_local.form?._meta?.embed_extension_providers ?? []",
+                                                "item_var": "ext"
+                                            },
+                                            "props": {
+                                                "className": "flex-between gap-3 py-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body"
+                                                    },
+                                                    "text": "{{ext.name + ' (' + ext.extension + ')'}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "확장 제공 서비스 켜고 끔 — 프리셋과 같은 맵에 `ext:{확장}:{id}` 키로 둔다(기본 꺼짐)",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.content.embed_presets": "{{({ ...(_local.form?.content?.embed_presets ?? {}), [ext.key]: !(_local.form?.content?.embed_presets?.[ext.key] === true) })}}",
+                                                                "hasChanges": true
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "ariaLabel": "{{ext.name}}",
+                                                        "checked": "{{_local.form?.content?.embed_presets?.[ext.key] === true}}",
+                                                        "size": "sm",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between gap-2 mt-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.custom"
+                                },
+                                {
+                                    "id": "content_embed_add",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "서비스 추가 창 열기 — 창 상태를 통째로 만들고 지금 목록 사본을 넘긴다(row_index=null 이면 추가)",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "embed_provider_form_modal": {
+                                                            "form": {
+                                                                "id": "",
+                                                                "name": "",
+                                                                "url_patterns_text": "",
+                                                                "player_url": "",
+                                                                "id_rule": "alnum_dash",
+                                                                "aspect": "16:9",
+                                                                "allow": [
+                                                                    "fullscreen",
+                                                                    "encrypted-media",
+                                                                    "picture-in-picture"
+                                                                ],
+                                                                "enabled": true
+                                                            },
+                                                            "sample_url": "",
+                                                            "preview": null,
+                                                            "row_index": null,
+                                                            "providers": "{{_local.form?.content?.embed_custom_providers ?? []}}",
+                                                            "error": null
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "embed_provider_form_modal"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "flex-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "plus",
+                                                "size": "xs"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.content.embed.add"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_local.form?.content?.embed_custom_providers ?? []).length === 0}}",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:admin.settings.content.embed.custom_empty"
+                        },
+                        {
+                            "id": "content_embed_custom_list",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.form?.content?.embed_custom_providers ?? []).length > 0}}",
+                            "props": {
+                                "className": "divider-list"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_local.form?.content?.embed_custom_providers ?? []",
+                                        "item_var": "provider",
+                                        "index_var": "idx"
+                                    },
+                                    "props": {
+                                        "className": "py-3 flex-between gap-3 flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-body font-medium"
+                                                    },
+                                                    "text": "{{provider.name ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "form-hint font-mono break-all"
+                                                    },
+                                                    "text": "{{(provider.url_patterns ?? []).join(' · ')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "사용 여부만 뒤집는다 — 지우지 않고 잠시 끄는 자리",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.content.embed_custom_providers": "{{(_local.form?.content?.embed_custom_providers ?? []).map((p, i) => i === idx ? {...p, enabled: !(p.enabled !== false)} : p)}}",
+                                                                "hasChanges": true
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "ariaLabel": "$t:common.row_cell|row={{provider.name ?? ''}}|column={{$t('admin.settings.content.embed.enabled')}}",
+                                                        "checked": "{{provider.enabled !== false}}",
+                                                        "size": "sm",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "content_embed_edit_{{idx}}",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "수정 창 열기 — 그 행 값으로 채우고 row_index 에 행 번호",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "embed_provider_form_modal": {
+                                                                            "form": {
+                                                                                "id": "{{provider.id ?? ''}}",
+                                                                                "name": "{{provider.name ?? ''}}",
+                                                                                "url_patterns_text": "{{(provider.url_patterns ?? []).join('\\n')}}",
+                                                                                "player_url": "{{provider.player_url ?? ''}}",
+                                                                                "id_rule": "{{provider.id_rule ?? 'alnum_dash'}}",
+                                                                                "aspect": "{{provider.aspect ?? '16:9'}}",
+                                                                                "allow": "{{provider.allow ?? ['fullscreen', 'encrypted-media', 'picture-in-picture']}}",
+                                                                                "enabled": "{{provider.enabled !== false}}"
+                                                                            },
+                                                                            "sample_url": "",
+                                                                            "preview": null,
+                                                                            "row_index": "{{idx}}",
+                                                                            "providers": "{{_local.form?.content?.embed_custom_providers ?? []}}",
+                                                                            "error": null
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "embed_provider_form_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:common.edit"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "content_embed_delete_{{idx}}",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "삭제 — 폼에서만 뺀다(저장 전이라 하단 「취소」로 되돌릴 수 있다)",
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.content.embed_custom_providers": "{{(_local.form?.content?.embed_custom_providers ?? []).filter((p, i) => i !== idx)}}",
+                                                                "hasChanges": true
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:common.delete"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['content.embed_custom_providers']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{(_local.errors?.['content.embed_custom_providers'] ?? []).join(' ')}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "card_content_media_ttl",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.content.ttl.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.content.ttl.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "audit:allow layout-input-boundary-hardcoded 코어 ContentMediaUrlRewriter 고정 범위(5~1440분) — 저장 규칙 SaveSettingsRequest 가 같은 범위다",
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "number",
+                                "name": "content.media_url_ttl_minutes",
+                                "aria-label": "$t:admin.settings.content.ttl.title",
+                                "min": "5",
+                                "max": "1440",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "input w-28"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:admin.settings.content.ttl.unit"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.['content.media_url_ttl_minutes']}}",
+                    "props": {
+                        "className": "form-error"
+                    },
+                    "text": "{{_local.errors?.['content.media_url_ttl_minutes']?.[0] ?? ''}}"
+                }
+            ]
+        }
+    ]
+}

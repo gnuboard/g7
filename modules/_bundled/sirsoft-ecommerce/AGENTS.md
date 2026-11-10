@@ -222,6 +222,34 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 `order.user_id === null` 로도 판정합니다. 이 판정이 빠지면 비회원 주문 상세에 눌러도 반응 없는
 「리뷰 작성」 버튼이 보입니다.
 
+**회원·주문 없는 후기(1.3.4)**: 다른 쇼핑몰에서 옮겨 온 후기처럼 회원·주문 연결이 없는 후기도 같은
+`ecommerce_product_reviews` 에 둡니다 — 별도 표에 두고 화면에서 합치면 관리자 목록·상품 상세·상품 목록
+별점 집계가 서로 다른 데이터를 봅니다. 그 행은 `user_id`·`order_option_id` 가 NULL 이고 작성자는
+`author_name`(가린 이름이면 가린 채로)입니다. 쓰기 진입점은 `ProductReviewService::createImported()` 하나이며
+작성 자격 검사·회원 후기 작성 훅(`before_create`/`after_create` → 관리자 활동 로그)을 거치지 않고
+`after_import` 만 발행합니다. 같은 상품·작성자 이름·작성일이면 그 행을 갱신합니다(재이관 멱등 — 관리자가 바꾼
+`status`·답변은 입력에 키가 있을 때만 덮어쓰고, 지운 후기는 되살리지 않음). HTML 본문은 상품 설명과 같은
+`Services\Concerns\PurifiesHtml` 의 기본 허용 목록(`baseline`)으로 정화합니다 — 상품 설명은 여기에 코어 「본문 콘텐츠」
+후보 요소 전부(그림 캡션·업로드 동영상·오디오·외부 영상)와 운영자 추가 태그를 더한 `content` 프로필로 정화하며, 후보
+스위치·외부 영상 서비스 켜고 끄기는 표시에서만 따릅니다(끈 동안 저장해도 원문이 남아 다시 켜면 돌아옴, #887). 후기를 읽는 코드에서 `$review->user`·`orderOption` 을
+null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview::displayAuthorName()`, 응답은
+`author_name`·`is_imported` 를 씁니다. 주문 옵션 파기 연쇄(`purgeForOrderOptions`)·옵션 필터·별점 분포 조인은
+`order_option_id` 로 묶으므로 이 후기를 자연히 건너뛰거나(옵션 필터) 그대로 셉니다(별점·상품 목록 집계).
+
+**본문 미디어 저장소(1.3.4)**: 상품 설명·공통 정보 편집기 본문의 이미지·동영상·오디오는 이 모듈의 범용 첨부 표
+`ecommerce_attachments`(게시판·페이지 첨부 표와 같은 모양)에 `collection = content_media` 로 둡니다(소유 = `attachmentable_type/id`,
+저장 전 임시 = `attachmentable_id` null + `temp_key`, #887). 이 행은 반드시 범위 모델 `Models\ContentMedia` 와 `ContentMediaRepositoryInterface`
+로만 읽고 씁니다 — 전역 범위가 같은 표의 다른 컬렉션을 막습니다. 흐름(업로드·저장 동기화 **연결 → 복제 → 제거**·서명·서빙·정리·소유자 삭제)은
+코어 골격 `AbstractContentMediaService` 를 상속한 `Services\ContentMedia\EcommerceContentMediaService` 가 돌리고, 저장소·권한은 어댑터
+`EcommerceContentMediaStore` 가 답합니다. 상품·공통 정보·리소스·컨트롤러는 종전 호출 모양을 유지한 `Services\ContentMediaService` 를 씁니다.
+코어 공용 훅 `core.content_media.*`(업로드 3종·영구 삭제 직전 `before_delete`)는 골격이 발화합니다. 파일은 모듈 저장소 `content-media`
+카테고리이고 행 `path` 는 그 카테고리 기준 경로입니다. 서빙 라우트는 서비스 프로바이더가 `ContentMediaRegistrar` 로 미디어 출처 허용
+패턴에 등록합니다 — 빠지면 설명의 업로드 동영상·오디오가 저장 정화·표시에서 지워집니다. 응답 본문은 공개되지 않은 상품일 때 그 상품이
+소유한 해시만 서명하고, 서빙 캐시는 아무나 볼 수 있을 때(전시 중 상품·공통 정보)만 public 입니다. 본문에서 빠지면 소프트 삭제, 빠진 지
+보존기간(기본 2일)이 지나면 `prune-temp-product-images` 가 파일째 지우고, 상품(영구 삭제)·공통 정보 삭제는 `ContentMediaPurger`(골격
+`purgeRows`)가 즉시 지웁니다. 상품 설명과 공통 정보 HTML 본문은 같은 저장 정화(`PurifiesHtml` `content` 프로필 — 규칙은 코어
+`ContentHtmlPolicy::forStorage()`)를 거칩니다.
+
 **상품 옵션 판매가 일괄 변경**: `BulkUpdateProductsRequest` 의
 `option_bulk_changes.price_adjustment.method` 는 `set` · `add` · `subtract` · `percent` 네 가지입니다
 (`subtract` 는 판매가 일괄 변경 창의 「인하 + 금액」 — 허용값에 없어 422 로 저장되지 않던 것을 더했습니다).
@@ -242,7 +270,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 593개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 596개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 224개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 48개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 17개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -335,6 +363,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 요청의 `temp_key` · `image_temp_key` 를 형식 검증 없이 `products/temp/{키}` 경로에 넣거나, 임시 이미지가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 이미지가 있을 때만 이동·정리 | 순회 키가 정리 경로를 모듈 저장소 루트로 끌어올린다 (게시판 KVE-2026-2349 와 같은 패턴) |
 | 임시 이미지를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory('images', 'products/temp/{키}')`)의 예외를 그대로 던지게 두기 | `ProductImageService::linkTempImages()` 처럼 disk 별 정리 전체를 `try/catch` 로 감싸 경고 로그(`상품 임시 이미지 디렉토리 정리 실패`)를 남기고 연결 수는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 상품 저장 전체가 500 으로 되돌아가고 파일·DB 경로가 어긋난다(#703 게시판 실측과 같은 구조). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
 | 관리자 화면에서 코어 회원 검색(`GET /api/admin/users/search`)을 검색어 조건 없이, 또는 길이(`length > 0`)만 보고 부르기 | `if="{{String($args[0] ?? '').trim() !== ''}}"`(`onSearch` 인자) 또는 `if="{{String($event.target.value ?? '').trim() !== ''}}"`(입력 이벤트)로 비거나 공백뿐이면 부르지 않는다. 입력칸 아래에 결과 목록을 직접 그리는 창(마일리지 수동 지급/차감·쿠폰 직접 발급)은 목록 표시·비우기도 같은 `trim()` 조건을 쓴다 | 회원 검색은 빈 검색어를 422 로 거절한다(공백은 서버 요청 정리에서 지워져 빈 값이 된다). 조건이 없던 알림 템플릿 「특정 회원」 수신자·주문 목록 주문자 필터·쿠폰 목록 만든 사람 필터는 검색칸을 지울 때마다, 길이만 보던 마일리지 수동 지급/차감 창·쿠폰 직접 발급 창은 공백만 적으면 거절되어 결과가 비거나 오류 안내가 떴다(#703) |
+| 본문 미디어를 `EcommerceAttachment`·`DB::table('ecommerce_attachments')` 로 범위 없이 조회·삭제하거나 파일을 주입 저장소로 직접 지우기 | `Models\ContentMedia`(범위 모델) + `ContentMediaRepositoryInterface`, 삭제는 `ContentMediaPurger`·골격 `pruneStale`(행 디스크 기준) | 범용 표는 다른 컬렉션 행과 함께 쓴다 — 범위 없는 조회는 남의 첨부를 지우고, 골격을 거치지 않으면 `core.content_media.before_delete` 가 빠지고 디스크를 바꾼 뒤의 옛 행 파일을 엉뚱한 디스크에서 찾는다 |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | `OrderCancel` 을 `recordCancellation()` 밖에서 만들기 | 그 메서드 한 지점 | 만드는 지점이 둘이면 합계 재계산·누적 컬럼 갱신이 경로마다 갈리고, 같은 취소가 경로에 따라 다른 장부를 남긴다 |
 | 최종 상태를 바로 INSERT 해 전이 단계를 건너뛰기 | `transition()` 으로 실제로 거치기 | 활동 로그가 한 줄만 남아 운영자가 승인 경위를 되짚을 수 없다. 한 트랜잭션 안이어도 단계를 밟는다 |
@@ -375,10 +404,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 717개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 293개 | `vitest.config.ts` |
+| PHPUnit | 745개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 298개 | `vitest.config.ts` |
 | Playwright | 81개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 406개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 444개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

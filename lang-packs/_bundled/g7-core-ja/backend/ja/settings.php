@@ -176,6 +176,8 @@ return [
         'source_vendor_missing' => 'ソースディレクトリに vendor がありません。composer install が実行されていない可能性があります。',
         'composer_failed_with_output' => 'composer install 実行に失敗しました。:output',
         'console' => [
+            'already_running' => '別のコアアップデート（core:update）が進行中のため、開始しませんでした。直前の実行が異常終了した場合は、:minutes分後にもう一度実行してください。',
+            'lock_unavailable' => 'コアアップデートのロックストア（キャッシュ）が使用できないため、開始しませんでした。キャッシュドライバーの状態を確認してから、もう一度実行してください。',
             'source_zip_conflict' => '--source と --zip は同時に指定できません。どちらか一方を選択してください。',
             'local_source_conflict' => '--local は --source / --zip と同時に使用できません。',
             'zip_not_found' => '指定された ZIP ファイルが存在しません: :path',

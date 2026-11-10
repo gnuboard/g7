@@ -2,7 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 절사 계산 사본 동일성 테스트
@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 모집단은 `src/` 를 스캔해 파생한다 — 사본이 하나 더 생기면 그것도 자동으로 대조 대상이
  * 되고, 스캔 결과가 비면(경로가 바뀌었거나 스캔이 깨졌으면) 그 자체로 실패한다.
  */
-class CurrencyRoundingParityTest extends ModuleTestCase
+class CurrencyRoundingParityTest extends PureTestCase
 {
     /**
      * 동일성을 요구하는 메서드 목록.
@@ -27,6 +27,15 @@ class CurrencyRoundingParityTest extends ModuleTestCase
      */
     private const MIN_COPIES = 2;
 
+    /**
+     * src/ 에서 찾은 applyRounding()·roundingUnitScale() 사본이 2개 이상이고, 공백·주석·가시성을 걷어 낸 본문이 모두 같다.
+     *
+     * @scenario case=rounding_helper_copies
+     *
+     * @effects rounding_helper_copies_discovered_from_source, rounding_helper_copies_identical
+     *
+     * @return void 반환값 없음
+     */
     public function test_rounding_helper_copies_are_identical(): void
     {
         $definers = $this->filesDefining('applyRounding');

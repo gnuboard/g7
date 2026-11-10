@@ -43,6 +43,11 @@ class ProductReviewResource extends BaseApiResource
                 'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ]),
 
+            // 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는
+            // 저장된 이름 그대로(가린 이름이면 가린 채로). 그 후기는 `user`·`orderOption` 이 null 이다.
+            'author_name' => $this->resource->displayAuthorName(),
+            'is_imported' => $this->resource->isImported(),
+
             // 상품 정보
             'product' => $this->whenLoaded('product', fn () => [
                 'id' => $this->product->id,
@@ -61,6 +66,8 @@ class ProductReviewResource extends BaseApiResource
             // 내용
             'content' => $this->content,
             'content_mode' => $this->content_mode,
+            // 태그를 걷어 낸 한 줄 본문 — 목록 칸·미리보기 창처럼 글자로만 그리는 자리용
+            'content_plain' => $this->getContentPlain(),
 
             // 상태
             'status' => $this->status->value,
@@ -113,6 +120,29 @@ class ProductReviewResource extends BaseApiResource
 
             ...$this->resourceMeta($request),
         ];
+    }
+
+    /**
+     * 본문을 글자로만 그릴 자리에 쓸 문자열을 반환합니다.
+     *
+     * 텍스트 모드는 본문 그대로, HTML 모드는 태그를 걷어 내고 엔티티를 풀어 공백을 한 칸으로 줄인다.
+     *
+     * @return string 글자 본문
+     */
+    private function getContentPlain(): string
+    {
+        $content = (string) ($this->content ?? '');
+
+        if ($this->content_mode !== 'html') {
+            return $content;
+        }
+
+        // 문단·줄바꿈 경계의 글자가 붙어 버리지 않게 블록 태그 자리에만 공백을 남긴 뒤 걷어 낸다
+        // (굵게 같은 글자 안 태그에 공백을 넣으면 낱말이 쪼개진다)
+        $spaced = preg_replace('/<\/?(?:p|div|br|li|ul|ol|h[1-6]|tr|td|th|table|blockquote|pre|hr)\b[^>]*>/i', ' ', $content) ?? $content;
+        $text = html_entity_decode(strip_tags($spaced), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
     }
 
     /**

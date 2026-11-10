@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 
 /**
@@ -64,6 +65,13 @@ class PruneTempProductImagesCommand extends Command
         $isDryRun = (bool) $this->option('dry-run');
 
         $result = $this->productImageService->pruneTempUploads($days, $limit, $isDryRun);
+
+        // 끝내 저장하지 않은 본문 미디어(상품 설명·공통 정보 편집기)도 같은 보존기간으로 함께 정리한다 (#883)
+        // 본문에서 빠져 소프트 삭제된 본문 미디어도 빠진 지 보존기간이 지나면 파일째 지운다 (#887)
+        $media = app(ContentMediaService::class)->pruneTempUploads($days, $limit, $isDryRun);
+        foreach (['scanned', 'deleted', 'failed'] as $key) {
+            $result[$key] = ($result[$key] ?? 0) + $media[$key];
+        }
 
         if ($isDryRun) {
             $this->info('[DRY RUN] '.__('sirsoft-ecommerce::messages.console.prune_temp_product_images.dry_run', ['days' => $days, 'count' => $result['scanned']]));

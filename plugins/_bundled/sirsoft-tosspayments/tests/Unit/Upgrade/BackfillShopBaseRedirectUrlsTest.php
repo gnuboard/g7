@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Tosspayments\Tests\Unit\Upgrade;
 use App\Upgrades\Data\Ext\Plugins\SirsoftTosspayments\V1_0_0\Migrations\BackfillShopBaseRedirectUrls;
 use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 기설치본의 결제 리다이렉트 주소 백필 규칙 (공개 #85).
@@ -35,7 +36,7 @@ class BackfillShopBaseRedirectUrlsTest extends PluginTestCase
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        require_once base_path('plugins/_bundled/sirsoft-tosspayments/upgrades/data/1.0.0/migrations/BackfillShopBaseRedirectUrls.php');
+        UpgradeFiles::requireOnce(base_path('plugins/_bundled/sirsoft-tosspayments/upgrades/data/1.0.0/migrations/BackfillShopBaseRedirectUrls.php'));
     }
 
     /**

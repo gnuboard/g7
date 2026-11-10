@@ -1,4 +1,4 @@
-// audit:allow seo-renderer-parity-sync #143 은 루트에 줄바꿈 클래스(wrap-anywhere)만 더했다 — 평문/HTML 판정·정화 목록은 그대로라 봇 쪽 HtmlSanitizer 와 맞출 것이 없다
+// audit:allow seo-renderer-parity-sync #883 표시 규칙을 코어 「본문 콘텐츠」(G7Core.contentPolicy)로 옮겼다 — 봇 정화기 HtmlSanitizer 도 같은 ContentHtmlPolicy 로 후보 태그를 살리고 마무리한다(외부 영상은 봇에 링크)
 import React, { useMemo } from 'react';
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -153,7 +153,17 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
           FORBID_ATTR: [...defaultConfig.FORBID_ATTR, ...(purifyConfig.FORBID_ATTR || [])],
         }
       : defaultConfig;
-    const cleaned = DOMPurify.sanitize(actualContent, config) as unknown as string;
+    // 코어 「본문 콘텐츠」 규칙(G7Core.contentPolicy, engine-v1.90.0)이 있으면 그 규칙으로 정화한다 — 켜진 후보(그림 캡션·업로드 동영상·
+    // 오디오·외부 영상)를 살리고 외부 영상은 정해진 플레이어 iframe 으로 바꾼다. prop 으로 덧붙인 금지는 규칙으로 풀 수 없다.
+    // 규칙이 없으면(옛 코어) 종전 경로다 (#883)
+    const policySanitized = (window as any)?.G7Core?.contentPolicy?.sanitize?.(DOMPurify, actualContent, {
+      ...config,
+      FORBID_TAGS: [...defaultConfig.FORBID_TAGS],
+      G7_KEEP_FORBID_TAGS: purifyConfig?.FORBID_TAGS || [],
+    });
+    const cleaned = typeof policySanitized === 'string'
+      ? policySanitized
+      : (DOMPurify.sanitize(actualContent, config) as unknown as string);
 
     // target="_blank" 링크에 rel 속성 추가 (보안)
     return cleaned.replace(

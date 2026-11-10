@@ -1,0 +1,24 @@
+feature: 이커머스 본문 미디어 수명 — 상품·공통 정보 삭제와 임시 정리 (#887)
+
+description: |
+  상품(영구 삭제)·상품 공통 정보를 지우면 그 소유의 본문 미디어 행(범용 첨부 표 `ecommerce_attachments`, 본문에서 빠져 소프트 삭제된 것 포함)을
+  영구 삭제하고 파일은 커밋된 뒤에 지운다(`ContentMediaPurger` → StorageTransaction::deleteAfterCommit). 삭제가 되돌아가면
+  행·파일이 남는다. 다른 소유자의 본문 미디어는 건드리지 않는다. 저장하지 않고 나간 임시 본문 미디어(owner_id=null + 임시 키,
+  상품·공통 정보 모두)는 임시 상품 이미지 정리 명령(`sirsoft-ecommerce:prune-temp-product-images`, 매일, 토글 없음, 기본
+  보존 2일)이 함께 지운다. `--dry-run` 은 세기만 한다.
+
+axes:
+  case: [product_deleted, common_info_deleted, delete_rolled_back, temp_pruned]
+
+effects:
+  - owner_delete_purges_rows
+  - owner_delete_purges_files
+  - other_owner_untouched
+  - rollback_keeps_media_file
+  - stale_temp_media_pruned_both_owner_types
+  - fresh_or_linked_media_kept
+  - dry_run_keeps_media
+  - prune_scheduled_daily
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ContentMediaLifecycleTest.php

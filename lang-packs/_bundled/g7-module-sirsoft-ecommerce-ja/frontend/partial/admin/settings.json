@@ -15,6 +15,7 @@
     "claim": "クレーム",
     "shipping": "配送設定",
     "review_settings": "レビュー設定",
+    "product_display": "商品陳列",
     "notification_definitions": "通知設定",
     "identity_policies": "本人認証ポリシー",
     "mileage": "マイレージ",
@@ -567,7 +568,7 @@
   "seo": {
     "meta_settings": {
       "title": "メタタグ設定",
-      "description": "各ページのメタタグを設定します。変数を使用して動的に設定できます。",
+      "description": "各ページのメタタグを設定します。変数を使用して動的に設定できます。Title は検索エンジンのタイトルと訪問者のブラウザタブのタイトルの両方に使われ、サイト名はコアSEO設定の「タイトル接尾辞」(空の場合は ' - サイト名')で後ろに付くため、テンプレートに含める必要はありません。",
       "main_page": "メインページ",
       "category_page": "カテゴリー",
       "search_page": "検索結果",
@@ -616,6 +617,19 @@
     "images_unit": "枚",
     "max_image_size_mb_label": "画像最大容量",
     "max_image_size_mb_hint": "アップロード可能な画像ファイルの最大容量"
+  },
+  "product_display": {
+    "title": "関連商品",
+    "description": "商品詳細の下に表示する「この商品はいかがですか？」リストを設定します。代表カテゴリーの商品を先に、足りない場合はその上位カテゴリーの商品で補います（最大8件）。",
+    "order_label": "同じ段階内の並び順",
+    "order_hint": "代表カテゴリー・上位カテゴリーなど、同じ段階の中で商品を並べる順序です。",
+    "order_random": "ランダム",
+    "order_sales": "販売数の多い順",
+    "order_reviews": "レビューの多い順",
+    "order_latest": "新着順",
+    "cache_hours_label": "リスト保持時間",
+    "hours_unit": "時間",
+    "cache_hours_hint": "一度選んだリストをこの時間そのまま表示します（ランダムでもこの間は同じリスト）。0にすると表示のたびに選び直します。保存すると、これまでに選んだリストは消去されます。"
   },
   "notification_definitions": {
     "title": "通知設定",

@@ -112,6 +112,11 @@ class TemplateManager implements TemplateManagerInterface
     protected array $bundledTemplates = [];
 
     /**
+     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다(#860)
+     */
+    protected bool $pendingAndBundledLoaded = false;
+
+    /**
      * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고 (#712 — {@see takeLastLayoutWarnings()})
      *
      * @var array<int, array{file: string, partial: string, reason: string, message: string}>
@@ -271,11 +276,11 @@ class TemplateManager implements TemplateManagerInterface
             }
         }
 
-        // _pending 디렉토리 로드
-        $this->loadPendingTemplates();
-
-        // _bundled 디렉토리 로드
-        $this->loadBundledTemplates();
+        // _pending / _bundled 메타는 관리 목록·업데이트 확인처럼 실제로 쓰는 곳이 처음 읽을 때 로드한다 — 부팅마다
+        // 미설치 번들 매니페스트까지 읽지 않게(#860). 다시 load 하면 지연 상태를 처음으로 돌린다.
+        $this->pendingTemplates = [];
+        $this->bundledTemplates = [];
+        $this->pendingAndBundledLoaded = false;
     }
 
     /**
@@ -292,7 +297,7 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($pending as $identifier => $metadata) {
             // 이미 활성 디렉토리에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier])) {
+            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
                 continue;
             }
 
@@ -314,12 +319,31 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($bundled as $identifier => $metadata) {
             // 이미 활성 디렉토리 또는 pending에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
+            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier]) || isset($this->bundledTemplates[$identifier])) {
                 continue;
             }
 
             $this->bundledTemplates[$identifier] = $metadata;
         }
+    }
+
+    /**
+     * _pending / _bundled 템플릿 메타데이터를 처음 읽힐 때 한 번 로드합니다.
+     *
+     * 읽는 것은 매니페스트 JSON 뿐이다 — 번들 사본의 진입 클래스를 require 하지 않는다(재선언 Fatal 선례).
+     * 이미 메모리에 있는 키는 덮지 않는다(같은 주기에 갱신·재로드된 항목 보존).
+     *
+     * @return void 반환값 없음
+     */
+    protected function ensurePendingAndBundledLoaded(): void
+    {
+        if ($this->pendingAndBundledLoaded) {
+            return;
+        }
+
+        $this->pendingAndBundledLoaded = true;
+        $this->loadPendingTemplates();
+        $this->loadBundledTemplates();
     }
 
     /**
@@ -329,6 +353,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getPendingTemplates(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->pendingTemplates;
     }
 
@@ -339,6 +365,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getBundledTemplates(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->bundledTemplates;
     }
 
@@ -487,7 +515,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  mixed  $declared  선언값 (`{localStorage: [], sessionStorage: [], cookie: []}`)
      * @param  string  $identifier  템플릿 식별자 (로그용)
-     * @param  bool  $reportWarnings  설치처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
+     * @param  bool  $reportWarnings  설치·업데이트처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
      * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
      */
     public static function normalizeNecessaryStorage(mixed $declared, string $identifier, bool $reportWarnings = false): array
@@ -497,13 +525,14 @@ class TemplateManager implements TemplateManagerInterface
             return $result;
         }
 
-        $invalid = [];
+        // 버린 이유별로 모은다 — 경고 문구가 「무엇을 왜 버렸는지」를 이유마다 한 덩어리로 말한다
+        $invalid = ['not_object' => false, 'invalid_scope' => [], 'invalid_key' => []];
         if (! is_array($declared)) {
-            $invalid[] = 'necessary_storage';
+            $invalid['not_object'] = true;
         } else {
             foreach ($declared as $scope => $items) {
                 if (! in_array($scope, self::NECESSARY_STORAGE_SCOPES, true) || ! is_array($items)) {
-                    $invalid[] = (string) $scope;
+                    $invalid['invalid_scope'][] = (string) $scope;
 
                     continue;
                 }
@@ -511,20 +540,34 @@ class TemplateManager implements TemplateManagerInterface
                     if (is_string($item) && strlen($item) <= 128 && preg_match(self::NECESSARY_STORAGE_KEY_PATTERN, $item) === 1) {
                         $result[$scope][] = $item;
                     } else {
-                        $invalid[] = $scope.':'.(is_scalar($item) ? (string) $item : gettype($item));
+                        $invalid['invalid_key'][] = $scope.':'.(is_scalar($item) ? (string) $item : gettype($item));
                     }
                 }
                 $result[$scope] = array_values(array_unique($result[$scope]));
             }
         }
 
-        if ($invalid !== []) {
+        $reasons = [];
+        if ($invalid['not_object']) {
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_not_object', [], 'necessary_storage');
+        }
+        if ($invalid['invalid_scope'] !== []) {
+            $names = implode(', ', $invalid['invalid_scope']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_scope', ['names' => $names], $names);
+        }
+        if ($invalid['invalid_key'] !== []) {
+            $items = implode(', ', $invalid['invalid_key']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_key', ['items' => $items], $items);
+        }
+
+        if ($reasons !== []) {
             Log::warning('template.json necessary_storage 의 형식이 틀린 항목을 무시합니다', [
                 'template' => $identifier,
                 'invalid' => $invalid,
             ]);
             if ($reportWarnings) {
-                LifecycleWarnings::current()->add('necessary_storage', $identifier, implode(', ', $invalid));
+                // 템플릿이 template.json 에 잘못 적은 값이라 다시 실행해도 같다 — 템플릿 개발자가 고칠 선언으로 표시한다
+                LifecycleWarnings::current()->declaration('necessary_storage', $identifier, implode(' / ', $reasons));
             }
         }
 
@@ -564,6 +607,10 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function installTemplate(string $templateName, ?\Closure $onProgress = null, bool $force = false): bool
     {
+        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'install');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_install', $templateName);
 
@@ -704,6 +751,10 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function activateTemplate(string $templateName, bool $force = false): array
     {
+        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'activate');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_activate', $templateName);
 
@@ -718,7 +769,7 @@ class TemplateManager implements TemplateManagerInterface
         }
 
         // 멈춘 업데이트(updating 고착)는 활성화가 정리하고 진행한다(7.1.1 출시 전)
-        if (StuckUpdateRecovery::recover('template', $templateName, $templateRecord, fn (array $attributes) => $this->templateRepository->updateByIdentifier($templateName, $attributes)) !== null) {
+        if (StuckUpdateRecovery::recover('template', $templateName, $templateRecord, fn (array $attributes) => $this->templateRepository->updateByIdentifier($templateName, $attributes), lockHeld: true) !== null) {
             self::invalidateTemplateStatusCache();
             $templateRecord = $this->templateRepository->findByIdentifier($templateName);
         }
@@ -875,6 +926,10 @@ class TemplateManager implements TemplateManagerInterface
         ?string $incompatibleRequiredVersion = null,
         ?string &$failureReason = null,
     ): bool {
+        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'deactivate');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_deactivate', $templateName);
 
@@ -943,6 +998,10 @@ class TemplateManager implements TemplateManagerInterface
         ?array &$preservedBackups = null,
         bool $deleteData = false,
     ): bool {
+        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'uninstall');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_uninstall', $templateName, $deleteData);
 
@@ -1065,6 +1124,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getIntegrationConstraints(string $identifier): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $template = $this->templates[$identifier]
             ?? $this->pendingTemplates[$identifier]
             ?? $this->bundledTemplates[$identifier]
@@ -1090,6 +1151,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getUninstalledTemplates(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $uninstalledTemplates = [];
         // 캐시된 설치된 템플릿 identifier 목록 활용
         // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
@@ -1181,6 +1244,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getInstalledTemplatesWithDetails(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $installedTemplates = [];
         $templateRecords = $this->templateRepository->getAllKeyedByIdentifier();
         $locale = app()->getLocale();
@@ -1236,6 +1301,13 @@ class TemplateManager implements TemplateManagerInterface
                         $record->update_source ?? null,
                         $this->findBundledTemplateManifest($identifier),
                         $template['g7_version'] ?? null
+                    )) : []),
+                    // 업데이트 대상 판이 요구하는 의존·연동 중 지금 못 미치는 것 — 업데이트 창이 실행 전에 알린다(업데이트가 있을 때만).
+                    // 판정은 업데이트 뒤 완료 문구의 경고·안내와 같다. GitHub 출처라 대상 판 manifest 를 모르면 null.
+                    ...($updateAvailable ? $this->buildUpdateTargetRequirementFields($this->resolveUpdateTargetManifest(
+                        $record->update_source ?? null,
+                        $this->findBundledTemplateManifest($identifier),
+                        $latestVersion
                     )) : []),
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
@@ -1331,6 +1403,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function getTemplateInfoFromMetadata(string $templateName): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $metadata = $this->pendingTemplates[$templateName] ?? $this->bundledTemplates[$templateName] ?? null;
 
         if (! $metadata) {
@@ -2843,6 +2917,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function copyToActiveFromSource(string $templateName, ?\Closure $onProgress = null, bool $force = false): void
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
 
         // _pending에서 찾기
@@ -2880,6 +2956,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function reloadTemplate(string $templateName): void
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $directory = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
         $templateFile = $directory.DIRECTORY_SEPARATOR.'template.json';
 
@@ -2951,6 +3029,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function checkTemplateUpdate(string $identifier, ?string $source = null): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
             return $this->buildTemplateUpdateResponse(false, null, null, null, null);
@@ -3041,6 +3121,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function bundledTemplateUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $meta = $this->bundledTemplates[$identifier]
             ?? (ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json')[$identifier] ?? null);
         $version = is_array($meta) ? ($meta['version'] ?? null) : null;
@@ -3254,6 +3336,16 @@ class TemplateManager implements TemplateManagerInterface
         // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
         $operationLock = ExtensionOperationLock::acquire('template', $identifier);
 
+        // 진행 중 하트비트 — 단계마다(30초 간격) 잠금을 늘리고, `updating` 기록 뒤에는 행 `updated_at` 도 갱신한다. 10분 넘게
+        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(#161 D4).
+        $statusUpdating = false;
+        $touch = function () use (&$statusUpdating, $identifier): void {
+            if ($statusUpdating) {
+                $this->templateRepository->updateByIdentifier($identifier, ['updated_at' => now()]);
+            }
+        };
+        $onProgress = $operationLock->wrapProgress($onProgress, $touch);
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_version_update', $identifier);
 
@@ -3373,6 +3465,7 @@ class TemplateManager implements TemplateManagerInterface
                 'status' => ExtensionStatus::Updating->value,
                 'updated_at' => now(),
             ]);
+            $statusUpdating = true;
 
             // 3. 스테이징 (소스에 따라 분기) — 템플릿은 composer install 불필요
             $onProgress?->__invoke('staging', __('extensions.progress.staging'));
@@ -3474,6 +3567,7 @@ class TemplateManager implements TemplateManagerInterface
                 'status' => $previousStatus,
                 'updated_at' => now(),
             ]);
+            $statusUpdating = false;
 
             // 7. 레이아웃 갱신 (이전 상태가 active이고 overwrite 전략이면)
             // refreshTemplateLayouts()는 캐시 초기화 + 캐시 버전 증가를 포함
@@ -3540,6 +3634,12 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_strategy' => $layoutStrategy,
             ]);
 
+            // 새 판의 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 설치와 같이 틀린 항목은 무시하고 경고로만
+            // 알린다. 업데이트로 들어온 선언이 틀려도 로그에만 남고 결과 창·CLI 에는 보이지 않았다 (7.1.5)
+            if (is_array($template)) {
+                self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $identifier, reportWarnings: true);
+            }
+
             // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
             // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.
             $dependencyWarnings = DependencyVersionWarnings::afterUpdate(
@@ -3574,6 +3674,7 @@ class TemplateManager implements TemplateManagerInterface
             ];
 
         } catch (\Throwable $e) {
+            $statusUpdating = false;
             Log::error('템플릿 업데이트 실패', [
                 'template' => $identifier,
                 'error' => $e->getMessage(),
@@ -3657,6 +3758,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledTemplates[$identifier])) {
             return 'bundled';
         }
@@ -3685,6 +3788,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function getBundledVersion(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledTemplates[$identifier]['version'])) {
             return $this->bundledTemplates[$identifier]['version'];
         }
@@ -3702,6 +3807,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function findBundledTemplateManifest(string $identifier): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledTemplates[$identifier])) {
             return $this->bundledTemplates[$identifier];
         }

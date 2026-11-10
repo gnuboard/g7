@@ -48,20 +48,37 @@ e2e:allow 표시 방식 선택지 번역·의미 클래스 위치 교정 — 구
       </div>
       <div data-ref="settings_form" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="settings_fields" class="p-6 space-y-6">
-          <div data-ref="field_display_mode" class="grid-3col-responsive">
+          <!-- 표시 방식은 기기별로 고른다(1.2.0) — 기기는 클릭 시점 화면 폭으로 가른다(1023px 이하 = 모바일·태블릿) -->
+          <div data-ref="field_display_mode_pc" class="grid-3col-responsive">
             <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.display_mode.label</label>
-              <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.display_mode.hint</p>
+              <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.label</label>
+              <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <select name="display_mode" aria-label="$t:sirsoft-daum_postcode.settings.fields.display_mode.label" class="w-full" disabled="{{_computed.isPluginReadOnly}}">
+              <select name="display_mode_pc" aria-label="$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.label" class="w-full" disabled="{{_computed.isPluginReadOnly}}">
                 <options>
-                  <option value="popup">$t:sirsoft-daum_postcode.settings.fields.display_mode.popup</option>
-                  <option value="layer">$t:sirsoft-daum_postcode.settings.fields.display_mode.layer</option>
+                  <option value="popup">$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.popup</option>
+                  <option value="layer">$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.layer</option>
+                  <option value="inline">$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.inline</option>
                 </options>
               </select>
               <!-- 저장 오류는 상단 상자와 함께 그 칸 아래에도 보인다(어느 칸을 고쳐야 하는지, 7.1.0 실측 M1-O11) -->
-              <span data-if="{{_local.errors?.display_mode}}" class="form-error">{{_local.errors?.display_mode?.[0]}}</span>
+              <span data-if="{{_local.errors?.display_mode_pc}}" class="form-error">{{_local.errors?.display_mode_pc?.[0]}}</span>
+            </div>
+          </div>
+          <div data-ref="field_display_mode_mobile" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label">$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.label</label>
+              <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <select name="display_mode_mobile" aria-label="$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.label" class="w-full" disabled="{{_computed.isPluginReadOnly}}">
+                <options>
+                  <option value="inline">$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.inline</option>
+                  <option value="fullscreen">$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.fullscreen</option>
+                </options>
+              </select>
+              <span data-if="{{_local.errors?.display_mode_mobile}}" class="form-error">{{_local.errors?.display_mode_mobile?.[0]}}</span>
             </div>
           </div>
           <div data-ref="field_popup_width" class="grid-3col-responsive">

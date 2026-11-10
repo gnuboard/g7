@@ -279,7 +279,10 @@ class UserReceiptController extends PublicBaseController
             ['key' => 'transaction_id', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.transaction_id'), 'value' => (string) $payment->transaction_id],
             ['key' => 'amount', 'label' => $amountLabel, 'value' => $this->formatCbtAmount($this->resolveCbtAmount($payment, $paymentMeta, $raw), $currency)],
             ['key' => 'deposit_status', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.deposit_status'), 'value' => $this->cbtPaymentStatusLabel($paymentStatus)],
-            ['key' => 'approved_at', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.approved_at'), 'value' => $this->formatCbtDateTime($raw['applDate'] ?? $raw['applDt'] ?? null, $raw['applTime'] ?? $raw['applTm'] ?? null)],
+            // 편의점 승인 시각은 일본 PG 입금 통보의 일본 시각이라 시간대를 밝힌다(D11). 카드·PayPay 는 PG 사양 미확인이라 그대로 둔다.
+            ['key' => 'approved_at', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.approved_at'), 'value' => $payMethod === 'CVS'
+                ? $this->markJst($this->formatCbtDateTime($raw['applDate'] ?? $raw['applDt'] ?? null, $raw['applTime'] ?? $raw['applTm'] ?? null))
+                : $this->formatCbtDateTime($raw['applDate'] ?? $raw['applDt'] ?? null, $raw['applTime'] ?? $raw['applTm'] ?? null)],
         ];
 
         if ($payMethod === 'CARD') {
@@ -295,7 +298,7 @@ class UserReceiptController extends PublicBaseController
             $fields[] = ['key' => 'cvs_code', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_code'), 'value' => (string) ($raw['convenience'] ?? $paymentMeta['cvs_convenience'] ?? '')];
             $fields[] = ['key' => 'cvs_confirmation_no', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_confirmation_no'), 'value' => (string) ($raw['confNo'] ?? $paymentMeta['cvs_conf_no'] ?? $payment->vbank_number ?? '')];
             $fields[] = ['key' => 'cvs_receipt_no', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_receipt_no'), 'value' => (string) ($raw['receiptNo'] ?? $paymentMeta['cvs_receipt_no'] ?? '')];
-            $fields[] = ['key' => 'cvs_payment_term', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_payment_term'), 'value' => $this->formatCbtCompactDateTime((string) ($raw['paymentTerm'] ?? $paymentMeta['cvs_payment_term'] ?? ''))];
+            $fields[] = ['key' => 'cvs_payment_term', 'label' => __('sirsoft-pay_kginicis::messages.receipt.fields.cvs_payment_term'), 'value' => $this->markJst($this->formatCbtCompactDateTime((string) ($raw['paymentTerm'] ?? $paymentMeta['cvs_payment_term'] ?? '')))];
         }
 
         return array_values(array_filter(
@@ -462,6 +465,17 @@ class UserReceiptController extends PublicBaseController
         }
 
         return $this->formatCbtDateTime(substr($value, 0, 8), substr($value, 8, 6));
+    }
+
+    /**
+     * 일본 PG 의 일본 시각 표시 문자열에 시간대 표기( (JST))를 붙입니다. (일본 시각 그대로 — D11)
+     *
+     * @param  string  $value  일본 시각 표시 문자열
+     * @return string 시간대를 붙인 문자열 (빈 값이면 빈 문자열)
+     */
+    private function markJst(string $value): string
+    {
+        return $value === '' ? '' : $value.' (JST)';
     }
 
     /**

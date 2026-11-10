@@ -1,4 +1,5 @@
-<!-- 상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지
+<!-- e2e:allow 회원 없이 등록한 후기(다른 쇼핑몰 이관)의 작성자·「이관」·주문 「—」·HTML 본문 표시 — 이관 도구가 넣는 데이터라 조작 흐름이 없고, 소비 계약은 importedReviewDisplay.test.ts, 응답은 PHPUnit ImportedProductReviewTest 가 고정
+  상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지
   audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=""` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다
   않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).
   조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를
@@ -567,7 +568,8 @@
           </column>
           <column field="content" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.content" width="200px" :sortable="false">
             <cell>
-              <div class="w-full max-w-[200px] truncate text-primary" title="{{row.content ?? ''}}">{{row.content ?? ''}}</div>
+              <!-- HTML 본문(다른 쇼핑몰에서 이관한 후기)은 태그를 걷어 낸 글자만 한 줄로 보인다 -->
+              <div class="w-full max-w-[200px] truncate text-primary" title="{{row.content_plain ?? row.content ?? ''}}">{{row.content_plain ?? row.content ?? ''}}</div>
             </cell>
           </column>
           <column field="rating" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.rating" width="100px" :sortable="false">
@@ -587,16 +589,20 @@
                   </on>
                   {{row.user?.name ?? ''}}
                 </a>
+                <!-- 회원이 없는 후기(다른 쇼핑몰에서 이관) — 저장된 작성자 이름 그대로 + 「이관」 표시 -->
                 <span data-if="{{!row.user_id}}" class="text-gray-700 dark:text-gray-300 font-medium">
-                  <span>{{row.user?.name ?? ''}}</span>
-                  <span class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                  <span>{{row.author_name ?? row.user?.name ?? ''}}</span>
+                  <span data-if="{{row.is_imported}}" class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.product_review.table.imported)</span>
+                  <span data-if="{{!row.is_imported}}" class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
                 </span>
               </div>
             </cell>
           </column>
           <column field="order_number" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.order_number" width="120px" :sortable="false">
             <cell>
-              <a href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="text-blue-600 hover:underline dark:text-blue-400">{{row.orderOption?.order_number ?? ''}}</a>
+              <a data-if="{{!!row.orderOption?.order_number}}" href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="text-blue-600 hover:underline dark:text-blue-400">{{row.orderOption?.order_number ?? ''}}</a>
+              <!-- 주문 없이 등록된 후기 -->
+              <span data-if="{{!row.orderOption?.order_number}}" class="text-gray-500 dark:text-gray-400">—</span>
             </cell>
           </column>
           <column field="created_at" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.created_at" width="120px" :sortable="false">
@@ -645,21 +651,25 @@
                         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.reviewer</span>
                         <span data-if="{{!!row.user_id}}" class="text-primary font-medium">{{`${row.user?.name ?? ''} (${row.user?.email ?? ''})`}}</span>
                         <span data-if="{{!row.user_id}}" class="text-primary font-medium">
-                          <span>{{row.user?.name ?? ''}}</span>
-                          <span class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                          <span>{{row.author_name ?? row.user?.name ?? ''}}</span>
+                          <span data-if="{{row.is_imported}}" class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.product_review.table.imported)</span>
+                          <span data-if="{{!row.is_imported}}" class="text-gray-500 dark:text-gray-400 ml-1">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
                         </span>
                       </div>
+                      <!-- 주문 없이 등록된 후기(다른 쇼핑몰에서 이관)는 주문번호·구매수량·구매일시를 「—」 로 -->
                       <div class="flex justify-between">
                         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.order_number</span>
-                        <a href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="text-blue-600 hover:underline dark:text-blue-400 font-medium">{{row.orderOption?.order_number ?? ''}}</a>
+                        <a data-if="{{!!row.orderOption?.order_number}}" href="{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}" class="text-blue-600 hover:underline dark:text-blue-400 font-medium">{{row.orderOption?.order_number ?? ''}}</a>
+                        <span data-if="{{!row.orderOption?.order_number}}" class="text-gray-500 dark:text-gray-400">—</span>
                       </div>
                       <div class="flex justify-between">
                         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.quantity</span>
-                        <span class="text-primary">$t:defer:sirsoft-ecommerce.admin.product_review.table.quantity_value|count={{row.orderOption?.quantity ?? ''}}</span>
+                        <span data-if="{{!!row.orderOption}}" class="text-primary">$t:defer:sirsoft-ecommerce.admin.product_review.table.quantity_value|count={{row.orderOption?.quantity ?? ''}}</span>
+                        <span data-if="{{!row.orderOption}}" class="text-gray-500 dark:text-gray-400">—</span>
                       </div>
                       <div class="flex justify-between">
                         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.purchase_date</span>
-                        <span class="text-primary">{{row.orderOption?.created_at ?? ''}}</span>
+                        <span class="text-primary">{{row.orderOption?.created_at ?? '—'}}</span>
                       </div>
                     </div>
                   </div>
@@ -676,7 +686,9 @@
                     </div>
                     <!-- 카드 본문: 리뷰 내용 + 이미지 -->
                     <div class="px-4 py-3">
-                      <div class="text-primary mb-4">{{row.content ?? ''}}</div>
+                      <div data-if="{{row.content_mode !== 'html'}}" class="text-primary mb-4">{{row.content ?? ''}}</div>
+                      <!-- HTML 본문(다른 쇼핑몰에서 이관한 후기) — 서버가 저장 때 정화했고 컴포넌트가 한 번 더 정화한다 -->
+                      <html-content data-if="{{row.content_mode === 'html'}}" data-type="composite" content="{{row.content ?? ''}}" :isHtml="true" class="text-primary mb-4 prose prose-sm dark:prose-invert max-w-none"/>
                       <!-- 첨부 이미지 레이블 -->
                       <div data-if="{{rowImageCount > 0}}" class="flex items-center gap-1 mt-2 text-tertiary">
                         <icon name="image" size="sm"/>
@@ -689,11 +701,11 @@
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="0">
                               <field name="reviewForModal">
-                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="userName" value="{{row.author_name ?? row.user?.name ?? ''}}"/>
                                 <field name="rating" value="{{row.rating}}"/>
                                 <field name="createdAt" value="{{row.created_at}}"/>
                                 <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
-                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="content" value="{{row.content_plain ?? row.content ?? ''}}"/>
                                 <field name="images" value="{{rowImages ?? []}}"/>
                               </field>
                             </set-state>
@@ -706,11 +718,11 @@
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="1">
                               <field name="reviewForModal">
-                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="userName" value="{{row.author_name ?? row.user?.name ?? ''}}"/>
                                 <field name="rating" value="{{row.rating}}"/>
                                 <field name="createdAt" value="{{row.created_at}}"/>
                                 <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
-                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="content" value="{{row.content_plain ?? row.content ?? ''}}"/>
                                 <field name="images" value="{{rowImages ?? []}}"/>
                               </field>
                             </set-state>
@@ -723,11 +735,11 @@
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="2">
                               <field name="reviewForModal">
-                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="userName" value="{{row.author_name ?? row.user?.name ?? ''}}"/>
                                 <field name="rating" value="{{row.rating}}"/>
                                 <field name="createdAt" value="{{row.created_at}}"/>
                                 <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
-                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="content" value="{{row.content_plain ?? row.content ?? ''}}"/>
                                 <field name="images" value="{{rowImages ?? []}}"/>
                               </field>
                             </set-state>
@@ -740,11 +752,11 @@
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="3">
                               <field name="reviewForModal">
-                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="userName" value="{{row.author_name ?? row.user?.name ?? ''}}"/>
                                 <field name="rating" value="{{row.rating}}"/>
                                 <field name="createdAt" value="{{row.created_at}}"/>
                                 <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
-                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="content" value="{{row.content_plain ?? row.content ?? ''}}"/>
                                 <field name="images" value="{{rowImages ?? []}}"/>
                               </field>
                             </set-state>
@@ -757,11 +769,11 @@
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="3">
                               <field name="reviewForModal">
-                                <field name="userName" value="{{row.user?.name ?? ''}}"/>
+                                <field name="userName" value="{{row.author_name ?? row.user?.name ?? ''}}"/>
                                 <field name="rating" value="{{row.rating}}"/>
                                 <field name="createdAt" value="{{row.created_at}}"/>
                                 <field name="optionValues" value="{{row.option_snapshot?.option_values ?? []}}"/>
-                                <field name="content" value="{{row.content ?? ''}}"/>
+                                <field name="content" value="{{row.content_plain ?? row.content ?? ''}}"/>
                                 <field name="images" value="{{rowImages ?? []}}"/>
                               </field>
                             </set-state>
@@ -794,11 +806,13 @@
                     </div>
                     <!-- 카드 본문: 답변 내용 (보기 모드) -->
                     <div data-if="{{_local.editingReviewId !== row.id}}" class="px-4 py-3">
-                      <div class="text-primary">{{rowReplyContent}}</div>
+                      <div data-if="{{row.reply_content_mode !== 'html'}}" class="text-primary">{{rowReplyContent}}</div>
+                      <html-content data-if="{{row.reply_content_mode === 'html'}}" data-type="composite" content="{{rowReplyContent ?? ''}}" :isHtml="true" class="text-primary prose prose-sm dark:prose-invert max-w-none"/>
                     </div>
                     <!-- 카드 푸터: 메타(관리자명·답변일) + 수정/삭제 버튼 (보기 모드) -->
                     <div data-if="{{_local.editingReviewId !== row.id}}" class="flex-between gap-2 px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
-                      <span class="text-secondary text-xs">{{`${row.reply_admin?.name ?? ''} (${row.reply_admin?.email ?? ''}) · ${row.replied_at ?? ''}${row.reply_updated_at ? ' · ' + $t('sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label') + row.reply_updated_at : ''}`}}</span>
+                      <!-- 이관한 답변은 등록 관리자가 없다 — 관리자 이름·이메일 칸을 빼고 답변일만 -->
+                      <span class="text-secondary text-xs">{{`${row.reply_admin ? (row.reply_admin?.name ?? '') + ' (' + (row.reply_admin?.email ?? '') + ') · ' : ''}${row.replied_at ?? ''}${row.reply_updated_at ? ' · ' + $t('sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label') + row.reply_updated_at : ''}`}}</span>
                       <div class="flex gap-2 shrink-0">
                         <!-- 답글 고치기 — 어느 행이 편집 중인지 id 로 표시하고 지금 답글을 입력칸에 옮겨 담는다(행마다 폼을 따로 두지 않고 한 벌을 돌려 쓴다) -->
                         <button data-ref="review_reply_edit_button" type="button" class="btn btn-sm btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">

@@ -1,0 +1,47 @@
+<!-- 쇼핑몰 설정 — 상품 진열 탭. 상품 상세 아래 「이 상품은 어떠세요?」(관련 상품) 목록의 순서와 목록 유지 시간을 정한다.
+  관련 상품은 대표 분류 → 그 상위 분류 단계로 채우고, 여기서 고르는 것은 같은 단계 안 순서다. 숫자 칸의 형 변환과 범위 판정은 저장 시 서버가 한다.
+  e2e:allow — 탭 표시는 Chrome MCP 로 실측했고, 저장·검증·캐시 비움은 PHPUnit(PublicProductRelatedTest)이 HTTP 로 잠근다. -->
+<partial description="쇼핑몰 설정 상품 진열 탭 콘텐츠">
+  <div data-ref="tab_content_product_display" data-if="{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'product_display'}}">
+    <div data-ref="product_display_related_card" class="admin-card">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.product_display.title</h3>
+      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.product_display.description</div>
+      <div class="row-stack">
+        <!-- 같은 단계 안 순서 -->
+        <div class="flex-center gap-2 flex-wrap">
+          <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.product_display.order_label</span>
+          <select name="product_display.related_order" aria-label="$t:sirsoft-ecommerce.admin.settings.product_display.order_label" :autoBinding="false" class="w-48" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.product_display?.related_order ?? 'random'}}" error="{{_local.errors?.['product_display.related_order']?.[0] ?? ''}}">
+            <options>
+              <option value="random">$t:sirsoft-ecommerce.admin.settings.product_display.order_random</option>
+              <option value="sales">$t:sirsoft-ecommerce.admin.settings.product_display.order_sales</option>
+              <option value="reviews">$t:sirsoft-ecommerce.admin.settings.product_display.order_reviews</option>
+              <option value="latest">$t:sirsoft-ecommerce.admin.settings.product_display.order_latest</option>
+            </options>
+            <on type="change">
+              <!-- 단계 안 순서. 저장하면 이미 골라 둔 목록을 비우므로 다음 상세 열람부터 새 순서다. -->
+              <set-state target="local" form.product_display.related_order="{{$event.target.value}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.product_display.order_hint</p>
+        </div>
+        <!-- 목록 유지 시간 -->
+        <div class="flex-center gap-2 flex-wrap">
+          <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.product_display.cache_hours_label</span>
+          <input type="number" min="0" max="720" step="1" aria-label="$t:sirsoft-ecommerce.admin.settings.product_display.cache_hours_label" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.product_display?.related_cache_hours ?? 24}}">
+            <on type="change">
+              <!-- 한 번 고른 목록을 몇 시간 그대로 둘지(0~720). 0 이면 볼 때마다 새로 고른다. -->
+              <set-state target="local" form.product_display.related_cache_hours="{{Number($event.target.value)}}" :hasChanges="true"/>
+            </on>
+          </input>
+          <span class="text-body">$t:sirsoft-ecommerce.admin.settings.product_display.hours_unit</span>
+          <p class="w-full form-hint">$t:sirsoft-ecommerce.admin.settings.product_display.cache_hours_hint</p>
+          <span data-if="{{_local.errors?.['product_display.related_cache_hours']}}" class="w-full form-error">{{_local.errors?.['product_display.related_cache_hours']?.[0] ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <!-- 본문 미디어 — 상품 설명·공통 정보 편집기 본문에 바로 넣는 이미지·동영상·오디오의 규칙 (#883). 비우면 상품 이미지 규칙(동영상·오디오는 코어 「본문 콘텐츠」 스위치) -->
+    <div data-ref="product_display_content_media_card" class="admin-card mt-4">
+      <include src="_content_media_policy.g7.html"/>
+    </div>
+  </div>
+</partial>

@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicReviewListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewResource;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -18,6 +19,11 @@ use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
  */
 class ProductReviewController extends PublicBaseController
 {
+    /**
+     * 상품 후기 서비스를 주입받습니다.
+     *
+     * @param  ProductReviewService  $reviewService  상품 후기 서비스
+     */
     public function __construct(
         private ProductReviewService $reviewService
     ) {}
@@ -54,6 +60,13 @@ class ProductReviewController extends PublicBaseController
                 ]
             );
         } catch (Exception $e) {
+            Log::error('review.index failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'product_id' => $product->id,
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.reviews.fetch_failed',

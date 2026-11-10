@@ -9,6 +9,7 @@ use App\Upgrades\Data\Ext\Plugins\SirsoftPayNicepayments\V1_1_0\Migrations\DropL
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 기설치본의 구 overlay 등록 행 제거 (S13 — 결제 정보 카드 주입을 공용 슬롯으로 전환).
@@ -61,7 +62,7 @@ class DropLegacyPaymentPanelOverlayTest extends PluginTestCase
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        require_once base_path('plugins/_bundled/sirsoft-pay_nicepayments/upgrades/data/1.1.0/migrations/DropLegacyPaymentPanelOverlay.php');
+        UpgradeFiles::requireOnce(base_path('plugins/_bundled/sirsoft-pay_nicepayments/upgrades/data/1.1.0/migrations/DropLegacyPaymentPanelOverlay.php'));
 
         $this->templateId = $this->ensureTemplate();
         DB::table(self::TABLE)->where('template_id', $this->templateId)->delete();

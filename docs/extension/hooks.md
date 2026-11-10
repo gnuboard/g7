@@ -132,7 +132,11 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
 `{prefix}.before_prune`(보존일) / `{prefix}.after_prune`(보존일, 건수).
 **`--dry-run` 에서는 발행하지 않습니다** — 리허설에서 자기 리스너가 돌았다고 착각하지 않도록
 실제 처리 때만 발행합니다. 번들 핸들러의 접두사 전수는 아래 「보존 기간 자동 파기」 카탈로그에 있습니다.
-코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
+코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다. 코어 최근 검색어 보관 기한 핸들러(7.1.5)는
+`core.privacy.search_history` 이고, 인자가 보존일 대신 범위별 기한 맵(`array<범위 id, 일>`)입니다.
+
+최근 검색어 기록(7.1.5)은 `core.search_history.filter_keyword`(filter — 검색어·범위·회원, 빈 문자열이나 문자열이 아닌 값을 돌려주면
+기록하지 않음, 예: 금칙어)와 `core.search_history.after_record`(action — 기록한 행·회원)를 발행합니다.
 구현 예시·규약 표·검증 매트릭스는 [개인정보 보유기간 처리 가이드](../backend/privacy-retention.md)에 있습니다.
 
 ### 개인정보 조치 직권 실행 대상·알림 훅
@@ -420,6 +424,13 @@ core.attachment.download
 core.attachment.update
 core.attachment.delete
 
+# 본문 미디어 공용 훅 (7.1.5) — 모든 확장(모듈·플러그인)의 편집기 본문 미디어. 마지막 인자는 ContentMediaContext
+# (어느 확장·문서의 미디어인지). 확장별 첨부 훅은 본문 미디어에 발화하지 않는다. 상세: content-media.md 「공용 훅」
+core.content_media.before_upload        # (UploadedFile, ctx) 저장 전
+core.content_media.filter_upload_file   # (UploadedFile, ctx) → UploadedFile — 돌려준 파일은 형식·크기 판정을 다시 거친다
+core.content_media.after_upload         # (행, ctx) 행 생성 뒤
+core.content_media.before_delete        # (행, ctx) 행·파일 영구 삭제 직전에만 — 소프트 삭제 때는 발화하지 않는다
+
 # 스토리지 공개 URL 훅 (Filter) — StorageInterface::url() 결과 공급/수정/차단 (공개#100)
 # 컨텍스트 6키는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.storage.filter_url
@@ -455,6 +466,9 @@ sirsoft-page.page.filter_content_thumbnail
 # 새 원본 파일명(xxx.webp)으로 UploadedFile 을 재구성해 반환할 것 — 일부 소비처는 저장
 # 확장자를 원본 파일명에서 얻으므로, 이름을 갱신하지 않으면 확장자와 내용이 어긋난다.
 core.attachment.filter_upload_file                      # 코어 첨부 (아바타 포함)
+core.content_media.before_upload                        # 편집기 본문 미디어 — 모든 확장 공용 (7.1.5)
+core.content_media.filter_upload_file                   # 편집기 본문 미디어 — 반환 파일은 정책 판정을 다시 거침 (7.1.5)
+core.content_media.after_upload                         # 편집기 본문 미디어 (7.1.5)
 core.template_layout_attachment.before_upload           # 레이아웃 편집기 첨부 (7.0.7)
 core.template_layout_attachment.filter_upload_file      # 레이아웃 편집기 첨부 (7.0.7)
 core.template_layout_attachment.after_upload            # 레이아웃 편집기 첨부 (7.0.7)
@@ -668,6 +682,16 @@ $boards = $this->cache->remember('board_menu', function () {
 `collector->addDimensionRow('ext:{식별자}:{키}', 라벨, 방문자유형, 지표)` 로 행을 얹는다 — 집계가
 「지우고 넣기」라 확장이 집계 표에 직접 쓰면 다음 집계가 지운다. 이 훅은 반드시 `'sync' => true` 로
 구독한다(아래 판정표).
+
+### 본문 콘텐츠 규칙 확장 훅 (7.1.5)
+
+| 훅 | 타입 | 받는 값 → 돌려줄 값 |
+| --- | --- | --- |
+| `core.content.filter_embed_providers` | filter | `array $providers`(처음 `[]`) → 외부 영상 서비스 항목 목록. 항목에 `extension`(확장 식별자) 필수, 검증 실패 항목은 버린다. 운영자가 「본문 콘텐츠」 탭에서 켜야 쓰인다 |
+| `core.content.filter_media_source_patterns` | filter | `array $patterns`(구분자 없는 정규식 — 확장이 등록한 서빙 라우트에서 만든 패턴) → 목록. 본문 `<video>`·`<audio>`·`<source>` 의 `src`·`poster` 가 맞아야 남는 서빙 주소를 더한다(기본 패턴 없음) |
+
+항목 형식·서빙 주소 패턴 생성 규칙·예시는 [본문 미디어 업로드 계약 — 본문 콘텐츠 규칙](content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy)을 보세요.
+본문 미디어 업로드·영구 삭제 훅(`core.content_media.*`)의 인자·발화 시점은 [본문 미디어 업로드 계약 — 공용 훅](content-media.md#공용-훅-corecontent_media)에 있습니다.
 
 ### 스토리지·드라이버 확장 훅 페이로드
 
@@ -964,9 +988,28 @@ public static function getSubscribedHooks(): array
 | `sync` 필수 | 같은 응답·바로 다시 연 화면에 보이는 파생 데이터 갱신(상품 총재고·옵션 그룹, 가입 직후 배정값, 저장한 동의값) |
 | `sync` 필수 | `before_*` 훅에서 삭제 전 데이터 정리 — 큐로 가면 커밋 뒤에 돌아 외래키가 이미 값을 지운 상태에서 정리 대상을 찾지 못하고, 실패해도 삭제를 되돌리지 못한다 |
 | `sync` 필수 | 같은 발송·처리 사이클의 문맥을 잇는 리스너(발송 로그 기록과 그 로그에 외부 발송 건을 잇는 리스너) — 큐로 가면 요청 단위 문맥이 작업 경계에서 사라지고, 가리기 전 본문이 큐 인자로 남는다 |
+| `sync` 필수 | 저장 트랜잭션 안 훅(`sirsoft-board.post.before_create_commit`·`before_update_commit`, `sirsoft-ecommerce.product.before_create_commit`·`before_update_commit`) — 큐로 가면 커밋 뒤에 돌아 같은 트랜잭션에 저장할 수 없고 실패해도 저장을 되돌리지 못한다 |
 | 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
 
 선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.
+
+#### 저장 트랜잭션 안 훅
+
+게시글·상품 저장에는 트랜잭션 **안**에서 도는 훅이 있다(7.1.5+). 기존 `after_create`·`after_update` 는 커밋 뒤 그대로다.
+
+| 훅 | 위치 | 인자 |
+| --- | --- | --- |
+| `sirsoft-board.post.before_create_commit` | 글 생성 — 첨부 연결 뒤, 커밋 앞 | `(Post $post, string $slug, array $data, array $options)` |
+| `sirsoft-board.post.before_update_commit` | 글 수정 — 첨부 연결 뒤, 커밋 앞 | `(Post $post, string $slug, array $data, array $snapshot)` |
+| `sirsoft-ecommerce.product.before_create_commit` | 상품 생성 — 트랜잭션 안 마지막 저장 뒤 | `(Product $product, array $data)` |
+| `sirsoft-ecommerce.product.before_update_commit` | 상품 수정 — 트랜잭션 안 마지막 저장 뒤 | `(Product $product, array $data, array $snapshot)` |
+
+- 확장이 글·상품 ID 가 정해진 뒤 같은 트랜잭션에서 자기 데이터를 저장하는 자리다. 리스너는 `'sync' => true` 로 구독한다 — 아니면
+  큐 래핑 + `afterCommit` 이라 커밋 뒤에 돈다.
+- 리스너의 예외는 저장 전체를 되돌린다. 오류 응답이 사용자에게 간다.
+- 커밋 전이라 외부 호출·메일·알림을 보내지 않는다(롤백돼도 되돌릴 수 없다). 그런 일은 `after_*` 에서 한다.
+- 파일을 옮기거나 지우면 `StorageTransaction`([저장소 드라이버 — 트랜잭션 파일 보상](storage-driver.md#트랜잭션-파일-보상-storagetransaction-715))
+  을 쓴다 — 롤백되면 파일도 제자리로 돌아간다.
 
 ### getSubscribedHooks() 옵션 요약
 
@@ -1806,10 +1849,20 @@ doAction('hook.name')
 ### addAction/addFilter 내부 동작
 
 ```text
-addAction()  → Event::listen() 등록 + 리스너 배열 관리
-addFilter()  → Event::listen() 등록 + 리스너 배열 관리 (동일)
-removeAction() / removeFilter() → Event::forget() + 배열에서 제거
+addAction()    → 액션 배열에 추가 + 지금 이벤트 디스패처에 `hook.*` 와일드카드 미러가 없으면 1개 등록
+addFilter()    → 필터 배열에 추가 (Laravel 이벤트에는 등록하지 않음)
+doAction()     → 배열의 콜백을 우선순위 순으로 실행 → Event::dispatch("hook.{이름}") (바깥 리스너용)
+removeAction() → 배열에서 그 콜백만 제거 (같은 훅에 바깥에서 건 Event::listen 리스너는 남음)
+clearAction()  → 배열에서 그 훅 전체 제거 + Event::forget("hook.{이름}") (바깥 리스너도 제거)
+removeFilter() / clearFilter() → 필터 배열에서만 제거
 ```
+
+**이벤트 미러 (7.1.5)** — 바깥 코드가 `Event::listen('hook.x')` 로 듣거나 `Event::dispatch('hook.x')` 로 직접 보내는 계약을 위해, 액션은 Laravel 이벤트로도 연결됩니다. 7.1.4 까지는 액션 콜백마다 이름 리스너를 하나씩 걸었고(요청마다 액션 수만큼), 7.1.5 부터는 디스패처당 `hook.*` 와일드카드 리스너 하나가 액션 배열을 읽어 실행합니다. 등록 여부는 디스패처 객체별로 기억하므로 새 앱·테스트의 새 디스패처에도 다시 걸리고, `Event::fake()` 가 감싼 경우에도 실제 디스패처에 두 번 걸리지 않습니다.
+
+- `doAction()` 안에서 나가는 `Event::dispatch` 는 위 가드(`$dispatching`)로 미러가 건너뛰므로 액션은 **정확히 1회** 실행됩니다.
+- 바깥에서 `Event::dispatch('hook.x', [$a, $b])` 로 보내면 액션이 doAction 과 같은 우선순위 순·같은 인자로 1회 실행됩니다(7.1.4 까지는 등록 순).
+- Laravel 은 이름 리스너를 와일드카드보다 먼저 부르므로, 바깥에서 직접 보낼 때는 같은 이름으로 건 `Event::listen` 리스너가 액션보다 먼저 실행됩니다.
+- 액션이 하나라도 등록된 뒤에는 `Event::hasListeners('hook.x')` 가 모든 훅 이름에 참입니다 — 훅 존재 여부 판정에 쓰지 마세요.
 
 ---
 

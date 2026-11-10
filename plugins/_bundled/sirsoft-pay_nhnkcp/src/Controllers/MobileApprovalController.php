@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
@@ -77,11 +78,13 @@ class MobileApprovalController
      * @param  KcpSoapService  $soapService  KCP SOAP 서비스
      * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
      * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (비회원 주문 소유자 확인)
      */
     public function __construct(
         private readonly KcpSoapService $soapService,
         private readonly OrderProcessingService $orderService,
         private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
+        private readonly GuestOrderAuthService $guestOrderAuthService,
     ) {}
 
     /**
@@ -160,11 +163,9 @@ class MobileApprovalController
                     ], 404);
                 }
 
-                if ((int) $order->user_id !== (int) ($request->user()?->id ?? 0)) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'You cannot request a NHN KCP approval key for this order.',
-                    ], 403);
+                $ownershipError = $this->orderOwnershipError($request, $order);
+                if ($ownershipError !== null) {
+                    return $ownershipError;
                 }
 
                 $expectedAmount = $this->resolveExpectedPaymentPriceOrNull($order, 'mobile_approval_key', [
@@ -245,7 +246,7 @@ class MobileApprovalController
                 $fields['disp_tax_yn'] = 'N';
 
                 // 모바일 가상계좌 콜백은 계좌번호를 브라우저 평문으로만 전달한다.
-                // 이 지점은 소유자 인증(auth:sanctum)을 통과했으므로 여기서 만든 일회성
+                // 이 지점은 주문 소유자 확인(회원 Sanctum / 비회원 조회 토큰)을 통과했으므로 여기서 만든 일회성
                 // nonce 를 passthrough 파라미터로 실어 보내고, 콜백에서 되돌아온 값과
                 // 대조해 그 콜백이 이 결제 세션에서 비롯됐음을 확인한다.
                 // param_opt_1 은 간편결제 수단 식별자가 점유하므로 param_opt_2 를 쓴다.
@@ -286,6 +287,46 @@ class MobileApprovalController
     }
 
     /**
+     * 승인키를 요청한 사람이 주문의 주인인지 확인합니다.
+     *
+     * - 회원 주문: 로그인한 본인만. 다른 회원·비로그인은 403.
+     * - 비회원 주문(`user_id` 없음): 주문 생성 때 받은 조회 토큰(`X-Guest-Order-Token`)이 이 주문의 것이어야 한다.
+     *   토큰이 없거나 틀리면 401 — 브라우저는 토큰 없이 보낸 요청이라 로그인 화면으로 옮기지 않고
+     *   「주문 조회에서 다시 결제」 안내를 띄운다(결제창 닫힘 보고와 같은 판정, #883).
+     *
+     * @param  Request  $request  승인키 요청
+     * @param  Order  $order  결제할 주문
+     * @return JsonResponse|null 거부 응답 (주인이면 null)
+     */
+    private function orderOwnershipError(Request $request, Order $order): ?JsonResponse
+    {
+        if ($order->user_id !== null) {
+            if ((int) $order->user_id === (int) ($request->user()?->id ?? 0)) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => 'You cannot request a NHN KCP approval key for this order.',
+            ], 403);
+        }
+
+        $verified = $this->guestOrderAuthService->verifyToken(
+            $request->header('X-Guest-Order-Token'),
+            (string) $order->order_number,
+        );
+
+        if ($verified !== null && (int) $verified->id === (int) $order->id) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'error' => 'Guest order verification failed.',
+        ], 401);
+    }
+
+    /**
      * 가상계좌 계좌 만료 기간 필드를 만듭니다. (주문 입금 기한 = 쇼핑몰 자동취소 기한)
      *
      * KCP 는 만료를 「발급일로부터 N일(`vcnt_expire_term`) · 그날 HHMMSS(`vcnt_expire_term_time`)까지」로 받는다.
@@ -298,12 +339,14 @@ class MobileApprovalController
      */
     private function buildVbankExpireFields(?Order $order, array $settings): array
     {
+        // KCP 가상계좌 입금기한(vcnt_expire_term)은 KCP 규격상 한국 시간 일수·시각이다
         $due = $order?->payment?->vbank_due_at?->copy()->setTimezone('Asia/Seoul');
 
         if ($due !== null) {
             $days = (int) Carbon::now()->setTimezone('Asia/Seoul')->startOfDay()->diffInDays($due->copy()->startOfDay(), false);
 
             if ($days >= 1) {
+                // audit:allow datetime-display-user-timezone reason: PG 규격값(KCP vcnt_expire_term) — Asia/Seoul 고정
                 return ['vcnt_expire_term' => (string) $days, 'vcnt_expire_term_time' => $due->format('His')];
             }
         }

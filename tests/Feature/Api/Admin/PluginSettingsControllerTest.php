@@ -384,7 +384,7 @@ class PluginSettingsControllerTest extends TestCase
         // 플러그인이 선언한 설정 스키마의 실제 키를 사용한다.
         // 스키마 밖의 키는 검증을 통과하지 못해 저장되지 않는다.
         $response = $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [
-            'display_mode' => 'popup',
+            'display_mode_pc' => 'popup',
             'popup_width' => 640,
         ]);
 
@@ -398,7 +398,7 @@ class PluginSettingsControllerTest extends TestCase
         $this->assertFileExists($settingsPath);
 
         $savedContent = json_decode(File::get($settingsPath), true);
-        $this->assertSame('popup', $savedContent['display_mode'] ?? null);
+        $this->assertSame('popup', $savedContent['display_mode_pc'] ?? null);
         $this->assertSame(640, $savedContent['popup_width'] ?? null);
 
         // 정리
@@ -621,7 +621,7 @@ class PluginSettingsControllerTest extends TestCase
         $this->ensureDaumPostcodePlugin();
 
         $response = $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [
-            'display_mode' => 'popup',
+            'display_mode_pc' => 'popup',
             'abilities' => ['can_update' => true],
         ]);
 
@@ -676,7 +676,7 @@ class PluginSettingsControllerTest extends TestCase
         }
 
         $response = $this->authRequest()->putJson('/api/admin/plugins/sirsoft-daum_postcode/settings', [
-            'display_mode' => 'popup',
+            'display_mode_pc' => 'popup',
         ]);
 
         $response->assertStatus(200)
@@ -687,8 +687,8 @@ class PluginSettingsControllerTest extends TestCase
         // 응답에 업데이트된 설정이 포함되어 있는지 확인
         $data = $response->json('data');
         $this->assertIsArray($data);
-        $this->assertArrayHasKey('display_mode', $data);
-        $this->assertSame('popup', $data['display_mode']);
+        $this->assertArrayHasKey('display_mode_pc', $data);
+        $this->assertSame('popup', $data['display_mode_pc']);
 
         // 정리
         $this->cleanupTestSettings('sirsoft-daum_postcode');

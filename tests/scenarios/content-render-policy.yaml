@@ -1,0 +1,95 @@
+feature: 본문 콘텐츠 규칙 — 허용 후보·운영자 추가 태그·외부 영상 서비스·미디어 서빙 응답 (#883 5단계, engine-v1.90.0)
+
+description: |
+  코어 환경설정 「본문 콘텐츠」(`content` 카테고리)가 본문 HTML 규칙의 SSoT 다. 서버 `ContentHtmlPolicy` 가 허용 후보(그림 캡션·
+  업로드 동영상·오디오·외부 영상)·추가 태그·미디어 출처 패턴을 정하고 `EmbedProviderRegistry` 가 프리셋 3종(YouTube·Vimeo·TikTok)·운영자 직접 추가·확장
+  제공 서비스를 같은 컴파일 정규식으로 합친다. 화면에는 계산값 `render_policy` 만 내려가고(원본 비공개), 템플릿 HtmlContent·편집기·
+  봇 정화기·이커머스 저장 정화기가 같은 규칙을 쓴다. 본문 미디어 서빙은 `ContentMediaResponder`(Range·inline 판정·보안 헤더).
+  미디어 출처 패턴은 확장이 등록한 실제 서빙 라우트에서 만든다(`MediaSourceRoutes` — 모듈·플러그인, 가짜 경로 거부, #887).
+  저장용 규칙 `ContentHtmlPolicy::forStorage()` 는 후보 스위치·외부 영상 켜고 끄기와 무관하고, 저장 마무리는 모르는 서비스 oembed 도
+  원문 보존한다(#887).
+
+axes:
+  case:
+    - parity_fixture
+    - resolve
+    - priority
+    - custom_rule
+    - extension_providers
+    - defaults
+    - custom_tags
+    - finalize
+    - purifier_definition
+    - range_parse
+    - remote_range
+    - local_range
+    - inline_policy
+    - save_custom_tags
+    - save_custom_provider
+    - save_reaches_server_mirror
+    - runtime_sanitize
+    - runtime_embed
+    - runtime_no_policy
+    - caption_off
+    - embed_off
+    - runtime_caption_off
+    - runtime_embed_off
+    - for_storage
+    - media_source_routes
+    - element_categories
+    - runtime_same_tab_e2e
+
+effects:
+  - php_js_patterns_identical
+  - presets_resolve_id_and_player
+  - foreign_host_rejected
+  - shorts_vertical
+  - preset_before_custom
+  - custom_before_extension
+  - disabled_not_used
+  - custom_provider_rule_rejections
+  - extension_provider_off_until_toggled
+  - invalid_extension_provider_dropped
+  - defaults_fix_only
+  - candidates_leave_forbid_list
+  - rejected_custom_tag_with_reason
+  - svg_allowed
+  - external_media_removed
+  - own_media_kept
+  - event_attrs_stripped
+  - oembed_store_vs_bot
+  - definition_rev_follows_settings
+  - range_edges
+  - remote_206_and_416
+  - playable_inline_headers
+  - local_binary_range
+  - harden_unchanged
+  - harden_playable_inline_only_for_media
+  - render_policy_reflects_settings
+  - server_reads_saved_content_settings
+  - runtime_sanitizes_with_policy
+  - embed_iframe_from_id_only
+  - unmatched_embed_becomes_link
+  - no_policy_falls_back
+  - caption_off_drops_caption_keeps_image
+  - embed_off_becomes_link
+  - unknown_oembed_kept_on_store
+  - storage_policy_ignores_switches
+  - media_patterns_from_routes
+  - fake_media_path_rejected
+  - registered_route_media_kept
+  - missing_route_skipped
+  - phrasing_content_inline
+  - same_tab_policy_applied_without_reload
+
+test_files:
+  - tests/Unit/Support/Content/EmbedProviderRegistryTest.php
+  - tests/Unit/Support/Content/ContentHtmlPolicyTest.php
+  - tests/Unit/Support/Content/MediaSourceRoutesTest.php
+  - tests/Unit/Support/Content/HtmlElementCategoriesTest.php
+  - tests/Unit/Seo/HtmlSanitizerContentPolicyTest.php
+  - tests/Unit/Support/ContentMedia/ContentMediaResponderTest.php
+  - tests/Feature/Settings/ContentSettingsSaveTest.php
+  - resources/js/core/contentPolicy/__tests__/ContentPolicyRuntime.test.ts
+  - resources/js/core/contentPolicy/__tests__/embedPatternParity.test.ts
+  - tests/Playwright/specs/admin/content-policy-runtime-same-tab.spec.ts

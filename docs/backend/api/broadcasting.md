@@ -37,7 +37,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 G7 공통 응답 봉투(`success`/`message`/`data`)를 사용하지 않습니다. 라우트 클로저가 `Broadcast::auth($request)` 의 반환값을 그대로 응답하므로, 응답 본문은 Laravel 브로드캐스팅 드라이버(Reverb — Pusher 프로토콜 호환)가 생성하는 채널 인증 페이로드입니다. 등록된 채널(`routes/channels.php`, 모듈/플러그인 `getChannels()`)은 모두 boolean 을 반환하는 private 채널이므로 아래 필드만 반환됩니다._
+_이 엔드포인트는 G7 공통 응답 봉투(`success`/`message`/`data`)를 사용하지 않습니다. 라우트 클로저가 `Broadcast::auth($request)` 의 반환값을 그대로 응답하므로, 응답 본문은 Laravel 브로드캐스팅 드라이버(Reverb — Pusher 프로토콜 호환)가 생성하는 채널 인증 페이로드입니다. 등록된 채널(`routes/channels.php`, 활성 모듈/플러그인 `getChannels()`)은 모두 boolean 을 반환하는 private 채널이므로 아래 필드만 반환됩니다. 채널 인가 콜백은 부팅 때가 아니라 이 요청이 `Broadcast::auth()` 를 부르기 직전에 `BroadcastChannelRegistrar::ensureRegistered()` 가 한 번 등록합니다(7.1.5 — 응답 형식은 같음)._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |

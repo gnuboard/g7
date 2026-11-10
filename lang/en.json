@@ -6,6 +6,9 @@
     "assets": {
       "$partial": "partial/en/assets.json"
     },
+    "content_media": {
+      "$partial": "partial/en/content_media.json"
+    },
     "navigation": {
       "leave_confirm": "You have unsaved changes. If you leave this page, what you entered will be lost. Leave anyway?"
     }

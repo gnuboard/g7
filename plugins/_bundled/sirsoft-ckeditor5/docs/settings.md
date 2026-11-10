@@ -59,7 +59,7 @@
 <!-- @generated:permissions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 카테고리 | 이름 | 액션 | 라우트 키 |
 |---|---|---|---|
-| `uploads` | 에디터 업로드 이미지 | `read`, `delete` | - |
+| `uploads` | 에디터 직접 업로드 이미지 | `read`, `delete` | - |
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
@@ -79,7 +79,7 @@
 <!-- @generated:menus START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 구분 | slug | 이름 | URL | 하위 |
 |---|---|---|---|---|
-| 관리자 | `sirsoft-ckeditor5-uploads` | 에디터 업로드 이미지 | `/admin/plugins/sirsoft-ckeditor5/uploads` | - |
+| 관리자 | `sirsoft-ckeditor5-uploads` | 에디터 직접 업로드 이미지 | `/admin/plugins/sirsoft-ckeditor5/uploads` | - |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->

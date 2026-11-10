@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
@@ -157,4 +158,26 @@ interface ProductReviewRepositoryInterface
      * @return bool 삭제 성공 여부
      */
     public function forceDeleteWithImages(ProductReview $review): bool;
+
+    /**
+     * 회원 없이 등록한 후기를 상품·작성자 이름·작성일로 찾습니다 (이관 멱등 판정, 지운 후기 포함).
+     *
+     * @param  int  $productId  상품 ID
+     * @param  string  $authorName  작성자 표시 이름
+     * @param  Carbon  $createdAt  작성일 (앱 시간대)
+     * @return ProductReview|null 후기 모델 (없으면 null)
+     */
+    public function findImported(int $productId, string $authorName, Carbon $createdAt): ?ProductReview;
+
+    /**
+     * 회원 없이 등록하는 후기를 작성일·수정일을 받은 값 그대로 두고 저장합니다.
+     *
+     * 새 모델이면 만들고(`wasRecentlyCreated` 참), 기존 모델이면 받은 값만 덮어쓴다. 자동 시각 기록을 끄므로
+     * `created_at`·`updated_at` 은 `$attributes` 에 준 값이 그대로 남는다.
+     *
+     * @param  ProductReview  $review  저장할 후기 (새 모델 또는 기존 모델)
+     * @param  array<string, mixed>  $attributes  저장할 컬럼 값
+     * @return ProductReview 저장된 후기 모델
+     */
+    public function saveImported(ProductReview $review, array $attributes): ProductReview;
 }

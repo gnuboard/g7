@@ -1946,7 +1946,8 @@ class PostRepository implements PostRepositoryInterface
      * 게시판 전체 답변을 비우던 정리(SB-1)는 운영자가 실제 문의에 단 답변까지 지웠다. 이제는
      * 넘겨받은 원글에서 parent_id 로 이어진 자손만 모은다. 댓글·첨부 행·반응(글·댓글)·스크랩도 함께
      * 지워 고아 행을 남기지 않는다. 첨부 파일 본문은 저장소가 다루지 않는다 — 호출하는 쪽이 먼저
-     * AttachmentService::purgeByPostIds 로 파일과 행을 정리한다(남은 행은 여기서 지운다).
+     * AttachmentService::purgeByPostIds 로 파일과 행을 정리한다(남은 행은 여기서 지운다). 본문 미디어 행은 그 뒤
+     * AttachmentService::purgeContentMediaByPostIds 로 먼저 지워 core.content_media.before_delete 를 거치게 한다(#887).
      *
      * @param  int  $boardId  게시판 ID (다른 게시판의 같은 ID 는 지우지 않는다)
      * @param  array<int, int>  $ids  삭제할 원글 ID 목록
@@ -2369,7 +2370,9 @@ class PostRepository implements PostRepositoryInterface
      */
     public function recalculateAttachmentsCount(int $postId): int
     {
-        $count = Attachment::where('post_id', $postId)->whereNull('deleted_at')->count();
+        // 본문 미디어(예약 컬렉션)는 첨부 개수에 세지 않는다 (#883)
+        $count = Attachment::where('post_id', $postId)->whereNull('deleted_at')
+            ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)->count();
         Post::where('id', $postId)->update(['attachments_count' => $count]);
 
         return $count;

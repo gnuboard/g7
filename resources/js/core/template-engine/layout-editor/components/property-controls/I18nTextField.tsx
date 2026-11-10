@@ -29,6 +29,7 @@ import { localeDisplayLabel } from '../LocaleSwitcher';
 import { useLayoutEditor } from '../../LayoutEditorContext';
 import { useLayoutDocumentContext } from '../../LayoutDocumentContext';
 import { useCustomTranslation } from '../../hooks/useCustomTranslation';
+import { beginCustomTextCommit } from '../../hooks/inflightCustomTextCommits';
 import { getPendingValue } from '../../hooks/pendingCustomTranslations';
 import { EDITOR_TRANSLATIONS_REFRESHED_EVENT } from '../../hooks/useInlineEdit';
 import { trackEditorI18n } from '../../devtools/editorTrackers';
@@ -166,6 +167,8 @@ export function I18nTextField({
       return;
     }
     setBusy(true);
+    // 키 생성 → 토큰 기록이 끝날 때까지 [저장]이 기다리게 알린다(그사이 저장하면 토큰이 본문에서 빠진다).
+    const endCommit = beginCustomTextCommit();
     try {
       const result = await commitText(value, draft);
       if (result.kind === 'created' && result.token) {
@@ -193,6 +196,7 @@ export function I18nTextField({
     } finally {
       setBusy(false);
       setDraft(null);
+      endCommit();
     }
   }, [draft, cls.displayValue, commitText, value, onChange, locale]);
 
@@ -667,6 +671,7 @@ function InlinePlaceholderField({
   const handlePick = useCallback(async (c: BindingCandidate): Promise<void> => {
     if (insertAt === null || inserting) return;
     setInserting(true);
+    const endCommit = beginCustomTextCommit();
     try {
       // 미커밋 평문/이동을 먼저 버퍼에 반영(소실 방지 — S9-N2 와 동일 규율).
       if (keyValue !== null && keyValue !== baselineRef.current) {
@@ -684,6 +689,7 @@ function InlinePlaceholderField({
     } finally {
       setInserting(false);
       setInsertAt(null);
+      endCommit();
     }
   }, [insertAt, inserting, keyValue, value, templateIdentifier, customKey, locale, onChange, loadValue, docCtx]);
 
@@ -804,6 +810,7 @@ function PlainInsertDataButton({
   const handlePick = useCallback(async (c: BindingCandidate): Promise<void> => {
     if (busy) return;
     setBusy(true);
+    const endCommit = beginCustomTextCommit();
     try {
       // 평문 custom 키(param 없음)는 키 승계, 그 외(평문/임의 키)는 신규 custom 키화. 끝에 추가
       // (앞/중간 위치 삽입은 데이터가 이미 붙어 param 키로 전이된 뒤 InlinePlaceholderField 가 담당).
@@ -823,6 +830,7 @@ function PlainInsertDataButton({
     } finally {
       setBusy(false);
       setOpen(false);
+      endCommit();
     }
   }, [busy, customKey, templateIdentifier, layoutName, locale, value, onChange, docCtx, t, resolveLang]);
 

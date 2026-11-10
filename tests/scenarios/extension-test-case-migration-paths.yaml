@@ -1,0 +1,16 @@
+feature: 확장 TestCase 의 마이그레이션 경로 선언
+
+description: |
+  migrateFreshUsing() 을 재정의한 번들 확장 TestCase 가 번들 모듈·플러그인 마이그레이션 전체를 glob 으로 포함하고,
+  자기 확장 경로만 하드코딩하지 않는다는 선언 계약을 지킨다. 프로세스에서 먼저 실행된 TestCase 가 스위트 전체
+  스키마를 정하므로, 이 선언이 깨지면 여러 확장 스위트를 묶어 돌릴 때만 테이블 누락이 드러난다.
+
+axes:
+  case: [includes_bundled_globs, no_pinned_extension_path]
+
+effects:
+  - extension_test_case_includes_all_bundled_migrations
+  - extension_test_case_does_not_pin_single_extension_path
+
+test_files:
+  - tests/Unit/Testing/ExtensionTestCaseMigrationPathsTest.php

@@ -45,6 +45,18 @@ PC 가상계좌 발급도 같다 — 발급 응답의 `amount` 가 청구액과 
 
 정당한 결제창 닫힘은 주문 소유자(회원 본인 로그인 / 비회원 조회 토큰)가 보낸 close-report 요청으로만 기록된다. 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 아니다 (KVE-2026-2434).
 
+### 모바일 승인키는 주문 소유자에게만 발급한다 (1.1.3+)
+
+`POST /api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key` 는 `optional.sanctum` 이다. 주문 소유를 이렇게 확인한다(결제창 닫힘 보고와 같은 판정).
+
+| 주문 | 통과 조건 | 실패 |
+| --- | --- | --- |
+| 회원 주문 | 주문한 회원 본인 로그인(Bearer) | 403 `You cannot request a NHN KCP approval key for this order.` (비로그인 포함) |
+| 비회원 주문 | `X-Guest-Order-Token` 헤더가 이 주문의 조회 토큰(주문 생성 응답의 `guest_order_token`) | 401 `Guest order verification failed.` — 브라우저는 토큰 없이 보낸 요청이라 로그인 화면으로 옮기지 않고 「주문 조회에서 다시 결제」 안내를 띄운다 |
+| 클레임 추가결제(CP 채번) | 그 클레임 주문의 회원 본인 로그인 | 403 |
+
+종전(1.1.2 까지)은 `auth:sanctum` 이라 비회원 주문은 모바일에서 결제할 수 없었다.
+
 ### 모바일 승인키 발급은 PHP soap 확장이 필요하다 (1.1.2+)
 
 모바일 결제창은 서버가 SOAP 으로 받은 승인키(`POST /api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key`)로 연다. 이 플러그인은 `composer.json`

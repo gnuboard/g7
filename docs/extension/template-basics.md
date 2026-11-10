@@ -326,7 +326,7 @@ CHANGELOG 에 적습니다.
 | 키 문자 | 영문·숫자와 `_` `.` `:` `@` `+` `-` |
 | 와일드카드 | 끝의 `*` 하나만 — 앞부분이 같은 키 모두와 매칭 (`g7_filters_*`) |
 | 길이 | 128자 이하 |
-| 틀린 항목 | 그 항목만 무시하고 경고 로그를 남긴다. 설치는 막지 않으며, 설치 때는 결과의 생명주기 경고 목록(`warnings`)에도 실린다 |
+| 틀린 항목 | 그 항목만 무시하고 경고 로그를 남긴다. 설치는 막지 않으며, 설치·업데이트 때는 결과의 생명주기 경고 목록(`warnings`)에도 실린다 |
 
 활성 템플릿의 선언만 반영됩니다 — 템플릿을 바꾸면 이전 템플릿이 선언한 키는 목록에서 빠집니다.
 
@@ -380,6 +380,33 @@ CHANGELOG 에 적습니다.
 `externals`는 페이지 최초 진입에 항상 필요한 리소스만 선언합니다. 라우트별 조건부 스크립트나 액션 실행 중 동적 로딩은 layout `scripts`와 `loadScript` 책임입니다.
 
 세 경로 모두 **같은 출처 정책**을 받습니다 — same-origin 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 상세: [module-assets.md](module-assets.md#trusted_script_hosts--외부-스크립트-신뢰-호스트) · [frontend/security.md](../frontend/security.md#외부-스크립트-신뢰-출처-허용목록)
+
+### 뒤로가기·새로고침 스크롤 기본값 (scroll_restoration) — engine-v1.85.0+
+
+뒤로/앞으로 가기·새로고침으로 화면에 돌아왔을 때의 스크롤 동작을 템플릿 전체에 거는 **선택 필드**입니다. 사용자·관리자 템플릿 모두 씁니다. 엔진은 앱 시작 때 `/api/templates/{identifier}/config.json`(이 파일을 그대로 내보낸다)으로 읽어 엔진 기본값 위에 깝니다.
+
+```json
+"scroll_restoration": {
+  "mode": "restore",
+  "on_reload": true,
+  "wait": "height",
+  "timeout_ms": 5000,
+  "containers": [],
+  "snapshot": { "enabled": true, "ttl_seconds": 600, "revalidate": true, "item_key": "id", "state": [] }
+}
+```
+
+키·값·기본값은 레이아웃 `meta.scroll_restoration` 과 같습니다 — [layout-json.md](../frontend/layout-json.md#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원). 모든 키가 선택이고, 적지 않은 키는 엔진 기본값을 씁니다. 관리자 템플릿처럼 본문이 창이 아닌 안쪽 영역에서 스크롤되면 그 선택자를 `containers` 에 적습니다.
+
+| 단계 (뒤가 우선) | 어디서 정하나 |
+| --- | --- |
+| 엔진 기본값 | 코어 |
+| `template.json` `scroll_restoration` | 템플릿 제작자 — 배포 초깃값. 읽기 전용이며 템플릿을 업데이트하면 새 판으로 덮인다 |
+| 베이스 레이아웃 `meta.scroll_restoration` | 운영자 — 레이아웃 편집기에서 베이스 레이아웃(`_user_base`·`_admin_base` 등)의 [페이지 설정 → 스크롤] 탭. 「템플릿 기본값」으로 보인다 |
+| 화면 레이아웃 `meta.scroll_restoration` | 운영자 — 화면의 [페이지 설정 → 스크롤] 탭 |
+| `navigate` 의 `returnScroll` | 그 이동으로 떠난 화면에 뒤로 가기로 돌아올 때만 ([actions-handlers-navigation.md](../frontend/actions-handlers-navigation.md#returnscroll-옵션)) |
+
+운영자가 사이트에 맞게 고치는 값은 `template.json` 이 아니라 베이스 레이아웃에 둡니다 — `template.json` 은 업데이트 때 덮이고 쓰기 화면이 없습니다.
 
 ---
 

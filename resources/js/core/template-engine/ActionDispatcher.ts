@@ -26,6 +26,7 @@ import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType, LoginResult } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { getConsentRuntime } from '../consent';
+import { getSearchHistoryRuntime } from '../searchHistory';
 import { getErrorHandlingResolver } from '../error';
 import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
@@ -41,6 +42,7 @@ import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetr
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
 import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
+import { notifyScreenScroll, runWithReturnScroll } from '../routing/ScrollMemory';
 import {
   applyQueryValues,
   getEventAnchor,
@@ -188,6 +190,9 @@ const PREVIEW_SUPPRESSED_HANDLERS: ReadonlySet<string> = new Set([
     // 간접 네비게이션 — 페이지 리로드 또는 리다이렉트 유발
     'refresh',          // window.location.reload()
     'logout',           // 로그아웃 후 로그인 페이지로 리다이렉트
+
+    // 사용자 데이터 쓰기 — 미리보기에서 검색창을 눌러 본 것이 실제 최근 검색어로 남으면 안 된다 (engine-v1.87.0)
+    'recordSearchKeyword',
 ]);
 
 /**
@@ -1314,6 +1319,9 @@ export class ActionDispatcher {
         }
       }
 
+      // 화면이 직접 옮기는 스크롤 — 뒤로 가기 복원이 이 위치를 덮지 않게 알린다 (@since engine-v1.85.0)
+      notifyScreenScroll();
+
       // scrollContainer가 지정된 경우 해당 컨테이너 내에서만 스크롤
       if (scrollContainer) {
         const container = document.querySelector(scrollContainer) as HTMLElement | null;
@@ -1407,32 +1415,26 @@ export class ActionDispatcher {
         logger.warn('reloadExtensions: TemplateApp.reloadExtensionState unavailable');
       }
 
-      // 2. 선택적으로 모듈/플러그인 에셋 동적 로드/제거
+      // 2. 선택적으로 모듈/플러그인 에셋 동적 로드/제거 — 보조 작업이라 실패는 로그만 남긴다.
+      //
+      // executeAction 을 거치지 않고 등록 핸들러를 직접 부른다. executeAction 은 실패를 오류 처리기(기본: 토스트)로
+      // 먼저 넘긴 뒤 던지므로, 아래 catch 가 삼키기 전에 내부 문구 「Failed to execute action: reloadPluginHandlers」가
+      // 화면에 떴다 — 켜자마자 다시 끄거나 라우트 캐시를 다시 굽는 사이 자산이 404·500 이면(#882 실측). 켜기·끄기 자체는
+      // 이미 끝났고 자산은 다음 새로고침에 다시 붙으므로 알릴 일이 아니다.
       const { moduleInfo, pluginInfo } = action.params || {};
-      if (moduleInfo) {
-        try {
-          await this.executeAction(
-            {
-              handler: 'reloadModuleHandlers',
-              params: action.params,
-            } as ActionDefinition,
-            context
-          );
-        } catch (error) {
-          logger.error('reloadExtensions: reloadModuleHandlers failed', error);
+      const assetReloads: Array<[unknown, string]> = [
+        [moduleInfo, 'reloadModuleHandlers'],
+        [pluginInfo, 'reloadPluginHandlers'],
+      ];
+      for (const [info, handlerName] of assetReloads) {
+        const assetHandler = info ? this.customHandlers.get(handlerName) : undefined;
+        if (!assetHandler) {
+          continue;
         }
-      }
-      if (pluginInfo) {
         try {
-          await this.executeAction(
-            {
-              handler: 'reloadPluginHandlers',
-              params: action.params,
-            } as ActionDefinition,
-            context
-          );
+          await assetHandler({ handler: handlerName, params: action.params } as ActionDefinition, context);
         } catch (error) {
-          logger.error('reloadExtensions: reloadPluginHandlers failed', error);
+          logger.error(`reloadExtensions: ${handlerName} failed`, error);
         }
       }
 
@@ -2284,6 +2286,22 @@ export class ActionDispatcher {
       await runtime.refresh();
     });
 
+    // recordSearchKeyword: 검색창 제출 때 최근 검색어를 기록한다 (engine-v1.87.0)
+    // 회원은 서버(/api/me/search-history), 비회원은 브라우저(localStorage g7_search_history)에 둔다. 범위(scope)가
+    // 선언되지 않았거나(확장 꺼짐·기능 꺼짐) 검색어가 비었거나 자동 저장을 껐거나 관리자 화면(런타임 없음)이면
+    // 아무것도 하지 않는다. 실패해도 던지지 않는다 — 같은 시퀀스의 다음 동작(검색 이동)을 막으면 안 된다.
+    // 주소에 검색어를 직접 넣은 검색은 이 핸들러를 거치지 않으므로 기록되지 않는다.
+    //
+    // @example <record-search-keyword scope="core.site" keyword="{{_local.searchQuery}}"/>
+    // 바인딩(`{{…}}`)은 디스패처가 이미 풀어서 넘긴다(커스텀 핸들러 경로의 resolvedParams).
+    this.registerHandler('recordSearchKeyword', async (action: ActionDefinition) => {
+      const params = (action.params ?? {}) as Record<string, unknown>;
+      const runtime = getSearchHistoryRuntime();
+      if (!runtime || typeof params.scope !== 'string') return false;
+
+      return runtime.record(params.scope, params.keyword);
+    });
+
     // suppress: 에러 전파를 의도적으로 방지하는 no-op 핸들러
     // 데이터소스/apiCall의 errorHandling에서 특정 에러 코드를 상위 레벨로 전파하지 않을 때 사용
     // 예: 비회원의 /api/auth/user 401은 정상 동작이므로 레이아웃 errorHandling으로 전파 방지
@@ -2314,6 +2332,7 @@ export class ActionDispatcher {
       { name: 'showErrorPage', description: '에러 페이지를 표시합니다' },
       { name: 'emitEvent', description: '이벤트를 발생시킵니다' },
       { name: 'refreshConsent', description: '방문자 동의 상태를 다시 조회합니다' },
+      { name: 'recordSearchKeyword', description: '검색창 제출 검색어를 최근 검색어에 기록합니다' },
       { name: 'updateProductField', description: '상품 필드를 인라인 수정합니다' },
       { name: 'updateOptionField', description: '상품 옵션 필드를 인라인 수정합니다' },
       { name: 'setLocale', description: '언어를 변경합니다 (DB 저장 + UI 리렌더링)' },
@@ -3536,9 +3555,11 @@ export class ActionDispatcher {
     // bypassLeaveGuard: 저장 성공 뒤 이동 등은 레이아웃 이탈 가드를 묻지 않는다 — 문맥의 navigate 래퍼가 옵션을
     // 버려도 닿도록 동기 범위로 감싼다 (engine-v1.82.0)
     const navigateFn = context.navigate;
-    const started = params.bypassLeaveGuard === true
+    // returnScroll: 이 이동으로 떠나는 화면에 뒤로 가기로 돌아올 때의 스크롤 동작(restore·top·none·선택자).
+    // 라우터가 이탈 가드를 통과한 뒤에만 그 항목에 붙인다 — 문맥의 navigate 래퍼가 옵션을 버려도 닿게 동기 범위로 감싼다 (engine-v1.85.0)
+    const started = runWithReturnScroll(params.returnScroll, () => (params.bypassLeaveGuard === true
       ? runWithLeaveGuardBypass(() => navigateFn(finalPath, { replace: params.replace === true, bypassLeaveGuard: true }))
-      : navigateFn(finalPath, { replace: params.replace === true });
+      : navigateFn(finalPath, { replace: params.replace === true })));
 
     // 이탈 가드에서 머무르기를 골랐다 — 화면이 그대로이므로 스크롤도 옮기지 않는다 (engine-v1.82.0)
     if (started === false) {
@@ -3695,6 +3716,8 @@ export class ActionDispatcher {
     if (effective === 'preserve') {
       return;
     }
+    // 화면이 직접 옮기는 스크롤 — 진행 중인 뒤로 가기 복원이 이 위치를 덮지 않게 알린다 (@since engine-v1.85.0)
+    notifyScreenScroll();
 
     // 기본값 'instant' — CSS scroll-behavior: smooth 가 전역 적용된 환경에서도
     // 페이지 전환 시 즉시 스크롤되도록 'auto' 대신 'instant' 사용.

@@ -1,0 +1,22 @@
+feature: 번들 확장 일괄 업데이트 자식 명령(core:execute-bundled-updates)의 입력 검증·결과 표식·잠금 저장소 장애 중단
+
+description: |
+  `core:update` 의 번들 일괄 업데이트 프롬프트가 운영자 선택을 매니페스트로 직렬화해 새 PHP 프로세스에서 이 명령을 부른다.
+  매니페스트가 없거나 읽을 수 없으면 INVALID·FAILURE 로 끝나고, 처리 결과는 결과 표식 줄(`[BUNDLED-RESULT]`)로 부모에게 넘긴다.
+
+  #161(7.1.5): 작업 잠금 저장소가 오류를 내면 항목마다 같은 오류로 실패하던 것을 첫 항목에서 멈추고 「남은 N건 건너뜀」을 한 번만
+  알린 뒤 FAILURE 로 끝낸다. 결과 표식에 `skipped`·`aborted` 를 싣는다(옛 부모는 모르는 키를 무시한다). 다른 작업이 진행 중인
+  항목(409)은 종전처럼 실패 1건으로 세고 다음 항목으로 간다.
+
+axes:
+  case: [manifest_option_missing, manifest_path_missing, manifest_malformed, manifest_empty, staging_sweep, bulk_abort]
+
+effects:
+  - invalid_manifest_input_rejected
+  - empty_manifest_reports_zero_counts
+  - execute_bundled_updates_child_sweeps_empty_staging_directories_left_by_parent
+  - bulk_update_aborts_at_first_lock_store_error
+  - bulk_update_in_progress_item_fails_and_continues
+
+test_files:
+  - tests/Feature/Console/ExecuteBundledUpdatesCommandTest.php

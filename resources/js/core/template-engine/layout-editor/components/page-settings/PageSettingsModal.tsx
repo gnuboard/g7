@@ -1,9 +1,9 @@
 /**
  * PageSettingsModal.tsx — 페이지 설정 모달 공통 셸
  *
- * 편집기 툴바 ⚙페이지 설정(또는 제목 배너 ⚙)으로 열리는 8탭 모달의 셸. 각 탭 폼
- * (MetaForm/SeoForm/InitActionsForm/TransitionOverlayForm/ComputedForm/InitialStateForm/
- * ErrorHandlingForm/DataSourceTab)을 마운트하고, 공통 인프라(usePageSettings + 후보 풀)를
+ * 편집기 툴바 ⚙페이지 설정(또는 제목 배너 ⚙)으로 열리는 9탭 모달의 셸. 각 탭 폼
+ * (MetaForm/SeoForm/InitActionsForm/TransitionOverlayForm/ScrollRestorationForm/ComputedForm/
+ * InitialStateForm/ErrorHandlingForm/DataSourceTab)을 마운트하고, 공통 인프라(usePageSettings + 후보 풀)를
  * 도출해 prop 으로 흘린다. **저장 버튼 없음** — 패치는 즉시 patchDocumentRaw(dirty), 영속은
  * 툴바 💾 가 일임(속성 모달과 동일 라이브 패치).
  *
@@ -27,7 +27,7 @@
  * @since engine-v1.50.0
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EditorSpec } from '../../spec/specTypes';
 import { usePageSettings } from '../../hooks/usePageSettings';
 import { useBindingCandidates, buildPageSampleContext } from '../../hooks/useBindingCandidates';
@@ -59,14 +59,24 @@ import { ComputedForm } from './ComputedForm';
 import { InitialStateForm } from './InitialStateForm';
 import { ErrorHandlingForm } from './ErrorHandlingForm';
 import { DataSourceTab } from './DataSourceTab';
+import { ScrollRestorationForm } from './ScrollRestorationForm';
+import {
+  asScrollObject,
+  deriveInheritedScroll,
+  mergeScrollLayers,
+  normalizeScrollOwn,
+  type ScrollRestorationValue,
+} from './scrollRestorationValue';
+import { deriveInheritedSeo, seoOwnForPersist } from './seoOwnValue';
 import { suffixed } from '../../../../support/assetUrl';
 
-/** 8탭 키 — 헤더 와이어프레임 순서 */
+/** 9탭 키 — 헤더 와이어프레임 순서 (scroll 은 engine-v1.85.0) */
 export type PageSettingsTabKey =
   | 'meta'
   | 'seo'
   | 'init'
   | 'overlay'
+  | 'scroll'
   | 'computed'
   | 'state'
   | 'error'
@@ -77,6 +87,7 @@ const TAB_ORDER: PageSettingsTabKey[] = [
   'seo',
   'init',
   'overlay',
+  'scroll',
   'computed',
   'state',
   'error',
@@ -106,14 +117,17 @@ export interface PageSettingsModalProps {
   initialTab?: PageSettingsTabKey;
   /** SEO extensions fetch 주입(테스트). 미전달 시 내부 Bearer fetch */
   extensionsFetcher?: (templateIdentifier: string) => Promise<SeoExtensionRef[]>;
+  /** template.json `scroll_restoration` fetch 주입(테스트). 미전달 시 공개 config 엔드포인트 */
+  templateConfigFetcher?: (templateIdentifier: string) => Promise<ScrollRestorationValue | undefined>;
 }
 
-/** 탭 라벨 키(약칭 — 8탭 한 줄) */
+/** 탭 라벨 키(약칭 — 9탭 한 줄) */
 const TAB_LABEL_KEY: Record<PageSettingsTabKey, string> = {
   meta: 'layout_editor.page_settings.tab.meta',
   seo: 'layout_editor.page_settings.tab.seo',
   init: 'layout_editor.page_settings.tab.init',
   overlay: 'layout_editor.page_settings.tab.overlay',
+  scroll: 'layout_editor.page_settings.tab.scroll',
   computed: 'layout_editor.page_settings.tab.computed',
   state: 'layout_editor.page_settings.tab.state',
   error: 'layout_editor.page_settings.tab.error',
@@ -149,6 +163,30 @@ async function fetchSeoExtensions(templateIdentifier: string): Promise<SeoExtens
   }
 }
 
+/**
+ * template.json 의 `scroll_restoration`(제작자 배포 초깃값) 조회 — 공개 config 엔드포인트(비캐시)
+ *
+ * @param templateIdentifier 편집 대상 템플릿 식별자
+ * @return scroll_restoration 객체 또는 undefined(없음·실패)
+ */
+async function fetchTemplateScrollRestoration(
+  templateIdentifier: string,
+): Promise<ScrollRestorationValue | undefined> {
+  if (typeof fetch !== 'function' || !templateIdentifier) return undefined;
+  try {
+    const response = await fetch(
+      suffixed(`/api/templates/${encodeURIComponent(templateIdentifier)}/config`, 'json'),
+      { credentials: 'same-origin', headers: { Accept: 'application/json' } },
+    );
+    if (!response.ok) return undefined;
+    const body = await response.json().catch(() => null);
+    const value = body?.data?.scroll_restoration ?? body?.scroll_restoration;
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as ScrollRestorationValue) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** init_actions 미환원(고급) 항목 수 — resolveActionCard 'advanced' */
 function countAdvancedActions(
   actions: Array<Record<string, unknown>>,
@@ -171,6 +209,36 @@ function countAdvancedComputed(
     if (resolveComputedCard(computed[key], recipes).kind === 'advanced') n += 1;
   }
   return n;
+}
+
+/**
+ * 상속 화면의 meta 영속값에서 베이스가 준 최상위 키를 덜어 낸다 (seo·scroll_restoration 은 호출부가 따로 나눈다)
+ *
+ * 서버는 베이스 meta 위에 화면 meta 를 얕게 덮어(`LayoutService::mergeMeta`) 편집기에 병합본을 준다 — 화면이 적지 않은
+ * 최상위 키(title·description·is_base·editor_label·icon 등 베이스 meta 의 모든 키)는 병합본 값이 곧 베이스 값이다.
+ * 이 화면이 직접 적은 키는 그대로 남기고, 그 밖의 키는 베이스 값과 달라졌을 때만 남긴다. `is_base` 는 이 화면이
+ * 직접 적지 않았으면 남기지 않는다(베이스 표식이 화면 본문에 박히지 않게).
+ *
+ * @param persist 영속값 후보(병합본 사본) — 제자리에서 줄인다
+ * @param mergedBefore 이번 패치 전 병합본 meta
+ * @param ownMeta 이번 패치 전 이 화면이 직접 적은 meta (__editor.original.meta)
+ */
+function dropInheritedTopLevelMeta(
+  persist: Record<string, unknown>,
+  mergedBefore: Record<string, unknown>,
+  ownMeta: Record<string, unknown> | undefined,
+): void {
+  const own = ownMeta ?? {};
+  for (const key of Object.keys(persist)) {
+    if (key === 'seo' || key === 'scroll_restoration' || key in own) continue;
+    if (key === 'is_base') {
+      delete persist[key];
+      continue;
+    }
+    if (key in mergedBefore && JSON.stringify(persist[key]) === JSON.stringify(mergedBefore[key])) {
+      delete persist[key];
+    }
+  }
 }
 
 /** 편집 대상 표시 이름 — meta.title 해석값 ?? editor_label ?? path */
@@ -211,6 +279,7 @@ export function PageSettingsModal({
   onClose,
   initialTab = 'meta',
   extensionsFetcher,
+  templateConfigFetcher,
 }: PageSettingsModalProps): React.ReactElement {
   const { state } = useLayoutEditor();
   const { raw, getValue, patch } = usePageSettings();
@@ -286,6 +355,109 @@ export function PageSettingsModal({
     return Object.keys(base).length > 0 ? base : undefined;
   }, [transitionOverlay, overlayOwn]);
 
+  // [스크롤] meta.scroll_restoration — own = 이 레이아웃이 직접 적은 값(__editor.original.meta), 병합본 − own =
+  // 베이스 상속분. 서버가 베이스→화면을 깊게 병합하므로(LayoutService::mergeScrollRestoration) 병합본에서 키 단위로 뺀다.
+  const metaValue = (getValue<Record<string, unknown>>('meta', {}) ?? {}) as Record<string, unknown>;
+  const ownMeta = editorOriginal
+    ? (asScrollObject(editorOriginal.meta) as Record<string, unknown> | undefined)
+    : undefined;
+  const mergedScroll = asScrollObject(metaValue.scroll_restoration);
+  const scrollOwn = editorOriginal === undefined ? mergedScroll : asScrollObject(ownMeta?.scroll_restoration);
+  const scrollBase = useMemo(
+    () => (editorOriginal === undefined ? undefined : deriveInheritedScroll(mergedScroll, scrollOwn)),
+    [editorOriginal, mergedScroll, scrollOwn],
+  );
+
+  /** [스크롤] own 변경 → 병합본 meta(베이스+own)와 own meta(original) 를 나눠 패치 */
+  const handleScrollChange = useCallback(
+    (next: ScrollRestorationValue | undefined): void => {
+      const own = normalizeScrollOwn(next);
+      const nextMeta: Record<string, unknown> = { ...metaValue };
+      if (editorOriginal === undefined) {
+        if (own) nextMeta.scroll_restoration = own;
+        else delete nextMeta.scroll_restoration;
+        patch('meta', nextMeta);
+        return;
+      }
+      const merged = mergeScrollLayers(scrollBase, own);
+      if (merged) nextMeta.scroll_restoration = merged;
+      else delete nextMeta.scroll_restoration;
+      const nextOwnMeta: Record<string, unknown> = { ...(ownMeta ?? {}) };
+      if (own) nextOwnMeta.scroll_restoration = own;
+      else delete nextOwnMeta.scroll_restoration;
+      patch('meta', nextMeta, Object.keys(nextOwnMeta).length === 0 && ownMeta === undefined ? undefined : nextOwnMeta);
+    },
+    [metaValue, editorOriginal, scrollBase, ownMeta, patch],
+  );
+
+  // [기본 정보]·[검색엔진] 탭은 병합본 meta 를 통째로 patch 한다(original 미지정 → 병합본이 그대로 영속). 그대로면
+  // 베이스에서 물려받은 scroll_restoration·seo 가 이 화면 값으로 굳어 베이스를 바꿔도 따라가지 않는다 —
+  // meta 패치의 영속 값에서는 scroll_restoration 을 이 화면이 직접 적은 값으로, seo 를 이 화면이 적었거나 베이스와
+  // 달라진 키만으로 바꿔 쓴다(seoOwnValue — 서버 mergeSeo 와 같은 규칙). 베이스를 물려받는 화면이면 title·description·is_base
+  // 같은 최상위 키도 같은 규칙으로 줄인다(dropInheritedTopLevelMeta).
+  // 병합본·이 화면 값은 그린 시점 값이 아니라 **부르는 시점의 최신 문서**(getValue)에서 읽는다 — 다국어 칸은 키 생성 응답
+  // 뒤에 기록되므로 그린 시점 값을 쓰면 그사이 다른 칸이 적은 키를 「베이스 상속분」 으로 잘못 나누거나 옛 이 화면 값으로 지운다.
+  const patchMetaKeepingOwnScroll = useCallback(
+    (key: string, value: unknown, ...rest: [unknown?]): void => {
+      const liveOriginal = (getValue<Record<string, unknown>>('__editor', {}) ?? {}).original as
+        | Record<string, unknown>
+        | undefined;
+      if (
+        key === 'meta' &&
+        rest.length === 0 &&
+        liveOriginal !== undefined &&
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value)
+      ) {
+        const liveMeta = (getValue<Record<string, unknown>>('meta', {}) ?? {}) as Record<string, unknown>;
+        const liveOwnMeta = asScrollObject(liveOriginal.meta) as Record<string, unknown> | undefined;
+        const persist: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+        const ownScroll = asScrollObject(liveOwnMeta?.scroll_restoration);
+        if (ownScroll) persist.scroll_restoration = ownScroll;
+        else delete persist.scroll_restoration;
+        const ownSeo = seoOwnForPersist(
+          persist.seo,
+          deriveInheritedSeo(liveMeta.seo, liveOwnMeta?.seo),
+          liveOwnMeta?.seo,
+        );
+        if (ownSeo) persist.seo = ownSeo;
+        else delete persist.seo;
+        // 베이스를 물려받는 화면이면 최상위 키도 같은 규칙 — 베이스 레이아웃 자신·독립 레이아웃은 원본이 곧 병합본이라 전부 남는다.
+        const extendsName = liveOriginal.extends;
+        if (typeof extendsName === 'string' && extendsName !== '') {
+          dropInheritedTopLevelMeta(persist, liveMeta, liveOwnMeta);
+        }
+        patch('meta', value, persist);
+        return;
+      }
+      if (rest.length >= 1) patch(key, value, rest[0]);
+      else patch(key, value);
+    },
+    [getValue, patch],
+  );
+
+  // template.json scroll_restoration — [스크롤] 탭을 처음 열 때 한 번 읽는다(상속 출처 표시).
+  // 요청 여부는 ref 로 둔다 — state 로 두면 그 갱신이 effect 를 다시 돌려 직전 실행의 정리 함수가 응답을 버린다.
+  const [templateScroll, setTemplateScroll] = useState<ScrollRestorationValue | undefined>(undefined);
+  const templateScrollRequested = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (activeTab !== 'scroll' || templateScrollRequested.current) return;
+    templateScrollRequested.current = true;
+    const fetcher = templateConfigFetcher ?? fetchTemplateScrollRestoration;
+    (async () => {
+      const value = await fetcher(templateIdentifier);
+      if (mountedRef.current) setTemplateScroll(asScrollObject(value));
+    })();
+  }, [activeTab, templateConfigFetcher, templateIdentifier]);
+
   // SEO extensions 후보.
   const [seoExtensions, setSeoExtensions] = useState<SeoExtensionRef[]>([]);
   useEffect(() => {
@@ -319,6 +491,7 @@ export function PageSettingsModal({
       seo: 0,
       init: countAdvancedActions(initActions, normalizedInitRecipes),
       overlay: 0,
+      scroll: 0,
       computed: countAdvancedComputed(computed, normalizedComputedRecipes),
       state: 0,
       error: 0,
@@ -368,7 +541,7 @@ export function PageSettingsModal({
         return (
           <MetaForm
             getValue={getValue}
-            patch={patch}
+            patch={patchMetaKeepingOwnScroll}
             t={t}
             // 값 필드(제목/설명)는 런타임 앱 lang 키(`$t:board.edit_post` 등)를 해석해야 한다 —
             // 편집기 전용 t 는 `layout_editor.*` 만 알아 분기 키를 못 풀어 칩 추가 시 텍스트가
@@ -384,7 +557,7 @@ export function PageSettingsModal({
         return (
           <SeoForm
             getValue={getValue}
-            patch={patch}
+            patch={patchMetaKeepingOwnScroll}
             t={t}
             templateIdentifier={templateIdentifier}
             candidates={seoCandidates}
@@ -432,6 +605,18 @@ export function PageSettingsModal({
             loadingComponents={loadingComponents}
             progressiveDataSources={dataSourceOptions}
             bindingCandidates={bindingCandidates}
+          />
+        );
+      case 'scroll':
+        return (
+          <ScrollRestorationForm
+            own={scrollOwn}
+            baseValue={scrollBase}
+            templateValue={templateScroll}
+            // 베이스 레이아웃(_user_base·_admin_base 등) 편집 = 이 값이 그 베이스를 쓰는 화면 전체의 템플릿 기본값
+            isBaseLayout={state.editMode === 'base'}
+            onChange={handleScrollChange}
+            t={t}
           />
         );
       case 'computed':

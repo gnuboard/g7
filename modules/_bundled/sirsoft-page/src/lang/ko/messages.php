@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'content_media' => [
+        'upload_success' => '본문 미디어를 올렸습니다.',
+        'upload_failed' => '본문 미디어를 올리지 못했습니다.',
+        'target_success' => '본문 미디어 업로드 계약을 조회했습니다.',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | 페이지 메시지
@@ -67,6 +73,11 @@ return [
     ],
     // 페이지 모듈 시더 콘솔 출력
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => '브라우저 실측 시더는 CLI 와 G7_PLAYWRIGHT_BYPASS=1 에서만 실행합니다.',
+            'done' => '브라우저 실측 페이지 :count개 생성',
+            'cleanup_done' => '브라우저 실측 페이지 정리 — :counts',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => '관리자 사용자가 없어 페이지 활동 로그 시더를 건너뜁니다.',
             'unmarked_kept' => '표식 없는 페이지 활동 로그 :count건은 운영 로그로 보고 남깁니다 (이전 버전 시더가 만든 샘플도 표식이 없어 정리되지 않습니다).',

@@ -7,6 +7,10 @@
  * 이제 Bearer 부착과 401 처리는 `G7Core.api` 가 맡고, 이 어댑터는 파일을 담아 보내기만 한다.
  *
  * 서버 응답 규격은 그대로다: 성공 `{ url }`, 실패 `{ error: { message } }`.
+ *
+ * 화면이 본문 미디어 업로드 계약(`mediaUpload`, 코어 `G7Core.contentMedia`)을 넘기면 그 계약으로 올린다 — 업로드 주소·
+ * 정책·응답 경로를 화면(확장)이 정하고, 이 어댑터는 계약을 읽기만 한다(#883 4단계). 계약이 없으면 종전 경로(이 플러그인의
+ * 관리자 전용 업로드)다.
  */
 
 /** CKEditor FileLoader 중 이 어댑터가 쓰는 부분 */
@@ -55,22 +59,69 @@ function extractUploadErrorMessage(error: unknown, fallback: string): string {
  * @return 실패 문구
  */
 function uploadFailedMessage(fileName: string): string {
-    const key = 'sirsoft-ckeditor5.editor.upload_failed';
+    return translateOr('sirsoft-ckeditor5.editor.upload_failed', "Couldn't upload file: {{name}}.").replace('{{name}}', fileName);
+}
+
+/**
+ * 비회원이 업로드하려다 401 을 받았을 때의 문구 — 로그인 화면으로 옮기지 않으므로 쓰던 글이 남아 있음을 함께 알린다.
+ *
+ * @return 로그인 필요 문구
+ */
+function uploadLoginRequiredMessage(): string {
+    return translateOr('sirsoft-ckeditor5.editor.upload_login_required', 'Sign in to upload images. Your draft is kept.');
+}
+
+/**
+ * 번역 키를 화면 언어 문구로 바꿉니다. 번역 엔진이 없거나 키가 그대로 돌아오면 대체 문구를 씁니다.
+ *
+ * @param key 번역 키
+ * @param fallback 대체 문구
+ * @return 문구
+ */
+function translateOr(key: string, fallback: string): string {
     const translate = (window as any)?.G7Core?.t;
     const translated = typeof translate === 'function' ? translate(key) : null;
-    const template = typeof translated === 'string' && translated !== key ? translated : "Couldn't upload file: {{name}}.";
 
-    return template.replace('{{name}}', fileName);
+    return typeof translated === 'string' && translated !== key ? translated : fallback;
+}
+
+/** 어댑터 선택 — 계약이 있으면 계약 경로, 없으면 종전 경로 */
+export interface G7UploadAdapterOptions {
+    /** 정규화한 본문 미디어 업로드 계약 (`G7Core.contentMedia.normalizeTarget` 결과) */
+    target?: any | null;
+    /** 종전 업로드 주소 (계약이 없을 때) */
+    legacyUrl: string;
+    /** 문서당 개수 사전 차단에 쓸 현재 본문 (편집기 getData) */
+    getContent?: () => string;
+}
+
+/**
+ * 계약 판정 문구를 화면 언어로 만듭니다.
+ *
+ * @param key 번역 키
+ * @param params 치환 값
+ * @param fallback 대체 문구
+ * @return 문구
+ */
+function translateWith(key: string, params: Record<string, string | number> | undefined, fallback: string): string {
+    const translate = (window as any)?.G7Core?.t;
+    const translated = typeof translate === 'function' ? translate(key, params) : null;
+
+    return typeof translated === 'string' && translated !== key ? translated : fallback;
 }
 
 export class G7UploadAdapter {
     private readonly controller = new AbortController();
 
+    private readonly options: G7UploadAdapterOptions;
+
     /**
      * @param loader CKEditor FileLoader
-     * @param uploadUrl 업로드 엔드포인트
+     * @param options 업로드 주소(종전) 또는 계약 옵션
      */
-    constructor(private readonly loader: UploadLoader, private readonly uploadUrl: string) {}
+    constructor(private readonly loader: UploadLoader, options: string | G7UploadAdapterOptions) {
+        this.options = typeof options === 'string' ? { legacyUrl: options } : options;
+    }
 
     /**
      * 파일을 올리고 CKEditor 가 이미지에 넣을 주소를 돌려줍니다.
@@ -78,6 +129,72 @@ export class G7UploadAdapter {
      * @return `{ default: 이미지 주소 }`
      */
     async upload(): Promise<{ default: string }> {
+        const target = this.options.target ?? null;
+        const contentMedia = (window as any).G7Core?.contentMedia;
+        if (target && contentMedia && typeof contentMedia.upload === 'function') {
+            return this.uploadByContract(target, contentMedia);
+        }
+
+        return this.uploadLegacy();
+    }
+
+    /**
+     * 본문 미디어 계약으로 올립니다 — 정책 판정 → 문서당 개수 사전 차단 → 코어 어댑터 업로드.
+     *
+     * @param target 정규화한 계약
+     * @param contentMedia `G7Core.contentMedia`
+     * @return `{ default: 미디어 주소 }`
+     */
+    private async uploadByContract(target: any, contentMedia: any): Promise<{ default: string }> {
+        const file = await this.loader.file;
+        const fallback = uploadFailedMessage(file?.name ?? '');
+        if (!file) {
+            throw fallback;
+        }
+
+        const verdict = contentMedia.validateFile(target, file);
+        if (!verdict?.ok) {
+            throw translateWith(verdict?.messageKey ?? '', verdict?.params, fallback);
+        }
+
+        const html = this.options.getContent?.() ?? '';
+        if (contentMedia.isAtLimit?.(html, target) === true) {
+            throw translateWith('core.content_media.client.limit_reached', { max: target.policy?.maxPerDocument ?? 0 }, fallback);
+        }
+
+        try {
+            const result = await contentMedia.upload(target, file, {
+                signal: this.controller.signal,
+                onProgress: (loaded: number, total: number) => {
+                    this.loader.uploadTotal = total;
+                    this.loader.uploaded = loaded;
+                },
+            });
+
+            if (typeof result?.url !== 'string' || result.url === '') {
+                throw fallback;
+            }
+
+            return { default: result.url };
+        } catch (error) {
+            if (typeof error === 'string') {
+                throw error;
+            }
+            // 토큰 없이 보낸 업로드의 401 — 코어가 로그인 화면으로 옮기지 않고 돌려준다(engine-v1.88.2)
+            if ((window as any).G7Core?.api?.isAnonymousUnauthorized?.(error) === true) {
+                throw uploadLoginRequiredMessage();
+            }
+
+            throw extractUploadErrorMessage(error, translateWith('core.content_media.client.upload_failed', undefined, fallback));
+        }
+    }
+
+    /**
+     * 종전 경로(이 플러그인의 관리자 전용 업로드)로 올립니다.
+     *
+     * @return `{ default: 이미지 주소 }`
+     */
+    private async uploadLegacy(): Promise<{ default: string }> {
         const file = await this.loader.file;
         const fallback = uploadFailedMessage(file?.name ?? '');
         const api = (window as any).G7Core?.api;
@@ -91,7 +208,7 @@ export class G7UploadAdapter {
 
         let response: any;
         try {
-            response = await api.post(this.uploadUrl, formData, {
+            response = await api.post(this.options.legacyUrl, formData, {
                 // 기본 Content-Type(JSON) 이 FormData 를 JSON 으로 바꾸지 않게 한다 — 경계값은 브라우저가 채운다
                 headers: { 'Content-Type': 'multipart/form-data' },
                 signal: this.controller.signal,
@@ -103,6 +220,12 @@ export class G7UploadAdapter {
                 },
             });
         } catch (error) {
+            // 토큰 없이 보낸 업로드의 401 — 코어가 로그인 화면으로 옮기지 않고 돌려준다(engine-v1.88.2).
+            // 서버 문구(「인증이 필요합니다.」) 대신 쓰던 글이 남아 있다는 안내를 보여 준다.
+            if (api.isAnonymousUnauthorized?.(error) === true) {
+                throw uploadLoginRequiredMessage();
+            }
+
             // CKEditor 는 거부 값(문자열)을 그대로 알림 문구로 보여 준다
             throw extractUploadErrorMessage(error, fallback);
         }
@@ -127,13 +250,16 @@ export class G7UploadAdapter {
  * 편집기에 업로드 어댑터를 붙이는 CKEditor 플러그인 함수를 만듭니다.
  *
  * CKEditor 는 함수도 플러그인으로 받는다. `FileRepository`(ImageUpload 가 함께 싣는다)의 어댑터
- * 생성기를 이 어댑터로 바꾼다.
+ * 생성기를 이 어댑터로 바꾼다. 계약(`target`)을 주면 계약 경로로, 문자열만 주면 종전 경로로 올린다.
  *
- * @param uploadUrl 업로드 엔드포인트
+ * @param options 종전 업로드 주소 또는 `{ target, legacyUrl }`
  * @return CKEditor 플러그인 함수
  */
-export function createG7UploadAdapterPlugin(uploadUrl: string): (editor: any) => void {
+export function createG7UploadAdapterPlugin(options: string | Omit<G7UploadAdapterOptions, 'getContent'>): (editor: any) => void {
     return function G7UploadAdapterPlugin(editor: any): void {
-        editor.plugins.get('FileRepository').createUploadAdapter = (loader: UploadLoader) => new G7UploadAdapter(loader, uploadUrl);
+        const resolved: G7UploadAdapterOptions = typeof options === 'string'
+            ? { legacyUrl: options }
+            : { ...options, getContent: () => (typeof editor.getData === 'function' ? editor.getData() : '') };
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader: UploadLoader) => new G7UploadAdapter(loader, resolved);
     };
 }

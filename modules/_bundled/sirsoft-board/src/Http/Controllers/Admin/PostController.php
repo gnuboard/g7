@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
+use App\Exceptions\ContentMediaLimitExceededException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
@@ -46,11 +48,13 @@ class PostController extends AdminBaseController
      * @param  PostService  $postService  게시글 서비스
      * @param  BoardService  $boardService  게시판 서비스
      * @param  ReportService  $reportService  신고 서비스
+     * @param  PostContentMediaService  $contentMediaService  본문 미디어 서비스 (폼 메타의 업로드 계약, #883)
      */
     public function __construct(
         private PostService $postService,
         private BoardService $boardService,
-        private ReportService $reportService
+        private ReportService $reportService,
+        private PostContentMediaService $contentMediaService
     ) {
         parent::__construct();
     }
@@ -223,6 +227,14 @@ class PostController extends AdminBaseController
                 new PostResource($post),
                 201
             );
+        } catch (ContentMediaLimitExceededException $e) {
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            return $this->error(
+                $e->getMessageKey(),
+                422,
+                ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]],
+                $e->getMessageParams()
+            );
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
             return $this->error(
@@ -290,6 +302,14 @@ class PostController extends AdminBaseController
             return $this->successWithResource(
                 'sirsoft-board::messages.posts.update_success',
                 new PostResource($post)
+            );
+        } catch (ContentMediaLimitExceededException $e) {
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            return $this->error(
+                $e->getMessageKey(),
+                422,
+                ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]],
+                $e->getMessageParams()
             );
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
@@ -569,6 +589,11 @@ class PostController extends AdminBaseController
 
             $metaData = [
                 'board' => $boardData,
+                // 편집기 본문 미디어 업로드 계약 (#883) — 관리자 업로드 권한이 있고 받는 종류가 있을 때만.
+                // 표준 계약 엔드포인트 `GET admin/board/{slug}/content-media/target`(#887)과 같은 값 — 옛 화면 호환으로 계속 싣는다(폐기 예정)
+                'content_media' => $this->checkBoardPermission($slug, 'admin.attachments.upload')
+                    ? $this->contentMediaService->uploadTarget($board, admin: true)
+                    : null,
             ];
 
             // 수정 모드: 작성자 정보, 작성일, 첨부파일 정보 포함

@@ -207,4 +207,17 @@ class PageAttachment extends Model
      * URL 유출 시 노출 창을 좁힐 만큼 짧은 값.
      */
     public const SIGNED_PREVIEW_TTL_MINUTES = 30;
+
+    /**
+     * 본문 미디어(편집기 본문에 넣은 이미지·동영상·오디오) 컬렉션 (#883).
+     * 첨부 목록·첨부 개수 상한에 들지 않고, 일반 첨부 업로드로는 쓸 수 없다.
+     */
+    public const COLLECTION_CONTENT_MEDIA = 'content_media';
+
+    /**
+     * 일반 첨부 업로드가 쓸 수 없는 예약 컬렉션 — 첨부 조회·개수에서 뺀다.
+     *
+     * @var array<int, string>
+     */
+    public const RESERVED_COLLECTIONS = [self::COLLECTION_CONTENT_MEDIA];
 }

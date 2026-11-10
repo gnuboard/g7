@@ -1,0 +1,17 @@
+feature: 마이페이지 마일리지 요약 「소멸 예정」 날짜 — 보는 사람 날짜 (#160)
+
+description: |
+  「…까지」 문구가 ISO 원문(`expiring_date` — 「2026-12-31T14:59:59+00:00」)을 그대로 넣어 시각·오프셋이 보였다.
+  이커머스 잔액 API 가 함께 내려주는 `expiring_date_formatted`(보는 사람 시간대 날짜)를 쓴다. 표시 조건도 같은 값 기준.
+
+axes:
+  value: [formatted_present, formatted_absent]
+
+effects:
+  - expiring_until_uses_viewer_date      # 「2026-12-31까지」 — T·오프셋 없음
+  - expiring_until_hidden_without_date   # 소멸 예정이 없으면 문구를 숨김
+  - expiring_until_shown_in_browser      # 실제 브라우저에서 카드 문구가 보는 사람 날짜로 보임
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-mileage-expiring-date.test.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mypage-mileage-expiring-date.spec.ts

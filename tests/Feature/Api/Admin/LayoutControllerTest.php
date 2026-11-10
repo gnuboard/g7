@@ -1865,6 +1865,139 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
+     * 레이아웃 업데이트 시 스크롤 복원 메타 키 보존 (scroll_restoration 및 하위 snapshot)
+     *
+     * 엔진은 뒤로/앞으로 가기·새로고침 때 meta.scroll_restoration 을 읽어 위치를 되돌린다. rules() 에 하위 키까지
+     * 명시하지 않으면 validated() 가 떨궈, 편집기 페이지 설정 [스크롤] 탭에서 고친 값이 저장되지 않는다.
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_layout_preserves_scroll_restoration_meta_keys(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'shop/index',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'shop/index',
+                'meta' => ['title' => '$t:shop.index.title'],
+                'endpoint' => '/api/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ]);
+
+        $scroll = [
+            'mode' => '#product-list',
+            'on_reload' => false,
+            'wait' => 'data',
+            'timeout_ms' => 8000,
+            'containers' => ['#admin-main', '.side-panel'],
+            'snapshot' => [
+                'enabled' => true,
+                'ttl_seconds' => 300,
+                'revalidate' => false,
+                'item_key' => 'uuid',
+                'state' => ['_global.infiniteScroll', '_local.page'],
+            ],
+        ];
+
+        $updateData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'shop/index',
+                'meta' => [
+                    'title' => '$t:shop.index.title',
+                    'scroll_restoration' => $scroll,
+                ],
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/shop/index", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $layout->refresh();
+        $this->assertSame($scroll, $layout->content['meta']['scroll_restoration'] ?? null, 'scroll_restoration 이 저장 시 유실·변형됨');
+    }
+
+    /**
+     * 레이아웃 업데이트 시 잘못된 scroll_restoration 값은 422
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_layout_rejects_invalid_scroll_restoration(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+        ]);
+
+        $invalidData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'test',
+                'meta' => [
+                    'scroll_restoration' => [
+                        'on_reload' => 'sometimes',
+                        'wait' => 'forever',
+                        'timeout_ms' => 999999,
+                        'containers' => [123],
+                        'snapshot' => [
+                            'enabled' => 'yes',
+                            'ttl_seconds' => -1,
+                            'revalidate' => 'no',
+                            'item_key' => str_repeat('k', 101),
+                            // 상태 경로는 _global./_local. 로 시작해야 한다
+                            'state' => ['_global.infiniteScroll', 'window.location', '_local.' . str_repeat('a', 200)],
+                        ],
+                    ],
+                ],
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}", $invalidData);
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'content.meta.scroll_restoration.on_reload',
+                'content.meta.scroll_restoration.wait',
+                'content.meta.scroll_restoration.timeout_ms',
+                'content.meta.scroll_restoration.containers.0',
+                'content.meta.scroll_restoration.snapshot.enabled',
+                'content.meta.scroll_restoration.snapshot.ttl_seconds',
+                'content.meta.scroll_restoration.snapshot.revalidate',
+                'content.meta.scroll_restoration.snapshot.item_key',
+                'content.meta.scroll_restoration.snapshot.state.1',
+                'content.meta.scroll_restoration.snapshot.state.2',
+            ])
+            ->assertJsonMissingValidationErrors(['content.meta.scroll_restoration.snapshot.state.0']);
+    }
+
+    /**
      * 레이아웃 업데이트 시 편집기·작성 도구·SEO 탭이 쓰는 meta 키 보존
      * (icon / editor_label / _e2e_allow / seo.title / seo.description / seo.twitter)
      *

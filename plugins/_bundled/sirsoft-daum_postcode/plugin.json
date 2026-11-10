@@ -5,7 +5,7 @@
         "ko": "Daum 우편번호",
         "en": "Daum Postcode"
     },
-    "version": "1.1.2",
+    "version": "1.2.0",
     "license": "MIT",
     "description": {
         "ko": "Daum 우편번호 서비스를 통한 주소 검색 기능을 제공하는 플러그인입니다. API 키 없이 무료로 사용할 수 있습니다.",
@@ -19,6 +19,7 @@
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode/blob/main/CHANGELOG.md",
     "trusted_script_hosts": [
+        "t1.kakaocdn.net",
         "t1.daumcdn.net"
     ],
     "assets": {
@@ -33,6 +34,7 @@
         "priority": 100
     },
     "trusted_script_hosts_reason": {
-        "t1.daumcdn.net": "다음 우편번호는 라이브러리가 아니라 Daum 이 운영하는 서비스 SDK 다. 스크립트가 Daum 서버와 통신하므로 자체 호스팅해도 동작하지 않는다. 대신 SDK 를 못 불러오면 주소를 직접 입력할 수 있게 한다."
+        "t1.kakaocdn.net": "다음 우편번호는 라이브러리가 아니라 카카오가 운영하는 서비스 SDK 다(카카오 주소로 옮겨 감). 스크립트가 카카오 서버와 통신하므로 자체 호스팅해도 동작하지 않는다. 대신 SDK 를 못 불러오면 주소를 직접 입력할 수 있게 한다.",
+        "t1.daumcdn.net": "카카오 전환 전 옛 SDK 주소다. 이 주소를 직접 싣는 템플릿 조각(사이트별 덮어쓰기 포함)이 남아 있는 동안 주소 검색이 끊기지 않게 함께 허용한다 — 카카오가 옛 주소를 내리면 뺀다."
     }
 }

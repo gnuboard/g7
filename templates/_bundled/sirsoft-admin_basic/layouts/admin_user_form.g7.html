@@ -161,7 +161,8 @@
     <div data-ref="user_form_content" data-key="form" data-track-changes class="admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
-        <tab-navigation-scroll data-type="composite" data-ref="user_form_tabs" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="" class="tab-nav-default">
+        <!-- 탭이 넘치면 글자 단위로 줄바꿈되지 않고 막대가 가로로 스크롤된다(상세와 같다) -->
+        <tab-navigation-scroll data-type="composite" data-ref="user_form_tabs" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="" class="tab-nav-default overflow-x-auto" activeClassName="tab-btn-base tab-btn-default-active shrink-0 whitespace-nowrap" inactiveClassName="tab-btn-base tab-btn-default shrink-0 whitespace-nowrap">
           <prop name="tabs">
             <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
             <item id="contact_info" label="$t:admin.users.detail.tabs.contact_info"/>
@@ -170,6 +171,7 @@
             <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info" if="{{route?.id}}"/>
             <item id="consent_info" label="$t:admin.users.detail.tabs.consent_info" if="{{route?.id}}"/>
             <item id="notifications_info" label="$t:admin.users.detail.tabs.notifications_info" if="{{route?.id}}"/>
+            <item id="search_history_info" label="$t:admin.users.detail.tabs.search_history_info" if="{{route?.id}}"/>
           </prop>
           <on type="change">
             <!-- 탭 전환은 화면만 바꾼다 — 입력값은 `_local.form` 에 그대로 남으므로 탭을 옮겨 다녀도
@@ -541,6 +543,30 @@
                 </on>
                 <span>$t:admin.users.detail.notifications.view_inbox</span>
               </a>
+            </div>
+          </div>
+        </div>
+        <!-- 최근 검색어 — 회원이 남긴 기록이라 운영자가 고칠 값이 없다. 상세와 같은 자리에 잠긴 채로 세운다(자동 저장 여부는
+             회원 본인이 검색창에서 정한다). 확장 범위(상품·게시글 검색)는 상세의 확장 탭에만 있다. -->
+        <div data-ref="section_search_history_info" data-if="{{route?.id}}" id="search_history_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.detail.tabs.search_history_info</h3>
+          <div class="row-stack">
+            <div data-ref="search_history_feature_off" data-if="{{user?.data?.search_history?.enabled === false}}" class="alert-info">
+              <span class="text-sm">$t:admin.users.detail.search_history.feature_off</span>
+            </div>
+            <div data-ref="field_search_history_auto_save">
+              <label class="form-label">$t:admin.users.detail.search_history.auto_save</label>
+              <input type="text" value="{{user?.data?.search_history?.auto_save === false ? '$t:admin.users.detail.search_history.auto_save_off' : '$t:admin.users.detail.search_history.auto_save_on'}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+            </div>
+            <div data-ref="field_search_history_site">
+              <label class="form-label">{{(user?.data?.search_history?.scopes ?? {})['core.site']?.label ?? '$t:admin.users.detail.search_history.keywords'}} · $t:admin.users.detail.search_history.count|count={{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length}}</label>
+              <div data-ref="search_history_site_empty" data-if="{{!!user?.data?.search_history &amp;&amp; ((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length === 0}}" class="text-gray-500 dark:text-gray-400 text-sm">$t:admin.users.detail.search_history.empty</div>
+              <ul data-ref="search_history_site_list" data-if="{{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
+                <li data-each="history in (user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []" class="flex items-center justify-between gap-3 py-2">
+                  <span class="text-gray-500 dark:text-gray-400 text-sm break-all">{{history.keyword}}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>

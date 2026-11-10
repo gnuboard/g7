@@ -215,6 +215,8 @@ return [
         'composer_failed_with_output' => 'composer install failed.:output',
         // `core:update` command console output
         'console' => [
+            'already_running' => 'Another core update (core:update) is in progress, so this one was not started. If the previous run ended abnormally, run it again after :minutes minutes.',
+            'lock_unavailable' => 'The core update lock store (cache) is unavailable, so the update was not started. Check the cache driver status and run it again.',
             'source_zip_conflict' => '--source and --zip cannot be used together. Choose only one.',
             'local_source_conflict' => '--local cannot be used together with --source / --zip.',
             'zip_not_found' => 'The specified ZIP file does not exist: :path',

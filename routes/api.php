@@ -1,5 +1,6 @@
 <?php
 
+use App\Broadcasting\BroadcastChannelRegistrar;
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
@@ -60,6 +61,7 @@ use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
+use App\Http\Controllers\Api\Auth\SearchHistoryController;
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
 use App\Http\Controllers\Api\Public\AnalyticsCollectController;
 use App\Http\Controllers\Api\Public\AnalyticsSummaryController;
@@ -271,6 +273,9 @@ Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request
         abort(403);
     }
 
+    // 채널 인가 콜백(코어·활성 확장)은 부팅이 아니라 여기서 한 번 등록한다 (#860)
+    app(BroadcastChannelRegistrar::class)->ensureRegistered();
+
     return Broadcast::auth($request);
 })->name('api.broadcasting.auth');
 
@@ -463,6 +468,14 @@ Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:
     Route::delete('avatar', [UserProfileController::class, 'deleteAvatar'])->name('api.me.avatar.delete');
     Route::post('verify-password', [UserProfileController::class, 'verifyPassword'])->name('api.me.verify-password');
     Route::put('password', [UserProfileController::class, 'changePassword'])->name('api.me.password');
+
+    // 내 최근 검색어 (7.1.5) — 본인 전용이라 새 권한 없음. 범위(scope)는 코어·활성 확장 선언만 받는다.
+    Route::get('search-history', [SearchHistoryController::class, 'index'])->name('api.me.search-history.index');
+    Route::post('search-history', [SearchHistoryController::class, 'store'])->name('api.me.search-history.store');
+    Route::post('search-history/merge', [SearchHistoryController::class, 'merge'])->name('api.me.search-history.merge');
+    Route::put('search-history/settings', [SearchHistoryController::class, 'updateSettings'])->name('api.me.search-history.settings');
+    Route::delete('search-history', [SearchHistoryController::class, 'destroyAll'])->name('api.me.search-history.destroy-all');
+    Route::delete('search-history/{id}', [SearchHistoryController::class, 'destroy'])->whereNumber('id')->name('api.me.search-history.destroy');
 });
 
 // 첨부파일 다운로드 (공개 - 권한 정책에 따라 접근 제어)
@@ -776,6 +789,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('queue-status', [AdminSettingsController::class, 'queueStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.queue-status');
         // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
         Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
+        // 「본문 콘텐츠」 외부 영상 서비스 추가 창의 예시 주소 확인 (#883) — 저장 없음, 저장 때와 같은 컴파일 규칙. `{key}` 와일드카드보다 먼저.
+        Route::post('content/embed-preview', [AdminSettingsController::class, 'embedProviderPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.content.embed-preview');
         // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.
         Route::get('password-expiry-preview', [AdminSettingsController::class, 'passwordExpiryPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.password-expiry-preview');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');

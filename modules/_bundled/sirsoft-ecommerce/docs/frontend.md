@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 247개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 249개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 247개 |
+| `admin` | 249개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -201,6 +201,7 @@
 | `_bank_accounts_table` | `admin` | partial | - |
 | `_bank_management_modal` | `admin` | partial | - |
 | `_claim_policy_section` | `admin` | partial | - |
+| `_content_media_policy` | `admin` | partial | - |
 | `_currency_exchange_cards` | `admin` | partial | - |
 | `_currency_exchange_table` | `admin` | partial | - |
 | `_disable_international_shipping_modal` | `admin` | partial | - |
@@ -240,6 +241,7 @@
 | `_tab_notification_definitions` | `admin` | partial | - |
 | `_tab_order_settings` | `admin` | partial | - |
 | `_tab_privacy_retention` | `admin` | partial | - |
+| `_tab_product_display` | `admin` | partial | - |
 | `_tab_review_settings` | `admin` | partial | - |
 | `_tab_seo` | `admin` | partial | - |
 | `_tab_shipping` | `admin` | partial | - |
@@ -362,14 +364,22 @@
 
 관리자 클레임 상세의 창(진행 방식 전환·대리 철회·신청 내용 수정·환불 실행)은 입력값을 `_global` 에 모은다 — 모달은 부모 `_local` 을 읽지 못하므로, 여는 핸들러가 대상 신청서를 `_global` 문맥에 두고 실행 핸들러가 거기서 읽는다.
 
+### 더보기 목록의 뒤로 가기 스크롤 복원
+
+관리자 「상품 공통정보」(`admin_ecommerce_product_common_info_index`)와 「상품정보제공고시」(`admin_ecommerce_product_notice_index`)는 더보기(`append-data-source`)로 목록을 늘리고 다음 쪽 번호를 공유 키 `_global.infiniteScroll` 에 둡니다. 코어 엔진(engine-v1.85.0, 코어 [scroll-restoration.md](../../../../docs/frontend/scroll-restoration.md))은 뒤로 가기 때 늘어난 목록을 스냅샷으로 되살리는데, 쪽 번호는 다른 화면(배송정책 폼 등)이 1로 되돌리므로 두 화면 레이아웃 meta 의 `scroll_restoration.snapshot.state` 에 `_global.infiniteScroll` 을 적어 함께 되돌립니다 — 빠지면 되살린 여러 쪽 목록에서 다음 더보기가 이미 받은 쪽을 다시 받아 같은 행이 두 번 붙습니다. 목록은 창이 아니라 목록 영역 안에서 스크롤되므로 `containers` 에 목록 영역(`#common_info_list`·`#template_list`)을 적고, `containers` 는 통째로 교체되므로 관리자 템플릿 기본값인 본문 영역 `#right_content_area` 도 함께 적습니다(1.3.4). 덧붙이는 소스가 모두 열 때 받는 소스(`auto_fetch: false`)인 배송정책 폼의 모달 목록은 엔진이 스냅샷을 심지 않으므로 대상이 아닙니다. 새로 더보기 + 공유 쪽 번호를 쓰는 화면을 만들면 같은 선언을 둡니다 — `resources/js/__tests__/layouts/infinite-list-scroll-restoration.test.ts` 가 레이아웃 소스에서 대상 화면을 기계로 찾아 선언 누락을 잡습니다.
+
 ### 비동기 응답 뒤 오류 화면을 부르는 핸들러
 
 자기 API 를 기다린 **뒤** 오류 화면(`showErrorPage`)·이동·상태 쓰기를 하는 핸들러는 시작할 때 화면 표식을 잡아 두고(`captureRouteGeneration()` — 경로+쿼리, 엔진이 `G7Core.navigation.getRouteGeneration()` 을 내면 그 경로 세대도 함께 잡아 나갔다가 같은 주소로 돌아온 경우도 가른다), 응답이 왔을 때 `isSameRouteGeneration()` 이 거짓이면 아무것도 하지 않는다(`initClaimEdit`). 엔진 `showErrorPage` 는 부른 시점의 경로 세대를 출처로 보므로, 응답을 기다리는 사이 사용자가 다른 화면으로 옮긴 뒤 부르면 그 새 화면을 404 로 덮는다. 데이터소스 오류 처리에서 불린 핸들러가 다시 dispatch 할 때는 받은 문맥을 `G7Core.dispatch(action, { componentContext: context })` 로 넘겨, 문맥의 `data.__routeGeneration`(그 fetch 를 시작한 세대)을 엔진이 쓰게 한다(`claimApplyOrderMissing`). 코어 내부(`window.__templateApp`)는 읽지 않는다. 또 init_actions 안에서는 `showErrorPage` 를 기다리지 않는다 — 렌더 전 단계라 본문 칸이 아직 없어 서로를 기다린다.
 
+### 비회원 주문 확인 실패(무토큰 401)
+
+비회원 화면의 요청(클레임 신청·미리보기·수정, 클레임 첨부 업로드·삭제, 구매확정, 배송지 변경)은 로그인 토큰 없이 주문 조회 토큰(`X-Guest-Order-Token`)으로 주인을 증명한다. 토큰이 없거나 만료되면 서버가 401 을 주는데, 코어(engine-v1.88.2)는 토큰 없이 보낸 요청의 401 을 세션 만료로 보지 않아 로그인 화면으로 옮기지 않고 호출자에게 돌려준다. 핸들러는 4xx 화면 안내(`isUserFixableClaimError`)보다 **먼저** `resources/js/utils/guestOrderAuth.ts` 의 `isGuestOrderAuthFailure(error)`(= `G7Core.api.isAnonymousUnauthorized`)로 판정해 안내 토스트(`user.claim.guest_auth_required`·`user.guest_order.auth_required`)를 띄우고 입력을 그대로 둔다(1.3.4). 새 비회원 요청 핸들러도 같은 판정을 쓴다 — 빠지면 서버 문구 「인증이 필요합니다.」만 남거나 4xx 로 분류되어 「상품·수량을 확인하라」로 잘못 안내된다.
+
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 220개 (정의: `resources/js/handlers/index.ts`).
+핸들러 228개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -557,6 +567,14 @@
 | `submitAdminClaimRequest` | `sirsoft-ecommerce.submitAdminClaimRequest` |
 | `toggleItemSelection` | `sirsoft-ecommerce.toggleItemSelection` |
 | `toggleSelectAllItems` | `sirsoft-ecommerce.toggleSelectAllItems` |
+| `initUserCancelItems` | `sirsoft-ecommerce.initUserCancelItems` |
+| `toggleUserCancelItem` | `sirsoft-ecommerce.toggleUserCancelItem` |
+| `toggleUserCancelSelectAll` | `sirsoft-ecommerce.toggleUserCancelSelectAll` |
+| `updateUserCancelQuantity` | `sirsoft-ecommerce.updateUserCancelQuantity` |
+| `estimateUserRefund` | `sirsoft-ecommerce.estimateUserRefund` |
+| `changeUserRefundPriority` | `sirsoft-ecommerce.changeUserRefundPriority` |
+| `executeUserCancelOrder` | `sirsoft-ecommerce.executeUserCancelOrder` |
+| `clearUserCancelOrderTimers` | `sirsoft-ecommerce.clearUserCancelOrderTimers` |
 | `confirmOrderOption` | `sirsoft-ecommerce.confirmOrderOption` |
 | `changeShippingAddress` | `sirsoft-ecommerce.changeShippingAddress` |
 | `submitReview` | `sirsoft-ecommerce.submitReview` |

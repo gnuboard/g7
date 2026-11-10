@@ -9,6 +9,7 @@ use App\Upgrades\Data\Ext\Plugins\SirsoftPayNicepayments\V1_1_0\Migrations\DropL
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 기설치본의 주문서 간편결제 조각 구 overlay 등록 행 제거 (D-6 — 그려지지 않던 조각 정리).
@@ -53,7 +54,7 @@ class DropLegacyCheckoutEasyPayOverlayTest extends PluginTestCase
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        require_once base_path('plugins/_bundled/sirsoft-pay_nicepayments/upgrades/data/1.1.0/migrations/DropLegacyCheckoutEasyPayOverlay.php');
+        UpgradeFiles::requireOnce(base_path('plugins/_bundled/sirsoft-pay_nicepayments/upgrades/data/1.1.0/migrations/DropLegacyCheckoutEasyPayOverlay.php'));
 
         $this->templateId = $this->ensureTemplate();
         DB::table(self::TABLE)->where('template_id', $this->templateId)->delete();

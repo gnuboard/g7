@@ -390,7 +390,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Input` | 텍스트 입력 | label, error | checkable |
-| `Select` | 선택 박스. `options` 를 주면 커스텀 드롭다운으로 그리며 펼침 목록은 트리거 폭을 하한으로 항목이 한 줄에 들어갈 만큼 넓어지고(상한 320px·화면 오른쪽 여유), 스크롤바 자리를 미리 확보한다 | label, error, options, searchable | - |
+| `Select` | 선택 박스. `options` 를 주면 커스텀 드롭다운으로 그리며 펼침 목록은 트리거 폭을 하한으로 항목이 한 줄에 들어갈 만큼 넓어지고(상한 320px·화면 오른쪽 여유), 스크롤바 자리를 미리 확보한다. 목록형 키보드: 단추에서 ↓(고른 값·없으면 첫 항목)·↑(고른 값·없으면 마지막 항목)로 열고 항목에 초점, 목록 안 ↓/↑(잠긴 항목 건너뛰며 순환)·Home·End, Enter·Space 로 고름, Esc 는 목록만 닫고 단추로(바깥 창 Esc 로 번지지 않음), Tab 은 닫고 단추 다음 칸으로, 펼쳤을 때만 단추 `aria-controls` 가 목록을 가리킨다 — 사용자 템플릿 Basic 의 Select 와 같은 계약. 회귀 테스트: `src/components/basic/__tests__/Select.keyboard.test.tsx` | label, error, options, searchable | - |
 | `Option` | Select 내부 옵션 | value | - |
 | `Optgroup` | Select 옵션 그룹화 | label | - |
 | `Textarea` | 텍스트 영역 | label, error | - |
@@ -493,7 +493,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 > 안의 `{{row.…}}` 는 그 카드의 행으로 풀린다. 행 컨텍스트에는 `_global` 이 없으므로 전역 값이 필요한 액션은 이벤트
 > 방식(`"event": "onItemClick"` + `switch`)을 쓴다. 종전에는 코어에 없는 멤버를 찾아 조용히 건너뛰었다(7.1.0 에서 수정).
 > 회귀 테스트: `src/components/composite/__tests__/CardGrid.actionDispatch.test.tsx`.
-| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, isHtml, purifyConfig, text |
+| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지). 코어 7.1.5+ 는 「본문 콘텐츠」 규칙(`G7Core.contentPolicy.sanitize`)으로 정화하고 외부 영상(`oembed`)을 플레이어로 바꾼다 — `purifyConfig.FORBID_TAGS` 는 규칙이 풀지 않는다 | content, isHtml, purifyConfig, text |
 
 #### 폼/입력
 
@@ -642,7 +642,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Accordion` | 아코디언 (접기/펼치기) | defaultOpen, isOpen, onToggle, style, disabled |
 | `Card` | 카드 컨테이너 (헤더, 본문, 푸터) | title, content, imageUrl, imageAlt, onClick, ... |
 | `LoadingSpinner` | 로딩 스피너 | size, color, fullscreen, text |
-| `ImageGallery` | 라이트박스 이미지 갤러리 (줌, 다운로드, 썸네일) | images, initialIndex, onClose |
+| `ImageGallery` | 라이트박스 이미지 갤러리 (줌, 다운로드, 썸네일) — 창 이름·단추 이름·「몇 장 중 몇 번째」 등 화면 읽기 이름은 `common.lightbox.*` 로 화면 언어를 따른다 | images, initialIndex, onClose |
 
 ---
 
@@ -951,4 +951,5 @@ interface SlotContainerProps {
 
 - **Icon** — `ariaLabel` 을 준 아이콘만 이미지(`role="img"`)로 읽히고, 나머지는 꾸밈으로 `aria-hidden` 입니다. 글리프 이름(「ellipsis」·「trash can」)이 단추 이름에 섞이지 않습니다. 아이콘만 있는 단추는 단추 쪽에 `aria-label="$t:…"` 를 답니다(`IconButton` 은 `ariaLabel` 또는 아이콘별 기본 이름).
 - **곁 라벨 잇기** — `Input`·`Textarea`·`Select`·`Toggle`·`TagInput` 은 스스로 이름(aria-label·aria-labelledby·`<label for>`·`label`/`ariaLabel` prop)이 없으면, 가까운 조상 3단계 안에서 앞에 놓인 `label`·`.form-label`·`.filter-label`·`.text-heading` 을 `aria-labelledby` 로 잇습니다(스위치는 뒤따르는 제목·앞 형제 상자의 첫 글자도 봅니다). 라벨과 입력 사이에 다른 입력이 끼면 그 라벨은 앞 칸의 것으로 보고 잇지 않습니다(`src/hooks/useAdjacentLabel.ts`). 같은 행에 입력이 여럿이면 레이아웃에서 이름을 직접 주는 편이 정확합니다.
+- **TagInput 라이브 영역 안내** — 고르기·지우기·초점 안내문(`common.tag_input.*`)의 항목 이름은 문자열 label 을, 문자열이 아니면 그 옵션의 value 를 읽습니다. 새 값 만들기(`creatable`) 행은 화면용 요소 label 대신 친 값을 읽어 「[object Object] 선택됨」이 나오지 않습니다(1.1.5). 회귀 테스트: `src/components/composite/__tests__/TagInput.a11yCreateAnnounce.test.tsx`.
 - **창 Esc** — 창 안에 펼친 팝업(`aria-haspopup` + `aria-expanded="true"`)이 있으면 첫 Esc 는 팝업 몫입니다. 팝업을 여는 부품은 트리거에 두 속성을 정확히 답니다.

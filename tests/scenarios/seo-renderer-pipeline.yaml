@@ -15,6 +15,7 @@ axes:
 
 effects:
   - renderer_render_product_detail_returns_complete_html
+  - renderer_marks_degraded_render   # 해석기의 일시 장애 데이터 소스 id 를 요청 속성 seo_render_degraded 로
   - renderer_render_returns_null_when_seo_disabled
   - renderer_render_returns_null_when_module_seo_disabled
   - renderer_render_with_datasource_failure_renders_with_fallback

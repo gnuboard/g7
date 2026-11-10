@@ -45,6 +45,11 @@ class ExtensionPendingHelperTest extends TestCase
 
     private array $tempDirs = [];
 
+    /**
+     * 임시 작업 디렉토리와 modules/_pending/test-pending-mod 의 manifest·소스 파일을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,6 +69,11 @@ class ExtensionPendingHelperTest extends TestCase
         File::put($pendingPath.'/src/Module.php', '<?php class Module {}');
     }
 
+    /**
+     * 테스트가 만든 pending·활성·스왑 임시 디렉토리와 작업 디렉토리를 지운다(_pending 자체는 보존).
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트 디렉토리 정리
@@ -107,6 +117,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * _pending에서 메타데이터를 올바르게 읽는지 확인합니다.
+     *
+     * @scenario case=pending_discovery
+     *
+     * @effects pending_meta_loaded_from_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_load_pending_extensions_reads_meta_json(): void
     {
@@ -123,6 +139,12 @@ class ExtensionPendingHelperTest extends TestCase
      *
      * 격리된 임시 modulesPath 에서 테스트 — 실제 modules/_pending 디렉토리 상태와
      * 무관하게 동작해야 한다.
+     *
+     * @scenario case=pending_discovery
+     *
+     * @effects invalid_or_temp_pending_dirs_skipped
+     *
+     * @return void 반환값 없음
      */
     public function test_load_pending_extensions_skips_invalid_dirs(): void
     {
@@ -152,6 +174,12 @@ class ExtensionPendingHelperTest extends TestCase
      *
      * 격리된 임시 modulesPath 에서 테스트 — 실제 modules/_pending 디렉토리 상태와
      * 무관하게 동작해야 한다.
+     *
+     * @scenario case=pending_discovery
+     *
+     * @effects missing_or_empty_pending_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_load_pending_extensions_returns_empty_when_no_pending(): void
     {
@@ -168,6 +196,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * _pending 디렉토리 자체가 없으면 빈 배열을 반환하는지 확인합니다.
+     *
+     * @scenario case=pending_discovery
+     *
+     * @effects missing_or_empty_pending_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_load_pending_extensions_returns_empty_when_dir_not_exists(): void
     {
@@ -184,6 +218,12 @@ class ExtensionPendingHelperTest extends TestCase
      * sirsoft-admin_basic_updating_<uniq>, sirsoft-admin_basic_old_<uniq>)는 내부에 원본
      * manifest 를 그대로 가지고 있어 identifier 가 원본과 동일하다. 이를 등록하면 install
      * 시 `getPendingPath({identifier})` 가 존재하지 않는 표준 경로를 반환해 실패한다.
+     *
+     * @scenario case=pending_discovery
+     *
+     * @effects invalid_or_temp_pending_dirs_skipped
+     *
+     * @return void 반환값 없음
      */
     public function test_load_extensions_skips_directories_with_mismatched_identifier(): void
     {
@@ -231,6 +271,12 @@ class ExtensionPendingHelperTest extends TestCase
      * 이전 업데이트가 비정상 종료되어 원본이 삭제되고 임시 디렉토리만 남는 상황.
      * 이 경우 확장을 "pending" 으로 인식하면 install 이 잘못된 경로로 접근해 실패하므로,
      * 빈 배열을 반환하여 _bundled 폴백으로 넘어가게 해야 한다.
+     *
+     * @scenario case=pending_discovery
+     *
+     * @effects invalid_or_temp_pending_dirs_skipped, missing_or_empty_pending_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_load_extensions_returns_empty_when_only_temp_directories_exist(): void
     {
@@ -251,6 +297,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * _pending에서 활성 디렉토리로 복사되는지 확인합니다.
+     *
+     * @scenario case=copy_to_active
+     *
+     * @effects active_copy_replaces_target_with_source
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_moves_files(): void
     {
@@ -269,6 +321,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * 대상에 이미 디렉토리가 있을 때 덮어쓰는지 확인합니다.
+     *
+     * @scenario case=copy_to_active
+     *
+     * @effects active_copy_replaces_target_with_source
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_overwrites_existing(): void
     {
@@ -285,6 +343,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * 확장 디렉토리가 완전히 삭제되는지 확인합니다.
+     *
+     * @scenario case=directory_delete
+     *
+     * @effects extension_directory_delete_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_extension_directory_removes_completely(): void
     {
@@ -300,6 +364,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * 존재하지 않는 경로 삭제 시 예외 없이 통과하는지 확인합니다.
+     *
+     * @scenario case=directory_delete
+     *
+     * @effects extension_directory_delete_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_extension_directory_ignores_nonexistent(): void
     {
@@ -310,6 +380,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * 복사 실패 시 기존 대상 디렉토리가 보존되는지 확인합니다.
+     *
+     * @scenario case=copy_failure
+     *
+     * @effects copy_failure_preserves_existing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_preserves_target_on_copy_failure(): void
     {
@@ -333,6 +409,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * 정상 교체 후 임시 디렉토리가 남아있지 않은지 확인합니다.
+     *
+     * @scenario case=copy_to_active
+     *
+     * @effects swap_temp_directories_cleaned, active_copy_replaces_target_with_source
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_cleans_temp_after_success(): void
     {
@@ -359,6 +441,12 @@ class ExtensionPendingHelperTest extends TestCase
     /**
      * 복사 실패 시 기존 대상 디렉토리가 보존되고 임시 디렉토리가 정리되는지 확인합니다.
      * File Facade Spy 패턴으로 copy(개별 파일 복사)를 가로채어 예외를 발생시킵니다.
+     *
+     * @scenario case=copy_failure
+     *
+     * @effects copy_failure_preserves_existing_target, swap_temp_directories_cleaned
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_preserves_target_and_cleans_temp_on_copy_failure(): void
     {
@@ -415,6 +503,12 @@ class ExtensionPendingHelperTest extends TestCase
     /**
      * 기존 활성 디렉토리의 rename(활성 → _old)이 차단될 때
      * 파일 단위 제자리 동기화로 폴백하여 교체가 완료되는지 확인합니다.
+     *
+     * @scenario case=rename_blocked
+     *
+     * @effects blocked_rename_falls_back_to_file_level_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_syncs_in_place_when_target_rename_is_blocked(): void
     {
@@ -463,6 +557,12 @@ class ExtensionPendingHelperTest extends TestCase
      *
      * 실사용 로그의 실패 지점: 활성 → _old 는 성공했으나, 방금 복사된 스테이징
      * 트리를 워처가 이미 열어 _updating_ → 활성 rename 이 차단된 케이스.
+     *
+     * @scenario case=rename_blocked
+     *
+     * @effects blocked_rename_falls_back_to_file_level_copy, swap_temp_directories_cleaned
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_copies_per_file_when_staging_rename_is_blocked(): void
     {
@@ -512,6 +612,12 @@ class ExtensionPendingHelperTest extends TestCase
      * Windows 는 하위 트리에 열린 파일이 있으면 그 경로의 모든 상위 디렉토리
      * rename 을 차단한다. 열린 파일이라도 일반적인 공유 모드(read/write 공유)로
      * 열려 있으면 내용 덮어쓰기는 허용되므로, 파일 단위 폴백은 성공해야 한다.
+     *
+     * @scenario case=rename_blocked
+     *
+     * @effects blocked_rename_falls_back_to_file_level_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_survives_open_file_handle_on_windows(): void
     {
@@ -545,6 +651,12 @@ class ExtensionPendingHelperTest extends TestCase
     /**
      * 이전 실패 실행이 남긴 _updating_/_old_ 잔존 디렉토리가
      * 다음 교체 시작 시 자동 정리되는지 확인합니다.
+     *
+     * @scenario case=copy_to_active
+     *
+     * @effects swap_temp_directories_cleaned
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_cleans_leftover_swap_directories(): void
     {
@@ -568,6 +680,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * EXCLUDED_DIRECTORIES 상수에 node_modules가 포함되어 있는지 확인합니다.
+     *
+     * @scenario case=copy_to_active
+     *
+     * @effects node_modules_excluded_from_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_excluded_directories_contains_node_modules(): void
     {
@@ -576,6 +694,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * copyToActive가 node_modules 디렉토리를 제외하는지 확인합니다.
+     *
+     * @scenario case=copy_to_active
+     *
+     * @effects node_modules_excluded_from_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_excludes_node_modules(): void
     {
@@ -598,6 +722,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * 중첩 경로의 node_modules도 제외되는지 확인합니다.
+     *
+     * @scenario case=copy_to_active
+     *
+     * @effects node_modules_excluded_from_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_to_active_excludes_nested_node_modules(): void
     {
@@ -620,6 +750,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * isPending이 존재할 때 true를 반환하는지 확인합니다.
+     *
+     * @scenario case=pending_path
+     *
+     * @effects pending_existence_and_path_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_is_pending_returns_true_when_exists(): void
     {
@@ -628,6 +764,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * isPending이 미존재 시 false를 반환하는지 확인합니다.
+     *
+     * @scenario case=pending_path
+     *
+     * @effects pending_existence_and_path_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_is_pending_returns_false_when_not_exists(): void
     {
@@ -636,6 +778,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * getPendingPath가 올바른 경로를 반환하는지 확인합니다.
+     *
+     * @scenario case=pending_path
+     *
+     * @effects pending_existence_and_path_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_get_pending_path_returns_correct_path(): void
     {
@@ -650,6 +798,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * createUpdateStagingPath()가 타임스탬프 형식의 디렉토리를 생성하는지 검증합니다.
+     *
+     * @scenario case=update_staging
+     *
+     * @effects update_staging_path_timestamped_and_unique
+     *
+     * @return void 반환값 없음
      */
     public function test_create_update_staging_path_creates_timestamped_directory(): void
     {
@@ -670,13 +824,23 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * createUpdateStagingPath()가 매 호출마다 고유 경로를 생성하는지 검증합니다.
+     *
+     * @scenario case=update_staging
+     *
+     * @effects update_staging_path_timestamped_and_unique
+     *
+     * @return void 반환값 없음
      */
     public function test_create_update_staging_path_creates_unique_paths(): void
     {
         $path1 = ExtensionPendingHelper::createUpdateStagingPath($this->modulesPath, 'test-mod');
         $this->tempDirs[] = $path1;
 
-        sleep(1);
+        // 경로 이름은 PHP date('Ymd_His') 라 시각을 옮길 수 없다 — 1초를 통째로 쉬지 않고 다음 초가 될 때까지만 기다린다
+        $second = date('Ymd_His');
+        while (date('Ymd_His') === $second) {
+            usleep(20_000);
+        }
 
         $path2 = ExtensionPendingHelper::createUpdateStagingPath($this->modulesPath, 'test-mod');
         $this->tempDirs[] = $path2;
@@ -692,6 +856,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * stageForUpdate()가 소스 파일을 스테이징 디렉토리로 복사하는지 검증합니다.
+     *
+     * @scenario case=update_staging
+     *
+     * @effects stage_for_update_copies_source_or_throws
+     *
+     * @return void 반환값 없음
      */
     public function test_stage_for_update_copies_files_to_staging(): void
     {
@@ -717,6 +887,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * stageForUpdate()가 존재하지 않는 소스에 대해 예외를 발생시키는지 검증합니다.
+     *
+     * @scenario case=update_staging
+     *
+     * @effects stage_for_update_copies_source_or_throws
+     *
+     * @return void 반환값 없음
      */
     public function test_stage_for_update_throws_on_missing_source(): void
     {
@@ -735,6 +911,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * cleanupStaging()이 스테이징 디렉토리를 완전히 삭제하는지 검증합니다.
+     *
+     * @scenario case=update_staging
+     *
+     * @effects cleanup_staging_removes_directory_idempotently
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_staging_removes_directory(): void
     {
@@ -752,6 +934,12 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * cleanupStaging()이 존재하지 않는 경로에서도 예외 없이 처리되는지 검증합니다.
+     *
+     * @scenario case=update_staging
+     *
+     * @effects cleanup_staging_removes_directory_idempotently
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_staging_does_not_fail_on_missing_path(): void
     {

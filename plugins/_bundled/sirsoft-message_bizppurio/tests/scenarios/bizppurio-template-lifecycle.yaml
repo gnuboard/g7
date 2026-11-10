@@ -35,9 +35,16 @@ exclusions:
   - { content_variant: [ex_text, ad_image, mi_item_list], transition: [requested_to_approved, requested_to_rejected, approved_cancel, requested_cancel], reason: "전이 규칙은 유형과 직교(content 는 불투명 JSON) — 전이 axis 는 대표 유형(ba_none)으로 검증하고, 유형 axis 는 검증 매트릭스·신청 페이로드 보존으로 검증" }
 
 effects:
+  # 날짜 표시 — ISO 원문은 기계값, 화면은 보는 사람 날짜 *_date_formatted (#160)
+  - template_dates_have_viewer_date_formatted
   # 데이터 모델·상태 (S1)
   - status_enum_maps_kapi_service_status_vocabulary
   - unknown_service_status_does_not_overwrite_state
+  # 상세 응답 → serviceStatus 유도 (serviceStatus 필드 우선 → block/dormant 플래그 → 검수·운영 상태 → 기본 REG)
+  - detail_service_status_field_takes_precedence
+  - detail_derivation_follows_flag_and_inspection_priority
+  - detail_derivation_defaults_to_reg
+  - is_approved_true_only_for_approved_status
   - notification_type_unique_one_row_per_definition
   - model_casts_content_snapshot_inspection_json
   # 검수 신청 (S2)

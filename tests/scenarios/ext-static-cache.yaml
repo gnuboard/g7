@@ -150,6 +150,19 @@ effects:
   - installer_probe_checks_mime_and_token
   - engine_layer_never_probes_asset_mode
   - convert_to_current_mode_shapes
+  # ClearsTemplateCaches — 게시 예약의 단일 지점인 확장 캐시 버전 카운터 계약
+  - extension_cache_version_is_timestamp_and_monotonic
+  - missing_cache_version_regenerates_valid_version
+  - extension_cache_version_uses_core_namespace
+  - legacy_template_cache_clear_is_no_op
+  # 게시 실패 경로의 원자성·복원·락·권한 — ExtensionStaticCacheServiceTest
+  - manifest_failure_cleans_final_directory
+  - rename_failure_restores_previous_published_version
+  - cleanup_excludes_failed_deletions_from_count
+  - lock_contention_skips_without_failure_marker
+  - lock_provider_failure_recorded_in_marker
+  - published_tree_is_group_writable
+  - publish_failure_backoff_is_scoped_to_version
 
 test_files:
   - tests/Feature/Services/ExtensionStaticCacheServiceTest.php

@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'content_media' => [
+        'upload_success' => '本文メディアをアップロードしました。',
+        'upload_failed' => '本文メディアをアップロードできませんでした。',
+        'target_success' => '本文メディアのアップロード契約を取得しました。',
+    ],
+
     'page' => [
         'not_found' => 'ページが見つかりません。',
         'fetch_success' => 'ページ情報を閲覧しました。',
@@ -56,6 +62,11 @@ return [
     ],
     // ページモジュールシーダーのコンソール出力
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => 'ブラウザ実測シーダーは CLI と G7_PLAYWRIGHT_BYPASS=1 でのみ実行します。',
+            'done' => 'ブラウザ実測ページを作成: :count 件',
+            'cleanup_done' => 'ブラウザ実測ページを整理 — :counts',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => '管理者ユーザーがいないため、ページアクティビティログシーダーをスキップします。',
             'unmarked_kept' => 'マーカーのないページアクティビティログ :count 件は運用ログとみなして残します(以前のバージョンのシーダーが作成したサンプルにもマーカーがないため、整理されません)。',

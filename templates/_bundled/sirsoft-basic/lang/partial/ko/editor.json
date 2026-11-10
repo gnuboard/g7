@@ -677,6 +677,18 @@
       "label": "배치",
       "row": "가로",
       "column": "세로"
+    },
+    "rsc_scope": {
+      "label": "검색 범위 (최근 검색어)"
+    },
+    "rsc_result_path": {
+      "label": "검색 결과 화면 경로 (주소 따라가기)"
+    },
+    "rsc_button_text": {
+      "label": "검색 단추 글자"
+    },
+    "hdr_search_history_scope": {
+      "label": "최근 검색어 범위"
     }
   },
   "component": {
@@ -731,7 +743,8 @@
     "header": "사이트 헤더",
     "footer": "사이트 푸터",
     "theme_toggle": "테마 전환",
-    "notification_center": "알림 센터"
+    "notification_center": "알림 센터",
+    "recent_search_combobox": "최근 검색어 검색창"
   },
   "action": {
     "go_to_page": {
@@ -1139,6 +1152,7 @@
     "current_user": "현재 사용자",
     "form_data": "폼 데이터",
     "form_meta": "폼 메타",
+    "content_media_target": "본문 미디어 업로드 계약",
     "home_boards": "홈 게시판",
     "mileage_balance": "마일리지 잔액",
     "mileage_history": "마일리지 내역",

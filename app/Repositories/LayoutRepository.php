@@ -380,15 +380,48 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * extends를 가진 자식 레이아웃 조회
      *
+     * 상속 선언은 두 곳에 있을 수 있다 — `extends` 칸과 본문 최상위 `extends`. 템플릿 자기 레이아웃은
+     * 설치·갱신 때 칸을 비우고 본문으로만 상속하므로(편집기 저장 때만 칸이 채워진다), 칸만 보면
+     * 공통 레이아웃을 고쳐도 그것을 쓰는 화면들이 자식으로 잡히지 않아 캐시 무효화·삭제 차단이 빠진다.
+     * 병합(LayoutService)이 본문의 `extends` 를 읽으므로 본문 선언도 자식으로 본다.
+     *
+     * 본문은 먼저 "JSON 문자열 값이 부모 이름으로 끝나는" 행으로 거른 뒤 디코드한 최상위 `extends` 가 정확히
+     * 같을 때만 자식으로 확정한다 — 접두가 겹치는 다른 부모는 세지 않는다. 저장 JSON 은 `/` 를 `\/` 로 적을 수
+     * 있어 거르는 토큰은 마지막 세그먼트와 그 앞 구분자(`/` 또는 여는 따옴표)·닫는 따옴표로 만든다.
+     *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $extendsName  부모 레이아웃 이름
      * @return Collection 자식 레이아웃 컬렉션
      */
     public function getChildrenByExtends(int $templateId, string $extendsName): Collection
     {
-        return TemplateLayout::where('template_id', $templateId)
-            ->where('extends', $extendsName)
-            ->get();
+        $segments = explode('/', $extendsName);
+        $lastSegment = (string) end($segments);
+        // `_`·`%` 는 LIKE 와일드카드라 이스케이프한다 (레이아웃 이름에 `_` 가 흔하다).
+        $escaped = (count($segments) > 1 ? '/' : '"')
+            .str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $lastSegment)
+            .'"';
+
+        $children = new Collection;
+
+        TemplateLayout::query()
+            ->where('template_id', $templateId)
+            ->where(function ($query) use ($extendsName, $escaped): void {
+                $query->where('extends', $extendsName)
+                    ->orWhere('content', 'like', '%'.$escaped.'%');
+            })
+            ->chunkById(self::LIST_CHUNK_SIZE, function (Collection $chunk) use ($children, $extendsName): void {
+                foreach ($chunk as $layout) {
+                    $content = $layout->content;
+
+                    if ($layout->extends === $extendsName
+                        || (is_array($content) && ($content['extends'] ?? null) === $extendsName)) {
+                        $children->push($layout);
+                    }
+                }
+            });
+
+        return $children;
     }
 
     /**

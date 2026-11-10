@@ -78,7 +78,7 @@
 | 필드 | 타입 | 용도/설명 |
 |---|---|---|
 | `channels` | array | 관리자 정의 전체 채널 목록(iteration 렌더링용). 원소: `key`, 현재 로케일 `label`, `enabled`, `terms_slug`, `terms_slug_set` |
-| `consent_histories` | array | 이 사용자의 동의 변경 이력. 원소: `channel_key`, `action`, `source`(register/admin/profile), `created_at` |
+| `consent_histories` | array | 이 사용자의 동의 변경 이력. 원소: `channel_key`, `action`, `source`(register/admin/profile), `created_at`(보는 사람 시간대 `Y-m-d H:i:s` — 같은 화면의 가입일과 같은 기준) |
 
 ## 주의사항
 

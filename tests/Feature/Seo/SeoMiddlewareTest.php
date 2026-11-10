@@ -211,6 +211,39 @@ class SeoMiddlewareTest extends TestCase
         $this->middleware->handle($request, $this->spaNext());
     }
 
+    /**
+     * 데이터 소스가 시간 초과·서버 오류로 대체값을 쓴 렌더(저하)는 봇에게 보내되 캐시에 넣지 않는다.
+     *
+     * 넣으면 데이터 없는 화면(상품명 없는 제목·본문)이 캐시 수명 동안 봇에게 계속 나간다 — 다음 미스가 다시 그리게 둔다.
+     *
+     * @effects degraded_render_not_cached
+     *
+     * @return void 반환값 없음
+     */
+    public function test_degraded_render_is_served_but_not_cached(): void
+    {
+        $request = $this->createRequest('/products/17', 'Googlebot/2.1');
+        $renderedHtml = '<html><head><title>상품 상세</title></head><body></body></html>';
+
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willReturnCallback(function (Request $request) use ($renderedHtml) {
+            $request->attributes->set('seo_layout_name', 'sirsoft-ecommerce.shop/show');
+            $request->attributes->set('seo_render_degraded', ['product']);
+
+            return $renderedHtml;
+        });
+
+        $this->cacheManager->expects($this->never())->method('putWithLayout');
+
+        $response = $this->middleware->handle($request, $this->spaNext());
+
+        $this->assertSame($renderedHtml, $response->getContent());
+        $this->assertSame('MISS', $response->headers->get('X-SEO-Cache'));
+    }
+
     // ========================================
     // 렌더링 실패 시 SPA 폴백 테스트
     // ========================================

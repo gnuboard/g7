@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Upgrades;
 use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 배송가능 국가명의 빈 로케일 키 청소 마이그레이션 테스트 (#459)
@@ -27,18 +28,28 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
 
     private string $settingsFile;
 
+    /**
+     * 1.0.2 국가명 빈 로케일 청소 마이그레이션을 불러오고 테스트 전용 배송 설정 파일 경로를 정한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         // DataMigration 클래스는 오토로드 밖 — 직접 로드
         $migDir = dirname(__DIR__, 3).'/upgrades/data/1.0.2/migrations';
-        require_once $migDir.'/PruneEmptyShippingCountryNameLocales.php';
+        UpgradeFiles::requireOnce($migDir.'/PruneEmptyShippingCountryNameLocales.php');
 
         // 운영 storage 오염 방지: 테스트 환경 경로 (마이그레이션의 runningUnitTests 분기와 일치)
         $this->settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         $this->settingsFile = $this->settingsPath.'/shipping.json';
     }
 
+    /**
+     * 테스트가 기록한 배송 설정 파일을 지워 다음 테스트에 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::exists($this->settingsFile)) {
@@ -47,6 +58,11 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * 검증 대상 국가명 빈 로케일 청소 마이그레이션 인스턴스를 새로 만든다.
+     *
+     * @return object PruneEmptyShippingCountryNameLocales 인스턴스
+     */
     private function migration(): object
     {
         $class = self::MIGRATION_NS;
@@ -54,6 +70,11 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         return new $class;
     }
 
+    /**
+     * 1.0.1 → 1.0.2 업그레이드 단계를 나타내는 컨텍스트를 만든다.
+     *
+     * @return UpgradeContext 1.0.2 단계 업그레이드 컨텍스트
+     */
     private function context(): UpgradeContext
     {
         return new UpgradeContext(
@@ -63,12 +84,23 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 배송 설정 파일에 주어진 설정 배열을 JSON 으로 기록한다.
+     *
+     * @param  array  $settings  기록할 shipping 설정
+     * @return void 반환값 없음
+     */
     private function writeSettings(array $settings): void
     {
         File::ensureDirectoryExists($this->settingsPath);
         File::put($this->settingsFile, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * 마이그레이션 후 배송가능 국가 목록을 국가 코드 키 배열로 읽는다.
+     *
+     * @return array 국가 코드별 국가 설정
+     */
     private function readCountries(): array
     {
         $settings = json_decode((string) File::get($this->settingsFile), true);
@@ -76,6 +108,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         return collect($settings['available_countries'])->keyBy('code')->all();
     }
 
+    /**
+     * 빈 문자열 로케일 키만 지워 부재로 정규화하고 채워진 이름은 그대로 둔다.
+     *
+     * @scenario case=blank_locale
+     *
+     * @effects blank_locale_keys_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_empty_string_locale_keys_are_removed(): void
     {
         $this->writeSettings([
@@ -95,6 +136,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertSame(['ko' => '프랑스'], $byCode['FR']['name']);
     }
 
+    /**
+     * 공백·탭만 있는 로케일 값도 빈 값으로 보고 키를 지운다.
+     *
+     * @scenario case=blank_locale
+     *
+     * @effects blank_locale_keys_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_whitespace_only_locale_keys_are_removed(): void
     {
         // 공백만 입력한 경우도 빈 값으로 취급
@@ -110,6 +160,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertSame(['ko' => '독일'], $this->readCountries()['DE']['name']);
     }
 
+    /**
+     * 남는 국가명 값은 앞뒤 공백이 잘린다.
+     *
+     * @scenario case=surviving_values
+     *
+     * @effects surviving_values_trimmed
+     *
+     * @return void 반환값 없음
+     */
     public function test_surviving_values_are_trimmed(): void
     {
         $this->writeSettings([
@@ -124,6 +183,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertSame(['ko' => '이탈리아', 'en' => 'Italy'], $this->readCountries()['IT']['name']);
     }
 
+    /**
+     * 모든 로케일이 비면 name 은 null 이 아닌 빈 객체로 남아 저장 검증을 깨지 않는다.
+     *
+     * @scenario case=blank_locale
+     *
+     * @effects all_blank_name_becomes_empty_object
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_locale_names_leaves_empty_object_not_null(): void
     {
         // 모든 로케일이 빈 값이면 name 은 빈 객체가 된다(키 자체는 유지) — 백엔드 검증이
@@ -140,6 +208,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertSame([], $this->readCountries()['XX']['name']);
     }
 
+    /**
+     * 부재 로케일(en·ja)을 새로 채우지 않고 청소만 한다.
+     *
+     * @scenario case=surviving_values
+     *
+     * @effects missing_locales_not_filled
+     *
+     * @return void 반환값 없음
+     */
     public function test_country_names_are_never_filled_in(): void
     {
         // 이름을 새로 채우지 않는다. 부재 로케일은 언어팩이 읽기 시점에 보강한다.
@@ -156,6 +233,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertSame(['ko' => '대한민국'], $this->readCountries()['KR']['name']);
     }
 
+    /**
+     * 국가명 외의 설정·국가 필드(국제 배송 여부·기본 국가·is_active·code)는 그대로 보존된다.
+     *
+     * @scenario case=surviving_values
+     *
+     * @effects other_fields_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_other_country_fields_are_preserved(): void
     {
         $this->writeSettings([
@@ -175,6 +261,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertSame('KR', $settings['available_countries'][0]['code']);
     }
 
+    /**
+     * 두 번 실행해도 국가 목록이 첫 실행 결과와 같다.
+     *
+     * @scenario case=rerun
+     *
+     * @effects prune_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_idempotent(): void
     {
         $this->writeSettings([
@@ -195,6 +290,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertSame(['ko' => '프랑스'], $second['FR']['name']);
     }
 
+    /**
+     * 배송 설정 파일이 없으면 건너뛰고 파일을 새로 만들지 않는다.
+     *
+     * @scenario case=noop_input
+     *
+     * @effects missing_input_is_noop
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_file_is_noop(): void
     {
         if (File::exists($this->settingsFile)) {
@@ -206,6 +310,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertFalse(File::exists($this->settingsFile));
     }
 
+    /**
+     * available_countries 키가 없는 설정은 키를 만들지 않고 그대로 둔다.
+     *
+     * @scenario case=noop_input
+     *
+     * @effects missing_input_is_noop
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_available_countries_is_noop(): void
     {
         $this->writeSettings(['default_country' => 'KR']);
@@ -217,6 +330,15 @@ class PruneEmptyShippingCountryNameLocalesTest extends ModuleTestCase
         $this->assertArrayNotHasKey('available_countries', $settings);
     }
 
+    /**
+     * 구 스키마 잔재인 문자열 name 은 건드리지 않는다.
+     *
+     * @scenario case=non_array_name
+     *
+     * @effects non_array_name_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_non_array_name_is_left_untouched(): void
     {
         // 구 스키마 잔재(문자열 name)는 이 마이그레이션의 책임이 아니다 — 건드리지 않는다.

@@ -31,6 +31,10 @@ trait FiltersByDateRange
      * 같은 결과를 냅니다. 날짜는 앱 시간대(UTC)의 하루로 해석합니다 — 화면에서 고른 날짜로
      * 목록을 거를 때는 `applyViewerDateRangeFilter()` 를 씁니다.
      *
+     * @deprecated 7.1.5 UTC 자정으로 하루를 자르면 사이트·보는 사람의 하루와 어긋납니다.
+     *             보는 사람 기준은 `applyViewerDateRangeFilter()`, 특정 시간대 기준은
+     *             `applyDateRangeFilterInTimezone()` 을 쓰세요. 공개 표면이라 메이저에서 제거합니다.
+     *
      * @param  Builder|\Illuminate\Database\Query\Builder  $query  대상 쿼리
      * @param  string  $column  날짜 컬럼 (테이블 한정자 포함 가능)
      * @param  string|null  $startDate  시작일 (빈 값이면 미적용)
@@ -76,6 +80,7 @@ trait FiltersByDateRange
     protected function applyViewerTodayFilter($query, string $column): void
     {
         $timezone = TimezoneHelper::getUserTimezone();
+        // audit:allow datetime-display-user-timezone reason: 시간대를 지정해 만든 Carbon — 날짜 키
         $today = CarbonImmutable::now($timezone)->toDateString();
 
         $this->applyDateRangeFilterInTimezone($query, $column, $today, $today, $timezone);
@@ -105,6 +110,9 @@ trait FiltersByDateRange
     /**
      * 특정 하루에 해당하는 행만 남기는 필터를 범위 조건으로 적용합니다.
      *
+     * @deprecated 7.1.5 UTC 자정 기준의 하루·달입니다. 사이트·보는 사람 기준은
+     *             `applyDateRangeFilterInTimezone()` 으로 그 하루·달의 범위를 넘기세요. 메이저에서 제거합니다.
+     *
      * @param  Builder|\Illuminate\Database\Query\Builder  $query  대상 쿼리
      * @param  string  $column  날짜 컬럼 (테이블 한정자 포함 가능)
      * @param  \DateTimeInterface|string  $day  대상 날짜
@@ -112,6 +120,7 @@ trait FiltersByDateRange
      */
     protected function applyDayFilter($query, string $column, \DateTimeInterface|string $day): void
     {
+        // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
         $target = CarbonImmutable::parse($day instanceof \DateTimeInterface ? $day->format('Y-m-d H:i:s') : $day);
 
         $query->whereBetween($column, [$target->startOfDay(), $target->endOfDay()]);
@@ -121,6 +130,9 @@ trait FiltersByDateRange
      * 특정 연·월에 해당하는 행만 남기는 필터를 범위 조건으로 적용합니다.
      *
      * `whereYear` + `whereMonth` 조합은 컬럼에 함수를 두 번 씌워 인덱스를 완전히 막습니다.
+     *
+     * @deprecated 7.1.5 UTC 자정 기준의 하루·달입니다. 사이트·보는 사람 기준은
+     *             `applyDateRangeFilterInTimezone()` 으로 그 하루·달의 범위를 넘기세요. 메이저에서 제거합니다.
      *
      * @param  Builder|\Illuminate\Database\Query\Builder  $query  대상 쿼리
      * @param  string  $column  날짜 컬럼 (테이블 한정자 포함 가능)

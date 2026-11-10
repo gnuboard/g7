@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
 use Plugins\Sirsoft\PayKginicis\Listeners\AdjustEcommercePaymentMethodsLayoutListener;
-use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * 이커머스 결제수단 설정 레이아웃 보정 리스너 테스트 — 이슈 #475
@@ -18,8 +18,17 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
  * 이제 결제수단 카탈로그가 pg_locked / needs_pg 를 내려주고 코어 레이아웃이 그 값으로 직접
  * 분기하므로, 이 리스너의 책임은 테스트모드 경고 주입 하나만 남았다.
  */
-class AdjustEcommercePaymentMethodsLayoutListenerTest extends PluginTestCase
+class AdjustEcommercePaymentMethodsLayoutListenerTest extends PureTestCase
 {
+    /**
+     * 리스너가 core.layout_extension.after_apply 를 filter 훅으로 구독해 adjustPaymentMethodsLayout 을 호출한다.
+     *
+     * @scenario case=hook_subscription
+     *
+     * @effects subscribed_as_layout_after_apply_filter
+     *
+     * @return void 반환값 없음
+     */
     public function test_subscribes_to_layout_after_apply_as_filter(): void
     {
         $hooks = AdjustEcommercePaymentMethodsLayoutListener::getSubscribedHooks();
@@ -34,6 +43,15 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 코어 레이아웃의 pg_locked·needs_pg 분기 표현식을 치환하지 않고 간편결제 ID 를 끼워 넣지 않는다.
+     *
+     * @scenario case=settings_layout
+     *
+     * @effects pg_branch_expressions_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_does_not_string_substitute_pg_branch_expressions(): void
     {
         // 코어 레이아웃은 이제 pg_locked / needs_pg 로 직접 분기한다.
@@ -64,6 +82,15 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PluginTestCase
         $this->assertStringNotContainsString('kginicis_lpay', $json);
     }
 
+    /**
+     * 주문 설정 탭의 결제수단 카드 앞에 테스트모드 경고를 한 번만(두 번 적용해도 중복 없이) 주입한다.
+     *
+     * @scenario case=settings_layout
+     *
+     * @effects test_mode_warning_injected_once_before_payment_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_adds_test_mode_warning_to_order_settings_tab(): void
     {
         $listener = new AdjustEcommercePaymentMethodsLayoutListener;
@@ -104,6 +131,15 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 이커머스 설정이 아닌 다른 레이아웃은 그대로 돌려준다.
+     *
+     * @scenario case=other_layout
+     *
+     * @effects other_layouts_unchanged
+     *
+     * @return void 반환값 없음
+     */
     public function test_leaves_other_layouts_unchanged(): void
     {
         $listener = new AdjustEcommercePaymentMethodsLayoutListener;

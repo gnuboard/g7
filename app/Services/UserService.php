@@ -37,13 +37,15 @@ class UserService
      * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타 정리)
      * @param  PermissionEscalationGuard  $escalationGuard  역할 부여 상한 가드
      * @param  PasswordChangeService  $passwordChangeService  비밀번호 변경 기록 서비스
+     * @param  SearchHistoryService  $searchHistoryService  최근 검색어 서비스 (탈퇴·삭제 시 명시 삭제)
      */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
         private AttachmentService $attachmentService,
         private PermissionEscalationGuard $escalationGuard,
-        private PasswordChangeService $passwordChangeService
+        private PasswordChangeService $passwordChangeService,
+        private SearchHistoryService $searchHistoryService
     ) {}
 
     /**
@@ -452,6 +454,9 @@ class UserService
         // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
         $this->passwordChangeService->purgeHistory($user);
 
+        // 최근 검색어 삭제 (명시적 삭제 - CASCADE 의존 금지, 7.1.5)
+        $this->searchHistoryService->purgeForUser($user);
+
         // 토큰 삭제 (로그아웃 처리)
         $user->tokens()->delete();
 
@@ -583,6 +588,9 @@ class UserService
 
                 // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
                 $this->passwordChangeService->purgeHistory($user);
+
+                // 최근 검색어 삭제 (명시적 삭제 - CASCADE 의존 금지, 7.1.5)
+                $this->searchHistoryService->purgeForUser($user);
 
                 // API 토큰 삭제
                 $user->tokens()->delete();

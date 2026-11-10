@@ -14,7 +14,7 @@
  * @since engine-v1.50.0
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useLayoutDocumentContext } from '../LayoutDocumentContext';
 import { useLayoutEditor } from '../LayoutEditorContext';
 import { createCustomKey, updateCustomKeyValue } from './useInlineEdit';
@@ -66,6 +66,36 @@ export interface UsePageSettingsResult {
 }
 
 /**
+ * patchDocumentRaw 와 같은 규칙으로 raw 사본을 갱신한다 — raw[key] = value, __editor.original[key] = 영속값.
+ *
+ * @param raw 현재 raw
+ * @param key 최상위 키
+ * @param value 병합본 값
+ * @param persistValue 저장 영속값
+ * @return 갱신된 raw 사본 (raw 가 없으면 null)
+ */
+function applyRawPatch(
+  raw: Record<string, unknown> | null,
+  key: string,
+  value: unknown,
+  persistValue: unknown,
+): Record<string, unknown> | null {
+  if (!raw) return raw;
+  const next: Record<string, unknown> = { ...raw, [key]: value };
+  const editorMeta = raw.__editor;
+  if (editorMeta && typeof editorMeta === 'object' && !Array.isArray(editorMeta)) {
+    const original = (editorMeta as Record<string, unknown>).original;
+    if (original && typeof original === 'object' && !Array.isArray(original)) {
+      next.__editor = {
+        ...(editorMeta as Record<string, unknown>),
+        original: { ...(original as Record<string, unknown>), [key]: persistValue },
+      };
+    }
+  }
+  return next;
+}
+
+/**
  * 페이지 설정 최상위 속성 로드/패치 훅.
  *
  * @return UsePageSettingsResult
@@ -77,11 +107,25 @@ export function usePageSettings(): UsePageSettingsResult {
   const templateIdentifier = state.templateIdentifier ?? '';
   const layoutName = state.selectedRoute?.layoutName ?? '';
 
+  // 최신 문서 — 폼은 칸 하나를 바꿀 때 "지금 문서의 meta 를 읽어 그 칸만 바꾼 meta" 를 patch 한다. 다국어 칸은
+  // 평문 → `$t:custom.*` 키 생성이 서버 왕복(수 초) 뒤에 기록되므로, 그 기록이 그린 시점의 raw 를 읽으면 그사이 다른
+  // 칸이 기록한 값을 옛 meta 로 덮어 지운다(먼저 적은 검색 제목이 뒤에 적은 검색 설명 기록에 지워지던 결함). 그래서
+  // getValue 는 렌더 시점 raw 가 아니라 이 ref 를 읽고, patch 는 patchDocumentRaw 와 같은 규칙으로 ref 를 바로 갱신한다
+  // (다시 그리기 전에 기록이 연달아 와도 서로 덮지 않는다). 문서가 바뀌면(새 raw) ref 를 그 raw 로 맞춘다.
+  const liveRawRef = useRef<Record<string, unknown> | null>(raw);
+  const seenRawRef = useRef<Record<string, unknown> | null>(raw);
+  if (seenRawRef.current !== raw) {
+    seenRawRef.current = raw;
+    liveRawRef.current = raw;
+  }
+
+  // 식별자는 raw 가 바뀔 때마다 새로 만든다 — 폼의 useMemo/useCallback 이 getValue 를 의존성으로 다시 계산한다.
   const getValue = useCallback(
     <T = unknown>(key: string, fallback?: T): T => {
-      const v = raw?.[key];
+      const v = liveRawRef.current?.[key];
       return (v === undefined ? fallback : v) as T;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [raw],
   );
 
@@ -89,7 +133,9 @@ export function usePageSettings(): UsePageSettingsResult {
     (key: string, value: unknown, ...rest: [unknown?]): void => {
       if (!docCtx) return;
       // 화살표 함수는 자체 arguments 가 없으므로 rest 길이로 3번째 인자 유무를 판정한다.
-      if (rest.length >= 1) {
+      const hasOriginal = rest.length >= 1;
+      liveRawRef.current = applyRawPatch(liveRawRef.current, key, value, hasOriginal ? rest[0] : value);
+      if (hasOriginal) {
         docCtx.patchDocumentRaw(key, value, rest[0]);
       } else {
         docCtx.patchDocumentRaw(key, value);

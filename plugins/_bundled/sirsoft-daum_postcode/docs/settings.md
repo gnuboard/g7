@@ -7,9 +7,10 @@
 <!-- @generated:settings-schema START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 키 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `display_mode` | `enum` | `layer` | 표시 방식 |
-| `popup_width` | `integer` | `500` | 팝업 너비 (px) |
-| `popup_height` | `integer` | `600` | 팝업 높이 (px) |
+| `display_mode_pc` | `enum` | `layer` | PC 표시 방식 |
+| `display_mode_mobile` | `enum` | `inline` | 모바일 표시 방식 |
+| `popup_width` | `integer` | `500` | PC 레이어·팝업 너비 (px) |
+| `popup_height` | `integer` | `600` | PC 레이어·팝업 높이 (px) |
 | `theme_color` | `string` | `#1D4ED8` | 테마 색상 |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
@@ -21,8 +22,9 @@
 
 | 키 | 기본값 | 왜 그 기본값인가 |
 |---|---|---|
-| `display_mode` | `layer` | 팝업은 브라우저·확장 프로그램에 차단될 수 있고, 차단되면 사용자에게는 "버튼을 눌러도 아무 일이 없는" 것으로 보입니다. 레이어는 그 위험이 없습니다 |
-| `popup_width` · `popup_height` | 500 × 600 | 팝업 모드에서만 쓰입니다. 스키마의 `min` 100 · `max` 2000 을 코어 설정 저장 검증이 규칙으로 쓰고(범위 밖 422), 설정 화면 입력칸도 같은 값을 갖습니다 |
+| `display_mode_pc` | `layer` | PC(클릭 시점 화면 폭 1024px 이상)의 방식 — `popup`·`layer`·`inline`. 팝업은 브라우저·확장 프로그램에 차단될 수 있고, 차단되면 사용자에게는 "버튼을 눌러도 아무 일이 없는" 것으로 보입니다. 레이어는 그 위험이 없습니다 |
+| `display_mode_mobile` | `inline` | 휴대폰·태블릿(엔진 반응형 `portable`, 1023px 이하)의 방식 — `inline`·`fullscreen`. 위에 겹치는 레이어는 좁은 화면에서 잘리기 쉬워 모바일 선택지에서 뺐고, 카카오 가이드가 모바일에 권하는 끼워 넣기를 기본으로 둡니다 |
+| `popup_width` · `popup_height` | 500 × 600 | PC 의 레이어·팝업 크기입니다(레이어는 화면보다 크면 화면에 맞춰 줄고, 펼치기 모드는 첫 높이로만 쓴 뒤 검색 결과 높이를 따릅니다). 스키마의 `min` 100 · `max` 2000 을 코어 설정 저장 검증이 규칙으로 쓰고(범위 밖 422), 설정 화면 입력칸도 같은 값을 갖습니다 |
 | `theme_color` | `#1D4ED8` | 검색 창의 강조 색 |
 
 저장 검증 오류 문구의 항목 이름은 `RegisterSettingsAttributeLabelsListener` 가 `core.plugin_settings.update_validation_rules`
@@ -95,7 +97,7 @@ _라우트 파일이 없습니다._
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `sirsoft-basic` | 템플릿 | `>=1.0.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

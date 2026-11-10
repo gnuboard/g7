@@ -7,6 +7,7 @@ import {
     rememberPendingClose,
     reportPaymentWindowClosed,
 } from '../paymentCloseReport';
+import { guestOwnershipHeaders } from '../guestOrderToken';
 import { translateNhnkcp as t } from '../translate';
 import {
     applePayUnsupportedMessage,
@@ -491,8 +492,12 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         const firstFieldError = responseData?.errors
             ? Object.values(responseData.errors)[0]?.[0]
             : undefined;
-        const errorMessage =
-            responseData?.error
+        // 비회원 주문 조회 토큰이 없거나 만료돼 승인키 요청이 401 로 거부된 경우 — 코어는 로그인 화면으로 옮기지 않는다
+        // (토큰 없이 보낸 요청, engine-v1.88.2). 서버 문구(「인증이 필요합니다.」) 대신 다시 결제하는 길을 알린다.
+        const guestAuthFailed = G7Core?.api?.isAnonymousUnauthorized?.(error) === true;
+        const errorMessage = guestAuthFailed
+            ? t('payment.error.mobile_guest_auth_failed', '주문 확인 정보가 만료되었습니다. 주문 조회에서 다시 결제해 주세요.')
+            : responseData?.error
             ?? responseData?.message
             ?? firstFieldError
             ?? (error instanceof Error ? error.message : 'Unknown error');
@@ -526,6 +531,10 @@ async function handleMobilePayment(
         buyr_tel1: pgPaymentData.customer_phone ?? '',
         ret_url: callbackUrl,
         currency: normalizeCurrency(pgPaymentData.currency),
+    }, {
+        // 비회원 주문은 주문 생성 때 받은 조회 토큰으로 주문 소유를 증명한다(결제창 닫힘 보고와 같은 방식, #883).
+        // 회원은 헤더가 비어 있고 Bearer 로 판정된다.
+        headers: guestOwnershipHeaders(),
     });
 
     if (!approvalJson.success || !approvalJson.data) {

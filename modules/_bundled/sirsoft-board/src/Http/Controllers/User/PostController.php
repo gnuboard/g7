@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Enums\PermissionType;
+use App\Exceptions\ContentMediaLimitExceededException;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Models\User;
 use App\Support\Query\PaginationLimits;
@@ -20,6 +21,7 @@ use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
+use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
 use Modules\Sirsoft\Board\Http\Requests\User\DestroyPostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\PostIndexRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\StorePostRequest;
@@ -34,10 +36,12 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
+use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Services\SecretViewTokenService;
+use Modules\Sirsoft\Board\Support\PostModifyGate;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -54,6 +58,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class PostController extends PublicBaseController
 {
     use ChecksBoardPermission;
+    use RespondsToExpiredSession;
 
     /**
      * PostController 생성자
@@ -63,13 +68,15 @@ class PostController extends PublicBaseController
      * @param  CommentService  $commentService  댓글 서비스
      * @param  ReportService  $reportService  신고 서비스
      * @param  SecretViewTokenService  $secretViewTokens  비밀글 열람 토큰 서비스
+     * @param  PostContentMediaService  $contentMediaService  본문 미디어 서비스 (폼 메타의 업로드 계약, #883)
      */
     public function __construct(
         private PostService $postService,
         private BoardService $boardService,
         private CommentService $commentService,
         private ReportService $reportService,
-        private SecretViewTokenService $secretViewTokens
+        private SecretViewTokenService $secretViewTokens,
+        private PostContentMediaService $contentMediaService
     ) {}
 
     /**
@@ -320,7 +327,13 @@ class PostController extends PublicBaseController
             // 사라진다 (201 + 첨부 0 건). 위에서 이미 `hasFile('files')` 로 업로드 권한을
             // 확인하고 있으므로 이 경로가 파일을 받는다는 의도는 명확하다.
             $files = $request->file('files');
-            $post = $this->postService->createPost($slug, $data, is_array($files) ? $files : []);
+
+            // `attachment_ids` 도 같은 이유로 넘긴다 — 종전에는 검증만 하고 넘기지 않아 201 이어도 첨부가 이어지지 않았다
+            // (사용자 수정·관리자 경로는 넘김). 번호로 잇는 경로도 서비스가 소유 규칙(본인 업로드만)으로 거른다 (#883 후속)
+            $attachmentIds = $data['attachment_ids'] ?? [];
+            unset($data['attachment_ids']);
+
+            $post = $this->postService->createPost($slug, $data, is_array($files) ? $files : [], is_array($attachmentIds) ? $attachmentIds : []);
 
             // 쿨다운 캐시 기록 (게시글 생성 성공 후)
             $spamSecurity = g7_module_settings('sirsoft-board', 'spam_security', []);
@@ -337,6 +350,14 @@ class PostController extends PublicBaseController
                 'sirsoft-board::messages.posts.create_success',
                 new PostResource($post),
                 201
+            );
+        } catch (ContentMediaLimitExceededException $e) {
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            return $this->error(
+                $e->getMessageKey(),
+                422,
+                ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]],
+                $e->getMessageParams()
             );
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
@@ -377,7 +398,8 @@ class PostController extends PublicBaseController
 
             // 수정 권한 확인
             if (! $this->canModifyPost($post, $request)) {
-                return $this->error('sirsoft-board::messages.posts.modify_permission_denied', 403);
+                // 만료 토큰 회원이면 세션 만료(401) (#883 후속)
+                return $this->ownershipDenied($request, 'sirsoft-board::messages.posts.modify_permission_denied');
             }
 
             // 게시글 수정
@@ -425,6 +447,14 @@ class PostController extends PublicBaseController
                 'sirsoft-board::messages.posts.update_success',
                 new PostResource($post)
             );
+        } catch (ContentMediaLimitExceededException $e) {
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            return $this->error(
+                $e->getMessageKey(),
+                422,
+                ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]],
+                $e->getMessageParams()
+            );
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
             return $this->error(
@@ -471,7 +501,7 @@ class PostController extends PublicBaseController
 
             // 삭제 권한 확인
             if (! $this->canModifyPost($post, $request)) {
-                return $this->error('sirsoft-board::messages.posts.delete_permission_denied', 403);
+                return $this->ownershipDenied($request, 'sirsoft-board::messages.posts.delete_permission_denied');
             }
 
             // 게시글 삭제 (소프트 삭제)
@@ -720,6 +750,12 @@ class PostController extends PublicBaseController
 
             $metaData = [
                 'board' => $boardData,
+                // 편집기 본문 미디어 업로드 계약 (#883) — 이 게시판 업로드 권한이 있고 받는 종류가 있을 때만. 「파일 첨부 사용」과
+                // 무관하다(D26). 이 값을 읽지 않는 복제 템플릿은 현행 동작(관리자만 편집기 자체 업로드).
+                // 표준 계약 엔드포인트 `GET boards/{slug}/content-media/target`(#887)과 같은 값 — 옛 화면 호환으로 계속 싣는다(폐기 예정)
+                'content_media' => $this->checkBoardPermission($slug, 'attachments.upload', PermissionType::User)
+                    ? $this->contentMediaService->uploadTarget($board, admin: false)
+                    : null,
             ];
 
             // 수정 모드: 작성자 정보, 작성일, 첨부파일 정보 포함
@@ -730,7 +766,7 @@ class PostController extends PublicBaseController
                 // 회원 게시글이고 본인이 아닌 경우 권한 에러
                 if ($post->user_id && Auth::id() !== $post->user_id) {
                     if (! $this->hasBoardManagePermission($slug)) {
-                        return $this->error('sirsoft-board::messages.posts.modify_permission_denied', 403);
+                        return $this->ownershipDenied($request, 'sirsoft-board::messages.posts.modify_permission_denied');
                     }
                 }
 
@@ -821,7 +857,7 @@ class PostController extends PublicBaseController
                 // 회원 게시글이고 본인이 아니거나, 관리자도 아닌 경우 권한 에러
                 if ($post->user_id && Auth::id() !== $post->user_id) {
                     if (! $this->hasBoardManagePermission($slug)) {
-                        return $this->error('sirsoft-board::messages.posts.modify_permission_denied', 403);
+                        return $this->ownershipDenied($request, 'sirsoft-board::messages.posts.modify_permission_denied');
                     }
                 }
 
@@ -974,34 +1010,8 @@ class PostController extends PublicBaseController
      */
     private function canModifyPost($post, Request $request): bool
     {
-        $slug = $post->board->slug;
-
-        // 1. 게시판 관리 권한 확인 (admin.manage 또는 manager)
-        if ($this->hasBoardManagePermission($slug)) {
-            return true;
-        }
-
-        // 2. 작성자 본인 확인 (회원 게시글)
-        if (Auth::check() && $post->user_id && Auth::id() === $post->user_id) {
-            return true;
-        }
-
-        // 3. 비회원 게시글인 경우 verification_token 또는 비밀번호로 확인
-        if (! $post->user_id && $post->password) {
-            // 3-1. verification_token 확인 (권장)
-            $token = $this->verificationTokenFrom($request);
-            if ($token !== '' && $this->consumeVerificationToken($slug, $post->id, $token)) {
-                return true;
-            }
-
-            // 3-2. 비밀번호 확인 (fallback)
-            $password = $request->input('password');
-            if ($password && Hash::check($password, $post->password)) {
-                return true;
-            }
-        }
-
-        return false;
+        // 판정은 첨부 업로드(`post_id`)와 같은 곳에 둔다 — 상태를 바꾸는 수정·삭제라 검증 토큰을 소비한다
+        return app(PostModifyGate::class)->allows($post, $request, consume: true);
     }
 
     // =========================================================================
@@ -1020,15 +1030,7 @@ class PostController extends PublicBaseController
      */
     private function verificationTokenFrom(Request $request): string
     {
-        $header = $request->header(PostService::VERIFY_TOKEN_HEADER);
-
-        if (is_string($header) && $header !== '') {
-            return $header;
-        }
-
-        $value = $request->input('verification_token');
-
-        return is_string($value) ? $value : '';
+        return app(PostModifyGate::class)->verificationTokenFrom($request);
     }
 
     /**
@@ -1047,22 +1049,6 @@ class PostController extends PublicBaseController
     private function verificationTokenMatches(string $slug, int $postId, string $token): bool
     {
         return $this->postService->hasValidDeleteVerifyToken($slug, $postId, $token);
-    }
-
-    /**
-     * verification_token 을 확인하고 소비합니다.
-     *
-     * 소비는 상태를 바꾸는 요청(수정·삭제)에서만 한다 — 그 지점이 토큰의 목적이고,
-     * 1회용이라야 같은 토큰으로 두 번 쓰는 것을 막을 수 있다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @param  string  $token  검증 토큰
-     * @return bool 토큰 유효 여부
-     */
-    private function consumeVerificationToken(string $slug, int $postId, string $token): bool
-    {
-        return $this->postService->consumeDeleteVerifyToken($slug, $postId, $token);
     }
 
     // =========================================================================

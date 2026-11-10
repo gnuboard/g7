@@ -6,6 +6,7 @@ use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -138,7 +139,7 @@ class UserMileageService
      * 사용자 마일리지 잔액 조회 (화면/주입용 — 캐시 O(1) 조회)
      *
      * @param  int  $userId  사용자 ID
-     * @return array 마일리지 정보 (enabled/available/pending/expiring_soon/expiring_date/total_earned/total_used/by_currency)
+     * @return array 마일리지 정보 (enabled/available/pending/expiring_soon/expiring_date/expiring_date_formatted/total_earned/total_used/by_currency)
      */
     public function getBalance(int $userId): array
     {
@@ -152,6 +153,7 @@ class UserMileageService
             'pending' => $cached['pending'] ?? 0,
             'expiring_soon' => $cached['expiring_soon'] ?? 0,
             'expiring_date' => $cached['expiring_date'] ?? null,
+            'expiring_date_formatted' => $cached['expiring_date_formatted'] ?? null,
             'total_earned' => $cached['total_earned'] ?? 0,
             'total_used' => $cached['total_used'] ?? 0,
             'by_currency' => $cached['by_currency'] ?? [],
@@ -914,7 +916,8 @@ class UserMileageService
      *
      * @param  int  $id  거래 ID
      * @param  string|null  $memo  변경할 관리자 메모 (null 이면 미변경 — Controller 가 키 존재로 판정)
-     * @param  Carbon|null  $expiresAt  변경할 만료일 (null 이면 미변경)
+     * @param  Carbon|string|null  $expiresAt  변경할 만료일 (null 이면 미변경). 문자열은 관리자 입력값으로 보고
+     *                                         수동 지급과 같은 규칙(날짜만이면 사이트 기준 그날 끝)으로 해석한다
      * @param  bool  $touchMemo  memo 키 전달 여부 (null 로 지우기와 미전달 구분)
      * @param  bool  $touchExpiry  expires_at 키 전달 여부
      * @return MileageTransaction 갱신된 거래
@@ -924,10 +927,14 @@ class UserMileageService
     public function updateAdminTransaction(
         int $id,
         ?string $memo,
-        ?Carbon $expiresAt,
+        Carbon|string|null $expiresAt,
         bool $touchMemo,
         bool $touchExpiry
     ): MileageTransaction {
+        if (is_string($expiresAt)) {
+            $expiresAt = $expiresAt === '' ? null : $this->parseAdminExpiryInput($expiresAt);
+        }
+
         return DB::transaction(function () use ($id, $memo, $expiresAt, $touchMemo, $touchExpiry) {
             $transaction = $this->ledger->findById($id);
             if ($transaction === null) {
@@ -1249,7 +1256,7 @@ class UserMileageService
     private function resolveAdminEarnExpiry(MileageAdminEarnDto $dto): ?Carbon
     {
         if ($dto->expiresAt !== null) {
-            return Carbon::parse($dto->expiresAt);
+            return $this->parseAdminExpiryInput($dto->expiresAt);
         }
 
         if (! $dto->useDefaultExpiry) {
@@ -1257,6 +1264,25 @@ class UserMileageService
         }
 
         return $this->resolveEarnExpiry();
+    }
+
+    /**
+     * 관리자가 입력한 만료일을 UTC 시각으로 해석합니다. (수동 지급·적립건 편집 공용)
+     *
+     * 날짜만(`YYYY-MM-DD`) 오면 **사이트 기준 그날 23:59:59** 에 만료되게 한다 — 쿠폰 유효기간과 같은 기준이고,
+     * 수정 모달이 같은 사이트 날짜(`expires_at_date`)로 다시 보여 주므로 저장을 반복해도 날짜가 밀리지 않는다.
+     * 시각이 함께 오면 그 시각을 사이트 시간대 벽시계로 읽는다.
+     *
+     * @param  string  $value  입력값 (YYYY-MM-DD 또는 날짜+시각)
+     * @return Carbon UTC 만료 시각
+     */
+    private function parseAdminExpiryInput(string $value): Carbon
+    {
+        $value = trim($value);
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1
+            ? TimezoneHelper::fromSiteDateEndOfDay($value)
+            : TimezoneHelper::fromSiteDateTime($value);
     }
 
     /**

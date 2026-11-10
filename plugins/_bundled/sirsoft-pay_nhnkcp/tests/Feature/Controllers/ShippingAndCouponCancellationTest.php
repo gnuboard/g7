@@ -64,7 +64,8 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
 
         Queue::fake();
 
-        $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        // 「환불까지 한 번에」(auto_advance_refund) 는 환불 실행 권한이 있어야 한다 — 없으면 컨트롤러가 403.
+        $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update', 'sirsoft-ecommerce.claims.execute-refund']);
         $this->createCancelSequences();
 
         // 테스트 DB 시더가 plugin 레코드를 등록하지 않아

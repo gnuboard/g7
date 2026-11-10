@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Services;
 
+use App\Helpers\TimezoneHelper;
+use Carbon\Carbon;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepositoryInterface;
 
 class CbtReconciliationService
@@ -16,6 +18,9 @@ class CbtReconciliationService
 
     public const STATUS_REFUND_RETRYING = 'refund_retrying';
 
+    /**
+     * @param  CbtReconciliationRepositoryInterface  $repository  CBT 조정 레코드 Repository
+     */
     public function __construct(
         private readonly CbtReconciliationRepositoryInterface $repository,
     ) {}
@@ -47,6 +52,7 @@ class CbtReconciliationService
             $existing = [];
         }
 
+        // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
         $now = now()->toIso8601String();
         $record = array_merge($existing, $attributes, [
             'created_at' => $existing['created_at'] ?? $now,
@@ -72,6 +78,7 @@ class CbtReconciliationService
                 return null;
             }
 
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             $now = now()->toIso8601String();
             $claimed = array_merge($existing, [
                 'status' => self::STATUS_REFUND_RETRYING,
@@ -89,6 +96,12 @@ class CbtReconciliationService
         return is_array($claimed) ? $this->normalize($claimed) : null;
     }
 
+    /**
+     * 조정 레코드를 화면 응답용으로 정규화합니다. (저장에는 쓰지 않는다)
+     *
+     * @param  array<string, mixed>  $record  저장된 조정 레코드
+     * @return array<string, mixed> 정규화된 조정 레코드
+     */
     private function normalize(array $record): array
     {
         $record['status'] = (string) ($record['status'] ?? '');
@@ -102,7 +115,30 @@ class CbtReconciliationService
         $record['refund_result_code'] = (string) ($refundResult['resultCode'] ?? $refundResult['code'] ?? '');
         $record['refund_result_msg'] = (string) ($refundResult['resultMsg'] ?? $refundResult['message'] ?? '');
 
+        // 화면 응답용 — 저장 ISO 는 그대로 두고 보는 사람 시간대 문자열을 곁들인다
+        foreach (['created_at', 'updated_at', 'last_retry_at'] as $key) {
+            $record[$key.'_formatted'] = $this->formatIsoForViewer($record[$key] ?? null);
+        }
+
         return $record;
     }
 
+    /**
+     * 저장된 ISO8601 시각을 보는 사람 시간대 표시 문자열로 바꿉니다.
+     *
+     * @param  mixed  $iso  저장된 ISO8601 시각
+     * @return string|null 표시용 일시 (값이 없거나 해석할 수 없으면 null)
+     */
+    private function formatIsoForViewer(mixed $iso): ?string
+    {
+        if (! is_string($iso) || $iso === '') {
+            return null;
+        }
+
+        try {
+            return TimezoneHelper::toUserDateTimeString(Carbon::parse($iso));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
 }

@@ -36,6 +36,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaService;
 use Modules\Sirsoft\Board\Support\BoardReadScope;
 use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Support\ReadHookContext;
@@ -839,6 +840,11 @@ class BoardService
 
         // 그누보드7 규정: DB CASCADE 금지 → 어플리케이션에서 명시적 삭제
         DB::transaction(function () use ($board) {
+            // 0. 본문 미디어 행은 코어 본문 미디어 골격으로 먼저 영구 삭제한다 — 행마다 core.content_media.before_delete 를
+            //    아래 파일 일괄 삭제보다 앞서 발화하고, 파일은 커밋 뒤 지운다(일괄 삭제가 먼저 지워도 무해). 일반 첨부는
+            //    아래 일괄 삭제 그대로다 (#887)
+            app(BoardContentMediaService::class)->purgeForBoard($board);
+
             // 1. 첨부파일 스토리지 일괄 삭제 (물리 파일)
             // 첨부파일 저장 경로: attachments/{slug}/...
             $this->deleteAttachmentFiles($board->slug);

@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\Log;
 class DataSourceResolver
 {
     /**
+     * 마지막 resolve() 에서 일시 장애(시간 초과·연결 오류·5xx)로 대체값을 쓴 데이터 소스 id.
+     *
+     * @var list<string>
+     */
+    private array $degraded = [];
+
+    /**
      * 레이아웃의 data_sources를 서버에서 호출하여 데이터를 로드합니다.
      *
      * @param  array  $dataSources  전체 data_sources 배열
@@ -22,6 +29,8 @@ class DataSourceResolver
     public function resolve(array $dataSources, array $seoDataSourceIds, array $routeParams, string $locale, array $queryParams = [], array $extraContext = []): array
     {
         $context = [];
+        // 싱글턴이라 앞 렌더의 기록을 비운다
+        $this->degraded = [];
 
         $evalContext = array_merge($extraContext, [
             'route' => array_merge($extraContext['route'] ?? [], $routeParams),
@@ -74,6 +83,20 @@ class DataSourceResolver
         }
 
         return $context;
+    }
+
+    /**
+     * 마지막 resolve() 에서 일시 장애로 대체값을 쓴 데이터 소스 id 를 돌려줍니다.
+     *
+     * 그 렌더는 데이터 없는 화면(상품명 없는 제목·본문)이라 SEO 캐시에 넣으면 캐시 수명 동안 봇에게 계속 나간다 —
+     * 저장 경로(SeoMiddleware·SeoCacheRegenerator)가 이 값으로 저장을 건너뛴다. 4xx·사이트 밖 주소 거부는 다시
+     * 불러도 같은 결과라 넣지 않는다.
+     *
+     * @return list<string> 데이터 소스 id 목록 (없으면 빈 배열)
+     */
+    public function degradedDataSources(): array
+    {
+        return $this->degraded;
     }
 
     /**
@@ -208,12 +231,19 @@ class DataSourceResolver
                 'status' => $response->status(),
             ]);
 
+            if ($response->serverError()) {
+                $this->degraded[] = (string) ($ds['id'] ?? $endpoint);
+            }
+
             return $fallback;
         } catch (\Throwable $e) {
             Log::warning('[SEO] DataSource API error', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);
+
+            // 시간 초과·연결 오류 — 다음 렌더에서는 데이터가 올 수 있다
+            $this->degraded[] = (string) ($ds['id'] ?? $endpoint);
 
             return $fallback;
         }

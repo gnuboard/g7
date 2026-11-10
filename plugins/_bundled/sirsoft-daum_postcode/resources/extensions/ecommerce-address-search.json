@@ -4,7 +4,7 @@
     "priority": 100,
     "scripts": [
         {
-            "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+            "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
             "id": "daum_postcode_script",
             "label": "$t:sirsoft-daum_postcode.search_address"
         }
@@ -36,11 +36,12 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "G7 표준 형식으로 변환하여 callbackAction 실행 (하이브리드 방식)",
+                            "comment": "G7 표준 형식으로 변환하여 callbackAction 실행 (하이브리드 방식). 표시 방식은 PC·모바일(클릭 시점 화면 폭 1023px 이하) 설정을 함께 넘긴다. inline 은 이 버튼이 있는 주소 입력 줄 바로 아래에 검색 창을 펼친다",
                             "type": "click",
                             "handler": "sirsoft-daum_postcode.openPostcode",
                             "params": {
-                                "displayMode": "{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}",
+                                "displayModePc": "{{_global.plugins['sirsoft-daum_postcode']?.display_mode_pc ?? 'layer'}}",
+                                "displayModeMobile": "{{_global.plugins['sirsoft-daum_postcode']?.display_mode_mobile ?? 'inline'}}",
                                 "width": "{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}",
                                 "height": "{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}",
                                 "callbackAction": "{{extensionPointCallbacks.onAddressSelect}}",

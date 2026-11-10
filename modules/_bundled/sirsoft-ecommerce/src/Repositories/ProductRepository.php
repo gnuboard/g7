@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
+use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -591,6 +592,14 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findWithTrashed(int $id): ?Product
+    {
+        return $this->model->newQuery()->withTrashed()->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function bulkUpdateFields(array $ids, array $fields): int
     {
         if (empty($ids) || empty($fields)) {
@@ -696,6 +705,25 @@ class ProductRepository implements ProductRepositoryInterface
             );
         }
 
+        // 리뷰 많은 순 — 판매량순과 같은 이유로 리뷰 집계 파생 테이블을 한 번 조인해 그 건수로 정렬한다(노출 리뷰만,
+        // 목록 응답의 review_count 와 같은 집계). 리뷰가 없는 상품은 집계가 null 이고 MySQL 내림차순은 null 을 뒤로 보낸다. 같으면 최신 등록순.
+        if ($sort === 'reviews') {
+            $productsTable = $this->model->getTable();
+            $this->joinReviewAggregate($query)
+                ->orderByDesc($this->reviewAlias().'.review_count')
+                ->orderByDesc($productsTable.'.created_at')
+                ->orderByDesc($productsTable.'.id')
+                ->with($listRelations);
+
+            // audit:allow repository-paginate-column-pruning reason: 리뷰 많은 순은 조인한 집계 별칭 기준이라
+            // 지연 조인 inner(=id 단일 select)로 옮길 수 없다(판매량순과 같음).
+            return BoundedPaginator::paginate(
+                $query,
+                perPage: $perPage,
+                resultCap: PaginationLimits::resultCap('shop.products'),
+            );
+        }
+
         $sortSpec = match ($sort) {
             'price_asc' => [['column' => 'selling_price', 'direction' => 'asc']],
             'price_desc' => [['column' => 'selling_price', 'direction' => 'desc']],
@@ -732,6 +760,74 @@ class ProductRepository implements ProductRepositoryInterface
             ->orderByDesc($this->salesAlias().'.total_sold')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRelatedProductIds(Product $product, RelatedProductOrder $order, int $limit): array
+    {
+        $product->loadMissing('categories');
+        $base = $product->categories->firstWhere('pivot.is_primary', true) ?? $product->categories->first();
+        if (! $base || $limit <= 0) {
+            return [];
+        }
+
+        // path 는 「뿌리/…/자기」 ID 사슬이다 — 뒤집으면 자기 → 부모 → … → 뿌리 단계가 된다. 비어 있는 레거시 행은 자기 하나.
+        $tiers = array_reverse(array_values(array_filter(explode('/', (string) $base->path), fn ($id) => $id !== '')));
+        if ($tiers === []) {
+            $tiers = [(string) $base->id];
+        }
+
+        $productsTable = $this->model->getTable();
+        $picked = [];
+
+        foreach ($tiers as $tierCategoryId) {
+            $remaining = $limit - count($picked);
+            if ($remaining <= 0) {
+                break;
+            }
+
+            // 단계마다 그 분류와 하위 분류 상품(분류 화면과 같은 범위)에서 고른다. 앞 단계에서 고른 상품과 지금 상품은 뺀다.
+            $categoryIds = Category::selfAndDescendantIds((int) $tierCategoryId);
+            $query = $this->model->newQuery()
+                ->where($productsTable.'.display_status', 'visible')
+                ->whereNotIn($productsTable.'.id', [...$picked, $product->id])
+                ->whereHas('categories', fn ($q) => $q->whereIn('ecommerce_product_categories.category_id', $categoryIds));
+
+            $this->orderRelated($query, $order);
+
+            foreach ($query->limit($remaining)->pluck($productsTable.'.id') as $id) {
+                $picked[] = (int) $id;
+            }
+        }
+
+        return $picked;
+    }
+
+    /**
+     * 관련 상품 한 단계 안의 순서를 적용합니다.
+     *
+     * 판매·리뷰 순은 목록 정렬과 같은 파생 테이블 조인을 쓰고, 같으면 최신 등록순으로 가른다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  RelatedProductOrder  $order  단계 안 순서
+     * @return void 반환값 없음
+     */
+    private function orderRelated($query, RelatedProductOrder $order): void
+    {
+        $productsTable = $this->model->getTable();
+
+        match ($order) {
+            RelatedProductOrder::RANDOM => $query->inRandomOrder(),
+            RelatedProductOrder::SALES => $this->joinSalesAggregate($query)->orderByDesc($this->salesAlias().'.total_sold'),
+            RelatedProductOrder::REVIEWS => $this->joinReviewAggregate($query)->orderByDesc($this->reviewAlias().'.review_count'),
+            RelatedProductOrder::LATEST => $query,
+        };
+
+        if ($order !== RelatedProductOrder::RANDOM) {
+            $query->orderByDesc($productsTable.'.created_at')->orderByDesc($productsTable.'.id');
+        }
     }
 
     /**

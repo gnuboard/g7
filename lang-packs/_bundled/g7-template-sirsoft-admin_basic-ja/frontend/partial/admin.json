@@ -415,7 +415,8 @@
         "profile_memo": "プロフィール/メモ",
         "activity_info": "アクティビティ情報",
         "consent_info": "同意履歴",
-        "notifications_info": "通知ボックス"
+        "notifications_info": "通知ボックス",
+        "search_history_info": "最近の検索語"
       },
       "unlock": "ロック解除",
       "unlock_success": "アカウントのロックを解除しました。",
@@ -441,6 +442,15 @@
         "no": "いいえ",
         "postponed_until": "延期終了",
         "policy": "有効期限の個別設定"
+      },
+      "search_history": {
+        "auto_save": "検索語の自動保存",
+        "auto_save_on": "オン",
+        "auto_save_off": "オフ — 新しい検索語は記録しません",
+        "feature_off": "サイトで最近の検索語機能がオフになっています。保存済みの検索語のみ表示します。",
+        "keywords": "検索語",
+        "count": "{{count}}件",
+        "empty": "保存された検索語はありません。"
       }
     },
     "bulk_status_change": "ステータス変更",
@@ -1569,6 +1579,7 @@
       "general": "一般",
       "mail": "メール",
       "upload": "アップロード",
+      "content": "本文コンテンツ",
       "seo": "SEO",
       "security": "セキュリティ",
       "drivers": "ドライバー",
@@ -1692,7 +1703,7 @@
       "meta_settings": "メタタグ設定",
       "meta_settings_desc": "検索エンジン最適化のためのメタタグを設定します。",
       "meta_title_suffix": "タイトルサフィックス",
-      "meta_title_suffix_hint": "すべてのページのタイトルの後に追加される文言です。 (例: ' | Gnuboard7')",
+      "meta_title_suffix_hint": "すべてのページのタイトル(検索エンジンのタイトルと訪問者のブラウザタブのタイトル)の後に追加される文言です。{site_name} はサイト名に置き換えられ、空の場合は ' - サイト名' を追加します。タイトルが既にサイト名で終わる場合は再度追加しません。 (例: ' | {site_name}')",
       "meta_description": "デフォルトメタ説明",
       "meta_description_placeholder": "サイトのデフォルトメタ説明を入力してください。",
       "meta_description_hint": "検索結果に表示される説明です。最大160文字を推奨します。",
@@ -2563,13 +2574,32 @@
         "withdraw_warning": "退会処理されたアカウントは取り戻せません。管理者アカウントは自動退会対象から除外されます。",
         "restore_hint": "休眠会員がログインすると自動的に解除され、別途の申請手続きはありません。"
       },
+      "search_history": {
+        "title": "最近の検索語",
+        "desc": "検索ボックスに入力して送信した検索語を検索範囲ごとに保管します。会員はサーバーに、非会員は訪問者のブラウザに保存され、ログインするとブラウザの一覧が会員の一覧に統合されます。退会すると、その会員の検索語を削除します。",
+        "enabled": "最近の検索語を使用",
+        "enabled_desc": "既定はオン。オフにすると検索ボックスは検索語を記録せず、最近の検索語の一覧も表示されません。保存済みの検索語は下の保管期限に従って削除されます。",
+        "auto_save_notice": "会員と訪問者は検索ボックスの「自動保存をオフ」で自分の記録を止められます。オフにすると記録が止まり一覧が非表示になりますが、保存済みの検索語は削除しません。",
+        "scopes_title": "検索範囲ごとの保管",
+        "scopes_desc": "コアの統合検索と有効な拡張が宣言した検索範囲です。同じ範囲を使う検索ボックス同士で一覧を共有します。拡張を無効にするとその範囲は一覧から外れ、設定値は残ります。",
+        "scope_meta": "{{owner}} · {{scope}}",
+        "max_count": "保管件数",
+        "max_count_aria": "{{scope}} の保管件数",
+        "retention_days": "保管期限 (日)",
+        "retention_days_aria": "{{scope}} の保管期限 (日)",
+        "retention_days_hint": "0 = 期限なし",
+        "retention_desc": "保管期限を1日以上にした範囲は、毎日早朝の個人情報保有期間処理が期限切れの検索語を削除します。対象一覧には検索語の代わりに会員・範囲・件数だけが表示されます。",
+        "target_count": "検索語 {{count}}件",
+        "empty": "宣言された検索範囲がありません。"
+      },
       "targets": {
         "title": {
           "withdrawn": "退会会員残存情報破棄対象",
           "pre_notice": "休眠事前案内対象",
           "convert": "休眠転換対象",
           "withdraw_notice": "休眠退会予告対象",
-          "withdraw": "休眠自動退会対象"
+          "withdraw": "休眠自動退会対象",
+          "search_history": "保管期限が過ぎた最近の検索語"
         },
         "hint": "件数と名簿は保存された設定基準です。機能がオフでも、オンにすれば処理される対象を事前に表示します。",
         "total": "合計 {{count}}件",
@@ -2582,7 +2612,8 @@
           "pre_notice": "休眠転換事前通知",
           "convert": "休眠転換",
           "withdraw_notice": "休眠アカウント退会予定通知",
-          "withdraw": "休眠アカウント退会処理"
+          "withdraw": "休眠アカウント退会処理",
+          "search_history": "最近の検索語の保管期限経過"
         },
         "editor_label": "個人情報措置の対象リスト"
       },
@@ -2617,6 +2648,75 @@
         "queue_failed": "実行を受け付けることができませんでした。",
         "preview_failed": "対象件数を読み込むことができませんでした。",
         "editor_label": "個人情報措置の職権実行"
+      }
+    },
+    "content": {
+      "candidates": {
+        "title": "許可する機能",
+        "description": "投稿・ページ・商品説明の本文で使える機能をオン・オフします。動画・音声はオンにするとエディタでファイルをアップロードできます。オフの機能の要素は表示時と保存時に削除されます。",
+        "figure_caption": "画像キャプション",
+        "figure_caption_hint": "画像の下の説明(figure・figcaption)を残します。",
+        "uploaded_video": "動画アップロードの許可",
+        "uploaded_video_hint": "エディタで動画ファイル(mp4 など)を本文にアップロードして再生できるようにします。掲示板・ショップで本文メディアルールを個別に設定している場合は、そのルールでも動画をオンにする必要があります。このサイトにアップロードしたファイルのみ再生されます。",
+        "uploaded_audio": "音声アップロードの許可",
+        "uploaded_audio_hint": "エディタで音声ファイル(mp3 など)を本文にアップロードして再生できるようにします。掲示板・ショップで本文メディアルールを個別に設定している場合は、そのルールでも音声をオンにする必要があります。このサイトにアップロードしたファイルのみ再生されます。",
+        "external_embed": "外部動画の埋め込み",
+        "external_embed_hint": "エディタの「メディア挿入」で入れた外部動画を、下で有効にしたサービスのプレーヤーで表示します。オフにするとリンクで表示されます。"
+      },
+      "custom_tags": {
+        "title": "運営者追加タグ",
+        "description": "上の候補にないタグを追加します(例: details、summary、svg)。",
+        "warning": "セキュリティ上の注意: 追加したタグはそのまま本文に残ります。スクリプト・外部文書・入力フォームのタグは追加できませんが、svg・math なども悪用される恐れがあるため、本当に必要なものだけ追加してください。イベント属性(on…)と javascript: アドレスは常に削除されます。",
+        "placeholder": "タグ名を入力して Enter"
+      },
+      "embed": {
+        "title": "外部動画サービス",
+        "description": "「メディア挿入」で入れられるサービスです。アドレスから取り出した動画 id で決まったプレーヤー URL だけを作り、他の HTML や任意の iframe は入れません。",
+        "presets": "既定のサービス",
+        "extension": "拡張機能が提供するサービス",
+        "extension_hint": "インストールした拡張機能が追加した外部動画サービスです。最初はオフで、オンにしたサービスだけが本文でプレーヤーとして表示されます。",
+        "custom": "追加したサービス",
+        "custom_empty": "追加したサービスはありません。",
+        "add": "サービスを追加",
+        "enabled": "使用",
+        "preset_names": {
+          "youtube": "YouTube",
+          "vimeo": "Vimeo",
+          "tiktok": "TikTok"
+        },
+        "modal": {
+          "create_title": "外部動画サービスを追加",
+          "edit_title": "外部動画サービスを編集",
+          "trust_notice": "信頼できるサービスのみ追加してください。プレーヤー URL のサイトが本文内(隔離された領域)に表示されます。",
+          "required": "名前・識別子・URL 形式・プレーヤー URL をすべて入力してください。",
+          "name": "名前",
+          "name_placeholder": "例: チジジク クリップ",
+          "id": "識別子",
+          "id_hint": "英小文字で始まる2〜32文字(英小文字・数字・アンダースコア)。既定のサービスと重複できません。",
+          "url_patterns": "URL 形式",
+          "url_patterns_hint": "1行に1つ(最大5つ)。* は / 以外の任意の文字、{id} は動画 id の位置です。ホストの * は先頭のサブドメイン位置(*.example.com)にのみ使えます。",
+          "player_url": "プレーヤー URL",
+          "player_url_hint": "https:// で始め、{id} を1回入れます。固定のクエリは付けられます。",
+          "id_rule": "id の文字規則",
+          "id_rules": {
+            "alnum_dash": "英字・数字・-・_",
+            "alnum": "英字・数字",
+            "digits": "数字のみ"
+          },
+          "aspect": "画面比率",
+          "allow": "許可する権限",
+          "sample": "例のアドレスを確認",
+          "sample_check": "確認",
+          "preview_id": "取り出した id: {{id}}",
+          "preview_player": "作られるプレーヤー URL: {{url}}",
+          "preview_no_match": "URL 形式と一致しません。",
+          "apply": "適用"
+        }
+      },
+      "ttl": {
+        "title": "メディア URL の有効時間",
+        "description": "秘密投稿・公開前のページなど閲覧できる人が限られる本文メディアは、短時間だけ有効な URL で配信します。画面を長く開いたままにすると、この時間を過ぎた後は再読み込みが必要です。",
+        "unit": "分 (5〜1440)"
       }
     }
   },
@@ -3508,6 +3608,7 @@
     },
     "admin_settings": {
       "identity_policy_delete_modal": "本人認証ポリシー削除確認",
+      "embed_provider_form_modal": "外部動画サービスの追加・編集",
       "identity_policy_form_modal": "本人認証ポリシー編集",
       "modal_notification_channel_off_confirm": "メールチャネルのオフ確認",
       "modal_notification_definition_reset": "通知定義デフォルト復元",
@@ -4406,6 +4507,10 @@
       "notice_title": "確認すべきお知らせがあります",
       "notice_summary": "完了しました — 確認すべきお知らせ {{count}} 件",
       "notice_description": "すべて反映されました。以下のお知らせを確認してください。",
+      "declaration_title": "拡張機能の宣言に誤った値があります",
+      "declaration_summary": "完了しましたが、拡張機能が誤って宣言した値 {{count}} 件を破棄しました",
+      "declaration_description": "作業自体は完了しました。以下の項目は拡張機能が設定ファイル(manifest)に誤って宣言した値のため破棄しました — 再実行しても変わらないため、拡張機能の開発者に知らせてください。",
+      "declaration_hint": "拡張機能の開発者が直す宣言です — 再実行しても変わりません",
       "steps": {
         "dependents": "依存する拡張機能",
         "extract": "展開",
@@ -4431,6 +4536,7 @@
         "necessary_storage": "必須ブラウザ保存項目",
         "operation_lock": "作業ロック",
         "reseed": "初期データの再投入",
+        "search_scopes": "最近の検索語の範囲宣言",
         "seeder": "初期データ作成"
       }
     }

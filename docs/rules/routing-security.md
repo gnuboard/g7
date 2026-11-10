@@ -57,7 +57,7 @@
 | catch-all 제외 패턴에 예약 프리픽스 누락 (`_boost`·`modules`) | `(?!admin)(?!api)(?!plugins)(?!_boost)(?!modules)` 전수 제외 — shadow 를 보호로 삼지 않는다 |
 | 게이트 부착을 행위 테스트(403 이 나오는지)로만 확인 | 라우트군 전체의 `gatherMiddleware()` 에 게이트 별칭이 있는지 단언하는 등록 계약 테스트 + 모집단 가드 |
 | 그룹 게이트가 라우트 캐시에도 구워질 것이라 가정 | 캐시 상태에서의 차단도 검증 — 라우트 캐시는 확장 수명주기 지점에서 자동 생성되어 오히려 흔한 상태다 |
-| `withRouting(channels: ...)` 로 채널 정의를 로드 | 프로바이더에서 `require routes/channels.php` — `channels:` 인자는 `Broadcast::routes()`(게이트 없는 `/broadcasting/auth`)까지 자동 등록해 킬스위치 우회로를 만든다 |
+| `withRouting(channels: ...)` 로 채널 정의를 로드 | 게이트된 인증 라우트가 `BroadcastChannelRegistrar::ensureRegistered()` 로 `routes/channels.php` 를 로드(7.1.5) — `channels:` 인자는 `Broadcast::routes()`(게이트 없는 `/broadcasting/auth`)까지 자동 등록해 킬스위치 우회로를 만든다 |
 
 catch-all shadow 는 보호처럼 보인다는 점이 위험하다. 가려진 라우트는 도달 불가라 게이트가 없어도 증상이 없고, 제외 패턴이 한 줄 바뀌는 순간 무방비로 노출된다 — 실제로 `_boost` GET 4종이 그 상태였고, 같은 그룹의 `DELETE clear` 는 shadow 밖이라 운영 환경·`APP_DEBUG=false` 에서 미인증 200 으로 `storage/debug-dump` 전체를 지웠다(공개#128). 등록 계약 축을 행위 테스트로 대체할 수 없는 이유도 같다: 가려진 라우트는 행위상 "막힌 것" 과 구분되지 않는다.
 

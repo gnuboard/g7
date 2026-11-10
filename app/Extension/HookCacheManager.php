@@ -7,6 +7,7 @@ use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
+use App\Support\AtomicBootstrapCache;
 use App\Support\BootDeferredLog;
 use Illuminate\Support\Facades\File;
 
@@ -84,6 +85,19 @@ class HookCacheManager
     public function getCacheFilePath(): string
     {
         return $this->cacheFilePath;
+    }
+
+    /**
+     * 현재 호출이 테스트 환경에서 실 캐시 파일(`bootstrap/cache/hooks.php`)을 건드리는지 판정합니다.
+     *
+     * 경로가 치환된(임시 경로) 인스턴스는 생성 로직 검증용이므로 통과시킨다.
+     *
+     * @return bool 테스트 환경에서 실 캐시 파일을 쓰거나 지우려는 경우 true
+     */
+    protected function touchesRealCacheFileDuringTests(): bool
+    {
+        return app()->environment('testing')
+            && $this->cacheFilePath === base_path('bootstrap/cache/hooks.php');
     }
 
     /**
@@ -207,7 +221,7 @@ class HookCacheManager
     {
         self::$memo = null;
 
-        if (! $this->isCached()) {
+        if (! $this->isCached() || $this->touchesRealCacheFileDuringTests()) {
             return true;
         }
 
@@ -241,32 +255,37 @@ class HookCacheManager
             'plugins' => $this->collectExtensionListeners($activePlugins),
         ];
 
-        $content = $this->buildCacheFileContent($cache);
-
-        $dir = dirname($this->cacheFilePath);
-        if (! File::isDirectory($dir)) {
-            File::makeDirectory($dir, 0755, true);
-        }
-
-        File::put($this->cacheFilePath, $content);
-
-        // 방금 쓴 새 매핑으로 request-scoped 메모리 캐시를 갱신
-        // (이후 read() 가 옛 memo 를 반환하지 않도록 무효화).
-        self::$memo = null;
-        ExtensionFingerprint::forget();
-
         $counts = [
             'core' => count($cache['core']),
             'modules' => array_sum(array_map('count', $cache['modules'])),
             'plugins' => array_sum(array_map('count', $cache['plugins'])),
         ];
 
-        BootDeferredLog::info('hooks.cache_file_written', [], [
-            'path' => $this->cacheFilePath,
-            'core' => $counts['core'],
-            'modules' => $counts['modules'],
-            'plugins' => $counts['plugins'],
-        ]);
+        // 테스트 환경에서는 실 캐시 파일을 쓰지 않는다 — 시험 DB 의 활성 확장 구성으로 개발 사이트 훅 매핑이
+        // 바뀐다(2026-11-03 실측: 업그레이드 단계를 태운 테스트가 확장 0건으로 덮음). 경로를 바꾼 인스턴스는 쓴다.
+        if (! $this->touchesRealCacheFileDuringTests()) {
+            $content = $this->buildCacheFileContent($cache);
+
+            $dir = dirname($this->cacheFilePath);
+            if (! File::isDirectory($dir)) {
+                File::makeDirectory($dir, 0755, true);
+            }
+
+            // 제자리에 덮어쓰지 않는다 — 쓰는 사이 다른 요청이 반쯤 쓰인 파일을 읽었다(#882). 임시 파일에 다 쓴 뒤 바꿔 끼운다.
+            AtomicBootstrapCache::write($this->cacheFilePath, $content);
+
+            BootDeferredLog::info('hooks.cache_file_written', [], [
+                'path' => $this->cacheFilePath,
+                'core' => $counts['core'],
+                'modules' => $counts['modules'],
+                'plugins' => $counts['plugins'],
+            ]);
+        }
+
+        // 방금 쓴 새 매핑으로 request-scoped 메모리 캐시를 갱신
+        // (이후 read() 가 옛 memo 를 반환하지 않도록 무효화).
+        self::$memo = null;
+        ExtensionFingerprint::forget();
 
         return $counts;
     }

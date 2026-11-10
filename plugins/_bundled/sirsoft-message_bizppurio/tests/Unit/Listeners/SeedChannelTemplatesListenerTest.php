@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\MessageBizppurio\Tests\Unit\Listeners;
 
 use Plugins\Sirsoft\MessageBizppurio\Listeners\SeedChannelTemplatesListener;
-use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * SeedChannelTemplatesListener — 시딩 필터 훅으로 회원 알림에 sms·alimtalk template 증강 검증.
@@ -13,7 +13,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * sms·alimtalk 채널 template 을 channels·templates 에 추가한다(결정 D·E). 관리자 전용 알림은
  * 건너뛰고, 기본 body 는 database 채널 body 를 재활용한다.
  */
-class SeedChannelTemplatesListenerTest extends PluginTestCase
+class SeedChannelTemplatesListenerTest extends PureTestCase
 {
     /**
      * 검증 대상 리스너 인스턴스를 만듭니다.

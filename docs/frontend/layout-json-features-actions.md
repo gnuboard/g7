@@ -1105,7 +1105,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 ### 구조
 
 ```html
-<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+<script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -1115,7 +1115,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
   "extends": "_admin_form",
   "scripts": [
     {
-      "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+      "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
       "id": "daum_postcode_script",
       "if": "{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' && p.status === 'active')}}"
     }
@@ -1150,7 +1150,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 **플러그인 활성화 상태 체크**:
 
 ```html
-<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+<script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -1159,7 +1159,7 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 {
   "scripts": [
     {
-      "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+      "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
       "id": "daum_postcode_script",
       "if": "{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' && p.status === 'active')}}"
     }
@@ -1192,10 +1192,10 @@ G7Core.componentEvent가 없으면 구독 설정 실패 (경고 로그 출력)
 scripts로 로드된 외부 라이브러리는 `callExternal` 핸들러로 호출합니다:
 
 ```html
-<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+<script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
 <button data-ref="btn_search_address">
   <on type="click">
-    <call-external constructor="daum.Postcode" method="open">
+    <call-external constructor="kakao.Postcode" method="open">
       <field name="args">
         <field name="oncomplete" :value="true"/>
       </field>
@@ -1217,7 +1217,7 @@ scripts로 로드된 외부 라이브러리는 `callExternal` 핸들러로 호�
 {
   "scripts": [
     {
-      "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+      "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
       "id": "daum_postcode_script",
       "if": "{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' && p.status === 'active')}}"
     }
@@ -1233,7 +1233,7 @@ scripts로 로드된 외부 라이브러리는 `callExternal` 핸들러로 호�
           "type": "click",
           "handler": "callExternal",
           "params": {
-            "constructor": "daum.Postcode",
+            "constructor": "kakao.Postcode",
             "args": { "oncomplete": true },
             "callbackSetState": {
               "basic_info": {

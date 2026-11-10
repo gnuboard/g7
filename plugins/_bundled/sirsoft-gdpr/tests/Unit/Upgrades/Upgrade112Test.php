@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.1.2 업그레이드 스텝 — 설정 파일에 굳은 계산값 키·이커머스 주문 열 키 정리
@@ -37,8 +38,8 @@ class Upgrade112Test extends PluginTestCase
     {
         parent::setUp();
 
-        require_once __DIR__.'/../../../upgrades/data/1.1.2/migrations/01_RemoveComputedNecessaryStorageKeys.php';
-        require_once __DIR__.'/../../../upgrades/data/1.1.2/migrations/02_RemoveEcommerceOrderKeysFromNecessaryAllowlist.php';
+        UpgradeFiles::requireOnce(__DIR__.'/../../../upgrades/data/1.1.2/migrations/01_RemoveComputedNecessaryStorageKeys.php');
+        UpgradeFiles::requireOnce(__DIR__.'/../../../upgrades/data/1.1.2/migrations/02_RemoveEcommerceOrderKeysFromNecessaryAllowlist.php');
 
         $this->path = ExtensionStoragePath::plugin('sirsoft-gdpr', 'settings').'/setting.json';
         File::delete($this->path);

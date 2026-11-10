@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Concerns\CountsQueries;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.3.0 업그레이드 데이터 스텝 결함 수정 검증 (#599 validate P4)
@@ -42,9 +43,9 @@ class ValidateP4UpgradeDataTest extends ModuleTestCase
         parent::setUp();
 
         $dir = dirname(__DIR__, 3).'/upgrades/data/1.3.0/migrations/';
-        require_once $dir.'02_SeedClaimReasons.php';
-        require_once $dir.'03_MergeClaimSettingsDefaults.php';
-        require_once $dir.'04_BackfillShippingSnapshotAddress.php';
+        UpgradeFiles::requireOnce($dir.'02_SeedClaimReasons.php');
+        UpgradeFiles::requireOnce($dir.'03_MergeClaimSettingsDefaults.php');
+        UpgradeFiles::requireOnce($dir.'04_BackfillShippingSnapshotAddress.php');
     }
 
     /**

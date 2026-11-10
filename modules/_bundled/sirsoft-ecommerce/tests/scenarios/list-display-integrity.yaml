@@ -1,0 +1,23 @@
+feature: 목록 표시 정합성 — 행은 나오는데 칸이 비거나 상태가 틀린 자리
+
+description: |
+  브라우저 실측에서 드러난 세 지점을 고정한다.
+  - 찜 목록에 소프트 삭제된 상품의 행이 남아 카드 렌더가 실패했다.
+  - 유효기간이 지난 쿠폰이 「사용가능」 라벨로 보였다(저장된 원시 상태는 그대로 노출).
+  - 관리자 마일리지 차감 거래의 내용(description)이 비어 있었다. 내용의 금액은 지급·사용 거래와 같은 통화 서식(`ecommerce_format_price`)이다.
+
+axes:
+  surface:
+    - wishlist_soft_deleted_product
+    - coupon_issue_expired
+    - coupon_issue_active
+    - mileage_admin_deduct
+
+effects:
+  - wishlist_excludes_soft_deleted_products
+  - expired_coupon_labelled_expired
+  - active_coupon_keeps_available_label
+  - admin_deduct_description_uses_formatted_amount
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/ListDisplayIntegrityTest.php

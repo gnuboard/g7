@@ -616,9 +616,9 @@ class TemplateAssetServingTest extends TestCase
         $firstResponse = $this->get($this->assetUrl('js/main.js'));
         $firstEtag = $firstResponse->headers->get('ETag');
 
-        // 파일 수정 (파일 크기 변경으로 ETag 변경 보장)
-        sleep(1);
+        // 파일 수정 (ETag = 수정 시각 + 크기 — 크기를 바꾸고 수정 시각도 직접 옮겨 기다리지 않는다)
         file_put_contents($jsPath, 'console.log("modified with longer content");');
+        touch($jsPath, time() + 2);
         clearstatcache(true, $jsPath);  // 파일 stat 캐시 초기화
 
         // Act - 2차 요청

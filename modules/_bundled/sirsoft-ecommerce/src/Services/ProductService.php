@@ -2,10 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Extension\Helpers\FilePermissionHelper;
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Search\SearchPagePolicy;
-use App\Support\ExtensionStoragePath;
 use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
@@ -14,10 +14,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
+use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OptionHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
@@ -29,6 +30,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\PurifiesHtml;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -38,6 +40,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class ProductService
 {
+    use PurifiesHtml;
     use ReappliesPermissionScope;
 
     /**
@@ -59,28 +62,11 @@ class ProductService
     public const SEARCH_CURSOR_COLUMNS = ['created_at', 'selling_price'];
 
     /**
-     * HTMLPurifier 인스턴스 (지연 생성)
-     */
-    protected ?\HTMLPurifier $purifier = null;
-
-    /**
-     * 이 모듈의 식별자
-     */
-    private const MODULE_IDENTIFIER = 'sirsoft-ecommerce';
-
-    /**
-     * HTMLPurifier 정의 캐시 디렉토리 권한
+     * 관련 상품 ID 캐시 태그 — 순서·만료 설정을 바꾸면 이 태그로 한꺼번에 비운다.
      *
-     * 0775 인 이유: CLI(스케줄러/큐)와 웹(php-fpm)이 같은 캐시를 공유해야 한다. 그룹 쓰기가
-     * 없으면 먼저 만든 프로세스가 상대를 잠근다. `Cache.SerializerPermissions` 로 HTMLPurifier 가
-     * 만드는 하위 디렉토리에도 전파되며, `.ser` 파일에는 `$chmod & 0666` 이 적용되어 0664 가 된다.
+     * @var string
      */
-    private const PURIFIER_CACHE_DIR_MODE = 0775;
-
-    /**
-     * 정의 캐시 비활성 통지를 프로세스당 1회만 남기기 위한 플래그
-     */
-    private static bool $purifierCacheWarned = false;
+    public const RELATED_CACHE_TAG = 'sirsoft-ecommerce.related_products';
 
     /**
      * 시스템 기본통화 코드 조회
@@ -188,6 +174,36 @@ class ProductService
     }
 
     /**
+     * 관련 상품(상품 상세 「이 상품은 어떠세요?」)을 조회합니다.
+     *
+     * 대표 분류 → 그 상위 분류 → … 단계로 채우고, 단계 안 순서는 환경설정 `product_display.related_order`
+     * (기본 무작위)를 따른다. 고른 ID 는 `product_display.related_cache_hours`(기본 24시간, 0 이면 캐시 안 함) 동안
+     * 코어 캐시 드라이버에 둔다 — 무작위여도 그 사이에는 같은 목록이다. 상품 정보는 캐시하지 않고 매번 읽으므로
+     * 그 사이 숨긴 상품은 빠지고 가격·재고는 지금 값이다.
+     *
+     * @param  Product  $product  기준 상품
+     * @param  int  $limit  최대 개수
+     * @return Collection<int, Product> 관련 상품 컬렉션
+     */
+    public function getRelatedProducts(Product $product, int $limit = 8): Collection
+    {
+        $order = RelatedProductOrder::fromSetting(g7_module_settings('sirsoft-ecommerce', 'product_display.related_order', RelatedProductOrder::RANDOM->value));
+        $hours = max(0, (int) g7_module_settings('sirsoft-ecommerce', 'product_display.related_cache_hours', 24));
+
+        $resolve = fn () => $this->repository->getRelatedProductIds($product, $order, $limit);
+        $ids = $hours > 0
+            ? app(CacheInterface::class)->remember(
+                sprintf('related_products.%d.%s.%d', $product->id, $order->value, $limit),
+                $resolve,
+                $hours * 3600,
+                [self::RELATED_CACHE_TAG]
+            )
+            : $resolve();
+
+        return $this->repository->findByIds($ids);
+    }
+
+    /**
      * 최신 등록순으로 신상품 컬렉션을 조회합니다.
      *
      * before/after_new_list 훅과 filter_new_list_result 훅을 발화합니다.
@@ -267,7 +283,7 @@ class ProductService
         // 데이터 가공 훅
         $data = HookManager::applyFilters('sirsoft-ecommerce.product.filter_create_data', $data);
 
-        // XSS 방어: HTML 설명 정화
+        // XSS 방어: HTML 설명 정화(본문 미디어 서명 주소 정리 포함 — sanitizeDescription)
         $data = $this->sanitizeDescription($data);
 
         // SEO 동기화 플래그 적용 (서버 SSoT — ON 이면 name/description 으로 meta_* 채움)
@@ -324,7 +340,16 @@ class ProductService
             // 상품정보제공고시 동기화 (템플릿은 UI용, 저장하지 않음)
             $this->syncNotice($product, $data['notice_items'] ?? null);
 
-            return $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+            $product = $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+
+            // 상품 설명이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
+            $this->syncDescriptionMedia($product, $data);
+
+            // 훅: before_create_commit — 트랜잭션 안·상품 ID 확정·마지막 저장 뒤. 확장이 같은 트랜잭션에서 자기 데이터를
+            // 저장하는 자리다(sync 리스너만, 예외는 저장 전체를 되돌린다, 파일은 StorageTransaction). (#883)
+            HookManager::doAction('sirsoft-ecommerce.product.before_create_commit', $product, $data);
+
+            return $product;
         });
 
         // 생성 후 훅
@@ -355,8 +380,8 @@ class ProductService
         // 데이터 가공 훅
         $data = HookManager::applyFilters('sirsoft-ecommerce.product.filter_update_data', $data, $product);
 
-        // XSS 방어: HTML 설명 정화
-        $data = $this->sanitizeDescription($data);
+        // XSS 방어: HTML 설명 정화 — 요청에 모드가 없으면 저장된 모드로 판정
+        $data = $this->sanitizeDescription($data, (string) ($product->description_mode ?? 'text'));
 
         // SEO 동기화 플래그 적용 (서버 SSoT — 필드 미전송 시 기존 상품값으로 폴백)
         $data = $this->applySeoSync($data, $product);
@@ -364,7 +389,7 @@ class ProductService
         // 수정자 정보 추가
         $data['updated_by'] = Auth::id();
 
-        $product = DB::transaction(function () use ($product, $data) {
+        $product = DB::transaction(function () use ($product, $data, $snapshot) {
             $productData = collect($data)->except([
                 'options', 'category_ids', 'images', 'label_assignments',
                 'notice_items', 'additional_options',
@@ -401,7 +426,17 @@ class ProductService
                 $this->syncNotice($product, $data['notice_items'] ?? null);
             }
 
-            return $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+            $product = $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+
+            // 본문 미디어 동기화 — 설명을 보낸 수정만 (#883)
+            if (array_key_exists('description', $data)) {
+                $this->syncDescriptionMedia($product, $data);
+            }
+
+            // 훅: before_update_commit — 트랜잭션 안·마지막 저장 뒤 (생성의 before_create_commit 과 같은 규약, #883)
+            HookManager::doAction('sirsoft-ecommerce.product.before_update_commit', $product, $data, $snapshot);
+
+            return $product;
         });
 
         // 수정 후 훅 (스냅샷 전달)
@@ -416,7 +451,7 @@ class ProductService
      * 주문 이력이 있는 상품은 삭제할 수 없습니다.
      *
      * @param  Product  $product  확인할 상품
-     * @return array{canDelete: bool, reason: string|null, relatedData: array}
+     * @return array{canDelete: bool, reason: string|null, relatedData: array} 삭제 가능 여부·불가 사유·연관 데이터 건수
      */
     public function checkCanDelete(Product $product): array
     {
@@ -491,6 +526,9 @@ class ProductService
 
             // 7. 카테고리 연결 해제 (중간 테이블)
             $product->categories()->detach();
+
+            // 7-1. 상품 설명 본문 미디어 영구 삭제 — 본문에서 빠져 소프트 삭제된 것 포함, 파일은 커밋 뒤 (#887)
+            app(ContentMediaPurger::class)->purgeForOwner(ContentMediaOwnerType::Product, $product->id);
 
             // === 미구현 연관 데이터 (테이블 생성 후 활성화) ===
 
@@ -1370,17 +1408,43 @@ class ProductService
     }
 
     /**
+     * 상품 설명이 참조한 본문 미디어를 맞춥니다 — 저장 트랜잭션 안 (#883).
+     *
+     * @param  Product  $product  저장된 상품
+     * @param  array  $data  요청 데이터 (`content_media_temp_key`)
+     * @return void 반환값 없음
+     */
+    protected function syncDescriptionMedia(Product $product, array $data): void
+    {
+        $result = app(ContentMediaService::class)->syncWithContent(
+            ContentMediaOwnerType::Product,
+            (int) $product->id,
+            $product->description,
+            ($product->description_mode ?? 'text') === 'html',
+            isset($data['content_media_temp_key']) && is_string($data['content_media_temp_key']) ? $data['content_media_temp_key'] : null
+        );
+
+        // 다른 상품·공통 정보의 본문 미디어를 이 상품 소유로 복제했으면 바뀐 설명을 다시 저장한다 — 같은 인스턴스를 갱신해
+        // 불러 둔 관계(옵션·분류·이미지)를 유지한다 (#887)
+        if (($result['cloned'] ?? 0) > 0 && array_key_exists('content', $result) && $result['content'] !== $product->description) {
+            $this->repository->update($product, ['description' => $result['content']]);
+        }
+    }
+
+    /**
      * 상품 설명 HTML을 정화합니다.
      *
-     * XSS 공격을 방지하기 위해 HTMLPurifier를 사용하여
-     * 허용된 HTML 태그만 남기고 위험한 내용을 제거합니다.
+     * 모드는 요청의 `description_mode` 를 따르고, 요청에 없으면 저장된 모드를 따른다 — 모드를 보내지 않은 수정이 HTML 상품의 설명을
+     * 정화 없이 저장하지 않도록(공통 정보 `sanitizeContent` 와 같은 판정, #887).
      *
      * @param  array  $data  상품 데이터
+     * @param  string  $currentMode  저장된 설명 모드 (요청에 `description_mode` 가 없을 때 — 생성은 기본값 text)
      * @return array 정화된 상품 데이터
      */
-    protected function sanitizeDescription(array $data): array
+    protected function sanitizeDescription(array $data, string $currentMode = 'text'): array
     {
-        if (! isset($data['description']) || ($data['description_mode'] ?? 'text') !== 'html') {
+        $mode = isset($data['description_mode']) && is_string($data['description_mode']) ? $data['description_mode'] : $currentMode;
+        if (! isset($data['description']) || $mode !== 'html') {
             return $data;
         }
 
@@ -1388,124 +1452,17 @@ class ProductService
             return $data;
         }
 
-        if ($this->purifier === null) {
-            $this->purifier = $this->createPurifier();
-        }
+        // 편집 폼이 받은 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 정화한다 — 생성·수정 공통, 정화기가 쿼리의 & 를 바꾸기 전에 (#883)
+        $data['description'] = app(ContentMediaService::class)->normalizeContent($data['description']);
 
         foreach ($data['description'] as $locale => $content) {
             if (is_string($content) && ! empty($content)) {
-                $data['description'][$locale] = $this->purifier->purify($content);
+                // 상품 설명은 게시판과 같은 「본문 콘텐츠」 규칙 — 그림 캡션·업로드 동영상·외부 영상이 남는다 (#883 D20)
+                $data['description'][$locale] = $this->purifyHtml($content, 'content');
             }
         }
 
         return $data;
-    }
-
-    /**
-     * HTMLPurifier 인스턴스를 생성합니다.
-     *
-     * 정의 캐시 경로를 `storage/` 아래로 강제합니다. 지정하지 않으면 HTMLPurifier 는 자기 설치
-     * 폴더(`{module}/vendor/ezyang/htmlpurifier/library/.../DefinitionCache/Serializer/`)에 캐시를
-     * 쓰는데, 배포본의 vendor 를 읽기 전용으로 두는 서버에서는 그 쓰기가 `E_USER_WARNING` 을 내고
-     * Laravel 이 이를 `ErrorException` 으로 승격시켜 상품 등록/수정이 매번 500 이 됩니다 (공개 #125).
-     * 캐시는 설정 해시당 1회만 기록되므로 쓰기 불가 환경에서는 캐시가 영영 생기지 않아 모든 요청이
-     * 실패합니다.
-     *
-     * 캐시 디렉토리를 확보하지 못하면 정의 캐시만 끄고(`Cache.DefinitionImpl = null`) 정화는 그대로
-     * 수행합니다 — 캐시는 성능 장치이고 정화는 보안 장치라, 캐시 실패가 보안 장치를 건너뛰게
-     * 만들어서는 안 됩니다.
-     *
-     * @return \HTMLPurifier 설정이 적용된 인스턴스
-     */
-    protected function createPurifier(): \HTMLPurifier
-    {
-        $cachePath = $this->resolvePurifierCachePath($failure);
-
-        if ($cachePath === null && ! self::$purifierCacheWarned) {
-            self::$purifierCacheWarned = true;
-
-            // `error` 로 남기는 이유: G7 출하 기본값(config/settings/defaults.json)의 `log_level` 이
-            // `error` 라, `warning` 으로 남기면 기본 설치 상태에서는 이 통지가 로그 파일에 아예
-            // 기록되지 않는다. 저장은 성공하므로 사용자 피해는 없지만, 캐시를 못 쓰는 상태가
-            // 흔적 없이 영구히 유지되어 운영자가 조치할 근거를 얻지 못한다.
-            Log::error('HTMLPurifier 정의 캐시 디렉토리를 사용할 수 없어 캐시 없이 동작합니다', [
-                'module' => self::MODULE_IDENTIFIER,
-                'expected_path' => $this->purifierCacheDirectory(),
-                // 사유마다 고쳐야 할 대상이 다르다 — 상위 디렉토리 권한 / 그 자리를 차지한 파일 /
-                // 대상 자신의 권한. 사유 없이 경로만 남기면 운영자가 어디를 볼지 알 수 없다.
-                'reason' => $failure['reason'] ?? 'unknown',
-                'blocking_path' => $failure['path'] ?? $this->purifierCacheDirectory(),
-                'impact' => '상품 설명(HTML) 정화가 요청마다 정의를 다시 계산합니다. 해당 디렉토리의 쓰기 권한을 확인하세요.',
-            ]);
-        }
-
-        return new \HTMLPurifier($this->buildPurifierConfig($cachePath));
-    }
-
-    /**
-     * HTMLPurifier 설정을 조립합니다.
-     *
-     * @param  string|null  $cachePath  정의 캐시 디렉토리 절대 경로 (null 이면 캐시 비활성)
-     * @return \HTMLPurifier_Config 조립된 설정
-     */
-    protected function buildPurifierConfig(?string $cachePath): \HTMLPurifier_Config
-    {
-        $config = \HTMLPurifier_Config::createDefault();
-        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr');
-        $config->set('CSS.AllowedProperties', 'color,background-color,font-size,font-weight,text-align,text-decoration,margin,padding,border,width,height');
-        $config->set('Attr.AllowedFrameTargets', ['_blank']);
-        $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
-
-        if ($cachePath === null) {
-            $config->set('Cache.DefinitionImpl', null);
-
-            return $config;
-        }
-
-        $config->set('Cache.SerializerPath', $cachePath);
-        // HTMLPurifier 가 `{경로}/HTML` 하위 디렉토리와 `.ser` 파일을 만들 때 쓰는 권한.
-        // 기본값 0755 는 CLI 가 먼저 만들면 웹 계정이 못 쓴다.
-        $config->set('Cache.SerializerPermissions', self::PURIFIER_CACHE_DIR_MODE);
-
-        return $config;
-    }
-
-    /**
-     * 정의 캐시 디렉토리를 확보하고 절대 경로를 반환합니다.
-     *
-     * 디렉토리가 이미 있는데 쓰기 불가라면 요청 경로에서 권한을 고치려 들지 않고 null 을
-     * 돌려줍니다 — 호출측이 캐시를 끄고 정화는 그대로 수행합니다.
-     *
-     * 확보 자체(경고를 내지 않는 생성 · umask 무력화 · POSIX setgid · 소유권 상속 · 쓰기 판정)는
-     * 코어 공통 프리미티브가 맡습니다. 그 프리미티브는 예외도 PHP 경고도 내지 않으므로, 이 수정이
-     * 막으려던 500 이 확보 실패 지점에서 다시 나는 일이 없습니다.
-     *
-     * @param  array{reason: string, path: string}|null  $failure  out — 확보 실패 사유와 그 대상 경로
-     * @return string|null 사용 가능한 절대 경로. 확보 실패 시 null
-     */
-    protected function resolvePurifierCachePath(?array &$failure = null): ?string
-    {
-        $dir = $this->purifierCacheDirectory();
-
-        return FilePermissionHelper::ensureWritableDirectory($dir, self::PURIFIER_CACHE_DIR_MODE, $failure)
-            ? $dir
-            : null;
-    }
-
-    /**
-     * 정의 캐시 디렉토리의 절대 경로 (존재 여부와 무관한 순수 계산).
-     *
-     * 경로는 코어 해석기가 `modules` 디스크 root 를 단일 출처로 삼아 조립합니다.
-     * `getStorageBasePath('cache')` 를 경유하지 않는 이유는 그 반환값이 `Storage::disk()->path()`
-     * 위임이라, 확장이 카테고리 디스크를 비로컬(S3 등)로 오버라이드하면 파일시스템 경로가 아니게
-     * 되기 때문입니다 — HTMLPurifier 는 `file_put_contents` 로 쓰므로 반드시 로컬 절대 경로여야
-     * 합니다.
-     *
-     * @return string 절대 경로
-     */
-    protected function purifierCacheDirectory(): string
-    {
-        return ExtensionStoragePath::module(self::MODULE_IDENTIFIER, 'cache/htmlpurifier');
     }
 
     /**
@@ -1758,8 +1715,9 @@ class ProductService
             'brand_id' => $product->brand_id,
             'category_ids' => $product->categories->pluck('id')->toArray(),
             'primary_category_id' => $product->categories->where('pivot.is_primary', true)->first()?->id,
-            'created_at' => $product->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
+            // 화면 값 — 보는 사람 시간대 (상품 수정·복사 화면)
+            'created_at' => TimezoneHelper::toUserDateTimeString($product->created_at),
+            'updated_at' => TimezoneHelper::toUserDateTimeString($product->updated_at),
 
             'list_price' => $product->list_price,
             'selling_price' => $product->selling_price,
@@ -1847,7 +1805,9 @@ class ProductService
 
             'label_assignments' => $product->labelAssignments?->map(fn ($la) => [
                 'label_id' => $la->label_id,
+                // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                 'start_date' => $la->start_date?->format('Y-m-d'),
+                // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                 'end_date' => $la->end_date?->format('Y-m-d'),
             ])->toArray() ?? [],
 

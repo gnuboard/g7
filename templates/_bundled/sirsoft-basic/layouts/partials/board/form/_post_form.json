@@ -578,20 +578,22 @@
             ]
         },
         {
-            "comment": "내용 에디터 래퍼 (에러 테두리용) — 비회원 비밀글은 비밀번호를 맞힌 뒤 다시 받은 폼 값(검증 토큰이 실려 옴)이 올 때까지 편집기를 띄우지 않는다. 편집기는 처음 세워질 때의 값만 들고 있어, 먼저 뜨면 빈 본문으로 세워지고 입력·저장 시 원문이 지워진다.",
+            "comment": "내용 에디터 래퍼 (에러 테두리용) — 비회원 비밀글은 비밀번호를 맞힌 뒤 다시 받은 폼 값(검증 토큰이 실려 옴)이 올 때까지 편집기를 띄우지 않는다. 편집기는 처음 세워질 때의 값만 들고 있어, 먼저 뜨면 빈 본문으로 세워지고 입력·저장 시 원문이 지워진다. form_meta 를 받기(실패 포함) 전에도 세우지 않는다(#883).",
             "type": "basic",
             "name": "Div",
-            "if": "{{!(_local.form?.is_secret && _local.passwordVerified && !_local.form?.verification_token)}}",
+            "if": "{{form_meta !== undefined && !(_local.form?.is_secret && _local.passwordVerified && !_local.form?.verification_token)}}",
             "props": {
                 "className": "{{_local.errors?.content ? '[&_textarea]:!border-red-500 [&_textarea]:dark:!border-red-500 [&_textarea]:focus:!ring-red-500' : ''}}"
             },
             "children": [
                 {
-                    "comment": "내용 에디터",
+                    "comment": "내용 에디터 — 편집기는 처음 세워질 때의 업로드 계약만 쓴다. 계약을 담은 표준 계약 엔드포인트(content_media_target, #887)를 받기(실패 포함) 전에는 세우지 않는다",
                     "id": "content_section",
                     "type": "extension_point",
                     "name": "html_editor",
+                    "if": "{{content_media_target !== undefined}}",
                     "props": {
+                        "mediaUpload": "{{content_media_target?.data ? Object.assign({}, content_media_target.data, { fields: Object.assign({}, content_media_target.data.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}",
                         "content": "{{_local.form?.content ?? ''}}",
                         "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
                         "rows": 15,

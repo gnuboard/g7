@@ -8,6 +8,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -355,10 +356,11 @@ class AdminTransactionController extends AdminBaseController
                 ? $embeddedPgProviderLabel.' ('.$basePayMethodLabel.')'
                 : $basePayMethodLabel,
             '_auth_code' => $pick('approve', 'applNo', 'approvalNo', 'authCode', 'confNo', 'receiptNo'),
-            '_auth_date' => $this->formatCbtDateTime(
+            // 편의점 승인일시는 일본 PG 입금 통보 시각(일본 시각) 그대로 두고 시간대를 밝힌다(D11).
+            '_auth_date' => $this->markJstForCvs($payMethod, $this->formatCbtDateTime(
                 $pick('auth_date', 'applDate', 'applDt'),
                 $pick('applTime', 'applTm'),
-            ) ?? $this->formatTimestamp((string) ($localPayment?->paid_at ?? '')),
+            )) ?? $this->formatTimestamp((string) ($localPayment?->paid_at ?? '')),
             '_total_price' => $pick('amount', 'price', 'cvs_amount', 'paid_amount_local'),
             '_currency' => $currency !== '' ? $currency : 'JPY',
             '_moid' => $pick('orderId', 'orderID', 'oid', 'order_number'),
@@ -378,10 +380,13 @@ class AdminTransactionController extends AdminBaseController
             '_vbank_bank_code' => $pick('convenience', 'vbank_code'),
             '_vbank_bank_name' => $pick('vbank_name') ?? ($payMethod === 'CVS' ? 'CVS' : null),
             '_vbank_holder' => $pick('vbank_holder'),
-            '_vbank_expire_date' => $this->formatCompactDateTime($pick('paymentTerm', 'cvs_payment_term'))
+            // 일본 편의점 결제기한은 일본 PG 가 준 일본 시각 그대로 두고 시간대를 밝힌다(D11).
+            // 로컬 vbank_due_at(UTC 저장) 대체값은 보는 사람 시간대로 바꾼다.
+            '_vbank_expire_date' => $this->markJst($this->formatCompactDateTime($pick('paymentTerm', 'cvs_payment_term')))
                 ?? $this->formatTimestamp((string) ($localPayment?->vbank_due_at ?? '')),
             '_vbank_status' => $pick('cvs_status'),
-            '_vbank_paid_at' => $this->formatCbtDateTime($pick('applDt'), $pick('applTm')),
+            // 편의점 입금 시각도 일본 PG 가 준 일본 시각이다 — 결제기한과 같이 시간대를 밝힌다(D11).
+            '_vbank_paid_at' => $this->markJst($this->formatCbtDateTime($pick('applDt'), $pick('applTm'))),
             '_bank_code' => null,
             '_bank_name' => null,
             '_bank_acnt_num' => null,
@@ -389,7 +394,7 @@ class AdminTransactionController extends AdminBaseController
             '_hpp_corp' => null,
             '_escrow_status' => null,
             '_escrow_confirm' => null,
-            '_inquiry_at' => date('Y-m-d H:i:s'),
+            '_inquiry_at' => TimezoneHelper::toUserDateTimeString(now()),
             '_local_notice' => 'CBT 거래는 한국 INIAPI 거래조회 대상이 아니므로 저장된 승인/입금 확인 정보로 표시됩니다.',
             '_cbt_cvs' => $payMethod === 'CVS' ? [
                 'status' => (string) ($localMeta['cvs_status'] ?? ''),
@@ -461,9 +466,9 @@ class AdminTransactionController extends AdminBaseController
     }
 
     /**
-     * 일시 문자열을 표시 형식으로 바꿉니다.
+     * 로컬 DB 의 UTC 일시 문자열을 보는 사람 시간대 표시 형식으로 바꿉니다.
      *
-     * @param  string  $value  일시 문자열
+     * @param  string  $value  UTC 일시 문자열 (DB 원문)
      * @return string|null 표시용 일시 (빈 값이면 null)
      */
     private function formatTimestamp(string $value): ?string
@@ -473,10 +478,35 @@ class AdminTransactionController extends AdminBaseController
         }
 
         try {
-            return Carbon::parse($value)->format('Y-m-d H:i:s');
+            return TimezoneHelper::toUserDateTimeString(Carbon::parse($value, 'UTC'));
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * 일본 PG 의 일본 시각 표시 문자열에 시간대 표기( (JST))를 붙입니다.
+     *
+     * @param  string|null  $value  일본 시각 표시 문자열
+     * @return string|null 시간대를 붙인 문자열 (값이 없으면 null)
+     */
+    private function markJst(?string $value): ?string
+    {
+        return $value === null ? null : $value.' (JST)';
+    }
+
+    /**
+     * 편의점(CVS) 결제의 PG 시각에만 시간대 표기( (JST))를 붙입니다.
+     *
+     * 편의점 시각은 일본 PG 입금 통보의 일본 시각이다. 카드·PayPay 승인 시각은 PG 시간대 사양을 확인하지 않아 그대로 둔다.
+     *
+     * @param  string  $payMethod  CBT 결제수단 코드
+     * @param  string|null  $value  PG 시각 표시 문자열
+     * @return string|null 표기를 붙인 문자열 (값이 없으면 null)
+     */
+    private function markJstForCvs(string $payMethod, ?string $value): ?string
+    {
+        return $payMethod === 'CVS' ? $this->markJst($value) : $value;
     }
 
     /**
@@ -562,13 +592,13 @@ class AdminTransactionController extends AdminBaseController
         $result['_vbank_bank_name'] = $pick('VACT_BankName', 'vactBankName', 'vbank_bank_name') ?? $this->bankNameByCode($result['_vbank_bank_code'] ?? null);
         $result['_vbank_holder'] = $pick('VACT_Name', 'vactName', 'vbank_holder');
         // 가상계좌 입금기한:
-        // 로컬 vbank_due_at 이 있으면 KST 로 변환해 사용 — 결제 발급 시 KG 이니시스가 보낸
+        // 로컬 vbank_due_at 이 있으면 그것을 쓴다 — 결제 발급 시 KG 이니시스가 보낸
         // VACT_Date(=다음 영업일) + VACT_Time(=08:59:59) 으로 만든 정확한 cutoff timestamp.
-        // DB 는 UTC 로 저장되므로 표시 시 Asia/Seoul 로 변환해야 주문 상세 화면(KST 표시) 과 일치.
+        // DB 는 UTC 로 저장되므로 표시 시 보는 사람 시간대로 바꿔야 주문 상세 화면과 일치한다.
         // 조회 응답의 vacctInfo.validDate 는 "마지막 입금 가능일" convention 이라 1일 일찍 표시되어
         // 로컬 timestamp 가 더 정확.
         $result['_vbank_expire_date'] = $localVbankDueAt !== null
-            ? Carbon::parse($localVbankDueAt, 'UTC')->setTimezone('Asia/Seoul')->format('Y-m-d H:i:s')
+            ? TimezoneHelper::toUserDateTimeString(Carbon::parse($localVbankDueAt, 'UTC'))
             : $this->formatDate($pick('VACT_Date', 'vactDate', 'vbank_expire_date', 'validDate'));
         $vbankStatus = $pick('VACT_Status', 'vactStatus', 'vbank_status');
         $result['_vbank_status'] = $vbankStatus;
@@ -585,7 +615,7 @@ class AdminTransactionController extends AdminBaseController
         $result['_escrow_confirm'] = $this->formatDateTime($pick('escrowConfirmDate'), $pick('escrowConfirmTime'));
 
         // 환경 정보
-        $result['_inquiry_at'] = date('Y-m-d H:i:s');
+        $result['_inquiry_at'] = TimezoneHelper::toUserDateTimeString(now());
 
         return $result;
     }

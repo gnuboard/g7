@@ -1,0 +1,43 @@
+<!-- 회원 상세 화면에 「게시글 검색어」 탭을 하나 더 얹는 조각. 스크랩·반응 탭과 같은 짜임으로 주입이 **두 군데**로
+  갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에 항목을 덧붙이고(`append`), 그 탭이 펼칠 본문은 별도
+  앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은 `id`(`ext_board_search_history`) 하나뿐이다.
+
+  회원이 게시글 검색창(범위 `sirsoft-board.posts`)에 남긴 최근 검색어를 보인다. 저장은 코어 최근 검색어가 하고, 값은
+  코어 회원 상세 응답의 `search_history.scopes` 에 범위 id 로 실려 온다 — 이 모듈의 회원 데이터라 코어 본문이 아니라
+  이 모듈의 탭에 둔다(모듈 소유 회원 데이터는 모듈 탭, 설계 결정 2026-09-21). 범위가 응답에 없으면(이 모듈의 범위 선언이
+  없는 사이트·검색어 기능이 없는 옛 코어·프로필 응답) 탭도 본문도 서지 않는다. 0건이어도 자리는 남긴다. -->
+<extension target-layout="admin_user_detail" priority="325">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_board_search_history" label="$t:sirsoft-board.admin.users.search_history.tab_label" iconName="search" if="{{!!(user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_board_search_history_content" data-if="{{!!(user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']}}" id="ext_board_search_history" class="scroll-mt-32">
+      <div data-ref="section_board_search_history" class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="search" class="text-xl text-gray-600 dark:text-gray-400"/>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.search_history.title</h3>
+          </div>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <span data-ref="board_search_history_count" class="block text-xs text-gray-500 dark:text-gray-400 mb-2">$t:sirsoft-board.admin.users.search_history.count_unit|count={{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length}}</span>
+        <p data-ref="board_search_history_empty" data-if="{{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length === 0}}" class="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">
+          <icon name="circle-info" class="text-base flex-shrink-0"/>
+          <span>$t:sirsoft-board.admin.users.search_history.empty</span>
+        </p>
+        <ul data-ref="board_search_history_list" data-if="{{((user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []).length > 0}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+          <li data-each="history in (user?.data?.search_history?.scopes ?? {})['sirsoft-board.posts']?.items ?? []" class="flex items-center justify-between gap-3 py-1.5">
+            <span class="text-sm text-gray-900 dark:text-white break-all">{{history.keyword}}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </inject>
+</extension>

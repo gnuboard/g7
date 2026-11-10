@@ -1942,7 +1942,9 @@ export class DataSourceManager {
       const hasToken = AuthManager.getInstance().isAuthenticated();
 
       // auth_mode: 'required'이고 토큰이 없으면 요청 스킵 (fallback 사용)
-      // 토큰 없이 ApiClient로 요청하면 401 → onUnauthorized → 로그인 리다이렉트 발생
+      // 보내 봐야 무토큰 401 이 확실한 요청이다. engine-v1.88.2 부터 ApiClient 는 무토큰 401 에 로그인 이동을
+      // 하지 않지만, 요청 자체를 줄이려고 건너뛰기는 유지한다. optional 데이터소스의 무토큰 401(fetch 경로)은
+      // 이동 없이 errorHandling 체인(레이아웃 `on-code code="401"` 처리기)으로 간다.
       if (authMode === 'required' && !hasToken) {
         logger.log(`[DataSourceManager] Skipping ${source.id}: auth_mode is 'required' but no token available`);
         if (devTools?.isEnabled()) {

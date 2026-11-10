@@ -135,6 +135,88 @@ class DataSourceResolverTest extends TestCase
     }
 
     /**
+     * 시간 초과·연결 오류·5xx 로 대체값을 쓴 데이터 소스는 저하로 기록합니다 — 그 렌더는 SEO 캐시에 넣지 않는다.
+     *
+     * @scenario aspect=failure_fallback
+     *
+     * @effects transient_failure_marks_render_degraded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_timeout_and_server_error_mark_data_source_degraded(): void
+    {
+        Http::fake([
+            '*/api/products/1' => function () {
+                throw new ConnectionException('Connection timed out');
+            },
+            '*/api/reviews' => Http::response(['error' => 'Server Error'], 503),
+            '*/api/categories' => Http::response(['data' => []], 200),
+        ]);
+
+        $dataSources = [
+            ['id' => 'product', 'endpoint' => '/api/products/1', 'method' => 'GET'],
+            ['id' => 'reviews', 'endpoint' => '/api/reviews', 'method' => 'GET'],
+            ['id' => 'categories', 'endpoint' => '/api/categories', 'method' => 'GET'],
+        ];
+
+        $this->resolver->resolve($dataSources, ['product', 'reviews', 'categories'], [], 'ko');
+
+        $this->assertSame(['product', 'reviews'], $this->resolver->degradedDataSources());
+    }
+
+    /**
+     * 4xx(없는 상품 등)는 다시 불러도 같은 결과라 저하가 아닙니다 — 그 화면은 그대로 캐시한다.
+     *
+     * @scenario aspect=failure_fallback
+     *
+     * @effects client_error_not_degraded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_client_error_is_not_degraded(): void
+    {
+        Http::fake([
+            '*' => Http::response(['error' => 'Not Found'], 404),
+        ]);
+
+        $dataSources = [
+            ['id' => 'product', 'endpoint' => '/api/products/999', 'method' => 'GET'],
+        ];
+
+        $this->resolver->resolve($dataSources, ['product'], [], 'ko');
+
+        $this->assertSame([], $this->resolver->degradedDataSources());
+    }
+
+    /**
+     * 저하 기록은 resolve() 한 번의 결과입니다 — 해석기는 싱글턴이라 앞 렌더의 저하가 다음 렌더에 남으면 안 된다.
+     *
+     * @scenario aspect=failure_fallback
+     *
+     * @effects transient_failure_marks_render_degraded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_degraded_record_resets_on_each_resolve(): void
+    {
+        $dataSources = [
+            ['id' => 'product', 'endpoint' => '/api/products/1', 'method' => 'GET'],
+        ];
+
+        Http::fake([
+            '*' => Http::sequence()
+                ->pushStatus(500)
+                ->push(['data' => ['id' => 1]], 200),
+        ]);
+
+        $this->resolver->resolve($dataSources, ['product'], [], 'ko');
+        $this->assertSame(['product'], $this->resolver->degradedDataSources());
+
+        $this->resolver->resolve($dataSources, ['product'], [], 'ko');
+        $this->assertSame([], $this->resolver->degradedDataSources());
+    }
+
+    /**
      * 라우트 파라미터 {{route.id}} 패턴이 실제 값으로 치환됩니다.
      *
      * @scenario aspect=endpoint_resolution

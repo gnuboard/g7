@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 189개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 191개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 141개 |
+| `partials` | 143개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -145,6 +145,7 @@
 | `_modal_core_changelog` | `partials` | partial | - |
 | `_modal_core_update_guide` | `partials` | partial | - |
 | `_modal_core_update_result` | `partials` | partial | - |
+| `_modal_embed_provider_form` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
@@ -161,6 +162,7 @@
 | `_modal_static_cache_republish` | `partials` | partial | - |
 | `_modal_unsaved_tab_switch` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
+| `_tab_content` | `partials` | partial | - |
 | `_tab_drivers` | `partials` | partial | - |
 | `_tab_general` | `partials` | partial | - |
 | `_tab_identity` | `partials` | partial | - |
@@ -466,6 +468,10 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 (7.1.0 부터 본인인증·관리자 2단계 인증 메일도 이 토글을 따릅니다). 창은 부모 화면 `_local` 을 읽지 못하므로 저장할 채널
 목록을 `_global.notification_channel_off_modal.channels` 에 담아 넘기고, [취소] 는 `$parent._local.form.notifications.channels`
 의 메일 항목을 켜짐으로 되돌립니다.
+
+고급 탭의 GeoIP 「최근 갱신」 칸은 `advanced.geoip_last_updated_at_formatted`(서버가 보는 사람 시간대로 만든 문자열)를
+씁니다. 저장값(`geoip_last_updated_at`)은 ISO8601 원문이라 그대로 보이면 오프셋이 붙은 UTC 시각이 됩니다. [갱신] 성공
+응답의 `last_updated_at_formatted` 로 같은 칸을 다시 채웁니다.
 <!-- @intent END -->
 
 ## 확장 오버라이드
@@ -597,6 +603,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_upload.g7.html (업로드)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
+│           ├── _tab_content.g7.html (본문 콘텐츠 — 허용 기능(그림 설명·동영상/오디오 업로드 허용·외부 영상 삽입)·추가 태그·외부 영상 서비스(프리셋 3종 유튜브·비메오·틱톡 — 공식 퍼가기 플레이어 주소가 있는 서비스만·확장 제공 `_meta.embed_extension_providers`·직접 추가)·미디어 주소 유효 시간, 코어 7.1.5)
+│           ├── _modal_embed_provider_form.g7.html (본문 콘텐츠 — 외부 영상 서비스 추가·수정 창. 폼의 `content.embed_custom_providers` 만 고치고 저장은 하단 「저장」, 예시 주소 확인은 `POST /api/admin/settings/content/embed-preview`)
 │           ├── _tab_advanced.g7.html (고급)
 │           ├── _tab_info.g7.html (시스템 정보 — PHP 확장 카드: 필수·선택(코어 SSoT)과 「확장이 요구하는 모듈」(`php_extensions.requested_by`))
 │           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
@@ -717,7 +725,7 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── 공통 Partial
 │   ├── partials/_modal_changelog.g7.html
 │   ├── partials/_modal_license.g7.html
-│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키. `cause: declaration` 항목(확장 manifest 선언 형식 오류)은 「확장 개발자가 고칠 선언」 안내를 붙이고, 실패가 모두 그런 항목이면 제목·요약도 「확장 선언에 틀린 값이 있습니다」·버린 선언 건수(`declaration_title`·`declaration_summary`)로 바꾸고 「다시 실행」 대신 개발자에게 알리라는 문구 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │

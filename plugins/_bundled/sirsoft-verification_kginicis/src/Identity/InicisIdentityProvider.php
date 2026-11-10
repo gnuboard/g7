@@ -613,9 +613,13 @@ class InicisIdentityProvider implements IdentityVerificationInterface
         }
 
         try {
-            $birth = Carbon::createFromFormat('Ymd', $birthday)->startOfDay();
+            // 한국 법상 나이 — 생일과 오늘을 모두 한국 시간 날짜로 센다(서버 UTC 날짜면 한국 0~9시 생일자가 하루 늦게 성인이 된다).
+            // audit:allow datetime-display-user-timezone reason: 한국 법상 나이 — Asia/Seoul 고정(D10)
+            $birth = Carbon::createFromFormat('Ymd', $birthday, 'Asia/Seoul')->startOfDay();
+            // audit:allow datetime-display-user-timezone reason: 한국 법상 나이 — Asia/Seoul 고정(D10)
+            $age = (int) floor($birth->diffInYears(Carbon::now('Asia/Seoul')->startOfDay()));
 
-            return $birth->age >= 19;
+            return $age >= 19;
         } catch (\Throwable $e) {
             Log::warning('이니시스 본인확인: 생년월일 파싱 실패', ['birthday' => $birthday, 'error' => $e->getMessage()]);
 

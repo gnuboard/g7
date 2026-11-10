@@ -1,0 +1,17 @@
+feature: 페이지 본문 미디어 — 복제 재저장도 한 번 저장으로 기록 (#887 G7)
+
+description: |
+  다른 페이지 소유 본문 미디어를 복제하면 바뀐 본문을 같은 트랜잭션에서 페이지에 다시 저장한다(리포지토리 갱신 — 훅 없음).
+  생성·수정·버전 복원 각각에서 활동 로그(`page.create`·`page.update`·`page.restore`) 1건, 버전 행 1개, 해당 `after_*` 훅
+  1회인지 잠근다. 복원은 `after_update` 를 발화하지 않는다.
+
+axes:
+  operation: [create, update, restore]
+
+effects:
+  - clone_resave_logged_once
+  - clone_resave_one_version
+  - clone_resave_hooks_once
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaSaveOnceTest.php

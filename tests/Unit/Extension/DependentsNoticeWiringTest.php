@@ -6,7 +6,7 @@ use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use ReflectionMethod;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 역방향 의존 안내의 연결 지점 — 재설치(`install --force`)·강제 비활성화·멈춘 업데이트 정리·업데이트 성공 경로 (#152 D6)
@@ -17,7 +17,7 @@ use Tests\TestCase;
  *
  * 시나리오 매니페스트: tests/scenarios/template-dependency-version.yaml
  */
-class DependentsNoticeWiringTest extends TestCase
+class DependentsNoticeWiringTest extends PureTestCase
 {
     /**
      * 메서드 본문 소스를 읽는다.

@@ -1,0 +1,44 @@
+feature: 게시판 목록 검색어 정제 — 어떤 입력에도 목록이 500 이 되지 않는다 (#407 재발 방지 / #519 C7)
+
+description: |
+  게시판 목록의 「제목+내용」 검색(search_field=title_content)은 FULLTEXT `MATCH … AGAINST IN BOOLEAN MODE`
+  를 탄다. BOOLEAN MODE 는 `+ - * " ( ) ~ < > @` 를 연산자로 해석하므로 원문 검색어를 그대로 바인딩하면
+  사용자가 그 문자를 입력하는 것만으로 파싱 오류가 나고 목록 화면 전체가 500 이 된다. 게시판은 자기 raw
+  쿼리를 들고 있어 코어 정제기(#407)가 닿지 않았고, 지금은 코어 헬퍼(KeywordSearch::apply)를 거쳐
+  DatabaseFulltextEngine::sanitizeBooleanModeKeyword() 정제를 받는다.
+
+  공백 없는 긴 검색어도 같은 결과를 낸다. ngram 파서는 공백 없는 토큰을 글자 단위 낱말로 쪼개므로
+  한글 130자는 낱말 129개짜리 구문이 되어 InnoDB 구문 낱말 한도(128)를 넘고 MATCH 가 오류를 낸다.
+  정제기는 토큰 하나를 128자까지만 쓴다.
+
+  단언 대상은 「검색이 무엇을 찾는가」가 아니라 「어떤 입력에도 화면이 죽지 않는가」다. InnoDB FULLTEXT
+  인덱스는 커밋된 행만 색인해 트랜잭션 안에서 만든 게시글을 MATCH 로 찾을 수 없으므로, 제목+내용 경로의
+  정상 검색어 보존은 정제기 출력으로 확인하고 실제 매칭은 작성자(LIKE) 경로로 확인한다.
+
+# 입력 axis
+#  keyword     : 검색어 형태
+#  search_field: 목록 검색 대상 — title_content 는 FULLTEXT, author 는 author_name·회원 이름 LIKE
+axes:
+  keyword: [boolean_operator, html_like, over_phrase_limit, operator_only, normal]
+  search_field: [title_content, author]
+
+# 의미 없는 조합 컷:
+#  - 작성자 검색은 FULLTEXT 를 타지 않는 LIKE 경로라 BOOLEAN MODE 연산자 해석도 구문 낱말 한도도 없다
+exclusions:
+  - { keyword: boolean_operator, search_field: author, reason: "작성자 검색은 LIKE 경로 — BOOLEAN MODE 정제 대상 아님" }
+  - { keyword: html_like, search_field: author, reason: "작성자 검색은 LIKE 경로 — BOOLEAN MODE 정제 대상 아님" }
+  - { keyword: over_phrase_limit, search_field: author, reason: "작성자 검색은 LIKE 경로 — FTS 구문 낱말 한도 없음" }
+  - { keyword: operator_only, search_field: author, reason: "작성자 검색은 LIKE 경로 — 연산자만 남는 정제 결과가 생기지 않음" }
+
+effects:
+  - boolean_mode_operator_does_not_500          # 연산자 단독·혼합 검색어 12종이 모두 200
+  - html_like_keyword_does_not_500              # <script>alert(1)</script> 가 200
+  - long_keyword_over_phrase_limit_does_not_500 # 공백 없는 한글 150자가 200
+  - operator_only_keyword_returns_empty         # 연산자만 입력하면 200 + 빈 목록
+  - normal_keyword_still_matches                # 정제가 정상 토큰을 보존하고, LIKE 경로 매칭도 유지
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostSearchKeywordSanitizationTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

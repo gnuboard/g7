@@ -127,6 +127,8 @@ class Module extends AbstractModule
                     'api.modules.sirsoft-board.boards.comments.*',
                     'api.modules.sirsoft-board.boards.attachments.*',
                     'api.modules.sirsoft-board.boards.attachment.*',
+                    // 본문 미디어 업로드·서빙 (#883) — 서빙(show)은 컨트롤러도 없는 게시판을 404 로 돌려 결과가 같다
+                    'api.modules.sirsoft-board.boards.content-media.*',
                     'api.modules.sirsoft-board.admin.board.*',
                 ],
             ],
@@ -1128,6 +1130,13 @@ class Module extends AbstractModule
                 'columns' => ['*'],
                 'order' => [['created_at', 'desc'], ['id', 'desc']],
                 'soft_delete' => true,
+            ],
+            // 요청 1건을 새 프로세스에서 처음부터 처리하는 부팅 비용 — 코어 boot 축(7.1.5)이 없는 코어에서는
+            // 알 수 없는 축으로 경고만 남고 이 선언만 빠진다
+            'boot_board_menu' => [
+                'type' => 'boot',
+                'label' => '게시판 메뉴 API 부팅',
+                'uri' => '/api/modules/sirsoft-board/boards/board-menu',
             ],
         ];
     }

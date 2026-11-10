@@ -523,6 +523,7 @@ class PaymentCallbackController
             'orderId' => $order->order_number,
             'paymentKey' => $paymentKey,
             'vbank_number' => $vbank['accountNumber'] ?? null,
+            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             'vbank_due_at' => $dueAt?->toDateTimeString(),
             'is_escrow' => $isEscrow,
         ]);

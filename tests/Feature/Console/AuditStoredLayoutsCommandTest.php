@@ -108,10 +108,11 @@ class AuditStoredLayoutsCommandTest extends TestCase
      */
     public function test_layout_files_pass_and_exit_zero(): void
     {
-        // 확장 manifest 가 선언하는 신뢰 스크립트 호스트(우편번호 검색) — 테스트 DB 에는 확장 활성 이력이 없다
+        // 확장 manifest 가 선언하는 신뢰 스크립트 호스트(우편번호 검색) — 테스트 DB 에는 확장 활성 이력이 없다.
+        // plugin.json `trusted_script_hosts` 와 같은 두 호스트(카카오 SDK 주소 + 전환 전 옛 주소)를 싣는다.
         HookManager::addFilter(
             TrustedScriptHosts::FILTER_HOOK,
-            fn (array $hosts) => array_merge($hosts, ['t1.daumcdn.net']),
+            fn (array $hosts) => array_merge($hosts, ['t1.kakaocdn.net', 't1.daumcdn.net']),
             priority: 1
         );
 

@@ -1,0 +1,15 @@
+feature: KG이니시스 성인 판정 기준 날짜 — 한국 시간 (#160 D10)
+
+description: |
+  성인 판정(isAdult)의 만 나이를 서버 시간대(UTC) 날짜로 세 한국 시간 0~9시 생일자가 하루 늦게 성인이 됐다.
+  한국 법상 나이이므로 생일과 오늘을 모두 Asia/Seoul 날짜로 센다.
+  (카드 인증 시각의 보는 사람 시간대 표시는 mypage-identity-card.yaml 이 다룬다.)
+
+axes:
+  surface: [adult_age_korea_time]
+
+effects:
+  - adult_age_counts_in_korea_time
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/Identity/InicisAdultAgeKoreaTimezoneTest.php

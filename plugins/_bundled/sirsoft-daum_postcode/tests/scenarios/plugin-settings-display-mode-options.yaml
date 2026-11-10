@@ -1,7 +1,7 @@
 feature: 우편번호 환경설정 — 표시 방식 선택지 문구와 의미 클래스 위치
 
 description: |
-  표시 방식 선택지(popup·layer)는 값 원문이 아니라 번역 키(`settings.fields.display_mode.*`)로 보이고 ko/en 번역이
+  표시 방식 선택지(1.2.0 부터 기기별 두 칸 — PC popup·layer·inline, 모바일 inline·fullscreen)는 값 원문이 아니라 번역 키(`settings.fields.display_mode.*`)로 보이고 ko/en 번역이
   있어야 한다. 관리자 템플릿 의미 클래스 도입 때 치환이 한 칸 밀려 입력 칸 줄에 오류 글자색이, 오류 목록 줄에
   3열 그리드가 붙었던 것을 되돌린다 — 3열 그리드는 입력 칸 줄(`field_*`)에만, 옅은 오류색은 저장 오류 줄에만 쓴다.
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Support\EnvPriority;
+use App\Support\Settings\ComputedSettingFields;
 
 /**
  * 터미널 설정 명령(`settings:get`·`settings:set`)의 코어 설정 키 해석.
@@ -19,7 +20,7 @@ class SettingsCliKeyResolver
      * 탭을 신설하면 그쪽 목록과 함께 고친다(테스트가 두 목록의 일치를 잠근다).
      */
     public const TAB_CATEGORIES = [
-        'general', 'mail', 'upload', 'seo', 'security', 'drivers', 'notifications', 'identity', 'analytics', 'privacy',
+        'general', 'mail', 'upload', 'seo', 'security', 'drivers', 'notifications', 'identity', 'analytics', 'privacy', 'content',
     ];
 
     /** 여러 범주를 한 폼에 모아 저장하는 탭 */
@@ -128,25 +129,18 @@ class SettingsCliKeyResolver
      */
     public function isComputed(string $category, string $field): bool
     {
-        return ! empty($this->schemaFields($category)[$field]['computed']);
+        return ComputedSettingFields::isComputed($this->schemaFields($category)[$field] ?? null);
     }
 
     /**
-     * 범주의 계산 항목 — 「항목 => 화면 키」.
+     * 범주의 계산 항목 — 「항목 => 화면 키」. 판정은 관리자 설정 저장과 같은 `ComputedSettingFields` 한 곳.
      *
      * @param  string  $category  범주
      * @return array<string, string> 계산 항목
      */
     public function computedFields(string $category): array
     {
-        $fields = [];
-        foreach ($this->schemaFields($category) as $field => $schema) {
-            if (! empty($schema['computed'])) {
-                $fields[$field] = (string) ($schema['frontend_key'] ?? $field);
-            }
-        }
-
-        return $fields;
+        return ComputedSettingFields::frontendKeys(['fields' => $this->schemaFields($category)]);
     }
 
     /**

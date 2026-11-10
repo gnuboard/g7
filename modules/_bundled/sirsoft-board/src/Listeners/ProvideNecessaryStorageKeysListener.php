@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Board\Support\GuestUploadOwnerCookie;
 
 /**
  * 쿠키 미동의 방문자에게도 필요한 이 확장의 브라우저 저장 키를 개인정보 동의 플러그인에 제공합니다.
@@ -20,6 +21,11 @@ use App\Contracts\Extension\HookListenerInterface;
  * 저장은 사용자 화면 템플릿이 하지만 그 값의 뜻과 필요성은 이 모듈이 정하므로 이 모듈이 제공한다.
  * 지워지면 비밀번호를 맞힌 방문자가 답변 링크로 이동하거나 새로고침할 때마다 다시 잠긴다.
  * 키 이름은 사용자 화면 템플릿의 저장 핸들러와 같아야 한다.
+ *
+ * 비회원 업로드 소유 쿠키도 같은 성격이다 — 비회원이 방금 올린 임시 첨부를 지우거나 순서를 바꿀 때 본인임을 보이는
+ * 소유 증명이고, 방문자가 스스로 요청한 업로드를 이어 가는 데만 쓴다(#883). 동의 플러그인은 기능 쿠키 미동의 방문자의
+ * 응답에서 허용목록 밖 쿠키를 걷어내므로, 빠지면 쿠키 배너를 고르지 않은 비회원은 자기 첨부를 지우지 못한다(403).
+ * 이름은 모듈 설정(`sirsoft-board.guest_upload_cookie.name`)을 따르므로 쿠키 도우미에서 읽는다.
  */
 class ProvideNecessaryStorageKeysListener implements HookListenerInterface
 {
@@ -71,7 +77,10 @@ class ProvideNecessaryStorageKeysListener implements HookListenerInterface
     {
         $keys = is_array($keys) ? $keys : [];
 
-        foreach (self::KEYS as $scope => $items) {
+        $own = self::KEYS;
+        $own['cookie'] = [app(GuestUploadOwnerCookie::class)->name()];
+
+        foreach ($own as $scope => $items) {
             $current = is_array($keys[$scope] ?? null) ? $keys[$scope] : [];
             $keys[$scope] = array_values(array_unique([...$current, ...$items]));
         }

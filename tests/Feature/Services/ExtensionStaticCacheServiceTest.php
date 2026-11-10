@@ -40,6 +40,11 @@ class ExtensionStaticCacheServiceTest extends TestCase
     /** 테스트 전용 public 루트 (실 게시 트리 격리) */
     private string $isolatedPublicPath;
 
+    /**
+     * public 루트를 테스트 전용 경로로 격리하고 캐시 버전·게시 락·실패 마커·게시 예약 상태를 초기화한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,6 +75,11 @@ class ExtensionStaticCacheServiceTest extends TestCase
         $this->cleanBaseDir();
     }
 
+    /**
+     * 게시 트리와 격리 public 루트를 지우고 게시 예약 상태를 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->cleanBaseDir();
@@ -79,6 +89,11 @@ class ExtensionStaticCacheServiceTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 격리 public 루트 아래의 게시 base 디렉토리(build/ext)를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     private function cleanBaseDir(): void
     {
         File::deleteDirectory(public_path('build/ext'));
@@ -118,6 +133,11 @@ class ExtensionStaticCacheServiceTest extends TestCase
         );
     }
 
+    /**
+     * 컨테이너에서 정적 게시 서비스를 꺼낸다.
+     *
+     * @return ExtensionStaticCacheService 정적 게시 서비스
+     */
     private function service(): ExtensionStaticCacheService
     {
         return app(ExtensionStaticCacheService::class);
@@ -132,6 +152,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
      *
      * @param  array<int, string>  $modules  활성 모듈 식별자
      * @param  array<int, string>  $plugins  활성 플러그인 식별자
+     * @return void 반환값 없음
      */
     private function createActiveExtensions(array $modules, array $plugins): void
     {
@@ -158,6 +179,13 @@ class ExtensionStaticCacheServiceTest extends TestCase
         }
     }
 
+    /**
+     * 활성 상태의 템플릿 행을 만든다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string  $type  템플릿 유형 (admin 또는 user)
+     * @return Template 생성된 활성 템플릿
+     */
     private function createActiveTemplate(string $identifier = 'sirsoft-admin_basic', string $type = 'admin'): Template
     {
         return Template::create([
@@ -175,6 +203,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 활성 템플릿 0개(설치 직전)여도 예외 없이 빈 게시가 성립한다.
      *
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
+     *
+     * @return void 반환값 없음
      */
     public function test_publishes_empty_tree_when_no_active_templates(): void
     {
@@ -190,6 +220,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * lang 게시물은 폴백 API(serveLanguage)와 동일 페이로드다 (canonical 비교).
      *
      * @effects published_lang_matches_api_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_published_lang_matches_api_payload(): void
     {
@@ -216,6 +248,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 프론트 소비 코드(result.success / result.data) 무변경 보장.
      *
      * @effects published_routes_has_success_envelope
+     *
+     * @return void 반환값 없음
      */
     public function test_published_routes_has_success_envelope(): void
     {
@@ -246,6 +280,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 따라 다르게 동작하고 그 이유가 화면에 드러나지 않는다.
      *
      * @effects custom_asset_published_for_all_extension_types
+     *
+     * @return void 반환값 없음
      */
     public function test_publishes_active_module_and_plugin_custom_assets(): void
     {
@@ -297,6 +333,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 쓰는지를 산출물로 잠근다.
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     public function test_published_custom_set_matches_publishable_files(): void
     {
@@ -337,6 +375,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 상태 보고서는 미게시/게시 상태를 필드로 구분해 돌려준다 — CLI·API·화면이 같은 판정을 소비한다.
      *
      * @effects status_endpoint_returns_report_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_status_report_reflects_publish_state(): void
     {
@@ -366,6 +406,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 수동 복구는 버전을 올리고 새 버전을 강제 게시한다 (`force` 없으면 같은 초 재게시가 skip 된다).
      *
      * @effects republish_bumps_version_and_publishes
+     *
+     * @return void 반환값 없음
      */
     public function test_republish_bumps_version_and_force_publishes(): void
     {
@@ -385,7 +427,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
 
         // 같은 초의 연속 복구도 **내용을 다시 만든다** — manifest 시각이 갱신된다
         $firstManifest = (string) file_get_contents($service->versionDir($result['version']).'/manifest.json');
-        sleep(1);
+        // manifest 시각(published_at)은 now() 라 시각만 옮긴다 — 실제로 기다리지 않는다
+        $this->travel(1)->seconds();
         $second = $service->republish();
         $this->assertTrue($second['republished']);
         $this->assertNotSame($firstManifest, (string) file_get_contents($service->versionDir($second['version']).'/manifest.json'));
@@ -395,6 +438,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 게시가 쓰이지 않는 환경(비프로덕션 / kill-switch)에서는 bump 하지 않고 사유를 돌려준다.
      *
      * @effects republish_disabled_when_not_publishable
+     *
+     * @return void 반환값 없음
      */
     public function test_republish_refuses_without_bump_when_not_publishable(): void
     {
@@ -422,6 +467,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 버전 디렉토리마다 쌓인다.
      *
      * @effects custom_asset_published_for_all_extension_types
+     *
+     * @return void 반환값 없음
      */
     public function test_inactive_module_custom_is_absent_from_published_tree(): void
     {
@@ -450,6 +497,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * components.json 사본과 dist 에셋이 게시되고 `*.map` 은 제외된다.
      *
      * @effects published_tree_excludes_sourcemaps
+     *
+     * @return void 반환값 없음
      */
     public function test_publishes_components_and_dist_assets_excluding_sourcemaps(): void
     {
@@ -477,6 +526,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 비활성 템플릿 산출물은 게시 트리에 부재한다 (활성 게이트의 정적 등가물).
      *
      * @effects published_tree_excludes_inactive_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_inactive_template_is_absent_from_published_tree(): void
     {
@@ -502,6 +553,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 식별자 패턴 불일치(경로 세그먼트 위험) 템플릿은 게시에서 거부된다.
      *
      * @effects identifier_outside_pattern_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_identifier_outside_whitelist_pattern(): void
     {
@@ -533,6 +586,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=published, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
      *
      * @effects publish_is_idempotent_until_forced
+     *
+     * @return void 반환값 없음
      */
     public function test_publish_is_idempotent_and_force_republishes(): void
     {
@@ -558,6 +613,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=partial, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects write_failure_cleans_tmp_and_falls_back
+     *
+     * @return void 반환값 없음
      */
     public function test_write_failure_cleans_tmp_and_returns_false(): void
     {
@@ -598,6 +655,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=parent_denied, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects parent_denied_short_circuits_before_merge
+     *
+     * @return void 반환값 없음
      */
     public function test_unwritable_parent_short_circuits_before_merge(): void
     {
@@ -639,6 +698,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=tree_denied, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects parent_denied_short_circuits_before_merge
+     *
+     * @return void 반환값 없음
      */
     public function test_unwritable_publish_tree_short_circuits(): void
     {
@@ -668,6 +729,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=partial, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects publish_failure_recorded_in_marker
+     *
+     * @return void 반환값 없음
      */
     public function test_write_failure_records_failure_marker(): void
     {
@@ -703,6 +766,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 게시 성공은 실패 마커를 제거한다 — 백오프가 영구 고착되지 않는다.
      *
      * @effects publish_success_clears_failure_marker
+     *
+     * @return void 반환값 없음
      */
     public function test_successful_publish_clears_failure_marker(): void
     {
@@ -730,6 +795,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 헛도는 것을 막는다.
      *
      * @effects publish_failure_backoff_suppresses_reschedule
+     *
+     * @return void 반환값 없음
      */
     public function test_fresh_failure_marker_suppresses_publish_scheduling(): void
     {
@@ -764,6 +831,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=partial, artifact_integrity=truncated, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects truncated_artifact_rejected_before_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_truncated_write_is_rejected_before_manifest(): void
     {
@@ -789,6 +858,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 진행 중일 수 있고, 나이 무관 삭제는 그 순간 살아 있는 남의 tmp 를 파괴한다.
      *
      * @effects cleanup_keeps_current_and_previous_versions
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_keeps_current_and_previous_only(): void
     {
@@ -820,6 +891,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * GC — 나이 가드: 10분을 넘긴 `.tmp` / `.old` 만 삭제된다 (A4).
      *
      * @effects cleanup_removes_only_stale_work_directories
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_removes_only_stale_work_directories(): void
     {
@@ -855,6 +928,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 없다. 그 상태에서 없는 버전을 보존 슬롯으로 쓰면 진짜 직전 버전이 삭제된다.
      *
      * @effects gc_preserves_previous_when_current_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_preserves_two_newest_when_current_version_absent(): void
     {
@@ -885,6 +960,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=kill_switch, process_user=web
      *
      * @effects kill_switch_disables_publish_and_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_kill_switch_disables_publishing(): void
     {
@@ -902,6 +979,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=dev, trigger=lifecycle, process_user=web
      *
      * @effects terminating_publish_gated_to_production
+     *
+     * @return void 반환값 없음
      */
     public function test_terminating_publish_not_scheduled_outside_production(): void
     {
@@ -918,6 +997,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects terminating_publish_uses_final_version_after_burst
+     *
+     * @return void 반환값 없음
      */
     public function test_terminating_publish_runs_in_production(): void
     {
@@ -946,6 +1027,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=root_cli
      *
      * @effects root_cli_defers_publish_to_web_self_heal
+     *
+     * @return void 반환값 없음
      */
     public function test_terminating_publish_not_scheduled_for_root_process(): void
     {
@@ -973,6 +1056,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=published, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects terminating_schedule_rearms_after_execution
+     *
+     * @return void 반환값 없음
      */
     public function test_terminating_publish_rearms_after_callback_execution(): void
     {
@@ -996,6 +1081,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=published, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
      *
      * @effects published_htaccess_declares_compression
+     *
+     * @return void 반환값 없음
      */
     public function test_published_htaccess_declares_compression(): void
     {
@@ -1019,6 +1106,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=partial, artifact_integrity=truncated, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects manifest_failure_cleans_final_directory
+     *
+     * @return void 반환값 없음
      */
     public function test_manifest_failure_cleans_final_directory(): void
     {
@@ -1068,6 +1157,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=published, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
      *
      * @effects rename_failure_restores_previous_published_version
+     *
+     * @return void 반환값 없음
      */
     public function test_rename_failure_restores_previous_published_version(): void
     {
@@ -1137,6 +1228,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=published, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
      *
      * @effects rename_failure_restores_previous_published_version
+     *
+     * @return void 반환값 없음
      */
     public function test_directory_rename_is_retried_before_giving_up(): void
     {
@@ -1185,6 +1278,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * 구버전·고아 tmp 가 무한 누적되는 동안 운영자에게는 정상으로 보인다.
      *
      * @effects cleanup_excludes_failed_deletions_from_count
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_excludes_failed_deletion_from_count(): void
     {
@@ -1230,6 +1325,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects lock_contention_skips_without_failure_marker
+     *
+     * @return void 반환값 없음
      */
     public function test_lock_contention_skips_without_failure_marker(): void
     {
@@ -1267,6 +1364,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects lock_provider_failure_recorded_in_marker
+     *
+     * @return void 반환값 없음
      */
     public function test_lock_provider_failure_records_marker(): void
     {
@@ -1276,6 +1375,14 @@ class ExtensionStaticCacheServiceTest extends TestCase
 
         Cache::extend('g7-lockless', fn () => new class(new ArrayStore) extends Repository
         {
+            /**
+             * 락을 지원하지 않는 저장소를 흉내 내 항상 BadMethodCallException 을 던진다.
+             *
+             * @param  string  $name  락 이름
+             * @param  int  $seconds  락 유지 시간(초)
+             * @param  string|null  $owner  락 소유자 토큰
+             * @return never 항상 예외를 던지므로 반환하지 않음
+             */
             public function lock($name, $seconds = 0, $owner = null)
             {
                 throw new \BadMethodCallException('This cache store does not support locking.');
@@ -1319,6 +1426,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=published, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
      *
      * @effects published_tree_is_group_writable
+     *
+     * @return void 반환값 없음
      */
     public function test_published_tree_is_group_writable(): void
     {
@@ -1405,6 +1514,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=lifecycle, process_user=web
      *
      * @effects publish_failure_backoff_is_scoped_to_version
+     *
+     * @return void 반환값 없음
      */
     public function test_previous_version_failure_marker_does_not_suppress_new_version(): void
     {
@@ -1471,6 +1582,8 @@ class ExtensionStaticCacheServiceTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
      *
      * @effects zero_byte_bundle_is_statically_published
+     *
+     * @return void 반환값 없음
      */
     public function test_publish_includes_zero_byte_bundle_when_declared_artifacts_are_empty(): void
     {

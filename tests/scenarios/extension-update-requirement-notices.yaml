@@ -1,0 +1,45 @@
+feature: 확장 업데이트 창이 새 버전이 요구하는 확장(필수 의존·연동) 중 지금 못 미치는 것을 업데이트 전에 알린다
+
+description: |
+  새 판이 연동 확장의 요구 버전을 올리면(예: 사용자 템플릿 새 판이 쇼핑 모듈·우편번호 플러그인의 상위 판을 요구) 업데이트
+  창에는 버전·변경사항·레이아웃 처리 방식만 보였고, 업데이트가 끝난 뒤 완료 안내에서야 「함께 쓰면 연동되는 확장 중
+  연동이 꺼진 것이 있습니다」를 알렸다. 운영자가 그 확장부터 올리면 연동 기능(예: 리뷰순 정렬)이 꺼진 채로 남았다.
+
+  결정(업데이트 전 경고): 목록 응답의 업데이트가 있는 행에 새 판 manifest 의 `dependencies`·`integrations` 를 지금 설치
+  상태와 대조한 결과(`update_dependency_warnings`·`update_integration_notices`)를 싣는다. 판정은 업데이트 뒤 완료 안내와
+  같은 함수다. 모듈·플러그인·템플릿 업데이트 창은 그 목록을 경고 상자로 보이되 업데이트를 막지 않는다(업데이트 뒤 안내와
+  같이 알리기만 한다 — 코어 업데이트 뒤 번들 일괄 업데이트처럼 의존·연동 확장이 곧 따라 올라오는 흐름이 정상 경로다).
+
+  대조 대상 manifest: 번들 출처면 _bundled 매니페스트, GitHub 출처면 _bundled 판이 업데이트 대상 버전과 같을 때만 그
+  매니페스트(아니면 null — 원격 매니페스트를 받지 않는다).
+
+axes:
+  # 확장 유형×업데이트 출처×충족 상태의 곱은 테스트가 실제로 재는 조합보다 넓다 — 재는 사례를 한 축으로 열거한다.
+  case:
+    - list_row_template_bundled_raised_requirements
+    - list_row_template_without_update
+    - list_row_template_github_unknown_manifest
+    - list_row_template_github_same_bundled_version
+    - list_row_module_bundled_raised_requirements
+    - list_row_plugin_bundled_raised_requirements
+    - list_row_plugin_bundled_requirements_met
+    - modal_shows_unmet_requirements_before_update
+    - modal_does_not_block_update
+    - modal_integrations_only
+    - modal_requirements_met_or_old_core
+
+effects:
+  - extension_list_row_exposes_update_target_requirements
+  - update_target_requirements_match_post_update_notices
+  - update_modal_warns_unmet_requirements_before_update
+  - update_modal_requirements_do_not_block_update
+  - update_modal_hides_requirements_when_met
+
+notes:
+  - 업데이트가 없는 행은 두 필드를 싣지 않는다(코어 호환 필드와 같은 조건).
+  - null 은 「대상 판 manifest 를 모름」이고 빈 배열은 「모두 충족」이다 — 창은 둘 다 상자를 그리지 않는다.
+  - 업데이트 전 목록과 업데이트 뒤 결과(`dependency_warnings`·`integration_notices`)는 같은 manifest 면 같은 값이다.
+
+test_files:
+  - tests/Feature/Extension/ExtensionListUpdateRequirementNoticesTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-update-requirement-notices.test.tsx

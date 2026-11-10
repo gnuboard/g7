@@ -271,7 +271,7 @@
             "auto_fetch": true,
             "auth_required": true,
             "params": {
-                "targets": "retention:user-withdrawn,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw",
+                "targets": "retention:user-withdrawn,retention:search-history,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw",
                 "since": "{{_global.privacyRunWatchSince ?? ''}}"
             },
             "fallback": {
@@ -719,7 +719,7 @@
         {
             "comment": "주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두\n         거짓이라 본문이 통째로 빈다. 기본 탭으로 바꿔 연다 — 목록은 탭 바와 같아야 한다(회귀 테스트가 대조한다).",
             "handler": "setState",
-            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'content', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
             "params": {
                 "target": "global",
                 "activeSettingsTab": "general"
@@ -728,7 +728,7 @@
         {
             "comment": "audit:allow layout-list-context-navigate-merge-query 알 수 없는 탭 키 정정 — 그 탭의 목록 쿼리는 의미가 없어 물려받지 않는다(탭 전환과 같은 규칙).",
             "handler": "navigate",
-            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'content', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
             "params": {
                 "path": "/admin/settings",
                 "replace": true,
@@ -954,6 +954,11 @@
                                             "label": "$t:admin.settings.tabs.upload"
                                         },
                                         {
+                                            "id": "content",
+                                            "href": "/admin/settings?tab=content",
+                                            "label": "$t:admin.settings.tabs.content"
+                                        },
+                                        {
                                             "id": "seo",
                                             "href": "/admin/settings?tab=seo",
                                             "label": "$t:admin.settings.tabs.seo"
@@ -1124,6 +1129,9 @@
                             },
                             {
                                 "partial": "partials/admin_settings/_tab_upload.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_content.json"
                             },
                             {
                                 "partial": "partials/admin_settings/_tab_seo.json"
@@ -1459,6 +1467,10 @@
         {
             "comment": "IP 접근 제한 규칙 추가·편집 겸용 창(보안 탭) — 서버에 저장하지 않고 설정 폼의 규칙 배열만 고친다.",
             "partial": "partials/admin_settings/_modal_ip_restriction_rule_form.json"
+        },
+        {
+            "comment": "외부 영상 서비스 추가·수정 겸용 창(본문 콘텐츠 탭, #883) — 서버에 저장하지 않고 설정 폼의 서비스 배열만 고친다.",
+            "partial": "partials/admin_settings/_modal_embed_provider_form.json"
         },
         {
             "comment": "인증 정책 등록·수정 겸용 창.",

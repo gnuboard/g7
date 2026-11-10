@@ -1,5 +1,5 @@
 {
-    "comment": "확장 설치·활성화·업데이트·레이아웃 갱신이 「완료했지만 일부 항목이 실패한」 결과 창(코어 7.1.3).\n  서버는 항목 하나가 실패해도 작업을 끝내고 응답 data.warnings 에 실패 목록(단계·대상·사유)을 싣는다.\n  각 목록 화면의 성공 갈래가 그 목록을 _global.lifecycleWarnings 에 담고 이 창을 연다 — 경고가 없으면 열지 않는다.\n  목록은 접혀 있고 「자세히」를 눌러 펼친다(_global.lifecycleWarningsOpen). 여는 쪽이 접힘으로 되돌린다.\n  항목마다 level 이 있다 — warning(반영되지 않은 실패)·notice(실패는 아닌 안내, 예: 압축 경로 정규화). 실패가 하나도 없으면\n  「실패」 제목·문구 대신 안내 제목·문구를 쓴다.\n  대상 칸은 식별자·경로를 보이되, 서버가 target_name(사람이 읽는 이름)을 실은 항목은 그 이름을 보인다(코어 7.1.4 — 지금은 dependents 단계만).\n  단계 이름은 admin.extensions.lifecycle_warnings.steps.{step} 번역이 있으면 그 이름으로 보인다. 지금 언어에 없으면(옛 언어팩) 대체 언어의 이름을, 어느 언어에도 없으면(새 단계) 서버가 보낸 원문을 보인다.",
+    "comment": "확장 설치·활성화·업데이트·레이아웃 갱신이 「완료했지만 일부 항목이 실패한」 결과 창(코어 7.1.3).\n  서버는 항목 하나가 실패해도 작업을 끝내고 응답 data.warnings 에 실패 목록(단계·대상·사유)을 싣는다.\n  각 목록 화면의 성공 갈래가 그 목록을 _global.lifecycleWarnings 에 담고 이 창을 연다 — 경고가 없으면 열지 않는다.\n  목록은 접혀 있고 「자세히」를 눌러 펼친다(_global.lifecycleWarningsOpen). 여는 쪽이 접힘으로 되돌린다.\n  항목마다 level 이 있다 — warning(반영되지 않은 실패)·notice(실패는 아닌 안내, 예: 압축 경로 정규화). 실패가 하나도 없으면\n  「실패」 제목·문구 대신 안내 제목·문구를 쓴다.\n  대상 칸은 식별자·경로를 보이되, 서버가 target_name(사람이 읽는 이름)을 실은 항목은 그 이름을 보인다(코어 7.1.4 — 지금은 dependents 단계만).\n  단계 이름은 admin.extensions.lifecycle_warnings.steps.{step} 번역이 있으면 그 이름으로 보인다. 지금 언어에 없으면(옛 언어팩) 대체 언어의 이름을, 어느 언어에도 없으면(새 단계) 서버가 보낸 원문을 보인다.\n  cause 가 declaration 인 항목은 확장 manifest 선언(search_scopes·necessary_storage 등)의 형식이 틀려 버린 것이다(코어 7.1.5) —\n  다시 실행해도 같으므로 항목 아래에 「확장 개발자가 고칠 선언」 안내를 붙이고, 실패가 모두 그런 항목이면 「일부 항목이 실패했습니다」\n  제목·요약과 「다시 실행하세요」 문구 대신 선언 오류 제목·요약(버린 선언 건수)과 확장 개발자에게 알리라는 문구를 쓴다.",
     "meta": {
         "is_partial": true,
         "description": "확장 작업 경고 결과 모달",
@@ -9,7 +9,7 @@
     "type": "composite",
     "name": "Modal",
     "props": {
-        "title": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice') ? $t('admin.extensions.lifecycle_warnings.title') : $t('admin.extensions.lifecycle_warnings.notice_title')}}",
+        "title": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice' && w?.cause !== 'declaration') ? $t('admin.extensions.lifecycle_warnings.title') : ((_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice') ? $t('admin.extensions.lifecycle_warnings.declaration_title') : $t('admin.extensions.lifecycle_warnings.notice_title'))}}",
         "size": "md"
     },
     "children": [
@@ -39,21 +39,41 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "if": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice' && w?.cause !== 'declaration')}}",
                             "props": {
                                 "className": "text-warning-soft"
                             },
                             "text": "$t:admin.extensions.lifecycle_warnings.summary|count={{(_global.lifecycleWarnings ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice' && w?.cause !== 'declaration')}}",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.extensions.lifecycle_warnings.declaration_summary|count={{(_global.lifecycleWarnings ?? []).filter(w => w?.cause === 'declaration').length}}"
                         }
                     ]
                 },
                 {
+                    "comment": "다시 실행하면 반영될 수 있는 실패가 하나라도 있으면 「다시 실행」 문구, 실패가 모두 확장 선언 형식 오류면 「확장 개발자에게 알림」 문구",
                     "type": "basic",
                     "name": "P",
-                    "if": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice')}}",
+                    "if": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice' && w?.cause !== 'declaration')}}",
                     "props": {
                         "className": "mt-2 text-label-subtle"
                     },
                     "text": "$t:admin.extensions.lifecycle_warnings.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice') && (_global.lifecycleWarnings ?? []).every(w => w?.level === 'notice' || w?.cause === 'declaration')}}",
+                    "props": {
+                        "className": "mt-2 text-label-subtle"
+                    },
+                    "text": "$t:admin.extensions.lifecycle_warnings.declaration_description"
                 },
                 {
                     "comment": "안내만 있을 때 — 실패가 아니므로 파란 안내 상자",
@@ -181,6 +201,16 @@
                                         "className": "mt-1 text-sm break-all text-gray-600 dark:text-gray-400"
                                     },
                                     "text": "{{warning.message}}"
+                                },
+                                {
+                                    "comment": "확장 선언 형식 오류 — 운영자가 다시 실행할 일이 아니라 확장 개발자가 고칠 선언임을 알린다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{warning?.cause === 'declaration'}}",
+                                    "props": {
+                                        "className": "mt-1 text-xs text-amber-700 dark:text-amber-400"
+                                    },
+                                    "text": "$t:admin.extensions.lifecycle_warnings.declaration_hint"
                                 }
                             ]
                         }

@@ -20,6 +20,9 @@ class ValidateP4MigrationsTest extends TestCase
     /** 레이아웃 확장 조각 식별자 마이그레이션. */
     private const LAYOUT_FRAGMENT_KEY = 'database/migrations/2026_09_11_000001_add_fragment_key_to_template_layout_extensions_table.php';
 
+    /** 조각 고유 키를 옮겨 받아 거는 마이그레이션(#703). */
+    private const LAYOUT_OVERRIDE_TARGET_KEY = 'database/migrations/2026_09_29_000001_add_override_target_key_to_template_layout_extensions_table.php';
+
     /** 전환 전 활동 로그의 공통 컬럼 (마이그레이션이 after()·인덱스로 참조하는 것). */
     private const BASE_COLUMNS = ['action', 'properties', 'loggable_type', 'loggable_id', 'log_type', 'created_at'];
 
@@ -87,10 +90,12 @@ class ValidateP4MigrationsTest extends TestCase
     }
 
     /**
-     * 조각 식별자 마이그레이션은 고유 키가 이미 있으면 다시 만들지 않고, 되돌리기도 고유 키가 있을 때만 지운다.
+     * 조각 고유 키는 존재를 확인한 뒤에만 만들고 지운다 — 다시 돌려도, 키 전에 멈춘 설치본을 되돌려도 막히지 않는다.
      *
-     * 이 마이그레이션은 MySQL 에서 접두 길이 고유 키를 raw 문으로 만들고 백필 UPDATE 도 실제로 내므로
-     * 기록기 위에서 돌리지 않고 소스를 읽는다(실행하면 공유 테스트 DB 에 DDL·DML 이 나간다).
+     * 고유 키는 #703 부터 조각 식별자 마이그레이션이 아니라 대상 확장 키 마이그레이션이 건다. 조각 식별자
+     * 마이그레이션은 키를 만들지 않고, 되돌릴 때 앞선 판이 남긴 키만 확인 뒤 지운다. 두 마이그레이션은
+     * MySQL 에서 접두 길이 고유 키를 raw 문으로 만들고 백필 UPDATE 도 실제로 내므로 기록기 위에서 돌리지 않고
+     * 소스를 읽는다(실행하면 공유 테스트 DB 에 DDL·DML 이 나간다).
      *
      * 수정 전 실패 이유: 고유 키 생성에 존재 확인이 없어, 고유 키까지 만들고 멈춘 설치본을 다시 돌리면
      * `Duplicate key name` 으로 매번 실패했고, 고유 키 전에 멈춘 설치본의 되돌리기는 없는 키를 지우려다 막혔다.
@@ -103,14 +108,34 @@ class ValidateP4MigrationsTest extends TestCase
      */
     public function test_layout_fragment_key_unique_index_is_guarded_on_rerun_and_rollback(): void
     {
-        $source = (string) file_get_contents(base_path(self::LAYOUT_FRAGMENT_KEY));
-        $guard = "Schema::hasIndex('template_layout_extensions', 'uk_layout_extension_fragment')";
+        [$fragmentUp, $fragmentDown] = $this->upAndDown(self::LAYOUT_FRAGMENT_KEY);
+        $this->assertFalse(strpos($fragmentUp, 'ADD UNIQUE'), '조각 식별자 마이그레이션이 다시 고유 키를 겁니다(#703 이후 다음 마이그레이션 몫)');
+        $this->assertNotFalse(
+            strpos($fragmentDown, "Schema::hasIndex('template_layout_extensions', 'uk_layout_extension_fragment')"),
+            '조각 식별자 마이그레이션 down() 이 고유 키 존재를 확인하지 않고 지웁니다'
+        );
 
-        $up = substr($source, (int) strpos($source, 'function up()'), (int) strpos($source, 'function down()') - (int) strpos($source, 'function up()'));
-        $down = substr($source, (int) strpos($source, 'function down()'));
+        [$up, $down] = $this->upAndDown(self::LAYOUT_OVERRIDE_TARGET_KEY);
+        $guard = "Schema::hasIndex('template_layout_extensions', self::INDEX)";
 
         $this->assertNotFalse(strpos($up, $guard), 'up() 이 고유 키 존재를 확인하지 않습니다');
+        $this->assertNotFalse(strpos($up, 'ADD UNIQUE'), 'up() 이 고유 키를 만들지 않습니다');
         $this->assertLessThan(strpos($up, 'ADD UNIQUE'), strpos($up, $guard), '고유 키 존재 확인이 생성보다 뒤에 있습니다');
         $this->assertNotFalse(strpos($down, $guard), 'down() 이 고유 키 존재를 확인하지 않고 지웁니다');
+    }
+
+    /**
+     * 마이그레이션 소스를 up()·down() 본문으로 나눕니다.
+     *
+     * @param  string  $path  저장소 기준 마이그레이션 경로
+     * @return array{0: string, 1: string} up() 부분과 down() 부분
+     */
+    private function upAndDown(string $path): array
+    {
+        $source = (string) file_get_contents(base_path($path));
+        $upAt = (int) strpos($source, 'function up()');
+        $downAt = (int) strpos($source, 'function down()');
+
+        return [substr($source, $upAt, $downAt - $upAt), substr($source, $downAt)];
     }
 }

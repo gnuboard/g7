@@ -163,6 +163,7 @@ class SeoRenderer implements SeoRendererInterface
         $preContext['_global'] = array_merge($preContext['_global'], $globalFromActions);
 
         $context = [];
+        $request->attributes->set('seo_render_degraded', []);
         if (! empty($seoDataSourceIds)) {
             $context = $this->dataSourceResolver->resolve(
                 $allDataSources,
@@ -172,6 +173,8 @@ class SeoRenderer implements SeoRendererInterface
                 $queryParams,
                 $preContext
             );
+            // 일시 장애로 대체값을 쓴 데이터 소스 — 저장 경로(SeoMiddleware·SeoCacheRegenerator)가 이 렌더를 캐시에 넣지 않는다
+            $request->attributes->set('seo_render_degraded', $this->dataSourceResolver->degradedDataSources());
         }
 
         // route/query/_global 을 데이터소스 결과와 합쳐 렌더 컨텍스트를 구성
@@ -542,9 +545,10 @@ class SeoRenderer implements SeoRendererInterface
         $viewData = [
             'locale' => $locale,
             'title' => $meta['title'],
-            // filter 훅이 title 을 바꿨을 수 있으므로 최종 title 기준으로 접미사를 정규화한다
-            // (TrimStrings 로 선행 공백이 제거된 접미사 복원 + 빈 제목의 매달린 구분자 제거)
-            'titleSuffix' => SeoMetaResolver::composeTitleSuffix((string) ($meta['title'] ?? ''), (string) ($meta['titleSuffix'] ?? '')),
+            // filter 훅이 title 을 바꿨을 수 있으므로 최종 title 기준으로 접미사를 조립한다 — 사람 탭 제목(엔진
+            // DocumentTitle)과 같은 규칙(SeoTitleRule): TrimStrings 로 지워진 선행 공백 복원, 빈 제목의 매달린 구분자 제거,
+            // 제목이 이미 「구분자 + 사이트 이름」으로 끝나면 다시 붙이지 않음
+            'titleSuffix' => $this->composeTitleSuffix((string) ($meta['title'] ?? ''), $meta['titleSuffix'] ?? ''),
             'description' => $meta['description'],
             'keywords' => $meta['keywords'],
             'canonicalUrl' => $canonicalUrl,
@@ -596,6 +600,22 @@ class SeoRenderer implements SeoRendererInterface
     {
         // 유효 UTF-8 보장 — 깨진 바이트 제거(JSON 직렬화 안전). 산출물 내용은 그대로 둔다.
         return Utf8::scrub($html);
+    }
+
+    /**
+     * 최종 제목 뒤에 붙일 접미사를 제목 규칙(SeoTitleRule)으로 조립합니다.
+     *
+     * 접미사 원값이 비면 ` - {site_name}` 을 쓰고, 제목이 이미 접미사나 「구분자 + 사이트 이름」으로 끝나면 붙이지 않는다.
+     *
+     * @param  string  $title  filter 훅을 거친 최종 제목
+     * @param  mixed  $rawSuffix  접미사 원값 (filter 훅이 바꿨을 수 있음 — 다국어 배열 허용)
+     * @return string 제목 뒤에 이을 글자
+     */
+    private function composeTitleSuffix(string $title, mixed $rawSuffix): string
+    {
+        $siteName = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
+
+        return SeoTitleRule::composeSuffix($title, SeoTitleRule::assembleSuffix($this->resolveLocalizedValue($rawSuffix), $siteName), $siteName);
     }
 
     /**
@@ -654,7 +674,7 @@ class SeoRenderer implements SeoRendererInterface
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  string  $locale  로케일
-     * @return void
+     * @return void 반환값 없음
      */
     private function loadTemplateTranslations(string $templateIdentifier, string $locale): void
     {
@@ -896,7 +916,7 @@ class SeoRenderer implements SeoRendererInterface
      *
      * @param  array  $allDataSources  전체 data_source 정의 배열
      * @param  array  &$context  현재 컨텍스트 (참조 전달)
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyInitGlobalMapping(array $allDataSources, array &$context): void
     {
@@ -1160,7 +1180,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  array  &$context  데이터 컨텍스트 (참조 전달 — _seo 주입)
      * @param  array  $routeParams  라우트 파라미터
      * @param  array  $resolvedVars  이미 해석된 vars (resolveSeoVars 결과)
-     * @return void
+     * @return void 반환값 없음
      */
     private function resolveSeoContext(array $seoConfig, array &$context, array $routeParams, array $resolvedVars): void
     {
@@ -1227,8 +1247,9 @@ class SeoRenderer implements SeoRendererInterface
                 $allResolvedVars[$varName] = $resolved;
             }
 
-            // 설정 템플릿 해석 (확장별)
-            $this->applySettingsTemplate($extType, $extId, $pageType, $allResolvedVars, $context);
+            // 설정 템플릿 해석 (확장별) — 필수 변수가 비면 제목 틀은 쓰지 않는다(고정 글자만 남은 제목 방지, 화면 탭 제목과 같은 규칙)
+            $titleReady = ! SeoTitleRule::hasMissingRequired($mergedVarsDef, $allResolvedVars);
+            $this->applySettingsTemplate($extType, $extId, $pageType, $allResolvedVars, $context, $titleReady);
         }
     }
 
@@ -1240,12 +1261,15 @@ class SeoRenderer implements SeoRendererInterface
      * @param  string  $pageType  페이지 타입
      * @param  array  $vars  해석된 변수 맵
      * @param  array  &$context  데이터 컨텍스트 (참조)
-     * @return void
+     * @param  bool  $titleReady  제목 틀을 쓸지 (필수 변수가 비면 false — 제목은 빈 값)
+     * @return void 반환값 없음
      */
-    private function applySettingsTemplate(string $extType, string $extId, string $pageType, array $vars, array &$context): void
+    private function applySettingsTemplate(string $extType, string $extId, string $pageType, array $vars, array &$context, bool $titleReady = true): void
     {
         // 다국어 JSON array 설정값 안전 변환 — 다국어 입력 환경에서 회귀 방지
-        $titleTemplate = $this->resolveLocalizedValue($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_title"));
+        $titleTemplate = $titleReady
+            ? $this->resolveLocalizedValue($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_title"))
+            : '';
         $descTemplate = $this->resolveLocalizedValue($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_description"));
 
         $title = $this->substituteVars($titleTemplate, $vars);

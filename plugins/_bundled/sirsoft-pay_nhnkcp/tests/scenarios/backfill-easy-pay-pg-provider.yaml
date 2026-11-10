@@ -1,0 +1,17 @@
+feature: NHN KCP 간편결제 PG 고정 백필 업그레이드의 적용 범위와 건너뛰기 조건 (1.0.0-beta.4)
+
+description: |
+  저장된 주문설정의 간편결제 PG 백필 스텝(이슈 #475)이 자기 접두사(nhnkcp_) 수단만 고치고
+  내장 수단·다른 PG 플러그인 수단은 건드리지 않는지, 설정 파일이 없거나 JSON 이 깨져 있으면 건너뛰는지 고정한다.
+  백필 자체(PG 고정·멱등)는 이커머스 모듈의 extension-payment-method 매니페스트가 소유한다.
+
+axes:
+  case: [other_methods, settings_missing, settings_malformed]
+
+effects:
+  - other_plugin_and_builtin_methods_untouched
+  - missing_settings_file_skipped
+  - malformed_settings_json_preserved
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Upgrades/BackfillEasyPayPgProviderTest.php

@@ -1,0 +1,22 @@
+feature: 주문 프로모션 스냅샷 평탄 키 표준화 (PromotionsSummary)
+
+description: |
+  주문 생성 시 promotions_applied_snapshot 이 coupon_issue_ids / item_coupons / discount_code
+  평탄 키를 항상 포함하도록 PromotionsSummary::toArray() 를 표준화했다. 취소 복원·재계산이
+  이 평탄 키를 SSoT 로 읽으므로, 상품·주문 쿠폰 구분과 빈 프로모션의 빈 값 형태가 흔들리면 안 된다.
+  기존 product_promotions / order_promotions 중첩 구조도 함께 유지한다.
+
+axes:
+  case: [flat_keys_present, coupon_issue_ids, item_coupons, discount_code, empty_promotions]
+
+effects:
+  - flat_keys_always_present
+  - nested_promotion_structure_preserved
+  - coupon_issue_ids_include_product_and_order_coupons
+  - item_coupons_map_product_coupons_per_option
+  - order_coupons_excluded_from_item_coupons
+  - discount_code_flattened_to_code_string
+  - empty_promotions_yield_empty_flat_keys
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/DTO/PromotionsSummaryFlatKeysTest.php

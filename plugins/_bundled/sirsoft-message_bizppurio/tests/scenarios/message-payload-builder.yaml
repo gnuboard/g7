@@ -1,0 +1,21 @@
+feature: 비즈뿌리오 발송 payload 조립과 이력 저장용 축약
+
+description: |
+  MessagePayloadBuilder 는 플러그인 설정(계정·발신 번호·senderkey)으로 SMS·LMS·알림톡 payload 를 부록 C-2 구조로 조립한다.
+  LMS 제목이 없으면 subject 키를 생략하고, 알림톡은 버튼 등 extra 를 content.at 에 병합한다.
+  forHistory() 는 다른 컬럼과 중복되는 수신·refkey·type·본문(대체발송 본문 포함)을 빼고 나머지 요소는 보존한다.
+
+axes:
+  case: [sms_build, lms_build, alimtalk_build, history_redaction]
+
+effects:
+  - sms_payload_follows_appendix_structure
+  - lms_payload_includes_subject
+  - lms_null_subject_omitted
+  - alimtalk_payload_includes_senderkey_templatecode_and_extra
+  - history_drops_duplicated_columns_and_message
+  - history_keeps_non_duplicated_fields
+  - history_drops_fallback_recontent_message
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/MessagePayloadBuilderTest.php

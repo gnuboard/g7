@@ -15,6 +15,7 @@ use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use RuntimeException;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,7 @@ use Tests\TestCase;
  */
 class IntegrationRequiredDependenciesTest extends TestCase
 {
+    use FakesGithubReleases;
     use MockeryPHPUnitIntegration;
 
     private object $harness;
@@ -44,6 +46,9 @@ class IntegrationRequiredDependenciesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         $this->harness = new class
         {
@@ -68,13 +73,13 @@ class IntegrationRequiredDependenciesTest extends TestCase
         };
 
         $modules = Mockery::mock(ModuleService::class);
-        $modules->shouldReceive('getModuleInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
+        $modules->shouldReceive('getModuleManifestInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
             return $info[$id] ?? null;
         });
         $modules->shouldReceive('installModule')->andReturnUsing(fn (string $id) => $installed($id));
         $modules->shouldReceive('activateModule')->andReturnUsing(fn (string $id) => $activated($id));
         $plugins = Mockery::mock(PluginService::class);
-        $plugins->shouldReceive('getPluginInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
+        $plugins->shouldReceive('getPluginManifestInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
             return $info[$id] ?? null;
         });
         $plugins->shouldReceive('installPlugin')->andReturnUsing(fn (string $id) => $installed($id));

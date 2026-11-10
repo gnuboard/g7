@@ -56,5 +56,16 @@
     "hint_1": "Use multiple words for more accurate results",
     "hint_2": "Search covers both titles and content"
   },
-  "refine_query_hint": "Narrow your search terms to see the exact total and jump to the last page."
+  "refine_query_hint": "Narrow your search terms to see the exact total and jump to the last page.",
+  "history": {
+    "title": "Recent searches",
+    "empty": "No recent searches.",
+    "loading": "Loading recent searches.",
+    "delete": "Delete search: {{keyword}}",
+    "clear_all": "Clear all",
+    "auto_save_off": "Turn off auto-save",
+    "auto_save_on": "Turn on auto-save",
+    "auto_save_off_notice": "Search history auto-save is off."
+  },
+  "clear": "Clear search"
 }

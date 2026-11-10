@@ -1,0 +1,27 @@
+feature: 템플릿 routes 와 확장 라우트 병합 (TemplateService)
+
+description: |
+  TemplateService 는 활성 템플릿의 routes.json 에 활성 모듈 라우트와 설정을 가진 플러그인의 설정 라우트를 병합해 돌려준다.
+  템플릿이 없거나 비활성이면 template_not_found, routes.json 이 없으면 routes_not_found 오류를 낸다.
+  활성 모듈 디렉토리가 비어 있으면(업데이트 스왑 창) 병합을 열화로 표시해 캐시에 굳지 않게 하고, 편집기 경로도 호출마다 열화 판정을 새로 한다.
+  레이아웃-경로 매핑(getLayoutRoutePathMap)은 라우트가 있는 레이아웃만 담는다.
+
+axes:
+  case: [template_routes, layout_route_path_map, module_merge, plugin_settings_routes, degraded_flag, error_response]
+
+effects:
+  - template_routes_returned_with_version
+  - layout_route_path_map_excludes_routeless_layouts
+  - layout_route_path_map_empty_without_routes_file
+  - active_module_routes_merged_into_template_routes
+  - plugin_settings_route_generated_per_plugin_with_settings
+  - plugin_without_settings_gets_no_settings_route
+  - plugin_settings_route_uses_own_layout
+  - missing_active_module_directory_flags_degraded
+  - normal_merge_not_flagged_degraded
+  - editor_merge_resets_degraded_state_per_call
+  - unavailable_template_returns_template_not_found
+  - missing_routes_file_returns_routes_not_found
+
+test_files:
+  - tests/Feature/Services/TemplateServiceRoutesMergeTest.php

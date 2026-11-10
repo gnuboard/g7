@@ -9,6 +9,7 @@ use App\Enums\PasswordExpiryPolicy;
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
 use App\Enums\UserStatus;
+use App\Helpers\TimezoneHelper;
 use App\Support\SiteUrl;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -143,6 +144,7 @@ class User extends Authenticatable implements HasLocalePreference
         'password_expiry_notified_at',
         'password_expired_processed_at',
         'password_change_postponed_until',
+        'search_history_auto_save',
     ];
 
     /**
@@ -184,6 +186,7 @@ class User extends Authenticatable implements HasLocalePreference
             'password_expiry_notified_at' => 'datetime',
             'password_expired_processed_at' => 'datetime',
             'password_change_postponed_until' => 'datetime',
+            'search_history_auto_save' => 'boolean',
         ];
     }
 
@@ -248,6 +251,16 @@ class User extends Authenticatable implements HasLocalePreference
     public function passwordHistories(): HasMany
     {
         return $this->hasMany(UserPasswordHistory::class);
+    }
+
+    /**
+     * 최근 검색어 관계 (검색 범위별)
+     *
+     * @return HasMany 최근 검색어 관계
+     */
+    public function searchHistories(): HasMany
+    {
+        return $this->hasMany(UserSearchHistory::class);
     }
 
     /**
@@ -690,7 +703,8 @@ class User extends Authenticatable implements HasLocalePreference
         }
 
         $now = now();
-        $dateSuffix = $now->format('Ymd'); // 예: 20260127
+        // 사람이 읽는 접미사 날짜 — 사이트 시간대(UTC 날짜면 한국 시간 새벽 탈퇴가 전날로 찍힌다)
+        $dateSuffix = $now->copy()->setTimezone(TimezoneHelper::getSiteTimezone())->format('Ymd'); // 예: 20260127
 
         // name/email 은 마이그레이션에서 길이를 지정하지 않은 문자열 컬럼이므로
         // 스키마 기본 길이(AppServiceProvider 의 defaultStringLength)를 그대로 따른다.

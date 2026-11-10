@@ -39,6 +39,17 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     private ?array $defaultsCache = null;
 
     /**
+     * 설정 기본값 파일 프로세스 메모 — [경로·mtime·크기] 키 => 해석 결과.
+     *
+     * 저장소는 부팅 중에도 여러 번 만들어지는데(설정 미러·드라이버 설정·워커 갱신) 기본값 파일(약 30KB)은
+     * 그때마다 같은 내용이다. 키에 mtime·크기를 넣어 코어 업데이트·settings:install 로 파일이 바뀌면
+     * 같은 프로세스에서도 다시 읽는다(#860).
+     *
+     * @var array{key: string, data: array<string, mixed>}|null
+     */
+    private static ?array $defaultsFileMemo = null;
+
+    /**
      * 메모리 캐시
      *
      * @var array<string, array<string, mixed>>|null
@@ -239,6 +250,13 @@ class JsonConfigRepository implements ConfigRepositoryInterface
         $path = $this->getCategoryPath($category);
         $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
+        // 변환 실패(잘못된 UTF-8 등)면 파일을 열지 않는다 — 열고 비운 뒤 false 를 쓰면 설정 파일이 빈 채로 남았다(#161 F5)
+        if ($json === false) {
+            Log::error("설정 JSON 변환 실패 — 파일을 바꾸지 않습니다: {$category}", ['error' => json_last_error_msg()]);
+
+            return false;
+        }
+
         try {
             // 파일 잠금으로 동시 쓰기 방지
             // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
@@ -251,14 +269,24 @@ class JsonConfigRepository implements ConfigRepositoryInterface
                 return false;
             }
 
-            if (flock($handle, LOCK_EX)) {
-                ftruncate($handle, 0);
-                fwrite($handle, $json);
-                fflush($handle);
-                flock($handle, LOCK_UN);
+            // 잠금을 못 잡거나 다 쓰지 못하면 실패로 답한다 — 7.1.4 까지는 잠금 실패 시 쓰지 않고도, 쓰기가 잘려도 성공(true)을
+            // 돌려 화면이 「저장됨」을 보였는데 값은 그대로였다(#161 F5)
+            if (! $this->lockForWrite($handle)) {
+                fclose($handle);
+                Log::error("설정 파일 잠금 실패 — 저장하지 않았습니다: {$category}");
+
+                return false;
             }
 
+            $written = $this->writeLocked($handle, $json);
+            flock($handle, LOCK_UN);
             fclose($handle);
+
+            if (! $written) {
+                Log::error("설정 파일 쓰기 실패(일부만 기록됐거나 디스크에 반영되지 않음): {$category}");
+
+                return false;
+            }
 
             // 캐시 무효화 — 저장한 카테고리와 전체 맵 양쪽을 비운다.
             // 한쪽만 비우면 저장 직후 조회가 이전 값을 돌려준다.
@@ -383,6 +411,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
         $this->assertZipAvailable();
         $this->ensureBackupDirectoryExists();
 
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = now()->format('Y-m-d_His');
         $backupName = "backup_{$timestamp}.zip";
         $backupPath = self::BACKUP_DIR.'/'.$backupName;
@@ -501,7 +530,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
      */
     private function loadDefaultsFile(): void
     {
-        $path = config_path(self::DEFAULTS_FILE);
+        $path = $this->defaultsPath();
 
         if (! file_exists($path)) {
             Log::error('설정 기본값 파일을 찾을 수 없습니다. settings:install 명령을 실행하세요.', ['path' => $path]);
@@ -510,9 +539,18 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             return;
         }
 
+        clearstatcache(true, $path);
+        $memoKey = $path."\0".@filemtime($path)."\0".@filesize($path);
+
+        if (self::$defaultsFileMemo !== null && self::$defaultsFileMemo['key'] === $memoKey) {
+            $this->defaultsCache = self::$defaultsFileMemo['data'];
+
+            return;
+        }
+
         try {
-            $content = file_get_contents($path);
-            $data = json_decode($content, true);
+            $content = $this->readDefaultsFile($path);
+            $data = json_decode((string) $content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 Log::error('설정 기본값 파일 JSON 파싱 실패', [
@@ -524,10 +562,62 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             }
 
             $this->defaultsCache = $data;
+            // 정상 해석한 결과만 메모한다 — 읽기·파싱 실패의 빈 기본값을 프로세스 내내 붙잡지 않게
+            self::$defaultsFileMemo = ['key' => $memoKey, 'data' => $data];
         } catch (\Exception $e) {
             Log::error('설정 기본값 파일 로드 실패', ['error' => $e->getMessage()]);
             $this->defaultsCache = ['_meta' => ['categories' => []], 'defaults' => [], 'frontend_schema' => []];
         }
+    }
+
+    /**
+     * 설정 파일에 배타 잠금을 겁니다(시험에서 실패를 흉내 낼 수 있게 분리).
+     *
+     * @param  resource  $handle  열린 파일 핸들
+     * @return bool 잠금 성공 여부
+     */
+    protected function lockForWrite($handle): bool
+    {
+        return flock($handle, LOCK_EX);
+    }
+
+    /**
+     * 잠긴 파일을 비우고 JSON 을 씁니다 — 모든 바이트를 쓰고 디스크로 내보냈을 때만 성공입니다(시험에서 실패를 흉내 낼 수 있게 분리).
+     *
+     * @param  resource  $handle  잠긴 파일 핸들
+     * @param  string  $json  쓸 JSON
+     * @return bool 쓰기 성공 여부
+     */
+    protected function writeLocked($handle, string $json): bool
+    {
+        if (! ftruncate($handle, 0)) {
+            return false;
+        }
+
+        $bytes = fwrite($handle, $json);
+
+        return $bytes === strlen($json) && fflush($handle);
+    }
+
+    /**
+     * 설정 기본값 파일 경로를 반환합니다.
+     *
+     * @return string 기본값 파일 절대 경로
+     */
+    protected function defaultsPath(): string
+    {
+        return config_path(self::DEFAULTS_FILE);
+    }
+
+    /**
+     * 설정 기본값 파일 내용을 읽습니다.
+     *
+     * @param  string  $path  파일 경로
+     * @return string|false 파일 내용 (실패 시 false)
+     */
+    protected function readDefaultsFile(string $path): string|false
+    {
+        return file_get_contents($path);
     }
 
     /**

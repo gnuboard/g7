@@ -105,6 +105,8 @@ class StoreProductRequest extends FormRequest
             // 이미지 (별도 테이블)
             'thumbnail_hash' => ['nullable', 'string', 'max:64'],
             'image_temp_key' => $this->tempKeyRules(),
+            // 본문 미디어 임시 키 — 설명 편집기가 올린 미디어를 저장 때 잇는다 (#883)
+            'content_media_temp_key' => ['nullable', 'string', 'uuid'],
             'images' => ['nullable', 'array', 'max:'.ProductImageCollection::MAX_IMAGES_PER_COLLECTION],
             'images.*.id' => ['nullable', 'integer'],
             'images.*.hash' => ['nullable', 'string'],
@@ -328,6 +330,7 @@ class StoreProductRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'content_media_temp_key' => __('sirsoft-ecommerce::validation.attributes.content_media_temp_key'),
             'name' => __('sirsoft-ecommerce::validation.product.attributes.name'),
             'product_code' => __('sirsoft-ecommerce::validation.product.attributes.product_code'),
             'list_price' => __('sirsoft-ecommerce::validation.product.attributes.list_price'),

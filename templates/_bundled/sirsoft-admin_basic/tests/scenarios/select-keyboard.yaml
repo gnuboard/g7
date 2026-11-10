@@ -1,0 +1,31 @@
+feature: sirsoft-admin_basic 사용자 정의 Select — 키보드로 항목 고르기
+
+description: |
+  options 를 받는 관리자 Select 는 네이티브 select 가 아니라 단추 + 문서 끝 포털 목록이다. 목록을 열어도 ↓·↑ 처리가
+  없고 Tab 은 포털 항목을 건너뛰어, 키보드만 쓰는 운영자는 환경설정·상품 등록 같은 화면의 펼침 선택칸을 고를 수 없었다
+  (7.1.4 부터). 사용자 템플릿 Basic 의 Select 와 같은 계약으로 항목에 실제 초점을 옮긴다 — 단추 ↓(고른 값 또는 첫 항목)·
+  ↑(고른 값 또는 마지막 항목), 목록 안 ↓↑ 순환(잠긴 항목 건너뜀)·Home·End, Enter·Space 는 항목 단추 기본 동작, Esc 는 목록만
+  닫고 단추로(바깥 창 Esc 로 번지지 않음), Tab 은 닫고 단추로 돌려 이어지는 기본 Tab 이 단추 다음 칸으로 간다.
+
+axes:
+  key_path:
+    - trigger_arrow_down
+    - trigger_arrow_up
+    - trigger_arrow_down_selected
+    - opened_then_arrow
+    - in_list_navigation
+    - option_activate
+    - escape
+    - tab
+    - aria_controls
+    - search_box_arrow_down
+
+effects:
+  - option_focusable_by_keyboard
+  - disabled_option_skipped
+  - escape_does_not_close_outer_modal
+  - tab_returns_to_trigger
+  - aria_controls_only_when_open
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Select.keyboard.test.tsx

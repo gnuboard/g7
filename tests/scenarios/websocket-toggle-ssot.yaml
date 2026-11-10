@@ -33,6 +33,9 @@ effects:
   - channel_auth_passes_toggle_guard_when_on_and_authenticated
   - websocket_manager_skips_initialize_when_appkey_empty
   - front_no_wss_connection_attempt_when_toggle_off  # Chrome MCP 라이브 실측 (실환경)
+  - channel_callback_authorizes_by_permission
+  - only_gated_auth_route_is_registered
+  - channel_definitions_registered_for_auth  # #860 부터 부팅이 아니라 인가 라우트가 등록기로 등록
 
 test_files:
   - tests/Unit/Providers/SettingsServiceProviderWebsocketConfigTest.php

@@ -92,6 +92,14 @@
 가 **해시**로 받습니다(`/pages/attachment/{hash}`, `/preview`) — 순번 ID 를 노출하지 않기
 위한 선택이며, 그래서 이 두 경로는 각각 발행 상태 게이트를 **자기 자리에서** 확인해야 합니다.
 
+**편집기 본문 미디어**(`page_attachments.collection = content_media`): 흐름은 코어 골격
+`AbstractContentMediaService` 를 상속한 `PageContentMediaFlow` 가 돌리고, 페이지 몫(행 표·게이트·제거
+정책)은 어댑터 `Services/ContentMedia/PageContentMediaStore` 가 답합니다(#887). 호출자는 진입점
+`PageContentMediaService` 를 씁니다. 페이지 저장 트랜잭션 안에서 연결 → 복제 → 제거 순서로 맞추고, 본문에서
+빠진 것은 **어느 버전 본문도 참조하지 않을 때만** 지웁니다 — 버전 복원이 미디어를 되살릴 수 있어야 하므로
+버전이 참조하면 페이지에 붙인 채 두고 페이지 삭제 때 정리합니다. 버전 복원도 복원 본문을 정규화·동기화한 뒤
+스냅샷을 남깁니다. 편집기 업로드 계약은 `GET admin/content-media/target`(표준 계약 엔드포인트)으로 냅니다.
+
 **공개 조회**: `PublicPageController::show(slug)` — `optional.sanctum` 이라 비로그인도
 접근하며, 미발행 페이지는 **읽기 권한을 가진 운영자에게만 미리보기로** 열리고 그 외에는
 404 입니다. 첨부 서빙 두 경로도 같은 판정을 각자 재적용합니다. 목록 API 는 없습니다(페이지는
@@ -164,6 +172,8 @@
 | 버전 복원을 현재 행 덮어쓰기로 구현 | 복원도 새 버전을 만든다 (`current_version` +1 후 스냅샷) | 되돌린 사실이 이력에서 사라지면 "누가 언제 무엇으로 되돌렸는가"를 추적할 수 없다 |
 | 첨부 공개 서빙(`download`)에만 발행 상태를 확인하고 `preview` 는 그대로 노출 | 두 경로 모두 같은 게이트를 재적용 | 한쪽만 막으면 같은 파일이 형제 엔드포인트로 새어나간다 |
 | 첨부 URL 을 순번 ID 로 조립 | 해시 경로(`/pages/attachment/{hash}`) | ID 노출은 다른 페이지의 첨부를 훑을 수 있는 열쇠가 된다 |
+| 본문에서 빠진 본문 미디어를 버전 참조와 상관없이 지우기, 또는 버전 복원에서 본문 미디어 동기화를 건너뛰기 | 제거는 어댑터 `handleRemoved`(버전 참조가 없을 때만 골격 `$purge`), 복원은 `normalizeContent` → `syncWithContent` 뒤 스냅샷 | 이전 버전으로 복원하면 이미지가 깨진다 — 되돌리기 수단이 버전 이력뿐인 도메인이다(#887). 다른 페이지 소유 미디어가 섞인 버전은 복원 때 복제해야 원본이 지워져도 남는다 |
+| 본문 미디어 파일을 주입 저장소(지금 기본 디스크)로 직접 읽고·지우기 | 골격의 `storageFor($row)`(행에 기록된 `disk`, `RowDiskStorage`)를 거친다 | 운영자가 기본 디스크를 바꾸면 옛 행이 404·복제 실패·파일 잔존이 된다 |
 | 소프트 삭제를 다시 도입 | 삭제는 실삭제, 되돌리기는 버전 이력 | 지운 페이지가 남아 있으면 같은 slug 를 다시 쓸 수 없고, slug 는 이 도메인에서 주소 그 자체다 |
 | 첨부 개수·용량 상한을 서비스에 리터럴로 재클램프 | 설정(`attachment.*`) 을 읽고 검증은 FormRequest 에 둔다 | 이중 클램프가 생기면 설정을 올려도 반영되지 않는다 |
 | 페이지 목록을 만들기 위해 공개 목록 API 를 추가 | 목록이 필요하면 게시판 모듈을 쓴다 | 페이지는 "주소 하나 = 문서 하나" 도메인이다. 목록을 들이면 게시판과 역할이 겹치면서 둘 다 애매해진다 |
@@ -176,10 +186,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 50개 | `modules/_bundled/sirsoft-page/tests` |
-| Vitest | 18개 | `vitest.config.ts` |
+| PHPUnit | 61개 | `modules/_bundled/sirsoft-page/tests` |
+| Vitest | 19개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 44개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 55개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -12,6 +12,7 @@ use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
+use App\Seo\SeoTitleRuleExporter;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
@@ -130,6 +131,7 @@ class TemplateComposer
         $view->with('activeModulesMeta', $activeModulesMeta);
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
+        $view->with('seoTitle', $this->collectAdminTitle($appConfig['supportedLocales'] ?? null));
         $view->with('templateExternals', $templateExternals);
         // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
         $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
@@ -138,5 +140,26 @@ class TemplateComposer
         $view->with('trustedScriptHosts', $trustedScriptHosts);
         // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
         $view->with('stateContracts', StateContracts::forFrontend());
+    }
+
+    /**
+     * 관리자 화면 브라우저 탭 제목 계산 값을 모읍니다 (`{화면 제목} - {사이트 이름} 관리자`).
+     *
+     * 실패하면 null 을 돌려준다 — 엔진은 값이 없으면 탭 제목을 바꾸지 않는다(종전 동작: 셸 제목).
+     *
+     * @param  mixed  $supportedLocales  프론트 앱 설정의 지원 언어 목록 (없으면 config 값)
+     * @return array<string, mixed>|null 제목 계산 값
+     */
+    private function collectAdminTitle(mixed $supportedLocales): ?array
+    {
+        try {
+            $locales = is_array($supportedLocales) && $supportedLocales !== []
+                ? array_values($supportedLocales)
+                : (array) config('app.supported_locales', [app()->getLocale()]);
+
+            return app(SeoTitleRuleExporter::class)->exportForAdmin($locales);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

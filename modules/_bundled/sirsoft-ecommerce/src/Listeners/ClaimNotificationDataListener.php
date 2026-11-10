@@ -427,9 +427,10 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'request_origin_notice' => $claim->isAdminRequested()
                 ? __('sirsoft-ecommerce::messages.claims.notifications.request_origin_admin')
                 : '',
-            // 반송 기한 날짜는 사용자 타임존 날짜다(화면·배너와 같은 날) — UTC 날짜면 저녁 기한이 하루 당겨진다.
+            // 반송 기한 날짜는 사이트 날짜다 — UTC 날짜면 저녁 기한이 하루 당겨지고, 요청자 시간대면
+            // 처리한 관리자의 시간대가 고객 알림에 섞인다.
             'collection_due_date' => $claim instanceof OrderExchange && $claim->collection_due_at !== null
-                ? (string) TimezoneHelper::toUserDateString($claim->collection_due_at)
+                ? (string) TimezoneHelper::toSiteDateString($claim->collection_due_at)
                 : '',
         ] + $empty;
     }

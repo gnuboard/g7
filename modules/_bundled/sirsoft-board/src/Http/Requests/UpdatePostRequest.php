@@ -73,7 +73,7 @@ class UpdatePostRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::in(PostStatus::values())],
             'attachment_ids' => ['nullable', 'array'],
             'attachment_ids.*' => ['integer', 'min:1'],
-            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
+            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID·7.0.x 화면 꼴만 — 저장 경로에 들어간다, ValidatesTempKey)
             'temp_key' => $this->tempKeyRules(),
         ];
 

@@ -1,0 +1,29 @@
+feature: 게시판 편집기 업로드 계약 표준 엔드포인트 — `…/content-media/target` (#887)
+
+description: |
+  편집 화면이 「무엇을 올릴 수 있나」를 받는 길을 확장마다 같은 모양으로 맞춘 표준 계약 엔드포인트. 게시판은 사용자
+  `GET boards/{slug}/content-media/target`(권한 `attachments.upload`, 비회원 포함)과 관리자
+  `GET admin/board/{slug}/content-media/target`(권한 `admin.attachments.upload`)을 둔다. 응답은 200 `{data: 계약|null}`
+  (받는 종류가 없으면 null), 권한이 없으면 회원 403·비회원 401. 값은 그 게시판 본문 미디어 정책이고 코어는 동영상·오디오
+  업로드 허용 스위치로만 관여한다. 옛 길인 글쓰기 폼 메타 `content_media` 는 같은 값을 계속 싣는다(호환). 화면(basic 글쓰기,
+  관리자 글쓰기)은 이 엔드포인트를 데이터소스 `content_media_target` 으로 받아 편집기 `mediaUpload` 에 임시 키를 더해 넘기고,
+  받기(실패 포함)가 끝난 뒤에 편집기를 세운다.
+
+axes:
+  surface: [user, admin]
+  permission: [granted, denied]
+
+effects:
+  - user_target_contract_shape
+  - admin_target_contract_shape
+  - form_meta_alias_same_value
+  - guest_target_with_upload_permission
+  - target_requires_upload_permission
+  - target_null_when_nothing_accepted
+  - editor_waits_for_target_source
+  - media_upload_from_target_with_temp_key
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/ContentMediaTargetTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-post-form-content-media-target.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-form-content-media-target.test.ts

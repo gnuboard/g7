@@ -5,6 +5,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Rules\LocaleRequiredTranslatable;
+use App\Support\ContentMedia\ContentMediaPolicyRules;
 use App\Rules\TranslatableField;
 use App\Services\DriverRegistryService;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesSiteLocale;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
@@ -43,7 +45,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @var array<int, string>
      */
-    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
+    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -90,6 +92,12 @@ class StoreEcommerceSettingsRequest extends FormRequest
         // (EcommerceSettingsAdminService::withPublicAssetCatalog). 화면은 받은 기본정보를 통째로 돌려보낸다.
         if (is_array($data['basic_info'] ?? null) && array_key_exists('public_asset_disk_unavailable', $data['basic_info'])) {
             unset($data['basic_info']['public_asset_disk_unavailable']);
+            $changed = true;
+        }
+
+        // 본문 미디어 정책: 「직접 정하기」가 꺼져 있으면 비운다(상품 이미지 규칙을 따름), 스위치 문자열은 불리언으로 (#883)
+        if (is_array($data['product_display'] ?? null) && array_key_exists('content_media', $data['product_display'])) {
+            $data['product_display']['content_media'] = ContentMediaPolicyRules::normalizeInput($data['product_display']['content_media']);
             $changed = true;
         }
 
@@ -592,6 +600,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // 출처다 — 손으로 나열하면 유형이 늘 때 규칙이 없는 유형이 생기고, validated()
             // 가 그 섹션을 통째로 버려 응답은 200 인데 아무것도 저장되지 않는다.
             ...$this->claimReasonRulesForAllTypes(),
+
+            // product_display 섹션 — 상품 상세 관련 상품(「이 상품은 어떠세요?」) 단계 안 순서와 고른 목록 캐시 시간(0 이면 캐시 안 함)
+            'product_display' => ['sometimes', 'array'],
+            'product_display.related_order' => ['nullable', 'string', Rule::in(RelatedProductOrder::values())],
+            'product_display.related_cache_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
+            // 본문 미디어 정책 (#883) — 형식은 코어가 정한다. 비우면 상품 이미지 규칙(동영상·오디오는 코어 스위치)
+            ...ContentMediaPolicyRules::settingsRules('product_display.content_media'),
 
             // review_settings 섹션
             'review_settings' => ['sometimes', 'array'],
@@ -2143,7 +2158,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
+        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
 
         return array_filter(
             $validated,

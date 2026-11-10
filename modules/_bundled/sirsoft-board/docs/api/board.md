@@ -57,7 +57,7 @@ FULLTEXT 연산자를 제거한 뒤 검색하며, 연산자만 입력한 경우�
 | file | body | file | 예 | — | 업로드 파일 |
 | post_id | body | integer | 아니오 | min 1 | post 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
-| temp_key | body | string | 아니오 | UUID | 게시글 작성 전 임시 업로드 세션 키(화면이 `$uuid()` 로 발급, `post_id` 와 함께 생략하면 서버가 UUID 를 발급). `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
+| temp_key | body | string | 아니오 | UUID 또는 `temp_<숫자>_<36진수 소문자>`(7.0.x 화면 꼴) | 게시글 작성 전 임시 업로드 세션 키(화면이 `$uuid()` 로 발급, `post_id` 와 함께 생략하면 서버가 UUID 를 발급). `post_id`가 없을 때 이 키로 첨부를 임시 보관했다가 게시글 저장 시점에 연결합니다 (쿼리스트링으로 보내면 body로 병합). |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.attachment.upload_validation_rules`).
 
@@ -199,6 +199,51 @@ Content-Disposition: attachment; filename="apidoc-sample.png"
 
 **설명** 게시판 관리자가 첨부파일을 해시로 조회해 다운로드합니다. `auth:sanctum` + admin + 게시판별 `attachments.download` 권한이 필요하며, `AttachmentService::getByHash()`로 대상을 찾은 뒤 `download()`가 파일 스트림 응답을 생성합니다. 해시에 해당하는 첨부가 없거나 실제 파일이 없으면 404를 반환하고, JSON이 아닌 `StreamedResponse`로 파일 본문을 직접 전송합니다.
 
+
+### POST /api/modules/sirsoft-board/admin/board/{slug}/content-media
+<!-- @generated:start:api.modules.sirsoft-board.admin.board.content-media.upload -->
+- **라우트명**: `api.modules.sirsoft-board.admin.board.content-media.upload`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ContentMediaController@upload`
+- **인증/권한**: `auth:sanctum` + `admin` + `permission:sirsoft-board.{slug}.admin.attachments.upload` · `throttle:60,1`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | 게시판 slug |
+| file | body | file | 예 | 게시판 본문 미디어 정책 | 본문에 넣을 이미지·동영상·오디오 |
+| temp_key | body | string | 예 | UUID | 글쓰기 화면의 임시 키 |
+| post_id | body | integer | 아니오 | min 1 | 기존 글 편집 중이면 그 글 번호 — 관리자 글 수정과 같은 스코프 권한을 본다 |
+
+**응답 필드**: 사용자 업로드(`POST boards/{slug}/content-media`)와 같다(`data.id`·`data.hash`·`data.kind`·`data.url`). 서빙은 사용자 경로 `GET boards/{slug}/content-media/{hash}` 를 함께 쓴다.
+
+- 상태: `201` · `403` 스코프 밖 글 · `404` · `422` 정책 밖 파일·임시 키 없음·업로드 상한 초과·업로드 파일 필터가 돌려준 파일이 정책 밖
+- 코어 공용 훅 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 가 발화한다(1.2.3, 코어 7.1.5). 게시판 첨부 훅(`sirsoft-board.attachment.*`)은 발화하지 않는다.
+<!-- @generated:end -->
+
+---
+
+### GET /api/modules/sirsoft-board/admin/board/{slug}/content-media/target
+<!-- @generated:start:api.modules.sirsoft-board.admin.board.content-media.target -->
+- **라우트명**: `api.modules.sirsoft-board.admin.board.content-media.target`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ContentMediaController@target`
+- **인증/권한**: `auth:sanctum` + `admin` + `permission:sirsoft-board.{slug}.admin.attachments.upload` · `throttle:60,1`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | 게시판 slug |
+
+**응답 필드**: 사용자 계약(`GET boards/{slug}/content-media/target`)과 같은 모양이고 `data.endpoint` 가 관리자 업로드 주소(`/api/modules/sirsoft-board/admin/board/{slug}/content-media`)다. 받는 종류가 없으면 `data: null`.
+
+- 상태: `200` · `401` 미인증 · `403` 관리자 업로드 권한 없음 · `404` 게시판 없음
+- 관리자 글쓰기 폼 메타(`GET admin/board/{slug}/posts/form-meta`)의 `data.content_media` 는 같은 값을 계속 싣는다(호환, 폐기 예정).
+<!-- @generated:end -->
+
+**설명** 관리자 글쓰기 편집기의 본문 미디어 업로드 계약을 내는 표준 계약 엔드포인트입니다(1.2.3). 판정은 관리자 본문 미디어 업로드와 같은 `admin.attachments.upload` 권한이고, 값은 그 게시판 본문 미디어 정책입니다. 관리자 글쓰기 화면은 이 응답을 데이터소스 `content_media_target` 으로 받아 편집기 `mediaUpload` 에 넘깁니다.
+
+---
 
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/attachments/reorder
 <!-- @generated:start:api.modules.sirsoft-board.admin.board.attachments.reorder -->
@@ -546,7 +591,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체. board 관계 미로드 시 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보. 쓰기 응답에서는 계산하지 않아 null. |
 | parent | null | `null` | 원글 객체 (parent 관계 파생) |
@@ -836,6 +881,9 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.posts.write`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
+
+> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 관리자 업로드 권한(`admin.attachments.upload`)이 있으면 관리자 업로드 주소(`admin/board/{slug}/content-media`)를 담은 계약, 없으면 `null`. 형식은 사용자 폼 메타와 같다. 표준 계약 엔드포인트 `GET admin/board/{slug}/content-media/target` 과 같은 값이며, 옛 화면 호환으로 계속 싣는다(폐기 예정 — 새 화면은 표준 엔드포인트를 쓴다).
+
 <!-- @generated:end -->
 
 **설명** 게시글 폼 화면 표시용 메타 데이터(읽기 전용)를 반환합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 게시판 정보와 사용자 권한(abilities)을 항상 포함합니다. `board.max_file_size` 는 게시판 값이 비어 있으면(기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10(MB)으로 채워 첨부 업로드 검증의 용량 상한과 같은 값을 내려 줍니다. `post_id`가 있으면 작성자·작성일·첨부파일과 원글 정보를 덧붙이고(수정 모드), `parent_id`가 있으면 원글 정보를 포함하되 블라인드/삭제된 원글에는 답글 작성이 차단됩니다(각각 403). 수정 모드(`post_id`)에서는 `can_modify` 를 싣습니다 — 저장(PUT)과 같은 판정(관리 권한이거나 글쓰기 권한 + 본인 글)으로, false 면 화면이 폼을 읽기 전용으로 엽니다(7.1.0). `board.user_abilities.can_write_notice` 는 글 등록·수정 API 의 공지 판정(게시판 관리 권한 `admin.manage`/`manager` 또는 공지 등록 권한 `posts.write-notice`)과 같은 값으로, 화면의 공지 체크박스가 이 값으로 잠깁니다.
@@ -898,7 +946,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-08 15:01:43` | 최종 수정 일시 |
 | deleted_at | string | `2026-07-08 15:01:43` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1054,13 +1102,13 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_post | boolean | `false` | guest post 여부 |
 | title | string | `API 문서 샘플 게시글` | 제목 |
-| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용 |
+| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용. HTML 본문의 본문 미디어 주소 가운데 **이 글 소유** 미디어만 한시 서명 주소로 나간다(1.2.3). 다른 글 소유 주소는 서명 없이 나가 원래 글의 열람 권한을 따른다 |
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | user 식별자 (연관 리소스 참조) |
 | trigger_type | string | `user` | 상태 변경(삭제/블라인드 등)을 유발한 주체. `report`(신고) / `admin`(관리자 직권) / `system`(시스템) / `auto_hide`(신고 누적 자동 블라인드) / `user`(사용자 직접) / `cascade`(상위 삭제 연쇄) 중 하나입니다. |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | object | `{"prev":null,"next":null}` | 이전/다음 게시글 이동 정보. `prev`·`next` 키에 인접 게시글 요약(없으면 null)이 담기며, 상세 로드 시 함께 계산됩니다. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1323,7 +1371,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1484,7 +1532,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1653,7 +1701,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | updated_at | string | `2026-07-08 15:01:45` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (복원 후 null) |
 | ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체 (관계 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보 (쓰기 응답은 미계산 → null) |
 | parent | null | `null` | 원글 객체 (parent 관계 파생) |
@@ -1806,7 +1854,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource`)._
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
 | ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
 | is_already_reported | boolean | `false` | 현재 사용자가 이미 신고한 댓글인지 여부 |
@@ -1981,7 +2029,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource` — 댓글 생성/블
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
 | ip_address | null | `null` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
 | is_already_reported | boolean | `false` | 현재 사용자가 이미 신고한 댓글인지 여부 |
@@ -2103,7 +2151,7 @@ _단건 응답: `data` 객체의 필드._
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | cascade deleted 여부 |
 | ip_address | null | `null` | 요청/행위가 발생한 IP 주소 |
-| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | guest comment 여부 |
 | is_already_reported | boolean | `false` | already reported 여부 |

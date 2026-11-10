@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
-use App\Exceptions\ExtensionOperationInProgressException;
+use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\PluginOperationException;
 use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Layout\LayoutInstallSourceScope;
@@ -243,6 +243,9 @@ class PluginController extends AdminBaseController
                     'error' => $this->withKeptDependencies($installFailureReason ?? __('plugins.errors.unknown_error')),
                 ]);
             }
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
@@ -310,6 +313,9 @@ class PluginController extends AdminBaseController
                     'error' => $result['reason'] ?? __('plugins.errors.unknown_error'),
                 ]);
             }
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.activate_validation_failed',
@@ -370,6 +376,9 @@ class PluginController extends AdminBaseController
                     'error' => $result['reason'] ?? __('plugins.errors.unknown_error'),
                 ]);
             }
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.deactivate_validation_failed',
@@ -458,6 +467,9 @@ class PluginController extends AdminBaseController
                     'error' => $uninstallFailureReason ?? __('plugins.errors.unknown_error'),
                 ]);
             }
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service 가 이미 「…제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
             // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, performUpdate 와 같은 처리)
@@ -508,6 +520,9 @@ class PluginController extends AdminBaseController
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (PluginOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
@@ -534,6 +549,9 @@ class PluginController extends AdminBaseController
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (PluginOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
@@ -664,9 +682,9 @@ class PluginController extends AdminBaseController
                 200,
                 $messageParams
             ), $result['integration_notices'] ?? []);
-        } catch (ExtensionOperationInProgressException $e) {
-            // 같은 확장의 업데이트가 진행 중 — 두 번째 요청(버튼 더블클릭 등)을 409 로 거절한다(#138 실측 ②)
-            return $this->error($e->getMessageKey(), 409, null, $e->getMessageParams());
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)

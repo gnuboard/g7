@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Enums\PermissionType;
+use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,8 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  */
 class CommentController extends PublicBaseController
 {
+    use RespondsToExpiredSession;
+
     use ChecksBoardPermission;
 
     /**
@@ -237,7 +240,7 @@ class CommentController extends PublicBaseController
             }
 
             if (! $canUpdate) {
-                return $this->forbidden('sirsoft-board::messages.comment.update_forbidden');
+                return $this->ownershipDenied($request, 'sirsoft-board::messages.comment.update_forbidden');
             }
 
             // 검증된 필드만 반영 (미검증 입력의 대량 할당 차단).
@@ -303,7 +306,7 @@ class CommentController extends PublicBaseController
             }
 
             if (! $canDelete) {
-                return $this->forbidden('sirsoft-board::messages.comment.delete_forbidden');
+                return $this->ownershipDenied($request, 'sirsoft-board::messages.comment.delete_forbidden');
             }
 
             $this->commentService->deleteComment($slug, $commentId, 'user', $postId);

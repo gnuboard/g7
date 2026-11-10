@@ -10,9 +10,12 @@ use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Support\UnusableUpgradeStep;
+use App\Extension\Upgrade\DataSnapshot;
 use App\Extension\UpgradeContext;
 use App\Services\CoreUpdateService;
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use Tests\Support\UpgradeFiles;
 use Tests\TestCase;
 use Zztest\DataStep\Upgrade_1_0_2;
 
@@ -101,6 +104,143 @@ class UpgradeStepDiscoveryTest extends TestCase
         $this->expectExceptionMessage('UpgradeStepInterface');
 
         $this->runModuleSteps($module, '1.0.0', '1.0.1');
+    }
+
+    /**
+     * 같은 단계 클래스를 다른 경로의 동일 사본(활성 디렉터리 ↔ _bundled)이 먼저 선언했으면 다시 싣지 않고 그 클래스를 쓴다.
+     *
+     * 예전에는 경로가 달라 require_once 가 막지 못해 「Cannot declare class」 Fatal 로 프로세스가 죽었다
+     * (게시판 테스트 스위트가 1,037/2,482 에서 통째로 중단). 별도 프로세스로 돌려 Fatal 이 나도 다른 시험을 죽이지 않게 한다.
+     *
+     * @scenario owner=module, defect=duplicate_copy
+     *
+     * @effects identical_copy_already_declared_is_reused
+     *
+     * @return void 반환값 없음
+     */
+    #[RunInSeparateProcess]
+    public function test_module_step_declared_by_identical_copy_is_reused(): void
+    {
+        $namespace = 'Modules\\Zztest\\Upgdup\\Upgrades';
+        $active = $this->extensionWithStep('zztest-upgdup', $namespace, 'Upgrade_1_0_1', true);
+        $bundled = $this->extensionWithStep('_bundled/zztest-upgdup', $namespace, 'Upgrade_1_0_1', true);
+        require_once $active.'/upgrades/Upgrade_1_0_1.php';
+
+        $steps = $this->discover($this->moduleAt($bundled));
+
+        $this->assertInstanceOf($namespace.'\\Upgrade_1_0_1', $steps['1.0.1']);
+    }
+
+    /**
+     * 플러그인 단계도 동일 사본이 먼저 선언한 클래스를 재사용한다.
+     *
+     * @scenario owner=plugin, defect=duplicate_copy
+     *
+     * @effects identical_copy_already_declared_is_reused
+     *
+     * @return void 반환값 없음
+     */
+    #[RunInSeparateProcess]
+    public function test_plugin_step_declared_by_identical_copy_is_reused(): void
+    {
+        $namespace = 'Plugins\\Zztest\\Upgdupp\\Upgrades';
+        $active = $this->extensionWithStep('zztest-upgdupp', $namespace, 'Upgrade_1_0_1', true);
+        $bundled = $this->extensionWithStep('_bundled/zztest-upgdupp', $namespace, 'Upgrade_1_0_1', true);
+        require_once $active.'/upgrades/Upgrade_1_0_1.php';
+
+        $plugin = new class extends AbstractPlugin {};
+        (new \ReflectionProperty(AbstractPlugin::class, 'pluginPath'))->setValue($plugin, $bundled);
+        $steps = (fn () => $this->discoverUpgradeSteps())->call($plugin);
+
+        $this->assertInstanceOf($namespace.'\\Upgrade_1_0_1', $steps['1.0.1']);
+    }
+
+    /**
+     * 데이터 마이그레이션 클래스를 다른 경로의 동일 사본이 먼저 선언했으면 다시 싣지 않고 그 클래스를 쓴다.
+     *
+     * 예전에는 이커머스 테스트 스위트가 5,704초 지점에서 이 재선언 Fatal 로 통째로 중단됐다.
+     *
+     * @scenario owner=data_migration, defect=duplicate_copy
+     *
+     * @effects identical_copy_already_declared_is_reused
+     *
+     * @return void 반환값 없음
+     */
+    #[RunInSeparateProcess]
+    public function test_data_migration_declared_by_identical_copy_is_reused(): void
+    {
+        $namespace = 'App\\Upgrades\\Data\\Ext\\Modules\\ZztestDupdata\\V1_0_2\\Migrations';
+        $probe = "<?php\nnamespace {$namespace};\nclass Probe implements \\App\\Extension\\Upgrade\\DataMigration { public function name(): string { return 'probe'; } public function run(\\App\\Extension\\UpgradeContext \$context): void {} }\n";
+        foreach (['modules/zztest-dupdata', 'modules/_bundled/zztest-dupdata'] as $copy) {
+            File::ensureDirectoryExists($this->tempDir.'/'.$copy.'/upgrades/data/1.0.2/migrations');
+            File::put($this->tempDir.'/'.$copy.'/upgrades/data/1.0.2/migrations/01_Probe.php', $probe);
+        }
+        $bundled = $this->tempDir.'/modules/_bundled/zztest-dupdata/upgrades';
+        File::put($bundled.'/Upgrade_1_0_2.php', "<?php\nnamespace Zztest\\DupData;\nclass Upgrade_1_0_2 extends \\App\\Extension\\AbstractUpgradeStep {}\n");
+        require_once $this->tempDir.'/modules/zztest-dupdata/upgrades/data/1.0.2/migrations/01_Probe.php';
+        require_once $bundled.'/Upgrade_1_0_2.php';
+
+        $step = new \Zztest\DupData\Upgrade_1_0_2;
+        $context = (new UpgradeContext('1.0.1', '1.0.2'))->withCurrentStep('1.0.2');
+        $migrations = (fn () => $this->dataMigrations($context))->call($step);
+
+        $this->assertCount(1, $migrations);
+        $this->assertInstanceOf($namespace.'\\Probe', $migrations[0]);
+    }
+
+    /**
+     * 테스트가 업그레이드 파일을 경로로 직접 실을 때도(UpgradeFiles) 런타임이 다른 사본으로 먼저 선언한 클래스를 재사용한다.
+     *
+     * 이커머스 스위트는 런타임이 활성 사본을 먼저 실은 뒤 테스트가 번들 사본을 `require_once` 해 3,292번째 시험에서 중단됐다.
+     *
+     * @scenario owner=data_migration, defect=duplicate_copy
+     *
+     * @effects identical_copy_already_declared_is_reused
+     *
+     * @return void 반환값 없음
+     */
+    #[RunInSeparateProcess]
+    public function test_test_helper_reuses_class_declared_by_other_copy(): void
+    {
+        $namespace = 'App\\Upgrades\\Data\\Ext\\Modules\\ZztestDuphelp\\V1_0_2\\Migrations';
+        $probe = "<?php\nnamespace {$namespace};\nfinal class HelperProbe {}\n";
+        foreach (['modules/zztest-duphelp', 'modules/_bundled/zztest-duphelp'] as $copy) {
+            File::ensureDirectoryExists($this->tempDir.'/'.$copy.'/upgrades/data/1.0.2/migrations');
+            File::put($this->tempDir.'/'.$copy.'/upgrades/data/1.0.2/migrations/01_HelperProbe.php', $probe);
+        }
+        require_once $this->tempDir.'/modules/zztest-duphelp/upgrades/data/1.0.2/migrations/01_HelperProbe.php';
+
+        UpgradeFiles::requireOnce($this->tempDir.'/modules/_bundled/zztest-duphelp/upgrades/data/1.0.2/migrations/01_HelperProbe.php');
+
+        $this->assertTrue(class_exists($namespace.'\\HelperProbe', false));
+    }
+
+    /**
+     * 데이터 스냅숏 Applier 클래스도 동일 사본이 먼저 선언했으면 다시 싣지 않는다.
+     *
+     * @scenario owner=data_migration, defect=duplicate_copy
+     *
+     * @effects identical_copy_already_declared_is_reused
+     *
+     * @return void 반환값 없음
+     */
+    #[RunInSeparateProcess]
+    public function test_snapshot_applier_declared_by_identical_copy_is_reused(): void
+    {
+        $namespace = 'App\\Upgrades\\Data\\Ext\\Modules\\ZztestDupapp\\V1_0_2\\Appliers';
+        $applier = "<?php\nnamespace {$namespace};\nclass ProbeApplier implements \\App\\Extension\\Upgrade\\SnapshotApplier { public function __construct(public string \$json) {} public function apply(\\App\\Extension\\UpgradeContext \$context): void {} }\n";
+        foreach (['modules/zztest-dupapp', 'modules/_bundled/zztest-dupapp'] as $copy) {
+            File::ensureDirectoryExists($this->tempDir.'/'.$copy.'/upgrades/data/1.0.2/appliers');
+            File::put($this->tempDir.'/'.$copy.'/upgrades/data/1.0.2/appliers/ProbeApplier.php', $applier);
+        }
+        require_once $this->tempDir.'/modules/zztest-dupapp/upgrades/data/1.0.2/appliers/ProbeApplier.php';
+
+        $dataDir = $this->tempDir.'/modules/_bundled/zztest-dupapp/upgrades/data/1.0.2';
+        $context = (new UpgradeContext('1.0.1', '1.0.2'))->withCurrentStep('1.0.2');
+        $made = (fn () => self::makeApplier('ProbeApplier', 'probe', $dataDir, $dataDir.'/probe.json', $context))
+            ->bindTo(null, DataSnapshot::class)();
+
+        $this->assertInstanceOf($namespace.'\\ProbeApplier', $made);
     }
 
     /**

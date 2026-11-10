@@ -29,5 +29,11 @@
     "latest_reacted_at": "Latest reaction",
     "none": "No reactions yet.",
     "view_list": "View this member's reactions"
+  },
+  "search_history": {
+    "tab_label": "Post searches",
+    "title": "Recent post searches",
+    "count_unit": "{{count}}",
+    "empty": "No saved post searches."
   }
 }

@@ -170,7 +170,7 @@ class ExtensionInstallPreviewBuilder
     {
         // 연동 대상 자신의 정보를 읽지 못하면 계획을 세우지 않는다 — 대상 없음은 연동 대상의 「필수 의존」 사유가 아니고,
         // 설치 단계가 종전과 같이 그 사유를 알린다.
-        $target = $type === 'module' ? $this->moduleService->getModuleInfo($identifier) : $this->pluginService->getPluginInfo($identifier);
+        $target = $type === 'module' ? $this->moduleService->getModuleManifestInfo($identifier) : $this->pluginService->getPluginManifestInfo($identifier);
         if ($target === null) {
             return ['requires' => [], 'blocked_reason' => null, 'blocked_by_permission' => false];
         }
@@ -181,8 +181,8 @@ class ExtensionInstallPreviewBuilder
         $blockedByPermission = false;
         foreach ($plan['steps'] as $step) {
             $info = $step['type'] === 'module'
-                ? $this->moduleService->getModuleInfo($step['identifier'])
-                : $this->pluginService->getPluginInfo($step['identifier']);
+                ? $this->moduleService->getModuleManifestInfo($step['identifier'])
+                : $this->pluginService->getPluginManifestInfo($step['identifier']);
             $requires[] = [
                 'type' => $step['type'],
                 'identifier' => $step['identifier'],
@@ -211,8 +211,8 @@ class ExtensionInstallPreviewBuilder
     private function resolveExtensionInfo(LanguagePackScope $scope, string $identifier): ?array
     {
         return match ($scope) {
-            LanguagePackScope::Module => $this->moduleService->getModuleInfo($identifier),
-            LanguagePackScope::Plugin => $this->pluginService->getPluginInfo($identifier),
+            LanguagePackScope::Module => $this->moduleService->getModuleManifestInfo($identifier),
+            LanguagePackScope::Plugin => $this->pluginService->getPluginManifestInfo($identifier),
             LanguagePackScope::Template => $this->templateService->getTemplateInfo($identifier),
             default => null,
         };
@@ -325,7 +325,7 @@ class ExtensionInstallPreviewBuilder
      */
     private function dependencyName(string $type, string $identifier): string
     {
-        $info = $type === 'module' ? $this->moduleService->getModuleInfo($identifier) : $this->pluginService->getPluginInfo($identifier);
+        $info = $type === 'module' ? $this->moduleService->getModuleManifestInfo($identifier) : $this->pluginService->getPluginManifestInfo($identifier);
         // 다국어 이름은 사이트 언어 대체 체인으로 고른다 — 'ko' 고정 대체는 다른 기본 언어 사이트에서 틀린다
         $name = LocalizedValue::pick($info['name'] ?? null);
 

@@ -2,6 +2,8 @@
 
 namespace App\Extension\Support;
 
+use Illuminate\Support\Facades\Lang;
+
 /**
  * 확장 생명주기 작업의 부분 실패 경고 수집기.
  *
@@ -28,6 +30,15 @@ class LifecycleWarnings
     public const LEVEL_NOTICE = 'notice';
 
     /**
+     * 항목 원인 — 확장 manifest 가 선언한 값의 형식이 틀려 그 부분을 버렸다(예: search_scopes·necessary_storage).
+     *
+     * 작업을 다시 실행해도 같은 결과가 나오므로 운영자가 아니라 확장 개발자가 선언을 고쳐야 한다. 관리자 결과 창은
+     * 이 표지가 붙은 항목에 「다시 실행」 대신 확장 개발자에게 알리라는 안내를 붙인다. 항목의 `cause` 키는 이 값일
+     * 때만 싣는다(항목 모양 하위 호환).
+     */
+    public const CAUSE_DECLARATION = 'declaration';
+
+    /**
      * 자식 artisan 프로세스가 「완료(경고 포함)」로 끝났는지 판정합니다.
      *
      * 경고가 있는 생명주기 명령은 종료코드 1 과 {@see self::CLI_MARKER} 를 낸다. 표지 없는 1 은 실패다.
@@ -42,7 +53,7 @@ class LifecycleWarnings
     }
 
     /**
-     * @var array<int, array{step: string, target: string, target_name?: string, message: string, level: string}>
+     * @var array<int, array{step: string, target: string, target_name?: string, message: string, level: string, cause?: string}>
      */
     private array $items = [];
 
@@ -65,9 +76,10 @@ class LifecycleWarnings
      * @param  string  $level  항목 수준 ({@see self::LEVEL_WARNING} 기본, 실패가 아닌 안내는 {@see self::LEVEL_NOTICE})
      * @param  string|null  $targetName  대상의 사람이 읽는 이름 — 관리자 결과 창의 대상 칸이 식별자 대신 보인다.
      *                                   비었거나 식별자와 같으면 싣지 않는다(항목 모양 하위 호환, `target` 은 늘 식별자·경로)
+     * @param  string|null  $cause  항목 원인 — {@see self::CAUSE_DECLARATION} 만 싣는다(그 밖의 값·null 은 싣지 않음)
      * @return void 반환값 없음
      */
-    public function add(string $step, string $target, string $message, string $level = self::LEVEL_WARNING, ?string $targetName = null): void
+    public function add(string $step, string $target, string $message, string $level = self::LEVEL_WARNING, ?string $targetName = null, ?string $cause = null): void
     {
         $item = ['step' => $step, 'target' => $target];
 
@@ -75,11 +87,59 @@ class LifecycleWarnings
             $item['target_name'] = $targetName;
         }
 
-        $this->items[] = [
+        $item = [
             ...$item,
             'message' => self::scrubMessage($message),
             'level' => $level === self::LEVEL_NOTICE ? self::LEVEL_NOTICE : self::LEVEL_WARNING,
         ];
+
+        if ($cause === self::CAUSE_DECLARATION) {
+            $item['cause'] = self::CAUSE_DECLARATION;
+        }
+
+        $this->items[] = $item;
+    }
+
+    /**
+     * 확장 manifest 선언의 형식 오류를 추가합니다 — 틀린 부분은 버렸고, 확장 개발자가 선언을 고쳐야 하는 실패.
+     *
+     * 수준은 {@see self::LEVEL_WARNING}(선언 일부가 반영되지 않음)이고 `cause` 에 {@see self::CAUSE_DECLARATION} 를 싣는다.
+     *
+     * @param  string  $step  단계 (예: search_scopes, necessary_storage)
+     * @param  string  $target  선언한 확장 식별자
+     * @param  string  $message  무엇을 왜 버렸는지 사람이 읽는 사유
+     * @param  string|null  $targetName  대상의 사람이 읽는 이름 ({@see self::add()})
+     * @return void 반환값 없음
+     */
+    public function declaration(string $step, string $target, string $message, ?string $targetName = null): void
+    {
+        $this->add($step, $target, $message, self::LEVEL_WARNING, $targetName, self::CAUSE_DECLARATION);
+    }
+
+    /**
+     * 경고 사유 문장을 번역합니다 — 번역이 없으면(그 문장이 없는 옛 언어팩·번역 반영 전) 키 대신 원문 항목을 돌려줍니다.
+     *
+     * 키 글자만 남으면 무엇을 버렸는지조차 사라지므로, 번역이 없을 때는 버린 항목 원문이라도 보이게 한다.
+     *
+     * @param  string  $key  번역 키
+     * @param  array<string, mixed>  $replace  자리표시자 값
+     * @param  string  $raw  번역이 없을 때 보일 원문 항목
+     * @return string 사유 문장
+     */
+    public static function reason(string $key, array $replace, string $raw): string
+    {
+        return Lang::has($key) ? (string) __($key, $replace) : $raw;
+    }
+
+    /**
+     * 항목이 확장 선언 형식 오류인지 판정합니다.
+     *
+     * @param  array<string, mixed>  $item  항목
+     * @return bool `cause` 가 {@see self::CAUSE_DECLARATION} 이면 true
+     */
+    public static function isDeclarationError(array $item): bool
+    {
+        return ($item['cause'] ?? null) === self::CAUSE_DECLARATION;
     }
 
     /**
@@ -114,25 +174,61 @@ class LifecycleWarnings
     }
 
     /**
-     * 경고 사유에서 DB 접속 정보·SQL 문장을 뗍니다.
+     * 경고 사유에서 DB 접속 정보·SQL 문장을 떼고, 설치 루트 절대경로를 상대경로로 바꿉니다.
      *
      * Laravel QueryException 메시지는 「SQLSTATE[…]: 사유 (Connection: …, Host: …, Database: …, SQL: …)」 꼴이라 그대로 두면
-     * 관리자 결과 창에 DB 호스트·이름·쿼리가 보인다. 사유 부분만 남긴다.
+     * 관리자 결과 창에 DB 호스트·이름·쿼리가 보인다. 사유 부분만 남긴다. 파일 오류(fopen·mkdir 등)의 사유에는 서버 절대경로가
+     * 들어 있어 결과 창 「자세히 보기」·명령줄 경고 표에 그대로 보였다(#161 S8) — 설치 루트 부분을 떼어 상대경로로 보인다.
      *
      * @param  string  $message  원래 사유
-     * @return string 접속 정보·SQL 을 뗀 사유
+     * @return string 접속 정보·SQL 을 떼고 설치 루트를 상대경로로 바꾼 사유
      */
     private static function scrubMessage(string $message): string
     {
         $scrubbed = preg_replace('/\s*\(Connection:.*$/s', '', $message);
+        $scrubbed = is_string($scrubbed) && $scrubbed !== '' ? $scrubbed : $message;
 
-        return is_string($scrubbed) && $scrubbed !== '' ? $scrubbed : $message;
+        return self::relativizePaths($scrubbed);
+    }
+
+    /**
+     * 사유 안의 설치 루트 절대경로를 떼어 상대경로로 바꿉니다(예: `C:\…\g7\storage\framework/cache/x` → `storage\framework/cache/x`).
+     *
+     * 루트 후보는 `base_path()` 와 그 실제 경로(심볼릭 링크 해제), 각각의 원형·`/` 정규화·`\` 정규화다. 긴 것부터 지워 겹치는
+     * 후보가 짧은 쪽에 먼저 잘리지 않게 한다. Windows 는 대소문자를 가리지 않는다. 설치 루트 밖의 경로는 그대로 둔다.
+     *
+     * @param  string  $message  사유
+     * @return string 설치 루트를 뗀 사유
+     */
+    private static function relativizePaths(string $message): string
+    {
+        $base = base_path();
+        $real = realpath($base);
+        $roots = [];
+        foreach (array_filter([$base, $real !== false ? $real : null]) as $root) {
+            $root = rtrim($root, '\\/');
+            $roots[] = $root;
+            $roots[] = str_replace('\\', '/', $root);
+            $roots[] = str_replace('/', '\\', $root);
+        }
+        $roots = array_values(array_unique(array_filter($roots, fn (string $root) => strlen($root) >= 3)));
+        usort($roots, fn (string $a, string $b) => strlen($b) <=> strlen($a));
+
+        $flags = PHP_OS_FAMILY === 'Windows' ? 'i' : '';
+        foreach ($roots as $root) {
+            $replaced = preg_replace('~'.preg_quote($root, '~').'[\\\\/]?~'.$flags, '', $message);
+            if (is_string($replaced)) {
+                $message = $replaced;
+            }
+        }
+
+        return $message;
     }
 
     /**
      * 모은 경고 전체를 반환합니다.
      *
-     * @return array<int, array{step: string, target: string, target_name?: string, message: string, level: string}>
+     * @return array<int, array{step: string, target: string, target_name?: string, message: string, level: string, cause?: string}>
      */
     public function all(): array
     {
@@ -173,7 +269,7 @@ class LifecycleWarnings
      * mark() 이후 추가된 경고만 반환합니다.
      *
      * @param  int  $mark  mark() 가 돌려준 값
-     * @return array<int, array{step: string, target: string, target_name?: string, message: string, level: string}>
+     * @return array<int, array{step: string, target: string, target_name?: string, message: string, level: string, cause?: string}>
      */
     public function since(int $mark): array
     {

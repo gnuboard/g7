@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -15,6 +16,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class CategoryImageController extends PublicBaseController
 {
+    /**
+     * 분류 이미지 서비스를 주입받습니다.
+     *
+     * @param  CategoryImageService  $categoryImageService  분류 이미지 서비스
+     */
     public function __construct(
         private CategoryImageService $categoryImageService
     ) {}
@@ -40,6 +46,13 @@ class CategoryImageController extends PublicBaseController
 
             return $response;
         } catch (\Exception $e) {
+            Log::error('category_image.download failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'hash' => $hash,
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',

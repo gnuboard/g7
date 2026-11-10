@@ -72,9 +72,14 @@ effects:
   # 별도 프로세스 복구 수단 (extension:update-autoload)
   - update_autoload_command_regenerates_hook_cache_after_reregistering_autoload
   - update_autoload_command_runs_without_required_arguments
+  # #862 — 테스트 환경은 실 bootstrap/cache/hooks.php 를 쓰거나 지우지 않는다(경로 치환 인스턴스는 그대로 쓴다)
+  - testing_env_never_writes_real_hook_cache_file
+  - testing_env_never_deletes_real_hook_cache_file
+  - substituted_path_manager_still_writes_and_clears_in_testing
 
 test_files:
   - tests/Unit/Extension/HookCacheManagerTest.php
+  - tests/Unit/Extension/HookCacheRealFileGuardTest.php
   - tests/Unit/Extension/HookListenerRegistrarTest.php
   - tests/Unit/Extension/HookListenerMissingClassTest.php
   - tests/Feature/Console/HooksCacheCommandTest.php

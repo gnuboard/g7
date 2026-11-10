@@ -87,6 +87,7 @@ class AdminCbtReconciliationController extends AdminBaseController
                 'reason' => (string) ($record['reason'] ?? ''),
                 'refund_error' => null,
                 'refund_result' => $this->sanitizeRefundResponse($refundResult),
+                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'last_retry_at' => now()->toIso8601String(),
                 'last_retry_error' => null,
                 'retry_count' => $retryCount,
@@ -110,6 +111,7 @@ class AdminCbtReconciliationController extends AdminBaseController
                 'tid' => $tid,
                 'amount' => $amount,
                 'refund_error' => $e->getMessage(),
+                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'last_retry_at' => now()->toIso8601String(),
                 'last_retry_error' => $e->getMessage(),
                 'retry_count' => $retryCount,

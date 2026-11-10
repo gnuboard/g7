@@ -6,6 +6,7 @@ use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -71,7 +72,9 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
                         $uq->where('name', 'like', "%{$keyword}%")
                             ->orWhere('email', 'like', "%{$keyword}%")
                             ->orWhere('nickname', 'like', "%{$keyword}%");
-                    });
+                    })
+                        // 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 작성자 이름으로 찾는다
+                        ->orWhere('author_name', 'like', "%{$keyword}%");
                 } elseif ($field === 'content') {
                     $q->where('content', 'like', "%{$keyword}%");
                 } elseif ($field === 'order_number') {
@@ -453,5 +456,41 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
         $review->images()->withTrashed()->forceDelete();
 
         return (bool) $review->forceDelete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findImported(int $productId, string $authorName, Carbon $createdAt): ?ProductReview
+    {
+        // 지운 후기도 찾는다 — 재이관이 관리자가 지운 후기를 새 행으로 되살리지 않게
+        return $this->model->newQuery()
+            ->withTrashed()
+            ->where('product_id', $productId)
+            ->whereNull('user_id')
+            ->where('author_name', $authorName)
+            // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
+            ->where('created_at', $createdAt->format('Y-m-d H:i:s'))
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function saveImported(ProductReview $review, array $attributes): ProductReview
+    {
+        // 작성일·수정일을 원래 값으로 두기 위해 자동 시각 기록을 끄고 저장한다.
+        // 입력 키는 서비스가 고정해 만들므로 대량 할당 보호(created_at 은 fillable 밖)를 거치지 않는다.
+        $review->forceFill($attributes);
+        $review->timestamps = false;
+
+        try {
+            $review->save();
+        } finally {
+            $review->timestamps = true;
+        }
+
+        return $review;
     }
 }

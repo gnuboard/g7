@@ -46,6 +46,8 @@ return [
     // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数。キーがない場合は宣言文字列をそのまま使う。
     'notification_variables' => [
         'common' => [
+            'name' => '受信者（管理者）の名前',
+            'app_name' => 'サイト名',
             'status_label' => '失敗の種類',
             'message' => '認証キーを除いた詳細な失敗理由',
             'search_date' => '韓国時間基準の照会日',

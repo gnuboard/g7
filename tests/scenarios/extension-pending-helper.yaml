@@ -1,0 +1,28 @@
+feature: 확장 _pending 탐색·활성 디렉토리 교체·업데이트 스테이징 (ExtensionPendingHelper)
+
+description: |
+  ExtensionPendingHelper 는 _pending 에서 manifest 를 읽어 대기 확장을 찾되, manifest 가 없거나 디렉토리명과 identifier 가 다른
+  업데이트 임시 디렉토리는 건너뛴다. copyToActive() 는 스왑 디렉토리를 거쳐 활성 디렉토리를 교체하고, 실패하면 기존 대상을 보존하며
+  임시 디렉토리를 정리한다. Windows 잠금 등으로 rename 이 막히면 파일 단위 복사로 폴백해 교체를 끝내고, node_modules 는 복사에서 뺀다.
+  업데이트 스테이징 경로는 타임스탬프로 고유하게 만들고, 스테이징 복사·정리는 없는 경로에서도 안전하게 동작한다.
+
+axes:
+  case: [pending_discovery, copy_to_active, copy_failure, rename_blocked, directory_delete, pending_path, update_staging]
+
+effects:
+  - pending_meta_loaded_from_manifest
+  - invalid_or_temp_pending_dirs_skipped
+  - missing_or_empty_pending_returns_empty
+  - active_copy_replaces_target_with_source
+  - copy_failure_preserves_existing_target
+  - swap_temp_directories_cleaned
+  - blocked_rename_falls_back_to_file_level_copy
+  - node_modules_excluded_from_copy
+  - extension_directory_delete_is_idempotent
+  - pending_existence_and_path_resolved
+  - update_staging_path_timestamped_and_unique
+  - stage_for_update_copies_source_or_throws
+  - cleanup_staging_removes_directory_idempotently
+
+test_files:
+  - tests/Unit/Extension/ExtensionPendingHelperTest.php

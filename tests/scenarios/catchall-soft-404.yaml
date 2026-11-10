@@ -47,6 +47,7 @@ effects:
   - resolver_maps_url_to_layout_for_seo
   - resolver_identifies_extension_of_layout
   - resolver_skips_auth_and_guest_routes_for_seo
+  - resolver_skips_system_routes   # 코어 미리보기 등 meta.is_system_route 는 봇 화면 매핑에서 뺀다(레이아웃 읽기 실패 로그 0)
   - resolver_returns_null_when_routes_unavailable
   - resolver_resolves_route_path_expressions
 

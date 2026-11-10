@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Base;
 
+use App\Exceptions\ExtensionOperationLockException;
 use App\Extension\Support\LifecycleWarnings;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
@@ -54,6 +55,20 @@ abstract class BaseApiController extends Controller
         array $messageParams = []
     ) {
         return ResponseHelper::error($messageKey, $statusCode, $errors, $messageParams, 'core');
+    }
+
+    /**
+     * 작업 잠금 거절(같은 대상 진행 중 409 / 잠금 저장소 오류 503)을 응답으로 만듭니다.
+     *
+     * `errors` 에 `operation_in_progress` 또는 `operation_lock_unavailable` 표지를 싣는다 — 화면이 같은 409 의 다른 계약
+     * (의존 경고·칸 충돌)과 이 거절을 가른다. 원본 오류는 싣지 않는다(잠금 쪽 `Log::error` 에만 남는다).
+     *
+     * @param  ExtensionOperationLockException  $e  잠금 거절 예외
+     * @return JsonResponse 409 또는 503 응답
+     */
+    protected function operationLockError(ExtensionOperationLockException $e): JsonResponse
+    {
+        return $this->error($e->getMessageKey(), $e->getStatusCode(), $e->getErrors(), $e->getMessageParams());
     }
 
     /**

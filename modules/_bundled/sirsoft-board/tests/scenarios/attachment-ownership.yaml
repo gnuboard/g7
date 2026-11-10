@@ -1,0 +1,24 @@
+feature: 게시판 첨부 소유 빈틈 — 교차 소유·번호 연결·다른 게시판·post_id·예약 컬렉션 (#883)
+
+description: |
+  비회원 임시 첨부는 임시 키 소지로 소유를 판단한다(템플릿 무변경 — basic 복제 템플릿 호환). 그 위에서 남은 빈틈을 막는다.
+  회원은 본인 업로드만, 비회원은 비회원 업로드만 임시 키로 잇는다. 첨부 번호로 잇는 경로는 이 게시판 임시 첨부만, 비회원은
+  그 첨부의 임시 키를 함께 보내야 한다. 다른 게시판 임시 경로(`{slug}/temp/…`)는 잇지도 옮기지도 않는다. 기존 글에 붙이는
+  업로드(`post_id`)는 같은 게시판 글이어야 하고(404) 글 수정 판정을 통과해야 한다(403, 비회원 글은 검증 토큰을 소비하지 않음).
+  예약 컬렉션(`content_media`)으로는 일반 첨부를 올릴 수 없다(422). 업로드 응답에 올린 사람의 임시 키가 실린다.
+
+axes:
+  case: [member_links_guest_temp_key, guest_links_member_upload, guest_links_by_id_only, other_board_temp, post_id_other_board_or_owner, guest_post_with_verify_token, reserved_collection, linked_by_ids, linked_by_temp_key]
+
+effects:
+  - cross_owner_temp_attachment_not_linked
+  - guest_id_link_requires_matching_temp_key
+  - other_board_temp_attachment_not_linked
+  - post_id_upload_requires_modify_permission
+  - verify_token_not_consumed_by_upload
+  - reserved_collection_rejected
+  - repository_link_contract_kept   # 저장소 연결 계약(번호·임시 키) 회귀
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentOwnershipGapsTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/AttachmentRepositoryTest.php

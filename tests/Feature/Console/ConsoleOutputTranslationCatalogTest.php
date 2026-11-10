@@ -139,8 +139,12 @@ class ConsoleOutputTranslationCatalogTest extends TestCase
     {
         $keys = [];
         foreach ($this->consoleFiles() as $file) {
-            preg_match_all("/(?<![\\w>\$:])(?:__|trans|trans_choice)\\(\\s*'([A-Za-z0-9_\\-]+(?:::)?[A-Za-z0-9_.\\-]+)'/", File::get($file), $m);
-            foreach ($m[1] as $key) {
+            preg_match_all("/(?<![\\w>\$:])(?:__|trans|trans_choice)\\(\\s*'([A-Za-z0-9_\\-]+(?:::)?[A-Za-z0-9_.\\-]+)'(\\s*\\.)?/", File::get($file), $m);
+            foreach ($m[1] as $i => $key) {
+                // `__('domain.group.state_'.$action)` 처럼 리터럴 뒤에 이어 붙이는 동적 키의 앞부분은 키가 아니다
+                if ($m[2][$i] !== '') {
+                    continue;
+                }
                 $keys[$key][] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
             }
         }

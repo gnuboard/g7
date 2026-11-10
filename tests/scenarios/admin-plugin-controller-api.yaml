@@ -1,0 +1,32 @@
+feature: 관리자 플러그인 관리 API (목록·상세·설치·활성화·비활성화·제거·changelog·파일/GitHub 설치)
+
+description: |
+  AdminPluginController 엔드포인트가 인증(401)·권한(403) 게이트, 페이지네이션·검색·상태 필터와 abilities,
+  상세 조회와 404, 라이프사이클 요청의 plugin_name 검증과 성공 응답, 의존성 충돌 409 와 force 우회,
+  활성화·비활성화 응답의 assets, changelog 파싱, 식별자 형식 422, ZIP 업로드·GitHub URL 설치의
+  입력 검증과 서비스 위임 및 예외별 422/500 응답을 지키는지 검증한다.
+
+axes:
+  case: [auth_guard, listing, detail, lifecycle, dependency_guard, changelog, identifier_validation, install_from_file, install_from_github]
+
+effects:
+  - unauthenticated_request_rejected_401
+  - missing_permission_rejected_403
+  - plugin_list_paginated_with_filters
+  - installed_endpoint_returns_only_installed
+  - list_abilities_reflect_user_permissions
+  - plugin_detail_returned_or_404
+  - lifecycle_request_validates_plugin_name
+  - lifecycle_request_succeeds_for_valid_plugin
+  - dependency_conflict_returns_409_unless_forced
+  - lifecycle_response_includes_plugin_assets
+  - changelog_parsed_or_empty_when_missing
+  - invalid_identifier_rejected_422
+  - upload_install_validates_zip_file
+  - upload_install_delegates_to_service
+  - github_install_validates_url
+  - github_install_delegates_to_service
+  - install_domain_error_422_general_error_500
+
+test_files:
+  - tests/Feature/Api/Admin/PluginControllerTest.php

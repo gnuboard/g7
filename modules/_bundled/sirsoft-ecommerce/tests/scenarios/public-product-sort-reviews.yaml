@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 공개 상품 목록 「리뷰 많은 순」 정렬 (sort=reviews)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: public_product_sort_reviews
+
+description: >-
+  공개 상품 목록(GET /api/modules/sirsoft-ecommerce/products)에 정렬 값 reviews 를 더한다 — 노출 중인
+  리뷰 수가 많은 상품부터, 같으면 최신 등록순. 숨긴 리뷰는 세지 않는다(목록 응답의 review_count 와 같은 집계).
+  판매량순과 같이 리뷰 집계 파생 테이블을 한 번 조인해 정렬한다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductReviewSortTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  sort:
+    - reviews    # 한 데이터셋에 리뷰 많음·적음·없음·동률·숨긴 리뷰를 함께 깔고 순서를 본다
+    - unknown    # 목록 밖 값은 422
+
+exclusions:
+  - { sort: unknown, reason: "제외 없음 — 단일 축" }
+
+effects:
+  - public_list_sorted_by_visible_review_count   # 노출 리뷰 수 내림차순, 같으면 최신순, 숨긴 리뷰 제외
+
+validation:
+  audit_rule: test-scenario-reverse-mapping
+  note: |
+    화면 축(사용자 템플릿 상품 목록 정렬 선택)은 각 템플릿이 정렬 항목을 더할 때 그 템플릿 시험과 브라우저 실측이 덮는다.

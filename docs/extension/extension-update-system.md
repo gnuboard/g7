@@ -89,6 +89,8 @@
 
 목록 API(모듈·플러그인·템플릿)의 설치된 행도 **업데이트가 있을 때만** 같은 규칙으로 `required_core_version`·`is_compatible`·`current_core_version` 을 싣는다(`ResolvesUpdateCoreCompatibility`). GitHub 출처는 원격 매니페스트를 받지 않는 추정값이고, 정확한 판정은 업데이트 스테이징 단계에서 한다. 관리자 화면은 이 값으로 업데이트 창에 코어 호환 경고와 「강제 업데이트」 체크를 띄우며, 목록의 업데이트 버튼은 잠그지 않는다. 설치본 자체의 호환은 별도 필드 `core_compatible` 이 맡는다.
 
+같은 행은 업데이트할 새 버전이 요구하는 확장 중 지금 미설치·꺼짐·버전 미달인 것도 싣는다(7.1.5) — 필수 의존은 `update_dependency_warnings`, 함께 쓰면 연동되는 확장(`integrations`)은 `update_integration_notices`. 판정은 업데이트가 끝난 뒤 결과의 `dependency_warnings`·`integration_notices`(완료 문구에 덧붙는 안내)와 같은 함수(`DependencyVersionWarnings::forManifest()`·`IntegrationNotices::forManifest()`)이고, 대조 대상은 번들 출처면 `_bundled` 매니페스트, GitHub 출처면 `_bundled` 판이 업데이트 대상 버전과 같을 때만 그 매니페스트다(아니면 `null` — 원격 매니페스트를 받지 않는다). 관리자 업데이트 창은 이 목록을 실행 버튼 위에 경고로 보이지만 업데이트를 막지 않는다 — 업데이트 뒤 안내와 같이 알리기만 한다(코어 업데이트 뒤 번들 일괄 업데이트처럼 의존·연동 확장이 같은 흐름에서 곧 따라 올라오는 경우가 정상 경로다). 그래서 연동 요구 버전을 올린 확장을 먼저 올리려는 운영자가 연동이 꺼진다는 것을 업데이트 전에 알 수 있다.
+
 ### 소스 강제 경로 (sourceOverride)
 
 기본 판정(GitHub·`_bundled` 중 높은 버전)을 우회해 특정 소스 단독으로 업데이트를 실행하는 경로입니다.
@@ -338,14 +340,34 @@ public static function assertNotInProgress(ExtensionStatus $status, string $iden
 
 | 항목 | 규칙 |
 |---|---|
-| 고착 판정 | `Updating` 이고 마지막 갱신이 업데이트 잠금 유지 시간(`ExtensionOperationLock::LOCK_SECONDS`, 10분)보다 오래됐으며, 업데이트 잠금을 잡을 수 있다(그 업데이트를 하는 프로세스가 없다) |
+| 고착 판정 | `Updating` 이고 마지막 갱신이 작업 잠금 유지 시간(`ExtensionOperationLock::LOCK_SECONDS`, 10분)보다 오래됐으며, 작업 잠금이 비어 있다(그 업데이트를 하는 프로세스가 없다). 진행 중인 업데이트는 단계마다 잠금을 늘리고 행 `updated_at` 을 갱신하므로(하트비트) 10분 넘게 걸려도 고착이 아니다. 잠금 저장소가 오류를 내 비었는지 알 수 없으면 고착으로 보지 않는다(정리하지 않는다) |
 | 정리하는 진입점 | 활성화(`{type}:activate`·관리자 활성화) — 정리 뒤 그대로 활성화한다. `--force` 업데이트 — 정리 뒤 업데이트를 이어 한다 |
 | 정리하지 않는 경우 | `--force` 없는 업데이트는 업데이트 확인(「업데이트 없음」)보다 먼저 멈춘 상태를 안내하고 실패로 끝낸다. 10분이 지나지 않았거나 잠금이 잡혀 있으면 종전처럼 「진행 중」으로 거절한다. 자동으로 풀지 않는다 |
 | 정리 결과 | 직전 상태를 따로 남기지 않으므로 `Inactive` 로 되돌린다. 업데이트 명령은 다시 켜는 명령(`php artisan {type}:activate {identifier}`)을 함께 안내한다 |
 | 끝나지 않은 판 전환 | 진행 기록이 남아 있고 파일을 건드렸거나 끝낸 스텝이 있으면, DB 판을 기록의 시작 판으로 되돌리고 「업데이트 있음」(`latest_version`·`update_available`)으로 표시한다. 파일은 옛 판으로 되돌리지 않는다. 다음 업데이트(`--force` 없이도)가 못 끝낸 스텝만 이어 돈다 — 활성화 명령과 실패한 업데이트는 업데이트를 다시 실행하라고 안내한다 |
 | 아무 일도 없던 경우 | 파일을 건드리기 전에 멈췄고 끝낸 스텝도 없으면 진행 기록을 지우고 상태만 되돌린다 |
 
-관리자 확장 목록 응답의 `stuck_update` 칸이 이 판정(10분 경과·진행 프로세스 없음)을 싣는다.
+관리자 확장 목록 응답의 `stuck_update` 칸이 이 판정(10분 경과·진행 프로세스 없음)을 싣는다. 잠금 저장소 장애 중에는 `false` 다(목록은 정상 응답).
+
+### 작업 잠금 (ExtensionOperationLock)
+
+> 파일: `app/Extension/Helpers/ExtensionOperationLock.php`
+
+같은 대상의 작업을 한 번에 하나만 수행하게 하는 원자적 잠금이다. Manager 진입점 첫 줄(직전 훅보다 앞)에서 잡으므로 CLI·관리자 화면·일괄 업데이트가 같은 잠금을 공유한다.
+
+| 항목 | 규칙 |
+|---|---|
+| 대상 동작 | 모듈·플러그인·템플릿의 설치·활성화·비활성화·제거·업데이트, ZIP·GitHub 설치(`_pending` 이동부터 설치까지), 언어팩의 설치·업데이트·활성화·비활성화·제거, `core:update` |
+| 키 | `extension-update:{type}:{identifier}` (`type` = `module`·`plugin`·`template`·`language_pack`), 코어는 `core-update` |
+| 겹침 | 다른 프로세스가 같은 키를 잡고 있으면 409 — 응답 `errors.operation_in_progress: true`, 업데이트는 「업데이트가 이미 진행 중」, 그 밖의 작업은 「다른 작업이 진행 중」 문구. 명령줄은 같은 문구로 실패 종료 |
+| 잠금 저장소 오류 | 작업을 시작하지 않는다 — 503, 응답 `errors.operation_lock_unavailable: true` 와 번역 문구만 싣고 원본 오류(경로 포함)는 `Log::error` 에만 남긴다. 7.1.4 까지는 잠금 없이 진행했다 |
+| 재진입 | 같은 프로세스가 이미 잡은 키를 다시 잡으면 합류한다(Service 바깥 잠금 → 안쪽 Manager, 언어팩 업데이트 → 설치). 가장 바깥 핸들이 풀릴 때 실제로 풀린다 |
+| 유지·연장 | 기본 600초(코어 1800초). 업데이트 진행 콜백이 30초 간격으로 잠금을 늘리고, 업그레이드 스텝 경계·캐시 비우기 직후에는 바로 늘린다. 잠금을 잃었으면(만료·캐시 비우기) 같은 소유자로 다시 잡고, 그래도 못 잡으면 오류 로그만 남기고 계속한다 |
+| 일괄 업데이트 | 번들 일괄 업데이트는 잠금 저장소 오류를 만나면 첫 항목에서 멈추고 「남은 N건 건너뜀」을 한 번 알린 뒤 실패로 끝난다. 진행 중(409) 항목은 실패 1건으로 세고 다음 항목으로 간다 |
+| `cache:clear` | file 캐시는 잠금을 `storage/framework/cache/locks` 에 따로 두어 캐시를 비워도 잡힌 잠금이 남는다. redis·memcached 는 `flush` 가 잠금까지 지우므로 다음 연장 때 다시 잡는다(그 사이 최대 30초는 배제가 약해진다) |
+| 다중 서버 | 서버 사이 배제는 공유 캐시 스토어(redis·memcached·database)에서만 성립한다. file 스토어는 서버마다 따로다 |
+
+관리자 화면의 켜기/끄기·템플릿 활성화는 409 를 「의존 확장 있음(강제 창)」·「같은 자리에 다른 언어팩(칸 충돌 창)」으로 써 왔으므로, `errors.operation_in_progress` 가 있으면 창을 열지 않고 안내 토스트를 띄운다(관리자 템플릿 sirsoft-admin_basic 1.1.5).
 
 ---
 
@@ -1093,6 +1115,10 @@ public function getSchedules(): array
 
 - cron expression vs 메서드명 자동 분기
 - `enabled_config`: 확장 설정값으로 조건부 활성화
+- 중복 실행 방지(7.1.5 기본): 모든 확장 예약 작업에 `withoutOverlapping(1440)`·`onOneServer()` 를 건다. 이전 회차가 끝나지 않았으면 다음 회차를 건너뛰고, 다중 서버에서는 한 서버만 실행한다
+  - `'without_overlapping' => false` 로 끈다. 정수(분)를 주면 그 시간 뒤 잠금이 만료된다
+  - `'on_one_server' => false` 로 끈다. 서버 사이 배제는 공유 캐시 스토어에서만 효력이 있다
+  - 비정상 종료로 남은 잠금은 만료 시간이 지나거나 `php artisan schedule:clear-cache` 로 풀린다(캐시 비우기로는 풀리지 않는다 — 잠금 폴더가 따로다)
 
 ---
 

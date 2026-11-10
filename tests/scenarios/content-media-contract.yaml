@@ -1,0 +1,37 @@
+feature: 본문 미디어 업로드 계약 — 코어 런타임 G7Core.contentMedia (#883 4단계, engine-v1.89.0)
+
+description: |
+  확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 업로드 계약을 넘기면, 편집기 플러그인은
+  확장의 API 경로를 모른 채 `G7Core.contentMedia` 로 계약을 검사·정규화하고, 업로드 전에 종류·확장자·크기·문서당 개수를
+  판정하며, 어댑터를 골라 올린다. 다른 출처 주소·허용 밖 헤더는 받지 않는다. 서버 짝은
+  `App\Support\ContentMedia\ContentMediaUploadTarget`·`ContentMediaPolicy`·`App\Rules\ContentMediaFile`.
+
+axes:
+  case: [normalize_valid, normalize_rejects_foreign, validate_file, count_references, default_upload, anonymous_401_passthrough, response_without_url, adapter_priority, policy_fallback, policy_from_array, core_gate, file_rule, extractor, rewriter, settings_rules, upload_target]
+
+effects:
+  - target_normalized
+  - foreign_target_rejected
+  - file_prevalidated
+  - per_document_limit_prechecked
+  - uploaded_via_api_client
+  - anonymous_401_rejected_to_caller
+  - upload_without_url_rejected
+  - adapter_selected_by_priority
+  - fallback_follows_core_switch
+  - extensions_narrowed_to_candidates
+  - stored_overrides_fallback
+  - values_clamped
+  - core_setting_gates_video
+  - content_sniffed_not_name
+  - size_enforced
+  - hashes_extracted_in_order
+  - normalize_strips_signature
+  - sign_only_canonical
+  - use_custom_off_clears
+  - settings_validation_rejects_non_candidate
+  - target_shape_and_header_allowlist
+
+test_files:
+  - resources/js/core/contentMedia/__tests__/ContentMediaRuntime.test.ts
+  - tests/Unit/Support/ContentMedia/ContentMediaContractTest.php

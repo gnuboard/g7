@@ -2,8 +2,8 @@
 
 namespace Modules\Sirsoft\Page\Tests\Unit\Support;
 
-use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\PureTestCase;
 
 /**
  * 페이지 모듈 라우트 파일 위치 테스트 (7.1.1 출시 전 점검)
@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
  *
  * 업데이트로 옛 파일이 설치본에 남아도 표준 위치가 먼저 읽혀 경고는 나지 않는다.
  */
-class RoutesFileLocationTest extends ModuleTestCase
+class RoutesFileLocationTest extends PureTestCase
 {
     /**
      * 모듈 루트(_bundled 작업 원본) 경로.

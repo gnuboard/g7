@@ -50,6 +50,7 @@
 | `refetch_data_sources` | string \| string[] | - | `replace: true` 호출에서 다시 받을 데이터 소스 id(쉼표 구분 문자열 또는 배열). 생략하면 auto_fetch 소스 전부 (engine-v1.79.0+) |
 | `scroll` | string \| number \| object | `"top"` | 이동 후 스크롤 위치 (engine-v1.37.0+). `"top"` / `"preserve"` / 숫자 / `{x,y}` / `"#selector"` |
 | `scrollBehavior` | string | `"instant"` | 스크롤 애니메이션 (engine-v1.37.0+). `"instant"` (즉시) / `"smooth"` (부드럽게). 기본값 `"instant"`는 템플릿 CSS의 `scroll-behavior: smooth` 전역 설정을 무시하고 페이지 전환 시 즉시 이동 |
+| `returnScroll` | string | - | 이 이동으로 **떠나는 화면**에 뒤로 가기로 돌아올 때의 스크롤 동작 (engine-v1.85.0+). `"restore"` / `"top"` / `"none"` / `"#selector"`. 생략하면 그 화면의 `meta.scroll_restoration` 을 따른다. `scroll`(도착 화면 위치)과 다른 인자다 — [returnScroll 옵션](#returnscroll-옵션) |
 | `fallback` | `false \| string \| object` | `openWindow`(`target: "_self"`) | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow` 를 **같은 탭**(`_self`)으로 — 그 주소로 페이지 전체를 불러온다. `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정(`"openWindow"` 면 새 창), 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용. 아래 `fallbackPath` 와 다른 인자다 |
 | `bypassLeaveGuard` | boolean | false | 레이아웃 이탈 확인(`meta.leave_guard`)을 이 이동에 한해 묻지 않는다 — 저장 성공 뒤 이동 등 (engine-v1.82.0+). [이탈 확인 건너뛰기](#이탈-확인-건너뛰기-bypassleaveguard) |
 | `fallbackPath` | string | - | 이동 주소(`path`)가 **비었거나 거부될 때**(실행 스킴·다른 사이트·`//host`) 대신 갈 경로 (engine-v1.80.1+). 같은 판정을 거치며 그것도 거부되면 이동하지 않는다. 쿼리·서버 값으로 이동하는 자리(로그인 복귀·본인 확인 복귀·알림 이동)에 쓴다 — [fallbackPath 옵션](#fallbackpath-옵션-engine-v1801) |
@@ -874,6 +875,47 @@ replace: true는 같은 페이지 내에서만 사용
 }
 ```
 
+### returnScroll 옵션
+
+> **버전**: engine-v1.85.0+
+
+`scroll` 이 **도착 화면**의 위치라면, `returnScroll` 은 이 이동으로 **떠나는 화면**에 브라우저 뒤로 가기(또는 `navigateBack`)로 돌아올 때의 동작이다. 엔진은 떠나는 히스토리 항목에 이 값을 붙여 두었다가, 그 항목으로 돌아오면 화면·템플릿 설정(`meta.scroll_restoration` 의 `mode`)보다 먼저 쓴다.
+
+| 값 | 돌아왔을 때 |
+|----|------|
+| `"restore"` | 떠날 때 기억한 위치로 복원 |
+| `"top"` | 맨 위 |
+| `"none"` | 엔진이 관여하지 않음(브라우저·템플릿 몫) |
+| `"#selector"` / `".class"` | 그 요소로 이동 |
+| (생략) | 그 화면의 `meta.scroll_restoration` → 베이스 레이아웃 → template.json → 엔진 기본값(`restore`) 순서 |
+
+- 이 값은 「돌아왔을 때 어디로」만 바꾼다. 대기 방식(`wait`)·최대 대기(`timeout_ms`)·안쪽 스크롤 영역(`containers`)·더보기 스냅샷은 그 화면의 `meta.scroll_restoration` 을 따른다 — [layout-json.md](layout-json.md#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원).
+- `replace: true`(같은 화면 쿼리 교체)는 새 히스토리 항목을 만들지 않으므로 붙일 항목이 없다.
+- 레이아웃 편집기의 동작 편집 폼에서는 「뒤로 가기로 이 화면에 돌아올 때 스크롤」 칸(상속·복원·맨 위·관여 안 함)으로 고른다. 선택자 값은 코드 편집으로 적는다.
+
+**결제 → 완료: 완료 화면에서 뒤로 가기로 결제 화면에 돌아오면 맨 위에서 시작**:
+
+```html
+<on type="click">
+  <navigate path="/shop/orders/{{response.data.order_number}}/complete" returnScroll="top" :bypassLeaveGuard="true"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/shop/orders/{{response.data.order_number}}/complete",
+    "returnScroll": "top",
+    "bypassLeaveGuard": true
+  }
+}
+```
+
+결제 화면을 떠날 때 붙인 `"top"` 이라, 결제 화면 자체의 설정(예: 기억한 위치로 복원)과 상관없이 이 이동으로 떠났다가 돌아올 때만 맨 위에서 시작한다.
+
 ---
 
 ## openWindow
@@ -1110,6 +1152,10 @@ replace: true는 같은 페이지 내에서만 사용
 | `moduleInfo` | object | 모듈 activate/deactivate API 응답 (`{{result}}`) — `identifier` 및 `assets` 포함 |
 | `pluginInfo` | object | 플러그인 activate/deactivate API 응답 |
 | `action` | 문자열 | `"add"` 또는 `"remove"` — 에셋 로드 또는 제거 |
+
+에셋 로드·제거는 보조 작업이다 — 실패해도(켠 직후 다시 꺼져 404, 서버가 캐시를 굽는 중 500 등) 오류 처리기·토스트를 거치지 않고 로그만 남기며 `reloadExtensions` 는 성공으로 끝난다(engine-v1.88.1). 확장 상태 재동기화(routes·translations·layouts)도 단계마다 실패를 삼킨다. 따라서 이 핸들러에는 `onError` 를 걸 필요가 없다.
+
+이 핸들러가 끝나야 에셋까지 붙은 것이다. 켜기·끄기 스위치처럼 「작업이 끝날 때까지 다시 누르지 못하게」 할 화면은 이 핸들러를 포함한 후속 묶음(`parallel`)이 **끝난 뒤** 진행 표시를 끈다 — 목록 값이 바뀐 순간 풀면 에셋을 받는 사이 다시 끌 수 있다(관리자 기본 템플릿 `ExtensionCardGrid` 의 `holdUntilResync`).
 
 ### 사용 사례
 

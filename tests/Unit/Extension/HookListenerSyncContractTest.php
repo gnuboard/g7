@@ -3,7 +3,7 @@
 namespace Tests\Unit\Extension;
 
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 즉시 반영이 필요한 훅 리스너의 sync 선언 잠금
@@ -15,7 +15,7 @@ use Tests\TestCase;
  * 반대로 무거운 일(상세 재렌더·대량 재색인)을 맡는 큐 리스너는 sync 가 아니어야 한다.
  * 확장 리스너는 그 확장이 설치돼 클래스가 있을 때만 검사한다.
  */
-class HookListenerSyncContractTest extends TestCase
+class HookListenerSyncContractTest extends PureTestCase
 {
     /**
      * sync 로 확정한 (리스너, 훅) 표

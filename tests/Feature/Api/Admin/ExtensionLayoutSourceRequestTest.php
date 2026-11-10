@@ -13,6 +13,7 @@ use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -24,7 +25,20 @@ use Tests\TestCase;
  */
 class ExtensionLayoutSourceRequestTest extends TestCase
 {
+    use FakesGithubReleases;
     use RefreshDatabase;
+
+    /**
+     * 설치·업데이트 확인 경로의 GitHub 실제 접속을 막습니다(테스트마다 최대 10초 대기 방지).
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->fakeGithubReleases();
+    }
 
     /**
      * 9개 창의 API·서비스 메서드·요청 본문을 제공합니다.

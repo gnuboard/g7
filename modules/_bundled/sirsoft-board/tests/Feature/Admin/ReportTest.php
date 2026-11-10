@@ -259,6 +259,47 @@ class ReportTest extends ModuleTestCase
     }
 
     /**
+     * 신고 상세의 게시글 본문(HTML)에 든 본문 미디어 주소는 서명해서 내보낸다.
+     *
+     * `<img>`·`<video>` 요청에는 인증 헤더가 없어, 비밀글 본문 미디어를 정식 주소로 두면 관리자 신고 상세에서 403 으로 깨진다.
+     * 게시글 응답(`PostResource`)과 같은 방식으로 서명한다.
+     *
+     * @scenario case=report_detail
+     *
+     * @effects admin_report_detail_signs_content_media
+     *
+     * @return void 반환값 없음
+     */
+    public function test_report_detail_signs_content_media_urls(): void
+    {
+        $url = '/api/modules/sirsoft-board/boards/'.$this->board->slug.'/content-media/AbCdEfGhIjKl';
+        $report = Report::factory()->create([
+            'board_id' => $this->board->id,
+            'author_id' => $this->author->id,
+            'target_type' => 'post',
+        ]);
+        ReportLog::factory()->create([
+            'report_id' => $report->id,
+            'reporter_id' => $this->reporter->id,
+            'reason_type' => ReportReasonType::Spam,
+            'snapshot' => [
+                'title' => '비밀글 본문 미디어',
+                'content' => '<p><img src="'.$url.'"></p>',
+                'content_mode' => 'html',
+                'author_name' => '작성자',
+            ],
+        ]);
+
+        $content = (string) $this->actingAs($this->admin)
+            ->getJson("/api/modules/sirsoft-board/admin/reports/{$report->id}")
+            ->assertStatus(200)
+            ->json('data.post.content');
+
+        $this->assertStringContainsString($url.'?expires=', $content, '본문 미디어 주소를 서명한다');
+        $this->assertStringContainsString('signature=', $content);
+    }
+
+    /**
      * 신고 상태 변경 테스트 (단일)
      *
      * @scenario case=update_status

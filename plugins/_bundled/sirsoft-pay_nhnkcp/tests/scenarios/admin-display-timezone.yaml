@@ -1,0 +1,14 @@
+feature: NHN KCP 관리자 결제조회·에스크로 화면 시각의 시간대 (#160)
+
+description: |
+  결제조회 패널의 취소 시각(cancelled_at)·환불 시각(refunded_at)이 DB UTC 원문 그대로라 주문 상세의 다른 시각과
+  9시간 어긋났다. 에스크로 배송등록 시각(registered_at)도 같다. 저장은 그대로 두고 화면 응답에서 보는 사람 시간대로 바꾼다.
+
+axes:
+  surface: [transaction_cancel_refund, escrow_registered_at]
+
+effects:
+  - kcp_admin_times_use_viewer_timezone
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/KcpDisplayTimezoneTest.php

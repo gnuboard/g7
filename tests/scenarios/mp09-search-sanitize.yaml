@@ -10,6 +10,8 @@ description: |
   (+, -, <, >, (, ), ~, *, ", @)와 제어문자를 제거하고 남은 토큰을 따옴표 phrase 로
   변환한다. 정제 결과가 비면 빈 결과(performSearch) 또는 1=0(whereFulltext)로 처리하여
   ER_PARSE_ERROR(500)을 막는다. 두 진입점(Scout performSearch, 직접 whereFulltext) 모두 적용.
+  토큰 하나는 128자까지만 쓴다 — ngram 파서에서 공백 없는 긴 토큰은 낱말 128개를 넘는 구문이 되어
+  InnoDB 오류(191 Too many words in a FTS phrase)로 500 이 되기 때문이다.
 
 axes:
   keyword:
@@ -27,6 +29,7 @@ axes:
     - plain_ko         # 셔츠 (정상 매칭)
     - plain_en         # shirt (정상 매칭)
     - mixed            # 셔츠 <b> (혼합)
+    - long_token       # 공백 없는 130자 → 128자 구문으로 자름
   path:
     - scout            # performSearch (Product::search)
     - direct           # whereFulltext (getPublicList name 검색)
@@ -37,6 +40,7 @@ effects:
   - operators_only_returns_empty   # 연산자만 → 빈 결과(에러 아님)
   - control_chars_stripped         # 제어문자 제거
   - sanitized_phrase_bound         # 정제된 phrase 가 바인딩됨
+  - long_token_capped_to_phrase_word_limit  # 토큰 하나를 구문 낱말 한도(128자) 안으로 자름
 
 test_files:
   - tests/Unit/Search/DatabaseFulltextEngineTest.php

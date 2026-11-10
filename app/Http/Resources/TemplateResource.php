@@ -73,6 +73,8 @@ class TemplateResource extends BaseApiResource
             ),
             // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
             ...$this->updateCoreCompatibilityFields(),
+            // 업데이트 대상 판이 요구하는 의존·연동 중 못 미치는 것(업데이트가 있을 때만) — 업데이트 창이 실행 전에 경고한다.
+            ...$this->updateTargetRequirementFields(),
             // 설치·레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712).
             // `when()` 대신 펼침으로 둔다 — 리소스를 `toArray()` 로 직접 부르는 경로에서 MissingValue 가 새지 않게.
             ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),

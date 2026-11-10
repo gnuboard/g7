@@ -8,6 +8,7 @@ use App\Enums\ExtensionStatus;
 use App\Models\IdentityPolicy;
 use App\Models\Module;
 use App\Models\Plugin;
+use App\Support\InstallerContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -20,6 +21,11 @@ use Illuminate\Support\Facades\Schema;
  */
 class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
 {
+    /**
+     * 정책 파생 캐시(route scope 인덱스·hook target 목록)를 쓰는 저장소를 받습니다.
+     *
+     * @param  CacheInterface  $cache  코어 캐시 드라이버
+     */
     public function __construct(
         protected CacheInterface $cache,
     ) {}
@@ -196,7 +202,14 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
             $query->whereNotIn('key', $currentKeys);
         }
 
-        return (int) $query->delete();
+        $deleted = (int) $query->delete();
+
+        // 대량 삭제는 모델 deleted 이벤트를 내지 않는다 — route scope 인덱스·hook target 캐시를 직접 지운다(#860)
+        if ($deleted > 0) {
+            IdentityPolicy::flushRouteScopeCache();
+        }
+
+        return $deleted;
     }
 
     /**
@@ -317,7 +330,8 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
      * brace expansion — 'api.admin.{modules,plugins}.uninstall' → ['api.admin.modules.uninstall', 'api.admin.plugins.uninstall'].
      * 단일 그룹만 지원 (중첩/다중 그룹은 정책 키를 분리해서 정의하는 편이 명확).
      *
-     * @return list<string>
+     * @param  string  $target  중괄호 그룹을 포함할 수 있는 정책 target
+     * @return list<string> 펼친 target 목록
      */
     protected function expandTargetBraces(string $target): array
     {
@@ -333,9 +347,14 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     }
 
     /**
-     * scope='hook' 활성 정책의 target 목록(중복 제거)을 반환합니다.
+     * scope='hook' 정책의 target 목록(중복 제거)을 반환합니다.
      *
-     * 마이그레이션 전이거나 DB 미연결 환경에서는 빈 배열을 반환해 부팅을 보호합니다.
+     * 동적 hook 구독 동기화(`EnforceIdentityPolicyListener::syncDynamicHookSubscriptions()`)가 부팅마다 부르므로
+     * 설치 완료 사이트에서는 캐시한다(#860). 정책이 바뀌면 `IdentityPolicy::flushRouteScopeCache()` 가 route scope
+     * 인덱스와 함께 지운다 — 모델 저장·삭제 이벤트와 이벤트 없는 대량 삭제(`cleanupStale()`) 모두.
+     *
+     * 마이그레이션 전이거나 DB 미연결 환경에서는 빈 배열을 반환해 부팅을 보호하며, 조회 실패의 빈 배열은
+     * 캐시하지 않는다(실패가 TTL 동안 굳으면 정책이 계속 적용되지 않는다).
      *
      * @return list<string> 동적 hook target 목록
      */
@@ -348,17 +367,37 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
                 return [];
             }
 
-            // audit:allow query-unbounded-get reason: 본인인증 정책은 운영자가 등록한 수만큼만 존재한다 (사용량과 무관)
-            return IdentityPolicy::query()
-                ->where('scope', 'hook')
-                ->distinct()
-                ->pluck('target')
-                ->filter(fn ($t) => is_string($t) && $t !== '')
-                ->values()
-                ->all();
+            // 설치 중·스키마 변경 명령 중에는 정책 테이블이 바뀌는 구간이라 캐시하지 않는다
+            if (! config('app.installer_completed') || InstallerContext::isSchemaMutatingCommand()) {
+                return $this->queryHookTargets();
+            }
+
+            return $this->cache->remember(
+                IdentityPolicy::HOOK_TARGETS_CACHE_KEY,
+                fn (): array => $this->queryHookTargets(),
+                (int) g7_core_settings('cache.identity_policy_ttl', 3600),
+                [IdentityPolicy::ROUTE_SCOPE_CACHE_TAG],
+            );
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    /**
+     * hook scope 정책 target 을 DB 에서 조회합니다 (캐시 없이).
+     *
+     * @return list<string> 동적 hook target 목록
+     */
+    protected function queryHookTargets(): array
+    {
+        // audit:allow query-unbounded-get reason: 본인인증 정책은 운영자가 등록한 수만큼만 존재한다 (사용량과 무관)
+        return IdentityPolicy::query()
+            ->where('scope', 'hook')
+            ->distinct()
+            ->pluck('target')
+            ->filter(fn ($t) => is_string($t) && $t !== '')
+            ->values()
+            ->all();
     }
 
     /**

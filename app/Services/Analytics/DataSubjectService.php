@@ -302,6 +302,7 @@ class DataSubjectService
         $today = Carbon::parse(AnalyticsClock::today());
 
         for ($offset = 0; $offset < self::HASH_LOOKBACK_DAYS; $offset++) {
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $salt = $this->salts->findForDate($today->copy()->subDays($offset)->toDateString());
 
             if ($salt !== null) {

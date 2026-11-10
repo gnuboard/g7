@@ -40,9 +40,14 @@ return [
     // `seo:generate-sitemap` command output
     'console' => [
         'generate_sitemap' => [
+            'already_running' => 'A sitemap is already being generated, so this run is skipped.',
+            'lock_unavailable' => 'The sitemap generation lock store (cache) is unavailable, so it was not run.',
             'invalid_mode' => 'Invalid mode. Allowed: :allowed',
             'generated' => 'Sitemap generated. (mode: :mode)',
             'dispatched' => 'Sitemap generation dispatched to the queue. (mode: :mode)',
         ],
     ],
+
+    // Admin browser tab title suffix — appended after the screen title ({site_name} is the site name)
+    'admin_title_suffix' => ' - {site_name} Admin',
 ];

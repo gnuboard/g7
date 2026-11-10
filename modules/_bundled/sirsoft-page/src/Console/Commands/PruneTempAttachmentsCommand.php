@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Page\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
+use Modules\Sirsoft\Page\Services\PageContentMediaService;
 
 /**
  * 미연결 임시 페이지 첨부 정리 커맨드
@@ -12,6 +13,8 @@ use Modules\Sirsoft\Page\Services\PageAttachmentService;
  * 페이지 작성 폼에서 업로드만 하고 저장 없이 이탈해 남은 임시 첨부(파일 + 기록)를 정리합니다.
  * 연결 시점에 본경로로 옮겨지므로 `temp_key` 가 남아 있다는 것은 "끝내 연결되지 않았다" 는
  * 뜻이고, 그래서 별도 운영자 토글 없이 상시 동작합니다 (운영 데이터가 아닌 폼 세션 부산물).
+ * 편집기 본문에 올리고 저장하지 않은 본문 미디어 임시 행도 같은 기준으로 함께 지웁니다 — 본문 미디어는
+ * 코어 골격의 정리가 맡아 행마다 `core.content_media.before_delete` 를 발화합니다 (#887). 건수는 둘을 합칩니다.
  *
  * @example php artisan sirsoft-page:prune-temp-attachments --dry-run
  * @example php artisan sirsoft-page:prune-temp-attachments --days=1
@@ -47,9 +50,10 @@ class PruneTempAttachmentsCommand extends Command
     /**
      * 커맨드 실행
      *
+     * @param  PageContentMediaService  $contentMediaService  페이지 본문 미디어 서비스 (임시 본문 미디어 정리)
      * @return int 종료 코드
      */
-    public function handle(): int
+    public function handle(PageContentMediaService $contentMediaService): int
     {
         $days = (int) $this->option('days');
 
@@ -63,7 +67,13 @@ class PruneTempAttachmentsCommand extends Command
         $limit = max(1, (int) $this->option('limit'));
         $isDryRun = (bool) $this->option('dry-run');
 
-        $result = $this->attachmentService->pruneTempUploads($days, $limit, $isDryRun);
+        $attachments = $this->attachmentService->pruneTempUploads($days, $limit, $isDryRun);
+        $contentMedia = $contentMediaService->pruneStaleTemp($days, $limit, $isDryRun);
+        $result = [
+            'scanned' => $attachments['scanned'] + $contentMedia['scanned'],
+            'deleted' => $attachments['deleted'] + $contentMedia['deleted'],
+            'failed' => $attachments['failed'] + $contentMedia['failed'],
+        ];
 
         if ($isDryRun) {
             $this->info('[DRY RUN] '.__('sirsoft-page::messages.console.prune_temp_attachments.dry_run', ['days' => $days, 'count' => $result['scanned']]));

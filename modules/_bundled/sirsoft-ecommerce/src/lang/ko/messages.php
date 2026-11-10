@@ -6,6 +6,13 @@
  * 컨트롤러 응답 메시지
  */
 return [
+    'content_media' => [
+        'upload_success' => '본문 미디어를 올렸습니다.',
+        'upload_failed' => '본문 미디어를 올리지 못했습니다.',
+        'target_success' => '본문 미디어 업로드 정보를 불러왔습니다.',
+        'not_found' => '본문 미디어를 찾을 수 없습니다.',
+    ],
+
     // 복사 작업 시 이름에 추가되는 locale 별 접미사 (ProductNoticeTemplateRepository 등에서 사용)
     'copy_suffix' => ' (복사)',
 
@@ -1564,6 +1571,12 @@ return [
     ],
     // 시더 콘솔 출력 (module:install·module:seed)
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => '브라우저 실측 시더는 CLI 와 G7_PLAYWRIGHT_BYPASS=1 에서만 실행합니다.',
+            'product' => '  - 실측 상품 #:id (옵션 #:option_id)',
+            'done' => '브라우저 실측 데이터 준비 완료',
+            'cleanup_done' => '브라우저 실측 데이터 정리 완료 — 주문 :orders건, 상품 :products건, 본문 미디어 :media건',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => '관리자 사용자가 없어 이커머스 활동 로그 시더를 건너뜁니다.',
             'purged' => '기존 이커머스 샘플 활동 로그 :count건 삭제 (표식 없는 실제 로그는 보존).',
@@ -1824,5 +1837,9 @@ return [
             'done' => '배송정책 더미 데이터 :count건이 성공적으로 생성되었습니다.',
             'purged' => '기존 배송정책 :count건을 삭제했습니다.',
         ],
+    ],
+    // 최근 검색어 범위 이름 (module.json search_scopes.products.label — 관리자 환경설정 > 개인정보 「최근 검색어」 카드)
+    'search_history' => [
+        'scope_products' => '상품 검색',
     ],
 ];

@@ -1404,6 +1404,12 @@ return [
 
     // Field name translations (Laravel standard)
     'attributes' => [
+        'content_media' => [
+            'owner_type' => 'content media owner type',
+            'file' => 'content media file',
+            'temp_key' => 'temporary key',
+        ],
+        'content_media_temp_key' => 'content media temporary key',
         // Manual paid transition confirm items (Q13·Q14)
         'apply_stock_deduction' => 'stock deduction',
         'apply_mileage_deduction' => 'used mileage deduction',
@@ -1444,6 +1450,10 @@ return [
         'review_settings.write_deadline_days' => 'Review write deadline (days)',
         'review_settings.max_images' => 'Max review images',
         'review_settings.max_image_size_mb' => 'Max review image size (MB)',
+
+        // Product display settings
+        'product_display.related_order' => 'Related products order',
+        'product_display.related_cache_hours' => 'Related products refresh interval',
 
         // Claim settings
         'claim.exchange_reasons' => 'Exchange reasons',

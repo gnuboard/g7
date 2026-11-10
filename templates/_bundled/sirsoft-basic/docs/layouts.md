@@ -355,6 +355,13 @@
 `/mypage` 자체는 레이아웃이 `-` 입니다 — 진입하면 하위 탭 중 하나로 넘기는 자리이며 자기
 화면을 갖지 않습니다.
 
+본문 편집기 확장점(`html_editor`)에는 게시판 표준 계약 엔드포인트(`GET boards/{slug}/content-media/target`, 데이터소스
+`content_media_target`)가 준 본문 미디어 업로드 계약을 `mediaUpload` 로 넘기고, 계약의 `fields.temp_key` 에 글쓰기 임시 키
+(`_local.tempKey`)를 더합니다(코어 7.1.5, 게시판 1.2.3). 올릴 권한이 없거나 받지 못하면 그 소스는 조용히 `{data: null}` 이 되고 편집기는
+종전 규칙(관리자만 편집기 자체 업로드)으로 동작합니다 — 이 prop 이 없는 복제 템플릿도 같습니다. 편집기는 처음 세워질 때의 계약만 쓰므로
+편집기 노드는 그 소스를 받기(실패 포함) 전에는 서지 않습니다. 예전처럼 폼 메타 `form_meta.data.content_media` 를 읽는 복제 템플릿도
+게시판이 같은 값을 계속 실어 주므로 그대로 동작합니다.
+
 게시글 작성·수정(`board/form` → `_post_form`)의 옵션 카드는 폼 메타의 권한 값으로 갈립니다.
 공지 옵션은 `user_abilities.can_manage`(게시판 관리) **또는** `can_write_notice`(공지 등록) 가
 참일 때만, 답글이 아닐 때만 보입니다 — 서버(게시판 모듈)가 공지 지정을 같은 두 권한으로
@@ -385,6 +392,9 @@
 있습니다 — `sirsoft-daum_postcode` 의 주소 검색 조각.
 원본과 같이 SDK 스크립트에 `label="$t:sirsoft-daum_postcode.search_address"` 를 선언해, 스크립트를 불러오지 못했을 때
 안내가 스크립트 id 가 아니라 「주소 검색」으로 나오게 합니다 — 원본 조각의 스크립트 선언을 바꾸면 이 오버라이드도 같이 맞춥니다.
+SDK 주소도 원본과 같은 카카오 주소(`t1.kakaocdn.net`)를 쓰고, 원본처럼 PC·모바일 표시 방식(`display_mode_pc`·`display_mode_mobile`)을
+함께 넘긴다(플러그인 1.2.0 · 이 템플릿 1.3.1). 표시 방식이 `inline`(페이지 안에 펼치기, 모바일 기본값)이면 버튼이 있는 「우편번호 칸 + 버튼」 줄 바로 아래에 검색 창을 넣으므로, 주소칸
+마크업에서 그 줄 구조(입력 칸과 확장점이 한 줄)를 바꾸면 펼쳐지는 자리도 함께 바뀐다 — 자리를 고정하려면 묶음에 `data-postcode-anchor` 를 단다.
 
 플러그인이 제공하는 원본 조각은 이커머스 관리자 화면에 맞춰져 있어, 방문자 화면의 배송지 입력
 디자인과 어긋납니다. 조각을 고치는 대신 **템플릿이 자기 버전을 얹는** 것이 이 방향입니다 —
@@ -996,6 +1006,9 @@ slots.content:
 **SEO 특수사항**:
 - `meta.seo.structured_data`: Product, AggregateRating 스키마
 - `meta.seo.og`: 상품 이미지, 가격 정보 포함
+- `meta.seo.vars`·`og` 의 제목·설명 식은 `$localized(meta_title) || $localized(name) || ''` 처럼 `||` 로 잇는다 — 화면 `$localized` 는
+  빈 값을 빈 글자로 돌려줘 `??` 로 이으면 다음 후보로 넘어가지 않는다. 그러면 상품 고유 검색 제목이 없는 상품의 방문자 탭 제목에서
+  상품명이 빠지고 틀의 고정 글자만 남는다(봇 `<title>` 은 정상이라 눈에 덜 띈다). 이 식은 서버 평가기와 화면 엔진이 함께 평가한다
 
 **핸들러 패턴**:
 - `sirsoft-basic.addSelectedItemIfComplete` — 옵션 선택 완료 시 자동 추가
@@ -1152,6 +1165,7 @@ slots.content:
 - `searchActiveTab`으로 탭 전환 시 해당 카테고리만 표시
 - 상품 결과는 카드/리스트 뷰 전환 지원
 - `global_state`로 검색 상태 유지 (탭, 필터, 정렬, 페이지)
+- 최근 검색어 범위: 통합검색·머리글·모바일 서랍 검색칸은 `core.site`, 상품 목록·분류 검색줄은 `sirsoft-ecommerce.products`, 게시판 목록 세 유형 검색칸은 `sirsoft-board.posts` 를 `RecentSearchCombobox` 의 `scope` 로 건넨다. 목록 화면 검색칸은 `submitEmpty` 로 빈 제출이 검색어 조건을 푼다(종전 동작)
 
 **핸들러 패턴**:
 - `apiCall` — 검색 API (게시글, 상품, 페이지 별도)

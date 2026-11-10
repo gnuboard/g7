@@ -363,10 +363,13 @@
                             ]
                         },
                         {
+                            "comment": "편집기는 처음 세워질 때의 업로드 계약만 쓴다 — 계약을 담은 소스(표준 계약 엔드포인트 content_media_target, #887)와 form_meta 를 받기(실패 포함) 전에는 세우지 않는다(#883 실측: 먼저 서면 업로드 단추가 끝내 생기지 않음)",
                             "id": "content_section",
                             "type": "extension_point",
                             "name": "html_editor",
+                            "if": "{{form_meta !== undefined && content_media_target !== undefined}}",
                             "props": {
+                                "mediaUpload": "{{content_media_target?.data ? Object.assign({}, content_media_target.data, { fields: Object.assign({}, content_media_target.data.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}",
                                 "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
                                 "label": "$t:sirsoft-board.admin.posts.form.content",
                                 "rows": 15,

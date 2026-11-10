@@ -105,6 +105,16 @@ interface PluginManagerInterface
     public function getPluginInfo(string $pluginName): ?array;
 
     /**
+     * 설치·의존 판정용 플러그인 정보를 반환합니다 — 미설치 플러그인은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
+     *
+     * @param  string  $pluginName  플러그인명
+     * @return array<string, mixed>|null 플러그인 정보 배열 또는 null
+     *
+     * @since 7.1.5
+     */
+    public function getPluginManifestInfo(string $pluginName): ?array;
+
+    /**
      * 플러그인의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $pluginName  플러그인명

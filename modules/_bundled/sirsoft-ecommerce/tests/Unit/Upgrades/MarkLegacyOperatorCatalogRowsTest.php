@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.2.1 운영자 카탈로그 행 생성자 표식(DataMigration) 회귀 테스트 (7.1.0 출시 점검 EU-2)
@@ -37,8 +38,8 @@ class MarkLegacyOperatorCatalogRowsTest extends ModuleTestCase
             DB::table($table)->delete();
         }
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/14_MarkLegacyOperatorCatalogRows.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/14_MarkLegacyOperatorCatalogRows.php');
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\MarkLegacyOperatorCatalogRows';
 

@@ -10,7 +10,7 @@
 
 ## 입력
 
-- 인자: 타입 + 범위(`--filter='A|B'`, Vitest 패턴, 구체 spec 파일). 인자가 없으면 변경 파일에서 대상을 도출한다 — 변경 파일 → 테스트 파일 매핑과 다계층 묶음 표는 references/scope.md(아래 「scope」 절).
+- 인자: 타입 + 범위(PHPUnit 테스트 파일 경로 목록, 메서드 단위면 `--filter`, Vitest 패턴, 구체 spec 파일). 인자가 없으면 변경 파일에서 대상을 도출한다 — 변경 파일 → 테스트 파일 매핑과 다계층 묶음 표는 references/scope.md(아래 「scope」 절).
 - 신규 기능이면 시나리오 매니페스트(`tests/scenarios/`, 확장 `tests/scenarios/`).
 - 규정: [testing-guide.md](../../testing-guide.md), [layout-testing.md](../../frontend/layout-testing.md), [e2e-testing.md](../../testing/e2e-testing.md). Windows 실행 형식의 원본은 operations.md Windows 환경 테스트 규칙.
 
@@ -19,6 +19,8 @@
 1. (backend) `.env.testing` 을 확인한다. 없으면 생성 필요를 알리고 기존 사용자 허가를 확인한다. 허가가 없으면 생성에 필요한 확인만 요청하고, 허가 후 `.env.testing.example` 을 복사해 `php artisan key:generate --env=testing` 을 실행한다. 존재 여부와 관계없이 테스트 DB가 개발 DB와 다른지 확인한 뒤 실행하며 접속 정보는 출력에 노출하지 않는다.
 2. 대상을 고른다 — 변경 파일에 걸리는 테스트와 그 변경이 영향을 주는 호출처·구독자·데이터 흐름의 연관 테스트(run-every-test-class-that-pokes-the-changed-contract). 새 화면·기존 화면 수정·데이터 흐름 변경은 백엔드 + 프론트엔드 + 레이아웃 렌더링(+해당 시 E2E)이 한 묶음이며 단일 계층으로 완료를 선언하지 않는다.
 3. 실행한다. Windows 에서 Vitest 는 PowerShell 래퍼로, PHPUnit 은 Bash 로 직접 실행한다. 스위트는 한 번에 하나씩 순차로 띄우고 앞 스위트가 끝난 뒤 다음을 시작한다(never-run-two-phpunit-suites-concurrently, never-run-two-e2e-suites-concurrently). 진행 중인 스위트는 진행률 확인 목적으로도 중단하지 않는다(never-interrupt-running-test-db-corruption). 실행 중에는 훅·라우트 캐시를 다시 굽는 artisan 을 돌리지 않는다(no-cache-regeneration-while-phpunit-runs). 출력은 처음부터 상세 오류까지 `<agent-tmp>/test-<name>.txt` 로 저장한다(save-test-output-to-file, test-show-full-error-output-first-run).
+
+   PHPUnit 은 스위트(코어 / 확장별)마다 **테스트 파일 경로**를 나열하고 `--log-junit` 으로 결과를 남긴다 — `--filter` 는 스위트 전체를 적재해 실행마다 수 초·수백 MB 를 더 쓰므로 메서드 단위로 좁힐 때만 덧붙인다. 테스트 DB 스키마는 마이그레이션이 바뀌지 않았으면 재사용된다(첫 DB 테스트 준비 약 1초). 마이그레이션 관련 파일을 바꾸면 자동으로 한 번 전체 재생하고, 일부러 처음부터 다시 만들려면 `G7_TEST_FRESH_SCHEMA=1` 을 붙인다(testing-schema-cache-reuse).
 
    ```bash
    ```
@@ -146,7 +148,9 @@ Playwright spec 과 Chrome MCP 실측을 같은 개발 서버에서 동시에 �
 | `plugins/_bundled/{id}/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
 | `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` (확장 주입 fragment) |
 
-확장 테스트는 확장 디렉토리에서 수집한다. 코어와 확장 테스트를 한 `--filter` 로 섞어 수집하면 모듈 마이그레이션이 누락된다(test-filter-cross-pollination).
+확장 테스트는 확장 디렉토리에서 수집하고, 코어와 확장은 실행을 나눈다(스위트마다 파일 경로 목록 1회). 테스트 스키마는 실행 순서와 무관하게 코어 + 모든 번들 확장 마이그레이션으로 만들어지므로 테이블 누락은 생기지 않지만, 확장 베이스 클래스의 준비(시드·오토로드)가 스위트 단위라 섞지 않는다(test-filter-cross-pollination).
+
+강제 재생 예시(Git Bash — PowerShell `$env:` 는 세션에 남는다): `G7_TEST_FRESH_SCHEMA=1 php vendor/bin/phpunit tests/Feature/XTest.php`.
 
 ### 다계층 묶음
 

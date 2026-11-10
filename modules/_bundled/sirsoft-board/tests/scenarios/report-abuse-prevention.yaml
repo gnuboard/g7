@@ -22,6 +22,7 @@ effects:
   - report_rejected_with_422_during_cooldown    # 쿨타임 안이면 422
   - report_allowed_after_cooldown               # 쿨타임이 지나면 다시 신고할 수 있다
   - cooldown_zero_disables_check                # 쿨타임 0 은 제한 없음
+  - report_cooldown_claim_released_when_validation_fails # 다른 칸 검증에 실패한 신고는 쿨타임 자리를 반납한다(#161 F7)
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/ReportAbusePreventionTest.php

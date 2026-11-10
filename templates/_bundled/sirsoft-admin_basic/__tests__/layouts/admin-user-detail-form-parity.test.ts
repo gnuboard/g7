@@ -92,6 +92,9 @@ const RECORD_ONLY = [
   'field_privacy_consent',
   'field_notifications_total',
   'field_notifications_unread',
+  // 최근 검색어(코어 7.1.5) — 회원이 남긴 기록과 회원 본인이 정하는 자동 저장 여부라 운영자가 고칠 값이 아니다.
+  'field_search_history_auto_save',
+  'field_search_history_site',
 ];
 
 describe('관리자 회원 상세 ↔ 수정 정합 (#599)', () => {

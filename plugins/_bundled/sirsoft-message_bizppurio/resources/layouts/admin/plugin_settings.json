@@ -7,7 +7,7 @@
         "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-message_bizppurio.settings.title",
         "description": "$t:sirsoft-message_bizppurio.settings.description",
-        "_e2e_allow": "e2e:allow (§529) 연결 확인 필드·hasChanges 가드 추가는 레이아웃 회귀테스트(plugin_settings.test.tsx) + PHPUnit Feature(TokenCheckEndpointTest·InvalidateTokenOnSettingsSaveListenerTest)로 커버. 실연동 Playwright는 계획서 §9 방침에 따라 직접 수행(인증·발송 환경 필요) 단계에서 도입 예정 — tests/scenarios/plugin-settings.yaml 상단 audit:allow 사유 참고."
+        "_e2e_allow": "e2e:allow (#160) 신청·동기화 날짜 바인딩만 서버 *_date_formatted(보는 사람 날짜)로 교체 — PHPUnit 응답 단언 + 레이아웃 Vitest(plugin_settings_manage.test.tsx) + Chrome MCP 매트릭스 S21. (§529) 연결 확인 필드·hasChanges 가드 추가는 레이아웃 회귀테스트(plugin_settings.test.tsx) + PHPUnit Feature(TokenCheckEndpointTest·InvalidateTokenOnSettingsSaveListenerTest)로 커버. 실연동 Playwright는 계획서 §9 방침에 따라 직접 수행(인증·발송 환경 필요) 단계에서 도입 예정 — tests/scenarios/plugin-settings.yaml 상단 audit:allow 사유 참고."
     },
     "data_sources": [
         {
@@ -2063,7 +2063,7 @@
                                                                                 "props": {
                                                                                     "className": "hidden"
                                                                                 },
-                                                                                "text": "{{$t('sirsoft-message_bizppurio.manage.owner.' + (bzRow.definition_extension_type ?? 'core'))}} {{(bzRow.definition_extension_type ?? 'core') === 'core' ? '' : ('(' + (bzRow.definition_extension_identifier ?? '') + ')')}} · {{$t('sirsoft-message_bizppurio.manage.columns.requested_at')}} {{(bzRow.requested_at ?? '').slice(0, 10) || '-'}} · {{$t('sirsoft-message_bizppurio.manage.columns.synced_at')}} {{(bzRow.last_synced_at ?? '').slice(0, 10) || '-'}}"
+                                                                                "text": "{{$t('sirsoft-message_bizppurio.manage.owner.' + (bzRow.definition_extension_type ?? 'core'))}} {{(bzRow.definition_extension_type ?? 'core') === 'core' ? '' : ('(' + (bzRow.definition_extension_identifier ?? '') + ')')}} · {{$t('sirsoft-message_bizppurio.manage.columns.requested_at')}} {{bzRow.requested_at_date_formatted || '-'}} · {{$t('sirsoft-message_bizppurio.manage.columns.synced_at')}} {{bzRow.last_synced_at_date_formatted || '-'}}"
                                                                             }
                                                                         ]
                                                                     },
@@ -2130,7 +2130,7 @@
                                                                         "props": {
                                                                             "className": "col-span-1 text-sm text-gray-700 dark:text-gray-200 tabular-nums"
                                                                         },
-                                                                        "text": "{{(bzRow.requested_at ?? '').slice(0, 10) || '-'}}"
+                                                                        "text": "{{bzRow.requested_at_date_formatted || '-'}}"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -2145,7 +2145,7 @@
                                                                         "props": {
                                                                             "className": "col-span-1 text-sm text-gray-700 dark:text-gray-200 tabular-nums"
                                                                         },
-                                                                        "text": "{{(bzRow.last_synced_at ?? '').slice(0, 10) || '-'}}"
+                                                                        "text": "{{bzRow.last_synced_at_date_formatted || '-'}}"
                                                                     },
                                                                     {
                                                                         "type": "basic",

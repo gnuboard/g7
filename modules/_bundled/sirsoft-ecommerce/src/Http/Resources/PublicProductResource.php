@@ -9,10 +9,12 @@ use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductWishlist;
+use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
 
 /**
@@ -45,6 +47,8 @@ class PublicProductResource extends BaseApiResource
                 'id' => $cat->id,
                 'name' => $cat->name,
                 'name_localized' => $cat->getLocalizedName(),
+                // 분류 화면 주소({shop}/category/{slug})를 만들 때 쓴다 — 상세 위 분류명을 그 분류로 잇는 링크
+                'slug' => $cat->slug,
                 'breadcrumb' => $cat->getLocalizedBreadcrumbString(),
                 'path' => $cat->path,
                 'is_primary' => $cat->pivot->is_primary,
@@ -121,7 +125,14 @@ class PublicProductResource extends BaseApiResource
             // 설명 (다국어)
             'short_description' => $this->short_description,
             'short_description_localized' => $this->resolveLocalizedField($this->short_description),
-            'description' => $this->description,
+            // 본문 미디어 — 전시 중 상품은 정식 주소, 아니면 서명 주소(관리자 화면·미리보기의 <img>·<video> 는 인증 헤더가 없다) (#883).
+            // 서명은 이 상품이 소유한 미디어만 — 다른 상품 해시는 정식 주소로 두어 원본 상품의 게이트를 따른다 (#887)
+            'description' => app(ContentMediaService::class)->presentContent(
+                $this->description,
+                $this->resource instanceof Product && ContentMediaService::isPublicProduct($this->resource),
+                ContentMediaOwnerType::Product,
+                $this->resource instanceof Product ? (int) $this->resource->id : null
+            ),
             'description_localized' => $this->getLocalizedDescription(),
             'description_mode' => $this->description_mode,
 

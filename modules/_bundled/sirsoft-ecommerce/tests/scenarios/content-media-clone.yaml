@@ -1,0 +1,28 @@
+feature: 이커머스 본문 미디어 저장 시 복제 — 다른 상품·공통 정보 소유 미디어를 이 소유로 복사 (#887)
+
+description: |
+  상품 설명·상품 공통 정보를 저장할 때 본문에 다른 상품·공통 정보 소유의 본문 미디어 주소가 있으면, 저장하는 사람이
+  그 원본을 볼 수 있을 때만(공통 정보는 공개, 상품은 전시 중이거나 상품 읽기 권한) 파일을 복사해 이 소유의 새 행·새 해시를
+  만들고 저장 본문의 주소를 새 주소로 바꾼다(코어 ContentMediaCloner). 원본에서 미디어를 빼거나 원본을 지워도 사본은 남는다.
+  볼 수 없는 원본은 복사하지 않는다. 복사할 미디어도 문서당 최대 개수에 센다(넘으면 422, 저장 전체 되돌림).
+  처리 순서는 코어 골격대로 연결 → 복제 → 제거다. 공개되지 않은 상품의 응답 본문은 그 상품이 소유한 해시만 서명하고 다른 상품
+  해시는 정식 주소로 둔다(원본 게이트를 따름).
+  복제로 바뀐 본문을 같은 트랜잭션에서 다시 저장해도 한 저장으로 기록된다 — 상품·공통 정보 각각 after_create·after_update 1회,
+  활동 로그 1건(#887 G7).
+
+axes:
+  case: [readable_source, unreadable_source, limit, sign_scope, record_once]
+
+effects:
+  - copied_to_new_owner
+  - content_rewritten
+  - survives_source_removal
+  - stored_description_rewritten
+  - unreadable_not_copied
+  - clones_counted_in_limit
+  - only_owned_hashes_signed
+  - product_clone_resave_recorded_once
+  - common_info_clone_resave_recorded_once
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ContentMediaCloneTest.php

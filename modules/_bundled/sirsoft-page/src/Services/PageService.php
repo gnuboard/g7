@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Services;
 
+use App\Exceptions\ContentMediaLimitExceededException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Search\SearchPagePolicy;
@@ -42,10 +43,17 @@ class PageService
      */
     public const SEARCH_CURSOR_COLUMNS = ['created_at'];
 
+    /**
+     * @param  PageRepositoryInterface  $pageRepository  페이지 리포지토리
+     * @param  PageVersionRepositoryInterface  $pageVersionRepository  페이지 버전 리포지토리
+     * @param  PageAttachmentService  $pageAttachmentService  첨부 서비스
+     * @param  PageContentMediaService  $contentMediaService  본문 미디어 서비스 (#883)
+     */
     public function __construct(
         private PageRepositoryInterface $pageRepository,
         private PageVersionRepositoryInterface $pageVersionRepository,
         private PageAttachmentService $pageAttachmentService,
+        private PageContentMediaService $contentMediaService,
     ) {}
 
     /**
@@ -69,6 +77,8 @@ class PageService
      *
      * @param  array  $data  페이지 생성 데이터
      * @return Page 생성된 페이지 모델
+     *
+     * @throws ContentMediaLimitExceededException 본문 미디어가 문서당 최대 개수를 넘을 때 (저장 전체를 되돌림)
      */
     public function createPage(array $data): Page
     {
@@ -78,6 +88,11 @@ class PageService
 
         return DB::transaction(function () use ($data) {
             $userId = Auth::id();
+
+            // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+            if (array_key_exists('content', $data)) {
+                $data['content'] = $this->contentMediaService->normalizeContent($data['content']);
+            }
 
             $pageData = array_merge($data, [
                 'created_by' => $userId,
@@ -92,9 +107,6 @@ class PageService
 
             $page = $this->pageRepository->create($pageData);
 
-            // 버전 1 스냅샷 저장
-            $this->saveVersionSnapshot($page, $userId);
-
             // temp_key 첨부파일 연결 및 파일 이동 (업로드 순서대로 order 부여)
             if (! empty($data['temp_key'])) {
                 $this->pageAttachmentService->linkTempAttachmentsWithMove(
@@ -102,6 +114,13 @@ class PageService
                     $page->id
                 );
             }
+
+            // 본문이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
+            // 다른 페이지 소유 본문 미디어는 이 페이지 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            $page = $this->applyClonedContentMedia($page, $this->contentMediaService->syncWithContent($page, $data['temp_key'] ?? null));
+
+            // 버전 1 스냅샷 저장 — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에 (#887)
+            $this->saveVersionSnapshot($page, $userId);
 
             HookManager::doAction('sirsoft-page.page.after_create', $page, $data);
 
@@ -117,6 +136,9 @@ class PageService
      * @param  Page  $page  페이지 모델
      * @param  array  $data  수정할 데이터
      * @return Page 수정된 페이지 모델
+     *
+     * @throws AccessDeniedHttpException 수정 권한 범위 밖의 페이지일 때
+     * @throws ContentMediaLimitExceededException 본문 미디어가 문서당 최대 개수를 넘을 때 (저장 전체를 되돌림)
      */
     public function updatePage(Page $page, array $data): Page
     {
@@ -133,6 +155,11 @@ class PageService
         return DB::transaction(function () use ($page, $data, $snapshot) {
             $userId = Auth::id();
 
+            // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+            if (array_key_exists('content', $data)) {
+                $data['content'] = $this->contentMediaService->normalizeContent($data['content']);
+            }
+
             $updateData = array_merge($data, [
                 'updated_by' => $userId,
                 'current_version' => $page->current_version + 1,
@@ -145,9 +172,6 @@ class PageService
 
             $page = $this->pageRepository->update($page, $updateData);
 
-            // 버전 스냅샷 저장
-            $this->saveVersionSnapshot($page, $userId);
-
             // temp_key 첨부파일 연결 및 파일 이동 (업로드 순서대로 order 부여)
             if (! empty($data['temp_key'])) {
                 $this->pageAttachmentService->linkTempAttachmentsWithMove(
@@ -156,6 +180,13 @@ class PageService
                 );
             }
 
+            // 본문 미디어 동기화 — 본문에서 빠진 것은 지우고 새로 참조한 임시 본문 미디어는 잇는다 (#883)
+            // 다른 페이지 소유 본문 미디어는 이 페이지 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            $page = $this->applyClonedContentMedia($page, $this->contentMediaService->syncWithContent($page, $data['temp_key'] ?? null));
+
+            // 버전 스냅샷 저장 — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에 (#887)
+            $this->saveVersionSnapshot($page, $userId);
+
             HookManager::doAction('sirsoft-page.page.after_update', $page, $data, $snapshot);
 
             return $page;
@@ -163,9 +194,9 @@ class PageService
     }
 
     /**
-     * 페이지를 삭제합니다 (소프트 삭제).
+     * 페이지를 삭제합니다.
      *
-     * 첨부파일도 함께 소프트 삭제합니다.
+     * 첨부파일과 본문 미디어도 파일과 행째 함께 지웁니다 — 파일은 커밋된 뒤에 지워 롤백과 어긋나지 않게 합니다.
      *
      * @param  Page  $page  페이지 모델
      * @return bool 삭제 성공 여부
@@ -179,11 +210,15 @@ class PageService
         HookManager::doAction('sirsoft-page.page.before_delete', $page);
 
         return DB::transaction(function () use ($page) {
-            // 첨부파일 삭제: 물리 파일 + DB 소프트 삭제 (DB CASCADE 의존 금지)
+            // 첨부파일 삭제: 물리 파일 + DB 행 (DB CASCADE 의존 금지)
             $attachments = $this->pageAttachmentService->getByPageId($page->id);
             foreach ($attachments as $attachment) {
                 $this->pageAttachmentService->deleteAttachment($attachment);
             }
+
+            // 본문 미디어 삭제 — 첨부 목록 조회가 본문 미디어를 빼므로 따로 지운다. 빠뜨리면 파일이 영구히 남는다.
+            // 버전이 참조해 남겨 둔 것까지 모두 지운다(버전도 함께 지워진다). 행마다 core.content_media.before_delete (#887)
+            $this->contentMediaService->deleteContentMediaForPage($page->id);
 
             $result = $this->pageRepository->delete($page);
 
@@ -283,13 +318,16 @@ class PageService
      * 페이지 버전을 복원합니다.
      *
      * 지정된 버전의 스냅샷으로 현재 페이지 내용을 덮어쓰고
-     * 새로운 버전 스냅샷을 생성합니다.
+     * 새로운 버전 스냅샷을 생성합니다. 복원 본문은 저장 경로와 같이 본문 미디어 정규화·동기화를 거친 뒤
+     * 스냅샷을 남깁니다 (#887).
      *
      * @param  Page  $page  페이지 모델
      * @param  int  $versionId  복원할 버전 ID
      * @return Page 복원된 페이지 모델
      *
      * @throws ModelNotFoundException 버전이 해당 페이지에 속하지 않을 때
+     * @throws AccessDeniedHttpException 수정 권한 범위 밖의 페이지일 때
+     * @throws ContentMediaLimitExceededException 복원 본문의 본문 미디어가 문서당 최대 개수를 넘을 때 (복원 전체를 되돌림)
      */
     public function restoreVersion(Page $page, int $versionId): Page
     {
@@ -307,7 +345,8 @@ class PageService
 
             $updateData = [
                 'title' => $version->title,
-                'content' => $version->content,
+                // 본문 미디어 서명 주소가 섞여 있어도 정식 주소로 저장한다 (#887)
+                'content' => $this->contentMediaService->normalizeContent($version->content),
                 'content_mode' => $version->content_mode,
                 'seo_meta' => $version->seo_meta,
                 'updated_by' => $userId,
@@ -316,7 +355,11 @@ class PageService
 
             $page = $this->pageRepository->update($page, $updateData);
 
-            // 복원 버전 스냅샷 저장 (복원 원본 버전 번호 전달)
+            // 복원 본문과 본문 미디어를 맞춘다 — 그 버전이 참조하던 미디어는 버전 참조 덕에 남아 있으므로 그대로 이어지고,
+            // 다른 페이지 소유 미디어가 섞여 있으면 볼 수 있을 때 이 페이지 소유로 복제한다. 복원은 임시 업로드가 없다 (#887)
+            $page = $this->applyClonedContentMedia($page, $this->contentMediaService->syncWithContent($page, null));
+
+            // 복원 버전 스냅샷 저장 (복원 원본 버전 번호 전달) — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에 (#887)
             $this->saveVersionSnapshot($page, $userId, $version->version);
 
             HookManager::doAction('sirsoft-page.page.after_restore', $page, $version);
@@ -464,11 +507,28 @@ class PageService
     }
 
     /**
+     * 본문 미디어 동기화가 복제한 해시로 바뀐 본문을 페이지에 다시 저장합니다 — 저장 트랜잭션 안 (#887).
+     *
+     * @param  Page  $page  저장된 페이지
+     * @param  array{cloned?: int, content?: mixed}  $result  `PageContentMediaService::syncWithContent` 결과
+     * @return Page 본문을 다시 저장한 페이지 (복제가 없으면 그대로)
+     */
+    private function applyClonedContentMedia(Page $page, array $result): Page
+    {
+        if (($result['cloned'] ?? 0) < 1 || ! array_key_exists('content', $result) || $result['content'] === $page->content) {
+            return $page;
+        }
+
+        return $this->pageRepository->update($page, ['content' => $result['content']]);
+    }
+
+    /**
      * 현재 페이지 상태를 버전 스냅샷으로 저장합니다.
      *
      * @param  Page  $page  페이지 모델
      * @param  int  $userId  작성자 ID
      * @param  int|null  $restoredFrom  복원 원본 버전 번호 (복원 시에만)
+     * @return void 반환값 없음
      */
     private function saveVersionSnapshot(Page $page, int $userId, ?int $restoredFrom = null): void
     {

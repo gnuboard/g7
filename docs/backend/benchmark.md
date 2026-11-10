@@ -7,7 +7,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. `g7:bench` 가 4축(list/screen/write/batch)을 잰다 — 계측 대상은 커맨드에 하드코딩하지 않는다
+1. `g7:bench` 가 5축(list/screen/write/batch/boot)을 잰다 — 계측 대상은 커맨드에 하드코딩하지 않는다
 2. 선언 지점: 코어 `config/benchmark.php`, 확장 `getBenchmarkProfiles()` — 스키마 동일
 3. 화면(screen) 축은 프로파일이 선언한 권한만 가진 임시 계정으로 내부 요청 → 롤백. `--as=` 로 기존 계정 지정 가능
 4. 데이터를 변경하는 축(write/batch/비-GET screen)은 `--allow-write` 없이 실행 거부
@@ -36,6 +36,7 @@
 | `screen` | 화면 1장 응답 시간 + 실행 쿼리 건수 + N+1 후보 | 라우트를 HTTP 커널로 내부 요청 처리 |
 | `write` | 저장 경로 1회 소요 시간 + 쿼리 건수 | 확장이 선언한 콜백 실행 |
 | `batch` | 배치 커맨드 소요 시간 + 피크 메모리 | artisan 커맨드 실행 감싸기 |
+| `boot` | 요청 1건의 부팅 비용 — 단계별 시간(중앙값) + 쿼리·캐시·포함 파일·프로바이더·리스너·훅 수 | 회차마다 새 PHP 프로세스가 실제 웹 요청과 같은 부팅으로 그 경로를 처리 (7.1.5) |
 
 `screen` 축이 값어치가 가장 크다 — 사용자가 체감하는 단위이고, 목록 SELECT 는 빨라도 N+1 로 느려지는 경우를 잡는다. `list` 축의 세 값 배수는 지연 조인(`PaginatesWithDeferredJoin`) 적용의 기대 효과에 대응한다 (셋째 축이 지연 조인의 inner 쿼리).
 
@@ -125,6 +126,23 @@ public function getBenchmarkProfiles(): array
 
 `prepare` 를 계측 구간 밖에 두는 이유는, 저장 경로에는 선행 상태가 필요한 경우가 많고(주문 생성에는 임시 주문이 필요하고 임시 주문은 1회만 전환됨) 그 준비 비용이 측정값에 섞이면 재려던 것을 재지 못하기 때문이다.
 
+### type=boot
+
+| 필드 | 설명 |
+| ------ | ------ |
+| `uri` | 요청 경로 (GET, 쿼리스트링 포함 가능, 필수) |
+| `runs` | 측정 회차 (기본 20). 첫 회는 OPcache·파일 캐시 데우기라 버리고 나머지의 중앙값을 낸다. `--runs` 를 주면 그 값 |
+| `permissions` | 선언하면 이 권한만 가진 임시 계정의 토큰으로 요청한다 (계측 뒤 계정·토큰 삭제) |
+
+`screen` 축은 이미 부팅이 끝난 프로세스 안에서 내부 요청을 처리하므로 **부팅 비용이 빠진다**. 「API 한 건마다 확장 세계를 다시 조립하는 비용」은 매 요청 새로 시작하는 프로세스(php-fpm 등)에서만 드러나므로, `boot` 축은 회차마다 자식 PHP 프로세스를 띄워 콘솔이 아닌 웹 실행 맥락(`APP_RUNNING_IN_CONSOLE=false`)으로 부팅·요청 처리를 한 번 하고 결과를 받는다. 횟수·키 수는 마지막 회차 값이다.
+
+| 표 열 (`--json` 키) | 뜻 |
+| ------ | ------ |
+| 전체·부트스트랩·처리(ms) (`ms.total`·`ms.bootstrap`·`ms.handle`, `app_create`·`terminate` 도 함께) | 회차 중앙값 |
+| 쿼리 (`query_count`·`query_count_during_boot`·`db_ms`·`repeated_queries`) | 쿼리 수 / 그중 부팅 중 / DB 시간 / 같은 SQL 이 두 번 이상 나간 목록 |
+| 캐시 조회 (`cache.hit`·`missed`·`written`·`top_keys`) | 캐시 조회 결과 수와 자주 읽은 키 |
+| 파일·리스너·훅 액션 (`included_files`·`providers`·`event_listeners`·`event_wildcard_listeners`·`hook_actions`·`hook_filters`) | 포함된 PHP 파일 / 로드된 프로바이더 / 이벤트 리스너 / 와일드카드 리스너 / 훅 액션·필터 수 |
+
 ### type=batch
 
 | 필드 | 설명 |
@@ -144,6 +162,7 @@ php artisan g7:bench --profile=sirsoft-ecommerce/orders --offsets=0,20000,50000,
 
 # 축 단위 / 전체
 php artisan g7:bench --axis=screen
+php artisan g7:bench --axis=boot --runs=10
 php artisan g7:bench --all --allow-write
 
 # 깊은 OFFSET 계측 (대량 합성 행 시딩 — 폐기 가능한 DB 에서만)

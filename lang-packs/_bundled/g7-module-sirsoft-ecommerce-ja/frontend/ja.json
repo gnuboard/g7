@@ -391,7 +391,9 @@
       "saved_addresses": "保存された配送先",
       "address_empty": "登録された配送先がありません。",
       "address_default": "基本",
-      "address_more": "他 {{count}}件は配送先管理で確認できます。"
+      "address_more": "他 {{count}}件は配送先管理で確認できます。",
+      "search_history": "最近の商品検索語",
+      "search_history_empty": "保存された商品検索語はありません。"
     },
     "claim": {
       "$partial": "partial/admin/claim.json"
@@ -445,6 +447,7 @@
       "ecommerce_settings": "ショッピングモール設定",
       "extra_fee_templates": "追加配送料金テンプレート",
       "policy_abilities": "配送ポリシー権限",
+      "contentMediaTarget": "本文メディアのアップロード情報",
       "product_abilities": "商品権限",
       "identityProviders": "本人認証プロバイダー",
       "notice_templates": "商品情報表示テンプレート",

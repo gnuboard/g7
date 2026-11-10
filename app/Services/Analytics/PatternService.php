@@ -52,7 +52,9 @@ class PatternService
 
         return [
             'weekday' => $this->weekday($from, $to, $types),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             'hour' => $this->hour($hourFrom->toDateString(), $to, $types),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             'hourly_available_from' => $availableFrom->toDateString(),
         ];
     }
@@ -79,6 +81,7 @@ class PatternService
             $buckets[$index]['pageviews'] += (int) $row->pageviews;
 
             // 같은 날에 유형별 행이 여럿이므로, 날짜를 한 번만 센다.
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $seenDates[$index][$date->toDateString()] = true;
         }
 
@@ -110,6 +113,7 @@ class PatternService
             $buckets[$index]['visitors'] += (int) $row->visitors;
             $buckets[$index]['pageviews'] += (int) $row->pageviews;
 
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $seenSlots[$index][$moment->toDateString()] = true;
         }
 

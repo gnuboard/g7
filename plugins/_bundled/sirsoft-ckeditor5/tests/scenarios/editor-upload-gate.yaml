@@ -1,0 +1,20 @@
+feature: 편집기 이미지 업로드 단추는 관리자에게만 주고, 편집기 경고는 코어 토스트로 보낸다
+
+description: |
+  이 플러그인의 업로드 주소(`POST /api/plugins/sirsoft-ckeditor5/upload`)는 관리자 전용이다. 사용자 글쓰기
+  화면에도 업로드 단추가 나와 비회원이 누르면 401 → 로그인 화면 이동으로 쓰던 글이 사라졌고, 일반 회원은
+  403 으로 실패했다(#883). 플러그인 설정이 켜져 있어도 보는 사람이 관리자일 때만 단추·어댑터를 붙인다.
+  판정은 부팅 때 받은 인증 사용자(`AuthManager.getUser().is_admin`)를 먼저 본다 — 관리자 템플릿은
+  `_global.currentUser` 를 올리지 않는다. 업로드 실패 같은 편집기 경고는 네이티브 alert 대신 코어 토스트다.
+
+axes:
+  case: [guest_setting_on, member_setting_on, admin_setting_on, admin_setting_off, auth_user_fallback, warning_toast]
+
+effects:
+  - upload_button_hidden_for_non_admin
+  - upload_button_shown_for_admin
+  - upload_button_hidden_when_setting_off
+  - editor_warning_routed_to_toast
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-upload-gate.test.tsx
