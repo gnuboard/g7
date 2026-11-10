@@ -1,0 +1,26 @@
+feature: 회원 상품 후기 작성 자격·상태 변경·판매자 답변 (ProductReviewService)
+
+description: |
+  회원 후기는 본인 주문의 구매 확정 옵션에만, 작성 기한 안에, 옵션당 한 번 쓸 수 있다.
+  자격이 없으면 canWrite 가 false 를 돌려주고 createReview 는 예외로 막는다.
+  상태 변경(단건·일괄)은 저장소에 위임하고, 판매자 답변은 첫 답변과 수정 시각을 따로 기록하며
+  답변 삭제는 답변 내용·작성자·시각을 모두 비운다.
+
+axes:
+  operation:
+    - can_write
+    - create_review
+    - update_status
+    - bulk_update_status
+    - save_reply
+    - delete_reply
+
+effects:
+  - review_write_denied_when_ineligible    # 옵션 없음·남의 주문·구매 확정 전·이미 작성·기한 지남
+  - review_write_allowed_when_eligible     # 본인 주문·구매 확정·기한 안·미작성
+  - review_status_change_delegated         # updateStatus·bulkUpdateStatus → 저장소
+  - review_reply_timestamps_tracked        # 첫 답변 replied_at, 수정 reply_updated_at
+  - review_reply_cleared_on_delete         # 답변 내용·작성 관리자·시각 비움, 형식 text
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewServiceTest.php

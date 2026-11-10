@@ -313,6 +313,7 @@
     "checked_fields_notice": "全体設定を保存した後、チェックした項目のみ一括適用されます。",
     "no_boards_notice": "登録された掲示板がないため、一括適用できません。まず掲示板を作成してください。",
     "field_labels": {
+      "content_media_policy": "本文メディアポリシー",
       "type": "デフォルトタイプ",
       "per_page": "ページあたりの投稿数 (PC)",
       "per_page_mobile": "ページあたりの投稿数 (モバイル)",

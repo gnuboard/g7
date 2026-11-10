@@ -41,6 +41,15 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 편집기 업로드 계약 — 표준 계약 엔드포인트(#887). 올릴 권한이 없거나 받지 못하면 조용히 넘기고 업로드 없이 편집기를 세운다(실패하면 값이 data: null). 편집기는 처음 세워질 때의 계약만 쓰므로 받기(실패 포함)가 끝난 뒤에 세운다 -->
+  <data-source id="content_media_target" label_key="$t:sirsoft-board.editor.data_source.content_media_target" type="api" endpoint="/api/modules/sirsoft-board/admin/board/{{route.slug}}/content-media/target" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <suppress/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
   <init-local>
     <field name="isSaving" :value="false"/>
     <field name="hasChanges" :value="false"/>

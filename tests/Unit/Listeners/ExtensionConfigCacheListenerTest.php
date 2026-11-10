@@ -4,7 +4,7 @@ namespace Tests\Unit\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Listeners\ExtensionConfigCacheListener;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * ExtensionConfigCacheListener 회귀 테스트.
@@ -14,7 +14,7 @@ use Tests\TestCase;
  * 이 리스너는 activate/deactivate 만 구독해야 한다(이중 재생성 회피). 구독 훅 집합이
  * 바뀌면 config 캐시가 재생성되지 않거나(누락) 두 번 재생성되는(낭비) 회귀가 발생한다.
  */
-class ExtensionConfigCacheListenerTest extends TestCase
+class ExtensionConfigCacheListenerTest extends PureTestCase
 {
     /**
      * 리스너가 훅 리스너 계약을 구현한다.

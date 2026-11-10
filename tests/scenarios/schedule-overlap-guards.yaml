@@ -1,0 +1,52 @@
+feature: 예약 작업 중복 실행 방지 (확장 예약 기본값 · 「지금 실행」 실행 잠금, #161 F3·F4)
+
+description: |
+  예약 작업의 「중복 실행 방지」가 두 곳에서 빠져 있었다.
+
+  확장 예약(모듈·플러그인 getSchedules())은 routes/console.php 가 등록하면서 중복 실행 방지·한 서버 실행을
+  걸지 않아, 길어진 매시 작업이 다음 회차와 겹치고 다중 서버에서는 같은 작업이 서버 수만큼 돌았다. 이제 기본으로
+  withoutOverlapping(1440)·onOneServer() 를 건다. 항목에 `without_overlapping => false` 를 두면 끄고, 분 단위
+  정수면 그 시간 뒤 잠금이 만료된다. `on_one_server => false` 면 서버마다 돈다.
+
+  관리자 화면의 「지금 실행」(ScheduleService::runSchedule)은 스케줄의 without_overlapping 값을 저장만 하고
+  쓰지 않아, 버튼을 두 번 누르면 같은 작업이 두 번 돌았다. 이제 방지를 켠 스케줄은 직전 훅·이력 생성보다 먼저
+  `schedule-run:{id}` 잠금을 잡는다. 실행 중이면 409, 잠금 저장소 오류면 503 으로 거절하고 거절된 요청은
+  이력·last_result 를 남기지 않는다. 잠금은 실행이 실패해도 풀린다.
+
+axis_notes:
+  case: |
+    ext_schedule_* 는 확장 예약 등록(routes/console.php 원본을 다시 읽혀 검증), run_* 는 「지금 실행」 경로다.
+
+axes:
+  case: [ext_schedule_default, ext_schedule_overlap_opt_out, ext_schedule_overlap_minutes, ext_schedule_one_server_opt_out,
+         run_rejected_while_running, run_overlap_allowed, run_failed_releases_lock, run_lock_store_error,
+         ext_schedule_registration, admin_history_list, admin_bulk_status, admin_bulk_delete, admin_unauthenticated,
+         service_query, service_delete]
+
+effects:
+  # 확장 예약 등록 기본값 (F3)
+  - extension_schedule_defaults_to_overlap_guards      # 지정하지 않으면 중복 실행 방지(1440분)·한 서버 실행
+  - extension_schedule_overlap_guard_opt_out           # without_overlapping => false 면 중복 실행 방지를 끈다
+  - extension_schedule_overlap_expiry_minutes          # without_overlapping 정수는 잠금 만료 분
+  - extension_schedule_one_server_opt_out              # on_one_server => false 면 서버마다 실행
+  # 「지금 실행」 실행 잠금 (F4)
+  - schedule_run_rejected_while_same_schedule_runs     # 실행 중이면 409 — 이력·last_result 를 남기지 않는다
+  - schedule_run_overlap_allowed_when_guard_off        # 방지를 끈 스케줄은 잠금 없이 겹쳐 실행된다
+  - schedule_run_lock_released_after_failure           # 실행이 실패해도 실행 잠금은 풀린다
+  - schedule_run_refused_when_lock_store_errors        # 잠금 저장소 오류면 실행하지 않고 503(번역문만 응답)
+
+  # 기존 동작 (이 매니페스트가 소유한 시험 파일의 종전 시험)
+  - extension_schedules_registered_from_active_extensions
+  - schedule_admin_history_includes_trigger_user
+  - schedule_bulk_status_change
+  - schedule_bulk_delete
+  - schedule_bulk_requires_auth
+  - schedule_service_returns_paginators
+  - schedule_delete_removes_histories_and_fires_hooks
+
+# E2E axis 없음: 판정은 전부 서버측이고 레이아웃 JSON·컴포넌트 변경이 없다.
+
+test_files:
+  - tests/Feature/Extension/ExtensionScheduleRegistrationTest.php
+  - tests/Unit/Services/ScheduleServiceTest.php
+  - tests/Feature/Api/Admin/ScheduleControllerTest.php

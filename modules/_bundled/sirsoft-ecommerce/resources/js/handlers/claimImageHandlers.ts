@@ -20,6 +20,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { guestClaimAuthRequiredMessage, isGuestOrderAuthFailure } from '../utils/guestOrderAuth';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimImage')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ClaimImage]', ...args),
@@ -223,7 +224,9 @@ export async function uploadPendingClaimFiles(
             // 파일마다 띄우지 않고 **끝나고 한 번** 장수와 함께 알린다 — 아래 요약 참조.
             logger.error('[uploadPendingClaimFiles] 실패:', error);
             failed += 1;
+            // 비회원 주문 확인 실패(무토큰 401)는 서버 문구(「인증이 필요합니다.」) 대신 주문 조회를 다시 하라고 덧붙인다(#883)
             firstFailureMessage = firstFailureMessage
+                ?? (isGuestOrderAuthFailure(error) ? guestClaimAuthRequiredMessage() : null)
                 ?? error?.response?.data?.message
                 ?? error?.data?.message
                 ?? null;
@@ -383,7 +386,8 @@ export async function removeClaimImageHandler(
     } catch (error: any) {
         logger.error('[removeClaimImage] 실패:', error);
         G7Core.toast?.error?.(
-            error?.response?.data?.message
+            (isGuestOrderAuthFailure(error) ? guestClaimAuthRequiredMessage() : null)
+            ?? error?.response?.data?.message
             ?? error?.data?.message
             ?? claimText('sirsoft-ecommerce.user.claim.image.remove_failed', '첨부 삭제에 실패했습니다.')
         );

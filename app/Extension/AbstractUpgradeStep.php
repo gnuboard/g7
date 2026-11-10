@@ -4,6 +4,7 @@ namespace App\Extension;
 
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
+use App\Extension\Support\UpgradeStepFileLoader;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\Upgrade\DataSnapshot;
 use ReflectionClass;
@@ -69,10 +70,12 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
         $namespace = DataSnapshot::versionedNamespace($context, $dir).'\\Migrations';
 
         foreach ($files as $file) {
-            require_once $file;
             $baseName = basename($file, '.php');
             $className = preg_replace('/^\d{2,}_/', '', $baseName);
             $fqcn = $namespace.'\\'.$className;
+
+            // 활성·번들 동일 사본이 이미 선언한 클래스는 다시 싣지 않는다(재선언 Fatal 방지, 7.1.5)
+            UpgradeStepFileLoader::load($file, $fqcn);
 
             // 파일이 있는데 클래스가 없거나 DataMigration 미구현이면 업데이트 실패 (7.1.3 — 예전엔 조용히 건너뜀)
             UpgradeStepClassMissingException::assertUsable($file, $fqcn, DataMigration::class);

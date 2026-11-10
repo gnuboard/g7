@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'content_media' => [
+        'upload_success' => 'Content media uploaded.',
+        'upload_failed' => 'Failed to upload content media.',
+        'target_success' => 'Content media upload contract retrieved.',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Page Messages
@@ -67,6 +73,11 @@ return [
     ],
     // Page module seeder console output
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => 'The browser measurement seeder runs only from the CLI with G7_PLAYWRIGHT_BYPASS=1.',
+            'done' => 'Browser measurement pages created: :count',
+            'cleanup_done' => 'Browser measurement pages cleaned up — :counts',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => 'No admin user found; skipping the page activity log seeder.',
             'unmarked_kept' => 'Unmarked page activity logs kept as production logs: :count (samples created by earlier seeder versions have no marker either, so they are not cleaned up).',

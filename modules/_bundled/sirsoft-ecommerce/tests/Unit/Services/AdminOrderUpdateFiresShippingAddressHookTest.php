@@ -3,8 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionClass;
+use Tests\PureTestCase;
 
 /**
  * 관리자 주문 수정 경로의 배송지 변경 로그 (S2-D6 · #599 통합실측 세션2)
@@ -30,13 +30,15 @@ use ReflectionClass;
  * 이 테스트는 서비스가 훅을 **발화하는지** 만 본다. 훅을 받은 뒤의 로그 모양은
  * `Unit/Listeners/OrderActivityLogListenerTest` 가 이미 잠그고 있으므로 중복하지 않는다.
  */
-class AdminOrderUpdateFiresShippingAddressHookTest extends ModuleTestCase
+class AdminOrderUpdateFiresShippingAddressHookTest extends PureTestCase
 {
     /**
      * `OrderService::update()` 의 본문을 소스에서 읽어 온다.
      *
      * 이 결함은 **훅 배선 누락**이라 DB 왕복 없이 배선 자체를 확인하는 것이
      * 가장 곧다(로컬 MySQL 의 migrate:fresh DDL 부담도 피한다).
+     *
+     * @return string OrderService::update() 메서드 본문 소스
      */
     private function updateMethodBody(): string
     {
@@ -62,6 +64,8 @@ class AdminOrderUpdateFiresShippingAddressHookTest extends ModuleTestCase
      * @scenario admin_order_update=writes_address_inline
      *
      * @effects admin_update_writes_shipping_address_directly
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_update_writes_the_shipping_address_directly(): void
     {
@@ -84,6 +88,8 @@ class AdminOrderUpdateFiresShippingAddressHookTest extends ModuleTestCase
      * @scenario admin_order_update=fires_address_hook
      *
      * @effects admin_shipping_address_change_is_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_update_fires_the_shipping_address_hook(): void
     {
@@ -108,6 +114,8 @@ class AdminOrderUpdateFiresShippingAddressHookTest extends ModuleTestCase
      * @scenario admin_order_update=passes_address_snapshot
      *
      * @effects admin_shipping_address_change_carries_before_values
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_update_passes_an_address_snapshot_to_the_hook(): void
     {

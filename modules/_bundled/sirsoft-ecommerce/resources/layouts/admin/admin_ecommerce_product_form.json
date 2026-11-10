@@ -67,6 +67,23 @@
             "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌린다 — 목록을 거치지 않고 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다"
         },
         {
+            "id": "contentMediaTarget",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.contentMediaTarget",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/content-media/target",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "owner_type": "product"
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "편집기 본문 미디어 업로드 계약 (#883) — 받는 종류가 없거나 권한이 없으면 null 이라 편집기는 종전대로 동작한다"
+        },
+        {
             "id": "product_abilities",
             "label_key": "$t:sirsoft-ecommerce.editor.data_source.product_abilities",
             "type": "api",
@@ -625,7 +642,8 @@
                     },
                     "isDeleting": false,
                     "isSavingTemplate": false,
-                    "imageTempKey": "{{$uuid()}}"
+                    "imageTempKey": "{{$uuid()}}",
+                    "contentMediaTempKey": "{{$uuid()}}"
                 },
                 "optionGenerators": [],
                 "productOptionItems": [],
@@ -1339,7 +1357,7 @@
                                                         "auth_required": true,
                                                         "params": {
                                                             "method": "{{route.itemCode ? 'PUT' : 'POST'}}",
-                                                            "body": "{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {})}}"
+                                                            "body": "{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {}, { content_media_temp_key: _local.ui.contentMediaTempKey })}}"
                                                         },
                                                         "onSuccess": [
                                                             {

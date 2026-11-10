@@ -5,6 +5,136 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.90.1] - 2026-11-09
+
+### Fixed
+
+- 「본문 콘텐츠」의 「그림 캡션」을 꺼도 사용자·관리자 화면에 캡션(`<figcaption>`)이 그대로 보이던 문제 — `figcaption` 은 DOMPurify 가 원래 받는 태그라 후보를 꺼도 금지되지 않았다. 서버 규칙에 표시 제거 태그 `render_policy.drop_tags`(캡션 끔이면 `['figcaption']`)를 더하고, `ContentPolicyRuntime.sanitize()` 가 이 태그를 `FORBID_TAGS` + `ADD_FORBID_CONTENTS` 로 내용째 지운다(그림 `figure`·`img` 는 남김). 편집기 금지 목록(`forbid_tags`)에는 넣지 않아 저장 원문은 그대로이고 다시 켜면 복원된다.
+- 「외부 영상 삽입」을 끄면 영상 주소가 사라지고 빈 `<figure class="media"></figure>` 만 남던 문제 — 끈 규칙에는 `oembed` 가 허용 태그에 없어 정화 단계에서 지워져 `renderEmbeds()` 가 링크로 바꿀 기회가 없었다. `sanitize()` 가 `oembed`(`url` 속성은 `oembed` 에서만)를 늘 통과시켜 `renderEmbeds()` 가 원래 주소 `rel="noopener noreferrer nofollow"` 새 창 링크로 바꾼다 — 봇 화면(`finalize('bot')`)과 같은 결과.
+
+배경: #883(engine-v1.90.0)의 끈 상태 표시를 실측하지 않았다(#887 점검에서 발견). 서버 짝: `ContentHtmlPolicy::displayDropTags()`·`DISPLAY_DROP_WHEN_OFF`, 봇 화면 `finalize('bot')` 도 캡션을 지운다. 회귀 잠금: `contentPolicy/__tests__/ContentPolicyRuntime.test.ts`(끈 상태 2건 + 고정본 1건, 수정 전 3건 red), 두 템플릿 `HtmlContent.contentPolicy.test.tsx`(끈 상태 2건씩, 수정 전 red).
+
+## [engine-v1.90.0] - 2026-11-08
+
+### Added
+
+- `G7Core.contentPolicy` — 본문 콘텐츠 규칙 런타임(`resources/js/core/contentPolicy`). 서버가 코어 환경설정 「본문 콘텐츠」로 계산해 `_global.settings.content.render_policy` 로 내려주는 규칙을 읽어, 템플릿 표시기와 편집기 플러그인이 태그 목록을 하드코딩하지 않고 같은 규칙을 쓴다. `getPolicy()` · `sanitize(purify, html, baseConfig)`(템플릿이 넘긴 DOMPurify 로 전용 인스턴스를 만들어 정화 — 켜진 후보 태그(`figcaption`·`video`·`audio`·`source`·`oembed`)와 운영자 추가 태그만 금지 목록에서 빼고, 후보 태그는 정해진 속성만, 미디어 `src`·`poster` 는 서빙 주소 패턴에 맞을 때만 남긴다. 호출자가 덧붙인 금지는 `G7_KEEP_FORBID_TAGS` 로 받아 규칙이 풀지 못한다. 규칙이 없으면(옛 서버) `null` 을 돌려 호출자가 종전 경로를 쓴다) · `resolveEmbed(url)` · `renderEmbeds(fragment)`(`oembed[url]` 을 켜진 서비스의 서버 컴파일 정규식에 맞춰 꺼낸 id 로만 플레이어 주소를 채운 샌드박스 iframe 으로 바꾼다 — 원본 주소는 iframe 에 넣지 않고, 맞지 않으면 `rel="noopener noreferrer nofollow"` 링크) · `editorConstraints()`(편집기용 서비스 목록·금지 태그·업로드 동영상/오디오 허용).
+
+배경: 편집기는 외부 영상(`<oembed>`)·그림 설명(`<figcaption>`)을 저장하는데 표시기(DOMPurify 기본 금지)·봇 정화기가 지워 본문에서 사라졌고, 업로드한 동영상·오디오를 재생할 태그도 통과하지 못했다. 서버 짝: `App\Support\Content\ContentHtmlPolicy`·`EmbedProviderRegistry`. 회귀 잠금: `contentPolicy/__tests__/ContentPolicyRuntime.test.ts`(3)·`embedPatternParity.test.ts`(표본 20 — PHP `EmbedProviderRegistryTest` 가 쓴 같은 사례 파일).
+
+## [engine-v1.89.0] - 2026-11-08
+
+### Added
+
+- `G7Core.contentMedia` — 본문 미디어 업로드 계약 런타임(`resources/js/core/contentMedia`). 확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 업로드 계약(`ContentMediaUploadTarget` — 주소·폼 필드·허용 헤더·응답 경로·서빙 주소 정규식·종류별 정책)을 넘기면, 편집기 플러그인은 확장의 API 경로를 모른 채 `normalizeTarget`(형식이 틀리거나 다른 출처 주소면 null, 헤더는 허용 목록만) · `validateFile`(종류·확장자·크기 사전 판정) · `countReferences`·`isAtLimit`(문서당 개수 사전 차단) · `upload`(어댑터 선택 → `{url, id?, kind}`) 를 쓴다. 기본 어댑터는 ApiClient + FormData 이고 토큰 없이 보낸 요청의 401 은 거절 그대로 호출자에게 전달된다(engine-v1.88.2). `registerAdapter({id, priority?, supports, upload})` → 해제 함수 · `listAdapters()` 로 다른 저장 방식을 끼울 수 있다. 문구 `core.content_media.client.*`·`core.content_media.policy.*`(ko·en·ja).
+
+### Fixed
+
+- 사용자 화면의 토큰 갱신이 늘 404 로 실패하던 문제 — `AuthManager` 사용자 설정의 갱신 주소가 `/auth/refresh` 였는데 서버 라우트는 `POST /api/user/auth/refresh` 뿐이다(같은 묶음의 `/auth/user`·`/auth/logout` 은 서버에 별칭이 있다). 사용자 갱신 주소를 `/user/auth/refresh` 로 바꿨다. 관리자 `/admin/auth/refresh` 는 그대로. 회귀 잠금: `auth/__tests__/AuthManager.refreshEndpoint.test.ts`(2 — 수정 전 사용자 1 red).
+
+배경: 편집기 이미지 업로드가 플러그인 고유 경로 하나뿐이라 게시판 첨부 정책·권한·비회원 소유권과 따로 놀았고, 동영상·오디오를 넣을 길이 없었다. 서버 짝: `App\Support\ContentMedia\*`·`App\Rules\ContentMediaFile`. 회귀 잠금: `contentMedia/__tests__/ContentMediaRuntime.test.ts`(14).
+
+## [engine-v1.88.2] - 2026-11-08
+
+### Added
+
+- `G7Core.api.isAnonymousUnauthorized(error)` — 토큰 없이 보낸 요청이 401 로 거부됐는지 판정한다(`status === 401 && error.g7Auth.tokenSent === false`). 확장 핸들러가 「로그인이 필요합니다」 안내를 띄우고 입력을 그대로 두는 데 쓴다.
+
+### Fixed
+
+- 비회원이 권한 없는 기능(사용자 글쓰기 편집기의 이미지 업로드, 비회원 주문의 모바일 결제 승인키, 비회원 클레임 신청 등 `G7Core.api` 직접 호출)을 누르면 401 을 세션 만료로 보고 로그인 화면(`reason=session_expired`)으로 옮겨 쓰던 글·입력이 사라지던 문제 — ApiClient 요청 인터셉터가 Authorization 을 실었는지 요청 시점에 기록하고(`_g7AuthTokenSent`, 호출자가 직접 넣은 헤더 포함), 응답 인터셉터는 토큰을 싣지 않은 요청의 401 에 토큰 갱신·삭제·`onUnauthorized` 를 부르지 않고 `error.g7Auth = { tokenSent: false }` 를 붙여 호출자에게 돌려준다. 토큰을 실은 요청의 401 은 종전대로 갱신 → 실패 시 로그인 이동이다. 응답 시점의 토큰 유무는 판정에 쓰지 않는다(그사이 다른 요청의 갱신 실패로 지워지거나 다른 탭에서 로그인했을 수 있다).
+
+배경: `TemplateApp` 의 `setOnUnauthorized` 콜백(#301, 7859ece0da)은 「콜백 발동 = 토큰이 거부됨」을 전제로 `session_expired` 를 붙이는데, 그 전제는 데이터소스가 토큰 없으면 required 요청을 건너뛴다는 데에만 기대고 있었고 `G7Core.api` 직접 호출에는 성립하지 않았다. 발생 시점: 401 → onUnauthorized 구조 도입(2cd06d3ac7, 2025-11-11) 이후 7.1.4 까지. 회귀 잠금: `api/__tests__/ApiClient.anonymousUnauthorized.test.ts`(7 — 수정 전 5 red), `ApiClient.crossOriginResponse.test.ts` 동일 출처 401 갱신 회귀.
+
+## [engine-v1.88.1] - 2026-11-08
+
+### Fixed
+
+- `reloadExtensions` 가 모듈·플러그인 자산(JS·CSS)을 다시 붙이다 실패하면, 확장을 켜고 끄는 일 자체는 끝났는데도 내부 문구 「Failed to execute action: reloadPluginHandlers」(모듈은 `reloadModuleHandlers`)가 오류 토스트로 떴다. 이제 자산 재로드 실패는 로그만 남긴다 — 자산은 다음 새로고침에 다시 붙는다.
+
+배경: `reloadExtensions` 는 자산 재로드를 `try/catch` 로 감싸 실패를 삼키도록 짜였지만, 위임을 `executeAction` 으로 해서 그 안의 기본 오류 처리기가 삼키기 전에 토스트를 먼저 띄웠다. 플러그인을 켜자마자 다시 끄거나(켜기 뒤 자산을 받는 동안 꺼져 404), 서버가 라우트 캐시를 다시 굽는 사이(500) 자산 요청이 세 번 모두 실패하면 드러났다(실측: GDPR 켜기 뒤 `plugin.css` 404·404·500). 이제 등록 핸들러를 직접 불러 오류 처리기를 거치지 않는다. 확장 4종(모듈·플러그인·템플릿·언어팩)의 관리자 목록·창 성공 체인 전수 — 자산을 붙이는 것은 모듈·플러그인 두 경로뿐이고, 템플릿·언어팩은 `reloadExtensions` 를 정보 없이 불러 이 경로를 타지 않는다. `reloadExtensionState`·`refetchDataSource` 는 실패를 단계별로 삼켜 던지지 않는다.
+
+회귀 잠금: `__tests__/ActionDispatcher.reloadExtensions.test.ts` 「자산 재로드가 실패해도 토스트를 띄우지 않고 reloadExtensions 는 끝까지 간다」 2건(모듈·플러그인, 고치기 전 2 실패 — `handleToast` 가 「Failed to execute action: reloadPluginHandlers」로 1회 호출).
+
+## [engine-v1.88.0] - 2026-11-04
+
+### Added
+
+- 관리자 화면도 브라우저 탭 제목을 화면마다 바꾼다 — 「{화면 제목} - {사이트 이름} 관리자」(영어 `Admin`, 일본어 `管理画面`). 화면 제목은 레이아웃이 선언한 `meta.title`(식·`$t:` 허용), 없으면 라우트 제목이다. 검색엔진 규칙(SEO 선언·확장 제목 틀·코어 접미사 설정·사이트 첫 화면 규칙)은 관리자에 쓰지 않는다. 사이트 이름과 언어별 접미사는 관리자 셸이 `G7Config.seoTitle`(`SeoTitleRuleExporter::exportForAdmin`)로 넘긴다 — 값이 없는 옛 서버에서는 종전처럼 셸 제목을 둔다. 컨트롤러·화면 세대 판정(이동 시작 때 라우트 제목, 앞 화면의 늦은 데이터 무시)은 사용자 화면과 같다(`DocumentTitleOptions.mode`·`TitleComputeDeps.mode`).
+
+배경: engine-v1.86.0 이 탭 제목 컨트롤러를 사용자 템플릿에서만 켜, 관리자 화면은 어느 화면에서나 셸 제목 「{앱 이름} - Admin」 그대로였다(탭 여러 개를 열면 구분되지 않음). 발생 시점: engine-v1.86.0 설계 범위 밖(미구현). 회귀 잠금: `TemplateApp.documentTitle.test.ts` 관리자 4건 — 관리자 켜기 제거 변이 3 red, 관리자 후보 갈래 제거 변이 2 red.
+
+### Fixed
+
+- 레이아웃 편집기 페이지 설정의 다국어 칸(검색 제목·검색 설명·OG/Twitter 제목·설명, 페이지 이름·설명)을 연달아 입력하면 먼저 입력한 칸의 값이 빠지고, 입력 직후 저장하면 그 값이 빠진 채 저장되던 문제 — 다국어 칸은 키를 만든 뒤(서버 왕복, 수 초) 토큰을 문서에 쓰는데, 그사이 다른 칸 기록이 그린 시점의 옛 meta 로 통째 덮거나 저장이 먼저 나가 토큰이 빠지고 막 만든 키가 고아가 됐다. 기록 함수가 최신 문서 값 위에 쓰고(`usePageSettings` 최신 문서 참조, `PageSettingsModal.patchMetaKeepingOwnScroll` 최신 병합본 기준 SEO 나누기, `SeoForm` og/twitter 키 단위 패치), 저장은 진행 중인 다국어 키 생성 기록을 기다린 뒤 그 기록이 반영된 문서로 보낸다(`inflightCustomTextCommits`·`I18nTextField`·`useLayoutDocument.save`, 대기 상한 30초). 기다리는 사이 편집기가 닫히면(언마운트) 그린 문서로 저장을 마저 보낸다 — 토큰 기록과 닫기가 같은 순간이면 최신 문서를 받는 함수형 갱신이 돌지 않아 저장이 끝나지 않던 경합을 막는다. 발생: 다국어 칸 키 자동 생성 도입 이후(검색 제목은 engine-v1.87.1 에서 실제 제목에 쓰이며 드러남). 회귀 잠금: `layout-editor/__tests__/layouts/page-settings-seo-own-persist.test.tsx`(12 — 수정 전 5 red)·`page-settings-seo-save-roundtrip.test.tsx`(6 — 수정 전 3 red)·`hooks/useLayoutDocument.saveAfterUnmount.test.tsx`(3 — 닫기 경합 수정 전 1 red).
+- 베이스 레이아웃을 물려받는 화면에서 페이지 설정 [기본 정보]·[검색엔진] 을 저장하면 베이스의 최상위 meta(`title`·`description`·`is_base`)가 그 화면 본문에 박혀, 이후 베이스의 이름·설명을 바꿔도 따라가지 않던 문제(기존 결함) — 서버 병합(`mergeMeta`)이 seo·scroll_restoration 밖의 최상위 키를 얕게 덮어쓰므로, 이 화면이 직접 적은 키와 이번에 바꾼 키만 남기고 `is_base` 는 저장하지 않는다(`PageSettingsModal` `dropInheritedTopLevelMeta`, extends 가 있는 화면만). 회귀 잠금: `layout-editor/__tests__/layouts/page-settings-meta-inherit-persist.test.tsx`(6).
+- 브라우저 탭 제목이 확장 제목 틀의 필수 변수(`required: true` — 상품명 등)가 빈 채로 틀을 치환해, 상품 정보를 받는 동안 「특가」처럼 틀의 고정 글자만 남은 제목을 보이던 문제 — 필수 변수가 비면 그 확장 **제목** 틀을 후보에서 빼고 다음 후보(화면 제목 등)로 넘어간다. 설명 틀은 그대로 쓴다. 서버 `SeoTitleRule::hasMissingRequired` 와 같은 규칙(`routing/DocumentTitle.ts` `hasMissingRequiredSeoVar`). 회귀 잠금: `routing/__tests__/DocumentTitle.parity.test.ts` `required_vars` 사례 5건(서버 `SeoTitleRuleParityTest.php` 와 같은 사례 파일).
+- 폼 화면에서 다른 레이아웃(목록 등)으로 옮기면 옮겨 간 화면 `_local` 에 앞 화면 폼(`form`)과 `hasChanges` 가 남던 문제(기존 결함 — 7.1.4 에서도 재현) — 레이아웃·경로 전환은 `_local` 과 `_localInit` 전역 추적을 비우는데, 새 화면이 그려지기 전 앞 화면 트리가 전역 상태 구독으로 다시 그려지면 `_local` 리셋으로 조건부 구역이 뒤집혀 새로 붙는 렌더러가 처리 기록 없이 아직 컨텍스트에 남은 앞 화면 `_localInit`(폼 + `hasChanges:false`)을 적용했다(관리자 상품 수정 → 뒤로 → 상품 목록). 전환이 떠나는 화면의 슬롯을 은퇴로 표시하고(`resetLocalInitTracking(slot)`), 렌더러는 은퇴한 슬롯을 적용하지 않는다(`isLocalInitRetired`). 새 화면의 새 슬롯은 종전대로 적용한다(engine-v1.79.0 「수정 → 등록 → 뒤로」 재적용 유지). 다음 폼으로 넘어가는 경로는 engine-v1.81.2 가 이미 막고 있었다. 회귀 잠금: `template-engine/__tests__/DynamicRenderer.localInitStaleScreenReapply.test.tsx`(4 — 은퇴 확인을 끄면 1 red).
+- 브라우저 탭 제목 계산이 파이프 식(`{{값 | date}}` 등)을 `evaluateExpression` 으로 평가해, 인자 없는 파이프는 예외 없이 `0` 같은 오답 제목이 될 수 있던 문제 — 다른 평가 지점과 같이 `hasPipes` 면 `evaluatePipeExpression` 으로 평가한다(`routing/DocumentTitle.ts` 평가 도구). 회귀 잠금: `template-engine/__tests__/pipeBranchParity.test.ts`(평가 지점 전수 스캔 — 수정 전 이 지점 1건 red).
+
+## [engine-v1.87.1] - 2026-11-04
+
+### Changed
+
+- 브라우저 탭 제목 후보에 레이아웃 편집기 「검색 제목」(`meta.seo.title`)을 더한다 — 순서: 리소스 `meta_title` → 페이지 `seo_meta.title` → **`meta.seo.title`** → 확장 제목 틀(`_seo`) → `meta.seo.og.title` → 라우트 제목. 서버 `SeoMetaResolver::resolveLayoutSeoValue`(제목·설명)와 같은 자리다. 식(`{{…}}`)·다국어 배열을 받고 식 안에서 `_seo` 를 읽는다(`og.title` 과 같은 평가 경로를 `layoutValueTier` 로 함께 쓴다).
+
+배경: 편집기에서 저장한 「검색 제목」이 어디에서도 읽히지 않았다(공유 미리보기만). engine-v1.86.0 제목 규칙 도입 때부터 빠져 있었다. 번들 레이아웃·로컬·개발 서버 DB 에 이 값을 쓴 레이아웃은 0건이라 지금 화면 제목은 바뀌지 않는다.
+
+회귀 잠금: `routing/__tests__/DocumentTitle.parity.test.ts` 「레이아웃 편집기 「검색 제목」」 3건(고치기 전 2 실패 — og 제목·라우트 제목이 나옴), 서버 짝 `tests/Unit/Seo/SeoMetaResolverTest.php` 3건.
+
+## [engine-v1.87.0] - 2026-11-04
+
+### Added
+
+- 최근 검색어 런타임(`searchHistory/`) — 검색창에 제출한 검색어를 검색 범위(scope)별로 보관한다. 범위는 서버가 인라인한 `G7Config.searchScopes`(코어 `core.site` + 활성 확장 manifest `search_scopes`, 범위 → `{max_count}`)에 있는 것만 다루고, 없는 범위(선언 안 됨·확장 꺼짐·기능 꺼짐)는 조용히 건너뛴다. 회원은 서버(`/api/me/search-history`), 비회원은 localStorage `g7_search_history`(`{v:1, autoSave, items:{범위:[{k, t}]}}`, 최신순·범위별 보관 개수로 자름 — 쿠키 동의 플러그인이 코어 필수 키로 받는다). 같은 검색어(대소문자 무시)는 하나로 맨 앞에 올린다. 검색어는 연속 공백을 하나로·앞뒤 공백 제거·100자.
+- 로그인 병합 — 비회원 → 회원이 되면(`authStateChange`, 부팅 때 이미 회원이어도) 브라우저 목록을 최신순 최대 200건으로 `POST /api/me/search-history/merge` 에 보내고 성공하면 브라우저 칸을 지운다(실패하면 남겨 다음 로그인 때 다시 보낸다). 인증이 바뀌면 회원 캐시를 버리고, 인증 세대가 바뀐 뒤 도착한 앞 계정의 조회 결과는 캐시에 넣지 않는다. 회원 데이터가 바뀌면(기록·삭제·전체 삭제·자동 저장 변경·병합 성공) 데이터 변경 세대를 올리고 진행 중 조회를 떼어 낸다 — 그 전에 출발한 목록 응답은 캐시·자동 저장 값에 쓰지 않고 최신 상태를 다시 받는다(조회 중 자동 저장을 끄면 늦게 온 옛 목록이 목록을 다시 보이게 하던 문제, 조회 중 기록한 검색어가 옛 목록에 덮여 빠지던 문제).
+- 내장 핸들러 `recordSearchKeyword`(`params {scope, keyword}`) — 검색 이동 앞에 둔다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면(런타임 없음)이면 아무것도 하지 않고, 실패해도 던지지 않는다(검색 이동을 막지 않음). 미리보기(레이아웃 편집기)에서는 실행하지 않는다(`PREVIEW_SUPPRESSED_HANDLERS`). 편집기 미리보기에서는 핸들러만이 아니라 런타임 쓰기 전부(파사드·훅의 record·remove·clear·setAutoSave, 로그인·부팅 병합)를 하지 않고 false 를 돌려준다 — 미리보기 모드는 런타임 설치 뒤에 켜지므로 쓰기마다 호출 시점에 디스패처 미리보기 모드·`_global.__isPreview`·시스템 미리보기 경로(`…/preview/{token}`)로 판정한다. 읽기(list·getSnapshot)는 그대로다. 주소에 직접 넣은 검색어는 이 경로를 거치지 않으므로 기록되지 않는다. 레이아웃 편집기 동작 레시피 「최근 검색어에 기록」.
+- 파사드 `G7Core.searchHistory`(동결) — `isEnabled(scope)` · `getSnapshot(scope)` · `list(scope, {force?})` · `record(scope, keyword)` · `remove(scope, item|id|keyword)` · `clear(scope?)` · `getAutoSave()` · `setAutoSave(on)` · `subscribe(listener)`(해제 함수 반환). 변경 이벤트 `searchHistory:changed`(`{scope, reason}` — 범위 전체면 scope null, reason `record|remove|clear|autoSave|auth|merge|load`).
+- 훅 `G7Core.useSearchHistory(scope)` → `{items:[{id, keyword, searchedAt}], autoSave, enabled, loading, maxCount, record, remove, clear, setAutoSave, refresh}`. 같은 범위를 쓰는 검색창끼리 목록을 공유하고, 늦게 끝난 조회가 그 사이 바뀐 상태(기록·자동 저장 끄기)를 옛 값으로 덮지 않게 차례 번호로 거른다. 관리자 화면에서는 `enabled: false`.
+- 「자동 저장 끄기」 — 기록을 멈추고 목록을 감춘다(저장된 검색어는 남김). 범위별이 아니라 사람 단위 하나(회원 `users.search_history_auto_save`, 비회원 브라우저 칸).
+
+배경: 검색창에 최근 검색어가 없었다(새 기능, 코어 7.1.5). 화면(검색창 펼침 목록)은 템플릿이 이 훅으로 그린다.
+
+회귀 잠금: `searchHistory/__tests__/SearchHistoryRuntime.test.ts`(12 — 비회원 정규화·중복·보관 개수, 미선언 범위, 자동 저장 끄기, 삭제, 로그인 병합·실패 보존·부팅 병합, 회원 기록·캐시, 인증 세대 경쟁, 로그아웃) · `searchHistory/__tests__/searchHistoryMemberStaleList.test.tsx`(2 — 실 훅 렌더: 회원 목록 GET 을 붙잡은 채 자동 저장 끄기·검색어 기록 뒤 옛 응답 해제) · `searchHistory/__tests__/searchHistoryPreviewGuard.test.tsx`(3 — 실 ActionDispatcher 미리보기 모드·기본 의존성: 비회원 파사드·훅·핸들러·자동 저장, 회원 기록·삭제·전체 삭제·자동 저장·로그인 병합, 미리보기 경로 부팅 병합 — 수정 전 3 red) · `searchHistory/__tests__/searchHistoryFacadeAndHandler.test.tsx`(3 — 실 ActionDispatcher 의 `recordSearchKeyword` 바인딩 해석·같은 범위 검색창 목록 공유, 런타임 없는 화면, 파사드 동결·구독 해제·자동 저장 끄기가 훅 목록을 감춤). 훅 차례 번호 가드 제거 변이에서 파사드 시험 2 red, 데이터 변경 세대 가드 제거 변이(와 가드 전 구현)에서 회원 경쟁 시험 2 red(자동 저장 끈 뒤 `autoSave` true, 기록한 검색어 빠짐), 인증 세대 가드 제거 변이에서 경쟁 시험 red. 매니페스트 `tests/scenarios/search-history.yaml`
+
+## [engine-v1.86.0] - 2026-11-04
+
+### Added
+
+- 브라우저 탭 제목(`routing/DocumentTitle.ts`) — 사용자 템플릿에서 `document.title` 을 검색엔진(봇) `<title>` 과 같은 규칙으로 정한다. 후보 순서: 리소스 `meta_title` → 페이지 `seo_meta.title` → 확장 제목 틀(`_seo.{page_type}.title` — `meta.seo.extensions` 의 `seoVariables()`·설정 틀을 서버 `SeoRenderer::resolveSeoContext` 와 같게 계산, 하위호환 모듈 틀 포함) → 평가한 `meta.seo.og.title` → 라우트 `meta.title`. 사이트 이름만 되풀이하는 후보는 건너뛰고, 사이트 이름은 코어 접미사(`seo.meta_title_suffix`, 비면 ` - {site_name}`, `{site_name}` 치환)로만 붙인다. 제목이 이미 접미사나 「구분자(` - `·` | `·` · `) + 사이트 이름」으로 끝나면 다시 붙이지 않는다. 사이트 첫 화면(`/`)은 사이트 이름만. 계산은 화면이 가진 데이터(`meta.seo.data_sources` 의 소스만, 레이아웃 순서)와 부팅 값 `G7Config.seoTitle`(서버 `SeoTitleRuleExporter`)로만 한다 — 이동마다 서버에 묻지 않는다. 서버 규칙 원본 `app/Seo/SeoTitleRule.php` 와 판정 사례 파일 `tests/fixtures/seo/title-rule-cases.json` 을 함께 쓴다.
+- 갱신 시점 — `handleRouteChange` 시작 즉시 라우트 제목(+접미사)을 쓰고 앞 화면 레이아웃과의 연결을 끊는다(`beginRoute`). 새 화면을 그린 뒤 그 레이아웃 객체에 연결하고(`bind`), `updateTemplateData` 끝에서 **연결한 레이아웃 객체일 때만** 다시 계산한다(`recompute` — 앞 화면의 늦은 데이터가 새 화면 제목을 덮지 않는다). 언어 전환은 재진입 경로로 다시 계산한다. 경로 없음(404)은 템플릿 `/404` 라우트 제목, 레이아웃 로드 실패는 「페이지 로딩 실패」(+접미사). 값이 바뀔 때만 쓴다.
+- 대상 — 사용자 템플릿만(관리자 템플릿은 종전대로 셸 제목). 레이아웃 편집기 경로(`/admin/layout-editor/*`)와 편집기 미리보기(`__preview__`)에서는 쓰지 않는다. `toggle_setting`(봇에게 SEO 화면을 줄지)은 보지 않는다. `G7Config.seoTitle` 이 없는 옛 서버에서는 켜지 않는다.
+
+배경: 사람 방문자의 탭 제목은 셸의 `config('app.name')`(사이트 이름) 그대로였고 봇만 SEO 제목을 받았다 — 엔진에 `document.title` 을 쓰는 코드가 처음부터 없었다. 함께 바꾼 서버 쪽(코어 7.1.5): 봇 `<title>` 도 같은 규칙(`SeoTitleRule`)으로 정해, 접미사를 비운 사이트에도 기본 접미사 ` - {사이트 이름}` 이 붙는다.
+
+회귀 잠금: `routing/__tests__/DocumentTitle.parity.test.ts`(37 — 서버 `tests/Unit/Seo/SeoTitleRuleParityTest.php` 와 같은 사례 파일) · `__tests__/TemplateApp.documentTitle.test.ts`(8 — 실 TemplateApp 화면 처리 + 실 renderTemplate·updateTemplateData: 이동 시작 라우트 제목·데이터 도착·앞 화면 늦은 데이터·언어 전환·첫 화면·404·편집기·관리자) — 수정 전 엔진(HEAD 작업 사본)에서 8 중 6 red(제목이 셸 제목 그대로), 「연결 끊기」 제거 변이에서 늦은 데이터 시험 red(「늦은 앞 화면 상품 - …」), 편집기 억제 제거 변이에서 편집기 시험 red. 매니페스트 `tests/scenarios/browser-tab-title-rule.yaml`
+
+## [engine-v1.85.0] - 2026-11-03
+
+### Added
+
+- 뒤로/앞으로 가기·새로고침 스크롤 위치 복원(`routing/ScrollMemory.ts`) — 브라우저 기본 복원(`history.scrollRestoration = 'auto'`)을 끄고 히스토리 항목(Navigation API `currentEntry.key`, 없으면 주소)마다 창·내부 스크롤 영역 위치를 기억했다가, 뒤로/앞으로 가기로 돌아온 화면을 다시 그린 뒤 문서가 그 위치를 담을 만큼 자라면 되돌린다. 높이가 바뀌거나 위치가 밀리면 다시 맞추고, **이 화면의 데이터를 다 받은 뒤** 600ms 동안 변화가 없거나 최대 대기(기본 5초)가 지나거나 사용자가 휠·터치·키·포인터로 만지면 끝낸다. 새 화면으로 가는 이동(navigate)은 종전대로 navigate `scroll`(기본 맨 위)을 따른다. 새로고침 복원은 sessionStorage `g7_scroll_positions`(sirsoft-gdpr 1.1.4 필수 저장 허용목록 등재).
+- 설정 `scroll_restoration` — `mode`(`restore`·`top`·`none`·`#선택자`) · `on_reload` · `wait`(`height` 높이 대기 / `data` 데이터를 다 받은 뒤) · `timeout_ms` · `containers`(함께 기억할 내부 스크롤 영역) · `snapshot`(`enabled`·`ttl_seconds`·`revalidate`·`item_key`·`state`). 엔진 기본값 → template.json(`/api/templates/{id}/config.json`) → 베이스 레이아웃 meta → 화면 meta(서버가 깊게 병합) 순으로 적은 키만 덮어쓴다(`mergeScrollRestorationConfig`).
+- navigate 액션 `returnScroll` — 이 이동으로 **떠나는 화면**에 뒤로 가기로 돌아올 때의 동작. 이탈 가드에서 머무르기를 고르면 붙지 않는다(`runWithReturnScroll` 동기 범위).
+- 먼저 스크롤을 가져간 쪽을 따른다 — 뒤로/앞으로 가기·새로고침 표시부터 복원 시작 전까지 사용자 입력(휠·터치·키·포인터)이나 화면의 스크롤 액션(`scrollIntoView`, `navigate` 의 `scroll` — `notifyScreenScroll`)이 있으면 복원하지 않고, 복원 중 스크롤 액션은 복원을 멈춘다. `mode` 는 `restore`·`top`·`none`·`#`·`.`·`[` 로 시작하는 선택자만 받고, 그 밖의 값은 경고와 함께 버린다. 스냅샷 유효 시간은 처음 기억한 때부터 잰다(되살려 오가도 늘어나지 않음).
+- 더보기 스냅샷(`template-engine/dataSourceSnapshot.ts`) — `appendDataSource`(`G7Core.dataSource.updateData` append·prepend)로 늘어난 데이터소스를 화면을 떠날 때 그 항목 키로 기억했다가(최근 10항목, 메모리), 돌아오면 유효 시간(기본 600초) 안이고 화면 언어·계정이 같고 진입 때 자동으로 받는 소스(`auto_fetch !== false`)일 때 그 데이터로 먼저 그린다. 다시 받은 첫 묶음은 `item_key`(기본 `id`)로 대조해 바뀐 항목을 갈아끼우고, 첫 묶음에서 스냅샷과 처음 겹치는 항목보다 앞의 새 항목은 앞에 붙인다. 다시 받기 실패·대체 값(`kept`)이면 스냅샷을 버린다. 심는 시점은 화면 초기화(init_global·init_local·init_actions) 뒤 첫 렌더 직전.
+- `snapshot.state` — 스냅샷과 함께 기억했다가 되돌릴 진행 상태 경로(`_global.…`·`_local.…`). 더보기의 다음 쪽 번호처럼 목록 길이와 맞아야 하는 값을 화면 초기화 뒤 첫 렌더 직전에 되돌린다(공유 키를 다른 화면이 1로 되돌리면 다음 더보기가 받은 쪽을 다시 받아 행이 중복됐다).
+- 레이아웃 편집기 — 페이지 설정 [스크롤] 탭(`ScrollRestorationForm` — 칸별 상속 출처 표시, 베이스 레이아웃에서 고치면 템플릿 기본값), 「다른 페이지로 이동」 액션 편집에 「돌아올 때 스크롤」·「스크롤 애니메이션」·「이탈 확인 묻지 않기」 칸(레시피 입력·저장 틀 양쪽). 편집 모드에서는 스크롤 기억·복원을 끈다.
+
+### Changed
+
+- 페이지 설정이 meta 를 저장할 때 영속 meta 에는 이 화면이 직접 적은 `scroll_restoration` 만 남긴다(베이스에서 물려받은 값이 화면 값으로 굳지 않게).
+
+### Fixed
+
+- 모바일에서 홈을 내린 뒤 상품을 눌렀다가 뒤로 가면 맨 위로 가던 문제 — 돌아온 화면이 데이터를 다시 받느라 popstate 직후 짧아 브라우저 기본 복원이 실패했다(개발 서버 390×844 실측: 홈 2,742px → 상품 → 뒤로 = 0, 홈 높이 약 1초에 걸쳐 3,416 → 5,574px; 측정마다 결과가 달랐다). 수정 후 로컬 실측: 2,742px → 상품 → 뒤로 = 2,742px(눌렀던 카드 화면 위 300px 그대로, 0.4초), 연속 왕복 3,198 → 3,198, 관리자 상품 목록 본문 영역 2,000px → 수정 → 뒤로 = 2,000px, 동의 전 새로고침 1,700 → 1,700. 발생: 엔진에 스크롤 복원이 처음부터 없었다(브라우저 기본 동작 의존).
+- 「레이아웃 편집기에서 다른 페이지로 이동 동작을 열어 저장하면 `scrollBehavior`·`bypassLeaveGuard` 값이 사라지던」 문제 — 레시피 저장 틀에 없는 인자를 버렸다.
+- 레이아웃 편집기 페이지 설정 [기본 정보]·[검색엔진] 탭 저장이 병합본 meta 를 통째로 영속해 베이스 레이아웃의 SEO 가 화면 값으로 굳던 문제(기존 결함) — 서버 `mergeSeo` 와 같은 규칙으로 이 화면이 적은 키·베이스와 달라진 키만 남긴다(`page-settings/seoOwnValue.ts`). 실 편집기 저장 실측: 화면 `data_sources` 에 베이스 `boards`·`vars` 가 더해지지 않음.
+
+구현 중 실측으로 찾아 고친 결함(출시 전): 돌아온 직후 뼈대 화면이 이미 목표만큼 길면 그 위치에서 0.85초 만에 끝나고, 데이터가 와 위쪽이 바뀐 뒤 스크롤 앵커링이 위치를 4,501 로 옮겨 그 값이 다시 기억을 오염시켰다 → 데이터 준비 신호(`notifyScrollRestoreDataReady`) 전에는 끝내지 않는다. 사례 전수 대조(색인 389건, 위험 7)로 찾은 방어 — 스냅샷 init 뒤 주입(setState 사례 9) · 밀린 뒤로 가기에서 앞 화면 값이 스냅샷으로 오염되지 않게 심을 때 늘어남 표시(state-global 7·12) · `auto_fetch:false` 소스 제외(state-global 11) · 실패 시 스냅샷 폐기(state-global 8) · 대체 값·계정·언어 변경 시 폐기(cache 21) · 복원 시작 전 세대 검사. 편집 모드에서 끈 뒤 `history.scrollRestoration` 을 `auto` 로 되돌림. `returnScroll` 이 항목 기록에 남아, 같은 화면을 다음에 일반 링크로 떠났다 돌아와도 계속 맨 위로 가던 것 → 새 이동은 늘 덮어쓴다(뒤로/앞으로 가기로 떠날 때만 유지).
+
+회귀 잠금: `routing/__tests__/Router.scrollRestoration.test.ts`(18) · `__tests__/TemplateApp.scrollRestoration.test.ts`(10 — 실 TemplateApp·Router: 늦게 자라는 홈·뼈대가 이미 긴 화면·더보기 스냅샷·`snapshot.state`·대체 값·계정 변경·`wait:"data"`·설정 층) · `template-engine/__tests__/dataSourceSnapshot.test.ts`(7) — 수정 전 엔진(HEAD 작업 사본)에서 Router·TemplateApp 18 중 13 red, 뼈대 경우 red(4,658 ≠ 2,500) · 편집기 `ScrollRestorationForm.test.tsx`(15)·셸·왕복·레시피 · E2E `tests/Playwright/specs/scroll-restoration.spec.ts`(3) · 이커머스 `infinite-list-scroll-restoration.test.ts`(소스에서 기계 도출한 더보기 화면 선언) · 매니페스트 `tests/scenarios/client-router-scroll-restoration.yaml`
+
 ## [engine-v1.84.1] - 2026-10-31
 
 ### Fixed

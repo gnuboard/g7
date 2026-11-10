@@ -140,6 +140,7 @@ class NhnKcpApiService
         $this->assertSafeCliValue($tno, 'tno');
         $this->assertSafeCliValue($ordrIdxx, 'ordr_idxx');
 
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = now()->format('YmdHis');
         $signature = hash_hmac(
             'sha256',

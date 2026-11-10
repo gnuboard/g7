@@ -20,6 +20,9 @@ use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
  */
 class AdminCbtTestProductController extends AdminBaseController
 {
+    /**
+     * @param  ProductService  $productService  이커머스 상품 서비스
+     */
     public function __construct(
         private readonly ProductService $productService,
     ) {
@@ -34,6 +37,7 @@ class AdminCbtTestProductController extends AdminBaseController
     public function create(): JsonResponse
     {
         try {
+            // audit:allow datetime-display-user-timezone reason: 시험 상품 코드 고유 접미사(서버 시각) — 기계값
             $timestamp = now()->format('YmdHis');
             $productCode = 'CBT-TEST-'.$timestamp;
 

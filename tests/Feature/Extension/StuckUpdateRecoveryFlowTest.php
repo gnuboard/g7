@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Mockery;
 use Mockery\MockInterface;
+use Tests\Concerns\SimulatesOperationLockStore;
 use Tests\TestCase;
 
 /**
@@ -30,6 +31,7 @@ use Tests\TestCase;
 class StuckUpdateRecoveryFlowTest extends TestCase
 {
     use DatabaseTransactions;
+    use SimulatesOperationLockStore;
 
     /** 활성화 경로 시험용 가짜 플러그인 식별자 (네임스페이스 Plugins\G7test\Stuckplug) */
     private const FIXTURE_PLUGIN = 'g7test-stuckplug';
@@ -61,6 +63,7 @@ class StuckUpdateRecoveryFlowTest extends TestCase
         }
         $this->fixtureDirs = [];
         $this->setRouteCacheDeferDepth(0);
+        $this->restoreOperationLockStore();
 
         parent::tearDown();
     }
@@ -179,6 +182,69 @@ class StuckUpdateRecoveryFlowTest extends TestCase
             StuckUpdateRecovery::takeRecovered(),
             '명령이 출력할 정리 기록이 남아야 한다',
         );
+    }
+
+    /**
+     * 활성화는 작업 잠금을 먼저 잡고, 그 잠금으로 멈춘 업데이트를 판정·정리한다 — 정리 중 다른 프로세스가 끼어들지 못한다(#161 D2).
+     *
+     * @scenario entry_point=activate
+     *
+     * @effects activate_resets_stale_updating_and_proceeds
+     *
+     * @return void 반환값 없음
+     */
+    public function test_activate_holding_lock_recovers_stale_row(): void
+    {
+        $manager = $this->makeStuckFixturePlugin();
+        $this->stuck(Plugin::class, self::FIXTURE_PLUGIN);
+
+        // 다른 프로세스가 같은 플러그인 작업 중이면 활성화는 정리하지 않고 거절된다
+        $held = Cache::lock(ExtensionOperationLock::key('plugin', self::FIXTURE_PLUGIN), 60);
+        $this->assertTrue($held->get());
+        try {
+            $manager->activatePlugin(self::FIXTURE_PLUGIN);
+            $this->fail('다른 프로세스가 작업 중인데 활성화가 진행됐다');
+        } catch (\App\Exceptions\ExtensionOperationInProgressException $e) {
+            $this->assertSame('activate', $e->operation);
+        } finally {
+            $held->release();
+        }
+        $this->assertSame(ExtensionStatus::Updating->value, Plugin::query()->where('identifier', self::FIXTURE_PLUGIN)->value('status'), '거절된 활성화가 행을 정리했다');
+
+        // 잠금이 비면 활성화가 잠금을 잡고 정리한다
+        try {
+            $manager->activatePlugin(self::FIXTURE_PLUGIN);
+        } catch (\Throwable) {
+            // 정리 뒤 단계의 실패는 이 시험 범위 밖
+        }
+        $this->assertNotSame(ExtensionStatus::Updating->value, Plugin::query()->where('identifier', self::FIXTURE_PLUGIN)->value('status'));
+    }
+
+    /**
+     * 잠금 저장소가 오류를 내도 확장 목록은 깨지지 않고, 멈춘 업데이트로 보이는 행도 `stuck_update: false` 다 — 판정 불가면 정리 단추를
+     * 보이지 않는다(#161 S1, T10).
+     *
+     * @scenario entry_point=listing
+     *
+     * @effects stuck_judgement_unavailable_when_store_down
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_api_ok_and_stuck_false_when_store_down(): void
+    {
+        $manager = $this->makeStuckFixturePlugin();
+        $this->stuck(Plugin::class, self::FIXTURE_PLUGIN);
+        $this->assertTrue(
+            collect($manager->getInstalledPluginsWithDetails())->firstWhere('identifier', self::FIXTURE_PLUGIN)['stuck_update'] ?? false,
+            '전제: 저장소가 정상이면 멈춘 업데이트로 보인다'
+        );
+
+        $this->breakLockStore();
+
+        $rows = $manager->getInstalledPluginsWithDetails();
+        $row = collect($rows)->firstWhere('identifier', self::FIXTURE_PLUGIN);
+        $this->assertNotNull($row, '저장소 장애에 목록이 깨졌다');
+        $this->assertFalse($row['stuck_update']);
     }
 
     /**

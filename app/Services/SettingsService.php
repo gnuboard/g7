@@ -10,17 +10,25 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
+use App\Helpers\TimezoneHelper;
 use App\Http\Resources\AttachmentResource;
+use App\Rules\EmbedCustomProviderRule;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
+use App\Support\Content\ContentHtmlPolicy;
+use App\Support\Content\EmbedProviderRegistry;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use App\Support\PhpExtensionProbe;
 use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
+use App\Support\RouteCacheHelper;
+use App\Support\SearchScopes;
+use App\Support\Settings\ComputedSettingFields;
 use App\Support\SettingsVersion;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -140,6 +148,8 @@ class SettingsService
      * 스키마의 frontend_name/merge_into 설정에 따라 카테고리를 자동 병합합니다.
      * (예: cache, debug → advanced)
      *
+     * 공개 설정의 화면용 계산 값(`computed: true` 필드)도 함께 싣습니다 — appendComputedFields() 참조.
+     *
      * @return array 시스템 설정 배열
      */
     public function getAllSettings(): array
@@ -185,7 +195,128 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
+        // 화면용 계산 값(frontend_schema 의 computed 필드)을 공개 설정과 같은 계산으로 싣는다(#887).
+        // 저장 응답도 이 경로로 다시 조회하므로, 화면이 저장 응답으로 전역 설정을 병합하면 같은 탭에서도 저장 뒤 계산 값을 쓴다.
+        $settings = $this->appendComputedFields($settings, $schema);
+
+        // GeoIP 최근 갱신 — 저장값은 ISO8601 그대로, 화면 표시용 문자열은 보는 사람 시간대.
+        // 저장 경로(saveAdvancedSettings)는 스키마에 없는 이 키를 버린다.
+        $settings['advanced']['geoip_last_updated_at_formatted'] = $this->formatIsoForViewer($settings['advanced']['geoip_last_updated_at'] ?? null);
+
         return $this->overlayEnvLockedValues($settings);
+    }
+
+    /**
+     * 화면용 계산 값을 관리자 설정 묶음에 덧붙입니다 (#887).
+     *
+     * 대상은 `frontend_schema` 의 `computed: true` 필드 전부이고, 계산은 공개 설정(formatCategorySettings)과 같은
+     * computeFieldValue() 를 씁니다 — 계산 필드가 늘어도 스키마와 그 변환 한 곳만 고치면 관리자 응답도 따라옵니다.
+     * 범주 공개 여부(`expose`)는 보지 않습니다. 관리자 응답은 원본을 이미 담고 있고 계산 값은 그 원본에서 나온 값입니다.
+     * `sensitive` 계산 필드는 공개 설정과 같이 뺍니다.
+     *
+     * 화면은 저장 응답(`data.settings`)으로 전역 설정을 병합하므로, 이 값이 없으면 저장 뒤 같은 탭에서 페이지 로드 때 받은
+     * 옛 계산 값이 남습니다(예: 동영상 업로드 허용을 켜고 저장해도 `content.render_policy` 가 그대로라 본문 동영상이 지워짐).
+     * 화면이 이 값을 저장 본문에 되돌려 보내도 저장하지 않습니다 — rejectComputedForSave() 참조.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @param  array<string, mixed>  $schema  프론트엔드 스키마
+     * @return array<string, mixed> 계산 값이 더해진 설정 배열
+     */
+    private function appendComputedFields(array $settings, array $schema): array
+    {
+        foreach ($schema as $category => $categorySchema) {
+            if (str_starts_with((string) $category, '_') || ! is_array($categorySchema)) {
+                continue;
+            }
+
+            $fields = $this->computedFieldSchemas($categorySchema);
+
+            if ($fields === []) {
+                continue;
+            }
+
+            // 공개 설정과 같은 입력 — 저장소의 범주 값(기본값 병합). 저장 직후에는 saveCategory() 가 비운 캐시 뒤의 새 값이다.
+            $source = $this->getSettings((string) $category);
+
+            foreach ($fields as $fieldName => $fieldSchema) {
+                if ($fieldSchema['sensitive'] ?? false) {
+                    continue;
+                }
+
+                $value = $this->computeFieldValue($source, $fieldSchema);
+
+                foreach ($this->resolveFrontendKeyTargets((string) $category, (string) $fieldName) as [$targetCategory, $outputKey]) {
+                    if (! isset($settings[$targetCategory]) || ! is_array($settings[$targetCategory])) {
+                        $settings[$targetCategory] = [];
+                    }
+
+                    $settings[$targetCategory][$outputKey] = $value;
+                }
+            }
+        }
+
+        return $settings;
+    }
+
+    /**
+     * 범주 스키마에서 계산 필드(`computed: true`)만 고릅니다 — 판정은 터미널 설정 명령과 같은 `ComputedSettingFields` 한 곳.
+     *
+     * @param  array<string, mixed>  $categorySchema  범주 스키마
+     * @return array<string, array<string, mixed>> 필드명 => 필드 스키마
+     */
+    private function computedFieldSchemas(array $categorySchema): array
+    {
+        return ComputedSettingFields::schemas($categorySchema);
+    }
+
+    /**
+     * 저장 본문에서 계산 필드를 뺍니다 (#887).
+     *
+     * 관리자 응답이 계산 값을 함께 싣고 화면은 응답으로 만든 탭 값 전체를 저장 본문에 되돌려 보내므로, 걸러내지 않으면
+     * 계산 값이 원본 설정처럼 저장소에 굳습니다. 그 탭에 합쳐지는 범주(`frontend_name`·`merge_into`)의 계산 필드도 뺍니다.
+     *
+     * @param  string  $tab  저장 탭
+     * @param  array<string, mixed>  $settings  원본 키로 역변환한 탭 값
+     * @return array<string, mixed> 계산 필드를 뺀 탭 값
+     */
+    private function rejectComputedForSave(string $tab, array $settings): array
+    {
+        foreach ($this->configRepository->getFrontendSchema() as $category => $categorySchema) {
+            if (str_starts_with((string) $category, '_') || ! is_array($categorySchema)) {
+                continue;
+            }
+
+            $targetCategory = $categorySchema['frontend_name'] ?? $categorySchema['merge_into'] ?? $category;
+
+            if ($category !== $tab && $targetCategory !== $tab) {
+                continue;
+            }
+
+            foreach ($this->computedFieldSchemas($categorySchema) as $fieldName => $fieldSchema) {
+                unset($settings[$fieldName], $settings[$fieldSchema['frontend_key'] ?? $fieldName]);
+            }
+        }
+
+        return $settings;
+    }
+
+    /**
+     * 저장된 ISO8601 시각을 보는 사람 시간대 표시 문자열로 바꿉니다.
+     *
+     * @param  mixed  $iso  저장된 ISO8601 시각
+     * @return string|null 표시용 일시 (값이 없거나 해석할 수 없으면 null)
+     */
+    private function formatIsoForViewer(mixed $iso): ?string
+    {
+        if (! is_string($iso) || $iso === '') {
+            return null;
+        }
+
+        try {
+            return TimezoneHelper::toUserDateTimeString(Carbon::parse($iso));
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -494,8 +625,37 @@ class SettingsService
         return match ($transform) {
             'format_extensions' => $this->formatExtensions($sourceValue),
             'first_image_url' => $this->getFirstImageUrl($sourceValue),
+            // 본문 콘텐츠 규칙 — 표시기·편집기용 계산값(허용 태그·속성·미디어 출처·외부 영상 컴파일 정규식, #883)
+            'content_render_policy' => ContentHtmlPolicy::fromSettings($settings)->toFrontendArray(),
             default => $sourceValue,
         };
+    }
+
+    /**
+     * 외부 영상 서비스 예시 주소 확인 — 저장 전 입력값으로 꺼낸 id 와 만들어질 플레이어 주소 (#883).
+     *
+     * 저장하지 않는다. 형식이 틀리면 필드별 문구를 함께 돌려 창이 저장 전에 알린다(저장 때와 같은 검증·컴파일 규칙).
+     *
+     * @param  array<string, mixed>  $entry  서비스 입력값(`url_patterns`·`player_url`·`id_rule`)
+     * @param  string  $sampleUrl  확인할 예시 주소
+     * @return array{matched: bool, id: ?string, player_url: ?string, errors: array<string, string>} 확인 결과
+     */
+    public function previewEmbedProvider(array $entry, string $sampleUrl): array
+    {
+        $errors = array_map(fn (string $key) => __($key, ['index' => 1, 'field' => '']), EmbedCustomProviderRule::validateEntry($entry + ['id' => 'preview', 'name' => 'preview'], false));
+        $preview = $errors === [] ? EmbedProviderRegistry::preview($entry, $sampleUrl) : ['matched' => false, 'id' => null, 'player_url' => null];
+
+        return ['matched' => $preview['matched'], 'id' => $preview['id'], 'player_url' => $preview['player_url'], 'errors' => $errors];
+    }
+
+    /**
+     * 확장이 제공한 외부 영상 서비스의 켜기 선택지 — 「본문 콘텐츠」 탭이 그린다 (#883).
+     *
+     * @return array<int, array{key: string, extension: string, id: string, name: string}> 선택지
+     */
+    public function embedExtensionProviderOptions(): array
+    {
+        return EmbedProviderRegistry::extensionProviderOptions();
     }
 
     /**
@@ -666,6 +826,9 @@ class SettingsService
             // frontend_key를 원본 키로 역변환
             $tabSettings = $this->reverseFrontendKeys($tabSettings);
 
+            // 응답에 실려 나간 화면용 계산 값이 되돌아와도 저장하지 않는다(#887)
+            $tabSettings = $this->rejectComputedForSave($tab, $tabSettings);
+
             // `.env` 가 소유권을 가져간 키는 저장 대상에서 제거한다. 화면의 disabled 는
             // 게이트가 아니다 — 저장 API 를 직접 호출하는 경로가 남으므로 실질 차단은 여기다.
             // (advanced 탭은 아직 카테고리가 갈리지 않았으므로 saveAdvancedSettings 가 분리 후 적용한다.)
@@ -721,6 +884,15 @@ class SettingsService
 
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
+
+            // 최근 검색어 범위 행(7.1.5) — 화면에는 지금 선언된 범위만 나오므로, 끈 확장의 기존 행은 보존해 다시 켤 때
+            // 운영자 값이 돌아오게 한다. 형식 검증은 FormRequest 가 마쳤다.
+            if ($tab === 'privacy' && is_array($tabSettings[SearchScopes::SETTINGS_ROWS_KEY] ?? null)) {
+                $tabSettings[SearchScopes::SETTINGS_ROWS_KEY] = SearchScopes::mergeForSave(
+                    $tabSettings[SearchScopes::SETTINGS_ROWS_KEY],
+                    $existingSettings[SearchScopes::SETTINGS_ROWS_KEY] ?? []
+                );
+            }
             $mergedSettings = array_merge($existingSettings, $tabSettings);
 
             // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486).
@@ -1348,6 +1520,7 @@ class SettingsService
             self::SYSTEM_INFO_CACHE_TTL
         );
 
+        // audit:allow datetime-display-user-timezone reason: 서버 시각 진단값 — 의도된 서버 기준
         $info['server_time'] = now()->format('Y-m-d H:i:s');
 
         return $info;
@@ -1461,10 +1634,11 @@ class SettingsService
             }
 
             Artisan::call('cache:clear');
-            Artisan::call('route:clear');
             Artisan::call('view:clear');
 
-            // config 는 clear 후 즉시 재생성 (비운 채 두면 이후 모든 요청이 config 재파싱).
+            // 라우트·config 는 지우는 대신 다시 구워 바꿔 끼운다 — 비운 채 두면 이후 모든 요청이 재파싱하고,
+            // 지우는 순간 들어온 요청은 500(`routes-v7.php: No such file`)을 받았다(#882).
+            RouteCacheHelper::rebuild();
             ConfigCacheHelper::rebuild();
 
             return true;
@@ -1481,12 +1655,11 @@ class SettingsService
     public function optimizeSystem(): bool
     {
         try {
-            // config:cache / route:cache 는 새 Application 을 부팅하며 전역 Container 를 바꿔 놓는다.
-            // 보존 래퍼 없이 부르면 이 요청의 후속 `app()->terminating()` 예약이 사라진다.
-            ConfigCacheHelper::withPreservedContainer(static function (): void {
-                Artisan::call('config:cache');
-                Artisan::call('route:cache');
-            });
+            // config·라우트 캐시는 두 헬퍼로 굽는다 — 새 Application 을 부팅하는 명령을 보존 래퍼(withPreservedContainer)로
+            // 감싸고(후속 `app()->terminating()` 예약 보존), 임시 파일에 다 구운 뒤 바꿔 끼운다. 명령을 직접 부르면 명령이
+            // 먼저 지운 뒤 다시 써서 그 사이 들어온 요청이 500 을 받았다(#882).
+            ConfigCacheHelper::rebuild();
+            RouteCacheHelper::rebuild();
             Artisan::call('view:cache');
 
             return true;

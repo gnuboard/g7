@@ -177,7 +177,7 @@ class SeoCacheController extends AdminBaseController
      */
     public function sitemapStatus(): JsonResponse
     {
-        return $this->success('messages.success', $this->sitemapManager->getStatus());
+        return $this->success('common.success', $this->sitemapManager->getStatus());
     }
 
     /**

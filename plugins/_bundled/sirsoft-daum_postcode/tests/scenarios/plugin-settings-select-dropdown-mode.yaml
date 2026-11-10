@@ -3,7 +3,7 @@ feature: 다음 우편번호 환경설정 「표시 방식」 칸 — 브라우�
 description: |
   관리자 템플릿 Select 는 props.options 가 있으면 단추(aria-haspopup=listbox) + 목록 상자로, 없으면 브라우저 기본
   <select> 로 그린다. 표시 방식 칸은 <select> 바로 아래 <option> 을 적어 기본 선택상자였다. <options> 래퍼로 바꿔
-  목록형으로 그리고, 폼 자동 바인딩(name="display_mode")·읽기 전용 잠금이 그대로인지 본다.
+  목록형으로 그리고, 폼 자동 바인딩(name="display_mode_pc"·"display_mode_mobile", 1.2.0)·읽기 전용 잠금이 그대로인지 본다.
 
 axes:
   screen: [daum_postcode_display_mode]

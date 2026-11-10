@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'content_media' => [
+        'upload_success' => '本文メディアをアップロードしました。',
+        'upload_failed' => '本文メディアをアップロードできませんでした。',
+        'target_success' => '本文メディアのアップロード情報を読み込みました。',
+        'not_found' => '本文メディアが見つかりません。',
+    ],
+
     'copy_suffix' => '（コピー）',
 
     // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
@@ -1439,6 +1446,12 @@ return [
     ],
     // シーダーのコンソール出力 (module:install・module:seed)
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => 'ブラウザ実測シーダーは CLI かつ G7_PLAYWRIGHT_BYPASS=1 のときだけ実行します。',
+            'product' => '  - 実測商品 #:id (オプション #:option_id)',
+            'done' => 'ブラウザ実測データの準備が完了しました',
+            'cleanup_done' => 'ブラウザ実測データを整理しました — 注文 :orders 件、商品 :products 件、本文メディア :media 件',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => '管理者ユーザーがいないため、eコマースのアクティビティログシーダーをスキップします。',
             'purged' => '既存のeコマースサンプルアクティビティログ :count 件を削除しました (マーカーのない実際のログは保持します)。',
@@ -1699,5 +1712,9 @@ return [
             'done' => '配送ポリシーのダミーデータ :count 件が正常に作成されました。',
             'purged' => '既存の配送ポリシー :count 件を削除しました。',
         ],
+    ],
+    // 最近の検索語の範囲名 (module.json search_scopes.products.label)
+    'search_history' => [
+        'scope_products' => '商品検索',
     ],
 ];

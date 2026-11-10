@@ -3,7 +3,7 @@
 namespace Tests\Unit\Seo;
 
 use App\Seo\ExpressionEvaluator;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * SEO(봇) 렌더러의 `{{raw:...}}` 번역 면제 바인딩 패리티 회귀 테스트.
@@ -13,8 +13,13 @@ use Tests\TestCase;
  * 아예 없다는 사실이 드러났다. 같은 표현식이 화면에서는 값이 나오고 봇 화면에서만
  * 사라지는 패리티 붕괴가 잠재해 있었다.
  */
-class ExpressionEvaluatorRawPrefixTest extends TestCase
+class ExpressionEvaluatorRawPrefixTest extends PureTestCase
 {
+    /**
+     * common.save 번역을 주입한 ExpressionEvaluator 를 준비한다.
+     *
+     * @return ExpressionEvaluator 번역 사전이 설정된 평가기
+     */
     private function evaluator(): ExpressionEvaluator
     {
         $e = new ExpressionEvaluator;
@@ -23,6 +28,15 @@ class ExpressionEvaluatorRawPrefixTest extends TestCase
         return $e;
     }
 
+    /**
+     * {{raw:...}} 바인딩은 접두사를 벗긴 뒤 평가돼 || 폴백 식의 값을 돌려준다.
+     *
+     * @scenario case=raw_binding
+     *
+     * @effects raw_prefix_stripped_before_evaluation
+     *
+     * @return void 반환값 없음
+     */
     public function test_raw_prefix_is_stripped_before_evaluation(): void
     {
         $context = ['file' => ['description' => '', 'name' => 'admin_module_list.json']];
@@ -34,6 +48,15 @@ class ExpressionEvaluatorRawPrefixTest extends TestCase
         );
     }
 
+    /**
+     * {{raw:...}} 결과에 들어 있는 $t: 토큰은 번역하지 않고 원문 그대로 남긴다.
+     *
+     * @scenario case=raw_binding
+     *
+     * @effects raw_result_translation_exempt
+     *
+     * @return void 반환값 없음
+     */
     public function test_raw_prefix_result_is_translation_exempt(): void
     {
         $context = ['post' => ['title' => '$t:common.save']];
@@ -45,6 +68,15 @@ class ExpressionEvaluatorRawPrefixTest extends TestCase
         );
     }
 
+    /**
+     * raw: 접두사가 없는 바인딩은 종전대로 $t: 토큰을 번역 값으로 바꾼다.
+     *
+     * @scenario case=plain_binding
+     *
+     * @effects plain_binding_translates_tokens
+     *
+     * @return void 반환값 없음
+     */
     public function test_non_raw_binding_still_resolves_translation_tokens(): void
     {
         $context = ['post' => ['title' => '$t:common.save']];
@@ -56,6 +88,15 @@ class ExpressionEvaluatorRawPrefixTest extends TestCase
         );
     }
 
+    /**
+     * evaluateRaw()도 raw: 접두사를 벗기고 배열 등 원본 타입을 유지해 돌려준다.
+     *
+     * @scenario case=evaluate_raw
+     *
+     * @effects evaluate_raw_strips_prefix_keeps_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_evaluate_raw_strips_prefix(): void
     {
         $context = ['items' => [1, 2, 3]];

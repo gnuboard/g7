@@ -1,0 +1,28 @@
+feature: 관리자 설정 조회·저장 응답에 화면용 계산 값을 함께 싣는다 (#887)
+
+description: |
+  관리자 환경설정 저장 뒤 화면은 저장 응답(`data.settings`)으로 전역 설정(`_global.settings`)을 병합한다. 응답에 공개 설정의
+  계산 값(`frontend_schema` 의 `computed: true` — `general.site_logo_url`·`upload.allowed_extensions_formatted`·
+  `seo.og_image_default_url`·`content.render_policy`)이 없으면 같은 탭에서는 페이지 로드 때 받은 옛 계산 값이 남아,
+  예컨대 동영상 업로드 허용을 켜고 저장해도 새로고침 전까지 본문 동영상이 지워진다. 조회·저장 응답이 공개 설정과 같은
+  계산(`SettingsService::computeFieldValue`)으로 저장 뒤 값을 싣고, 화면이 그 값을 저장 본문에 되돌려 보내도 저장하지 않는다.
+  계산 필드 판정은 관리자 설정 서비스와 터미널 설정 명령(`SettingsCliKeyResolver`)이 `ComputedSettingFields` 한 곳을 함께 쓴다.
+
+axes:
+  case:
+    - index_parity
+    - store_after_save
+    - store_attachment_urls
+    - echo_not_persisted
+    - single_source
+
+effects:
+  - admin_index_carries_computed_fields
+  - admin_store_computed_uses_saved_values
+  - attachment_urls_follow_saved_attachments
+  - computed_fields_not_persisted_on_save
+  - computed_judgement_single_source
+
+test_files:
+  - tests/Feature/Api/Admin/SettingsComputedFieldsTest.php
+  - tests/Unit/Support/Settings/ComputedSettingFieldsTest.php

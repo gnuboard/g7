@@ -116,7 +116,7 @@ _단건 응답: `data` 객체의 필드._
 | conf_no | string | `1234567890` | 편의점 입금용 확인번호(수납확인번호). 구매자가 편의점 단말에서 입력·제시하는 번호다. |
 | receipt_no | string | `0987654321` | 편의점 입금용 접수번호(수납번호). 확인번호와 함께 편의점 결제 접수를 식별한다. |
 | payment_term | string | `20260710235959` | 편의점 입금 마감 일시(YmdHis 압축 문자열). 이 기한이 지나면 시간 경과 만료 대상이 된다. |
-| payment_term_formatted | string | `2026-07-10 23:59:59` | `payment_term` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| payment_term_formatted | string | `2026-07-10 23:59:59 (JST)` | `payment_term` 을 일본 시각 그대로 표시하고 ` (JST)` 를 붙인 문자열 |
 | is_expired_by_time | boolean | `false` | expired by time 여부 |
 | cvs_status | string | `waiting_deposit` | CVS 입금 상태(`payment_meta.cvs_status`). 입금대기(`waiting_deposit`)·입금완료(`paid`)·만료(`expired`) 등을 나타내며, 메타값이 없고 결제가 입금대기면 `waiting_deposit`로 채운다. |
 | last_notify_at | string | `` | last notify 일시 |
@@ -156,7 +156,7 @@ HTTP/1.1 200
         "conf_no": "1234567890",
         "receipt_no": "0987654321",
         "payment_term": "20260710235959",
-        "payment_term_formatted": "2026-07-10 23:59:59",
+        "payment_term_formatted": "2026-07-10 23:59:59 (JST)",
         "is_expired_by_time": false,
         "cvs_status": "waiting_deposit",
         "last_notify_at": "",
@@ -185,7 +185,7 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명**
-`AdminCbtCvsOperationsController@show` 가 `CbtCvsOperationsService::summary` 를 호출해 CBT(일본결제) 편의점(CVS) 입금 결제의 운영 요약을 반환한다. 주문번호로 결제·메타(`payment_meta`)를 읽어 입금 상태(`cvs_status`), 편의점 확인번호/접수번호(`conf_no`/`receipt_no`), 입금 마감(`payment_term` 및 포맷된 값), 시간 경과 만료 여부(`is_expired_by_time`), NOTI 통보 이력(`notify_history`), 통보 수신 URL 등을 집계한다. `can_simulate_notify`(테스트 모드 + 입금대기)와 `can_mark_expired`(입금대기 + 기한 경과)는 후속 운영 액션의 버튼 노출을 제어하는 게이트값이다. `sirsoft-ecommerce.orders.read` 권한이 필요하며, 주문이 없으면 플러그인 표준 404(`order_not_found`)를 반환한다.
+`AdminCbtCvsOperationsController@show` 가 `CbtCvsOperationsService::summary` 를 호출해 CBT(일본결제) 편의점(CVS) 입금 결제의 운영 요약을 반환한다. 주문번호로 결제·메타(`payment_meta`)를 읽어 입금 상태(`cvs_status`), 편의점 확인번호/접수번호(`conf_no`/`receipt_no`), 입금 마감(`payment_term` 및 포맷된 값), 시간 경과 만료 여부(`is_expired_by_time`), NOTI 통보 이력(`notify_history`), 통보 수신 URL 등을 집계한다. 입금 마감(`payment_term`)은 일본 PG 의 일본 시각이라 `Asia/Tokyo` 로 읽어 만료를 판정한다. 운영 시각(`last_notify_at`·`last_recheck_at`·`expired_at`·`notify_history[].received_at`)은 저장된 ISO8601 그대로 두고, 화면 표시용 `*_formatted`(보는 사람 시간대 `Y-m-d H:i:s`)를 함께 싣는다. `can_simulate_notify`(테스트 모드 + 입금대기)와 `can_mark_expired`(입금대기 + 기한 경과)는 후속 운영 액션의 버튼 노출을 제어하는 게이트값이다. `sirsoft-ecommerce.orders.read` 권한이 필요하며, 주문이 없으면 플러그인 표준 404(`order_not_found`)를 반환한다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/cbt-cvs/expire
@@ -229,7 +229,7 @@ _단건 응답: `data` 객체의 필드 (만료 처리 후 갱신된 CBT 편의�
 | conf_no | string | `1234567890` | 편의점 입금용 확인번호 |
 | receipt_no | string | `0987654321` | 편의점 입금용 접수번호 |
 | payment_term | string | `20260710235959` | 편의점 입금 마감 일시(YmdHis 압축 문자열) |
-| payment_term_formatted | string | `2026-07-10 23:59:59` | `payment_term` 의 표시용 포맷 문자열 |
+| payment_term_formatted | string | `2026-07-10 23:59:59 (JST)` | `payment_term` 을 일본 시각 그대로 표시하고 ` (JST)` 를 붙인 문자열 |
 | is_expired_by_time | boolean | `false` | 입금 마감 경과 여부. 만료 처리 후에는 `payment_status` 가 `expired` 이므로 `false` 로 계산된다. |
 | cvs_status | string | `expired` | CVS 입금 상태. 만료 처리 시 `expired` 로 기록된다. |
 | last_notify_at | string | `` | 마지막 입금 통보(NOTI) 수신 일시 |
@@ -269,7 +269,7 @@ HTTP/1.1 200
         "conf_no": "1234567890",
         "receipt_no": "0987654321",
         "payment_term": "20260710235959",
-        "payment_term_formatted": "2026-07-10 23:59:59",
+        "payment_term_formatted": "2026-07-10 23:59:59 (JST)",
         "is_expired_by_time": false,
         "cvs_status": "expired",
         "last_notify_at": "",
@@ -343,7 +343,7 @@ _단건 응답: `data` 객체의 필드._
 | conf_no | string | `1234567890` | 편의점 입금용 확인번호(수납확인번호). 구매자가 편의점 단말에서 입력·제시하는 번호다. |
 | receipt_no | string | `0987654321` | 편의점 입금용 접수번호(수납번호). 확인번호와 함께 편의점 결제 접수를 식별한다. |
 | payment_term | string | `20260710235959` | 편의점 입금 마감 일시(YmdHis 압축 문자열). 이 기한이 지나면 시간 경과 만료 대상이 된다. |
-| payment_term_formatted | string | `2026-07-10 23:59:59` | `payment_term` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| payment_term_formatted | string | `2026-07-10 23:59:59 (JST)` | `payment_term` 을 일본 시각 그대로 표시하고 ` (JST)` 를 붙인 문자열 |
 | is_expired_by_time | boolean | `false` | expired by time 여부 |
 | cvs_status | string | `waiting_deposit` | CVS 입금 상태(`payment_meta.cvs_status`). 입금대기(`waiting_deposit`)·입금완료(`paid`)·만료(`expired`) 등을 나타내며, 메타값이 없고 결제가 입금대기면 `waiting_deposit`로 채운다. |
 | last_notify_at | string | `` | last notify 일시 |
@@ -383,7 +383,7 @@ HTTP/1.1 200
         "conf_no": "1234567890",
         "receipt_no": "0987654321",
         "payment_term": "20260710235959",
-        "payment_term_formatted": "2026-07-10 23:59:59",
+        "payment_term_formatted": "2026-07-10 23:59:59 (JST)",
         "is_expired_by_time": false,
         "cvs_status": "waiting_deposit",
         "last_notify_at": "",
@@ -456,7 +456,7 @@ _단건 응답: `data` 객체의 필드 (시뮬레이션 통보 처리 후 갱�
 | conf_no | string | `1234567890` | 편의점 입금용 확인번호 |
 | receipt_no | string | `0987654321` | 편의점 입금용 접수번호 |
 | payment_term | string | `20260710235959` | 편의점 입금 마감 일시(YmdHis 압축 문자열) |
-| payment_term_formatted | string | `2026-07-10 23:59:59` | `payment_term` 의 표시용 포맷 문자열 |
+| payment_term_formatted | string | `2026-07-10 23:59:59 (JST)` | `payment_term` 을 일본 시각 그대로 표시하고 ` (JST)` 를 붙인 문자열 |
 | is_expired_by_time | boolean | `false` | 입금 마감 경과 여부. 입금완료(`paid`) 후에는 `false`. |
 | cvs_status | string | `paid` | CVS 입금 상태. 입금 확정 시 `paid` 로 기록된다. |
 | last_notify_at | string | `2026-07-08T06:35:02+00:00` | 마지막 입금 통보 수신 일시(ISO8601). 시뮬레이션 시각이 기록된다. |
@@ -496,7 +496,7 @@ HTTP/1.1 200
         "conf_no": "1234567890",
         "receipt_no": "0987654321",
         "payment_term": "20260710235959",
-        "payment_term_formatted": "2026-07-10 23:59:59",
+        "payment_term_formatted": "2026-07-10 23:59:59 (JST)",
         "is_expired_by_time": false,
         "cvs_status": "paid",
         "last_notify_at": "2026-07-08T06:35:02+00:00",
@@ -614,7 +614,7 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명**
-`AdminCbtReconciliationController@show` 가 `CbtReconciliationService::get` 을 호출해 주문에 연결된 CBT 자동환불 조정(reconciliation) 레코드를 반환한다. 이 레코드는 CBT 결제의 자동환불 처리 이력(상태, TID, 금액, 환불 결과/에러, 재시도 횟수)을 담으며, `status` 에서 파생된 `manual_action_required`(수동 환불 필요 여부)와 `can_retry`(수동환불필요 + TID 존재 시 재시도 가능)를 함께 노출한다. 조정 레코드가 없는 주문이면 `data` 가 `null` 로 내려간다(정상 응답). `sirsoft-ecommerce.orders.read` 권한이 필요하며, 관리자 화면에서 자동환불 실패 건의 재시도 버튼 활성화 판단에 사용된다.
+`AdminCbtReconciliationController@show` 가 `CbtReconciliationService::get` 을 호출해 주문에 연결된 CBT 자동환불 조정(reconciliation) 레코드를 반환한다. 이 레코드는 CBT 결제의 자동환불 처리 이력(상태, TID, 금액, 환불 결과/에러, 재시도 횟수)을 담으며, `status` 에서 파생된 `manual_action_required`(수동 환불 필요 여부)와 `can_retry`(수동환불필요 + TID 존재 시 재시도 가능)를 함께 노출한다. 조정 레코드가 없는 주문이면 `data` 가 `null` 로 내려간다(정상 응답). `sirsoft-ecommerce.orders.read` 권한이 필요하며, 관리자 화면에서 자동환불 실패 건의 재시도 버튼 활성화 판단에 사용된다. 시각(`created_at`·`updated_at`·`last_retry_at`)은 저장된 ISO8601 그대로 두고, 화면 표시용 `*_formatted`(보는 사람 시간대 `Y-m-d H:i:s`)를 함께 싣는다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/cbt-reconciliation/refund-retry
@@ -806,7 +806,7 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명**
-`AdminEscrowDeliveryController@formData` 가 에스크로 배송등록 폼에 필요한 초기 데이터를 반환한다. 대상 주문의 KG 이니시스 에스크로 결제(`is_escrow = true`)를 찾아 TID, 결제금액, 공식 택배사 코드표(`courier_codes`), 배송지 기반 수령인 선입력값(`prefill`)을 내려주고, `payment_meta` 에서 이미 등록된 배송 이력(`registered_delivery`)·구매확정(`escrow_confirm`)·구매거절확인(`deny_confirmed`) 여부를 함께 제공한다. 에스크로 결제가 아닌 주문은 `has_escrow_payment` 없이 `data` 가 `null` 로 내려간다. `sirsoft-ecommerce.orders.read` 권한이 필요하며, 실제 배송등록(POST) 전 화면 표시·중복 등록 방지 판단에 사용된다.
+`AdminEscrowDeliveryController@formData` 가 에스크로 배송등록 폼에 필요한 초기 데이터를 반환한다. 대상 주문의 KG 이니시스 에스크로 결제(`is_escrow = true`)를 찾아 TID, 결제금액, 공식 택배사 코드표(`courier_codes`), 배송지 기반 수령인 선입력값(`prefill`)을 내려주고, `payment_meta` 에서 이미 등록된 배송 이력(`registered_delivery`)·구매확정(`escrow_confirm`)·구매거절확인(`deny_confirmed`) 여부를 함께 제공한다. 에스크로 결제가 아닌 주문은 `has_escrow_payment` 없이 `data` 가 `null` 로 내려간다. `sirsoft-ecommerce.orders.read` 권한이 필요하며, 실제 배송등록(POST) 전 화면 표시·중복 등록 방지 판단에 사용된다. `registered_delivery.registered_at`·`escrow_confirm.confirmed_at` 은 UTC 로 저장된 값을 보는 사람 시간대(`Y-m-d H:i:s`)로 바꿔 내려준다(저장값은 그대로). 배송등록(POST)이 PG 에 보내는 배송등록일(`invoiceDay`)은 PG 업무 날짜라 한국 시간으로 만든다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-delivery
@@ -1003,7 +1003,7 @@ _단건 응답: `data` 객체의 필드._
 | _embedded_pg_provider_label | null | `null` | `_embedded_pg_provider` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | _pay_method_label | string | `일본 편의점결제` | `_pay_method` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | _auth_code | null | `null` | 승인번호. CVS 결제는 확인번호/접수번호를 대체로 사용하며, 카드 등에서는 승인번호(applNum)가 채워진다. |
-| _auth_date | string | `2026-07-07 07:17:11` | 승인 일시(YYYY-MM-DD HH:MM:SS 포맷). 승인 일시가 없으면 로컬 결제완료 시각(`paid_at`)으로 대체된다. |
+| _auth_date | string | `2026-07-07 07:17:11` | 승인 일시(YYYY-MM-DD HH:MM:SS 포맷). 승인 일시가 없으면 로컬 결제완료 시각(`paid_at`)을 보는 사람 시간대로 바꿔 대체한다. 일본 편의점 결제의 PG 승인 일시는 일본 시각 그대로 두고 뒤에 `(JST)` 를 붙인다. |
 | _total_price | string | `5000` | 결제 총액. 조회 응답 또는 로컬 저장 금액에서 취한 값이다. |
 | _currency | string | `JPY` | 결제 통화 코드. CBT는 기본 `JPY`, 일반 국내결제는 원화(응답에 없으면 `WON`)로 표기된다. |
 | _moid | string | `APIDOC-KGINICIS-000001` | 가맹점 주문번호(MOID). 이 거래에 대응하는 주문의 주문번호다. |
@@ -1023,9 +1023,9 @@ _단건 응답: `data` 객체의 필드._
 | _vbank_bank_code | null | `null` | 가상계좌 은행 코드. CVS 결제에서는 편의점 식별값(`convenience`)이 들어갈 수 있고, 미해당 시 `null`이다. |
 | _vbank_bank_name | string | `CVS` | 가상계좌 은행명. 은행명이 없으면 은행 코드로 매핑하며, 편의점(CVS) 결제에서는 `CVS`로 표기된다. |
 | _vbank_holder | null | `null` | 가상계좌 예금주명. 미해당 시 `null`이다. |
-| _vbank_expire_date | string | `2026-07-10 23:59:59` | 가상계좌/편의점 입금 마감 일시. 로컬 `vbank_due_at`가 있으면 KST로 변환해 사용하고, 없으면 조회 응답의 입금기한을 포맷한다. |
+| _vbank_expire_date | string | `2026-07-10 23:59:59` | 가상계좌/편의점 입금 마감 일시. 로컬 `vbank_due_at`가 있으면 보는 사람 시간대로 바꿔 사용하고, 없으면 조회 응답의 입금기한을 포맷한다. 일본 편의점 결제는 일본 시각 그대로 ` (JST)` 를 붙인다. |
 | _vbank_status | string | `waiting_deposit` | 가상계좌/편의점 입금 상태(입금대기 등). |
-| _vbank_paid_at | null | `null` |  vbank paid 일시 |
+| _vbank_paid_at | null | `null` | 입금 일시. 일본 편의점 결제는 입금 통보의 일본 시각 그대로 두고 뒤에 `(JST)` 를 붙인다(예: `2026-07-10 10:00:00 (JST)`). 입금 전이면 `null`이다. |
 | _bank_code | null | `null` | 계좌이체 은행 코드. 계좌이체 결제가 아니면 `null`이다. |
 | _bank_name | null | `null` | 계좌이체 은행명. 은행명이 없으면 은행 코드로 매핑하며, 미해당 시 `null`이다. |
 | _bank_acnt_num | null | `null` | 계좌이체 계좌번호. 미해당 시 `null`이다. |
@@ -1033,7 +1033,7 @@ _단건 응답: `data` 객체의 필드._
 | _hpp_corp | null | `null` | 휴대폰 결제 시 이동통신사. 미해당 시 `null`이다. |
 | _escrow_status | null | `null` | 에스크로 거래 상태. 에스크로 결제가 아니거나 CBT 로컬 확인 경로에서는 `null`이다. |
 | _escrow_confirm | null | `null` | 에스크로 구매확정 일시(YYYY-MM-DD HH:MM:SS). 미확정 시 `null`이다. |
-| _inquiry_at | string | `2026-07-07 07:24:51` |  inquiry 일시 |
+| _inquiry_at | string | `2026-07-07 07:24:51` | 이 조회를 수행한 시각 — 보는 사람 시간대 |
 | _local_notice | string | `CBT 거래는 한국 INIAPI 거래조회 대상이 아니므로 저장된 승…` | CBT 로컬 확인 경로에서만 채워지는 안내 문구. 이 거래가 실시간 PG 조회가 아니라 저장된 승인/입금 정보로 표시됨을 관리자에게 알린다. |
 | _cbt_cvs | object | `{"status":"waiting_deposit","last_notify_at":"","last_not…` | CBT 편의점(CVS) 결제일 때만 채워지는 입금 운영 요약. 입금 상태·최근 통보/재확인 결과·만료 정보·최근 통보 이력(최대 10건)을 담으며, CVS가 아니면 `null`이다. |
 
@@ -1119,7 +1119,7 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명**
-`AdminTransactionController@queryByOrder` 가 주문번호로 KG 이니시스 결제의 실시간 거래 상태를 조회한다. 결제 TID 를 찾은 뒤, CBT(일본결제, TID 가 `INIJPG` 로 시작하거나 통화 JPY)면 한국 INIAPI 조회 대상이 아니므로 로컬에 저장된 승인/입금 정보로 응답을 구성하고(`_is_local_confirmation=true`), 그 외에는 결제 시점 MID·모드(`is_test_mode`, MID `SIR` 접두사=Live 추정)에 맞는 자격증명으로 실제 `queryTransaction` API 를 호출한다. 응답은 `_pay_method_label`·카드/가상계좌/은행 상세·부분취소 이력·에스크로 상태 등 화면 표시용 `_` 접두 필드로 보강되며, 결제수단/은행/할부 코드는 한국어 라벨로 매핑된다. `sirsoft-ecommerce.orders.read` 권한이 필요하고, 결제 미존재 시 `data`=`null`, 조회 예외 시 502 로 응답한다.
+`AdminTransactionController@queryByOrder` 가 주문번호로 KG 이니시스 결제의 실시간 거래 상태를 조회한다. 결제 TID 를 찾은 뒤, CBT(일본결제, TID 가 `INIJPG` 로 시작하거나 통화 JPY)면 한국 INIAPI 조회 대상이 아니므로 로컬에 저장된 승인/입금 정보로 응답을 구성하고(`_is_local_confirmation=true`), 그 외에는 결제 시점 MID·모드(`is_test_mode`, MID `SIR` 접두사=Live 추정)에 맞는 자격증명으로 실제 `queryTransaction` API 를 호출한다. 응답은 `_pay_method_label`·카드/가상계좌/은행 상세·부분취소 이력·에스크로 상태 등 화면 표시용 `_` 접두 필드로 보강되며, 결제수단/은행/할부 코드는 한국어 라벨로 매핑된다. `sirsoft-ecommerce.orders.read` 권한이 필요하고, 결제 미존재 시 `data`=`null`, 조회 예외 시 502 로 응답한다. 화면 표시 시각(`_inquiry_at`, 로컬 대체 `_auth_date`, 로컬 `vbank_due_at` 기반 `_vbank_expire_date`)은 보는 사람 시간대로 만들고, 일본 편의점 입금 마감은 일본 시각 그대로 ` (JST)` 를 붙인다.
 
 
 ### GET /api/plugins/sirsoft-pay_kginicis/user/orders/{orderNumber}/receipt
@@ -1252,6 +1252,6 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명** `vbank_bank_code` 는 주문 조회 권한(`sirsoft-ecommerce.orders.read`)이 있는 관리자에게만 값이 실리고, 그 밖에는 null 입니다(7.1.0).
-`UserReceiptController@show` 가 회원/비회원 공용 영수증 조회를 제공한다(선택적 인증). 로그인 사용자는 본인 소유 주문만, 비로그인 사용자는 `X-Guest-Order-Token` 헤더로 비회원 주문을 매칭하고, 토큰이 없거나 stale 하면 결제 직후 PG 콜백이 발급한 단기 영수증 쿠키(5분 유효)로 폴백한다. 소유권/토큰/쿠키 검증 실패는 모두 404 로 통일된다. CBT(일본결제) 결제면 KG 이니시스 매출전표가 없으므로 결제확인서용 필드 목록(`receipt_fields`)과 라벨을 직접 구성해 `receipt_type=cbt_confirmation` 으로 내려주고, 일반 결제는 KG 이니시스 영수증 URL(`receipt_type=inicis_receipt`)을 생성해 반환한다.
+`UserReceiptController@show` 가 회원/비회원 공용 영수증 조회를 제공한다(선택적 인증). 로그인 사용자는 본인 소유 주문만, 비로그인 사용자는 `X-Guest-Order-Token` 헤더로 비회원 주문을 매칭하고, 토큰이 없거나 stale 하면 결제 직후 PG 콜백이 발급한 단기 영수증 쿠키(5분 유효)로 폴백한다. 소유권/토큰/쿠키 검증 실패는 모두 404 로 통일된다. CBT(일본결제) 결제면 KG 이니시스 매출전표가 없으므로 결제확인서용 필드 목록(`receipt_fields`)과 라벨을 직접 구성해 `receipt_type=cbt_confirmation` 으로 내려주고, 일반 결제는 KG 이니시스 영수증 URL(`receipt_type=inicis_receipt`)을 생성해 반환한다. 편의점 입금 마감(`cvs_payment_term`)은 일본 시각 그대로 ` (JST)` 를 붙인다.
 
 

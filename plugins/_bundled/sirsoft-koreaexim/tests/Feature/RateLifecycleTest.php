@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Koreaexim\Tests\Feature;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
+use App\Jobs\DispatchHookListenerJob;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -84,7 +85,8 @@ class RateLifecycleTest extends PluginTestCase
         app(HookListenerRegistrar::class)->register(ReapplyRatesOnCurrencyChangeListener::class);
         HookManager::doAction('sirsoft-ecommerce.settings.after_save', ['general']);
         HookManager::doAction('sirsoft-ecommerce.settings.after_save', ['language_currency']);
-        Queue::assertNothingPushed();
+        // 같은 훅을 구독하는 다른 리스너(이커머스 활동 로그 등)는 큐로 갈 수 있다 — 재적용 리스너만 큐에 실리지 않으면 된다.
+        Queue::assertNotPushed(DispatchHookListenerJob::class, fn (DispatchHookListenerJob $job) => $job->listenerClass === ReapplyRatesOnCurrencyChangeListener::class);
         Http::assertNothingSent();
     }
 

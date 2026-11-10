@@ -1798,6 +1798,13 @@ class Module extends AbstractModule
                 'prepare' => [OrderCreationBenchmark::class, 'prepare'],
                 'callback' => [OrderCreationBenchmark::class, 'create'],
             ],
+            // 요청 1건을 새 프로세스에서 처음부터 처리하는 부팅 비용 — 코어 boot 축(7.1.5)이 없는 코어에서는
+            // 알 수 없는 축으로 경고만 남고 이 선언만 빠진다
+            'boot_products' => [
+                'type' => 'boot',
+                'label' => '공개 상품 목록 API 부팅',
+                'uri' => '/api/modules/sirsoft-ecommerce/products?per_page=12',
+            ],
         ];
     }
 

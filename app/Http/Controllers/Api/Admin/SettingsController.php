@@ -6,6 +6,7 @@ use App\Contracts\Extension\ConsentProviderInterface;
 use App\Exceptions\PhpExtensionUnavailableException;
 use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Settings\EmbedProviderPreviewRequest;
 use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
 use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
@@ -24,9 +25,11 @@ use App\Services\ExtensionStaticCacheService;
 use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
 use App\Services\Queue\QueueWorkerRegistry;
+use App\Services\SearchHistoryService;
 use App\Services\SettingsService;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
+use App\Support\SearchScopes;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -51,6 +54,7 @@ class SettingsController extends AdminBaseController
      * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (#139)
+     * @param  SearchHistoryService  $searchHistoryService  최근 검색어 서비스 (개인정보 탭 범위 메타, 7.1.5)
      */
     public function __construct(
         private SettingsService $settingsService,
@@ -61,7 +65,8 @@ class SettingsController extends AdminBaseController
         private PrivacyRetentionManager $privacyRetentionManager,
         private DormantAccountService $dormantAccountService,
         private PasswordExpiryService $passwordExpiryService,
-        private QueueWorkerRegistry $queueWorkerRegistry
+        private QueueWorkerRegistry $queueWorkerRegistry,
+        private SearchHistoryService $searchHistoryService
     ) {
         parent::__construct();
     }
@@ -79,6 +84,8 @@ class SettingsController extends AdminBaseController
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
      * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts}` (#158)
+     * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
+     * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -101,6 +108,8 @@ class SettingsController extends AdminBaseController
             'consent_selection' => $consent->selection()->toArray(),
             'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
             'csp' => $this->buildCspMeta(),
+            'search_scopes' => $this->searchHistoryService->settingsMeta(),
+            'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
         ];
     }
 
@@ -137,6 +146,11 @@ class SettingsController extends AdminBaseController
     {
         if (isset($settings['drivers']) && is_array($settings['drivers'])) {
             $settings['drivers']['queue_names'] = (object) (is_array($settings['drivers']['queue_names'] ?? null) ? $settings['drivers']['queue_names'] : []);
+        }
+
+        // 최근 검색어 범위 행(7.1.5) — 지금 선언된 범위마다 한 행, 선언 순서, 적용값으로 채운다(새로 켠 확장은 선언값).
+        if (isset($settings['privacy']) && is_array($settings['privacy'])) {
+            $settings['privacy'][SearchScopes::SETTINGS_ROWS_KEY] = SearchScopes::presentRows($settings['privacy'][SearchScopes::SETTINGS_ROWS_KEY] ?? []);
         }
 
         $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
@@ -271,6 +285,26 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 외부 영상 서비스 추가 창의 예시 주소 확인 — 꺼낸 id 와 만들어질 플레이어 주소 (#883).
+     *
+     * 저장하지 않는다. 형식이 틀리면(검증 위반) 필드별 문구도 함께 돌려줘 창이 저장 전에 알려 줄 수 있게 한다.
+     *
+     * @param  EmbedProviderPreviewRequest  $request  검증된 요청
+     * @return JsonResponse `{matched, id, player_url, errors}`
+     */
+    public function embedProviderPreview(EmbedProviderPreviewRequest $request): JsonResponse
+    {
+        $preview = $this->settingsService->previewEmbedProvider((array) $request->validated('provider'), (string) $request->validated('sample_url'));
+
+        return $this->success('common.success', [
+            'matched' => $preview['matched'],
+            'id' => $preview['id'],
+            'player_url' => $preview['player_url'],
+            'errors' => (object) $preview['errors'],
+        ]);
     }
 
     /**

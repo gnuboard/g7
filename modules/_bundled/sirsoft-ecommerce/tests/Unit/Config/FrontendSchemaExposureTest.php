@@ -2,8 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Config;
 
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\PureTestCase;
 
 /**
  * 프론트엔드 노출 스키마 계약 테스트 (이슈 #524 §4.3)
@@ -21,7 +21,7 @@ use PHPUnit\Framework\Attributes\Group;
  */
 #[Group('ecommerce')]
 #[Group('settings')]
-class FrontendSchemaExposureTest extends ModuleTestCase
+class FrontendSchemaExposureTest extends PureTestCase
 {
     /**
      * frontend_schema 가 mileage.enabled 를 노출한다.

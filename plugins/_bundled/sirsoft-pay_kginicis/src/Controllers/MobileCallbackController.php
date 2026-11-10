@@ -544,6 +544,7 @@ class MobileCallbackController
             'P_TID' => $tid,
             'vbank_name' => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
             'vbank_number' => $result['P_VACT_NUM'] ?? null,
+            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             'vbank_due_at' => $vbankDueAt?->toDateTimeString(),
         ]);
     }

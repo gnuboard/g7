@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\DTO;
 
 use Modules\Sirsoft\Ecommerce\DTO\ManualPaidOptions;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 수동 결제 처리 확인 창 세 항목 DTO (Q13)
@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 요청에 키가 없으면 켬(true) — 키를 모르는 기존 API 클라이언트가 업그레이드만으로 마일리지·재고를
  * 빼먹던 종전 결함으로 돌아가지 않게 한다.
  */
-class ManualPaidOptionsTest extends ModuleTestCase
+class ManualPaidOptionsTest extends PureTestCase
 {
     /**
      * 키가 없으면 세 항목 모두 켬이다.

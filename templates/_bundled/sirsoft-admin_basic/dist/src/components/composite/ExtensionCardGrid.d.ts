@@ -119,6 +119,12 @@ export interface ExtensionCardGridProps {
      * 서버가 토글을 거절해 원래 값이 그대로 돌아오는 경로(실패·의존 충돌 창 취소)에서 화면이 올려 준다.
      */
     resyncKey?: string | number;
+    /**
+     * 누른 스위치의 진행 표시를 재동기 신호(`resyncKey`)가 올 때까지 둔다 — 서버 값이 바뀌어도 끄지 않는다.
+     * 성공 뒤에도 후속 작업(확장 화면 파일 받기 등)이 이어지는 목록이 켜고, 그 작업이 끝난 뒤 신호를 올린다.
+     * 기본 false(서버 값이 바뀌면 끔).
+     */
+    holdUntilResync?: boolean;
     loading?: boolean;
     skeletonCount?: number;
     className?: string;

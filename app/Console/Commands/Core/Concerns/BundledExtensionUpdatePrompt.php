@@ -4,6 +4,7 @@ namespace App\Console\Commands\Core\Concerns;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -275,7 +276,8 @@ trait BundledExtensionUpdatePrompt
             return [
                 'success' => $spawnResult['success'],
                 'failed' => $spawnResult['failed'],
-                'skipped' => 0,
+                // 자식이 잠금 저장소 장애로 멈춰 건너뛴 항목 수 (7.1.5 자식부터 실림 — 안내는 자식이 이미 출력했다)
+                'skipped' => $spawnResult['skipped'] ?? 0,
                 'has_updates' => true,
             ];
         }
@@ -358,7 +360,7 @@ trait BundledExtensionUpdatePrompt
      * 결과 페이로드로 보관 후 부모 콘솔로 노출하지 않음). 종료 후 페이로드 파싱.
      *
      * @param  array  $manifest  buildBundledUpdateManifest() 반환값 (rebuild_search_index 포함)
-     * @return array{success: int, failed: int}|null spawn 성공 시 결과, 실패/미지원 시 null
+     * @return array{success: int, failed: int, skipped?: int}|null spawn 성공 시 결과, 실패/미지원 시 null
      */
     private function spawnBundledUpdates(array $manifest): ?array
     {
@@ -447,6 +449,7 @@ trait BundledExtensionUpdatePrompt
             return [
                 'success' => (int) ($resultPayload['success'] ?? 0),
                 'failed' => (int) ($resultPayload['failed'] ?? 0),
+                'skipped' => (int) ($resultPayload['skipped'] ?? 0),
             ];
         } finally {
             if (File::exists($manifestPath)) {
@@ -479,6 +482,9 @@ trait BundledExtensionUpdatePrompt
     ): array {
         $success = 0;
         $failed = 0;
+        // 잠금 저장소 장애로 멈췄는지 — 처리한 항목 수로 남은(건너뛴) 항목 수를 센다(#161 D8)
+        $aborted = false;
+        $attempted = 0;
 
         // 모듈·플러그인은 한 목록으로 서로의 의존 순서를 따른다 — 프로세스 분리 경로(core:execute-bundled-updates)와 같은 정렬.
         // 목록은 DB 조회 순서라 같은 종류 안의 의존 순서도 여기서 맞춘다.
@@ -495,6 +501,7 @@ trait BundledExtensionUpdatePrompt
             $id = (string) $node['entry']['identifier'];
             $type = $node['type'];
             $strategy = $strategies[($type === 'module' ? 'modules' : 'plugins').":{$id}"] ?? 'overwrite';
+            $attempted++;
             $this->line($type === 'module'
                 ? __('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy])
                 : __('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
@@ -505,6 +512,12 @@ trait BundledExtensionUpdatePrompt
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
+            } catch (ExtensionOperationLockUnavailableException $e) {
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                $failed++;
+                $aborted = true;
+                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => $type, 'id' => $id]);
+                break;
             } catch (\Throwable $e) {
                 $failed++;
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
@@ -512,8 +525,9 @@ trait BundledExtensionUpdatePrompt
             }
         }
 
-        foreach ($updates['templates'] as $t) {
+        foreach ($aborted ? [] : $updates['templates'] as $t) {
             $id = $t['identifier'];
+            $attempted++;
             $strategy = $strategies["templates:{$id}"] ?? 'overwrite';
             $this->line(__('extensions.commands.bundled_update.running_items.template', ['identifier' => $id, 'strategy' => $strategy]));
             try {
@@ -521,6 +535,12 @@ trait BundledExtensionUpdatePrompt
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
+            } catch (ExtensionOperationLockUnavailableException $e) {
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                $failed++;
+                $aborted = true;
+                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'template', 'id' => $id]);
+                break;
             } catch (\Throwable $e) {
                 $failed++;
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
@@ -529,8 +549,9 @@ trait BundledExtensionUpdatePrompt
         }
 
         $langPackService = app(LanguagePackService::class);
-        foreach ($updates['lang_packs'] ?? [] as $lp) {
+        foreach ($aborted ? [] : ($updates['lang_packs'] ?? []) as $lp) {
             $id = $lp['identifier'];
+            $attempted++;
             $this->line(__('extensions.commands.bundled_update.running_items.lang_pack', ['identifier' => $id]));
             try {
                 $pack = $langPackService->findByIdentifier($id);
@@ -539,6 +560,12 @@ trait BundledExtensionUpdatePrompt
                 }
                 $langPackService->performUpdate($pack, true);
                 $success++;
+            } catch (ExtensionOperationLockUnavailableException $e) {
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                $failed++;
+                $aborted = true;
+                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'lang_pack', 'id' => $id]);
+                break;
             } catch (\Throwable $e) {
                 $failed++;
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
@@ -546,15 +573,22 @@ trait BundledExtensionUpdatePrompt
             }
         }
 
+        $totalItems = count($extensionOrder['ordered']) + count($updates['templates'] ?? []) + count($updates['lang_packs'] ?? []);
+        $skipped = $aborted ? max(0, $totalItems - $attempted) : 0;
+
         $this->newLine();
         $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
+        if ($aborted) {
+            $this->error(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
+        }
 
-        $this->runSearchIndexRebuildIfRequested($rebuildSearchIndex);
+        // 잠금 저장소 장애로 멈췄으면 검색 인덱스 재생성도 하지 않는다 — 확장 갱신이 끝나지 않았다
+        $this->runSearchIndexRebuildIfRequested($rebuildSearchIndex && ! $aborted);
 
         return [
             'success' => $success,
             'failed' => $failed,
-            'skipped' => 0,
+            'skipped' => $skipped,
             'has_updates' => true,
         ];
     }

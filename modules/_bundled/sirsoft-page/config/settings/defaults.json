@@ -3,7 +3,8 @@
     "version": "1.0.0",
     "description": "페이지 모듈 환경설정",
     "categories": [
-      "attachment"
+      "attachment",
+      "content_media"
     ]
   },
   "defaults": {
@@ -18,7 +19,8 @@
         "application/pdf",
         "application/zip"
       ]
-    }
+    },
+    "content_media": {}
   },
   "frontend_schema": {
     "_comment": "첨부 정책만 노출 — 관리자 페이지 폼의 업로더(개수·용량·형식 안내와 클라이언트 차단)가 서버 검증과 같은 값을 쓰도록",

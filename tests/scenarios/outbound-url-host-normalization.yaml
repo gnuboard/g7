@@ -68,6 +68,16 @@ effects:
   - userinfo_disguised_host_is_rejected
   - allow_internal_outbound_setting_keeps_structural_check_only
 
+  # 화이트리스트·기본 정책 (검증기 단위 계약)
+  - whitelist_exact_host_match_allowed
+  - whitelist_bypass_variants_rejected
+  - whitelist_rejects_explicit_port_by_default
+  - whitelist_comparison_uses_normalized_host
+  - https_only_by_default_http_requires_opt_in
+  - ascii_internal_targets_are_denied
+  - bare_host_judged_with_same_internal_rules
+  - suffix_match_requires_normalized_host
+
   # 형제 (검증기 미경유 경로)
   - nicepay_approval_url_rejects_host_that_only_looks_like_nicepay
   - nicepay_approval_url_still_accepts_official_hosts

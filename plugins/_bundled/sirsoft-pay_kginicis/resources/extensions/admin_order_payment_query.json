@@ -1,5 +1,5 @@
 {
-    "comment": "주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다",
+    "comment": "주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다\n     e2e:allow #160 — CBT 대사·편의점 운영 시각 바인딩만 서버가 만든 *_formatted(보는 사람 시간대)로 교체했다. 대체 검증: PHPUnit 응답 단언(CbtPaymentControllerTest). Chrome MCP 매트릭스 S19 는 국내 결제조회 패널만 쟀고, 개발 사이트에 해외결제(CBT) 데이터가 없어 바꾼 CBT 칸은 브라우저로 재지 않았다. 테스트 결제창이 실제 카드사·편의점 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다.",
     "target_layout": "admin_ecommerce_order_detail",
     "data_sources": [
         {
@@ -237,7 +237,7 @@
                                     "props": {
                                         "className": "font-mono text-red-950 dark:text-red-100"
                                     },
-                                    "text": "{{kginicis_cbt_reconciliation.data?.updated_at ?? '-'}}"
+                                    "text": "{{kginicis_cbt_reconciliation.data?.updated_at_formatted ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
@@ -526,7 +526,7 @@
                                     "props": {
                                         "className": "font-mono text-blue-950 dark:text-blue-100 break-all"
                                     },
-                                    "text": "{{(kginicis_cbt_cvs.data?.last_notify_at ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_result ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_reason ?? '-')}}"
+                                    "text": "{{(kginicis_cbt_cvs.data?.last_notify_at_formatted ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_result ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_reason ?? '-')}}"
                                 },
                                 {
                                     "type": "basic",
@@ -542,7 +542,7 @@
                                     "props": {
                                         "className": "font-mono text-blue-950 dark:text-blue-100 break-all"
                                     },
-                                    "text": "{{(kginicis_cbt_cvs.data?.last_recheck_at ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_recheck_result ?? '-')}}"
+                                    "text": "{{(kginicis_cbt_cvs.data?.last_recheck_at_formatted ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_recheck_result ?? '-')}}"
                                 },
                                 {
                                     "type": "basic",
@@ -612,7 +612,7 @@
                                                     "props": {
                                                         "className": "font-mono text-blue-950 dark:text-blue-100"
                                                     },
-                                                    "text": "{{notify.received_at ?? '-'}}"
+                                                    "text": "{{notify.received_at_formatted ?? '-'}}"
                                                 },
                                                 {
                                                     "type": "basic",

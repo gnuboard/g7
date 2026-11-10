@@ -48,7 +48,8 @@
     "pay": {
       "success": "Payment completed.",
       "failed": "Could not start the payment."
-    }
+    },
+    "guest_auth_required": "Guest order verification is required. Look up your order again and resubmit; your input is kept."
   },
   "claim_apply": {
     "edit_not_editable": "A request cannot be changed after it has been approved. Please contact customer support if you need a change.",
@@ -64,5 +65,8 @@
     "edit_save_success": "The request has been updated.",
     "edit_save_failed": "Could not update the request.",
     "refund_account_masked_mixed": "Hidden account details cannot be changed in part. Please enter the bank, account number and holder all anew."
+  },
+  "guest_order": {
+    "auth_required": "Guest order verification is required. Look up your order again and try once more."
   }
 }

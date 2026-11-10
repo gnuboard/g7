@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -120,11 +121,14 @@ class CommentResource extends BaseApiResource
 
         $logs = $this->action_logs ?? [];
 
-        return array_map(static fn (array $log): array => [
+        // 처리 시각은 naive UTC 문자열로 저장된다(PostService·CommentService) — 보는 사람 시간대로 바꿔 내보낸다.
+        return array_map(fn (array $log): array => [
             'action' => $log['action'] ?? null,
             'reason' => $log['reason'] ?? null,
             'admin_name' => $log['admin_name'] ?? null,
-            'created_at' => $log['created_at'] ?? null,
+            'created_at' => ! empty($log['created_at'])
+                ? $this->formatDateTimeStringForUser(Carbon::parse($log['created_at'], 'UTC'))
+                : null,
         ], $logs);
     }
 

@@ -1,0 +1,28 @@
+feature: 관리자 인증 토큰 — 로그인·로그아웃·갱신과 관리자 API 접근 판정
+
+description: |
+  관리자 전용 로그인 경로는 없다 — 관리자 화면도 공개 로그인 API(/api/auth/login)로 토큰을 받고,
+  그 토큰으로 /api/admin/* 에 접근한다. 비인증 접근은 Accept 헤더와 무관하게 항상 401 JSON 이어야 한다
+  (Accept 가 없으면 Laravel 기본 폴백이 login 라우트로 redirect 하려다 500 이 되던 결함 — 공개#39).
+
+axes:
+  credential: [admin_token, regular_user_token, none, invalid_token]
+  accept: [json, absent, html]
+
+exclusions:
+  - { credential: admin_token, accept: absent, reason: "Accept 축은 비인증 401 응답 형식(redirect 폴백)만 가른다 — 인증에 성공한 요청은 컨트롤러가 JSON 을 낸다" }
+  - { credential: admin_token, accept: html, reason: "Accept 축은 비인증 401 응답 형식(redirect 폴백)만 가른다 — 인증에 성공한 요청은 컨트롤러가 JSON 을 낸다" }
+  - { credential: regular_user_token, accept: absent, reason: "인증은 통과하고 관리자 권한 미들웨어가 403 을 낸다 — redirect 폴백이 없는 경로라 Accept 축과 무관" }
+  - { credential: regular_user_token, accept: html, reason: "인증은 통과하고 관리자 권한 미들웨어가 403 을 낸다 — redirect 폴백이 없는 경로라 Accept 축과 무관" }
+  - { credential: invalid_token, accept: json, reason: "무효 토큰은 Sanctum 이 비인증과 같은 예외로 처리한다 — json 은 none 자격에서 잰다" }
+  - { credential: invalid_token, accept: html, reason: "무효 토큰은 Sanctum 이 비인증과 같은 예외로 처리한다 — html 은 none 자격에서 잰다" }
+
+effects:
+  - admin_login_issues_token_usable_on_admin_api
+  - admin_logout_succeeds
+  - unauthenticated_admin_api_returns_401_json_without_redirect
+  - regular_user_admin_api_forbidden
+  - token_refresh_issues_usable_token
+
+test_files:
+  - tests/Feature/Api/Admin/AdminAuthTest.php

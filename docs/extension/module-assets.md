@@ -164,15 +164,15 @@ React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품
 그 호스트를 이 배열에 선언합니다. 활성 확장이 선언한 호스트만 집계되며(편집자는 추가 불가 —
 manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allowlist 를 구성합니다.
 
-- 값은 호스트명만(스킴/경로 없이). 예: `"t1.daumcdn.net"`.
+- 값은 호스트명만(스킴/경로 없이). 예: `"t1.kakaocdn.net"`.
 - **`trusted_script_hosts_reason` 에 호스트별 사유를 함께 선언합니다.** 사유가 없는 선언은
   자체 제공 원칙의 예외로 인정되지 않습니다 — 왜 외부로 나가는지가 코드에 남아야 합니다.
 
   ```jsonc
   {
-    "trusted_script_hosts": ["t1.daumcdn.net"],
+    "trusted_script_hosts": ["t1.kakaocdn.net"],
     "trusted_script_hosts_reason": {
-      "t1.daumcdn.net": "라이브러리가 아니라 Daum 이 운영하는 서비스 SDK 다. 스크립트가 Daum 서버와 통신하므로 자체 호스팅해도 동작하지 않는다."
+      "t1.kakaocdn.net": "라이브러리가 아니라 카카오가 운영하는 서비스 SDK 다. 스크립트가 카카오 서버와 통신하므로 자체 호스팅해도 동작하지 않는다."
     }
   }
   ```

@@ -1551,6 +1551,12 @@
             "required": false,
             "description": "스위치 재동기 신호 — 값이 바뀌면 누른 채 기다리던 스위치 값을 버리고 서버 값을 따른다(토글 실패·의존 충돌 창 취소 경로에서 올린다)"
           },
+          "holdUntilResync": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "누른 스위치의 진행 표시를 재동기 신호(resyncKey)가 올 때까지 둔다 — 서버 값이 바뀌어도 끄지 않는다. 성공 뒤 후속 작업(확장 화면 파일 받기 등)이 이어지는 목록이 켜고, 그 작업이 끝난 뒤 신호를 올린다"
+          },
           "loading": {
             "type": "boolean",
             "required": false,
@@ -3862,6 +3868,18 @@
             "required": false,
             "default": "",
             "description": "사용자 정의 클래스"
+          },
+          "awaitConfirmation": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "true 면 눌러도 스위치가 스스로 바뀌지 않고 onChange 로 다음 값만 알린다 — 바깥이 checked 를 바꿀 때만 바뀐다(서버 작업 확정 대기)"
+          },
+          "pending": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "바깥 작업 진행 중 — 잠그고 손잡이 자리에 스피너를 보인다(aria-busy)"
           }
         }
       },

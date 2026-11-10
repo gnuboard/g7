@@ -1,0 +1,14 @@
+feature: 페이지 임시 첨부 연결의 파일 보상 — 롤백되면 임시 자리로 (#883 3단계)
+
+description: |
+  `PageAttachmentService::linkTempAttachmentsWithMove` 는 파일을 StorageTransaction::move 로 옮긴다 — 페이지 저장 트랜잭션이
+  롤백되면 사본을 지우고 원본을 두며, 커밋되면 원본을 지운다. 임시 디렉토리 정리도 커밋 뒤다.
+
+axes:
+  case: [rollback_then_commit]
+
+effects:
+  - page_temp_attachment_file_restored_on_rollback
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentLinkRollbackTest.php

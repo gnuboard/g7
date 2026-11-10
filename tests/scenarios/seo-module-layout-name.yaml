@@ -59,6 +59,7 @@ effects:
   - declaration_collects_only_seo_enabled_public_layouts
   - declaration_empty_without_active_template_or_routes
   - declaration_skips_layout_that_fails_to_load
+  - declaration_skips_system_routes   # 코어 미리보기 등 meta.is_system_route 는 레이아웃을 읽지 않고 건너뛴다(사이트맵 생성마다 오류 보고 0)
   - declaration_grouped_by_owning_extension
   - module_screen_served_to_bot_with_cache_hit
 

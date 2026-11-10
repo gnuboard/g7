@@ -4,6 +4,8 @@ return [
     // Messages
     'fetch_success' => 'Schedules retrieved successfully.',
     'fetch_failed' => 'Failed to retrieve schedules.',
+    'already_running' => 'This schedule is already running (overlap prevention). Run it again after it finishes.',
+    'run_lock_unavailable' => 'The schedule run lock store (cache) is unavailable, so it was not run.',
     'create_success' => 'Schedule created successfully.',
     'create_failed' => 'Failed to create schedule.',
     'update_success' => 'Schedule updated successfully.',

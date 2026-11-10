@@ -205,6 +205,7 @@
             "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
             "krw_only": "NHN KCP는 KRW 결제만 지원합니다. ({{currency}})",
             "mobile_approval_key_failed": "KCP 모바일 승인키 획득 실패",
+            "mobile_guest_auth_failed": "주문 확인 정보가 만료되었습니다. 주문 조회에서 다시 결제해 주세요.",
             "pg_error": "KCP 오류 [{{code}}]: {{message}}",
             "applepay_ios_only": "애플페이는 IOS 기기에 모바일결제만 가능합니다.",
             "method_missing": "결제수단 정보가 없어 결제를 진행할 수 없습니다. 주문서를 다시 열어 주세요."

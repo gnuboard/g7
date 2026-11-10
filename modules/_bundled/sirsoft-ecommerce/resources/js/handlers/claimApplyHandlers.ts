@@ -22,6 +22,7 @@
 import type { ActionContext } from '../types';
 import { formatAmountInCurrency } from './calculateCurrencyPrices';
 import { claimRequestConfig, uploadPendingClaimFiles } from './claimImageHandlers';
+import { guestClaimAuthRequiredMessage, isGuestOrderAuthFailure } from '../utils/guestOrderAuth';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimApply')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ClaimApply]', ...args),
@@ -1993,6 +1994,15 @@ async function estimateClaimInternal(
 
         logger.error('[estimateClaim] 실패:', error);
 
+        // 비회원 주문 조회 토큰이 없거나 만료된 무토큰 401 — 로그인 화면으로 옮겨지지 않는다(engine-v1.88.2).
+        // 「상품·수량을 확인하라」(4xx 화면 안내)가 아니라 주문 조회를 다시 하라고 알리고 입력은 그대로 둔다(#883).
+        if (isGuestOrderAuthFailure(error)) {
+            writeLocal({ claimEstimate: null, claimEstimateFormatted: null, claimEstimateLoading: false, claimEstimateError: null });
+            G7Core.toast?.error?.(guestClaimAuthRequiredMessage());
+
+            return;
+        }
+
         const message = error?.response?.data?.message
             ?? error?.data?.message
             ?? t('sirsoft-ecommerce.user.claim_apply.estimate_failed', '예상 금액을 계산하지 못했습니다.');
@@ -2250,6 +2260,14 @@ export async function submitClaimHandler(
     } catch (error: any) {
         logger.error('[submitClaim] 실패:', error);
 
+        // 비회원 주문 확인 실패(무토큰 401) — 신청서를 그대로 두고 주문 조회를 다시 하라고 알린다(#883).
+        if (isGuestOrderAuthFailure(error)) {
+            G7Core.state.setLocal({ isSubmittingClaim: false });
+            G7Core.toast?.error?.(guestClaimAuthRequiredMessage());
+
+            return;
+        }
+
         const errorData = error?.response?.data ?? error?.data;
         const message = errorData?.message
             ?? error?.message
@@ -2451,6 +2469,14 @@ export async function saveClaimEditHandler(
         }
     } catch (error: any) {
         logger.error('[saveClaimEdit] 실패:', error);
+
+        // 비회원 주문 확인 실패(무토큰 401) — 수정 내용을 그대로 두고 주문 조회를 다시 하라고 알린다(#883).
+        if (isGuestOrderAuthFailure(error)) {
+            G7Core.state.setLocal({ claimEditSaving: false });
+            G7Core.toast?.error?.(guestClaimAuthRequiredMessage());
+
+            return;
+        }
 
         const errorData = error?.response?.data ?? error?.data;
         const message = errorData?.message

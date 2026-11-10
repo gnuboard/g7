@@ -28,6 +28,8 @@ effects:
   - custom_login_path_used_for_unauthorized_redirect
   - admin_pathname_selects_admin_login
   - non_unauthorized_layout_failure_does_not_redirect
+  # 초기화가 ApiClient 에 거는 401 콜백 — 토큰을 실은 요청이 거부됐을 때만 불리고 종전대로 session_expired 이동(engine-v1.88.2, D2)
+  - token_rejected_callback_keeps_session_expired_redirect
 
 test_files:
   - resources/js/core/__tests__/template-engine.releaseRoot.test.tsx

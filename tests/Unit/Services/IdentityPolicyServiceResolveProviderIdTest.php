@@ -9,7 +9,7 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\IdentityPolicy;
 use App\Services\IdentityPolicyService;
 use Mockery;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * IdentityPolicyService::resolveProviderId 의 fallback 분기 회귀 차단.
@@ -26,14 +26,28 @@ use Tests\TestCase;
  * 의 providerId 인자로 전달되는 값을 결정하므로, 본 회귀 차단이 통과해야 admin UI 의
  * default_provider 환경설정이 모달 launcher 까지 정상 전달된다.
  */
-class IdentityPolicyServiceResolveProviderIdTest extends TestCase
+class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
 {
+    /**
+     * 테스트마다 만든 Mockery 목 객체의 기대값을 검증하고 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
+    /**
+     * 정책의 provider_id 가 등록된 provider 이면 Manager fallback 없이 그 값을 그대로 돌려준다.
+     *
+     * @scenario case=registered
+     *
+     * @effects registered_policy_provider_returned_as_is
+     *
+     * @return void 반환값 없음
+     */
     public function test_returns_policy_provider_id_when_registered(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
@@ -54,6 +68,15 @@ class IdentityPolicyServiceResolveProviderIdTest extends TestCase
         $this->assertSame('inicis', $this->invokeResolveProviderId($service, $policy));
     }
 
+    /**
+     * 정책의 provider_id 가 NULL 이면 Manager 의 목적 기반 해석으로 넘어가 그 결과 provider id 를 돌려준다.
+     *
+     * @scenario case=null_provider
+     *
+     * @effects null_policy_provider_falls_back_to_manager
+     *
+     * @return void 반환값 없음
+     */
     public function test_falls_back_to_manager_when_policy_provider_id_is_null(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
@@ -79,6 +102,15 @@ class IdentityPolicyServiceResolveProviderIdTest extends TestCase
         $this->assertSame('inicis', $this->invokeResolveProviderId($service, $policy));
     }
 
+    /**
+     * 정책 provider 가 미등록이면 그 값을 0순위로 Manager 에 넘겨 fallback 해석한 provider id 를 돌려준다.
+     *
+     * @scenario case=unregistered_provider
+     *
+     * @effects unregistered_policy_provider_passed_to_manager_fallback
+     *
+     * @return void 반환값 없음
+     */
     public function test_falls_back_to_manager_when_policy_provider_unregistered(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
@@ -106,6 +138,15 @@ class IdentityPolicyServiceResolveProviderIdTest extends TestCase
         $this->assertSame('g7:core.mail', $this->invokeResolveProviderId($service, $policy));
     }
 
+    /**
+     * Manager 해석이 예외를 던지면 정책에 저장된 원본 provider_id 를 그대로 돌려준다.
+     *
+     * @scenario case=manager_failure
+     *
+     * @effects manager_failure_keeps_original_provider_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_returns_original_provider_id_when_manager_throws(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
@@ -126,6 +167,13 @@ class IdentityPolicyServiceResolveProviderIdTest extends TestCase
         $this->assertSame('legacy-id', $this->invokeResolveProviderId($service, $policy));
     }
 
+    /**
+     * 비공개 메서드 resolveProviderId 를 리플렉션으로 호출해 해석된 provider id 를 얻는다.
+     *
+     * @param  IdentityPolicyService  $service  검사 대상 서비스 인스턴스
+     * @param  IdentityPolicy  $policy  해석에 쓸 본인인증 정책 모델
+     * @return string|null 해석된 provider id (없으면 null)
+     */
     private function invokeResolveProviderId(IdentityPolicyService $service, IdentityPolicy $policy): ?string
     {
         $reflection = new \ReflectionMethod($service, 'resolveProviderId');

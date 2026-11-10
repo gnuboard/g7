@@ -2,30 +2,17 @@
      주소가 바뀌면 목록 데이터소스가 알아서 따라온다. -->
 <partial description="검색 바 + 정렬 바 (검색 입력, 총 상품 수, 초기화, 정렬)">
   <div class="space-y-4">
-    <!-- 검색 영역 -->
-    <div class="flex gap-2">
-      <input type="text" name="keyword" placeholder="$t:shop.search_placeholder" class="flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" value="{{_local.keyword ?? query.keyword ?? ''}}">
-        <on type="change">
-          <!-- 타이핑은 로컬에만 담는다 — 글자마다 목록을 다시 받지 않기 위해서다 -->
-          <set-state target="local" keyword="{{$event.target.value}}"/>
-        </on>
-        <on type="keydown" key="Enter">
-          <!-- Enter 로 검색. `mergeQuery` 라 카테고리·정렬은 그대로 두고 검색어와 쪽수만 갈아 끼운다 -->
-          <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
-            <query keyword="{{_local.keyword ?? ''}}" page="1"/>
-          </navigate>
-        </on>
-      </input>
-      <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium">
-        <on type="click">
-          <!-- 검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다 -->
-          <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
-            <query keyword="{{_local.keyword ?? query.keyword ?? ''}}" page="1"/>
-          </navigate>
-        </on>
-        $t:shop.search
-      </button>
-    </div>
+    <!-- 검색 영역 — 최근 검색어 검색창(상품 검색 범위 sirsoft-ecommerce.products, 분류 화면 검색줄과 목록을 함께 쓴다).
+         입력칸은 주소의 keyword 를 보이기만 하고 기록하지 않는다 — 제출(Enter·검색 단추·목록 항목)할 때 검색창이 기록한다.
+         이커머스가 꺼져 범위가 없으면 펼침 목록 없는 평범한 검색칸이다. 칸을 비우고 제출하면 검색어 조건이 풀린다(submitEmpty). -->
+    <recent-search-combobox data-type="composite" data-ref="shop_list_search_box" scope="sirsoft-ecommerce.products" name="keyword" value="{{query.keyword ?? ''}}" placeholder="$t:shop.search_placeholder" :showButton="true" buttonText="$t:shop.search" :showIcon="false" :submitEmpty="true" inputClassName="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" buttonClassName="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium">
+      <on event="onSearch">
+        <!-- 검색. `mergeQuery` 라 카테고리·정렬은 그대로 두고 검색어와 쪽수만 갈아 끼운다(빈 검색어는 주소에서 빠진다) -->
+        <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
+          <query keyword="{{$args[0]}}" page="1"/>
+        </navigate>
+      </on>
+    </recent-search-combobox>
     <!-- 정렬 바 (총 상품 수 + 초기화 + 정렬) -->
     <div class="flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50">
       <!-- 총 상품 수 -->
@@ -47,6 +34,7 @@
           <options>
             <option value="latest">$t:shop.sort.latest</option>
             <option value="sales">$t:shop.sort.sales</option>
+            <option value="reviews">$t:shop.sort.reviews</option>
             <option value="price_asc">$t:shop.sort.price_asc</option>
             <option value="price_desc">$t:shop.sort.price_desc</option>
           </options>

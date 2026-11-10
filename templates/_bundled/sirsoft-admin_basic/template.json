@@ -5,7 +5,7 @@
         "ko": "Admin Basic",
         "en": "Admin Basic"
     },
-    "version": "1.1.4",
+    "version": "1.1.5",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 관리자 템플릿",
@@ -22,7 +22,7 @@
         "url": "https://sirsoft.com"
     },
     "release_date": "2026-11-01",
-    "g7_version": ">=7.1.1",
+    "g7_version": ">=7.1.5",
     "dependencies": {
         "modules": {},
         "plugins": {}
@@ -115,6 +115,13 @@
             "grid",
             "section"
         ]
+    },
+    "scroll_restoration": {
+        "mode": "restore",
+        "on_reload": true,
+        "wait": "height",
+        "timeout_ms": 5000,
+        "containers": ["#right_content_area"]
     },
     "error_config": {
         "layouts": {

@@ -7,6 +7,7 @@ use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftGdpr\V1_1_0\Migrations\ConvertPrivacyPolicySlugToUrl;
 use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.1.0 업그레이드 스텝 — 처리방침 슬러그 설정을 처리방침 주소 설정으로 이관 검증
@@ -37,7 +38,7 @@ class ConvertPrivacyPolicySlugToUrlTest extends PluginTestCase
         parent::setUp();
 
         // 업그레이드 마이그레이션은 오토로드되지 않는다 — 실행 시점과 같은 방식으로 싣는다.
-        require_once __DIR__.'/../../../upgrades/data/1.1.0/migrations/05_ConvertPrivacyPolicySlugToUrl.php';
+        UpgradeFiles::requireOnce(__DIR__.'/../../../upgrades/data/1.1.0/migrations/05_ConvertPrivacyPolicySlugToUrl.php');
 
         $this->path = ExtensionStoragePath::plugin('sirsoft-gdpr', 'settings').'/setting.json';
 

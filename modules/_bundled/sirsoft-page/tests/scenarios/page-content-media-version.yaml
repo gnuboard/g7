@@ -1,0 +1,26 @@
+feature: 페이지 본문 미디어 — 버전이 참조하면 남기고 복원 때 동기화 (#887 G5)
+
+description: |
+  본문에서 빠진 본문 미디어(`page_attachments.collection = content_media`)는 어느 버전 본문도 그 해시를 참조하지 않을 때만
+  영구 삭제한다(`PageVersionRepository::referencesHash` — 버전 본문은 배열 캐스트 JSON 이라 주소 대신 12자 해시로 찾는다).
+  참조하면 페이지에 붙인 채 두어 그 버전으로 복원했을 때 서빙된다. 버전 스냅샷이 동기화 뒤에 찍히므로 직전 버전이 늘 옛 본문을
+  가져, 뺀 미디어는 사실상 페이지를 지울 때 정리된다(버전 보존 한도 없음). 복원 본문도 정규화·동기화를 거친 뒤 스냅샷을
+  찍는다 — 다른 페이지 소유 미디어가 섞여 있으면 지금 볼 수 있을 때 이 페이지 소유로 복제한다. 페이지 삭제는 남겨 둔 것까지 모두
+  코어 골격 `purgeRows` 로 지우고 행마다 `core.content_media.before_delete` 를 발화한다. 버전 응답(버전 이력 미리보기)은 페이지 응답과
+  같은 규칙으로 미발행 페이지의 소유 미디어만 서명한다(관리자 화면의 미디어 요청에는 인증 헤더가 없다).
+
+axes:
+  case: [dropped_then_restored, page_deleted, foreign_media_restored, version_preview_signed]
+
+effects:
+  - dropped_media_kept_while_version_references
+  - restore_relinks_and_serves
+  - restore_snapshot_after_sync
+  - page_delete_purges_all_media
+  - before_delete_fired_per_row
+  - restore_clones_foreign_media
+  - unpublished_version_preview_signs_owned_media
+  - published_version_preview_unsigned
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaVersionTest.php

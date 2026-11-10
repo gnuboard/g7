@@ -1,0 +1,112 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 4축 전개(요청 4 × 맥락 7 × 캐시 3 × 확장 상태 3 = 252 조합)는 docblock @scenario 1:1 매핑이 비현실적이라 조합 축만 면제한다. 각 W 항목의 회귀 가드는 effects 37건 전수 @effects 마킹과 test_files 로 지킨다 — effects·test_files 축은 면제하지 않는다.
+
+feature: boot_repeated_work
+
+description: |
+  API 한 건이 컨트롤러에 닿기 전에 서버가 하는 준비 작업(부팅) 중, 같은 요청 안에서 같은 일을
+  되풀이하던 것을 걷어낸다(#860, 7.1.5). 확장 탐색·훅 등록·캐시 메커니즘 자체는 바꾸지 않는다.
+
+  핵심 설계:
+    - 요청 메모는 static 이 아니라 컨테이너 scoped 다 — 웹 요청 1건 동안 하나, 큐 워커는 잡마다 새로,
+      route:cache 같은 일회용 새 앱은 새 컨테이너라 새로. 프로세스 수명 static 은 워커가 옛 상태를 붙잡는다.
+    - 메모는 비어 있지 않은 목록만 담는다. 빈 목록을 붙잡으면 「모든 확장 비활성」이 요청 내내 고착된다.
+    - 메모 무효화는 기존 상태 캐시 무효화 함수 안에 둔다 — 새 무효화 지점을 만들지 않아 굽기/무효화 순서가 그대로다.
+    - 비활성 확장도 바인딩·번역은 등록하고(#730), 요청 처리에 개입하는 boot 부수효과만 활성일 때 건다.
+      상태를 알 수 없으면(설치 전·스키마 변경 명령·업데이트 중·조회 예외) 지금처럼 실행한다.
+    - 훅 Event 미러는 디스패처마다 와일드카드 리스너 1개다. 외부 Event::listen/dispatch 계약과 「정확히 1회」를 지킨다.
+    - 브로드캐스트 채널은 인가 요청 처리 안에서 등록한다 — 라우트 캐시 상태에서도 실행된다.
+
+axes:
+  request_kind: [public_get, authenticated_get, admin, broadcast_auth]
+  runtime: [web, queue_job_first, queue_job_second, console, before_install, during_update, disposable_app]
+  cache_state: [cold, warm, hook_cache_absent]
+  extension_state: [active, inactive, unrecorded]
+
+coverage_strategy: pairwise
+
+exclusions:
+  - { request_kind: broadcast_auth, runtime: before_install, reason: "설치 전에는 인증 사용자가 없어 채널 인가 요청이 성립하지 않는다" }
+  - { request_kind: admin, runtime: queue_job_second, reason: "큐 잡은 HTTP 요청 종류 축을 갖지 않는다 — 잡 축은 public_get 대표로 본다" }
+  - { extension_state: unrecorded, runtime: disposable_app, reason: "일회용 새 앱은 DB 상태를 새로 읽을 뿐 미기록 확장 판정 경로가 웹과 같다" }
+
+effects:
+  # ── W0 부팅 계측 축 ──
+  - boot_axis_spawns_fresh_process_per_run_with_web_runtime
+  # ── W1 활성·설치 확장 목록 요청 메모 ──
+  - active_extension_identifiers_read_store_once_per_request
+  - memo_is_cleared_by_status_cache_invalidation
+  - empty_active_list_is_never_memoized
+  - scoped_memo_is_rebuilt_after_forget_scoped_instances
+  - memo_is_skipped_before_installer_completion
+  # ── W2 _bundled·_pending 지연 로딩 ──
+  - pending_and_bundled_manifests_are_not_read_during_boot
+  - pending_and_bundled_manifests_load_once_on_first_access
+  - reloading_extensions_resets_lazy_state
+  - manifest_info_lookup_loads_pending_and_bundled_first
+  # ── W4 비활성 확장 boot 부수효과 게이트 ──
+  - inactive_extension_keeps_bindings_without_request_side_effects
+  - side_effects_register_on_first_boot_after_activation
+  - unknown_extension_state_defaults_to_active
+  - bundled_providers_guard_gate_with_method_exists
+  # ── W5 훅 Event 미러 와일드카드 ──
+  - action_mirror_uses_single_wildcard_listener
+  - external_dispatch_runs_registered_action_exactly_once
+  - do_action_runs_each_callback_exactly_once
+  - remove_action_preserves_external_listeners
+  - clear_action_forgets_all_listeners
+  - fresh_dispatcher_gets_its_own_wildcard_mirror
+  # ── W6 본인인증 hook target 캐시 ──
+  - identity_hook_targets_are_cached_across_requests
+  - identity_hook_target_cache_is_flushed_on_policy_write
+  - identity_hook_target_lookup_failure_is_not_cached
+  # ── W7 확장 미들웨어 인덱스 ──
+  - middleware_index_is_read_once_per_request
+  # ── W8 언어팩 활성 로케일 ──
+  - active_locales_reuse_registry_memo
+  # ── W9 설정 미러 ──
+  - settings_mirror_never_decrypts_sensitive_fields
+  - defaults_json_is_read_once_per_file_version
+  - plugin_settings_saved_value_is_visible_in_same_request
+  - plugin_settings_service_is_rebuilt_for_each_queue_job
+  - worker_settings_refresh_rebuilds_notification_channel_drivers
+  - seo_renderer_uses_current_job_plugin_settings
+  # ── W10 동의 ──
+  - consent_selection_is_computed_once_per_request
+  - cookie_consent_middleware_skips_db_without_target_cookies
+  - current_policy_version_is_queried_at_most_once_per_request
+  # ── W11 사이트맵 기여자 지연 등록 ──
+  - sitemap_generator_not_built_during_boot
+  - sitemap_contributors_registered_once_when_generator_resolved
+  # ── W12 브로드캐스트 채널 지연 등록 ──
+  - broadcaster_not_created_during_boot
+  - broadcast_auth_registers_core_and_extension_channels
+
+test_files:
+  # W0
+  - tests/Unit/Benchmark/BootAxisRunnerTest.php
+  # W1
+  - tests/Unit/Extension/ExtensionStatusMemoTest.php
+  # W2
+  - tests/Unit/Extension/ExtensionPendingLazyLoadTest.php
+  # W4
+  - tests/Feature/Extension/ExtensionBootSideEffectGateTest.php
+  - tests/Unit/Extension/BundledProviderActiveGateCompatTest.php
+  # W5
+  - tests/Unit/Extension/HookManagerWildcardMirrorTest.php
+  # W6
+  - tests/Unit/Repositories/IdentityPolicyHookTargetsCacheTest.php
+  # W7·W8·W9
+  - tests/Unit/Extension/ExtensionMiddlewareRegistryMemoTest.php
+  - tests/Unit/Services/LanguagePack/LanguagePackActiveLocalesMemoTest.php
+  - tests/Unit/Support/ExtensionSettingsMirrorSensitiveTest.php
+  - tests/Feature/Settings/WorkerJobScopedSettingsTest.php
+  # W10
+  - tests/Unit/Extension/Consent/ConsentManagerSelectionMemoTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/CookieConsentRequestQueryBudgetTest.php
+  # W11
+  - tests/Feature/Seo/SitemapContributorLazyRegistrationTest.php
+  # W12
+  - tests/Feature/Broadcasting/BroadcastChannelRegistrarTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

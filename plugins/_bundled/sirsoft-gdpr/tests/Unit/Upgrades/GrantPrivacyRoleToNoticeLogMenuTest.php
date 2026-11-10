@@ -6,6 +6,7 @@ use App\Extension\UpgradeContext;
 use App\Upgrades\Data\Ext\Plugins\SirsoftGdpr\V1_1_0\Migrations\GrantPrivacyRoleToNoticeLogMenu;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\UpgradeFiles;
 use Tests\TestCase;
 
 // audit:allow test-extension-base-class reason: 메뉴·역할 행(코어 테이블)만 쓰는 업그레이드 스텝 테스트라 트랜잭션 격리로 충분하다 — PluginTestCase 의 RefreshDatabase(migrate:fresh)는 로컬 MySQL OOM 규율(mem:migrate-fresh-ddl-crashes-local-mysql)에 걸린다
@@ -41,7 +42,7 @@ class GrantPrivacyRoleToNoticeLogMenuTest extends TestCase
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        require_once base_path('plugins/_bundled/sirsoft-gdpr/upgrades/data/1.1.0/migrations/06_GrantPrivacyRoleToNoticeLogMenu.php');
+        UpgradeFiles::requireOnce(base_path('plugins/_bundled/sirsoft-gdpr/upgrades/data/1.1.0/migrations/06_GrantPrivacyRoleToNoticeLogMenu.php'));
 
         DB::table('menus')->where('slug', 'like', self::SLUG.'%')->delete();
     }

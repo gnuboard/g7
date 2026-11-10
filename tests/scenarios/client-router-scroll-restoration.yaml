@@ -1,0 +1,55 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 복원 입력 변수 목록(SSoT)이고 조합은 독립적이다 — 각 시험은 한 축의 값만 바꿔 효과를 잠근다(이동 종류·문서가 자라는 시점·설정 층·사용자 입력). 교차곱 대부분(새 이동 × 설정 층 등)은 「새 이동은 복원하지 않는다」 한 규칙으로 같은 결과다.
+
+feature: 뒤로/앞으로 가기·새로고침 스크롤 위치 복원과 더보기 스냅샷
+
+description: |
+  템플릿 엔진 라우터(`resources/js/core/routing/Router.ts`)가 이동 종류를 표시하고 히스토리 항목마다 스크롤 위치를
+  기억하면(`resources/js/core/routing/ScrollMemory.ts`), 화면 처리(`TemplateApp.handleRouteChange`)가 레이아웃을 받은 뒤 설정
+  (엔진 기본값 → template.json → 베이스 레이아웃 meta → 화면 meta → navigate `returnScroll`)을 합쳐 첫 렌더 직후(높이 대기)
+  또는 데이터를 다 받은 뒤(데이터 기준) 되돌린다. 더보기(`appendDataSource`)로 늘어난 데이터소스는 떠날 때 스냅샷으로
+  기억했다가 돌아오면 그 데이터로 먼저 그리고, 다시 받은 첫 묶음은 `item_key` 로 대조해 바뀐 항목만 갈아끼운다
+  (`resources/js/core/template-engine/dataSourceSnapshot.ts`).
+
+  engine-v1.85.0: 종전에는 브라우저 기본 복원(`scrollRestoration = 'auto'`)에만 맡겨, popstate 직후 문서가
+  아직 짧으면(데이터를 다시 받는 중) 맨 위에 머물렀다 — 모바일 홈을 2,742px 까지 내린 뒤 상품으로 갔다
+  돌아오면 0. 높이는 약 1초에 걸쳐 3,416 → 5,574px 로 자랐다.
+
+axes:
+  entry: [popstate, navigate, reload]
+  content_timing: [already_tall, grows_late, never_tall_enough]
+  config_layer: [engine_default, template_config, layout_meta, navigate_return_scroll, editor_mode]
+  user_input: [none, before_restore, during_restore]
+
+effects:
+  - scroll_position_restored_after_late_content       # 돌아온 항목의 위치를 문서가 자란 뒤 되돌린다
+  - stale_scroll_during_popstate_not_saved            # 이전 화면이 남은 채 일어난 스크롤이 돌아갈 항목의 값을 덮지 않는다
+  - new_navigation_does_not_restore                   # 새 항목으로 가는 이동(navigate)은 복원하지 않는다
+  - user_input_stops_restore                          # 복원 중 사용자가 손을 대면 그 자리를 따른다
+  - reload_restores_from_session_storage              # 새로고침 뒤에도 기억한 위치로 돌아간다
+  - on_reload_false_starts_at_top                     # on_reload 를 끈 화면은 새로고침 뒤 맨 위
+  - unreachable_target_clamps_to_max                  # 끝내 높이가 모자라면 닿을 수 있는 가장 아래에 둔다
+  - return_scroll_overrides_screen_setting            # navigate returnScroll 이 떠나는 화면의 돌아올 때 동작을 정한다
+  - return_scroll_not_attached_when_leave_guard_blocks  # 이탈 가드에서 머무르면 returnScroll 을 붙이지 않는다
+  - selector_mode_scrolls_to_element                  # mode 가 선택자면 그 요소로 간다
+  - container_scroll_restored                         # containers 로 지정한 내부 스크롤 영역도 되돌린다
+  - editor_mode_disables_restore                      # 레이아웃 편집기 편집 모드에서는 복원하지 않는다
+  - config_layers_merge_narrower_wins                 # 엔진 기본값 → 템플릿 → 레이아웃 순 부분 덮어쓰기
+  - template_default_applies_without_meta             # 화면 meta 가 없으면 template.json 기본값을 따른다
+  - snapshot_restores_more_loaded_list                # 더보기로 늘어난 목록을 스냅샷으로 되살리고 첫 묶음 변경만 반영
+  - wait_data_restores_after_all_data                 # wait:"data" 는 데이터를 다 받은 뒤 되돌린다
+  - snapshot_state_restored_after_init                # snapshot.state 진행 상태(다음 쪽 번호)를 init 뒤 되돌린다
+  - snapshot_discarded_on_kept_fallback               # 다시 받기가 대체 값이면 스냅샷을 버린다(앞 계정 데이터 재발 방지)
+  - snapshot_discarded_on_context_change              # 언어·계정이 바뀌었거나 유효 시간이 지나면 되살리지 않는다
+  - restore_waits_for_data_before_settling            # 돌아온 직후 화면이 이미 길어도 데이터를 다 받기 전에는 끝내지 않는다
+  - user_input_before_restore_skips_restore           # 복원 시작 전(데이터 대기 중) 사용자가 손으로 스크롤하면 복원하지 않는다
+  - screen_scroll_action_before_restore_skips_restore # 복원 시작 전 화면이 스크롤 액션을 실행하면 복원하지 않는다
+  - screen_scroll_action_during_restore_stops_restore # 복원 중 화면이 스크롤 액션을 실행하면 복원을 멈춘다
+  - snapshot_ttl_counts_from_first_capture            # 되살린 스냅샷으로 오가도 유효 시간은 처음 기억한 때부터 잰다
+  - invalid_mode_ignored_with_warning                 # 정해진 값·선택자가 아닌 mode 는 경고와 함께 버리고 앞 층 값을 쓴다
+
+test_files:
+  - tests/Playwright/specs/scroll-restoration.spec.ts
+  - resources/js/core/routing/__tests__/Router.scrollRestoration.test.ts
+  - resources/js/core/__tests__/TemplateApp.scrollRestoration.test.ts
+  - resources/js/core/template-engine/__tests__/dataSourceSnapshot.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/infinite-list-scroll-restoration.test.ts

@@ -1,0 +1,104 @@
+<!-- 본문 미디어 정책 조각 (#883) — 편집기 본문에 바로 넣는 이미지·동영상·오디오의 규칙. 「직접 정하기」를 끄면 값이 비고(null) 그 확장의 첨부 정책을 따른다(동영상·오디오는 코어 「본문 콘텐츠」 스위치). 기준 마크업은 공개 문서 docs/extension/content-media.md 에 있고, 게시판·페이지·이커머스 사본은 값 경로 접두사(content_media_policy ↔ content_media)만 다르다(사본 일치 잠금 시험) -->
+<partial description="Content Media Policy Fragment">
+  <div data-ref="content_media_policy_section" class="row-stack">
+    <div data-ref="content_media_policy_header" class="flex-start justify-between">
+      <div class="flex-1">
+        <label class="text-heading">$t:core.content_media.policy.title</label>
+        <p class="form-hint">$t:core.content_media.policy.description</p>
+      </div>
+    </div>
+    <div data-ref="content_media_policy_use_custom" class="flex-start justify-between">
+      <div class="flex-1">
+        <label class="text-heading">$t:core.content_media.policy.use_custom</label>
+        <p data-if="{{!_local.form?.content_media_policy?.use_custom}}" class="form-hint">$t:core.content_media.policy.follows_attachment</p>
+      </div>
+      <toggle data-type="composite" name="content_media_policy.use_custom" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+    </div>
+    <div data-ref="content_media_policy_fields" data-if="{{_local.form?.content_media_policy?.use_custom}}" class="row-stack">
+      <div data-ref="content_media_policy_image" class="row-stack">
+        <div class="flex-start justify-between">
+          <label class="text-heading">$t:core.content_media.policy.kind_image</label>
+          <toggle data-type="composite" name="content_media_policy.image.enabled" value="{{_local.form?.content_media_policy?.image?.enabled ?? _local.form?.content_media_policy_fallback?.image?.enabled ?? true}}" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        </div>
+        <div class="grid-2col">
+          <div>
+            <label class="form-label">$t:core.content_media.policy.max_size_mb</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
+            <input type="number" name="content_media_policy.image.max_size_mb" min="1" max="2048" value="{{_local.form?.content_media_policy?.image?.max_size_mb ?? _local.form?.content_media_policy_fallback?.image?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+            <span data-if="{{_local.errors?.['content_media_policy.image.max_size_mb']}}" class="form-error-xs mt-1">{{_local.errors?.['content_media_policy.image.max_size_mb']?.[0] ?? ''}}</span>
+          </div>
+          <div>
+            <label class="form-label">$t:core.content_media.policy.extensions</label>
+            <tag-input data-type="composite" name="content_media_policy.image.extensions" value="{{_local.form?.content_media_policy?.image?.extensions ?? _local.form?.content_media_policy_fallback?.image?.extensions ?? ['jpg', 'jpeg', 'png', 'gif', 'webp']}}" :isMulti="true" :isClearable="false" disabled="{{_computed.isReadOnly}}">
+              <prop name="options">
+                <item value="jpg" label="jpg"/>
+                <item value="jpeg" label="jpeg"/>
+                <item value="png" label="png"/>
+                <item value="gif" label="gif"/>
+                <item value="webp" label="webp"/>
+                <item value="avif" label="avif"/>
+              </prop>
+            </tag-input>
+          </div>
+        </div>
+      </div>
+      <div data-ref="content_media_policy_video" class="row-stack">
+        <div class="flex-start justify-between">
+          <label class="text-heading">$t:core.content_media.policy.kind_video</label>
+          <toggle data-type="composite" name="content_media_policy.video.enabled" value="{{_local.form?.content_media_policy?.video?.enabled ?? false}}" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        </div>
+        <div data-if="{{_local.form?.content_media_policy?.video?.enabled}}" class="grid-2col">
+          <div>
+            <label class="form-label">$t:core.content_media.policy.max_size_mb</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
+            <input type="number" name="content_media_policy.video.max_size_mb" min="1" max="2048" value="{{_local.form?.content_media_policy?.video?.max_size_mb ?? _local.form?.content_media_policy_fallback?.video?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+            <span data-if="{{_local.errors?.['content_media_policy.video.max_size_mb']}}" class="form-error-xs mt-1">{{_local.errors?.['content_media_policy.video.max_size_mb']?.[0] ?? ''}}</span>
+          </div>
+          <div>
+            <label class="form-label">$t:core.content_media.policy.extensions</label>
+            <tag-input data-type="composite" name="content_media_policy.video.extensions" value="{{_local.form?.content_media_policy?.video?.extensions ?? ['mp4', 'webm']}}" :isMulti="true" :isClearable="false" disabled="{{_computed.isReadOnly}}">
+              <prop name="options">
+                <item value="mp4" label="mp4"/>
+                <item value="webm" label="webm"/>
+                <item value="ogv" label="ogv"/>
+              </prop>
+            </tag-input>
+          </div>
+        </div>
+      </div>
+      <div data-ref="content_media_policy_audio" class="row-stack">
+        <div class="flex-start justify-between">
+          <label class="text-heading">$t:core.content_media.policy.kind_audio</label>
+          <toggle data-type="composite" name="content_media_policy.audio.enabled" value="{{_local.form?.content_media_policy?.audio?.enabled ?? false}}" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        </div>
+        <div data-if="{{_local.form?.content_media_policy?.audio?.enabled}}" class="grid-2col">
+          <div>
+            <label class="form-label">$t:core.content_media.policy.max_size_mb</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
+            <input type="number" name="content_media_policy.audio.max_size_mb" min="1" max="2048" value="{{_local.form?.content_media_policy?.audio?.max_size_mb ?? _local.form?.content_media_policy_fallback?.audio?.max_size_mb ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
+            <span data-if="{{_local.errors?.['content_media_policy.audio.max_size_mb']}}" class="form-error-xs mt-1">{{_local.errors?.['content_media_policy.audio.max_size_mb']?.[0] ?? ''}}</span>
+          </div>
+          <div>
+            <label class="form-label">$t:core.content_media.policy.extensions</label>
+            <tag-input data-type="composite" name="content_media_policy.audio.extensions" value="{{_local.form?.content_media_policy?.audio?.extensions ?? ['mp3', 'm4a']}}" :isMulti="true" :isClearable="false" disabled="{{_computed.isReadOnly}}">
+              <prop name="options">
+                <item value="mp3" label="mp3"/>
+                <item value="m4a" label="m4a"/>
+                <item value="ogg" label="ogg"/>
+                <item value="oga" label="oga"/>
+                <item value="wav" label="wav"/>
+              </prop>
+            </tag-input>
+          </div>
+        </div>
+      </div>
+      <div data-ref="content_media_policy_max_per_document">
+        <label class="form-label">$t:core.content_media.policy.max_per_document</label>
+        <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다 -->
+        <input type="number" name="content_media_policy.max_per_document" min="1" max="200" value="{{_local.form?.content_media_policy?.max_per_document ?? _local.form?.content_media_policy_fallback?.max_per_document ?? 30}}" disabled="{{_computed.isReadOnly}}" class=""/>
+        <span data-if="{{_local.errors?.['content_media_policy.max_per_document']}}" class="form-error-xs mt-1">{{_local.errors?.['content_media_policy.max_per_document']?.[0] ?? ''}}</span>
+      </div>
+      <p data-ref="content_media_policy_core_hint" class="form-hint">$t:core.content_media.policy.core_disabled_hint</p>
+    </div>
+  </div>
+</partial>

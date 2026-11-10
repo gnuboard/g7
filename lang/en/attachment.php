@@ -75,4 +75,26 @@ return [
             'done' => 'Deleted :deleted of :scanned orphan attachments past retention (:days days). (:failed failed)',
         ],
     ],
+    // Content media (images, video and audio inserted into the editor body) — core contract (#883, 7.1.5)
+    'content_media' => [
+        'kind' => [
+            'image' => 'Image',
+            'video' => 'Video',
+            'audio' => 'Audio',
+        ],
+        'validation' => [
+            'file_invalid' => 'The file is not valid.',
+            'kind_not_allowed' => 'This file type cannot be inserted into the content. Allowed: :allowed',
+            'extension_not_allowed' => ':kind files must be one of: :extensions.',
+            'file_too_large' => ':kind files may not be larger than :maxMB.',
+            'max_per_document_range' => 'The maximum per document must be between 1 and :max.',
+            'max_size_range' => 'The :kind size per file must be between 1 and :maxMB.',
+            'extension_not_candidate' => ':kind formats can only be chosen from: :extensions.',
+        ],
+        'errors' => [
+            'limit_exceeded' => 'The content contains :attempted media items. Up to :limit are allowed per document.',
+            'upload_failed' => 'Could not upload the content media.',
+            'not_found' => 'Content media not found.',
+        ],
+    ],
 ];

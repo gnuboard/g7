@@ -627,7 +627,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         const walk = (n: AnyNode) => { all.push(n); (n.children ?? []).forEach(walk); };
         walk(row);
         const meta = all.find((n) => typeof n.text === 'string'
-            && n.text.includes("requested_at ?? '').slice(0, 10)")
+            && n.text.includes('requested_at_date_formatted')
             && n.text.includes('last_synced_at'));
         expect(meta, '카드 메타 줄(신청·동기화 합본)이 없다').toBeTruthy();
         expect(String((meta!.props as { className?: string })?.className)).toContain('hidden');

@@ -13,6 +13,7 @@ axes:
     - notice_only_uses_notice_wording
     - step_label_translated_with_raw_fallback
     - dependents_target_shows_name
+    - declaration_errors_tell_developer_fix
     - success_branches_open_only_with_warnings
     - population_not_empty
     - every_lifecycle_call_opens_warnings
@@ -23,6 +24,8 @@ effects:
   - lifecycle_warnings_modal_separates_notices_from_failures
   - lifecycle_warnings_step_shown_as_label   # 단계 키(dependents 등)는 번역 이름, 번역 없는 단계는 원문
   - lifecycle_warnings_dependents_target_shows_name   # 대상 이름(target_name)이 오면 대상 칸은 식별자 대신 이름, 없으면 식별자 (7.1.4)
+  - lifecycle_warnings_declaration_errors_not_rerun   # cause=declaration 항목은 「확장 개발자가 고칠 선언」 안내, 실패가 모두 그런 항목이면 「다시 실행」 문구 대신 개발자에게 알리라는 문구 (7.1.5)
+  - lifecycle_warnings_declaration_only_title   # 실패가 모두 선언 오류면 창 제목·요약도 「일부 항목이 실패했습니다」 대신 선언 오류 제목·버린 선언 건수 (7.1.5)
   - success_branch_opens_warnings_modal_only_when_warnings_exist
   - every_lifecycle_api_success_opens_warnings_modal
 

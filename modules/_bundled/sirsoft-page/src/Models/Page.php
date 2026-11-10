@@ -181,7 +181,22 @@ class Page extends Model implements FulltextSearchable
      */
     public function attachments(): HasMany
     {
-        return $this->hasMany(PageAttachment::class, 'page_id')->orderBy('order');
+        // 본문 미디어(예약 컬렉션)는 본문의 일부라 첨부 목록에 넣지 않는다 (#883)
+        return $this->hasMany(PageAttachment::class, 'page_id')
+            ->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS)
+            ->orderBy('order');
+    }
+
+    /**
+     * 본문 미디어와의 관계를 정의합니다 (#883).
+     *
+     * @return HasMany<PageAttachment>
+     */
+    public function contentMedia(): HasMany
+    {
+        return $this->hasMany(PageAttachment::class, 'page_id')
+            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
+            ->orderBy('order');
     }
 
     /**

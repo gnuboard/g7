@@ -1,0 +1,26 @@
+feature: 배송정책 스냅샷 배송지 백필 업그레이드 (1.3.0)
+
+description: |
+  1.0.0-beta.5 이전 주문은 shipping_policy_applied_snapshot.address 가 비어 있어 환불 재계산(폴백 없음)과
+  클레임 배송비 산정(주문 주소 폴백)이 다른 배송지를 읽었다. BackfillShippingSnapshotAddress 가 빈 배송지를
+  주문 배송지 행으로 채워 두 경로를 수렴시키되, 이미 있는 배송지·null 스냅샷·구형 형태는 건드리지 않고
+  배송지 행이나 국가 코드가 없는 주문은 확정하지 않고 건너뛰는지 고정한다.
+
+axes:
+  case: [empty_address_filled, existing_address, rerun, unresolvable_address, postal_code_fallback, null_snapshot, legacy_shape, read_path_convergence]
+
+effects:
+  - empty_address_filled_from_order_shipping_address
+  - snapshot_items_preserved
+  - existing_address_untouched
+  - rerun_is_idempotent
+  - order_without_address_row_skipped
+  - missing_country_code_left_unresolved
+  - intl_postal_code_fallback_applied
+  - zipcode_null_when_no_postal_code
+  - null_snapshot_untouched
+  - legacy_snapshot_shape_preserved
+  - refund_and_claim_paths_converge
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/BackfillShippingSnapshotAddressTest.php

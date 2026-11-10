@@ -1,0 +1,16 @@
+feature: 클레임 컬럼 확장 마이그레이션 되돌리기 가드
+
+description: |
+  MySQL 은 DDL 을 롤백하지 않으므로 up() 이 중간에 죽으면 컬럼만 남고 인덱스·외래키는 없는 설치본이 생긴다.
+  down() 은 컬럼·인덱스·외래키 3축을 각각 존재 여부로 가드해, 그 반쪽 상태에서도 되돌리기가 끝까지 통과하고
+  정상 적용 상태에서도 클레임 컬럼을 모두 지워야 한다.
+
+axes:
+  case: [partially_applied_up, fully_applied_up]
+
+effects:
+  - down_skips_missing_index_and_foreign_key
+  - down_drops_claim_columns
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/ClaimColumnsMigrationDownTest.php

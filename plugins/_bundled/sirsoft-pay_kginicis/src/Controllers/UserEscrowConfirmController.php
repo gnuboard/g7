@@ -369,6 +369,7 @@ class UserEscrowConfirmController extends Controller
 
         $meta = $row->payment_meta ? json_decode($row->payment_meta, true) : [];
         $meta['escrow_confirm'] = array_merge(
+            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             ['confirmed_at' => now()->toDateTimeString()],
             $data,
         );

@@ -22,7 +22,7 @@
 | `**/database/migrations/**`, `**/upgrades/Upgrade_*.php`, `**/seeders/**` | migration |
 | `lang/**`, `**/lang/**`, `lang-packs/**` | i18n |
 | `**/layouts/**/*.{json,g7.html}`, `**/extensions/**/*.{json,g7.html}`, `**/*.tsx`, 핸들러·`resources/js/core/**` | frontend (`.g7.html` = 소스 SSoT, `.json` = 런타임 계약 — 동일 취급) |
-| `resources/js/core/template-engine/**`, `resources/js/core/{TemplateApp,template-engine}.ts`, `resources/js/core/{auth,identity,support}/**` | engine (frontend 에 더해 `/engine-regression` 5단계 기록 · 엔진 CHANGELOG · SEO 렌더러 짝) |
+| `resources/js/core/{template-engine,auth,identity,support,contentPolicy,contentMedia}/**`, `resources/js/core/{TemplateApp,template-engine}.ts` | engine (frontend 에 더해 `/engine-regression` 6단계 기록 · 엔진 CHANGELOG · SEO 렌더러 짝) |
 | `module.json`·`plugin.json`·`template.json`·`config/app.php` | version-sync (보조 스크립트) |
 | 사용자가 브랜치·이슈 전체를 지시 · 위 표가 2개 이상 영역을 켠 경우 | branch (전 영역) |
 
@@ -259,7 +259,7 @@ SKILL.md 자동 선택 표의 카테고리 처리 방법이다. engine·plan·ha
 
 ## frontend
 
-`validate frontend` 의 0·3단계에서 쓴다. 대상: `resources/layouts/**/*.{json,g7.html}`, `templates/**/layouts/**/*.{json,g7.html}`, `{modules,plugins}/**/resources/layouts/**/*.{json,g7.html}`, `(templates|modules|plugins)/**/extensions/**/*.{json,g7.html}`(확장 주입 fragment), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, 엔진 범위(`resources/js/core/template-engine/**` · `resources/js/core/{TemplateApp,template-engine}.ts` · `resources/js/core/{auth,identity,support}/**`). 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md(태그·속성 3분할·구조 태그·액션 top-level)가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다(역방향 `layout:compile` 은 `.json` → `.g7.html`). 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
+`validate frontend` 의 0·3단계에서 쓴다. 대상: `resources/layouts/**/*.{json,g7.html}`, `templates/**/layouts/**/*.{json,g7.html}`, `{modules,plugins}/**/resources/layouts/**/*.{json,g7.html}`, `(templates|modules|plugins)/**/extensions/**/*.{json,g7.html}`(확장 주입 fragment), `templates/**/src/components/**/*.tsx`, 커스텀 핸들러, 엔진 범위(`resources/js/core/{template-engine,auth,identity,support,contentPolicy,contentMedia}/**` · `resources/js/core/{TemplateApp,template-engine}.ts`). 작성 SSoT 는 `.g7.html`, 짝 `.json` 은 그 굽기(`layout:decompile` = `.g7.html` → `.json`) 산출인 런타임·편집기 계약이라 동일 취급한다 — `.g7.html` 을 볼 때는 layout-markup.md(태그·속성 3분할·구조 태그·액션 top-level)가 1차 기준이고 `layout-json.md` 는 산출 JSON 키 계약이다. 마크업이 규정 위반인지 애매하면 `php artisan layout:decompile {path}` 로 짝 `.json` 을 구운 뒤 같은 규정으로 본다(역방향 `layout:compile` 은 `.json` → `.g7.html`). 계획서 안 JSON·TSX 코드 블록은 plan-code-blocks.md.
 
 규정: layout-json.md · layout-json-features.md · layout-json-components.md · layout-json-inheritance.md · data-binding.md · data-binding-i18n.md · data-sources.md · actions.md · actions-handlers.md · state-management.md · components.md(인덱스: types/patterns/advanced) · component-props-composite.md · dark-mode.md · responsive-layout.md · modal-usage.md · layout-json-features-error.md · security.md · editors.md.
 

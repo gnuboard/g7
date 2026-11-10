@@ -30,7 +30,11 @@ class TemplateResourceDependencyNameTest extends TestCase
      */
     public function test_dependency_summary_name_falls_back_to_identifier(): void
     {
+        // 이름 결정 순서: DB 이름 → manifest(module.json) 이름 → 식별자.
+        // manifest 도 없는 식별자는 식별자로, DB 이름만 빈 번들 확장은 manifest 이름으로 보인다.
         $modules = Mockery::mock(ModuleRepositoryInterface::class);
+        $modules->shouldReceive('findByIdentifier')->with('sample-manifestless_module')
+            ->andReturn(new Module(['name' => ['ko' => '', 'en' => '']]));
         $modules->shouldReceive('findByIdentifier')->with('gnuboard7-hello_module')
             ->andReturn(new Module(['name' => ['ko' => '', 'en' => '']]));
         $modules->shouldReceive('findByIdentifier')->with('sirsoft-board')
@@ -49,15 +53,16 @@ class TemplateResourceDependencyNameTest extends TestCase
             'type' => 'user',
             'status' => 'active',
             'dependencies' => [
-                'modules' => ['gnuboard7-hello_module' => '>=0.1.0', 'sirsoft-board' => '>=1.0.0'],
+                'modules' => ['sample-manifestless_module' => '>=0.1.0', 'gnuboard7-hello_module' => '>=0.1.0', 'sirsoft-board' => '>=1.0.0'],
                 'plugins' => ['sirsoft-daum_postcode' => '>=1.0.0'],
             ],
         ]))->toArray(Request::create('/api/admin/templates'));
 
         $this->assertSame(
-            ['gnuboard7-hello_module', '게시판'],
+            ['sample-manifestless_module', 'Hello 모듈', '게시판'],
             array_column($array['dependencies']['modules'], 'name')
         );
-        $this->assertSame(['sirsoft-daum_postcode'], array_column($array['dependencies']['plugins'], 'name'));
+        // 레코드가 없는(미설치) 플러그인도 번들 manifest 이름으로 보인다.
+        $this->assertSame(['Daum 우편번호'], array_column($array['dependencies']['plugins'], 'name'));
     }
 }

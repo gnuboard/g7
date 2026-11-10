@@ -6,15 +6,36 @@ use App\Extension\Cache\ModuleCacheDriver;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * 쿨다운 검증 규칙
  *
  * 게시글 또는 댓글 작성 시 지정된 시간(초) 내 연속 작성을 제한합니다.
  * 회원은 user_id, 비회원은 IP 주소로 식별합니다.
+ *
+ * 쿨다운 자리는 검증 시점에 원자적으로 선점한다(`add`) — 「있는지 보고(has) 저장은 나중(Service)」이던 1.2.2 까지는 동시에 들어온
+ * 요청이 모두 검증을 통과해 쿨다운을 켠 게시판에 글이 여러 개 써졌다(#161 F7). 작성에 성공하면 Service 가 같은 키를 덮어써 쿨다운이
+ * 이어지고, 다른 검증 실패·생성 실패로 끝난 요청은 응답 뒤 자리를 반납한다(422 뒤 쿨다운에 갇히지 않게). 캐시가 오류를 내면 검증을
+ * 통과시킨다 — 도배 방지 장치가 캐시 장애로 글쓰기 전체를 막는 쪽이 더 나쁘다(종전 has() 도 장애 시 통과였다).
  */
 class CooldownRule implements ValidationRule
 {
+    /**
+     * 이번 요청이 선점한 쿨다운 자리 — 응답 뒤 아직 자기 표지를 들고 있으면 반납한다.
+     *
+     * @var list<array{store: \Illuminate\Contracts\Cache\Repository, key: string, token: string}>
+     */
+    private static array $pendingClaims = [];
+
+    /**
+     * 반납 콜백을 등록한 앱 인스턴스 id — 수명이 긴 앱(큐 워커·Octane)에서 요청마다 콜백이 쌓이지 않게 앱당 한 번만 건다.
+     */
+    private static ?int $terminatingRegisteredFor = null;
+
     /**
      * CooldownRule 생성자
      *
@@ -51,18 +72,70 @@ class CooldownRule implements ValidationRule
         // 인스턴스 생성. 동일 모듈 내 다중 호출 시에도 stateless 라 안전.
         $cache = new ModuleCacheDriver('sirsoft-board', config('cache.default', 'array'));
 
-        if ($cache->has($cacheKey)) {
-            $formattedTime = $this->formatDuration($this->cooldownSeconds);
+        try {
+            // audit:allow no-cache-facade-direct reason: CacheInterface 에는 원자적 선점(add)이 없다 — 같은 스토어(getStore)와
+            // 같은 키(resolveKey)로 add 만 직접 부른다. 기록·조회는 종전대로 ModuleCacheDriver 가 맡는다.
+            $store = Cache::store($cache->getStore());
+            $key = $cache->resolveKey($cacheKey);
+            $token = 'claim:'.Str::uuid()->toString();
+            $claimed = $store->add($key, $token, $this->cooldownSeconds);
+        } catch (Throwable $e) {
+            Log::error('[sirsoft-board] 쿨다운 캐시 오류 — 이번 요청은 쿨다운 검사 없이 통과합니다', [
+                'type' => $this->type,
+                'slug' => $this->slug,
+                'error' => $e->getMessage(),
+            ]);
 
-            // 타입별 전용 메시지가 있으면 사용, 없으면 공통 메시지
-            $typeKey = "sirsoft-board::validation.cooldown_required_{$this->type}";
-            $typeMessage = __($typeKey, ['time' => $formattedTime]);
-
-            $fail($typeMessage !== $typeKey
-                ? $typeMessage
-                : __('sirsoft-board::validation.cooldown_required', ['time' => $formattedTime])
-            );
+            return;
         }
+
+        if ($claimed) {
+            // 이 요청이 자리를 잡았다 — 작성에 성공하면 Service 가 값을 덮어써 남고, 아니면 응답 뒤 반납한다
+            self::$pendingClaims[] = ['store' => $store, 'key' => $key, 'token' => $token];
+            self::registerReleaseOnTerminate();
+
+            return;
+        }
+
+        $formattedTime = $this->formatDuration($this->cooldownSeconds);
+
+        // 타입별 전용 메시지가 있으면 사용, 없으면 공통 메시지
+        $typeKey = "sirsoft-board::validation.cooldown_required_{$this->type}";
+        $typeMessage = __($typeKey, ['time' => $formattedTime]);
+
+        $fail($typeMessage !== $typeKey
+            ? $typeMessage
+            : __('sirsoft-board::validation.cooldown_required', ['time' => $formattedTime])
+        );
+    }
+
+    /**
+     * 응답 뒤 선점한 자리를 반납하는 콜백을 앱마다 한 번만 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
+    private static function registerReleaseOnTerminate(): void
+    {
+        $app = app();
+        if (self::$terminatingRegisteredFor === spl_object_id($app)) {
+            return;
+        }
+        self::$terminatingRegisteredFor = spl_object_id($app);
+
+        $app->terminating(static function (): void {
+            $claims = self::$pendingClaims;
+            self::$pendingClaims = [];
+
+            foreach ($claims as $claim) {
+                try {
+                    if ($claim['store']->get($claim['key']) === $claim['token']) {
+                        $claim['store']->forget($claim['key']);
+                    }
+                } catch (Throwable) {
+                    // 반납 실패는 쿨다운 시간이 지나면 저절로 풀린다
+                }
+            }
+        });
     }
 
     /**

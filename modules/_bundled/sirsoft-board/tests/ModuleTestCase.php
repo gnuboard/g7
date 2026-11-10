@@ -14,7 +14,6 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
 use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
@@ -198,6 +197,18 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
+     * 첫 사용 때는 시드 없는 테스트 스키마(잔여 행만 정리한 상태)를 요구하고, 그 뒤에는 현재 상태를 받아들인다.
+     *
+     * 예전에는 프로세스 첫 테스트가 `migrate:fresh` 로 시드까지 지운 DB 에서 시작했다 — 같은 전제를 재사용 스키마에서 재현한다.
+     *
+     * @return string 요구 프로필(none-exact · any)
+     */
+    protected function requiredTestingSchema(): string
+    {
+        return static::$migrated ? 'any' : 'none-exact';
+    }
+
+    /**
      * 스키마를 먼저 끝낸 뒤 시험 트랜잭션을 엽니다.
      *
      * Laravel 은 `parent::setUp()` 안(트레이트 초기화)에서 이 트랜잭션을 연다. 그 뒤 setUp 에서 프로세스 첫
@@ -215,7 +226,9 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * 모듈 마이그레이션 실행 (필요한 경우에만)
+     * 첫 사용 표시 (프로세스당 한 번)
+     *
+     * 테스트 스키마는 코어 TestCase 가 트레이트 초기화 전에 맞춘다. 첫 사용 여부는 요구 프로필(requiredTestingSchema)이 읽는다.
      *
      * 코어 테이블이 없으면 먼저 코어 마이그레이션을 실행하고,
      * 그 후 모듈 마이그레이션을 실행합니다.
@@ -229,18 +242,8 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        // 매 PHP process 첫 setUp 시 DB 를 완전 초기화 후 코어+모듈 마이그레이션을 처음부터
-        // 실행한다 (board 는 DatabaseTransactions 사용 — RefreshDatabase 가 아니므로 schema
-        // 자동 재구축 없음). 이전 process 의 부분 schema 잔재(예: 컬럼은 추가됐지만 migration
-        // record 누락) 로 인한 "Duplicate column" 등 충돌을 차단한다.
-        $this->artisan('migrate:fresh');
-
-        // 모듈 마이그레이션 실행 (코어 테이블 생성 후)
-        $this->artisan('migrate', [
-            '--path' => $this->getModuleBasePath().'/database/migrations',
-            '--realpath' => true,
-        ]);
-
+        // 스키마는 코어 TestCase 의 테스트 스키마 판정(TestingSchemaCache)이 트레이트 초기화 전에 이미 맞췄다 —
+        // 첫 사용이면 시드 없는 상태(none-exact)로 정리돼 있다. 여기서는 첫 사용이 끝났다는 표시만 남긴다.
         static::$migrated = true;
     }
 

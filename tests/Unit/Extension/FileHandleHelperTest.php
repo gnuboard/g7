@@ -4,7 +4,7 @@ namespace Tests\Unit\Extension;
 
 use App\Extension\Helpers\FileHandleHelper;
 use PHPUnit\Framework\Attributes\RequiresOperatingSystemFamily;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * FileHandleHelper 테스트
@@ -13,7 +13,7 @@ use Tests\TestCase;
  * 일부 테스트는 Windows 환경에서만 의미가 있으며,
  * 비-Windows 환경에서는 자동 스킵됩니다.
  */
-class FileHandleHelperTest extends TestCase
+class FileHandleHelperTest extends PureTestCase
 {
     private string $tempDir;
 

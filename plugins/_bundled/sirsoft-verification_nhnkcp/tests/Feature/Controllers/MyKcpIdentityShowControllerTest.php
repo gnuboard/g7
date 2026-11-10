@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationNhnkcp\Tests\Feature\Controllers;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityRecordRepositoryInterface;
@@ -39,16 +40,19 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
      *
      * @scenario record_exists=true,auth=authenticated
      *
-     * @effects verified_user_receives_masked_fields
+     * @effects verified_user_receives_masked_fields, verified_at_uses_viewer_timezone
      *
      * @return void 반환값 없음
      */
     public function test_verified_user_receives_masked_fields(): void
     {
         $user = User::factory()->create();
+        // 인증 시각 UTC 11-03 16:00 = 서울 11-04 01:00
+        Carbon::setTestNow(Carbon::parse('2026-11-03 16:00:00', 'UTC'));
         $this->seedRecord($user->id);
+        Carbon::setTestNow();
 
-        $response = $this->actingAs($user, 'sanctum')->getJson(self::ENDPOINT);
+        $response = $this->actingAs($user, 'sanctum')->withHeader('X-Timezone', 'Asia/Seoul')->getJson(self::ENDPOINT);
 
         $response->assertStatus(200);
         $data = $response->json('data');
@@ -59,7 +63,7 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
         $this->assertTrue($data['is_adult']);
         $this->assertFalse($data['is_foreigner']);
         $this->assertNotEmpty($data['method']);
-        $this->assertNotEmpty($data['verified_at']);
+        $this->assertSame('2026-11-04 01:00:00', $data['verified_at'], '인증 시각은 보는 사람 시간대여야 한다');
     }
 
     /**

@@ -402,11 +402,11 @@ class LayoutValidatorTest extends LayoutMarkupTestCase
 
         // 확장 자신의 레이아웃 — 위로 올라가 처음 만나는 매니페스트(plugin.json)의 선언.
         $own = $resolver->contextFor(base_path('plugins/_bundled/sirsoft-daum_postcode/resources/extensions/ecommerce-address-search.g7.html'));
-        $this->assertSame(['t1.daumcdn.net'], $own->declaredScriptHosts);
+        $this->assertSame(['t1.kakaocdn.net', 't1.daumcdn.net'], $own->declaredScriptHosts);
 
         // 템플릿의 확장 오버라이드 — 같은 트리의 대상 확장 매니페스트 선언을 더한다.
         $override = $resolver->contextFor(base_path('templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html'));
-        $this->assertSame(['t1.daumcdn.net'], $override->declaredScriptHosts);
+        $this->assertSame(['t1.kakaocdn.net', 't1.daumcdn.net'], $override->declaredScriptHosts);
 
         // 선언 없는 확장 — 아무 호스트도 얻지 않는다.
         $none = $resolver->contextFor(base_path('modules/_bundled/sirsoft-board/resources/layouts/admin/any.g7.html'));

@@ -6,6 +6,13 @@
  * Controller response messages
  */
 return [
+    'content_media' => [
+        'upload_success' => 'Content media uploaded.',
+        'upload_failed' => 'Failed to upload content media.',
+        'target_success' => 'Content media upload settings loaded.',
+        'not_found' => 'Content media not found.',
+    ],
+
     // Locale-specific suffix appended to names on copy (used by ProductNoticeTemplateRepository, etc.)
     'copy_suffix' => ' (Copy)',
 
@@ -1575,6 +1582,12 @@ return [
     ],
     // Seeder console output (module:install, module:seed)
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => 'The browser measurement seeder runs only from the CLI with G7_PLAYWRIGHT_BYPASS=1.',
+            'product' => '  - Measurement product #:id (option #:option_id)',
+            'done' => 'Browser measurement data is ready',
+            'cleanup_done' => 'Browser measurement data cleaned up — :orders orders, :products products, :media content media',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => 'No admin user found; skipping the ecommerce activity log seeder.',
             'purged' => 'Deleted :count existing ecommerce sample activity logs (real logs without the sample marker are kept).',
@@ -1835,5 +1848,9 @@ return [
             'done' => 'Created :count shipping policy dummy records successfully.',
             'purged' => 'Deleted :count existing shipping policies.',
         ],
+    ],
+    // Recent search scope name (module.json search_scopes.products.label — admin Settings > Privacy "Recent searches" card)
+    'search_history' => [
+        'scope_products' => 'Product search',
     ],
 ];

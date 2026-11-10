@@ -220,7 +220,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | product_id | integer | `320` | product 식별자 (연관 리소스 참조) |
 | product_name | string | `API 문서 샘플 상품` | 리뷰 대상 상품의 현재 로케일 상품명 (product 관계 파생) |
 | rating | integer | `5` | 리뷰 평점 (별점 정수) |
-| author_name | string | `API 문서 샘플 사용자` | 리뷰 작성자 이름 (user 관계 파생) |
+| author_name | string | `API 문서 샘플 사용자` | 리뷰 작성자 표시 이름 — 회원 후기는 회원 이름, 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 |
 | created_at | string | `2026-07-07 14:47:31` | 생성 일시 |
 
 **응답 예시**

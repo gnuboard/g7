@@ -315,6 +315,7 @@ class NoticeManualRunner implements PrivacyManualRunnerInterface
 - **배치**: `app/Console/Commands/ProcessPrivacyRetentionCommand.php` (`routes/console.php` 예약 등록)
 - **명단 API**: `app/Http/Controllers/Api/Admin/PrivacyTargetController.php` · `app/Http/Resources/PrivacyTargetCollection.php`
 - **코어 참조 구현**: `app/Privacy/Handlers/WithdrawnUserRetentionHandler.php` (탈퇴 회원 잔여 정보)
+- **코어 최근 검색어**: `app/Privacy/Handlers/SearchHistoryRetentionHandler.php` (id `search-history`, 7.1.5) — 검색 범위마다 보관 기한(`privacy.search_history_scopes[*].retention_days`, 0 = 기한 없음)이 지난 검색어를 지운다. 별도 토글 없이 기한을 1일 이상 적은 범위가 하나라도 있으면 켜진 것으로 본다. 명단은 회원·범위로 묶어 건수와 가장 오래된 검색일만 내고 검색어는 보이지 않는다(개인정보 최소 노출). 권한은 탈퇴 회원 핸들러와 같다(명단 `core.settings.read`+`core.users.read`, 실행 `core.settings.update`+`core.users.update`)
 - **휴면**: `app/Privacy/DormantAccountService.php` (코어 전용)
 - **번들 확장 구현**: 이커머스 `modules/_bundled/sirsoft-ecommerce/src/Privacy/OrderRetentionHandler.php` · 게시판 `modules/_bundled/sirsoft-board/src/Privacy/BoardIpRetentionHandler.php`(가장 단순한 예) · `BoardGuestRetentionHandler.php`
 - **직권 실행**: `app/Privacy/Contracts/PrivacyManualRunnerInterface.php` · `app/Privacy/ManualRun/`(수집기·서비스·러너) · `app/Jobs/RunPrivacyManualActionJob.php` · `app/Http/Controllers/Api/Admin/PrivacyManualRunController.php` · 확장 러너 예 `plugins/_bundled/sirsoft-gdpr/src/Privacy/AnnualNoticeManualRunner.php`

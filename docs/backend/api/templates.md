@@ -216,6 +216,8 @@ HTTP/1.1 200
 | is_compatible | boolean | `false` | (업데이트가 있는 행에만) 업데이트할 새 버전이 지금 코어와 호환되는지. 업데이트 창의 코어 호환 경고·「강제 업데이트」 체크가 읽는다. 업데이트가 없으면 키 자체가 없다 — 설치본 호환은 `core_compatible` |
 | required_core_version | string\|null | `>=7.2.0` | (업데이트가 있는 행에만) 새 버전이 요구하는 코어 버전 — 번들 출처면 _bundled 매니페스트, GitHub 출처면 설치된 매니페스트의 `g7_version`(원격 매니페스트는 받지 않는 추정) |
 | current_core_version | string | `7.1.0` | (업데이트가 있는 행에만) 현재 코어 버전 |
+| update_dependency_warnings | array\|null | `[{"type":"module","identifier":"sirsoft-ecommerce","state":"version_mismatch","required_version":">=1.3.4","installed_version":"1.3.3",…}]` | (업데이트가 있는 행에만) 새 버전이 요구하는 의존 확장(`dependencies`) 중 지금 미설치·꺼짐·버전 미달인 것. `state` 는 `not_installed`·`inactive`·`version_mismatch`. 판정은 업데이트 뒤 결과의 `dependency_warnings` 와 같고 업데이트를 막지 않는다. 번들 출처면 _bundled 매니페스트로 대조하고, GitHub 출처는 _bundled 판이 같은 버전일 때만 대조하며 아니면 `null`(원격 매니페스트를 받지 않음) |
+| update_integration_notices | array\|null | `[{"type":"plugin","identifier":"sirsoft-daum_postcode","state":"version_mismatch","required_version":">=1.2.0","installed_version":"1.1.2",…}]` | (업데이트가 있는 행에만) 새 버전과 함께 쓰면 연동되는 확장(`integrations`) 중 지금 미설치·꺼짐·버전 미달인 것 — 업데이트 창이 실행 전에 알린다. 판정은 업데이트 뒤 결과의 `integration_notices` 와 같다. 출처별 대조 규칙·`null` 은 `update_dependency_warnings` 와 같다 |
 
 **설명** 설치/미설치 템플릿을 모두 포함해 목록을 조회합니다(TemplateService::getPaginatedTemplates). `search`(이름·식별자·설명·벤더 OR 검색), `filters`(AND 조건), `status`, `type`, `include_hidden` 필터와 페이지네이션을 지원하며, 응답에는 현재 사용자의 install/activate/uninstall 수행 가능 여부(`abilities`)가 함께 담깁니다. `core.templates.read` 권한이 필요합니다.
 
@@ -313,6 +315,8 @@ _단건 응답: `data` 객체의 필드._
 | 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
 | 409 | Conflict | 필요한 의존 모듈/플러그인이 충족되지 않은 경우 (`errors` 에 `warning`, `missing_modules`, `missing_plugins`, `template_type`, `current_active_identifier`, `message`) — 각 항목은 `{identifier, name, type, status, required_version, installed_version}` 이고 `status` 는 `not_installed`·`inactive`·`version_mismatch`(7.1.4 부터) 중 하나다. `template_type` 은 켜려던 템플릿의 타입(user\|admin), `current_active_identifier` 는 지금 켜져 있는 같은 타입 템플릿(없으면 null). `force=true` 로 우회 가능 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 활성화 처리 실패 (이미 활성 상태·미설치·코어 버전 비호환 등) |
 
 <!-- @generated:end -->
@@ -491,6 +495,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 비활성화 처리 실패 (템플릿 미존재 등) |
 
 <!-- @generated:end -->
@@ -619,6 +625,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 설치 실패 (이미 설치됨·manifest 오류·cascade 의존 확장 설치 실패 등 — `errors` 에 번역된 사유) |
+| 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
@@ -740,6 +748,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 처리 실패 (template.json 누락/무효, 이미 설치된 식별자, 잘못된 디렉토리명 등) |
+| 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
@@ -855,6 +865,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 검증 위반 또는 설치 실패 (유효하지 않은 GitHub URL, 저장소 없음, 다운로드 실패, 이미 설치된 식별자 등) |
+| 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
@@ -1167,6 +1179,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.uninstall`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 제거 실패 (활성 상태·파일 삭제 실패 등 — `errors.identifier` 에 번역된 사유) |
+| 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 제거 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
@@ -96683,6 +96697,18 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | content.meta.guest_only | body | boolean | 아니오 | — | 비로그인 전용 화면 여부 (로그인 상태면 리다이렉트, SEO/sitemap 제외 판정에도 사용) |
 | content.meta.is_error_layout | body | boolean | 아니오 | — | error layout 여부 |
 | content.meta.error_code | body | integer | 아니오 | — | 에러 레이아웃일 때 담당하는 HTTP 상태 코드 (예: 404, 500) |
+| content.meta.scroll_restoration | body | array | 아니오 | — | 뒤로/앞으로 가기·새로고침으로 돌아왔을 때의 스크롤 동작 설정 객체 (모든 하위 키 선택, 베이스→화면 깊은 병합) |
+| content.meta.scroll_restoration.mode | body | string | 아니오 | max 200 | 돌아왔을 때 동작 (`restore`, `top`, `none`, 또는 이동할 요소 선택자) |
+| content.meta.scroll_restoration.on_reload | body | boolean | 아니오 | — | 새로고침 때도 같은 동작 적용 여부 |
+| content.meta.scroll_restoration.wait | body | string | 아니오 | `height`, `data` | 복원 시점 (높이가 찰 때까지 / 데이터를 다 받은 뒤) |
+| content.meta.scroll_restoration.timeout_ms | body | integer | 아니오 | min 0, max 60000 | 최대 대기 시간(ms) |
+| content.meta.scroll_restoration.containers | body | array | 아니오 | — | 창 말고 함께 기억·복원할 안쪽 스크롤 영역 선택자 배열 (각 항목 string, max 200) |
+| content.meta.scroll_restoration.snapshot | body | array | 아니오 | — | 더보기 목록 스냅샷 설정 객체 |
+| content.meta.scroll_restoration.snapshot.enabled | body | boolean | 아니오 | — | 더보기로 늘어난 데이터 소스를 기억해 돌아올 때 먼저 그릴지 여부 |
+| content.meta.scroll_restoration.snapshot.ttl_seconds | body | integer | 아니오 | min 0, max 86400 | 스냅샷 유효 시간(초) |
+| content.meta.scroll_restoration.snapshot.revalidate | body | boolean | 아니오 | — | 스냅샷으로 그린 뒤 첫 묶음을 다시 받아 바뀐 항목만 갈아끼울지 여부 |
+| content.meta.scroll_restoration.snapshot.item_key | body | string | 아니오 | max 100 | 갈아끼울 때 항목을 알아보는 필드 이름 |
+| content.meta.scroll_restoration.snapshot.state | body | array | 아니오 | — | 스냅샷과 함께 되돌릴 진행 상태 경로 배열 (각 항목 `_global.*`·`_local.*` 형식, max 200) |
 | content.meta.seo | body | array | 아니오 | — | SEO 메타데이터 객체 (봇 HTML 렌더/sitemap 생성기가 소비하는 하위 키 묶음) |
 | content.meta.seo.enabled | body | boolean | 아니오 | — | 사용 여부 |
 | content.meta.seo.data_sources | body | array | 아니오 | — | API 데이터 소스 정의 배열 (id/endpoint/method) |
@@ -97512,7 +97538,8 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 업데이트 실패 (미설치, 다운그레이드 차단, 다운로드 실패, 코어 버전 비호환 등 — `errors.template_name` 에 번역된 사유) |
-| 409 | Conflict | 같은 템플릿의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) |
+| 409 | Conflict | 같은 템플릿의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) · 7.1.5 부터 `errors.operation_in_progress: true` 를 싣고, 같은 확장의 설치·활성화·비활성화·제거가 진행 중이어도 같은 응답이다 |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 업데이트 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->

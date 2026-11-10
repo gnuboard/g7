@@ -168,6 +168,57 @@
   "sampleData": {
     "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
     "byDataSourceId": {
+      "contentMediaTarget": {
+        "data": {
+          "data": {
+            "version": 1,
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/content-media",
+            "fileField": "file",
+            "fields": {
+              "owner_type": "product"
+            },
+            "headers": {},
+            "response": {
+              "urlPath": "data.url",
+              "idPath": "data.id",
+              "kindPath": "data.kind"
+            },
+            "mediaUrlPattern": "/api/modules/sirsoft-ecommerce/content-media/(?<hash>[A-Za-z0-9]{12})",
+            "policy": {
+              "image": {
+                "enabled": true,
+                "maxSizeMb": 10,
+                "extensions": [
+                  "jpg",
+                  "jpeg",
+                  "png",
+                  "gif",
+                  "webp"
+                ],
+                "mimeTypes": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/gif",
+                  "image/webp"
+                ]
+              },
+              "video": {
+                "enabled": false,
+                "maxSizeMb": 10,
+                "extensions": [],
+                "mimeTypes": []
+              },
+              "audio": {
+                "enabled": false,
+                "maxSizeMb": 10,
+                "extensions": [],
+                "mimeTypes": []
+              },
+              "maxPerDocument": 30
+            }
+          }
+        }
+      },
       "wishlists": {
         "data": {
           "data": [
@@ -3823,11 +3874,11 @@
             ]
           },
           "seo": {
-            "meta_category_title": "{commerce_name} - {category_name}",
+            "meta_category_title": "{category_name}",
             "meta_category_description": "",
-            "meta_search_title": "{commerce_name} - {keyword_name}",
+            "meta_search_title": "{keyword_name}",
             "meta_search_description": "",
-            "meta_product_title": "{commerce_name} - {product_name}",
+            "meta_product_title": "{product_name}",
             "meta_product_description": "",
             "meta_shop_index_title": "{commerce_name}",
             "meta_shop_index_description": "",
@@ -3840,6 +3891,10 @@
             "write_deadline_days": 90,
             "max_images": 5,
             "max_image_size_mb": 10
+          },
+          "product_display": {
+            "related_order": "random",
+            "related_cache_hours": 24
           },
           "inquiry": {
             "board_slug": null
@@ -9291,6 +9346,18 @@
               },
               "global": {
                 "activeEcommerceSettingsTab": "review_settings"
+              }
+            }
+          },
+          {
+            "id": "tab_product_display",
+            "label": "$t:editor.state.tab.product_display",
+            "initialState": {
+              "query": {
+                "tab": "product_display"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "product_display"
               }
             }
           },

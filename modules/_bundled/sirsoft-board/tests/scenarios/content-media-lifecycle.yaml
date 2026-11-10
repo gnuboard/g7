@@ -1,0 +1,21 @@
+feature: 게시판 본문 미디어 수명 — 휴지통 삭제·복원과 임시 정리 (#887 잠금)
+
+description: |
+  게시글 삭제는 휴지통 정책이다. 본문 미디어(`board_attachments.collection = content_media`)도 일반 첨부와 같은 연쇄
+  소프트 삭제(`softDeleteByPostId`, trigger_type=cascade)로 행만 지우고 파일은 남기며, 복원(`restoreCascadedByPostId`)하면
+  함께 돌아온다. 파일은 소프트 삭제 첨부 영구 정리(운영자 옵트인, `attachment_settings.purge_enabled`)가 지운다.
+  저장하지 않고 나간 임시 본문 미디어(board_id=0 + 임시 키)는 `sirsoft-board:prune-attachments` 의 임시 정리 파트
+  (`findStaleTempAttachments` — 컬렉션 구분 없음)가 보존기간 뒤 파일과 함께 지운다. 이 매니페스트는 현행 동작을 잠근다.
+
+axes:
+  case: [post_deleted_and_restored, temp_pruned]
+
+effects:
+  - post_delete_soft_deletes_media_cascade
+  - post_delete_keeps_media_file
+  - post_restore_restores_media
+  - stale_temp_media_pruned
+  - fresh_temp_media_kept
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostContentMediaLifecycleTest.php

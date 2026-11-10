@@ -1,0 +1,541 @@
+{
+    "comment": "본문 미디어 정책 조각 (#883) — 편집기 본문에 바로 넣는 이미지·동영상·오디오의 규칙. 「직접 정하기」를 끄면 값이 비고(null) 그 확장의 첨부 정책을 따른다(동영상·오디오는 코어 「본문 콘텐츠」 스위치). 기준 마크업은 공개 문서 docs/extension/content-media.md 에 있고, 게시판·페이지·이커머스 사본은 값 경로 접두사(content_media_policy ↔ content_media)만 다르다(사본 일치 잠금 시험)",
+    "meta": {
+        "is_partial": true,
+        "description": "Content Media Policy Fragment"
+    },
+    "id": "content_media_policy_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "row-stack"
+    },
+    "children": [
+        {
+            "id": "content_media_policy_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-start justify-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "$t:core.content_media.policy.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:core.content_media.policy.description"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "content_media_policy_use_custom",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-start justify-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "$t:core.content_media.policy.use_custom"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!_local.form?.product_display?.content_media?.use_custom}}",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:core.content_media.policy.follows_attachment"
+                        }
+                    ]
+                },
+                {
+                    "type": "composite",
+                    "name": "Toggle",
+                    "props": {
+                        "name": "product_display.content_media.use_custom",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "flex-shrink-0 ml-4"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "content_media_policy_fields",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.form?.product_display?.content_media?.use_custom}}",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "content_media_policy_image",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:core.content_media.policy.kind_image"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "product_display.content_media.image.enabled",
+                                        "value": "{{_local.form?.product_display?.content_media?.image?.enabled ?? _local.form?.product_display?.content_media_fallback?.image?.enabled ?? true}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "flex-shrink-0 ml-4"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-2col"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:core.content_media.policy.max_size_mb"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "product_display.content_media.image.max_size_mb",
+                                                "min": "1",
+                                                "max": "2048",
+                                                "value": "{{_local.form?.product_display?.content_media?.image?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.image?.max_size_mb ?? 10}}",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": ""
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['product_display.content_media.image.max_size_mb']}}",
+                                            "props": {
+                                                "className": "form-error-xs mt-1"
+                                            },
+                                            "text": "{{_local.errors?.['product_display.content_media.image.max_size_mb']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:core.content_media.policy.extensions"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "TagInput",
+                                            "props": {
+                                                "name": "product_display.content_media.image.extensions",
+                                                "value": "{{_local.form?.product_display?.content_media?.image?.extensions ?? _local.form?.product_display?.content_media_fallback?.image?.extensions ?? ['jpg', 'jpeg', 'png', 'gif', 'webp']}}",
+                                                "isMulti": true,
+                                                "isClearable": false,
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "options": [
+                                                    {
+                                                        "value": "jpg",
+                                                        "label": "jpg"
+                                                    },
+                                                    {
+                                                        "value": "jpeg",
+                                                        "label": "jpeg"
+                                                    },
+                                                    {
+                                                        "value": "png",
+                                                        "label": "png"
+                                                    },
+                                                    {
+                                                        "value": "gif",
+                                                        "label": "gif"
+                                                    },
+                                                    {
+                                                        "value": "webp",
+                                                        "label": "webp"
+                                                    },
+                                                    {
+                                                        "value": "avif",
+                                                        "label": "avif"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "content_media_policy_video",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:core.content_media.policy.kind_video"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "product_display.content_media.video.enabled",
+                                        "value": "{{_local.form?.product_display?.content_media?.video?.enabled ?? false}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "flex-shrink-0 ml-4"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.product_display?.content_media?.video?.enabled}}",
+                            "props": {
+                                "className": "grid-2col"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:core.content_media.policy.max_size_mb"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "product_display.content_media.video.max_size_mb",
+                                                "min": "1",
+                                                "max": "2048",
+                                                "value": "{{_local.form?.product_display?.content_media?.video?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.video?.max_size_mb ?? 10}}",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": ""
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['product_display.content_media.video.max_size_mb']}}",
+                                            "props": {
+                                                "className": "form-error-xs mt-1"
+                                            },
+                                            "text": "{{_local.errors?.['product_display.content_media.video.max_size_mb']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:core.content_media.policy.extensions"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "TagInput",
+                                            "props": {
+                                                "name": "product_display.content_media.video.extensions",
+                                                "value": "{{_local.form?.product_display?.content_media?.video?.extensions ?? ['mp4', 'webm']}}",
+                                                "isMulti": true,
+                                                "isClearable": false,
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "options": [
+                                                    {
+                                                        "value": "mp4",
+                                                        "label": "mp4"
+                                                    },
+                                                    {
+                                                        "value": "webm",
+                                                        "label": "webm"
+                                                    },
+                                                    {
+                                                        "value": "ogv",
+                                                        "label": "ogv"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "content_media_policy_audio",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:core.content_media.policy.kind_audio"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "product_display.content_media.audio.enabled",
+                                        "value": "{{_local.form?.product_display?.content_media?.audio?.enabled ?? false}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "flex-shrink-0 ml-4"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.product_display?.content_media?.audio?.enabled}}",
+                            "props": {
+                                "className": "grid-2col"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:core.content_media.policy.max_size_mb"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "product_display.content_media.audio.max_size_mb",
+                                                "min": "1",
+                                                "max": "2048",
+                                                "value": "{{_local.form?.product_display?.content_media?.audio?.max_size_mb ?? _local.form?.product_display?.content_media_fallback?.audio?.max_size_mb ?? 10}}",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": ""
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['product_display.content_media.audio.max_size_mb']}}",
+                                            "props": {
+                                                "className": "form-error-xs mt-1"
+                                            },
+                                            "text": "{{_local.errors?.['product_display.content_media.audio.max_size_mb']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:core.content_media.policy.extensions"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "TagInput",
+                                            "props": {
+                                                "name": "product_display.content_media.audio.extensions",
+                                                "value": "{{_local.form?.product_display?.content_media?.audio?.extensions ?? ['mp3', 'm4a']}}",
+                                                "isMulti": true,
+                                                "isClearable": false,
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "options": [
+                                                    {
+                                                        "value": "mp3",
+                                                        "label": "mp3"
+                                                    },
+                                                    {
+                                                        "value": "m4a",
+                                                        "label": "m4a"
+                                                    },
+                                                    {
+                                                        "value": "ogg",
+                                                        "label": "ogg"
+                                                    },
+                                                    {
+                                                        "value": "oga",
+                                                        "label": "oga"
+                                                    },
+                                                    {
+                                                        "value": "wav",
+                                                        "label": "wav"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "content_media_policy_max_per_document",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:core.content_media.policy.max_per_document"
+                        },
+                        {
+                            "comment": "audit:allow layout-input-boundary-hardcoded 코어 ContentMediaPolicy 고정 한계(파일당 1~2048MB·문서당 1~200개) — 서버 규칙 ContentMediaPolicyRules 가 같은 상수를 쓴다",
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "number",
+                                "name": "product_display.content_media.max_per_document",
+                                "min": "1",
+                                "max": "200",
+                                "value": "{{_local.form?.product_display?.content_media?.max_per_document ?? _local.form?.product_display?.content_media_fallback?.max_per_document ?? 30}}",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": ""
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['product_display.content_media.max_per_document']}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.['product_display.content_media.max_per_document']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "content_media_policy_core_hint",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "form-hint"
+                    },
+                    "text": "$t:core.content_media.policy.core_disabled_hint"
+                }
+            ]
+        }
+    ]
+}

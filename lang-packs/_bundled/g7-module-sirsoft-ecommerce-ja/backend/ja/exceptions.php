@@ -184,4 +184,5 @@ return [
     'claim_withdraw_reason_required' => '取り下げ理由を入力してください。',
     'claim_admin_request_not_allowed' => 'この商品は現在のステータス(:status)では受け付けできません。',
     'no_purchasable_option' => '現在、購入可能なオプションがない商品です。',
+    'imported_review_invalid_field' => '移行レビューの入力値が正しくありません: :field',
 ];

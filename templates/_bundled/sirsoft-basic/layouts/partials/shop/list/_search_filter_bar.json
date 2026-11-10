@@ -11,74 +11,37 @@
     },
     "children": [
         {
-            "comment": "검색 영역",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex gap-2"
-            },
-            "children": [
+            "comment": "검색 영역 — 최근 검색어 검색창(상품 검색 범위 sirsoft-ecommerce.products, 분류 화면 검색줄과 목록을 함께 쓴다).\n         입력칸은 주소의 keyword 를 보이기만 하고 기록하지 않는다 — 제출(Enter·검색 단추·목록 항목)할 때 검색창이 기록한다.\n         이커머스가 꺼져 범위가 없으면 펼침 목록 없는 평범한 검색칸이다. 칸을 비우고 제출하면 검색어 조건이 풀린다(submitEmpty).",
+            "id": "shop_list_search_box",
+            "type": "composite",
+            "name": "RecentSearchCombobox",
+            "actions": [
                 {
-                    "type": "basic",
-                    "name": "Input",
-                    "actions": [
-                        {
-                            "comment": "타이핑은 로컬에만 담는다 — 글자마다 목록을 다시 받지 않기 위해서다",
-                            "type": "change",
-                            "handler": "setState",
-                            "params": {
-                                "target": "local",
-                                "keyword": "{{$event.target.value}}"
-                            }
-                        },
-                        {
-                            "comment": "Enter 로 검색. `mergeQuery` 라 카테고리·정렬은 그대로 두고 검색어와 쪽수만 갈아 끼운다",
-                            "type": "keydown",
-                            "key": "Enter",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "{{_global.shopBase}}/products",
-                                "mergeQuery": true,
-                                "query": {
-                                    "keyword": "{{_local.keyword ?? ''}}",
-                                    "page": "1"
-                                }
-                            }
+                    "comment": "검색. `mergeQuery` 라 카테고리·정렬은 그대로 두고 검색어와 쪽수만 갈아 끼운다(빈 검색어는 주소에서 빠진다)",
+                    "event": "onSearch",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "{{_global.shopBase}}/products",
+                        "mergeQuery": true,
+                        "query": {
+                            "keyword": "{{$args[0]}}",
+                            "page": "1"
                         }
-                    ],
-                    "props": {
-                        "type": "text",
-                        "name": "keyword",
-                        "placeholder": "$t:shop.search_placeholder",
-                        "className": "flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
-                        "value": "{{_local.keyword ?? query.keyword ?? ''}}"
                     }
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다",
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "{{_global.shopBase}}/products",
-                                "mergeQuery": true,
-                                "query": {
-                                    "keyword": "{{_local.keyword ?? query.keyword ?? ''}}",
-                                    "page": "1"
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"
-                    },
-                    "text": "$t:shop.search"
                 }
-            ]
+            ],
+            "props": {
+                "scope": "sirsoft-ecommerce.products",
+                "name": "keyword",
+                "value": "{{query.keyword ?? ''}}",
+                "placeholder": "$t:shop.search_placeholder",
+                "showButton": true,
+                "buttonText": "$t:shop.search",
+                "showIcon": false,
+                "submitEmpty": true,
+                "inputClassName": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                "buttonClassName": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"
+            }
         },
         {
             "comment": "정렬 바 (총 상품 수 + 초기화 + 정렬)",
@@ -158,6 +121,10 @@
                                     {
                                         "value": "sales",
                                         "label": "$t:shop.sort.sales"
+                                    },
+                                    {
+                                        "value": "reviews",
+                                        "label": "$t:shop.sort.reviews"
                                     },
                                     {
                                         "value": "price_asc",

@@ -1,0 +1,29 @@
+feature: sirsoft-basic 상품 상세 — 방문자 탭 제목이 검색엔진 제목과 같은 답
+
+description: |
+  상품 상세(`shop/show`) 의 `meta.seo.vars`·`og` 식은 서버 평가기(봇 `<title>`)와 화면 엔진(방문자 탭 제목)이 함께 평가한다.
+  종전 식 `$localized(meta_title) ?? $localized(name)` 은 화면 `$localized` 가 빈 값을 빈 글자로 돌려줘 `??` 가 상품명으로
+  넘어가지 않았다 — 상품 고유 검색 제목이 없는 상품의 탭 제목에서 상품명이 빠지고 틀의 고정 글자(「특가」)만 남았다(봇은 정상).
+  빈 다국어 값(`{ko: ''}`)은 서버도 멈췄다. 식을 빈 글자도 건너뛰는 `||` 로 잇는다.
+  또 상품을 받기 전에는 필수 변수(상품명)가 빈 채로 확장 제목 틀을 치환해 「특가」만 남은 제목을 썼다 — 필수 변수가 빈 틀은
+  후보로 쓰지 않아 받는 동안은 화면 제목(라우트 제목)이다(서버·엔진 공통 규칙은 코어 `browser-tab-title-rule` 매니페스트).
+
+axes:
+  case:
+    - no_meta_title_uses_product_name
+    - meta_title_wins
+    - no_template_og_uses_product_name
+    - loading_skips_unready_template
+
+effects:
+  - product_name_var_falls_back_to_name        # 고유 검색 제목이 비면(null·빈 다국어 값) 틀의 {product_name} 이 상품명
+  - product_meta_title_first_candidate         # 고유 검색 제목이 있으면 그 값이 제목
+  - og_title_falls_back_to_name                # 확장 틀이 없으면 소셜 공유 제목 후보가 상품명
+  - required_var_empty_template_skipped        # 상품을 받기 전에는 틀의 고정 글자가 아니라 화면 제목
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-product-document-title.test.ts
+  - tests/Unit/Seo/ProductDetailLayoutSeoExpressionTest.php
+
+validation:
+  browser_check: 재실측 — 상품 제목 틀 `{commerce_name} | {product_name} 특가`·쇼핑몰명 빈 사이트에서 meta_title 없는 상품 상세를 열어 로딩 중 「상품 상세 - 사이트명」 → 「상품명 특가 - 사이트명」, 봇 `<title>` 과 같음

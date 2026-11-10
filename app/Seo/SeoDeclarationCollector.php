@@ -72,6 +72,10 @@ class SeoDeclarationCollector
             if ($route['guest_only'] ?? false) {
                 continue;
             }
+            // 코어가 덧붙이는 시스템 라우트(미리보기 등)는 템플릿 레이아웃이 아니다 — 읽으면 매번 실패해 오류 보고만 쌓인다
+            if ($route['meta']['is_system_route'] ?? false) {
+                continue;
+            }
 
             $layoutName = $route['layout'] ?? '';
             if (empty($layoutName)) {

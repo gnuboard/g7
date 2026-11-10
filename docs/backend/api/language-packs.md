@@ -520,6 +520,9 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -662,6 +665,9 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -796,6 +802,9 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -936,6 +945,9 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1146,6 +1158,9 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1370,6 +1385,9 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1569,6 +1587,9 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1699,6 +1720,9 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 

@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Requests;
 
 use Illuminate\Support\Facades\Validator;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
+use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -1068,12 +1069,16 @@ class StoreEcommerceSettingsRequestTest extends ModuleTestCase
      */
     public function test_shipping_tab_passes_with_valid_carriers(): void
     {
+        // 기존 행 id 는 시드된 행에서 읽는다 — 시험 DB 정리는 DELETE 라 자동 증가 번호가 되돌아가지 않아 1 이 실재한다는 보장이 없다
+        $existingCarrierId = ShippingCarrier::query()->where('code', 'cj')->value('id');
+        $this->assertNotNull($existingCarrierId, 'TestingSeeder 가 cj 배송사를 시드해야 합니다');
+
         $validator = $this->validate([
             '_tab' => 'shipping',
             'shipping' => [
                 'carriers' => [
                     [
-                        'id' => 1,
+                        'id' => $existingCarrierId,
                         'code' => 'cj',
                         'name' => ['ko' => 'CJ대한통운', 'en' => 'CJ Logistics'],
                         'type' => 'domestic',

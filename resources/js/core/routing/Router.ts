@@ -9,6 +9,13 @@ import {
   installLeaveGuardUnloadListener,
   requestLeave,
 } from './LeaveGuard';
+import {
+  captureBeforeLeave,
+  consumePendingReturnScroll,
+  installScrollMemory,
+  markScrollNavigation,
+  syncCommittedScrollEntry,
+} from './ScrollMemory';
 
 const logger = createLogger('Router');
 
@@ -111,6 +118,8 @@ export class Router {
     this.committedHistoryIndex = currentHistoryEntryIndex();
     this.initPopstateListener();
     installLeaveGuardUnloadListener();
+    // 뒤로/앞으로 가기·새로고침 스크롤 복원 — 브라우저 기본 복원을 끄고 항목별 위치를 기억한다 (engine-v1.85.0)
+    installScrollMemory();
   }
 
   /**
@@ -128,6 +137,8 @@ export class Router {
    */
   private handlePopState = (): void => {
     const targetIndex = currentHistoryEntryIndex();
+    // 떠나는 화면의 내부 스크롤 영역 위치를 남긴다 — 창 위치는 scroll 이벤트가 이미 남겼다 (engine-v1.85.0)
+    captureBeforeLeave(undefined, true);
     const bypass = consumeArmedLeaveGuardBypass();
     if (!requestLeave(currentUrl(), { bypass, fromPath: this.getCommittedUrl() })) {
       this.restoreBlockedPopState(targetIndex);
@@ -137,6 +148,8 @@ export class Router {
 
     this.committedUrl = currentUrl();
     this.committedHistoryIndex = targetIndex;
+    // 돌아온 항목 — 화면을 다시 그린 뒤 TemplateApp 이 기억한 위치로 되돌린다 (engine-v1.85.0)
+    markScrollNavigation('pop');
     this.navigateToCurrentPath();
   };
 
@@ -153,6 +166,8 @@ export class Router {
   private restoreBlockedPopState(_targetIndex: number | null): void {
     window.history.pushState({}, '', this.getCommittedUrl());
     this.committedHistoryIndex = currentHistoryEntryIndex();
+    // 다시 쌓은 항목이 지금 화면이다 — 스크롤 기억도 그 항목에 이어 쓴다 (engine-v1.85.0)
+    syncCommittedScrollEntry();
   }
 
   /**
@@ -492,6 +507,9 @@ export class Router {
       return false;
     }
 
+    // 떠나는 화면의 위치와, 이동 액션이 맡긴 돌아올 때 동작(`returnScroll`)을 그 항목에 남긴다 (engine-v1.85.0)
+    captureBeforeLeave(consumePendingReturnScroll());
+
     // 이미 navigate가 진행 중이면 대기열에 추가
     if (this.isNavigating) {
       this.pendingNavigation = path;
@@ -517,6 +535,8 @@ export class Router {
     try {
       // URL 변경 (브라우저 히스토리에 추가)
       window.history.pushState({}, '', path);
+      // 새 항목 — 복원하지 않는다(도착 위치는 navigate 액션의 `scroll` 이 정한다) (engine-v1.85.0)
+      markScrollNavigation('push');
       // 같은 레이아웃으로 쿼리만 바뀌는 이동에서도 `:mergeQuery` 링크가 새 주소로 다시 그려지게 알린다 (engine-v1.82.1)
       notifyLocationReplaced();
       this.committedUrl = currentUrl();

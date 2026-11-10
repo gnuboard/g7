@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Benchmark\Axes\BatchAxisRunner;
+use App\Benchmark\Axes\BootAxisRunner;
 use App\Benchmark\Axes\ListAxisRunner;
 use App\Benchmark\Axes\ScreenAxisRunner;
 use App\Benchmark\Axes\WriteAxisRunner;
@@ -60,6 +61,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
@@ -76,6 +78,8 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
+use App\Extension\Storage\StorageTransactionJournal;
+use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
@@ -126,6 +130,7 @@ use App\Repositories\TemplateRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserPasswordHistoryRepository;
 use App\Repositories\UserRepository;
+use App\Repositories\UserSearchHistoryRepository;
 use App\Services\Analytics\ConversionRecorder as AnalyticsConversionRecorder;
 use App\Services\Analytics\DimensionRegistry as AnalyticsDimensionRegistry;
 use App\Services\Analytics\GoalRegistry as AnalyticsGoalRegistry;
@@ -133,14 +138,19 @@ use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\NotificationRecipientCapability;
+use App\Services\PluginSettingsService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
+use App\Support\Content\MediaSourceRoutes;
 use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
+use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
@@ -191,6 +201,7 @@ class CoreServiceProvider extends ServiceProvider
             ScreenAxisRunner::class,
             WriteAxisRunner::class,
             BatchAxisRunner::class,
+            BootAxisRunner::class,
         ], 'benchmark.axes');
 
         $this->app->when(BenchCommand::class)
@@ -202,7 +213,7 @@ class CoreServiceProvider extends ServiceProvider
      * Extension(모듈/플러그인) PSR-4 오토로드를 등록합니다.
      *
      * index.php 또는 artisan에서 이미 등록된 경우 스킵합니다.
-     * 진입점에서 등록되지 않은 경우(예: queue worker)에만 실행됩니다.
+     * 진입점에서 등록되지 않은 부팅(기본 진입점을 거치지 않는 실행 스크립트 등)에서만 실행됩니다.
      *
      * @return void 반환값 없음
      */
@@ -224,49 +235,9 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        $loader = require base_path('vendor/autoload.php');
-
-        // PSR-4 네임스페이스 등록
-        if (! empty($extensionAutoloads['psr4'])) {
-            foreach ($extensionAutoloads['psr4'] as $namespace => $paths) {
-                $paths = (array) $paths;
-                foreach ($paths as $path) {
-                    $absolutePath = base_path($path);
-                    if (is_dir($absolutePath)) {
-                        $loader->addPsr4($namespace, $absolutePath);
-                    }
-                }
-            }
-        }
-
-        // 확장 소스 classmap 등록 (FQCN → 절대경로) — findFile 파일시스템 스캔 제거 (lazy include).
-        if (! empty($extensionAutoloads['src_classmap'])) {
-            $absoluteClassmap = [];
-            foreach ($extensionAutoloads['src_classmap'] as $fqcn => $relPath) {
-                $absoluteClassmap[$fqcn] = base_path($relPath);
-            }
-            $loader->addClassMap($absoluteClassmap);
-        }
-
-        // Classmap 파일 로드 (module.php, plugin.php) — 다른 경로 사본에서 이미 선언된 진입 클래스는 건너뛴다.
-        if (! empty($extensionAutoloads['classmap'])) {
-            foreach ($extensionAutoloads['classmap'] as $file) {
-                $absolutePath = base_path($file);
-                if (file_exists($absolutePath) && ! ExtensionManager::isEntryClassDeclared($file)) {
-                    require_once $absolutePath;
-                }
-            }
-        }
-
-        // Files 로드 (헬퍼 함수 등)
-        if (! empty($extensionAutoloads['files'])) {
-            foreach ($extensionAutoloads['files'] as $file) {
-                $absolutePath = base_path($file);
-                if (file_exists($absolutePath)) {
-                    require_once $absolutePath;
-                }
-            }
-        }
+        // 진입점과 같은 등록 함수에 맡긴다 — PSR-4·소스 classmap·진입 파일·files 에 더해 확장 vendor(제3자 패키지)와
+        // 그 중복 선언 가드까지 같은 경로를 탄다. 직접 등록하던 사본은 vendor_autoloads 를 빠뜨렸다 (#159).
+        ExtensionManager::registerExtensionAutoload(require base_path('vendor/autoload.php'), $extensionAutoloadFile);
     }
 
     /**
@@ -302,6 +273,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(UserConsentRepositoryInterface::class, UserConsentRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(UserPasswordHistoryRepositoryInterface::class, UserPasswordHistoryRepository::class);
+        $this->app->bind(UserSearchHistoryRepositoryInterface::class, UserSearchHistoryRepository::class);
         $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
         $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
         // 알림 수신자별 발송 기록 — 재시도·재예약 시 이미 보낸 수신자 건너뛰기 (#139)
@@ -348,7 +320,7 @@ class CoreServiceProvider extends ServiceProvider
         });
 
         // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
-        $this->app->singleton(ConsentManager::class);
+        $this->app->scoped(ConsentManager::class);
 
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
@@ -373,8 +345,9 @@ class CoreServiceProvider extends ServiceProvider
             return new CoreCacheDriver(config('cache.default'));
         });
 
-        // 확장 선언 미들웨어 self-gate 인덱스 (요청 내 인덱스 1회 빌드 → singleton)
-        $this->app->singleton(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
+        // 확장 선언 미들웨어 self-gate 인덱스 — 요청 내 인덱스 1회 빌드. scoped 라서 인덱스·해석 메모가
+        // 요청·큐 잡이 끝나면 버려진다(프로세스 수명이면 워커가 옛 인덱스를 붙잡는다, #860)
+        $this->app->scoped(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
 
         // 알림 수신자 권한 판정 (수신자 수만큼 같은 권한을 재조회하지 않도록 요청·잡 수명 메모 → scoped).
         // singleton 이면 큐 워커가 재시작될 때까지 메모가 남아, 권한을 뺏긴 사람도 관리자 링크를 계속
@@ -394,6 +367,13 @@ class CoreServiceProvider extends ServiceProvider
 
         // 선택 연동 역맵 — 목록 행마다 「연동 중인 확장」을 실을 때 켜진 확장 조회를 요청·작업당 한 번으로 줄인다(7.1.4)
         $this->app->scoped(IntegrationReverseIndex::class);
+
+        // 활성·설치 확장 목록 메모 — 부팅 경로가 요청마다 수십 번 읽는 목록을 저장소 조회 한 번으로 줄인다(#860)
+        $this->app->scoped(ExtensionStatusMemo::class);
+
+        // 플러그인 설정 서비스 — 요청 단위로 하나. 소비자마다 새로 만들면 같은 요청에서 설정 파일을 여러 번 읽고,
+        // 한 소비자가 저장한 값을 먼저 읽어 둔 다른 소비자가 모른다. scoped 라 큐 잡마다 새로 읽는다(#860)
+        $this->app->scoped(PluginSettingsService::class);
 
         // 확장 매니저 등록 (모듈/플러그인 공통 기능)
         $this->app->singleton(ExtensionManager::class, function ($app) {
@@ -460,6 +440,13 @@ class CoreServiceProvider extends ServiceProvider
         // 디렉토리를 재스캔했다. 요청 단위 상태는 라우트 병합 열화 플래그 하나뿐이며
         // 그 플래그는 병합 진입 시 재설정되므로 공유해도 안전하다.
         $this->app->singleton(TemplateService::class);
+
+        // 트랜잭션 파일 보상 저널 (StorageTransaction) — 한 요청·잡 안의 트랜잭션 항목을 공유해야 롤백 때 되돌린다
+        $this->app->singleton(StorageTransactionJournal::class);
+
+        // 본문 미디어 서빙 라우트 레지스트리 — 확장 어댑터가 부팅 때 서빙 라우트 이름을 등록하고, 미디어 출처 허용 패턴이 이를 읽는다(#887).
+        // 등록은 부팅 때 한 번이라 프로세스 수명(singleton)이어야 큐 워커·다음 요청에서도 남는다
+        $this->app->singleton(MediaSourceRoutes::class);
     }
 
     /**
@@ -469,6 +456,10 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 트랜잭션 파일 보상 — 롤백·커밋 이벤트로 저널을 정리한다 (환경 무관, .env 없는 설치 전에도 무해)
+        Event::listen(TransactionRolledBack::class, fn (TransactionRolledBack $event) => $this->app->make(StorageTransactionJournal::class)->handleRolledBack($event));
+        Event::listen(TransactionCommitted::class, fn (TransactionCommitted $event) => $this->app->make(StorageTransactionJournal::class)->handleCommitted($event));
+
         // 코어 훅 리스너 자동 발견 및 등록 (환경 무관)
         $this->registerCoreHookListeners();
 
@@ -814,7 +805,14 @@ class CoreServiceProvider extends ServiceProvider
     {
         try {
             $driverRegistry = $this->app->make(DriverRegistryService::class);
-            $configRepository = $this->app->make(JsonConfigRepository::class);
+            // 코어 설정 저장소 싱글톤이 같은 구현이면 그것을 쓴다 — 새로 만들면 설정 파일을 다시 읽는다(#860).
+            // 구현 클래스를 직접 바인딩해 둔 경우(교체·시험)는 그 바인딩을 따른다.
+            $configRepository = $this->app->bound(JsonConfigRepository::class)
+                ? $this->app->make(JsonConfigRepository::class)
+                : $this->app->make(ConfigRepositoryInterface::class);
+            if (! $configRepository instanceof JsonConfigRepository) {
+                $configRepository = $this->app->make(JsonConfigRepository::class);
+            }
 
             foreach ($driverRegistry->getCategories() as $category) {
                 $settingsKey = $driverRegistry->getSettingsKey($category);

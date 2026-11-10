@@ -229,6 +229,7 @@ class AnonymizeService
             // 해시는 그 방문이 일어난 날의 솔트로 만든다. 그 날 솔트가 이미 지워졌으면
             // 날짜로 만든 고정 솔트를 쓴다 — 다른 날 기록과는 이어 붙지 않지만, 같은
             // 날 안에서 같은 사람을 찾는 일은 된다.
+            // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
             $date = $visit->visit_date?->toDateString() ?? AnalyticsClock::today();
             $salt = $this->salts->findForDate($date) ?? 'anonymized-'.$date;
 

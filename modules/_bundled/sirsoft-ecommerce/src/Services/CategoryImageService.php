@@ -71,6 +71,7 @@ class CategoryImageService
 
         // 저장 경로 생성 (category + 날짜별 디렉토리)
         $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $datePath = date('Y/m/d');
         $path = "category/{$datePath}/{$storedFilename}";
 

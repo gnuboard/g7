@@ -34,6 +34,7 @@ effects:
   - existing_plus_new_over_limit_blocked
   - existing_plus_new_at_limit_passes
   - attachment_ids_path_counted_in_total
+  - non_default_collection_counted_in_limit  # post_attachments 등 예약 밖 컬렉션도 상한에 셈 (#883)
   - single_upload_repeat_blocked_at_limit
   - unlimited_board_not_restricted
   - limit_violation_returns_422_not_500

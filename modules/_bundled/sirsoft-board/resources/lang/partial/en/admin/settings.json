@@ -314,6 +314,7 @@
     "checked_fields_notice": "All settings will be saved, then only the checked items will be bulk applied.",
     "no_boards_notice": "No boards available for bulk apply. Please create a board first.",
     "field_labels": {
+      "content_media_policy": "Content media policy",
       "type": "Default Type",
       "per_page": "Posts per Page (PC)",
       "per_page_mobile": "Posts per Page (Mobile)",

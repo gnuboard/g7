@@ -1,0 +1,38 @@
+feature: 범용 알림의 발송 채널 결정(via)
+
+description: |
+  채널 후보(정의·채널 제공 확장·도메인 훅)에서 확장 토글로 끈 채널, 준비되지 않은 채널, 템플릿이 없거나 꺼진 채널, 사용 가능 목록 밖 채널을 빼고 남은 채널로만 보내는지, 명시 채널도 같은 규칙을 따르는지 고정한다.
+
+axes:
+  case:
+    - via_excludes_channel_disabled_by_extension_toggle
+    - via_returns_empty_when_all_channels_disabled_by_extension
+    - via_with_explicit_channel_honors_extension_toggle
+    - via_with_explicit_channel_returns_when_enabled
+    - via_returns_both_channels_when_both_have_templates
+    - via_excludes_channel_that_is_not_ready
+    - via_excludes_channel_without_template
+    - via_returns_only_database_when_mail_has_no_template
+    - via_excludes_channel_with_inactive_template
+    - via_returns_empty_when_no_templates
+    - via_unknown_type_returns_empty
+    - via_with_explicit_channel_excludes_channel_not_in_available_list
+    - via_multichannel_excludes_channel_not_in_available_list
+
+effects:
+  - via_excludes_channel_disabled_by_extension_toggle
+  - via_returns_empty_when_all_channels_disabled_by_extension
+  - via_with_explicit_channel_honors_extension_toggle
+  - via_with_explicit_channel_returns_when_enabled
+  - via_returns_both_channels_when_both_have_templates
+  - via_excludes_channel_that_is_not_ready
+  - via_excludes_channel_without_template
+  - via_returns_only_database_when_mail_has_no_template
+  - via_excludes_channel_with_inactive_template
+  - via_returns_empty_when_no_templates
+  - via_unknown_type_returns_empty
+  - via_with_explicit_channel_excludes_channel_not_in_available_list
+  - via_multichannel_excludes_channel_not_in_available_list
+
+test_files:
+  - tests/Unit/Notifications/GenericNotificationViaTest.php

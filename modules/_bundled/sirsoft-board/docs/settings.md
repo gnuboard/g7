@@ -200,3 +200,11 @@ board 를 자기 도메인으로 대체할 뿐 board API 계약에 실제로 묶
 이 모듈의 공개 표면(라우트·API 응답 구조)을 바꿀 때는 `sirsoft-basic` 의 최소 버전 상향을
 검토해야 합니다(§코어 AGENTS.md "확장 → 확장 동기화").
 <!-- @intent END -->
+
+## 최근 검색어 범위 (코어 7.1.5+)
+
+`module.json` 의 `search_scopes` 로 최근 검색어 범위 `posts`(범위 id `sirsoft-board.posts`, 이름 「게시글 검색」 — 번역 키 `messages.search_history.scope_posts`, 보관 개수 10)를 선언합니다.
+보관 기한은 선언하지 않아 기본값(기한 없음)입니다. 운영자는 코어 환경설정 > 개인정보 「최근 검색어」 카드에서 이 범위의 보관 개수·보관 기한을 고칩니다(설정이 선언값보다 우선).
+모듈을 끄면 범위가 사라져 그 범위의 기록을 서버가 거부하고 엔진은 건너뜁니다. 고친 설정 값은 보존됩니다.
+이 범위를 쓰는 검색창 연결(검색 이동 앞 `<record-search-keyword scope="sirsoft-board.posts" …/>` 또는 `G7Core.useSearchHistory('sirsoft-board.posts')`)은 템플릿 몫입니다.
+형식 규칙: 코어 문서 「플러그인 개발 — 최근 검색어 범위(search_scopes)」.

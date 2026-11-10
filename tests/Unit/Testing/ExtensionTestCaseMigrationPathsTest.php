@@ -3,7 +3,7 @@
 namespace Tests\Unit\Testing;
 
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 확장 TestCase 의 마이그레이션 경로 선언 회귀 테스트
@@ -18,7 +18,7 @@ use Tests\TestCase;
  * 돌리면 전부 green 이라, 실행 기반 테스트로는 잡히지 않고 CI 조합이 바뀔 때 되살아난다.
  * 그래서 선언 자체를 검사한다 — 모든 확장 TestCase 가 번들 확장 전체를 포함해야 한다.
  */
-class ExtensionTestCaseMigrationPathsTest extends TestCase
+class ExtensionTestCaseMigrationPathsTest extends PureTestCase
 {
     /**
      * 저장소 루트 절대 경로.
@@ -68,7 +68,12 @@ class ExtensionTestCaseMigrationPathsTest extends TestCase
     /**
      * 모든 확장 TestCase 가 번들 모듈·플러그인 마이그레이션을 전부 포함한다.
      *
+     * @scenario case=includes_bundled_globs
+     *
+     * @effects extension_test_case_includes_all_bundled_migrations
+     *
      * @param  string  $path  TestCase 파일 절대 경로
+     * @return void 반환값 없음
      */
     #[DataProvider('extensionTestCaseProvider')]
     public function test_extension_test_case_includes_all_bundled_migrations(string $path): void
@@ -94,7 +99,12 @@ class ExtensionTestCaseMigrationPathsTest extends TestCase
      * glob 없이 하드코딩만 있는 상태로 되돌아가는 회귀는 위 단언이 잡는다. 이 단언은 그
      * 되돌림이 "자기 확장만 나열" 형태로 재등장하는 것을 추가로 막는다.
      *
+     * @scenario case=no_pinned_extension_path
+     *
+     * @effects extension_test_case_does_not_pin_single_extension_path
+     *
      * @param  string  $path  TestCase 파일 절대 경로
+     * @return void 반환값 없음
      */
     #[DataProvider('extensionTestCaseProvider')]
     public function test_extension_test_case_does_not_pin_only_its_own_migrations(string $path): void

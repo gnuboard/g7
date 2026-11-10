@@ -44,6 +44,7 @@ vi.mock('../template-engine', () => ({
   renderTemplate: vi.fn().mockResolvedValue(undefined),
   destroyTemplate: vi.fn(),
   releaseTemplateRoot: vi.fn(),
+  updateTemplateData: vi.fn(),
   getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
   getState: vi.fn().mockReturnValue({
     actionDispatcher: sharedActionDispatcher,
@@ -387,6 +388,49 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
 
     expect(window.location.href).toBe(
       `/admin/login?redirect=${encodeURIComponent('/admin/some/page')}&reason=session_expired`
+    );
+  });
+
+  /**
+   * #883 1단계(D2) — TemplateApp 이 ApiClient 에 거는 401 콜백은 「토큰을 실었던 요청이 거부됐다」 경우에만 불린다
+   * (토큰 없이 보낸 요청의 401 은 ApiClient 가 걸러 호출자에게 돌려준다 — ApiClient.anonymousUnauthorized.test.ts).
+   * 그래서 콜백 자체는 종전대로 토큰을 지우고 session_expired 로 로그인 화면에 보낸다(현행 유지).
+   *
+   * @scenario screen_takeover=none
+   * @effects token_rejected_callback_keeps_session_expired_redirect
+   */
+  it('초기화가 등록한 401 콜백은 토큰을 지우고 session_expired 로 로그인 화면에 보낸다(토큰을 실은 요청 전용)', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { href: '', pathname: '/board/free/write', search: '' },
+      writable: true,
+      configurable: true,
+    });
+
+    // 초기화가 콜백 등록 단계까지 가도록 정적 자원 요청(라우트·번역 등)에 성공 응답을 준다
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({ success: true, data: {} }),
+      text: async () => '{}',
+    } as unknown as Response);
+
+    try {
+      app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false });
+      await app.init().catch(() => undefined);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+
+    expect(mockApiClient.setOnUnauthorized).toHaveBeenCalledTimes(1);
+    const onUnauthorized = mockApiClient.setOnUnauthorized.mock.calls[0][0] as () => void;
+
+    onUnauthorized();
+
+    expect(mockApiClient.removeToken).toHaveBeenCalled();
+    expect(window.location.href).toBe(
+      `/login?redirect=${encodeURIComponent('/board/free/write')}&reason=session_expired`
     );
   });
 });

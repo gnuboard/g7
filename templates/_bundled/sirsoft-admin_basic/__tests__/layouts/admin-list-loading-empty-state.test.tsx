@@ -479,6 +479,8 @@ describe('관리자 목록 — 전수', () => {
     { file: 'partials/admin_language_pack_list/_modal_detail.json', match: 'changelog_entries', reason: '상세를 받은 뒤에만 그리는 감싸개 안(받는 중에는 「불러오는 중」)' },
     { file: 'partials/admin_settings/_modal_notification_identity_definition_add.json', match: '.filter(p', reason: '정책이 1건 이상일 때만 참 — 받기 전에는 거짓' },
     { file: '_admin_base.json', match: 'admin_sidebar_empty', reason: '응답 성공(success === true)으로 이미 받은 뒤만 가른다' },
+    { file: 'admin_user_detail.json', match: 'search_history_site_empty', reason: '회원 응답의 search_history 가 온 뒤에만 참(`!!user?.data?.search_history &&`) — 받는 중에는 거짓' },
+    { file: 'admin_user_form.json', match: 'search_history_site_empty', reason: '회원 응답의 search_history 가 온 뒤에만 참(`!!user?.data?.search_history &&`) — 받는 중에는 거짓' },
   ];
 
   /**

@@ -31,6 +31,7 @@ import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
+import { documentTitle } from './routing/DocumentTitle';
 import { loadScriptWithRetry } from './template-engine/networkResilience';
 // LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
 // (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
@@ -959,6 +960,13 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       startTransition(() => {
         doRender();
       });
+    }
+
+    // 브라우저 탭 제목 — 받은 데이터로 다시 계산한다. 이 화면 레이아웃에 연결된 동안만 쓴다(앞 화면의 늦은 데이터 무시) (engine-v1.86.0)
+    try {
+      documentTitle.recompute(state.currentLayoutJson, state.currentDataContext);
+    } catch (titleError) {
+      logger.warn('탭 제목 계산 실패', titleError);
     }
 
     logger.log('템플릿 데이터 업데이트 완료');

@@ -66,4 +66,26 @@ return [
             'done' => '保持期間(:days 日)経過の孤立した添付ファイル :scanned 件のうち :deleted 件を削除しました。(失敗 :failed 件)',
         ],
     ],
+    // 本文メディア(エディター本文に挿入する画像・動画・音声) — コア契約 (#883, 7.1.5)
+    'content_media' => [
+        'kind' => [
+            'image' => '画像',
+            'video' => '動画',
+            'audio' => '音声',
+        ],
+        'validation' => [
+            'file_invalid' => '正しいファイルではありません。',
+            'kind_not_allowed' => '本文に挿入できないファイル形式です。挿入できる形式: :allowed',
+            'extension_not_allowed' => ':kindファイルは :extensions 形式のみ挿入できます。',
+            'file_too_large' => ':kindファイルは :maxMB を超えることはできません。',
+            'max_per_document_range' => '文書あたりの最大数は 1〜:max の間で指定してください。',
+            'max_size_range' => ':kindのファイルあたりのサイズは 1〜:maxMB の間で指定してください。',
+            'extension_not_candidate' => ':kindの形式は :extensions の中からのみ選べます。',
+        ],
+        'errors' => [
+            'limit_exceeded' => '本文に挿入したメディアが :attempted 件です。文書あたり最大 :limit 件まで挿入できます。',
+            'upload_failed' => '本文メディアをアップロードできませんでした。',
+            'not_found' => '本文メディアが見つかりません。',
+        ],
+    ],
 ];

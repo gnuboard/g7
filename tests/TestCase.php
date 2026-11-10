@@ -10,16 +10,23 @@ use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Helpers\PermissionHelper;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Support\AssetUrl;
+use Composer\Autoload\ClassLoader;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\LoadConfiguration;
 use Illuminate\Foundation\Testing\CachedState;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\WithCachedConfig;
 use Illuminate\Foundation\Testing\WithCachedRoutes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\TestingDatabaseGuard;
+use Tests\Support\TestingSchema\TestingSchemaCache;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -43,11 +50,9 @@ abstract class TestCase extends BaseTestCase
     /**
      * 테스트 환경 설정
      *
-     * RefreshDatabase 트레이트가 migrate:fresh를 실행하기 전에
-     * g7_testing DB의 좀비 커넥션을 정리합니다.
-     *
-     * 근본 원인: 테스트 프로세스 강제 종료 시 MySQL 커넥션이
-     * 트랜잭션 락을 유지한 채 남아있어 DROP TABLE이 metadata lock 대기에 빠짐
+     * 테스트 DB 의 좀비 커넥션 정리는 여기서 하지 않는다 — 테스트 스키마 판정(TestingSchemaCache::ensure)이 프로세스 잠금을
+     * 얻은 뒤, 스키마를 지우기 전에 한 번 부른다(killStaleTestingConnectionsOnce). 예전에는 앱 생성 콜백으로 걸어 두어
+     * 트레이트 초기화(migrate:fresh) **뒤에** 돌았다 — 강제 종료로 남은 연결의 잠금을 풀어 DROP TABLE 대기를 막는다는 의도와 반대 순서였다.
      *
      * 확장 로딩 allowlist 도 여기서 주입합니다. parent::setUp() 의
      * createApplication() 단계에서 모든 ServiceProvider 의 register()/boot() 가
@@ -73,14 +78,6 @@ abstract class TestCase extends BaseTestCase
             PermissionHelper::clearPermissionScopeCache();
         });
 
-        if (! self::$staleConnectionsCleaned) {
-            // Laravel 앱 부팅 전이므로 부트스트랩 후 콜백으로 등록
-            $this->afterApplicationCreated(function () {
-                $this->killStaleTestingConnections();
-                self::$staleConnectionsCleaned = true;
-            });
-        }
-
         parent::setUp();
     }
 
@@ -92,11 +89,15 @@ abstract class TestCase extends BaseTestCase
      * (TestingDatabaseGuard 주석 참조). 그 밖의 본문은 프레임워크 `TestCase::createApplication()` 과 같다 —
      * 프레임워크를 올릴 때 그쪽 본문이 바뀌었는지 함께 대조한다.
      *
+     * 기준 경로는 `Application::inferBasePath()` 로 추론하지 않고 저장소 루트로 고정한다. 그 추론은 등록된 Composer
+     * 로더 목록의 첫 항목을 쓰는데, 업그레이드 단계처럼 확장 vendor 오토로더를 싣는 코드를 테스트가 돌리면 그 로더가
+     * 맨 앞에 서서 같은 프로세스의 뒤 테스트가 전부 `<확장>/bootstrap/app.php` 를 찾다 실패했다(2026-11-03 실측).
+     *
      * @return Application 테스트 앱
      */
     public function createApplication()
     {
-        $app = require Application::inferBasePath().'/bootstrap/app.php';
+        $app = require dirname(__DIR__).'/bootstrap/app.php';
 
         $app->afterBootstrapping(LoadConfiguration::class, function ($app): void {
             $connection = (string) $app['config']->get('database.default');
@@ -254,6 +255,10 @@ abstract class TestCase extends BaseTestCase
      */
     protected function tearDown(): void
     {
+        // 트랜잭션 테스트 안의 DDL 은 MySQL 이 열린 트랜잭션을 암묵 커밋한다 — 그 테스트의 행이 롤백되지 않고 남는다.
+        // 트랜잭션 수준은 남았는데 PDO 는 트랜잭션 밖이면 다음 테스트 전에 스키마·데이터를 다시 판정하게 표시한다.
+        $this->markSchemaDirtyOnImplicitCommit();
+
         ExtensionTestAllowlist::reset();
 
         // IDV 동적 hook 구독 정적 상태를 초기화한다. 프로세스 내 다음 테스트가
@@ -275,8 +280,62 @@ abstract class TestCase extends BaseTestCase
         HookManager::resetAll();
         HookListenerRegistrar::clear();
         $this->purgeIdleDatabaseConnections();
+        $this->moveRootComposerLoaderBackToFront();
+
+        // 시험 대상 코드의 `set_time_limit(300)`(정적 게시 등)이 프로세스에 남으면 Windows PHP 는 그 시점부터 실제 경과
+        // 시간을 재서, 같은 프로세스의 뒤 테스트가 300초를 넘기는 순간 PHPUnit 전체가 치명 오류로 끝난다(2026-11-03 실측).
+        // CLI 기본값(무제한)으로 되돌린다.
+        set_time_limit(0);
 
         parent::tearDown();
+    }
+
+    /**
+     * 테스트가 맨 앞에 끼운 Composer 로더(확장 vendor)를 목록 뒤로 옮겨 루트 vendor 로더를 첫 자리로 되돌립니다.
+     *
+     * 업그레이드 단계처럼 확장 `vendor/autoload.php` 를 실제로 싣는 코드는 그 로더를 맨 앞에 등록한다. 첫 항목은
+     * 기준 경로 추론(`Application::inferBasePath()`)과 `tests/bootstrap.php` 의 등록 순서 계약이 기대는 자리다
+     * (ExtensionVendorAutoloadInTestsTest). 해제하지 않고 뒤로 옮기므로 그 로더가 싣는 클래스는 계속 쓸 수 있다.
+     *
+     * @return void 반환값 없음
+     */
+    private function moveRootComposerLoaderBackToFront(): void
+    {
+        $root = realpath(dirname(__DIR__).'/vendor');
+
+        foreach (ClassLoader::getRegisteredLoaders() as $vendorDir => $loader) {
+            if (realpath($vendorDir) === $root) {
+                return;
+            }
+
+            $loader->unregister();
+            $loader->register(false);
+        }
+    }
+
+    /**
+     * 열린 트랜잭션이 DDL 로 암묵 커밋됐으면 테스트 스키마를 다시 판정하게 표시합니다.
+     *
+     * 그 테스트가 정규 마이그레이션의 표·기록을 지웠으면(확장 「데이터까지 삭제」 제거 등) 빠진 것만
+     * 다시 올려 둔다 — 다음 판정이 전체 재생 대신 재사용하게.
+     *
+     * @return void 반환값 없음
+     */
+    private function markSchemaDirtyOnImplicitCommit(): void
+    {
+        if ($this->app === null) {
+            return;
+        }
+
+        foreach ($this->app['db']->getConnections() as $connection) {
+            $pdo = $connection->getRawPdo();
+            if ($connection->transactionLevel() > 0 && $pdo instanceof \PDO && ! $pdo->inTransaction()) {
+                TestingSchemaCache::markDirty();
+                TestingSchemaCache::restoreRemovedMigrations($this);
+
+                return;
+            }
+        }
     }
 
     /**
@@ -374,23 +433,112 @@ abstract class TestCase extends BaseTestCase
      */
     protected function setUpTraits()
     {
-        // RefreshDatabase가 migrate:fresh를 실행하기 전에 확장 마이그레이션 경로 등록.
-        // ① 이 클래스가 선언한 requiredExtensions ② 모든 번들 확장(_bundled) 을 함께 등록한다.
-        // RefreshDatabase 는 프로세스당 migrate:fresh 를 1회만 실행하므로, 그 1회를
-        // 트리거하는 첫 테스트 클래스가 어떤 확장을 선언했는지에 따라 다른 클래스가
-        // 쓰는 확장 테이블이 누락될 수 있다(테스트 순서 의존 — RefreshDatabase 공유 상태).
-        // 번들 확장 마이그레이션을 항상 등록해 어떤 순서로 실행되든 모든 번들 테이블이
-        // 생성되게 한다(테이블 생성은 provider 무관 — Schema 빌더만 실행, 격리 무영향).
+        // 확장 마이그레이션 경로 등록 — 테스트가 직접 부르는 `migrate`(설치 경로 등)를 위해 유지한다.
+        // 테스트 스키마 자체는 아래 판정이 클래스 선언과 무관하게 정규 집합(코어 + 모든 번들)으로 만든다.
         $this->loadExtensionMigrations();
+
+        // DB 를 쓰는 테스트는 트레이트가 트랜잭션을 열기 전에 스키마·데이터 상태를 맞춘다. 마이그레이션이 바뀌지 않았으면
+        // migrate:fresh(약 50초) 대신 잔여 행만 정리하고, RefreshDatabaseState::$migrated 를 세워 트레이트의 재마이그레이션을 막는다.
+        if ($this->needsTestingSchema()) {
+            TestingSchemaCache::ensure($this, $this->requiredTestingSchema());
+        } else {
+            $this->watchCommittedWritesWithoutTransaction();
+        }
 
         return parent::setUpTraits();
     }
 
     /**
+     * DB 트레이트 없는 테스트가 테스트 DB 에 쓰면(INSERT·UPDATE·DELETE·DDL) 끝날 때 다음 테스트가 다시 판정하게 표시합니다.
+     *
+     * 트레이트가 없으면 쓰기가 곧바로 커밋되고 스키마 판정도 받지 않는다. 같은 프로세스에서 이미 판정을 마친 뒤라면 다음 DB
+     * 테스트는 「확인됨」으로 넘어가 남은 행과 충돌했다(2026-11-03 실측 — 실제 업그레이드 단계를 돌리는 테스트가 커밋한 역할·
+     * 알림 정의 행이 뒤 테스트의 중복 키 오류로 이어짐).
+     *
+     * @return void 반환값 없음
+     */
+    private function watchCommittedWritesWithoutTransaction(): void
+    {
+        // 기본 연결은 읽기·쓰기 분리 설정이라 설정값 대신 연결이 보고하는 DB 이름과 비교한다
+        $database = (string) $this->app['db']->connection()->getDatabaseName();
+
+        $this->app['events']->listen(QueryExecuted::class, function (QueryExecuted $query) use ($database): void {
+            if ($query->connection->getDatabaseName() === $database
+                && preg_match('/^\s*(insert|update|delete|replace|create|alter|drop|truncate|rename)\b/i', $query->sql) === 1) {
+                TestingSchemaCache::markDirty();
+            }
+        });
+    }
+
+    /**
+     * 이 테스트가 테스트 DB 스키마를 쓰는지 판정합니다 — DB 트레이트(RefreshDatabase 계열·DatabaseTransactions) 사용 여부.
+     *
+     * `refreshDatabase()` 를 덮어써 트랜잭션만 여는 클래스도 트레이트를 쓰므로 여기서 스키마를 보장받는다. 테스트 DB 를 쓰지 않는
+     * 클래스(SQLite 격리 등)는 덮어써 false 를 돌려준다.
+     *
+     * @return bool 스키마 판정이 필요하면 true
+     */
+    protected function needsTestingSchema(): bool
+    {
+        $traits = class_uses_recursive(static::class);
+
+        foreach ([RefreshDatabase::class, DatabaseTransactions::class, DatabaseTruncation::class, DatabaseMigrations::class] as $trait) {
+            if (isset($traits[$trait])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 이 테스트가 요구하는 데이터 프로필을 돌려줍니다.
+     *
+     * `migrateFreshUsing()` 이 시더를 지정했거나 시드를 켰으면 `seed:<시더>`(그 시더를 돌린 상태), 아니면 `any`(현재 상태 수용).
+     * 첫 사용 때 시드 없는 상태가 필요한 베이스는 덮어써 `none-exact` 를 돌려준다.
+     *
+     * @return string 요구 프로필(any · none-exact · seed:<시더 FQCN>)
+     */
+    protected function requiredTestingSchema(): string
+    {
+        if (method_exists($this, 'migrateFreshUsing')) {
+            $options = (array) $this->migrateFreshUsing();
+            $seeder = $options['--seeder'] ?? null;
+
+            if (is_string($seeder) && $seeder !== '') {
+                return 'seed:'.ltrim($seeder, '\\');
+            }
+
+            if (! empty($options['--seed'])) {
+                return 'seed:Database\\Seeders\\DatabaseSeeder';
+            }
+        }
+
+        return 'any';
+    }
+
+    /**
+     * 테스트 DB 의 좀비 커넥션을 프로세스당 한 번 정리합니다(테스트 스키마 판정이 잠금을 얻은 뒤 부른다).
+     *
+     * @return bool 이번 호출에서 정리했으면 true(이미 정리했으면 false)
+     */
+    public function killStaleTestingConnectionsOnce(): bool
+    {
+        if (self::$staleConnectionsCleaned) {
+            return false;
+        }
+
+        $this->killStaleTestingConnections();
+        self::$staleConnectionsCleaned = true;
+
+        return true;
+    }
+
+    /**
      * 확장 마이그레이션 경로를 migrator 에 등록합니다.
      *
-     * RefreshDatabase의 migrate:fresh 실행 시 확장 테이블도 함께 생성되도록
-     * 마이그레이션 경로를 등록한다. 대상:
+     * 테스트가 직접 실행하는 `migrate` 가 확장 테이블도 볼 수 있도록 마이그레이션 경로를 등록한다
+     * (테스트 스키마는 TestingSchemaCache 가 정규 집합으로 따로 만든다). 대상:
      *  - 이 클래스가 선언한 `requiredExtensions` (활성 디렉토리 경로)
      *  - 모든 번들 확장(`modules|plugins|templates/_bundled/*`) — 테스트 순서에 무관하게
      *    번들 테이블이 항상 생성되도록(공유 RefreshDatabase 상태 누락 방지).

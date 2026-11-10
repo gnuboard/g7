@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 공개 상품 상세의 분류 slug
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: public_product_detail_category_slug
+
+description: >-
+  공개 상품 상세(GET /api/modules/sirsoft-ecommerce/products/{id})의 categories 항목에 slug 를 싣는다. 사용자
+  템플릿이 상품명 위 분류명을 그 분류 화면({shop}/category/{slug})으로 잇는 링크로 그릴 때 쓴다.
+  대표 분류와 나머지 분류 모두 같은 모양이다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductDetailCategorySlugTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  category_role:
+    - primary     # 대표 분류
+    - secondary   # 함께 걸린 분류
+
+exclusions:
+  - { category_role: primary, reason: "제외 없음 — 단일 축" }
+
+effects:
+  - detail_categories_include_slug   # 분류마다 slug, 대표 분류는 is_primary=true
+
+validation:
+  audit_rule: test-scenario-reverse-mapping
+  note: |
+    화면 축(상품명 위 분류명 링크)은 사용자 템플릿 시험과 브라우저 실측이 덮는다.

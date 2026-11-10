@@ -427,6 +427,23 @@ class UpdateLayoutContentRequest extends FormRequest
             // 작성 도구 표기(번들 JSON 의 `_` 접두 키) — 런타임은 쓰지 않지만 저장에서 떨어지면 다음 업데이트의 3-way 병합이
             // 운영자가 meta 를 고친 것으로 본다
             'content.meta._e2e_allow' => ['nullable', 'string'],
+            // 뒤로/앞으로 가기·새로고침 스크롤 복원 — 엔진 ScrollMemory 가 소비(편집기 페이지 설정 [스크롤] 탭이 씀).
+            // 하위 키까지 명시해야 validated() 가 보존한다.
+            'content.meta.scroll_restoration' => ['nullable', 'array'],
+            'content.meta.scroll_restoration.mode' => ['nullable', 'string', 'max:200'],
+            'content.meta.scroll_restoration.on_reload' => ['nullable', 'boolean'],
+            'content.meta.scroll_restoration.wait' => ['nullable', 'string', 'in:height,data'],
+            'content.meta.scroll_restoration.timeout_ms' => ['nullable', 'integer', 'min:0', 'max:60000'],
+            'content.meta.scroll_restoration.containers' => ['nullable', 'array'],
+            'content.meta.scroll_restoration.containers.*' => ['string', 'max:200'],
+            'content.meta.scroll_restoration.snapshot' => ['nullable', 'array'],
+            'content.meta.scroll_restoration.snapshot.enabled' => ['nullable', 'boolean'],
+            'content.meta.scroll_restoration.snapshot.ttl_seconds' => ['nullable', 'integer', 'min:0', 'max:86400'],
+            'content.meta.scroll_restoration.snapshot.revalidate' => ['nullable', 'boolean'],
+            'content.meta.scroll_restoration.snapshot.item_key' => ['nullable', 'string', 'max:100'],
+            // 스냅샷과 함께 되돌릴 진행 상태 경로(다음 쪽 번호 등) — 엔진 ScrollMemory 와 같은 형식만 받는다
+            'content.meta.scroll_restoration.snapshot.state' => ['nullable', 'array'],
+            'content.meta.scroll_restoration.snapshot.state.*' => ['string', 'max:200', 'regex:/^_(global|local)\.[A-Za-z0-9_$][\w$.]*$/'],
 
             // SEO 메타데이터
             // 주의: content.meta.seo 도 'array' 규칙 + 하위 키 일부 명시이므로 SEO 페이지 생성기가
@@ -629,6 +646,20 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.meta._e2e_allow' => __('validation.attributes.layout_meta_authoring_note'),
             'content.meta.leave_guard' => __('validation.attributes.layout_meta_leave_guard'),
             'content.meta.leave_message' => __('validation.attributes.layout_meta_leave_message'),
+            'content.meta.scroll_restoration' => __('validation.attributes.layout_meta_scroll_restoration'),
+            'content.meta.scroll_restoration.mode' => __('validation.attributes.layout_meta_scroll_restoration_mode'),
+            'content.meta.scroll_restoration.on_reload' => __('validation.attributes.layout_meta_scroll_restoration_on_reload'),
+            'content.meta.scroll_restoration.wait' => __('validation.attributes.layout_meta_scroll_restoration_wait'),
+            'content.meta.scroll_restoration.timeout_ms' => __('validation.attributes.layout_meta_scroll_restoration_timeout_ms'),
+            'content.meta.scroll_restoration.containers' => __('validation.attributes.layout_meta_scroll_restoration_containers'),
+            'content.meta.scroll_restoration.containers.*' => __('validation.attributes.layout_meta_scroll_restoration_containers'),
+            'content.meta.scroll_restoration.snapshot' => __('validation.attributes.layout_meta_scroll_restoration_snapshot'),
+            'content.meta.scroll_restoration.snapshot.enabled' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_enabled'),
+            'content.meta.scroll_restoration.snapshot.ttl_seconds' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_ttl_seconds'),
+            'content.meta.scroll_restoration.snapshot.revalidate' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_revalidate'),
+            'content.meta.scroll_restoration.snapshot.item_key' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_item_key'),
+            'content.meta.scroll_restoration.snapshot.state' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_state'),
+            'content.meta.scroll_restoration.snapshot.state.*' => __('validation.attributes.layout_meta_scroll_restoration_snapshot_state'),
             'content.meta.seo.title' => __('validation.attributes.layout_seo_title'),
             'content.meta.seo.description' => __('validation.attributes.layout_seo_description'),
             'content.meta.seo.twitter' => __('validation.attributes.layout_seo_twitter'),

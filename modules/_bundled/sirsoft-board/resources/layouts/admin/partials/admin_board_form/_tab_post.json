@@ -1132,6 +1132,10 @@
                             "text": "{{_local.errors?.allowed_extensions?.[0] ?? ''}}"
                         }
                     ]
+                },
+                {
+                    "comment": "본문 미디어 정책 — 「파일 첨부 사용」과 따로 판정하므로 첨부가 꺼져 있어도 보인다 (#883, D26)",
+                    "partial": "_content_media_policy.json"
                 }
             ]
         }

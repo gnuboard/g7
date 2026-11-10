@@ -108,6 +108,11 @@ return [
         'privacy_dormant_notice_days_min' => 1,
         'privacy_dormant_notice_days_max' => 365,
 
+        // 최근 검색어 범위별 보관 개수 (개인정보 탭 「최근 검색어」 카드 · 확장 manifest search_scopes.max_count, 7.1.5)
+        // 보관 기한(일)은 위 privacy_retention_days_max 를 상한으로 쓰고 하한은 0(기한 없음)이다.
+        'search_history_max_count_min' => 1,
+        'search_history_max_count_max' => 50,
+
         // 목록 한계값 (0 = 무제한)
         'advanced_pagination_result_cap_min' => 0,
         'advanced_pagination_result_cap_max' => 1000000,

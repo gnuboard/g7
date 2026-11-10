@@ -30,6 +30,8 @@ export { default as PageLoading } from './PageLoading';
 export { default as ThemeToggle } from './ThemeToggle';
 export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
+export { RecentSearchCombobox } from './RecentSearchCombobox';
+export type { RecentSearchComboboxProps, RecentSearchItem } from './RecentSearchCombobox';
 export { Avatar } from './Avatar';
 export { VisitorCounter } from './VisitorCounter';
 export type { VisitorCounterProps, VisitorCounterLabels } from './VisitorCounter';
@@ -78,6 +80,7 @@ export declare const compositeComponents: {
     ThemeToggle: () => Promise<typeof import("./ThemeToggle")>;
     Pagination: () => Promise<typeof import("./Pagination")>;
     SearchBar: () => Promise<typeof import("./SearchBar")>;
+    RecentSearchCombobox: () => Promise<typeof import("./RecentSearchCombobox")>;
     Avatar: () => Promise<typeof import("./Avatar")>;
     VisitorCounter: () => Promise<typeof import("./VisitorCounter")>;
     AvatarUploader: () => Promise<typeof import("./AvatarUploader")>;

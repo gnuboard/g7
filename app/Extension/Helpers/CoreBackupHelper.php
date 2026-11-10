@@ -2,6 +2,8 @@
 
 namespace App\Extension\Helpers;
 
+use App\Helpers\TimezoneHelper;
+use Carbon\Carbon;
 use FilesystemIterator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +34,7 @@ class CoreBackupHelper
      */
     public static function createBackup(array $targets, ?\Closure $onProgress = null, array $excludes = []): string
     {
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = date('Ymd_His');
         $backupRoot = storage_path('app/core_backups');
         $backupPath = $backupRoot.DIRECTORY_SEPARATOR."core_{$timestamp}";
@@ -195,7 +198,8 @@ class CoreBackupHelper
             $backups[] = [
                 'path' => $dir,
                 'name' => basename($dir),
-                'created_at' => date('Y-m-d H:i:s', filectime($dir)),
+                // 운영자 콘솔 출력 — 사이트 시간대
+                'created_at' => TimezoneHelper::toSiteDateTimeString(Carbon::createFromTimestamp(filectime($dir))),
             ];
         }
 
@@ -318,6 +322,7 @@ class CoreBackupHelper
 
         $manifest = [
             'version' => self::MANIFEST_SCHEMA_VERSION,
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'created_at' => date('c'),
             'from_version' => $fromVersion,
             'to_version' => $toVersion,

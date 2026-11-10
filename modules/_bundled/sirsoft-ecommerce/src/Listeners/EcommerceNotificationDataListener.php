@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\ModuleManager;
+use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationRecipientCapability;
@@ -223,7 +224,9 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'account_number' => $payment?->dbank_account ?? '',
                 'account_holder' => $payment?->dbank_holder ?? '',
                 'depositor_name' => $payment?->depositor_name ?? '',
-                'deposit_due_at' => $dueAt ? $dueAt->format('Y-m-d H:i') : '',
+                // 알림 변수 날짜는 사이트 시간대 — 요청자(관리자·고객) 시간대가 끼어들지 않게 고정.
+                // 형식(Y-m-d H:i)은 기존 알림 템플릿 호환을 위해 유지한다.
+                'deposit_due_at' => $dueAt ? $dueAt->copy()->setTimezone(TimezoneHelper::getSiteTimezone())->format('Y-m-d H:i') : '',
             ]),
             'context' => $this->buildOrderContext($order),
         ];

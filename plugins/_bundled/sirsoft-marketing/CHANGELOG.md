@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-11-05
+
+### Fixed
+
+- 관리자 회원 상세 「약관 동의 이력」의 시각이 UTC 로 보여 같은 화면의 가입일과 9시간 어긋나던 문제를 고쳤습니다. 이제 보는 사람 시간대로 보입니다.
+
 ## [1.1.2] - 2026-11-01
 
 ### Changed

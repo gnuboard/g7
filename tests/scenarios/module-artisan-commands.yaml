@@ -1,0 +1,24 @@
+feature: 모듈 Artisan 커맨드 (list·install·activate·deactivate·uninstall·update·check-updates·cache-clear)
+
+description: |
+  module:* 커맨드가 목록 출력·상태 필터, 존재하지 않거나 미설치인 모듈에 대한 실패 코드,
+  cache-clear 의 상태·미들웨어 인덱스·레이아웃 해석 캐시 삭제와 확장 캐시 버전 증가,
+  설치→활성화→비활성화→삭제 라이프사이클의 상태 전이·중복 경고·삭제 확인·권한 보존,
+  잘못된 식별자 형식 거부를 지키는지 검증한다. DDL 을 유발하는 시나리오는 한 통합 테스트로 묶는다.
+
+axes:
+  case: [list, missing_target, cache_clear, lifecycle_workflow, invalid_identifier]
+
+effects:
+  - module_list_renders_with_status_filter
+  - module_list_rejects_unknown_status_filter
+  - module_list_reports_empty_result_message
+  - command_fails_for_unknown_or_uninstalled_module
+  - cache_clear_all_purges_status_and_middleware_index_and_bumps_version
+  - cache_clear_single_also_purges_module_layout_resolver_cache
+  - lifecycle_commands_transition_status_with_duplicate_warnings
+  - uninstall_confirmation_respected_and_permissions_preserved
+  - invalid_identifier_format_rejected_on_install
+
+test_files:
+  - tests/Feature/Console/Commands/Module/ModuleArtisanCommandsTest.php

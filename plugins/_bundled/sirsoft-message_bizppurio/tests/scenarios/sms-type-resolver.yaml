@@ -1,0 +1,19 @@
+feature: 비즈뿌리오 문자 유형(SMS·LMS) 바이트 판정
+
+description: |
+  SmsTypeResolver 가 본문을 EUC-KR 바이트로 세어 90바이트 이하는 SMS, 그 초과는 LMS 로 고르고
+  2000바이트를 넘으면 LMS 한도 초과로 판정하는 계약을 지킨다.
+  한글은 2바이트로 세고, EUC-KR 로 표현할 수 없는 이모지는 제거한 뒤 센다.
+
+axes:
+  case: [sms_boundary, euckr_byte_count, lms_limit]
+
+effects:
+  - short_body_resolves_to_sms
+  - korean_counted_as_two_bytes
+  - over_90_bytes_resolves_to_lms
+  - emoji_excluded_from_byte_count
+  - over_2000_bytes_exceeds_lms_limit
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/SmsTypeResolverTest.php

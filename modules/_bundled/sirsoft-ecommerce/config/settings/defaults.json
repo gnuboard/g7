@@ -10,6 +10,7 @@
             "shipping",
             "seo",
             "review_settings",
+            "product_display",
             "inquiry",
             "notifications",
             "mileage",
@@ -524,11 +525,11 @@
             "address_api_provider": "kakao"
         },
         "seo": {
-            "meta_category_title": "{commerce_name} - {category_name}",
+            "meta_category_title": "{category_name}",
             "meta_category_description": "",
-            "meta_search_title": "{commerce_name} - {keyword_name}",
+            "meta_search_title": "{keyword_name}",
             "meta_search_description": "",
-            "meta_product_title": "{commerce_name} - {product_name}",
+            "meta_product_title": "{product_name}",
             "meta_product_description": "",
             "meta_shop_index_title": "{commerce_name}",
             "meta_shop_index_description": "",
@@ -541,6 +542,11 @@
             "write_deadline_days": 90,
             "max_images": 5,
             "max_image_size_mb": 10
+        },
+        "product_display": {
+            "related_order": "random",
+            "related_cache_hours": 24,
+            "content_media": null
         },
         "inquiry": {
             "board_slug": null

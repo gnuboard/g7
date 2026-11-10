@@ -55,6 +55,7 @@ class RateRunService
             'base_currency' => $this->settings->getSetting('language_currency.default_currency'),
             'last_success_run' => $this->runs->latestSuccessful(), 'last_run' => $this->runs->latest(),
             'today_request_count' => $this->runs->sumTodayRequestCount(), 'quota_limit' => 1000,
+            // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
             'next_run_at_kst' => $next ? $next->format('Y-m-d H:i').' KST' : null,
             'update_time_site' => Carbon::today('Asia/Seoul')->setTimeFromTimeString($time)->setTimezone(config('app.schedule_timezone', config('app.timezone')))->format('H:i'),
             'next_run_at' => $next?->copy()->setTimezone(config('app.schedule_timezone', config('app.timezone')))->format('Y-m-d H:i'),

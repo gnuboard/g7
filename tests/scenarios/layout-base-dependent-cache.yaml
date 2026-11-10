@@ -1,0 +1,30 @@
+feature: 공통 레이아웃 저장·복원 뒤 그것을 상속하는 화면의 캐시 무효화
+
+description: |
+  템플릿 자기 레이아웃은 설치·갱신 때 `template_layouts.extends` 칸을 비우고 본문(`content.extends`)으로만 상속을
+  선언한다. 자식 찾기(`LayoutRepository::getChildrenByExtends()`)가 칸만 보아, 공통 레이아웃(`_user_base`)을
+  편집기로 저장하거나 버전을 복원해도 그것을 쓰는 화면들의 병합 캐시·공개 서빙 캐시가 남았다 — 베이스에서 바꾼
+  스크롤 복원 기본값·머리글 같은 값이 화면에 닿지 않았다. 같은 조회를 쓰는 삭제 차단도 본문 상속 화면을
+  참조로 세지 못해 공통 레이아웃을 지울 수 있었다. 자식 찾기가 칸과 본문 최상위 `extends` 를 모두 본다.
+
+axes:
+  case:
+    - save_base_content_only_child
+    - restore_base_version_content_only_child
+    - lookup_column_and_content
+    - lookup_slash_name_encodings
+
+effects:
+  - saving_base_invalidates_content_only_child_merged_and_serving_cache
+  - restoring_base_version_invalidates_content_only_child
+  - children_lookup_reads_column_and_content_exactly
+  - children_lookup_handles_both_slash_encodings
+
+test_files:
+  - tests/Unit/Services/LayoutServiceDependentCacheContentExtendsTest.php
+
+notes: |
+  삭제 차단은 코드 편집기 파일 조작 계약 시험
+  `tests/Feature/Api/Admin/LayoutFileCrudTest.php::test_blocks_deleting_a_parent_referenced_only_by_content_extends`
+  가 확인한다(그 클래스의 기존 소유 체계를 따른다). 화면 확인은 편집기에서 `_user_base` 의 스크롤 설정을 바꿔 저장한
+  뒤 그 베이스를 쓰는 다른 화면을 새로고침해 베이스 값이 적용되는지 본다.

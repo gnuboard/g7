@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\ScheduleAlreadyRunningException;
+use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Schedule\BulkDeleteScheduleRequest;
 use App\Http\Requests\Schedule\BulkUpdateScheduleStatusRequest;
@@ -27,6 +29,11 @@ use Illuminate\Validation\ValidationException;
  */
 class ScheduleController extends AdminBaseController
 {
+    /**
+     * 스케줄 관리 컨트롤러를 생성합니다.
+     *
+     * @param  ScheduleService  $scheduleService  스케줄 서비스
+     */
     public function __construct(
         private ScheduleService $scheduleService
     ) {
@@ -162,6 +169,9 @@ class ScheduleController extends AdminBaseController
                 'schedule.run_success',
                 new ScheduleHistoryResource($history)
             );
+        } catch (ScheduleAlreadyRunningException|ScheduleRunLockUnavailableException $e) {
+            // 「중복 실행 방지」 스케줄이 이미 실행 중(409)이거나 실행 잠금 저장소 오류(503) — #161 F4
+            return $this->error($e->getMessageKey(), $e->getStatusCode());
         } catch (ValidationException $e) {
             return $this->error('schedule.run_failed', 422, $e->errors());
         } catch (Exception $e) {

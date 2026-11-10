@@ -32,6 +32,7 @@
             "ecommerce_settings": "Ecommerce Settings",
             "extra_fee_templates": "Extra Fee Templates",
             "policy_abilities": "Shipping policy permissions",
+            "contentMediaTarget": "Content media upload target",
             "product_abilities": "Product permissions",
             "identityProviders": "Identity Providers",
             "notice_templates": "Notice Templates",
@@ -462,7 +463,9 @@
             "saved_addresses": "Saved addresses",
             "address_empty": "No saved addresses.",
             "address_default": "Default",
-            "address_more": "{{count}} more in address management."
+            "address_more": "{{count}} more in address management.",
+            "search_history": "Recent product searches",
+            "search_history_empty": "No saved product searches."
         },
         "claim": {
             "$partial": "partial/en/admin/claim.json"

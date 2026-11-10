@@ -9,7 +9,7 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:72` |
+| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:73` |
 | `sirsoft-ckeditor5.image.before_upload` | action | 에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점) | `src/Services/ImageUploadService.php:40` |
 | `sirsoft-ckeditor5.image.filter_reference_sources` | filter | 에디터 이미지 참조 스캔 대상 테이블/컬럼 목록에 확장 콘텐츠를 추가 | 선언 (호출 위치 미확인) |
 | `sirsoft-ckeditor5.image.filter_upload_file` | filter | 업로드 파일 변형 지점 (압축·리사이즈 등) | `src/Services/ImageUploadService.php:45` |
@@ -84,6 +84,8 @@ _훅 리스너가 없습니다._
 `html_editor` 를 쓰는 쪽은 `props` 로 `name` · `content` · `multilingual` · `placeholder` ·
 `readOnly` 를 선언합니다. 여기에 **`trackChanges`(기본 `true`)** 가 있습니다 — 이 편집기의 입력을
 "폼이 변경됨"(`_local.hasChanges`)으로 칠지 여부입니다.
+
+**`mediaUpload`**(코어 7.1.5+, 기본 `null`)는 화면이 넘기는 본문 미디어 업로드 계약입니다(`docs/extension/content-media.md`). 있으면 이 편집기는 플러그인 고유 업로드 대신 그 계약의 주소·규칙으로 이미지를 올리고(비회원·일반 회원 포함 — 권한은 확장 서버가 판정), 규칙이 켜면 「동영상 넣기」「오디오 넣기」 단추를 더합니다. 편집기는 **처음 세워질 때의 계약만** 쓰므로, 계약을 데이터소스에서 읽는 화면은 그 소스를 받은 뒤(`{{소스 !== undefined}}`)에 확장점을 그려야 합니다. 없으면 종전대로 관리자만 플러그인 업로드를 씁니다.
 
 저장 대상이 아닌 편집기(설정 화면의 미리보기처럼 시험용으로 두는 자리)는 `false` 로 선언합니다.
 그러지 않으면 운영자가 시험 삼아 글자만 쳐도 [저장] 버튼이 켜져, 바뀐 것이 없는데 바뀐 것처럼

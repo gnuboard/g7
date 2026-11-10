@@ -4590,6 +4590,49 @@
           }
         }
       ]
+    },
+    {
+      "comment": "외부 영상 서비스 추가·수정 창(#883) — 「서비스 추가」 단추가 창 상태를 통째로 만든다. 편집기는 그 클릭을 하지 않으므로 예시 주소 확인까지 마친 모습을 담는다(제목 식이 row_index, 안내 문구가 preview 를 읽는다).",
+      "scope": {
+        "kind": "modal",
+        "match": "embed_provider_form_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "embed_provider_form_modal": {
+                "form": {
+                  "id": "myvideo",
+                  "name": "My Video",
+                  "url_patterns_text": "https://www.myvideo.example/v/{id}",
+                  "player_url": "https://player.myvideo.example/{id}",
+                  "id_rule": "alnum_dash",
+                  "aspect": "16:9",
+                  "allow": [
+                    "fullscreen",
+                    "encrypted-media",
+                    "picture-in-picture"
+                  ],
+                  "enabled": true
+                },
+                "sample_url": "https://www.myvideo.example/v/abc123",
+                "preview": {
+                  "matched": true,
+                  "id": "abc123",
+                  "player_url": "https://player.myvideo.example/abc123"
+                },
+                "row_index": null,
+                "providers": [],
+                "error": null
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }

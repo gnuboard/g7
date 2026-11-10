@@ -276,14 +276,14 @@ prop 으로 받은 주소로 직접 이동(`location.href`)할 때도 같은 판
 
 `G7Core.asset.isAllowedScriptSrc(url)` 로 같은 판정을 직접 물어볼 수 있습니다. 로더를 쓸 수 없는 주입(iframe `document.write` 등)은 이 함수로 같은 게이트를 재사용합니다.
 
-구동에 필요한 자산은 확장이 함께 담아 자체 제공하는 것이 원칙입니다. 자체 제공이 불가능한 경우 — 라이브러리가 아니라 그 회사 서버와 통신하는 **서비스 SDK**(예: Daum 우편번호 → `t1.daumcdn.net`) — 에만 외부 호스트를 씁니다. 이런 확장은 자신의 manifest 에 신뢰 호스트를 **선언**하고, 코어가 활성 확장 전수에서 이 목록을 집계해 `window.G7Config.trustedScriptHosts` 로 노출합니다. 런타임 로더·저장측 검증·자동 검증은 모두 이 목록에 속한 호스트만 예외로 허용합니다.
+구동에 필요한 자산은 확장이 함께 담아 자체 제공하는 것이 원칙입니다. 자체 제공이 불가능한 경우 — 라이브러리가 아니라 그 회사 서버와 통신하는 **서비스 SDK**(예: Daum 우편번호 → `t1.kakaocdn.net`) — 에만 외부 호스트를 씁니다. 이런 확장은 자신의 manifest 에 신뢰 호스트를 **선언**하고, 코어가 활성 확장 전수에서 이 목록을 집계해 `window.G7Config.trustedScriptHosts` 로 노출합니다. 런타임 로더·저장측 검증·자동 검증은 모두 이 목록에 속한 호스트만 예외로 허용합니다.
 
 ```json
 // 확장 manifest (module.json / plugin.json / template.json)
 {
-  "trusted_script_hosts": ["t1.daumcdn.net"],
+  "trusted_script_hosts": ["t1.kakaocdn.net"],
   "trusted_script_hosts_reason": {
-    "t1.daumcdn.net": "Daum 이 운영하는 서비스 SDK 라 자체 호스팅해도 동작하지 않는다."
+    "t1.kakaocdn.net": "카카오가 운영하는 서비스 SDK 라 자체 호스팅해도 동작하지 않는다."
   }
 }
 ```

@@ -106,6 +106,29 @@ class SeoSettingsCacheListenerTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /**
+     * 「본문 콘텐츠」 탭 저장도 봇 화면 캐시를 비운다 — 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로
+     * 규칙을 바꾸면 캐시된 봇 화면이 옛 규칙으로 남는다(#887 실측: 캡션 끔 저장 뒤 봇 캐시 HIT 에 figcaption 1).
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_settings_save_clears_all_cache_for_content_tab(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        Log::shouldReceive('info')
+            ->once()
+            ->with('[SEO] Core SEO settings changed — all cache cleared', Mockery::type('array'));
+
+        $this->listener->onSettingsSave('content', ['allow_figure_caption' => false], ['success' => true]);
+
+        $this->addToAssertionCount(1);
+    }
+
     // ─── 비-SEO 탭 저장 ──────────────────────────────────────
 
     /**

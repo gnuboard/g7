@@ -57,6 +57,7 @@ class PrivacyController extends AdminBaseController
             'visits' => $found['visits']->map(fn ($visit): array => [
                 'visit_id' => $visit->id,
                 'visitor_key' => $visit->visitor_key,
+                // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                 'visit_date' => $visit->visit_date?->toDateString(),
                 'first_action_at' => AnalyticsClock::toSiteDateTimeString($visit->first_action_at),
                 'last_action_at' => AnalyticsClock::toSiteDateTimeString($visit->last_action_at),

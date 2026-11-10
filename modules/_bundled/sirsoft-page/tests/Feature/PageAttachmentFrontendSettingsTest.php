@@ -82,7 +82,10 @@ class PageAttachmentFrontendSettingsTest extends ModuleTestCase
     {
         $settings = $this->bundledSettingsService()->getAllSettings();
 
-        $this->assertSame(['attachment'], array_keys($settings));
+        // 카테고리는 첨부(attachment)와 본문 미디어 규칙(content_media, 1.2.2) 둘뿐이다 — 메타·노출 스키마는 끼지 않는다.
+        $this->assertSame(['attachment', 'content_media'], array_keys($settings));
+        $this->assertArrayNotHasKey('_meta', $settings);
+        $this->assertArrayNotHasKey('frontend_schema', $settings);
         $this->assertArrayHasKey('max_count', $settings['attachment']);
         $this->assertArrayHasKey('max_size_mb', $settings['attachment']);
         $this->assertArrayHasKey('allowed_types', $settings['attachment']);

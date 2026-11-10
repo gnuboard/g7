@@ -40,9 +40,14 @@ return [
     // `seo:generate-sitemap` 명령 출력
     'console' => [
         'generate_sitemap' => [
+            'already_running' => '사이트맵을 이미 생성하고 있어 이번 실행은 건너뜁니다.',
+            'lock_unavailable' => '사이트맵 생성 잠금 저장소(캐시)를 쓸 수 없어 실행하지 않았습니다.',
             'invalid_mode' => '잘못된 모드입니다. 허용: :allowed',
             'generated' => 'Sitemap이 생성되었습니다. (모드: :mode)',
             'dispatched' => 'Sitemap 생성이 큐에 디스패치되었습니다. (모드: :mode)',
         ],
     ],
+
+    // 관리자 화면 브라우저 탭 제목 접미사 — `{화면 제목}` 뒤에 붙는다({site_name} 은 사이트 이름)
+    'admin_title_suffix' => ' - {site_name} 관리자',
 ];

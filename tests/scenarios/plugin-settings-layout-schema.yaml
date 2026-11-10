@@ -1,0 +1,30 @@
+feature: plugin_settings_layout_schema
+
+description: |
+  플러그인 설정 화면 레이아웃·스키마 기본 계약(AbstractPlugin). 설정 레이아웃은 저작 원본(.g7.html)이 있으면
+  그것을, 없으면 산출 JSON 을 찾고, 둘 다 없으면 설정 화면이 없다. 스키마는 기본 빈 배열이며 플러그인이 덮어쓴다.
+
+test_files:
+  - tests/Unit/Extension/AbstractPluginSettingsTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  layout_source: [authoring_g7_html, compiled_json, absent, overridden]
+
+exclusions:
+  - { layout_source: overridden, reason: "제외 없음 — 축 값마다 테스트가 하나씩 있고 조합이 필요한 축이 없다(단일 축)" }
+
+effects:
+  - has_settings_is_true_when_settings_layout_exists
+  - has_settings_is_false_when_settings_layout_absent
+  - settings_layout_resolves_existing_source_path
+  - settings_layout_is_null_when_no_source_exists
+  - settings_layout_can_be_overridden
+  - settings_schema_defaults_to_empty
+  - settings_schema_can_be_overridden
+  - bundled_plugin_settings_schema_is_declared
+  - has_settings_delegates_to_settings_layout
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -66,15 +66,18 @@ class ConfigCacheHelper
     }
 
     /**
-     * config 캐시를 비우고 즉시 재생성합니다.
+     * config 캐시를 다시 굽습니다 — 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼웁니다(`AtomicBootstrapCache`).
+     *
+     * 굽는 동안 실제 파일은 그대로 남아 다른 요청이 계속 쓴다 — 종전처럼 먼저 지우면 그 사이 요청이
+     * 비캐시 부팅하거나 반쯤 쓰인 파일을 만났다(#882).
      *
      * 설치 미완료(installer 실행 전) 환경에서는 config:cache 가 불완전한 부팅을
      * 캐시에 박제해 부팅 실패를 유발할 수 있으므로, clear 만 수행하고 재생성은 건너뛴다.
      * 테스트 환경(APP_ENV=testing)은 tests/bootstrap.php 가 config 캐시를 자동 삭제하며
      * 캐시 생성이 테스트 격리를 깨므로 no-op 로 스킵한다.
      *
-     * 재생성 실패(권한/디스크 등)는 치명적이지 않다 — config:clear 로 stale 캐시는
-     * 이미 제거되어 다음 요청이 fresh config 로 안전하게 부팅되므로, 경고만 남기고 넘어간다.
+     * 재생성 실패(권한/디스크 등)는 치명적이지 않다 — 실패하면 그때 config:clear 로 stale 캐시를
+     * 지워 다음 요청이 fresh config 로 안전하게 부팅되므로, 경고만 남기고 넘어간다.
      *
      * deferRebuilds() 안에서는 대기 표시만 하고 즉시 돌아간다.
      *
@@ -88,19 +91,26 @@ class ConfigCacheHelper
             return;
         }
 
-        // 항상 stale 캐시부터 제거 (값 반영 보장). testing 환경에서도 clear 는 수행한다 —
-        // 캐시 파일이 없으면 사실상 no-op 이고 격리를 깨지 않으며, 설정 저장 후 값 반영을
-        // 검증하는 기존 테스트(SettingsServiceConfigClearTest) 계약을 유지한다.
-        Artisan::call('config:clear');
-
         // config:cache 생성은 격리를 깨므로(캐시된 config 가 다음 테스트로 누출) testing 에서
         // 스킵한다. 설치 미완료 상태에서도 불완전 config 박제를 피하려 재생성하지 않는다.
+        // 그 둘은 낡은 캐시만 지운다(값 반영 보장) — testing 에서도 clear 는 수행한다. 캐시 파일이 없으면
+        // 사실상 no-op 이고 격리를 깨지 않으며, 설정 저장 후 값 반영을 검증하는 기존 테스트
+        // (SettingsServiceConfigClearTest) 계약을 유지한다.
         if (app()->environment('testing') || ! self::isInstalled()) {
+            Artisan::call('config:clear');
+
             return;
         }
 
         try {
-            self::withPreservedContainer(static fn () => Artisan::call('config:cache'));
+            // 먼저 지우지 않는다 — 지운 뒤 굽는 사이 다른 요청이 비캐시 부팅·반쯤 쓰인 파일을 만났다(#882).
+            // 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼우고, 굽기가 실패하면 그때 낡은 캐시를 지운다.
+            AtomicBootstrapCache::regenerate(
+                'APP_CONFIG_CACHE',
+                app()->getCachedConfigPath(),
+                static fn () => self::withPreservedContainer(static fn () => Artisan::call('config:cache')),
+                static fn () => Artisan::call('config:clear'),
+            );
         } catch (\Throwable $e) {
             Log::warning('config 캐시 재생성 실패 (config:clear 로 stale 은 제거됨 — 다음 요청은 비캐시 부팅)', [
                 'error' => $e->getMessage(),

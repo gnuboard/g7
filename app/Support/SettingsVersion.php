@@ -36,6 +36,7 @@ class SettingsVersion
     public static function bump(): void
     {
         try {
+            // audit:allow datetime-display-user-timezone reason: 캐시 키/버전 스탬프 — 기계값
             if (! app(CacheInterface::class)->put(self::KEY, now()->format('Y-m-d H:i:s.u'), self::TTL)) {
                 Log::warning('[Settings] 설정 버전 저장 실패', ['reason' => 'cache put returned false']);
             }

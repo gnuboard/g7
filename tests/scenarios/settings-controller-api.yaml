@@ -1,0 +1,35 @@
+feature: 관리자 환경설정 API(조회·탭 저장·검증·단일 키·시스템 정보·캐시·앱 키·테스트 메일·복원)
+
+description: |
+  /api/admin/settings 계열 엔드포인트가 인증(401)·권한(403) 가드를 지키고, 설정 조회 응답에 can_update 능력을 싣고,
+  탭별(general·security·advanced·identity·drivers) 저장과 그 입력 검증(422)을 약속대로 처리하는 계약을 지킨다.
+  단일 키 조회·수정, 시스템 정보 페이로드 형태와 캐시, 캐시 정리, 앱 키 마스킹·재생성 가드, 테스트 메일, 설정 복원 검증도 포함한다.
+  시스템 정보 probe 실패 격리와 OPcache 노출은 별도 매니페스트(settings-system-info-probe-isolation, opcache-status-visibility)가 소유한다.
+
+axes:
+  case: [auth_guard, index_read, tab_store, tab_validation, single_key, system_info, maintenance, test_mail, restore]
+
+effects:
+  - unauthenticated_request_returns_401
+  - missing_permission_returns_403
+  - index_returns_settings_payload
+  - abilities_can_update_reflects_update_permission
+  - tab_settings_saved
+  - identity_tab_accepts_nested_purpose_providers
+  - invalid_tab_input_rejected_with_422
+  - timezone_setting_keeps_app_timezone_utc
+  - core_update_settings_persisted_and_readable
+  - site_logo_accepts_attachment_objects_and_ids
+  - websocket_credentials_required_only_when_enabled
+  - drivers_roundtrip_keeps_s3_keys
+  - single_setting_read_and_update
+  - system_info_payload_shape_is_stable
+  - system_info_hardware_cached_but_server_time_fresh
+  - clear_cache_succeeds_and_invalidates_system_info
+  - safe_system_probe_returns_fallback_on_error
+  - app_key_masked_and_regeneration_guarded
+  - test_mail_validates_recipient_and_sends
+  - restore_requires_backup_path
+
+test_files:
+  - tests/Feature/Api/Admin/SettingsControllerTest.php

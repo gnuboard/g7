@@ -50,6 +50,7 @@ class ArchiveCatchUpService
         $today = AnalyticsClock::today();
         $floor = Carbon::parse($today)
             ->subDays(AnalyticsConfig::fromSettings()->effectiveRetentionDays())
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             ->toDateString();
 
         $dates = $this->visits->unfinalizedDatesWithVisits($floor, $today, min($limit, self::MAX_DAYS));

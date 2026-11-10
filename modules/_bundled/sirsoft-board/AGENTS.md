@@ -135,10 +135,10 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 167개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 169개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 104개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 22개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 레이아웃 확장 | 8개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 2개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -196,9 +196,13 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 비밀글 하위 쓰기 중 답변(답글)만 `canWriteChild()` 로 판정 | 답변은 `SecretContentGate::canWriteReply()` — 부모의 모든 비밀 조상을 지금 열 수 있어야 한다 | 경로 규칙은 답변 작성자에게 조상 글을 열어 준다. 비밀글 아래 공개 답변에 외부인이 답변을 달 수 있으면 그 외부인이 비밀글을 본다(#789). 댓글·신고는 앵커를 만들지 않아 `canWriteChild()` 그대로다 |
 | 일괄 적용 대상 설정 키를 `sectionMap` 에만 추가 | 같은 키의 `bulk_apply.field_labels` 라벨을 ko/en(+번들 ja)에 함께 추가 | 라벨이 없으면 확인 창에 원시 다국어 키가 그대로 노출된다 |
 | 게시판 권한(role_permissions)이나 게시판 관리자·스텝 명단을 바꾸는 새 경로를 `BoardPermissionService::assignRolesToPermission()`·`syncBoardRoleUsers()` 를 거치지 않고 직접 `attach`/`sync` | 기존 두 지점을 재사용하거나, 새 지점에서 `PermissionEscalationGuard`(권한은 `assertGrantWithinActorCeiling`, 역할 배정은 `assertRoleAssignmentWithinActorCeiling`)를 쓰기 전에 호출 | 한 경로만 상한을 걸면 나머지가 자기부여 우회로가 된다 — 권한 저장만 막았을 때 담당자 지정·일괄 적용이 같은 결과를 냈다 (KVE-2026-2367) |
-| 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
+| 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 또는 7.0.x 화면 꼴 `temp_<숫자>_<36진수 소문자>` 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
+| 임시 첨부 조회·연결을 `board_id=0` + `temp_key` 만으로 쿼리하거나 번호 연결 소유를 `created_by` 하나로 판정 | `AttachmentRepository` 의 `whereBoardTemp`(이 게시판 `{slug}/temp/…`) + `findLinkableTempAttachmentIds`(회원=본인, 비회원=비회원 업로드 + 같은 임시 키), 업로드 응답의 `temp_key` | 다른 게시판 임시 첨부가 이어지고 파일까지 옮겨졌고, 비회원끼리 번호만으로 남의 임시 첨부를 가져갔다 |
+| 기존 글에 붙이는 업로드(`post_id`)를 업로드 권한만으로 통과 | 같은 게시판 글(`PostService::getPost`) + `Support\PostModifyGate::allows(..., consume: false)`(사용자)·`admin.posts.write` 스코프(관리자) | 남의 글·다른 게시판 글에 파일이 붙었다. 비회원 글 검증 토큰은 저장(PUT)에서 다시 쓰므로 업로드가 소비하지 않는다 |
 | 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory`)의 예외를 그대로 던지게 두기 | `AttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`게시판 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던지고, 그 예외가 글 저장 전체를 「게시글 등록에 실패했습니다」(500)로 되돌려 파일은 본경로·DB 는 임시 경로를 가리키는 어긋남이 남았다(#703). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
 | 레이아웃·확장 조각의 메뉴·목록·제목 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 넓어진 단추의 글이 가운데로 간다 |
+| 본문 미디어(`collection=content_media`)의 업로드·저장 동기화·영구 삭제를 게시판 코드에서 따로 구현하거나 행·파일을 직접 지우기 | 코어 본문 미디어 골격을 거친다 — `Services\ContentMedia\BoardContentMediaService`(업로드·동기화·`purgeRows`·`pruneStale`)와 어댑터 `BoardContentMediaStore`, 호출자 시그니처는 `PostContentMediaService`. 서빙 라우트 이름을 바꾸면 `BoardContentMediaStore::SERVE_ROUTE` 와 `BoardServiceProvider` 의 출처 등록(`ContentMediaRegistrar::register`)을 함께 맞춘다 | 골격을 건너뛰면 공용 훅 `core.content_media.*`(업로드·영구 삭제)가 발화하지 않아 그 훅을 구독한 플러그인이 게시판 미디어만 놓친다. 출처 등록이 빠지면 코어가 기본 출처 패턴을 두지 않으므로 본문의 동영상·오디오가 화면·봇 정화에서 지워진다(#887) |
+| 새 쿨다운·도배 방지 검사를 `has()` 로 확인하고 저장은 작성 성공 뒤 Service 에서 `put()` | `CooldownRule` 처럼 검증 시점에 같은 키를 `add()` 로 원자적으로 선점하고, 성공하면 Service 가 덮어쓰고 실패한 요청은 응답 뒤 반납한다 | 확인과 저장 사이에 들어온 동시 요청이 모두 검사를 통과해 쿨다운을 켠 게시판에 글이 여러 개 써졌다(#161). 캐시 오류면 통과시킨다 — 도배 방지가 캐시 장애로 글쓰기 전체를 막으면 안 된다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -206,10 +210,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 267개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 100개 | `vitest.config.ts` |
+| PHPUnit | 281개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 102개 | `vitest.config.ts` |
 | Playwright | 39개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 179개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 193개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

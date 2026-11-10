@@ -170,6 +170,40 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
+     * 목록·맵·상세는 ISO 원문 옆에 보는 사람 날짜(*_date_formatted)를 함께 싣는다 — 화면이 ISO 를 잘라 쓰면 UTC 날짜가 보인다.
+     *
+     * UTC 11-03 16:00 = 서울 11-04.
+     *
+     * @effects template_dates_have_viewer_date_formatted
+     *
+     * @return void 반환값 없음
+     */
+    public function test_목록_맵_상세는_보는_사람_날짜를_함께_싣는다(): void
+    {
+        $this->definition();
+        $template = BizppurioTemplate::create([
+            'notification_type' => 'welcome',
+            'status' => BizppurioTemplateStatus::Requested->value,
+            'requested_at' => '2026-11-03 16:00:00',
+            'last_synced_at' => '2026-11-03 16:30:00',
+        ]);
+        $user = $this->adminWith([self::VIEW]);
+        $headers = $this->authHeaders($user) + ['X-Timezone' => 'Asia/Seoul'];
+
+        $row = $this->getJson(self::BASE, $headers)->assertOk()->json('data.templates.0');
+        $this->assertSame('2026-11-04', $row['requested_at_date_formatted']);
+        $this->assertSame('2026-11-04', $row['last_synced_at_date_formatted']);
+        $this->assertStringContainsString('+00:00', (string) $row['requested_at'], 'ISO 원문은 기계값으로 유지');
+
+        $entry = $this->getJson(self::BASE.'/map', $headers)->assertOk()->json('data.templates.welcome');
+        $this->assertSame('2026-11-04', $entry['requested_at_date_formatted']);
+        $this->assertSame('2026-11-04', $entry['last_synced_at_date_formatted']);
+
+        $detail = $this->getJson(self::BASE.'/'.$template->id, $headers)->assertOk()->json('data.template');
+        $this->assertSame('2026-11-04', $detail['requested_at_date_formatted']);
+    }
+
+    /**
      * 목록은 상태 필터와 알림 타입 검색을 지원한다.
      *
      * @effects list_supports_status_filter_and_search

@@ -40,6 +40,14 @@ effects:
   # 본문·요소
   - snapshot_content_substituted_with_notification_data
   - snapshot_buttons_mapped_to_dispatch_button_fields
+  - snapshot_quick_replies_mapped_to_quickreply
+  - snapshot_emphasis_fields_mapped_and_substituted        # title·header·item·itemhighlight
+  - snapshot_represent_link_mapped_to_link
+  - url_protocol_prefix_deduplicated_for_absolute_value    # http(s)://#{url} + 완전 URL 값 → 접두어 제거
+  - url_kept_when_no_duplicate_protocol                    # 접두어 없음·상대경로 값은 그대로
+  - unresolved_variable_kept_verbatim
+  - absent_or_empty_fields_omitted_from_extra
+  - substitute_text_replaces_variables_in_arbitrary_text
   - dispatch_uses_row_template_code
   # 대체 SMS
   - fallback_on_merges_resend_recontent_from_sms_body

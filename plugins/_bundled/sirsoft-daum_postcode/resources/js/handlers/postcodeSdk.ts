@@ -1,8 +1,12 @@
 /**
- * 다음 우편번호 SDK 확보 상태 판정
+ * 다음(카카오) 우편번호 SDK 확보 상태 판정
  *
- * 이 SDK 는 라이브러리가 아니라 Daum 이 운영하는 **서비스 SDK** 라 동봉할 수 없다.
- * 스크립트가 Daum 서버와 통신하므로 자체 호스팅해도 오프라인에서 동작하지 않는다.
+ * 이 SDK 는 라이브러리가 아니라 카카오가 운영하는 **서비스 SDK** 라 동봉할 수 없다.
+ * 스크립트가 카카오 서버와 통신하므로 자체 호스팅해도 오프라인에서 동작하지 않는다.
+ *
+ * 다음 우편번호는 카카오 주소(`t1.kakaocdn.net`)와 생성자 `kakao.Postcode` 로 옮겨 간다. 새 SDK 는
+ * `window.kakao`·`window.daum` 두 이름을 함께 정의하고, 옛 `daum.Postcode` 도 당분간 호환된다 — 그래서
+ * 새 이름을 먼저 보고 옛 이름을 대체로 둔다(옛 주소를 싣는 템플릿 조각이 남아 있어도 동작한다).
  * 그래서 이 플러그인만은 외부 호스트 의존이 남으며, 대신 **못 불러왔을 때 주소를
  * 직접 입력할 수 있어야** 한다.
  *
@@ -14,8 +18,12 @@
  * @module postcodeSdk
  */
 
-/** SDK 스크립트 URL (manifest `trusted_script_hosts` 로 선언한 호스트) */
-export const DAUM_POSTCODE_SDK_URL = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+/**
+ * SDK 스크립트 URL (manifest `trusted_script_hosts` 로 선언한 호스트)
+ *
+ * 상수 이름은 플러그인 식별자(`sirsoft-daum_postcode`)처럼 그대로 둔다 — 값만 카카오 주소다.
+ */
+export const DAUM_POSTCODE_SDK_URL = '//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
 
 /** 레이아웃 확장이 삽입하는 스크립트 element id */
 export const DAUM_POSTCODE_SCRIPT_ID = 'daum_postcode_script';
@@ -52,7 +60,7 @@ const POLL_INTERVAL_MS = 100;
  * @param fallback 번역 엔진 부재 시 사용할 문구
  * @return string 번역된 문자열
  */
-function t(key: string, fallback: string): string {
+export function t(key: string, fallback: string): string {
     const translate = (window as any)?.G7Core?.t;
 
     if (typeof translate !== 'function') {
@@ -66,12 +74,26 @@ function t(key: string, fallback: string): string {
 }
 
 /**
+ * 쓸 수 있는 우편번호 생성자를 돌려줍니다 — `kakao.Postcode` 우선, 없으면 옛 `daum.Postcode`.
+ *
+ * `window.kakao` 는 카카오 지도 SDK 도 정의하므로(`kakao.maps`) 전역이 있다는 것만으로 확보로 보지 않고
+ * `Postcode` 가 실제로 있는지 본다.
+ *
+ * @return 생성자 (없으면 null)
+ */
+export function getPostcodeConstructor(): any {
+    const w = window as any;
+
+    return w.kakao?.Postcode ?? w.daum?.Postcode ?? null;
+}
+
+/**
  * SDK 가 지금 사용 가능한지 판정합니다.
  *
  * @return bool 사용 가능하면 true
  */
 export function isPostcodeSdkReady(): boolean {
-    return Boolean((window as any).daum?.Postcode);
+    return Boolean(getPostcodeConstructor());
 }
 
 /**
@@ -133,7 +155,7 @@ export async function reloadPostcodeSdk(): Promise<boolean> {
             await loadScript(
                 DAUM_POSTCODE_SDK_URL,
                 { id: DAUM_POSTCODE_SCRIPT_ID },
-                { label: 'daum postcode SDK' }
+                { label: 'postcode SDK' }
             );
         } else {
             await new Promise<void>((resolve, reject) => {
@@ -141,7 +163,7 @@ export async function reloadPostcodeSdk(): Promise<boolean> {
                 script.id = DAUM_POSTCODE_SCRIPT_ID;
                 script.src = DAUM_POSTCODE_SDK_URL;
                 script.onload = () => resolve();
-                script.onerror = () => reject(new Error('daum postcode SDK load failed'));
+                script.onerror = () => reject(new Error('postcode SDK load failed'));
                 document.head.appendChild(script);
             });
         }

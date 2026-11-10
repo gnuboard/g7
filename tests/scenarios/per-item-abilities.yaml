@@ -1,0 +1,30 @@
+feature: 사용자 목록·상세의 행별 권한 메타(abilities·is_owner)
+
+description: |
+  역할의 권한 스코프(self·전체·없음)에 따라 행마다 can_update·can_delete·is_owner 가 맞게 나오는지, 감싼 리소스(컬렉션 이중 감싸기)에서도 같은 판정인지, 본인 계정은 관리자 화면에서 지울 수 없는지를 고정한다.
+
+axes:
+  case:
+    - self_scope_allows_own_row
+    - self_scope_denies_other_row
+    - null_scope_allows_all_rows
+    - to_list_array_includes_is_owner
+    - to_list_array_includes_abilities
+    - effective_scope_caching
+    - user_without_permission_gets_all_false
+    - collection_double_wrap_resolves_scope_correctly
+    - double_wrapped_resource_returns_correct_abilities
+
+effects:
+  - self_scope_allows_own_row
+  - self_scope_denies_other_row
+  - null_scope_allows_all_rows
+  - to_list_array_includes_is_owner
+  - to_list_array_includes_abilities
+  - effective_scope_caching
+  - user_without_permission_gets_all_false
+  - collection_double_wrap_resolves_scope_correctly
+  - double_wrapped_resource_returns_correct_abilities
+
+test_files:
+  - tests/Unit/Resources/PerItemAbilitiesTest.php

@@ -332,6 +332,8 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment1->path = "{$slug}/temp/{$tempKey}/uuid1.pdf";
         $attachment1->stored_filename = 'uuid1.pdf';
         $attachment1->id = 1;
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        $attachment1->created_by = $this->user->id;
         $attachment1->shouldReceive('update')
             ->once()
             ->with(Mockery::on(function ($data) use ($postId, $slug, $datePath) {
@@ -348,6 +350,8 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment2->path = "{$slug}/temp/{$tempKey}/uuid2.jpg";
         $attachment2->stored_filename = 'uuid2.jpg';
         $attachment2->id = 2;
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        $attachment2->created_by = $this->user->id;
         $attachment2->shouldReceive('update')
             ->once()
             ->with(Mockery::on(function ($data) use ($postId, $slug, $datePath) {
@@ -435,6 +439,8 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->path = "{$slug}/temp/{$tempKey}/big.zip";
         $attachment->stored_filename = 'big.zip';
         $attachment->id = 3;
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->once()->andReturn(true);
 
         $this->repository->shouldReceive('getByTempKey')->once()->with($slug, $tempKey)
@@ -482,6 +488,30 @@ class AttachmentServiceTest extends ModuleTestCase
 
         // Assert
         $this->assertEquals(0, $result);
+    }
+
+    /**
+     * 비회원은 소유 쿠키가 맞는, 글에 연결되기 전의 비회원 임시 첨부만 지울 수 있다 (#883 2단계).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects guest_can_delete_and_reorder_own_temp_with_cookie, guest_without_matching_cookie_denied
+     */
+    #[Test]
+    public function test_can_delete_allows_guest_only_with_matching_owner_cookie(): void
+    {
+        $token = str_repeat('a', 40);
+        $temp = new Attachment(['post_id' => null, 'created_by' => null, 'guest_owner_hash' => hash('sha256', $token)]);
+
+        $this->assertTrue($this->service->canDelete($temp, null, $token));
+        $this->assertFalse($this->service->canDelete($temp, null, null));
+        $this->assertFalse($this->service->canDelete($temp, null, str_repeat('b', 40)));
+
+        $linked = new Attachment(['post_id' => 9, 'created_by' => null, 'guest_owner_hash' => hash('sha256', $token)]);
+        $this->assertFalse($this->service->canDelete($linked, null, $token));
+
+        $legacy = new Attachment(['post_id' => null, 'created_by' => null, 'guest_owner_hash' => null]);
+        $this->assertFalse($this->service->canDelete($legacy, null, $token), '해시가 없는 옛 행은 종전처럼 지울 수 없다');
     }
 
     /**

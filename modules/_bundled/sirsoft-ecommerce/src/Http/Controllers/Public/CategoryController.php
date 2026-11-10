@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Http\Resources\PublicCategoryDetailResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\PublicCategoryResource;
 use Modules\Sirsoft\Ecommerce\Services\CategoryService;
@@ -17,6 +18,11 @@ use Modules\Sirsoft\Ecommerce\Services\CategoryService;
  */
 class CategoryController extends PublicBaseController
 {
+    /**
+     * 공개 분류 조회 서비스를 주입받습니다.
+     *
+     * @param  CategoryService  $categoryService  분류 서비스
+     */
     public function __construct(
         private CategoryService $categoryService
     ) {}
@@ -41,6 +47,12 @@ class CategoryController extends PublicBaseController
                 PublicCategoryResource::collection($categories)
             );
         } catch (Exception $e) {
+            Log::error('categories.index failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.categories.fetch_failed',
@@ -78,6 +90,13 @@ class CategoryController extends PublicBaseController
                 new PublicCategoryDetailResource($category)
             );
         } catch (Exception $e) {
+            Log::error('categories.show failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'slug' => $slug,
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.categories.fetch_failed',

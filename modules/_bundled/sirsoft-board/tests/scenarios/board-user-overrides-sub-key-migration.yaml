@@ -1,0 +1,17 @@
+feature: 게시판 유형 user_overrides 의 다국어 하위 키(dot-path) 변환 업그레이드 (1.0.0-beta.4)
+
+description: |
+  1.0.0-beta.4 업그레이드 스텝이 board_types.user_overrides 에 최상위 키(`name`)로 기록된 사용자 수정 표시를
+  지원 로케일별 dot-path(`name.ko`·`name.en`·…)로 펼치는지 고정한다.
+  이미 dot-path 인 값은 다시 펼치지 않아 재실행해도 결과가 같고, user_overrides 가 null 인 행은 건드리지 않는다.
+
+axes:
+  case: [top_level_key, already_dot_path, null_overrides]
+
+effects:
+  - top_level_override_expanded_to_locale_dot_paths
+  - existing_dot_path_override_left_unchanged
+  - null_override_left_null
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Upgrades/BoardUserOverridesSubKeyMigrationTest.php

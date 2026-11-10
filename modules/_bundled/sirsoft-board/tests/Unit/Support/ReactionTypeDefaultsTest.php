@@ -10,6 +10,7 @@ use Modules\Sirsoft\Board\Support\ReactionTypeDefaults;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 반응 유형 기본값 단일 원천(ReactionTypeDefaults) 검증.
@@ -98,7 +99,7 @@ class ReactionTypeDefaultsTest extends ModuleTestCase
         $this->assertFileExists($stepFile, "반응 유형 백필 스텝 파일이 없습니다: {$relativePath}");
 
         if (! class_exists($stepClass, false)) {
-            require_once $stepFile;
+            UpgradeFiles::requireOnce($stepFile);
         }
 
         $constant = (new ReflectionClass($stepClass))->getConstant('DEFAULTS');

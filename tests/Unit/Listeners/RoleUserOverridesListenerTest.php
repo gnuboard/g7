@@ -8,14 +8,14 @@ use App\Models\Role;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * RoleUserOverridesListener 테스트
  *
  * 역할 업데이트/권한 동기화 시 user_overrides 필드 기록을 검증합니다.
  */
-class RoleUserOverridesListenerTest extends TestCase
+class RoleUserOverridesListenerTest extends PureTestCase
 {
     use MockeryPHPUnitIntegration;
 
@@ -23,6 +23,11 @@ class RoleUserOverridesListenerTest extends TestCase
 
     private MockInterface $roleRepository;
 
+    /**
+     * 역할 저장소 목을 만들고 그것을 주입한 RoleUserOverridesListener 를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,7 +37,13 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * getSubscribedHooks()가 올바른 훅 매핑을 반환하는지 검증
+     * getSubscribedHooks()가 before_update·after_sync_permissions 훅을 우선순위 10 의 각 핸들러에 연결한다.
+     *
+     * @scenario case=hook_subscription
+     *
+     * @effects role_hooks_subscribed_with_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_mapping(): void
     {
@@ -47,11 +58,17 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * name 변경 시 user_overrides에 "name" 기록
+     * name 을 바꾸면 user_overrides 에 name.ko·name.en 하위 키만 기록하고 description 키는 넣지 않는다.
+     *
+     * @scenario case=field_update
+     *
+     * @effects changed_translatable_subkeys_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_name_change_records_user_override(): void
     {
-        $role = new Role();
+        $role = new Role;
         $role->name = ['ko' => '관리자', 'en' => 'Admin'];
         $role->description = ['ko' => '설명', 'en' => 'Description'];
         $role->forceFill(['user_overrides' => []]);
@@ -73,11 +90,17 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * description 변경 시 user_overrides에 sub-key dot-path 기록
+     * description 을 바꾸면 user_overrides 에 description.ko·description.en 하위 키만 기록한다.
+     *
+     * @scenario case=field_update
+     *
+     * @effects changed_translatable_subkeys_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_description_change_records_user_override(): void
     {
-        $role = new Role();
+        $role = new Role;
         $role->name = ['ko' => '관리자', 'en' => 'Admin'];
         $role->description = ['ko' => '설명', 'en' => 'Description'];
         $role->forceFill(['user_overrides' => []]);
@@ -97,11 +120,17 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * 변경 없는 필드는 user_overrides에 기록하지 않음
+     * 기존과 같은 값으로 갱신하면 변경으로 보지 않아 저장소 update 를 호출하지 않는다.
+     *
+     * @scenario case=field_update
+     *
+     * @effects unchanged_values_not_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_unchanged_field_not_recorded(): void
     {
-        $role = new Role();
+        $role = new Role;
         $role->name = ['ko' => '관리자', 'en' => 'Admin'];
         $role->description = ['ko' => '설명', 'en' => 'Description'];
         $role->forceFill(['user_overrides' => []]);
@@ -115,11 +144,17 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * 권한 추가/제거 시 변경된 개별 권한 식별자를 user_overrides에 기록
+     * 권한 동기화로 제거된 권한 식별자만 user_overrides 에 기록하고 유지된 권한은 넣지 않는다.
+     *
+     * @scenario case=permission_sync
+     *
+     * @effects changed_permission_identifiers_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_permissions_records_changed_identifiers(): void
     {
-        $role = new Role();
+        $role = new Role;
         $role->forceFill(['user_overrides' => []]);
 
         $previous = ['boards.read', 'boards.create', 'boards.delete'];
@@ -138,11 +173,17 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * 권한 변경 없으면 user_overrides 미변경
+     * 동기화 전후 권한 목록이 같으면 저장소 update 를 호출하지 않는다.
+     *
+     * @scenario case=permission_sync
+     *
+     * @effects unchanged_values_not_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_permissions_no_change_no_record(): void
     {
-        $role = new Role();
+        $role = new Role;
         $role->forceFill(['user_overrides' => []]);
 
         $permissions = ['boards.read', 'boards.create'];
@@ -154,12 +195,18 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * 이미 기록된 필드는 중복 추가하지 않음
+     * 바뀐 하위 키가 이미 user_overrides 에 모두 있으면 중복 추가 없이 update 를 생략한다.
+     *
+     * @scenario case=field_update
+     *
+     * @effects existing_override_not_duplicated
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_override_not_added(): void
     {
         // name.ko/name.en 가 이미 user_overrides 에 있는 경우 (sub-key dot-path 형식)
-        $role = new Role();
+        $role = new Role;
         $role->name = ['ko' => '관리자', 'en' => 'Admin'];
         $role->description = ['ko' => '설명', 'en' => 'Description'];
         $role->forceFill(['user_overrides' => ['name.ko', 'name.en']]);
@@ -173,11 +220,17 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * 이미 기록된 권한 식별자는 중복 추가하지 않음
+     * 제거된 권한 식별자가 이미 user_overrides 에 있으면 중복 추가 없이 update 를 생략한다.
+     *
+     * @scenario case=permission_sync
+     *
+     * @effects existing_override_not_duplicated
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_permission_identifier_not_added(): void
     {
-        $role = new Role();
+        $role = new Role;
         $role->forceFill(['user_overrides' => ['boards.delete']]);
 
         $previous = ['boards.read', 'boards.create', 'boards.delete'];
@@ -190,11 +243,17 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * 권한 추가도 개별 식별자로 기록
+     * 권한 동기화로 추가된 권한 식별자도 개별로 user_overrides 에 기록한다.
+     *
+     * @scenario case=permission_sync
+     *
+     * @effects changed_permission_identifiers_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_permissions_records_added_identifiers(): void
     {
-        $role = new Role();
+        $role = new Role;
         $role->forceFill(['user_overrides' => []]);
 
         $previous = ['boards.read'];

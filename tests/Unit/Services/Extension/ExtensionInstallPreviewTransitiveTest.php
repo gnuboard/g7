@@ -49,9 +49,9 @@ class ExtensionInstallPreviewTransitiveTest extends TestCase
         ];
 
         $moduleService = Mockery::mock(ModuleService::class);
-        $moduleService->shouldReceive('getModuleInfo')->andReturnUsing(fn (string $id) => $modules[$id] ?? null);
+        $moduleService->shouldReceive('getModuleManifestInfo')->andReturnUsing(fn (string $id) => $modules[$id] ?? null);
         $pluginService = Mockery::mock(PluginService::class);
-        $pluginService->shouldReceive('getPluginInfo')->with('pay')->andReturn([
+        $pluginService->shouldReceive('getPluginManifestInfo')->with('pay')->andReturn([
             'identifier' => 'pay', 'name' => ['ko' => '결제', 'en' => 'Pay'], 'version' => '1.0.0', 'is_installed' => false, 'status' => 'uninstalled',
             'dependencies' => [[
                 'identifier' => 'shop', 'name' => '샵', 'type' => 'module', 'required_version' => '>=1.0.0',
@@ -103,9 +103,9 @@ class ExtensionInstallPreviewTransitiveTest extends TestCase
         ];
 
         $moduleService = Mockery::mock(ModuleService::class);
-        $moduleService->shouldReceive('getModuleInfo')->andReturnUsing(fn (string $id) => $modules[$id] ?? null);
+        $moduleService->shouldReceive('getModuleManifestInfo')->andReturnUsing(fn (string $id) => $modules[$id] ?? null);
         $pluginService = Mockery::mock(PluginService::class);
-        $pluginService->shouldReceive('getPluginInfo')->with('pay')->andReturn([
+        $pluginService->shouldReceive('getPluginManifestInfo')->with('pay')->andReturn([
             'identifier' => 'pay', 'name' => '결제', 'version' => '1.0.0', 'is_installed' => false, 'status' => 'uninstalled',
             'dependencies' => [
                 ['identifier' => 'shop', 'name' => '샵', 'type' => 'module', 'required_version' => '>=1.0.0',

@@ -3,6 +3,8 @@
 namespace App\Extension\Concerns;
 
 use App\Extension\CoreVersionChecker;
+use App\Extension\Helpers\DependencyVersionWarnings;
+use App\Extension\Helpers\IntegrationNotices;
 
 /**
  * 업데이트 대상 버전의 코어 호환 정보를 만드는 공통 조각
@@ -15,6 +17,10 @@ use App\Extension\CoreVersionChecker;
  * 요구 버전 규칙: 번들 출처면 _bundled 매니페스트의 g7_version(없으면 활성 매니페스트 값),
  * GitHub 출처면 활성 매니페스트의 g7_version(원격 매니페스트를 받지 않는 베스트 이펙트 —
  * 정확한 판정은 업데이트 스테이징 단계에서 한다).
+ *
+ * 같은 자리에서 업데이트 대상 판이 요구하는 의존(`dependencies`)·연동(`integrations`) 중 지금 설치 상태로 충족되지
+ * 않는 것도 만든다 — 업데이트 창이 실행 **전에** 알리게. 판정은 업데이트가 끝난 뒤 완료 문구에 붙는 경고·안내와 같다
+ * ({@see DependencyVersionWarnings::forManifest()}·{@see IntegrationNotices::forManifest()}). 업데이트를 막지 않는다.
  */
 trait ResolvesUpdateCoreCompatibility
 {
@@ -55,6 +61,54 @@ trait ResolvesUpdateCoreCompatibility
             'required_core_version' => $requiredCoreVersion,
             'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
             'current_core_version' => CoreVersionChecker::getCoreVersion(),
+        ];
+    }
+
+    /**
+     * 업데이트 대상 판의 manifest 를 정합니다 — 업데이트 전 의존·연동 대조에 쓴다.
+     *
+     * 번들 출처면 _bundled manifest 다. GitHub 출처는 원격 manifest 를 받지 않으므로, _bundled 판이 업데이트 대상 버전과
+     * 같을 때만 그 manifest 를 쓰고(같은 판이다) 아니면 null(알 수 없음)이다.
+     *
+     * @param  string|null  $updateSource  업데이트 출처 (github|bundled|null)
+     * @param  array<string, mixed>|null  $bundledManifest  같은 식별자의 _bundled manifest (없으면 null)
+     * @param  string|null  $latestVersion  업데이트 대상 버전
+     * @return array<string, mixed>|null 업데이트 대상 판 manifest (알 수 없으면 null)
+     */
+    protected function resolveUpdateTargetManifest(?string $updateSource, ?array $bundledManifest, ?string $latestVersion): ?array
+    {
+        if ($bundledManifest === null) {
+            return null;
+        }
+
+        if ($updateSource !== 'github') {
+            return $bundledManifest;
+        }
+
+        $bundledVersion = $bundledManifest['version'] ?? null;
+
+        return is_string($bundledVersion) && is_string($latestVersion) && version_compare($bundledVersion, $latestVersion, '==')
+            ? $bundledManifest
+            : null;
+    }
+
+    /**
+     * 업데이트 대상 판이 요구하는 의존·연동 중 지금 설치 상태로 충족되지 않는 것을 필드 셋으로 만듭니다.
+     *
+     * 값이 null 이면 업데이트 대상 manifest 를 알 수 없다는 뜻이다(GitHub 출처) — 빈 배열(모두 충족)과 구분한다.
+     *
+     * @param  array<string, mixed>|null  $targetManifest  업데이트 대상 판 manifest ({@see resolveUpdateTargetManifest()})
+     * @return array{update_dependency_warnings: list<array<string, mixed>>|null, update_integration_notices: list<array<string, mixed>>|null} 업데이트 전 대조 필드
+     */
+    protected function buildUpdateTargetRequirementFields(?array $targetManifest): array
+    {
+        if ($targetManifest === null) {
+            return ['update_dependency_warnings' => null, 'update_integration_notices' => null];
+        }
+
+        return [
+            'update_dependency_warnings' => DependencyVersionWarnings::forManifest($targetManifest),
+            'update_integration_notices' => IntegrationNotices::forManifest($targetManifest),
         ];
     }
 }

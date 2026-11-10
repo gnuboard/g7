@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Psr\Log\AbstractLogger;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 부분취소 주문의 헤더 적립 예정액 보정(DataMigration) 테스트
@@ -38,8 +39,8 @@ class BackfillPartialCancelEarnedPointsTest extends ModuleTestCase
     {
         parent::setUp();
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/10_BackfillPartialCancelEarnedPoints.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/10_BackfillPartialCancelEarnedPoints.php');
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\BackfillPartialCancelEarnedPoints';
         $this->migration = new $class;

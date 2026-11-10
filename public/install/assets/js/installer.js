@@ -3841,10 +3841,28 @@
      * 가능 (응답 종료 시점에 한 번에 flush 되어도 onmessage 발화). timing 검증으로
      * 실제 streaming 가능성을 실증한다.
      *
+     * 첫 연결은 1차 이벤트만 늦게 도착해 간격이 임계보다 짧아질 수 있다(실측 0.94s·2.23s — 1.29s).
+     * 간격이 짧지만 두 이벤트가 함께 도착한 것은 아니면(버퍼 환경은 간격 ≈0) 한 번 더 잰다.
+     *
      * @param {number} timeoutMs probe 응답 대기 timeout (default 5000 — sleep 2s + 여유)
      * @returns {Promise<boolean>} 호환 여부
      */
-    function detectSseCompatibility(timeoutMs = 5000) {
+    async function detectSseCompatibility(timeoutMs = 5000) {
+        const BUFFERED_GAP_MS = 300;
+        const first = await probeSseStreamingOnce(timeoutMs);
+        if (first.compatible) return true;
+        if (first.gap === null || first.gap < BUFFERED_GAP_MS) return false;
+
+        return (await probeSseStreamingOnce(timeoutMs)).compatible;
+    }
+
+    /**
+     * sse-probe.php 에 한 번 연결해 두 probe 이벤트의 도착 간격을 잽니다.
+     *
+     * @param {number} timeoutMs probe 응답 대기 timeout
+     * @returns {Promise<{compatible: boolean, gap: number|null}>} 호환 여부와 도착 간격(ms, 두 이벤트를 다 받지 못하면 null)
+     */
+    function probeSseStreamingOnce(timeoutMs) {
         return new Promise((resolve) => {
             const probeUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/sse-probe.php`;
             const STREAMING_THRESHOLD_MS = 1500;
@@ -3852,13 +3870,13 @@
             let source = null;
             let phase1ClientTs = null;
 
-            const finish = (compatible) => {
+            const finish = (compatible, gap = null) => {
                 if (settled) return;
                 settled = true;
                 if (source) {
                     try { source.close(); } catch (e) { /* ignore */ }
                 }
-                resolve(compatible);
+                resolve({ compatible, gap });
             };
 
             try {
@@ -3877,7 +3895,7 @@
                     phase1ClientTs = Date.now();
                 } else if (payload.phase === 2 && phase1ClientTs !== null) {
                     const gap = Date.now() - phase1ClientTs;
-                    finish(gap >= STREAMING_THRESHOLD_MS);
+                    finish(gap >= STREAMING_THRESHOLD_MS, gap);
                 }
             });
 

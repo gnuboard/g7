@@ -7,6 +7,7 @@ require_once __DIR__.'/../ModuleTestCase.php';
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Mockery;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Models\Attachment;
@@ -127,6 +128,41 @@ class AttachmentLimitTest extends BoardTestCase
                 'order' => $i,
             ]);
         }
+    }
+
+    /**
+     * 업로더가 보내는 `post_attachments` 처럼 `attachments` 가 아닌 컬렉션도 상한에 센다 (#883).
+     *
+     * 종전 서비스 상한은 `attachments` 컬렉션만 세어, 다른 이름으로 올린 첨부가 상한 밖이었다. 예약 컬렉션
+     * (본문 미디어)만 뺀다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects non_default_collection_counted_in_limit
+     */
+    public function test_non_default_collection_counts_toward_limit(): void
+    {
+        $tempKey = (string) Str::uuid();
+        $this->seedTempAttachments($tempKey, 5);
+        Attachment::query()->where('temp_key', $tempKey)->update(['collection' => 'post_attachments']);
+
+        $this->actingAs($this->memberUser, 'sanctum')
+            ->postJson("/api/modules/sirsoft-board/boards/{$this->getTestBoardSlug()}/attachments", [
+                'file' => UploadedFile::fake()->image('sixth.png'),
+                'temp_key' => $tempKey,
+                'collection' => 'post_attachments',
+            ])
+            ->assertStatus(422);
+
+        // 예약 컬렉션 행은 세지 않는다 — 본문 미디어가 있어도 첨부 칸은 줄지 않는다
+        Attachment::query()->where('temp_key', $tempKey)->update(['collection' => Attachment::COLLECTION_CONTENT_MEDIA]);
+        $this->actingAs($this->memberUser, 'sanctum')
+            ->postJson("/api/modules/sirsoft-board/boards/{$this->getTestBoardSlug()}/attachments", [
+                'file' => UploadedFile::fake()->image('first-real.png'),
+                'temp_key' => $tempKey,
+                'collection' => 'post_attachments',
+            ])
+            ->assertStatus(201);
     }
 
     /**

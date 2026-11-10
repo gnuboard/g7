@@ -32,6 +32,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         return $ref->invokeArgs($command, $args);
     }
 
+    /**
+     * 확장 컨트롤러 FQCN 에서 확장 베이스 네임스페이스를 뽑는지 검증합니다.
+     *
+     * @scenario surface=base_namespace
+     *
+     * @effects extracts_base_namespace_from_extension_controller
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 확장_컨트롤러_fqc_n에서_베이스_네임스페이스를_추출한다(): void
     {
@@ -42,6 +51,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertSame('Modules\\Sirsoft\\Page', $base);
     }
 
+    /**
+     * Http\Controllers 없이 Controllers 규약을 쓰는 확장도 베이스를 뽑는지 검증합니다.
+     *
+     * @scenario surface=base_namespace
+     *
+     * @effects extracts_base_for_controllers_convention_without_http
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function http_controllers_없이_controllers_규약을_쓰는_확장도_베이스를_추출한다(): void
     {
@@ -54,6 +72,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertSame('Plugins\\Sirsoft\\PayKginicis', $base);
     }
 
+    /**
+     * Http\Controllers 규약이 Controllers 규약보다 먼저 적용되는지 검증합니다.
+     *
+     * @scenario surface=base_namespace
+     *
+     * @effects http_controllers_convention_wins_over_controllers
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function http_controllers_규약이_controllers_보다_우선한다(): void
     {
@@ -65,6 +92,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertSame('Modules\\Sirsoft\\Board', $base);
     }
 
+    /**
+     * 클로저 라우트나 컨트롤러 규약 밖이면 null 을 돌려주는지 검증합니다.
+     *
+     * @scenario surface=base_namespace
+     *
+     * @effects returns_null_outside_controller_convention
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 클로저_또는_컨트롤러_규약_밖이면_null을_반환한다(): void
     {
@@ -72,6 +108,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertNull($this->invoke('extensionBaseNamespace', ['SomeRandomClass']));
     }
 
+    /**
+     * 경로 파라미터 이름이 도메인 단수형과 같으면 매칭으로 보는지 검증합니다.
+     *
+     * @scenario surface=domain_match
+     *
+     * @effects param_matching_domain_singular_is_a_match
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 파라미터명이_도메인_단수형과_일치하면_매칭이다(): void
     {
@@ -80,6 +125,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertTrue($this->invoke('paramMatchesDomain', ['pages', 'pages']));
     }
 
+    /**
+     * slug·hash 같은 보조 문자열 파라미터는 도메인과 매칭되지 않는지 검증합니다.
+     *
+     * @scenario surface=domain_match
+     *
+     * @effects auxiliary_string_param_does_not_match_domain
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 보조_문자열_파라미터는_도메인과_매칭되지_않는다(): void
     {
@@ -89,6 +143,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertFalse($this->invoke('paramMatchesDomain', ['versionId', 'pages']));
     }
 
+    /**
+     * 도메인 샘플의 path_params 맵으로 문자열 파라미터를 치환하는지 검증합니다.
+     *
+     * @scenario surface=path_params
+     *
+     * @effects domain_sample_path_params_map_substitutes_string_params
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 도메인_샘플의_path_params_맵으로_문자열_파라미터를_치환한다(): void
     {
@@ -116,6 +179,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertSame('api/modules/sirsoft-board/boards/qna/posts/123?per_page=25', $uri);
     }
 
+    /**
+     * path_params 맵에 없는 파라미터는 치환하지 않고 원본을 남기는지 검증합니다.
+     *
+     * @scenario surface=path_params
+     *
+     * @effects param_missing_from_path_params_stays_unsubstituted
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function path_params에_없는_파라미터는_치환하지_않고_원본을_유지한다(): void
     {
@@ -142,6 +214,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
         $this->assertStringContainsString('boards/qna/attachment/{hash}', $uri);
     }
 
+    /**
+     * path_params 를 주지 않는 확장은 샘플 레코드가 없을 때 문자열 파라미터를 그대로 두는지 검증합니다.
+     *
+     * @scenario surface=path_params
+     *
+     * @effects extension_without_path_params_applies_route_key_only
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function path_params가_없는_기존_확장은_route_key_치환만_적용한다(): void
     {
@@ -154,9 +235,15 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
             'path_params' => ['slug'],
             'path_bindings' => [],
         ];
+        // 샘플 레코드가 없는 상태를 고정한다 — 실제 사용자 표를 쓰면 같은 프로세스의 앞선 시험이
+        // 남긴 행 때문에 일반 경로 치환(resolveGenericPathParam)이 일어나 실행 순서에 따라 결과가 바뀐다.
+        $absentSampleModel = new class extends \Illuminate\Database\Eloquent\Model
+        {
+            protected $table = 'api_docgen_test_absent_samples';
+        };
         $sampleMap = [
             'pages' => [
-                'model' => User::class,
+                'model' => get_class($absentSampleModel),
                 'key' => 'slug',
                 'value' => 'sample',
             ],
@@ -164,7 +251,7 @@ class ApiDocgenExtensionDiscoveryTest extends TestCase
 
         $uri = $this->invoke('resolvePathParams', [$route, $sampleMap]);
 
-        // path_params 미제공 + paramMatchesDomain('slug','pages')=false → 미치환
+        // path_params 미제공 + paramMatchesDomain('slug','pages')=false + 샘플 레코드 없음 → 미치환
         $this->assertStringContainsString('pages/{slug}', $uri);
     }
 }

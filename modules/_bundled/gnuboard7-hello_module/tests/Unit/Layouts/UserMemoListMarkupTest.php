@@ -2,7 +2,7 @@
 
 namespace Modules\Gnuboard7\HelloModule\Tests\Unit\Layouts;
 
-use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 사용자 메모 목록 화면의 마크업 테스트.
@@ -17,7 +17,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
  *
  * @scenario-manifest tests/scenarios/user-memo-list-markup.yaml
  */
-class UserMemoListMarkupTest extends ModuleTestCase
+class UserMemoListMarkupTest extends PureTestCase
 {
     /**
      * 사용자 메모 목록 레이아웃 JSON 을 읽습니다.

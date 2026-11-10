@@ -52,6 +52,7 @@ class OverviewService
     {
         $types = $visitorTypes !== [] ? $visitorTypes : $this->humanTypes();
         $today = AnalyticsClock::today();
+        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $yesterday = Carbon::parse($today)->subDay()->toDateString();
 
         $todayCount = $this->todayVisitors($today, $types);
@@ -69,6 +70,7 @@ class OverviewService
                 'value' => $max !== null ? (int) $max->visitors : 0,
                 // 날짜 컬럼이 캐스트되면 문자열화에 시각이 붙는다 — 화면에는 날짜만 보여야 한다.
                 'date' => $max === null ? null : ($max->date instanceof \DateTimeInterface
+                    // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                     ? $max->date->format('Y-m-d')
                     : substr((string) $max->date, 0, 10)),
             ],

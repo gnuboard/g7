@@ -6,7 +6,8 @@
       "pages": "Pages",
       "versions": "Versions",
       "attachmentSettings": "Attachment Settings",
-      "createAbility": "Create Permission Check"
+      "createAbility": "Create Permission Check",
+      "contentMediaTarget": "Content Media Upload Contract"
     }
   },
   "admin": {

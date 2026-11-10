@@ -1,0 +1,60 @@
+feature: 게시판 본문 미디어 — 편집기 본문 이미지·동영상·오디오 업로드·연결·서빙 (#883 4단계)
+
+description: |
+  편집기 본문에 바로 넣는 미디어를 `board_attachments` 의 `collection = content_media` 로 저장한다. 파일은 처음부터
+  최종 경로(`{slug}/content-media/Y/m/d/uuid.ext`), 행은 임시(board_id=0 + 임시 키)다. 글 저장 트랜잭션 안에서 본문이
+  참조한 것만(같은 임시 키 + 첨부와 같은 소유 규칙) DB 갱신으로 잇고, 본문에서 빠진 것은 소프트 삭제한다. 문서당 최대
+  개수를 넘으면 422 로 저장 전체를 되돌린다. 업로드 판정은 「파일 첨부 사용」과 무관하게 본문 미디어 정책 +
+  `attachments.upload` 권한(D26). 서빙에는 권한 미들웨어가 없고 서명 또는 글 읽기 권한 + 삭제·비밀·블라인드 게이트가 맡는다.
+  글 응답은 본문 주소를 서명 주소로 내보내고(봇 렌더는 정식 주소), 저장 때 서명 쿼리를 뗀다. 첨부 목록·첨부 개수·목록
+  썸네일에 들지 않는다.
+
+axes:
+  case:
+    - guest_image_upload
+    - policy_violation
+    - video_enabled
+    - gates
+    - upload_headroom
+    - link_and_remove
+    - limit_exceeded
+    - foreign_hash
+    - guest_post
+    - public_post
+    - secret_post
+    - temp_row
+    - read_permission_and_status
+    - not_found
+
+effects:
+  - temp_row_created
+  - signed_url_returned
+  - guest_cookie_issued
+  - final_path_used
+  - rejected_outside_policy
+  - video_accepted_when_policy_and_core_allow
+  - permission_required
+  - temp_key_required
+  - post_id_gate
+  - upload_headroom_enforced
+  - referenced_linked
+  - unreferenced_temp_left
+  - signed_query_stripped
+  - excluded_from_attachments
+  - removed_soft_deleted
+  - limit_exceeded_rolls_back
+  - foreign_hash_ignored
+  - guest_media_linked_hash_cleared
+  - public_served_without_signature
+  - detail_content_signed
+  - secret_requires_signature
+  - tampered_or_expired_denied
+  - temp_requires_signature
+  - read_permission_required
+  - deleted_and_blinded_denied
+  - unknown_hash_404
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ContentMediaUploadTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/PostContentMediaSyncTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ContentMediaServeGateTest.php

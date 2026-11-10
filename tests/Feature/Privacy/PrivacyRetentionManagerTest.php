@@ -7,9 +7,12 @@ use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
 use App\Privacy\DTO\PrivacyRetentionTarget;
 use App\Privacy\Handlers\WithdrawnUserRetentionHandler;
 use App\Privacy\PrivacyRetentionManager;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Lock;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -93,7 +96,8 @@ class PrivacyRetentionManagerTest extends TestCase
         $handlers = app(PrivacyRetentionManager::class)->handlers();
 
         $this->assertArrayHasKey('user-withdrawn', $handlers);
-        $this->assertCount(1, $handlers);
+        // 코어 기본 핸들러 둘(탈퇴 회원 잔여 정보 · 최근 검색어 보관 기한, 7.1.5)만 남고 계약 위반 클래스는 빠진다
+        $this->assertSame(['user-withdrawn', 'search-history'], array_keys($handlers));
     }
 
     /**
@@ -219,7 +223,7 @@ class PrivacyRetentionManagerTest extends TestCase
 
         $results = app(PrivacyRetentionManager::class)->process(dryRun: true);
 
-        $this->assertSame(['user-withdrawn', 'fake-domain'], array_keys($results), '식별자를 못 읽은 핸들러만 빠지고 앞뒤 도메인은 모두 실행된다');
+        $this->assertSame(['user-withdrawn', 'search-history', 'fake-domain'], array_keys($results), '식별자를 못 읽은 핸들러만 빠지고 앞뒤 도메인은 모두 실행된다');
     }
 
     /**
@@ -283,6 +287,94 @@ class PrivacyRetentionManagerTest extends TestCase
         $this->artisan('privacy:process-retention', ['--handler' => 'fake-domain', '--dry-run' => true])
             ->expectsOutputToContain('[DRY RUN] fake-domain (시험 도메인): 7건')
             ->assertExitCode(0);
+    }
+
+    /**
+     * 지정한 핸들러의 실행 잠금만 저장소 오류가 나는 시험 저장소를 기본 캐시로 둡니다(다른 잠금은 배열 잠금 그대로).
+     *
+     * @param  string  $brokenHandlerId  잠금 오류를 낼 핸들러 식별자
+     * @return void 반환값 없음
+     */
+    private function useLockStoreBrokenFor(string $brokenHandlerId): void
+    {
+        BrokenRetentionLockStore::$brokenLockName = PrivacyRetentionManager::lockKey($brokenHandlerId);
+
+        config(['cache.stores.i161_privacy_broken_lock' => ['driver' => 'i161_privacy_broken_lock']]);
+        Cache::extend('i161_privacy_broken_lock', fn () => Cache::repository(new BrokenRetentionLockStore));
+        config(['cache.default' => 'i161_privacy_broken_lock']);
+    }
+
+    /**
+     * B11: 한 핸들러의 잠금 저장소가 오류를 내도 그 항목만 실패로 남기고 다음 핸들러를 처리한다 (#161 F6).
+     *
+     * 7.1.4 까지는 잠금 예외가 루프 밖으로 나가 뒤의 핸들러(다른 도메인의 법정 파기)가 모두 처리되지 않았다. 잠금 없이
+     * 파기하지는 않는다 — 오류 난 핸들러의 `process()` 는 불리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario toggle=on, row_age=beyond_retention, run_mode=real_run
+     *
+     * @effects lock_store_error_fails_only_that_handler
+     */
+    public function test_lock_error_on_one_handler_marks_it_failed_and_continues(): void
+    {
+        Log::spy();
+        CountingRetentionHandler::$calls = 0;
+        BrokenRetentionLockStore::$processedWhileBroken = 0;
+
+        HookManager::addFilter(PrivacyRetentionManager::HANDLERS_FILTER, function (array $handlers) {
+            $handlers[] = LockBrokenRetentionHandler::class;
+            $handlers[] = CountingRetentionHandler::class;
+
+            return $handlers;
+        });
+        $this->useLockStoreBrokenFor('lock-broken-domain');
+
+        $results = app(PrivacyRetentionManager::class)->process(dryRun: false);
+
+        $this->assertSame([
+            'status' => 'failed',
+            'count' => 0,
+            'mode' => 'none',
+            'label' => '잠금 오류 도메인',
+            'error' => __('privacy.console.lock_unavailable'),
+        ], $results['lock-broken-domain']);
+        $this->assertSame(0, BrokenRetentionLockStore::$processedWhileBroken, '잠금 없이 파기하지 않는다');
+        $this->assertSame('processed', $results['counting-domain']['status'], '뒤 핸들러는 계속 처리된다');
+        $this->assertSame(1, CountingRetentionHandler::$calls);
+        Log::shouldHaveReceived('error')
+            ->withArgs(fn ($message, $context = []) => str_contains((string) $message, '잠금 오류')
+                && ($context['handler'] ?? null) === 'lock-broken-domain'
+                && str_contains((string) ($context['error'] ?? ''), 'i161 lock store down'))
+            ->once();
+    }
+
+    /**
+     * B12: 잠금 오류 결과의 `error` 는 번역문이다 — 원본 저장소 오류(호스트·경로가 섞일 수 있다)는 로그에만 남고 결과(화면·
+     * 커맨드 출력)에 실리지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario toggle=on, row_age=beyond_retention, run_mode=real_run
+     *
+     * @effects lock_store_error_message_is_localized
+     */
+    public function test_lock_error_message_is_localized_not_raw(): void
+    {
+        HookManager::addFilter(PrivacyRetentionManager::HANDLERS_FILTER, function (array $handlers) {
+            $handlers[] = LockBrokenRetentionHandler::class;
+
+            return $handlers;
+        });
+        $this->useLockStoreBrokenFor('lock-broken-domain');
+
+        $results = app(PrivacyRetentionManager::class)->process(dryRun: false, only: 'lock-broken-domain');
+
+        $error = $results['lock-broken-domain']['error'];
+        $this->assertNotSame('privacy.console.lock_unavailable', $error, '번역 키가 아니라 번역문이어야 한다');
+        $this->assertSame(__('privacy.console.lock_unavailable'), $error);
+        $this->assertStringNotContainsString('i161 lock store down', json_encode($results, JSON_UNESCAPED_UNICODE));
+        $this->assertStringNotContainsString('C:\\fake\\g7', json_encode($results, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 }
 
@@ -496,6 +588,107 @@ class CountingRetentionHandler extends FakeRetentionHandler
     public function process(bool $dryRun, bool $force = false): array
     {
         self::$calls++;
+
+        return parent::process($dryRun, $force);
+    }
+}
+
+/**
+ * 시험용 캐시 저장소 — 지정한 이름의 잠금만 얻으려 하면 저장소 오류가 난다.
+ */
+class BrokenRetentionLockStore extends ArrayStore
+{
+    /** 오류를 낼 잠금 이름 */
+    public static string $brokenLockName = '';
+
+    /** 오류 잠금 핸들러가 실행된 횟수 */
+    public static int $processedWhileBroken = 0;
+
+    /**
+     * 지정한 이름이면 오류 잠금을, 아니면 배열 잠금을 돌려준다.
+     *
+     * @param  string  $name  잠금 이름
+     * @param  int  $seconds  잠금 유지 시간(초)
+     * @param  string|null  $owner  소유자
+     * @return \Illuminate\Contracts\Cache\Lock 잠금
+     */
+    public function lock($name, $seconds = 0, $owner = null)
+    {
+        if ($name !== self::$brokenLockName) {
+            return parent::lock($name, $seconds, $owner);
+        }
+
+        return new class($name, $seconds, $owner) extends Lock
+        {
+            /**
+             * 잠금 저장소에 닿지 못한다.
+             *
+             * @return bool 반환하지 않음
+             *
+             * @throws \RuntimeException 언제나
+             */
+            public function acquire()
+            {
+                throw new \RuntimeException('i161 lock store down C:\\fake\\g7');
+            }
+
+            /**
+             * 잠금을 푼다.
+             *
+             * @return bool 언제나 true
+             */
+            public function release()
+            {
+                return true;
+            }
+
+            /**
+             * 소유자와 무관하게 잠금을 푼다.
+             *
+             * @return void 반환값 없음
+             */
+            public function forceRelease() {}
+
+            /**
+             * 현재 소유자를 돌려준다.
+             *
+             * @return string|null 소유자 없음
+             */
+            protected function getCurrentOwner()
+            {
+                return null;
+            }
+        };
+    }
+}
+
+/**
+ * 시험용 핸들러 — 실행 잠금이 저장소 오류를 내는 도메인. 실행되면 횟수를 남긴다.
+ */
+class LockBrokenRetentionHandler extends FakeRetentionHandler
+{
+    /**
+     * {@inheritDoc}
+     */
+    public function id(): string
+    {
+        return 'lock-broken-domain';
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function label(): string
+    {
+        return '잠금 오류 도메인';
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function process(bool $dryRun, bool $force = false): array
+    {
+        BrokenRetentionLockStore::$processedWhileBroken++;
 
         return parent::process($dryRun, $force);
     }

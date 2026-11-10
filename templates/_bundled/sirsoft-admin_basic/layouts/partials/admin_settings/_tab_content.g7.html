@@ -1,0 +1,183 @@
+<!-- e2e:allow 커밋 전 점검 후속(2026-11-09) — 허용 기능 목록을 원시 JSON 대신 <item> 표기로 바꿨을 뿐 굽기 JSON 무변경. 화면 동작은 5단계 브라우저 매트릭스 T1~T5 실측분 그대로.
+  본문 콘텐츠 탭 (#883) —게시글·페이지·상품 설명 본문에 남길 수 있는 것을 한 곳에서 정한다. 표시기(두 템플릿)·봇 정화기·쇼핑몰 저장 정화기·편집기가
+  모두 이 규칙을 읽는다(편집기 설정에 두면 편집기를 바꿀 때 표시 규칙이 사라진다). 카드 넷: 허용 후보 · 운영자 추가 태그 · 외부 영상 서비스 · 미디어 주소 유효 시간.
+  외부 영상 「직접 추가한 서비스」 표는 IP 접근 제한 규칙과 같은 방식이다 — 창이 폼의 배열만 고치고 저장은 하단 「저장」이 한다. -->
+<partial description="환경설정 본문 콘텐츠 탭 콘텐츠">
+  <div data-ref="tab_content_content" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'content'}}">
+    <div data-ref="card_content_candidates" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.content.candidates.title</h3>
+      <div class="card-description">$t:admin.settings.content.candidates.description</div>
+      <div class="row-stack">
+        <div data-ref="field_allow_figure_caption" class="flex-between gap-4">
+          <div class="flex-1">
+            <label class="form-label">$t:admin.settings.content.candidates.figure_caption</label>
+            <p class="form-hint">$t:admin.settings.content.candidates.figure_caption_hint</p>
+          </div>
+          <toggle data-type="composite" name="content.allow_figure_caption" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="field_allow_uploaded_video" class="flex-between gap-4">
+          <div class="flex-1">
+            <label class="form-label">$t:admin.settings.content.candidates.uploaded_video</label>
+            <p class="form-hint">$t:admin.settings.content.candidates.uploaded_video_hint</p>
+          </div>
+          <toggle data-type="composite" name="content.allow_uploaded_video" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="field_allow_uploaded_audio" class="flex-between gap-4">
+          <div class="flex-1">
+            <label class="form-label">$t:admin.settings.content.candidates.uploaded_audio</label>
+            <p class="form-hint">$t:admin.settings.content.candidates.uploaded_audio_hint</p>
+          </div>
+          <toggle data-type="composite" name="content.allow_uploaded_audio" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="field_allow_external_embed" class="flex-between gap-4">
+          <div class="flex-1">
+            <label class="form-label">$t:admin.settings.content.candidates.external_embed</label>
+            <p class="form-hint">$t:admin.settings.content.candidates.external_embed_hint</p>
+          </div>
+          <toggle data-type="composite" name="content.allow_external_embed" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_content_custom_tags" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.content.custom_tags.title</h3>
+      <div class="card-description">$t:admin.settings.content.custom_tags.description</div>
+      <div data-ref="content_custom_tags_warning" class="alert-warning mb-3">
+        <p class="text-sm">$t:admin.settings.content.custom_tags.warning</p>
+      </div>
+      <tag-input data-type="composite" data-ref="content_custom_tags_input" name="content.custom_tags" :creatable="true" placeholder="$t:admin.settings.content.custom_tags.placeholder" disabled="{{_computed.isReadOnly}}" class="w-full"/>
+      <span data-if="{{_local.errors?.['content.custom_tags']}}" class="form-error">{{_local.errors?.['content.custom_tags']?.[0] ?? ''}}</span>
+    </div>
+    <div data-ref="card_content_embed" class="admin-card {{_local.form?.content?.allow_external_embed === false ? 'opacity-60' : ''}}">
+      <h3 class="card-title">$t:admin.settings.content.embed.title</h3>
+      <div class="card-description">$t:admin.settings.content.embed.description</div>
+      <div class="row-stack">
+        <span class="form-label">$t:admin.settings.content.embed.presets</span>
+        <div data-ref="content_embed_presets" class="grid-2col-responsive">
+          <div data-each="preset in ['youtube', 'vimeo', 'tiktok']" class="flex-between gap-3 py-1">
+            <span class="text-body">$t:admin.settings.content.embed.preset_names.{{preset}}</span>
+            <toggle data-type="composite" ariaLabel="$t:admin.settings.content.embed.preset_names.{{preset}}" checked="{{_local.form?.content?.embed_presets?.[preset] === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 프리셋 켜고 끔 — 서비스 키 하나만 뒤집는다 -->
+                <set-state target="local" form.content.embed_presets="{{({ ...(_local.form?.content?.embed_presets ?? {}), [preset]: !(_local.form?.content?.embed_presets?.[preset] === true) })}}" :hasChanges="true"/>
+              </on>
+            </toggle>
+          </div>
+        </div>
+        <div data-ref="content_embed_extension" data-if="{{(_local.form?._meta?.embed_extension_providers ?? []).length > 0}}" class="row-stack mt-2">
+          <span class="form-label">$t:admin.settings.content.embed.extension</span>
+          <p class="form-hint">$t:admin.settings.content.embed.extension_hint</p>
+          <div class="grid-2col-responsive">
+            <div data-each="ext in _local.form?._meta?.embed_extension_providers ?? []" class="flex-between gap-3 py-1">
+              <span class="text-body">{{ext.name + ' (' + ext.extension + ')'}}</span>
+              <toggle data-type="composite" ariaLabel="{{ext.name}}" checked="{{_local.form?.content?.embed_presets?.[ext.key] === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <!-- 확장 제공 서비스 켜고 끔 — 프리셋과 같은 맵에 `ext:{확장}:{id}` 키로 둔다(기본 꺼짐) -->
+                  <set-state target="local" form.content.embed_presets="{{({ ...(_local.form?.content?.embed_presets ?? {}), [ext.key]: !(_local.form?.content?.embed_presets?.[ext.key] === true) })}}" :hasChanges="true"/>
+                </on>
+              </toggle>
+            </div>
+          </div>
+        </div>
+        <div class="flex-between gap-2 mt-2">
+          <span class="form-label">$t:admin.settings.content.embed.custom</span>
+          <button data-ref="content_embed_add" type="button" disabled="{{_computed.isReadOnly}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+            <on type="click">
+              <!-- 서비스 추가 창 열기 — 창 상태를 통째로 만들고 지금 목록 사본을 넘긴다(row_index=null 이면 추가) -->
+              <sequence>
+                <set-state target="global">
+                  <field name="embed_provider_form_modal">
+                    <field name="form">
+                      <field name="id" value=""/>
+                      <field name="name" value=""/>
+                      <field name="url_patterns_text" value=""/>
+                      <field name="player_url" value=""/>
+                      <field name="id_rule" value="alnum_dash"/>
+                      <field name="aspect" value="16:9"/>
+                      <field name="allow">
+                        <item>fullscreen</item>
+                        <item>encrypted-media</item>
+                        <item>picture-in-picture</item>
+                      </field>
+                      <field name="enabled" :value="true"/>
+                    </field>
+                    <field name="sample_url" value=""/>
+                    <field name="preview" :value="null"/>
+                    <field name="row_index" :value="null"/>
+                    <field name="providers" value="{{_local.form?.content?.embed_custom_providers ?? []}}"/>
+                    <field name="error" :value="null"/>
+                  </field>
+                </set-state>
+                <open-modal target="embed_provider_form_modal"/>
+              </sequence>
+            </on>
+            <icon name="plus" size="xs"/>
+            <span>$t:admin.settings.content.embed.add</span>
+          </button>
+        </div>
+        <p data-if="{{(_local.form?.content?.embed_custom_providers ?? []).length === 0}}" class="form-hint">$t:admin.settings.content.embed.custom_empty</p>
+        <div data-ref="content_embed_custom_list" data-if="{{(_local.form?.content?.embed_custom_providers ?? []).length > 0}}" class="divider-list">
+          <div data-each="provider, idx in _local.form?.content?.embed_custom_providers ?? []" class="py-3 flex-between gap-3 flex-wrap">
+            <div class="flex-1 min-w-0">
+              <div class="text-body font-medium">{{provider.name ?? ''}}</div>
+              <div class="form-hint font-mono break-all">{{(provider.url_patterns ?? []).join(' · ')}}</div>
+            </div>
+            <div class="flex-center gap-2">
+              <toggle data-type="composite" ariaLabel="$t:common.row_cell|row={{provider.name ?? ''}}|column={{$t('admin.settings.content.embed.enabled')}}" checked="{{provider.enabled !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <on type="change">
+                  <!-- 사용 여부만 뒤집는다 — 지우지 않고 잠시 끄는 자리 -->
+                  <set-state target="local" form.content.embed_custom_providers="{{(_local.form?.content?.embed_custom_providers ?? []).map((p, i) => i === idx ? {...p, enabled: !(p.enabled !== false)} : p)}}" :hasChanges="true"/>
+                </on>
+              </toggle>
+              <button data-ref="content_embed_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
+                <on type="click">
+                  <!-- 수정 창 열기 — 그 행 값으로 채우고 row_index 에 행 번호 -->
+                  <sequence>
+                    <set-state target="global">
+                      <field name="embed_provider_form_modal">
+                        <field name="form">
+                          <field name="id" value="{{provider.id ?? ''}}"/>
+                          <field name="name" value="{{provider.name ?? ''}}"/>
+                          <field name="url_patterns_text" value="{{(provider.url_patterns ?? []).join('\n')}}"/>
+                          <field name="player_url" value="{{provider.player_url ?? ''}}"/>
+                          <field name="id_rule" value="{{provider.id_rule ?? 'alnum_dash'}}"/>
+                          <field name="aspect" value="{{provider.aspect ?? '16:9'}}"/>
+                          <field name="allow" value="{{provider.allow ?? ['fullscreen', 'encrypted-media', 'picture-in-picture']}}"/>
+                          <field name="enabled" value="{{provider.enabled !== false}}"/>
+                        </field>
+                        <field name="sample_url" value=""/>
+                        <field name="preview" :value="null"/>
+                        <field name="row_index" value="{{idx}}"/>
+                        <field name="providers" value="{{_local.form?.content?.embed_custom_providers ?? []}}"/>
+                        <field name="error" :value="null"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="embed_provider_form_modal"/>
+                  </sequence>
+                </on>
+                <span>$t:common.edit</span>
+              </button>
+              <button data-ref="content_embed_delete_{{idx}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                <on type="click">
+                  <!-- 삭제 — 폼에서만 뺀다(저장 전이라 하단 「취소」로 되돌릴 수 있다) -->
+                  <set-state target="local" form.content.embed_custom_providers="{{(_local.form?.content?.embed_custom_providers ?? []).filter((p, i) => i !== idx)}}" :hasChanges="true"/>
+                </on>
+                <span>$t:common.delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <span data-if="{{_local.errors?.['content.embed_custom_providers']}}" class="form-error">{{(_local.errors?.['content.embed_custom_providers'] ?? []).join(' ')}}</span>
+      </div>
+    </div>
+    <div data-ref="card_content_media_ttl" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.content.ttl.title</h3>
+      <div class="card-description">$t:admin.settings.content.ttl.description</div>
+      <div class="flex-center gap-2">
+        <!-- audit:allow layout-input-boundary-hardcoded 코어 ContentMediaUrlRewriter 고정 범위(5~1440분) — 저장 규칙 SaveSettingsRequest 가 같은 범위다 -->
+        <input type="number" name="content.media_url_ttl_minutes" aria-label="$t:admin.settings.content.ttl.title" min="5" max="1440" disabled="{{_computed.isReadOnly}}" class="input w-28"/>
+        <span class="text-label-subtle">$t:admin.settings.content.ttl.unit</span>
+      </div>
+      <span data-if="{{_local.errors?.['content.media_url_ttl_minutes']}}" class="form-error">{{_local.errors?.['content.media_url_ttl_minutes']?.[0] ?? ''}}</span>
+    </div>
+  </div>
+</partial>

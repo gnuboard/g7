@@ -2334,8 +2334,8 @@ _단건 응답: `data` 객체의 필드._
 | brand_id | integer | `7` | 브랜드 ID |
 | category_ids | array | `[29,30,32]` | category 식별자 배열 (연관 리소스 참조) |
 | primary_category_id | integer | `32` | primary category 식별자 (연관 리소스 참조) |
-| created_at | string | `2026-07-30 14:36:13` | 생성 일시 |
-| updated_at | string | `2026-07-30 14:36:13` | 최종 수정 일시 |
+| created_at | string | `2026-07-30 14:36:13` | 생성 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
+| updated_at | string | `2026-07-30 14:36:13` | 최종 수정 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
 | list_price | string | `5000.00` | 정가 (기본통화 기준) |
 | selling_price | string | `3000.00` | 판매가 (기본통화 기준) |
 | stock_quantity | integer | `26` | 재고 수량 (옵션 있으면 옵션 합계) |
@@ -2617,7 +2617,7 @@ HTTP/1.1 200
 | category_slug | query | string | 아니오 | max 100 | 카테고리 slug 필터 (URL 친화 식별자로 카테고리 지정, category_id 대체 가능) |
 | brand_id | query | integer | 아니오 | — | brand 식별자 |
 | search | query | string | 아니오 | max 200 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
-| sort | query | string | 아니오 | `latest`, `sales`, `price_asc`, `price_desc` | 정렬 기준 (필드명, `-` 접두 시 내림차순) |
+| sort | query | string | 아니오 | `latest`, `sales`, `reviews`, `price_asc`, `price_desc` | 정렬 기준 (필드명, `-` 접두 시 내림차순) |
 | min_price | query | integer | 아니오 | min 0 | 판매가 범위 필터 하한 (판매가가 이 값 이상인 상품) |
 | max_price | query | integer | 아니오 | min 0 | 판매가 범위 필터 상한 (판매가가 이 값 이하인 상품) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
@@ -2740,7 +2740,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 쇼핑몰 프런트용 공개 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPublicList()`가 전시상태 visible이고 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다. 카테고리/브랜드/검색어/가격 범위 필터와 `sort`(latest/sales/price_asc/price_desc) 정렬을 지원하고 결과는 `ProductCollection`으로 페이지네이션됩니다. 확장은 `sirsoft-ecommerce.product.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다.
+**설명** 쇼핑몰 프런트용 공개 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPublicList()`가 전시상태 visible이고 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다. 카테고리/브랜드/검색어/가격 범위 필터와 `sort`(latest/sales/reviews/price_asc/price_desc) 정렬을 지원하고(reviews 는 노출 리뷰 수 내림차순, 같으면 최신 등록순) 결과는 `ProductCollection`으로 페이지네이션됩니다. 확장은 `sirsoft-ecommerce.product.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/new
@@ -3035,6 +3035,52 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명** 공개 인기 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPopularProducts()`가 최근 30일 판매량 기준으로 정렬한 상품을 `ProductListResource` 컬렉션으로 반환합니다. `limit`(기본 10, 최대 50) 쿼리로 개수를 제한하며, 베스트/인기 상품 위젯에 사용됩니다. 확장은 `sirsoft-ecommerce.product.public_popular_validation_rules` 훅으로 검증 규칙을 확장할 수 있습니다.
+
+
+### GET /api/modules/sirsoft-ecommerce/products/{product}/related
+<!-- @generated:start:api.modules.sirsoft-ecommerce.products.related -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.products.related`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductController@related`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-ecommerce.user-products.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| product | path | string | 예 | 상품코드 또는 숫자 ID (`[0-9A-Za-z_-]+`) | 기준 상품 |
+| limit | query | integer | 아니오 | min 1, max 50 | 반환할 최대 항목 수 (기본 8) |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/products/P-1001/related?limit=8 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 예시**
+
+```json
+{
+  "success": true,
+  "message": "상품 목록을 조회했습니다.",
+  "data": [
+    { "id": 42, "name_localized": "캠핑 의자 (국산)", "selling_price_formatted": "12,000원", "thumbnail_url": "https://cdn.example.com/p/42.jpg", "review_count": 3, "rating_avg": 4.7 }
+  ]
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
+| 404 | Not Found | 기준 상품이 없거나 전시상태가 visible 이 아닌 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명** 상품 상세 아래 「이 상품은 어떠세요?」 목록용 관련 상품을 조회합니다. `ProductService::getRelatedProducts()`가 기준 상품의 대표 분류(없으면 첫 분류)와 그 하위 분류 상품을 먼저, 모자라면 상위 분류 → 그 위 분류 순으로 채워 `ProductListResource` 컬렉션으로 반환합니다. 기준 상품·숨긴 상품·앞 단계에서 고른 상품은 다시 고르지 않으며, 분류가 없으면 빈 배열입니다. 단계 안 순서는 환경설정 `product_display.related_order`(`random` 기본, `sales`, `reviews`, `latest`)를 따르고, 고른 상품 ID 는 `product_display.related_cache_hours`(기본 24, 0 이면 캐시 안 함) 동안 코어 캐시 드라이버에 둡니다(태그 `sirsoft-ecommerce.related_products`, 설정 저장 시 비움). 상품 정보 자체는 매번 읽으므로 그 사이 숨긴 상품은 빠집니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/recent

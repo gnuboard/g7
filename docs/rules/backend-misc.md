@@ -26,8 +26,15 @@
 필수: 상태/타입/분류는 Enum으로 정의
 절대 금지: 인증 필요 미들웨어를 append()로 전역 등록 → appendToGroup('api') 사용
 절대 금지: 로케일 하드코딩 → config('app.supported_locales') 사용
+필수: 시간 저장은 UTC, 화면 응답은 보는 사람 시간대 — 알림 데이터·콘솔 출력·날짜 경계 판단은 사이트 시간대 (TimezoneHelper)
 주의: ResponseHelper::success($messageKey, $data) — 메시지가 첫 번째 인수
 ```
+
+시간대를 정하지 않고 날짜를 문자열로 만들면(`->format()`·`->toDateString()`·`date()`) DB 의 UTC 값이 그대로 나간다.
+화면 응답은 `formatDateTimeStringForUser()`·`TimezoneHelper::toUser*`, 알림 변수와 운영자 콘솔 출력은
+`TimezoneHelper::toSite*`, 「오늘」·일수 세기처럼 하루를 자르는 판단은 사이트 시간대의 하루로 계산한다. 알림 데이터에
+보는 사람 시간대를 쓰지 않는 이유는 그 데이터가 알림을 일으킨 요청(관리자 처리 등) 안에서 만들어지기 때문이다.
+저장 경로·캐시 키·로그·ISO8601 API 값·PG 통신값처럼 사람이 읽지 않는 기계값은 그대로 두되 자동 검증 허용 주석에 사유를 남긴다.
 
 갱신값이 항상 필터 소속을 유지해 안전한 경우(예: `whereNotNull` + 갱신값이 항상 non-null)만 예외이며, 그 근거를 코드 주석에 남긴다. 자동 검증이 이 패턴을 검출한다.
 

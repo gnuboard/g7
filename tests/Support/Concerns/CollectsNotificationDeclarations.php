@@ -28,9 +28,9 @@ trait CollectsNotificationDeclarations
     protected array $recognizedRecipientTypes = ['trigger_user', 'related_user', 'role', 'specific_users'];
 
     /**
-     * 선언된 알림 정의 전수를 반환합니다.
+     * 선언된 알림 정의 전수를 반환합니다(코어 config · 번들 모듈 · 번들 플러그인).
      *
-     * @return array<int, array{extension_type: string, extension_identifier: string, definition: array<string, mixed>}>
+     * @return array<int, array{extension_type: string, extension_identifier: string, definition: array<string, mixed>}> 정의 행 목록
      */
     protected function declaredNotificationDefinitions(): array
     {
@@ -46,7 +46,7 @@ trait CollectsNotificationDeclarations
         }
 
         foreach (app(ModuleManager::class)->getAllModules() as $module) {
-            if (! method_exists($module, 'getNotificationDefinitions')) {
+            if (! method_exists($module, 'getNotificationDefinitions') || ! $this->isBundledExtension('modules', $module->getIdentifier())) {
                 continue;
             }
 
@@ -60,7 +60,7 @@ trait CollectsNotificationDeclarations
         }
 
         foreach (app(PluginManager::class)->getAllPlugins() as $plugin) {
-            if (! method_exists($plugin, 'getNotificationDefinitions')) {
+            if (! method_exists($plugin, 'getNotificationDefinitions') || ! $this->isBundledExtension('plugins', $plugin->getIdentifier())) {
                 continue;
             }
 
@@ -74,6 +74,21 @@ trait CollectsNotificationDeclarations
         }
 
         return $collected;
+    }
+
+    /**
+     * 저장소에 들어 있는 번들 확장인지 판정합니다.
+     *
+     * 개발 PC 에 따로 설치한 비번들 확장(저장소 밖)은 이 저장소의 계약 대상이 아니다 —
+     * 섞이면 PC 마다 결과가 달라진다.
+     *
+     * @param  string  $kind  `modules` 또는 `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @return bool 번들 확장 여부
+     */
+    protected function isBundledExtension(string $kind, string $identifier): bool
+    {
+        return is_dir(base_path($kind.'/_bundled/'.$identifier));
     }
 
     /**

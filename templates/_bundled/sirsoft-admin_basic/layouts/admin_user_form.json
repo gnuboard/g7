@@ -433,6 +433,7 @@
                         },
                         "children": [
                             {
+                                "comment": "탭이 넘치면 글자 단위로 줄바꿈되지 않고 막대가 가로로 스크롤된다(상세와 같다)",
                                 "id": "user_form_tabs",
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
@@ -452,7 +453,9 @@
                                     "enableScrollSpy": true,
                                     "scrollSpyOffset": 120,
                                     "sectionIdPrefix": "",
-                                    "className": "tab-nav-default",
+                                    "className": "tab-nav-default overflow-x-auto",
+                                    "activeClassName": "tab-btn-base tab-btn-default-active shrink-0 whitespace-nowrap",
+                                    "inactiveClassName": "tab-btn-base tab-btn-default shrink-0 whitespace-nowrap",
                                     "tabs": [
                                         {
                                             "id": "basic_info",
@@ -483,6 +486,11 @@
                                         {
                                             "id": "notifications_info",
                                             "label": "$t:admin.users.detail.tabs.notifications_info",
+                                            "if": "{{route?.id}}"
+                                        },
+                                        {
+                                            "id": "search_history_info",
+                                            "label": "$t:admin.users.detail.tabs.search_history_info",
                                             "if": "{{route?.id}}"
                                         }
                                     ]
@@ -2286,6 +2294,145 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "text": "$t:admin.users.detail.notifications.view_inbox"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "최근 검색어 — 회원이 남긴 기록이라 운영자가 고칠 값이 없다. 상세와 같은 자리에 잠긴 채로 세운다(자동 저장 여부는\n             회원 본인이 검색창에서 정한다). 확장 범위(상품·게시글 검색)는 상세의 확장 탭에만 있다.",
+                                "id": "section_search_history_info",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{route?.id}}",
+                                "props": {
+                                    "id": "search_history_info",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.detail.tabs.search_history_info"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "row-stack"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "search_history_feature_off",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{user?.data?.search_history?.enabled === false}}",
+                                                "props": {
+                                                    "className": "alert-info"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm"
+                                                        },
+                                                        "text": "$t:admin.users.detail.search_history.feature_off"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_search_history_auto_save",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.search_history.auto_save"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "value": "{{user?.data?.search_history?.auto_save === false ? '$t:admin.users.detail.search_history.auto_save_off' : '$t:admin.users.detail.search_history.auto_save_on'}}",
+                                                            "disabled": true,
+                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "field_search_history_site",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "{{(user?.data?.search_history?.scopes ?? {})['core.site']?.label ?? '$t:admin.users.detail.search_history.keywords'}} · $t:admin.users.detail.search_history.count|count={{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length}}"
+                                                    },
+                                                    {
+                                                        "id": "search_history_site_empty",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!!user?.data?.search_history && ((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length === 0}}",
+                                                        "props": {
+                                                            "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                                        },
+                                                        "text": "$t:admin.users.detail.search_history.empty"
+                                                    },
+                                                    {
+                                                        "id": "search_history_site_list",
+                                                        "type": "basic",
+                                                        "name": "Ul",
+                                                        "if": "{{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length > 0}}",
+                                                        "props": {
+                                                            "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "iteration": {
+                                                                    "source": "(user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []",
+                                                                    "item_var": "history"
+                                                                },
+                                                                "props": {
+                                                                    "className": "flex items-center justify-between gap-3 py-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-gray-500 dark:text-gray-400 text-sm break-all"
+                                                                        },
+                                                                        "text": "{{history.keyword}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                                        },
+                                                                        "text": "{{history.searched_at ?? '-'}}"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     }

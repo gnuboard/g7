@@ -1,0 +1,36 @@
+feature: public_index_vendor_guard
+
+description: |
+  코어 업데이트는 유지보수 모드를 켠 채 운영 `vendor/` 를 비우고 새 vendor 를 복사한다(수십 초). 그 사이 들어온 요청은
+  미리 렌더된 유지보수 화면이 없으면 `vendor/autoload.php` require 에서 치명 오류로 죽어, 유지보수 503 이 아니라
+  500(display_errors 가 켜진 환경은 200 + 서버 경로가 담긴 오류 본문)을 받았다. 진입점 `public/index.php` 가 프레임워크를
+  싣기 전에 vendor 상태를 보고, 유지보수 중이면 down 파일의 Retry-After·Refresh 로 503(API 는 JSON)을 보낸다.
+  유지보수가 아닌데 vendor 가 없으면 설치 손상이라 500 을 보내되 오류 내부를 노출하지 않는다. vendor 가 온전하면
+  끼어들지 않고 프레임워크에 맡기며, 미설치 사이트는 지금처럼 설치 화면으로 보낸다.
+
+coverage_strategy: full
+
+axes:
+  case:
+    - maintenance_vendor_empty_html
+    - maintenance_vendor_empty_api
+    - maintenance_vendor_partial_html
+    - maintenance_vendor_complete_html
+    - no_maintenance_vendor_empty
+    - not_installed
+
+effects:
+  - maintenance_vendor_gap_returns_503
+  - maintenance_vendor_gap_returns_json_503_for_api
+  - maintenance_vendor_partial_copy_returns_503
+  - maintenance_with_complete_vendor_delegates_to_framework
+  - vendor_missing_outside_maintenance_returns_500
+  - not_installed_redirect_unchanged
+
+test_files:
+  - tests/Unit/Bootstrap/PublicIndexVendorGuardTest.php
+
+notes: |
+  앱 부팅 없이 진짜 웹 요청으로 확인한다 — vendor 없는 임시 루트에 현재 `public/index.php` 만 복사하고 PHP 내장
+  웹서버로 띄워 상태 코드·헤더·본문을 본다. 화면 확인은 유지보수 모드에서 vendor 폴더 이름을 잠시 바꾼 뒤 사이트와
+  `/api/settings/public` 을 열어 503·Retry-After 를 본다.

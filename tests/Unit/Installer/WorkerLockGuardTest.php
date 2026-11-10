@@ -189,8 +189,7 @@ class WorkerLockGuardTest extends TestCase
     {
         $first = acquireWorkerLock(15);
 
-        // 의도적 1초 지연 (heartbeat 갱신 detection)
-        sleep(1);
+        // 기다리지 않는다 — 단언은 갱신 시각이 지금 근처(time()-1 이상)인지만 본다
 
         $ok = refreshWorkerHeartbeat($first['worker_id']);
         $this->assertTrue($ok);

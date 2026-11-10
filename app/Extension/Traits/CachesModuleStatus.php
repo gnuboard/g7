@@ -5,6 +5,7 @@ namespace App\Extension\Traits;
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
 use App\Models\Module;
 use App\Support\InstallerContext;
@@ -52,16 +53,27 @@ trait CachesModuleStatus
      */
     private static function rememberNonEmpty(string $key, \Closure $resolver): array
     {
+        // 같은 요청 안에서는 저장소를 한 번만 읽는다 — 목록은 요청 안에서 바뀌지 않고, 바뀌면 무효화가 메모도 비운다(#860)
+        $memo = ExtensionStatusMemo::current();
+        $memoized = $memo?->get($key);
+
+        if ($memoized !== null) {
+            return $memoized;
+        }
+
         $cache = self::resolveStatusCache();
         $cached = $cache->get($key);
 
         if (is_array($cached) && $cached !== []) {
+            $memo?->put($key, $cached);
+
             return $cached;
         }
 
         $fresh = $resolver();
 
         if ($fresh !== []) {
+            $memo?->put($key, $fresh);
             $cache->put(
                 $key,
                 $fresh,
@@ -122,6 +134,9 @@ trait CachesModuleStatus
         $cache = self::resolveStatusCache();
         $cache->forget('ext.modules.active_identifiers');
         $cache->forget('ext.modules.installed_identifiers');
+
+        // 같은 요청의 목록 메모도 버린다 — 상태를 바꾼 요청의 뒤쪽(활성화 직후 provider boot 등)이 새 목록을 보게(#860)
+        ExtensionStatusMemo::forgetCurrent('modules');
 
         // 같은 요청에서 만든 선택 연동 역맵도 버린다 — 상태가 바뀐 뒤의 「연동 중인 확장」 응답이 옛 목록이 되지 않게(7.1.4)
         IntegrationReverseIndex::flushCurrent();

@@ -3,7 +3,7 @@
 namespace Tests\Unit\Analytics;
 
 use App\Analytics\IpAddress;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * IP 유틸 — 마스킹·대역 비교·이진 변환.
@@ -12,7 +12,7 @@ use Tests\TestCase;
  * 세지 않는다」를 결정한다. 둘 다 틀리면 조용히 틀린다 — 마스킹이 덜 되면 개인정보가
  * 더 남고, 대역이 안 맞으면 차단해 둔 주소가 계속 집계된다.
  */
-class IpAddressTest extends TestCase
+class IpAddressTest extends PureTestCase
 {
     /**
      * IPv4 는 옥텟 수만큼 뒤에서부터 지운다.

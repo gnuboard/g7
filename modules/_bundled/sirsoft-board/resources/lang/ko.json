@@ -10,6 +10,7 @@
             "board_types": "게시판 유형",
             "boards": "게시판 목록",
             "boards_list": "게시판 목록",
+            "content_media_target": "본문 미디어 업로드 계약",
             "form_data": "폼 데이터",
             "form_meta": "폼 메타",
             "identityProviders": "본인인증 제공자",

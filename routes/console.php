@@ -3,6 +3,7 @@
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Jobs\GenerateSitemapJob;
+use Illuminate\Console\Scheduling\Event;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -190,6 +191,19 @@ if (file_exists(base_path('.env'))) {
 
 if (file_exists(base_path('.env'))) {
     try {
+        // 확장 예약 작업 기본값 — 중복 실행 방지(1440분)·한 서버에서만 실행(#161 F3). 길어진 매시 작업이 다음 회차와 겹치거나
+        // 다중 서버에서 같은 작업이 서버 수만큼 돌던 것을 막는다. 끄려면 getSchedules() 항목에 `without_overlapping => false`
+        // (분 단위 정수면 그 시간 뒤 잠금 만료)·`on_one_server => false` 를 둔다. 서버 간 배제는 공유 캐시 스토어에서만 효력이 있다.
+        $applyOverlapGuards = function (Event $cmd, array $config): void {
+            $withoutOverlapping = $config['without_overlapping'] ?? true;
+            if ($withoutOverlapping !== false) {
+                $cmd->withoutOverlapping(is_int($withoutOverlapping) ? $withoutOverlapping : 1440);
+            }
+            if (($config['on_one_server'] ?? true) !== false) {
+                $cmd->onOneServer();
+            }
+        };
+
         // 모듈 스케줄 등록
         $moduleManager = app(ModuleManager::class);
         foreach ($moduleManager->getActiveModules() as $module) {
@@ -204,6 +218,8 @@ if (file_exists(base_path('.env'))) {
                 str_contains($config['schedule'], ' ')
                     ? $cmd->cron($config['schedule'])
                     : $cmd->{$config['schedule']}();
+
+                $applyOverlapGuards($cmd, $config);
 
                 if (isset($config['description'])) {
                     $cmd->description($config['description']);
@@ -237,6 +253,8 @@ if (file_exists(base_path('.env'))) {
                 str_contains($config['schedule'], ' ')
                     ? $cmd->cron($config['schedule'])
                     : $cmd->{$config['schedule']}();
+
+                $applyOverlapGuards($cmd, $config);
 
                 if (isset($config['description'])) {
                     $cmd->description($config['description']);

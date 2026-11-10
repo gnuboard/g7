@@ -26,7 +26,7 @@ description: |
      자체가 뜨지 않으므로 서비스 계층에서 막는다.
 
 axes:
-  endpoint: [index, show, install, activate, deactivate, uninstall, check_updates, refresh_cache, changelog]
+  endpoint: [index, show, install, activate, deactivate, uninstall, update, check_updates, refresh_cache, changelog]
   outcome: [success, validation_rejected, not_found, permission_denied, conflict]
 
 exclusions:
@@ -80,6 +80,7 @@ effects:
   # ── 제거 ──
   - uninstall_removes_an_unprotected_pack
   - protected_pack_cannot_be_uninstalled
+  - language_pack_notice_failures_respond_422   # 이미 최신·보호 팩 같은 안내성 실패는 500 이 아니라 422 + 사유 문구(#882)
   # ── 갱신·캐시 ──
   - check_updates_returns_a_summary
   - refresh_cache_reports_status_per_registry

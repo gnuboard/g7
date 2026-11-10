@@ -22,6 +22,13 @@ use Illuminate\Support\Facades\Log;
 class SeoSettingsCacheListener implements HookListenerInterface
 {
     /**
+     * 저장하면 봇 화면 캐시를 비워야 하는 설정 범주 — SEO 설정과 본문 표시 규칙(본문 콘텐츠)
+     *
+     * @var array<int, string>
+     */
+    private const BOT_RENDER_CATEGORIES = ['seo', 'content'];
+
+    /**
      * 구독할 훅 목록 반환
      *
      * @return array 훅 이름 → 메서드/우선순위 매핑
@@ -60,7 +67,8 @@ class SeoSettingsCacheListener implements HookListenerInterface
     /**
      * 코어 설정 저장 시 SEO 캐시를 무효화합니다.
      *
-     * SEO 탭 설정이 저장된 경우에만 전체 캐시를 삭제합니다.
+     * SEO 탭 또는 「본문 콘텐츠」 탭 설정이 저장된 경우에만 전체 캐시를 삭제합니다.
+     * 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로 그 규칙이 바뀌면 캐시된 봇 화면도 비운다 (#887).
      *
      * @param  mixed  ...$args  훅 인자 ($tab, $mergedSettings, $result)
      * @return void 반환값 없음
@@ -70,8 +78,8 @@ class SeoSettingsCacheListener implements HookListenerInterface
         DB::afterCommit(function () use ($args) {
             $tab = $args[0] ?? null;
 
-            // SEO 탭이 아니면 무시
-            if ($tab !== 'seo') {
+            // 봇 화면에 영향이 있는 탭이 아니면 무시
+            if (! in_array($tab, self::BOT_RENDER_CATEGORIES, true)) {
                 return;
             }
 
@@ -82,7 +90,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
     /**
      * 코어 설정 단건 저장 시 SEO 캐시를 무효화합니다.
      *
-     * seo 카테고리 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
+     * seo·content 카테고리 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($key, $value, $result)
      * @return void 반환값 없음
@@ -93,7 +101,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             $key = $args[0] ?? null;
             $result = $args[2] ?? false;
 
-            if (! is_string($key) || ! str_starts_with($key, 'seo.')) {
+            if (! is_string($key) || ! in_array(strstr($key, '.', true), self::BOT_RENDER_CATEGORIES, true)) {
                 return;
             }
 

@@ -146,8 +146,30 @@ describe('확장 목록 — 의존 충돌(409) 후 스위치', () => {
       expect(gridProp(tree, 'resyncKey'), `${source} 격자에 resyncKey 바인딩이 없습니다.`).toContain('_global.extensionToggleResync');
       expect(hasResyncBump(conflictActionsOf(tree)), `${source} 409 처리에 재동기 신호가 없습니다.`).toBe(true);
       expect(hasResyncBump(toggleCallOf(tree).onError), `${source} 토글 실패 처리에 재동기 신호가 없습니다.`).toBe(true);
-      expect(hasResyncBump(toggleCallOf(tree).onSuccess), `${source} 성공 처리는 서버 값이 바뀌므로 신호가 필요 없습니다.`).toBe(false);
     }
+  });
+
+  /**
+   * 모듈·플러그인은 켜기 뒤 화면 파일(JS·CSS)을 몇 초 더 받는다 — 목록이 바뀌자마자 잠금을 풀면 그 사이 다시 끌 수 있어
+   * 받던 파일이 404 가 됐다(#882 결정: 파일까지 받은 뒤 해제). 그래서 격자는 holdUntilResync 로 서버 값 변경에 풀지 않고,
+   * 성공 처리는 후속 작업 묶음(parallel — reloadExtensions 포함)이 끝난 **뒤에** 재동기 신호를 올린다. 언어팩은 화면 파일을
+   * 받지 않아 종전대로 서버 값이 바뀌면 푼다(성공 신호 없음 — 있으면 hold 없이도 일찍 풀 뿐 해는 없지만 계약을 하나로 둔다).
+   *
+   * @scenario case=card_toggle_pending
+   * @effects card_toggle_holds_until_post_success_work_done
+   */
+  it('모듈·플러그인: 성공 처리가 후속 작업 묶음 뒤에 재동기 신호를 올리고 격자가 그때까지 잠금을 둔다 — 언어팩은 종전대로', () => {
+    for (const [tree, source] of [[moduleList, 'modules'], [pluginList, 'plugins']] as const) {
+      expect(gridProp(tree, 'holdUntilResync'), `${source} 격자에 holdUntilResync 가 없습니다.`).toBe('true');
+      const success = asArray(toggleCallOf(tree).onSuccess);
+      const parallel = success.findIndex((a: Json) => a.handler === 'parallel');
+      const bump = success.findIndex((a: Json) => hasResyncBump(a));
+      expect(parallel, `${source} 성공 처리에 후속 작업 묶음(parallel)이 없습니다.`).toBeGreaterThanOrEqual(0);
+      expect(JSON.stringify(success[parallel]), `${source} 후속 작업 묶음에 reloadExtensions 가 없습니다.`).toContain('reloadExtensions');
+      expect(bump, `${source} 성공 처리에 재동기 신호가 없습니다.`).toBeGreaterThan(parallel);
+    }
+    expect(gridProp(languagePackList, 'holdUntilResync')).toBe('');
+    expect(hasResyncBump(toggleCallOf(languagePackList).onSuccess), '언어팩 성공 처리는 서버 값이 바뀌므로 신호가 필요 없습니다.').toBe(false);
   });
 
   /**

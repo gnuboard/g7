@@ -129,6 +129,7 @@ class RollbackStaleFilesCommand extends Command
 
         $logPath = storage_path(sprintf(
             'logs/hotfix_rollback_stale_files_%s.log',
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             date('Ymd_His'),
         ));
         @file_put_contents($logPath, $this->buildLogEntry($backupPath, $result, $candidates));
@@ -232,6 +233,7 @@ class RollbackStaleFilesCommand extends Command
     {
         $lines = [
             '=== hotfix:rollback-stale-files 실행 로그 ===',
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             '날짜: '.date('Y-m-d H:i:s'),
             "백업 디렉토리: {$backupPath}",
             '',

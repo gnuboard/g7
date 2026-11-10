@@ -67,7 +67,9 @@
           </button>
         </div>
       </div>
-      <tab-navigation-scroll data-type="composite" data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
+      <!-- 탭이 많다(코어 8 + 확장 탭) — 탭은 줄어들거나 글자 단위로 줄바꿈되지 않고, 넘치면 막대가 가로로 스크롤된다.
+           줄어들게 두면 확장을 여럿 켠 사이트에서 탭 하나가 44px 까지 눌려 이름이 세로로 쪼개지고 막대가 158px 로 높아졌다(실측). -->
+      <tab-navigation-scroll data-type="composite" data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default overflow-x-auto" activeClassName="tab-btn-base tab-btn-default-active shrink-0 whitespace-nowrap" inactiveClassName="tab-btn-base tab-btn-default shrink-0 whitespace-nowrap" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
         <prop name="tabs">
           <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
           <item id="contact_info" label="$t:admin.users.detail.tabs.contact_info"/>
@@ -76,6 +78,7 @@
           <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info"/>
           <item id="consent_info" label="$t:admin.users.detail.tabs.consent_info"/>
           <item id="notifications_info" label="$t:admin.users.detail.tabs.notifications_info"/>
+          <item id="search_history_info" label="$t:admin.users.detail.tabs.search_history_info"/>
         </prop>
         <on type="change">
           <!-- 탭 전환 — 내용은 이미 받아 둔 한 응답에서 갈라 보이므로 탭마다 다시 부르지 않는다. -->
@@ -348,6 +351,36 @@
               </on>
               <span>$t:admin.users.detail.notifications.view_inbox</span>
             </a>
+          </div>
+        </div>
+      </div>
+      <!-- 최근 검색어 — 회원이 사이트 통합검색(코어 범위 `core.site`)에 남긴 검색어. 상품·게시글 검색처럼 확장이 선언한 범위는
+           그 확장이 자기 탭에 그린다(모듈이 소유하는 회원 데이터는 모듈 탭 — 설계 결정 2026-09-21). 값은 상세 응답에만 실리는
+           `search_history`(범위 id 가 키). 회원이 자동 저장을 끄거나 사이트가 기능을 꺼도 저장돼 있던 검색어는 그대로 보인다 —
+           끄기는 기록만 멈춘다. -->
+      <div data-ref="section_search_history_info" id="search_history_info" class="admin-card">
+        <div class="flex-center gap-2 mb-4">
+          <icon name="search" class="text-secondary text-xl"/>
+          <h3 class="section-heading">$t:admin.users.detail.tabs.search_history_info</h3>
+        </div>
+        <div class="row-stack">
+          <div data-ref="search_history_feature_off" data-if="{{user?.data?.search_history?.enabled === false}}" class="alert-info">
+            <span class="text-sm">$t:admin.users.detail.search_history.feature_off</span>
+          </div>
+          <div data-ref="field_search_history_auto_save">
+            <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.search_history.auto_save</label>
+            <div class="text-primary text-sm">{{user?.data?.search_history?.auto_save === false ? '$t:admin.users.detail.search_history.auto_save_off' : '$t:admin.users.detail.search_history.auto_save_on'}}</div>
+          </div>
+          <div data-ref="field_search_history_site">
+            <label class="text-label-subtle block font-medium mb-1">{{(user?.data?.search_history?.scopes ?? {})['core.site']?.label ?? '$t:admin.users.detail.search_history.keywords'}} · $t:admin.users.detail.search_history.count|count={{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length}}</label>
+            <!-- 0건이어도 자리를 비우지 않는다 — 감추면 「검색어가 없다」와 「이 기능이 없다」가 화면에서 같아 보인다 -->
+            <div data-ref="search_history_site_empty" data-if="{{!!user?.data?.search_history &amp;&amp; ((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length === 0}}" class="text-primary text-sm">$t:admin.users.detail.search_history.empty</div>
+            <ul data-ref="search_history_site_list" data-if="{{((user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []).length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
+              <li data-each="history in (user?.data?.search_history?.scopes ?? {})['core.site']?.items ?? []" class="flex items-center justify-between gap-3 py-2">
+                <span class="text-primary text-sm break-all">{{history.keyword}}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

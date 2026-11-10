@@ -99,6 +99,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | `target_name` | (선택, 7.1.4+) 대상의 사람이 읽는 이름(현재 로케일). 지금은 `dependents` 단계(강제 비활성화·강제 재설치 등으로 의존 조건이 깨진 의존 확장 안내)만 싣는다 — `target` 은 그대로 식별자다. 이름을 찾지 못해 식별자와 같으면 키가 없다. 관리자 결과 창은 이 값이 있으면 대상 칸에 식별자 대신 이름을 보인다 |
 | `message` | 실패 사유 (현재 로케일). DB 예외면 접속 정보·SQL 문장을 뗀 사유만 담는다(원문은 서버 로그) |
 | `level` | `warning`(반영되지 않은 실패) 또는 `notice`(실패는 아닌 안내 — 예: 압축 경로 정규화). 안내만 있으면 관리자 결과 창은 「실패」 대신 안내 제목을 쓰고, artisan 명령은 종료코드·표지를 바꾸지 않는다 |
+| `cause` | (선택, 7.1.5+) `declaration` — 확장 manifest 선언(`search_scopes`·`necessary_storage`)의 형식이 틀려 그 부분을 버린 실패. 작업을 다시 실행해도 같으므로 확장 개발자가 선언을 고쳐야 한다. 관리자 결과 창은 이 항목에 「확장 개발자가 고칠 선언」 안내를 붙이고, 실패가 모두 이 항목이면 「다시 실행하세요」 대신 확장 개발자에게 알리라고 안내한다. artisan 경고 표는 사유 뒤에 같은 안내를 붙인다. 다른 항목에는 키가 없다 |
 
 ### 페이지네이션
 
@@ -279,7 +280,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 40 · **엔드포인트 수**: 358
+- **문서 수**: 41 · **엔드포인트 수**: 364
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -317,6 +318,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [roles.md](roles.md) | `roles` | 7 |
 | [schedules.md](schedules.md) | `schedules` | 12 |
 | [search.md](search.md) | `search` | 1 |
+| [search-history.md](search-history.md) | `search-history` | 6 |
 | [seo.md](seo.md) | `seo` | 5 |
 | [settings.md](settings.md) | `settings` | 18 |
 | [system.md](system.md) | `system` | 2 |

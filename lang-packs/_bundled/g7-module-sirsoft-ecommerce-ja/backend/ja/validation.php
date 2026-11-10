@@ -1277,6 +1277,12 @@ return [
     ],
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
     'attributes' => [
+        'content_media' => [
+            'owner_type' => '本文メディアの所有種別',
+            'file' => '本文メディアファイル',
+            'temp_key' => '一時キー',
+        ],
+        'content_media_temp_key' => '本文メディアの一時キー',
         // 手動決済処理・再有効化の確認ウィンドウ3項目 (Q13・Q14)
         'apply_stock_deduction' => '在庫差し引き',
         'apply_mileage_deduction' => '使用マイレージ差し引き',
@@ -1416,6 +1422,10 @@ return [
         'review_settings.write_deadline_days' => 'レビュー作成期限(日)',
         'review_settings.max_images' => 'レビュー画像最大枚数',
         'review_settings.max_image_size_mb' => 'レビュー画像最大容量(MB)',
+
+        // 商品陳列設定
+        'product_display.related_order' => '関連商品の並び順',
+        'product_display.related_cache_hours' => '関連商品リストの保持時間',
         'country_settings.*.api_config.http_method' => 'HTTPメソッド',
         'country_settings.*.api_config.auth_type' => '認証方式',
         'country_settings.*.api_config.auth_token' => '認証トークン',

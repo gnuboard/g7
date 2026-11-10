@@ -7,16 +7,20 @@ use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Enums\ScheduleType;
+use App\Exceptions\ScheduleAlreadyRunningException;
 use App\Exceptions\ScheduleExecutionException;
+use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
 use App\Support\OutboundUrlValidator;
 use App\Support\ScheduleCommandValidator;
 use Exception;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +30,12 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 class ScheduleService
 {
+    /**
+     * 스케줄 서비스를 생성합니다.
+     *
+     * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 저장소
+     * @param  ScheduleHistoryRepositoryInterface  $historyRepository  실행 이력 저장소
+     */
     public function __construct(
         private ScheduleRepositoryInterface $scheduleRepository,
         private ScheduleHistoryRepositoryInterface $historyRepository
@@ -169,6 +179,67 @@ class ScheduleService
      * @throws ValidationException 실행 실패 시
      */
     public function runSchedule(Schedule $schedule, ?int $triggeredBy = null): ScheduleHistory
+    {
+        // 「중복 실행 방지」를 켠 스케줄은 실행 잠금을 먼저 잡는다 — 7.1.4 까지는 값을 저장만 해 「지금 실행」을 두 번 누르면 같은
+        // 작업이 두 번 돌았다(#161 F4). 직전 훅·이력 생성보다 앞이라 거절된 요청은 이력·last_result 를 남기지 않는다.
+        $runLock = $this->acquireRunLock($schedule);
+
+        try {
+            return $this->runScheduleUnlocked($schedule, $triggeredBy);
+        } finally {
+            if ($runLock !== null) {
+                try {
+                    $runLock->release();
+                } catch (\Throwable $e) {
+                    Log::warning('스케줄 실행 잠금 해제 실패 — 유지 시간이 지나면 풀립니다', ['schedule_id' => $schedule->id, 'error' => $e->getMessage()]);
+                }
+            }
+        }
+    }
+
+    /**
+     * 「중복 실행 방지」 스케줄의 실행 잠금을 잡습니다. 방지를 끈 스케줄은 잡지 않습니다.
+     *
+     * 유지 시간은 스케줄 제한 시간 + 60초, 최소 1시간이다 — 실행 프로세스가 죽어도 그 뒤 풀린다.
+     *
+     * @param  Schedule  $schedule  실행할 스케줄
+     * @return Lock|null 잡은 잠금 (방지를 끈 스케줄이면 null)
+     *
+     * @throws ScheduleAlreadyRunningException 이미 실행 중일 때 (409)
+     * @throws ScheduleRunLockUnavailableException 잠금 저장소 오류일 때 (503)
+     */
+    private function acquireRunLock(Schedule $schedule): ?Lock
+    {
+        if (! $schedule->without_overlapping) {
+            return null;
+        }
+
+        try {
+            $lock = Cache::lock('schedule-run:'.$schedule->id, max(3600, (int) ($schedule->timeout ?? 0) + 60));
+            $acquired = $lock->get();
+        } catch (\Throwable $e) {
+            Log::error('스케줄 실행 잠금 저장소 오류 — 실행하지 않습니다', ['schedule_id' => $schedule->id, 'error' => $e->getMessage()]);
+
+            throw new ScheduleRunLockUnavailableException((int) $schedule->id);
+        }
+
+        if (! $acquired) {
+            throw new ScheduleAlreadyRunningException((int) $schedule->id);
+        }
+
+        return $lock;
+    }
+
+    /**
+     * 스케줄을 실행하고 이력을 남깁니다(실행 잠금은 호출하는 쪽이 잡는다).
+     *
+     * @param  Schedule  $schedule  실행할 스케줄
+     * @param  int|null  $triggeredBy  수동 실행한 사용자 ID (예약 실행이면 null)
+     * @return ScheduleHistory 실행 이력
+     *
+     * @throws ValidationException 실행 실패 시
+     */
+    private function runScheduleUnlocked(Schedule $schedule, ?int $triggeredBy): ScheduleHistory
     {
         // before_run 훅 실행
         HookManager::doAction('core.schedule.before_run', $schedule);

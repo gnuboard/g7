@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 계산 API 요청 필드 정리(DataMigration) 회귀 테스트
@@ -30,12 +31,17 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
 
     private UpgradeContext $context;
 
+    /**
+     * 1.3.0 계산 API 요청 필드 정리 마이그레이션을 불러와 인스턴스와 업그레이드 컨텍스트를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/07_NormalizeShippingApiRequestFields.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/07_NormalizeShippingApiRequestFields.php');
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\NormalizeShippingApiRequestFields';
 
@@ -105,6 +111,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         return json_decode((string) $this->rawFields($id), true) ?: [];
     }
 
+    /**
+     * 전송 후보 밖 값(order_amount·zipcode)만 지우고 후보 안 값은 순서대로 남긴다.
+     *
+     * @scenario case=mixed_fields
+     *
+     * @effects out_of_candidate_fields_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_removes_fields_outside_the_allowed_candidates(): void
     {
         $id = $this->makeCountrySetting(json_encode(['policy_id', 'order_amount', 'items', 'zipcode']));
@@ -117,6 +132,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         $this->assertSame(['policy_id', 'items'], $this->storedFields($id));
     }
 
+    /**
+     * Enum 의 전송 후보 전부가 저장된 행은 값을 덜거나 더하지 않고 그대로 둔다.
+     *
+     * @scenario case=all_allowed
+     *
+     * @effects allowed_fields_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_keeps_every_allowed_field(): void
     {
         $allowed = ShippingApiRequestField::values();
@@ -129,6 +153,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         $this->assertSame($allowed, $this->storedFields($id));
     }
 
+    /**
+     * 이미 후보 안 값만 가진 행은 원시 JSON 까지 바뀌지 않는다.
+     *
+     * @scenario case=already_clean
+     *
+     * @effects clean_rows_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_leaves_already_clean_rows_untouched(): void
     {
         $id = $this->makeCountrySetting(json_encode(['country_code', 'group_total']));
@@ -139,6 +172,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         $this->assertSame($before, $this->rawFields($id));
     }
 
+    /**
+     * 두 번째 실행은 첫 실행 결과를 더 바꾸지 않는다.
+     *
+     * @scenario case=rerun
+     *
+     * @effects cleanup_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_idempotent(): void
     {
         $id = $this->makeCountrySetting(json_encode(['weight', 'total_quantity', 'zipcode']));
@@ -152,6 +194,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         $this->assertSame(['total_quantity'], $this->storedFields($id));
     }
 
+    /**
+     * 저장된 값이 전부 후보 밖이면 목록이 빈 배열이 된다.
+     *
+     * @scenario case=all_out_of_candidates
+     *
+     * @effects out_of_candidate_fields_removed, all_invalid_list_becomes_empty
+     *
+     * @return void 반환값 없음
+     */
     public function test_empties_the_list_when_every_field_is_outside_the_candidates(): void
     {
         $id = $this->makeCountrySetting(json_encode(['order_amount', 'weight', 'zipcode']));
@@ -161,6 +212,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         $this->assertSame([], $this->storedFields($id));
     }
 
+    /**
+     * null 이나 배열이 아닌 JSON 값은 정리 대상에서 빠져 원래 값 그대로 남는다.
+     *
+     * @scenario case=non_array_value
+     *
+     * @effects null_and_non_array_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_leaves_null_and_non_array_values_alone(): void
     {
         $nullId = $this->makeCountrySetting(null);
@@ -172,6 +232,15 @@ class NormalizeShippingApiRequestFieldsTest extends ModuleTestCase
         $this->assertSame(json_encode('order_amount'), $this->rawFields($scalarId));
     }
 
+    /**
+     * 백필에 복제된 ALLOWED_FIELDS 상수가 ShippingApiRequestField Enum 값 목록과 정확히 같다.
+     *
+     * @scenario case=enum_ssot
+     *
+     * @effects candidate_list_matches_enum_ssot
+     *
+     * @return void 반환값 없음
+     */
     public function test_allowed_candidates_match_the_enum_ssot(): void
     {
         $reflection = new \ReflectionClass($this->migration);

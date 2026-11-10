@@ -5,6 +5,8 @@ namespace App\Extension;
 use App\Contracts\Extension\CacheableExtensionInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\StorageInterface;
+use App\Support\CoreUpdateContext;
+use App\Support\InstallerContext;
 use Illuminate\Support\ServiceProvider;
 use ReflectionClass;
 
@@ -82,6 +84,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
 
     /**
      * 다국어 도메인 이름. 기본값은 확장 식별자이며 자식이 필요 시 오버라이드.
+     *
+     * @return string 번역 네임스페이스
      */
     protected function translationNamespace(): string
     {
@@ -90,6 +94,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
 
     /**
      * Register services.
+     *
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -100,6 +106,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap services.
+     *
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -108,7 +116,56 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
     }
 
     /**
+     * 이 확장이 지금 활성 상태인지 판정합니다 — boot 부수효과 게이트(#730 결정, #860).
+     *
+     * 비활성 확장도 provider 는 등록된다(바인딩·번역은 설치 시더·관리 화면이 쓴다). 다만 요청 처리에 끼어드는
+     * boot 부수효과(레이트리미터·쿠키 암호화 예외·큐 훅·사이트맵 기여자 등)는 활성일 때만 건다:
+     *
+     *     if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) { ... }
+     *
+     * `method_exists` 가드는 이 메서드가 없는 옛 코어(7.1.4 이하)에서도 확장이 지금처럼 동작하게 한다.
+     * 판정은 새 판정식을 만들지 않고 코어 상태 목록(`getActive{Module,Plugin}Identifiers()`)을 그대로 본다.
+     * 상태를 알 수 없으면 — 설치 미완료·스키마 변경 명령·코어 업데이트 중·조회 실패 — 지금처럼 true 다.
+     *
+     * 활성화 요청 안에서는 provider 가 상태를 쓰기 전에 이미 부팅돼 있으므로, 부수효과는 활성화 다음 요청의
+     * 첫 부팅부터 걸린다(활성화 요청의 응답은 그 부수효과를 쓰지 않는다).
+     *
+     * @return bool 활성이거나 상태를 알 수 없으면 true
+     */
+    protected function isExtensionActive(): bool
+    {
+        try {
+            $identifier = isset($this->extensionIdentifier) ? $this->extensionIdentifier : null;
+
+            if (! is_string($identifier) || $identifier === ''
+                || ! config('app.installer_completed')
+                || InstallerContext::isSchemaMutatingCommand()
+                || CoreUpdateContext::isInProgress()) {
+                return true;
+            }
+
+            $active = $this->activeIdentifiersForGate();
+
+            return $active === null || in_array($identifier, $active, true);
+        } catch (\Throwable) {
+            return true;
+        }
+    }
+
+    /**
+     * 이 유형(모듈·플러그인)의 활성 식별자 목록을 반환합니다 — `isExtensionActive()` 판정용.
+     *
+     * @return array<int, string>|null 활성 식별자 목록 (유형을 모르면 null = 판정 보류)
+     */
+    protected function activeIdentifiersForGate(): ?array
+    {
+        return null;
+    }
+
+    /**
      * Repository 인터페이스를 구현체에 바인딩합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerRepositories(): void
     {
@@ -119,6 +176,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
 
     /**
      * StorageInterface 를 필요로 하는 서비스에 contextual binding 으로 주입합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerStorageBindings(): void
     {
@@ -137,6 +196,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
 
     /**
      * CacheInterface 를 필요로 하는 서비스에 contextual binding 으로 주입합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerCacheBindings(): void
     {
@@ -154,6 +215,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
      *
      * ReflectionClass 로 자식 클래스의 실제 경로를 가져옵니다 (__DIR__ 은 베이스
      * 경로를 반환하므로 사용 불가).
+     *
+     * @return string 확장 디렉터리 경로
      */
     protected function getProviderPath(): string
     {
@@ -170,6 +233,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
      *
      * 확장 마이그레이션은 ModuleManager/PluginManager::runMigrations() 가 별도로
      * 실행하므로 여기서는 loadMigrationsFrom() 을 호출하지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     protected function loadExtensionMigrations(): void
     {
@@ -180,6 +245,8 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
      * 확장의 다국어 파일을 로드합니다.
      *
      * 기본 경로: ServiceProvider 디렉토리에서 상위로 한 단계 올라간 lang/ 디렉토리.
+     *
+     * @return void 반환값 없음
      */
     protected function loadExtensionTranslations(): void
     {

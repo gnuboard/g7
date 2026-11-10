@@ -1,0 +1,22 @@
+feature: 통화별 사용 언어(locales) 정합화 업그레이드 (1.0.0)
+
+description: |
+  시드 기본값이 사이트 지원 언어와 무관한 locale(zh, de/fr/es/it)을 박아 두어 통화 설정 저장이
+  in:supported_locales 검증에 영구 차단되던 결함을 NormalizeCurrencyLocales 가 정리한다.
+  유효값은 보존하고 무효값·중복만 제거하며, 비게 된 통화에만 기본값(KRW→ko, 그 외→en)을 주고,
+  설정 파일이 없으면 건너뛰며 재실행해도 결과가 같다.
+
+axes:
+  case: [unsupported_removed, krw_fallback, mixed_valid_invalid, site_locale_missing, rerun, missing_file, duplicates]
+
+effects:
+  - unsupported_locales_removed
+  - valid_locales_preserved
+  - empty_non_krw_falls_back_to_en
+  - empty_krw_falls_back_to_ko
+  - normalization_idempotent
+  - missing_settings_file_skipped
+  - duplicate_locales_deduplicated
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/NormalizeCurrencyLocalesTest.php

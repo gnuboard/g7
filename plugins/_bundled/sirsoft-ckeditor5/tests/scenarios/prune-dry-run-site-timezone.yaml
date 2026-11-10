@@ -1,0 +1,14 @@
+feature: 미참조 이미지 정리 드라이런 표의 업로드 시각 — 사이트 시간대 (#160)
+
+description: |
+  `sirsoft-ckeditor5:prune-unused-images --dry-run` 이 업로드 시각을 UTC 원문으로 찍어 운영자가 보는 사이트 시각과
+  어긋났다. 운영자 콘솔 출력은 사이트 시간대로 찍는다(감사 규칙 확장으로 발견된 추가 결함).
+
+axes:
+  surface: [dry_run_uploaded_at]
+
+effects:
+  - console_uploaded_at_uses_site_timezone
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/Console/PruneUnusedImagesSiteTimezoneTest.php

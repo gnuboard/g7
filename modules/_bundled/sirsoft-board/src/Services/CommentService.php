@@ -757,6 +757,7 @@ class CommentService
             'admin_id' => Auth::id(),
             'admin_name' => Auth::user()?->name ?? 'Unknown',
             'ip_address' => request()->ip(),
+            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 Resource 에서 변환
             'created_at' => now()->toDateTimeString(),
         ];
     }

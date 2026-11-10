@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Providers\SettingsServiceProvider;
 use App\Repositories\JsonConfigRepository;
+use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * 저장한 웹 프로세스만 다시 읽으므로 워커는 재시작 전까지 옛 설정을 쓴다. 설정 저장 때 올린 {@see SettingsVersion} 을
  * 작업마다 비교해 바뀌었으면 다시 읽는다.
  *
- * 다시 읽는 것: 코어 config(드라이버 계열 제외)·이미 만든 메일러·코어/모듈/플러그인 설정 미러.
+ * 다시 읽는 것: 코어 config(드라이버 계열 제외)·이미 만든 메일러·알림 채널 드라이버·코어/모듈/플러그인 설정 미러.
  * 드라이버 계열(큐·캐시·세션 연결 등)은 기존대로 저장 시 `queue:restart` 가 맡는다 — 작업 도중 연결을 바꾸지 않는다.
  *
  * 프로세스 수명 동안 마지막으로 본 버전을 기억해야 하므로 의도된 싱글톤이다(SettingsServiceProvider 가 등록).
@@ -73,6 +74,12 @@ class WorkerSettingsRefresher
         // 이미 만든 메일러는 옛 설정(발신 주소·SMTP 자격증명)을 들고 있다 — 버려서 다음 발송이 새 설정으로 만들게 한다
         if (app()->resolved('mail.manager')) {
             app('mail.manager')->forgetMailers();
+        }
+
+        // 알림 채널 매니저(싱글톤)는 만든 채널 드라이버를 들고 있고, 드라이버는 생성자로 받은 플러그인 설정 서비스를
+        // 들고 있다 — 버려서 다음 발송이 이 작업의 설정 서비스로 드라이버를 다시 만들게 한다(#860)
+        if (app()->resolved(ChannelManager::class)) {
+            app(ChannelManager::class)->forgetDrivers();
         }
 
         $mirror = app(ExtensionSettingsMirror::class);

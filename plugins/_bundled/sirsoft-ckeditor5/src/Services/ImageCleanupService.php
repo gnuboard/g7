@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Ckeditor5\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Helpers\TimezoneHelper;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
@@ -191,7 +192,8 @@ class ImageCleanupService
             'hash' => (string) $upload->hash,
             'original_name' => (string) $upload->original_name,
             'file_size' => (int) $upload->file_size,
-            'created_at' => $upload->created_at?->toDateTimeString(),
+            // 운영자 콘솔(드라이런 표) 출력 — 사이트 시간대
+            'created_at' => TimezoneHelper::toSiteDateTimeString($upload->created_at),
             'status' => $status,
         ];
     }

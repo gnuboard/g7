@@ -11847,5 +11847,37 @@
       }
     ],
     "label": "$t:editor.control.vc_layout.label"
+  },
+  "rscScope": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "scope"
+    },
+    "label": "$t:editor.control.rsc_scope.label"
+  },
+  "rscResultPath": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "resultPath"
+    },
+    "label": "$t:editor.control.rsc_result_path.label"
+  },
+  "rscButtonText": {
+    "widget": "i18n-text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "buttonText"
+    },
+    "label": "$t:editor.control.rsc_button_text.label"
+  },
+  "hdrSearchHistoryScope": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "searchHistoryScope"
+    },
+    "label": "$t:editor.control.hdr_search_history_scope.label"
   }
 }

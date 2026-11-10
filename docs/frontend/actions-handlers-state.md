@@ -831,6 +831,13 @@ refetch 시 상태를 임시로 오버라이드하여 데이터소스 파라미�
 | `dataPath` | string | ❌ | null | 병합할 데이터 경로 (예: "data") |
 | `newData` | array | ✅ | - | 병합할 새 데이터 배열 |
 
+### 뒤로 가기와 더보기 목록 (engine-v1.85.0+)
+
+`appendDataSource` 로 늘린 데이터소스는 화면을 떠날 때 엔진이 스냅샷으로 기억했다가, 뒤로/앞으로 가기로 돌아오면 그 길이로
+되살리고 다시 받은 첫 묶음의 바뀐 항목만 갈아끼운다. 다음 쪽 번호 같은 진행 상태는 레이아웃 `meta.scroll_restoration.snapshot.state`
+에 경로를 적어야 함께 돌아온다 — 적지 않으면 되살린 여러 쪽 목록에서 다음 더보기가 받은 쪽을 다시 받을 수 있다.
+목록이 화면 안 영역에서 스크롤되면 그 영역을 `containers` 에 적는다. 상세는 [scroll-restoration.md](scroll-restoration.md#더보기-목록-스냅샷-snapshot).
+
 ### 무한스크롤 예시
 
 ```html

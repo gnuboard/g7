@@ -145,6 +145,8 @@ effects:
   - cash_equivalent_recalculated_on_partial_cancel # 취소 재계산이 현금성 금액을 갱신
   - cash_equivalent_zeroed_on_full_cancel          # 전액취소 → 현금성 0
   - cash_equivalent_zero_for_non_dbank_methods
+  - negative_final_amount_clamped_to_zero          # 음수 실결제액 → 현금성 0 으로 보정
+  - fully_mileage_dbank_order_has_zero_cash_equivalent # 무통장 + 전액 마일리지 0원 주문 → 현금성 0
 
   # 리소스 노출 · 영수증 분리
   - payment_resource_exposes_pg_receipt_url        # PG 영수증(카드 매출전표) URL 노출

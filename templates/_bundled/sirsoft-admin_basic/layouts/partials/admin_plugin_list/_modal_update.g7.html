@@ -32,6 +32,47 @@
         </div>
       </div>
     </div>
+    <!-- 새 버전이 요구하는 확장(목록 행 `update_dependency_warnings`·`update_integration_notices`, 코어 7.1.5) — 새 판 manifest 의
+         필수 의존·연동을 지금 설치 상태와 대조해 못 미치는 것(미설치·꺼짐·버전 미달)을 업데이트 **전에** 알린다.
+         판정은 업데이트가 끝난 뒤 완료 안내와 같고, 업데이트를 막지 않는다(실행 버튼을 잠그지 않는다).
+         배지는 설치 창의 연동 목록과 같은 문구·모양이다. 옛 코어는 두 필드를 싣지 않으므로 절이 그려지지 않는다. -->
+    <div data-ref="plugin_update_requirements_section" data-if="{{(_global.selectedPlugin?.update_dependency_warnings ?? []).length &gt; 0 || (_global.selectedPlugin?.update_integration_notices ?? []).length &gt; 0}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
+      <div class="flex-start gap-2">
+        <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" aria-hidden="true"/>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-warning-soft">$t:extensions.update_modal.requirements_title</p>
+          <!-- 필수 의존 — 못 미치면 업데이트 뒤 이 확장이 제대로 동작하지 않을 수 있다 -->
+          <div data-ref="plugin_update_requirements_dependencies" data-if="{{(_global.selectedPlugin?.update_dependency_warnings ?? []).length &gt; 0}}" class="mt-2">
+            <p class="text-warning-soft">$t:extensions.update_modal.requirements_dependencies_hint</p>
+            <div data-each="depItem in _global.selectedPlugin.update_dependency_warnings" class="flex-center flex-wrap gap-2 p-2 mt-1 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
+              <icon data-if="{{depItem.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+              <icon data-if="{{depItem.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+              <span class="text-primary text-sm">{{depItem.name || depItem.identifier}} ({{depItem.identifier}})</span>
+              <span data-if="{{depItem.required_version &amp;&amp; depItem.required_version !== '*'}}" class="text-tertiary font-mono">$t:admin.extension_integrations.required_version|version={{depItem.required_version}}</span>
+              <span data-if="{{depItem.installed_version}}" class="text-tertiary font-mono">$t:admin.extension_integrations.installed_version|version={{depItem.installed_version}}</span>
+              <span data-if="{{depItem.state === 'not_installed'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
+              <span data-if="{{depItem.state === 'inactive'}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.extension_integrations.inactive</span>
+              <span data-if="{{depItem.state === 'version_mismatch'}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.extension_integrations.version_mismatch</span>
+            </div>
+          </div>
+          <!-- 함께 쓰면 연동되는 확장 — 못 미치면 업데이트는 되지만 그 연동이 꺼진다 -->
+          <div data-ref="plugin_update_requirements_integrations" data-if="{{(_global.selectedPlugin?.update_integration_notices ?? []).length &gt; 0}}" class="mt-2">
+            <p class="text-warning-soft">$t:extensions.update_modal.requirements_integrations_hint</p>
+            <div data-each="intItem in _global.selectedPlugin.update_integration_notices" class="flex-center flex-wrap gap-2 p-2 mt-1 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
+              <icon data-if="{{intItem.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+              <icon data-if="{{intItem.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+              <icon data-if="{{intItem.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+              <span class="text-primary text-sm">{{intItem.name || intItem.identifier}} ({{intItem.identifier}})</span>
+              <span data-if="{{intItem.required_version &amp;&amp; intItem.required_version !== '*'}}" class="text-tertiary font-mono">$t:admin.extension_integrations.required_version|version={{intItem.required_version}}</span>
+              <span data-if="{{intItem.installed_version}}" class="text-tertiary font-mono">$t:admin.extension_integrations.installed_version|version={{intItem.installed_version}}</span>
+              <span data-if="{{intItem.state === 'not_installed'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
+              <span data-if="{{intItem.state === 'inactive'}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.extension_integrations.inactive</span>
+              <span data-if="{{intItem.state === 'version_mismatch'}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.extension_integrations.version_mismatch</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div data-if="{{_global.pluginUpdateError}}" class="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
       <div class="flex-start gap-2">
         <icon name="exclamation-circle" class="text-red-500 dark:text-red-400 mt-0.5 shrink-0"/>

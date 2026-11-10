@@ -949,7 +949,24 @@
                                             }
                                         },
                                         {
+                                            "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                     칸 충돌 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161).",
+                                            "handler": "toast",
+                                            "if": "{{error.errors?.operation_in_progress}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "if": "{{error.errors?.operation_in_progress}}",
+                                            "params": {
+                                                "dataSourceId": "language_packs"
+                                            }
+                                        },
+                                        {
                                             "handler": "setState",
+                                            "if": "{{!error.errors?.operation_in_progress}}",
                                             "params": {
                                                 "target": "global",
                                                 "slotConflictCurrent": "{{error.errors?.current ?? null}}",
@@ -959,7 +976,8 @@
                                         },
                                         {
                                             "handler": "openModal",
-                                            "target": "language_pack_slot_conflict_modal"
+                                            "target": "language_pack_slot_conflict_modal",
+                                            "if": "{{!error.errors?.operation_in_progress}}"
                                         }
                                     ]
                                 }

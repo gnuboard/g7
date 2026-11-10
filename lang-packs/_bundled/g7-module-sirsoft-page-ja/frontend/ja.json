@@ -9,7 +9,8 @@
       "pages": "ページ一覧",
       "versions": "バージョン履歴",
       "attachmentSettings": "添付設定",
-      "createAbility": "登録権限の確認"
+      "createAbility": "登録権限の確認",
+      "contentMediaTarget": "本文メディアのアップロード契約"
     }
   }
 }

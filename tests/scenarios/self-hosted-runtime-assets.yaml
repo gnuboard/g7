@@ -78,6 +78,7 @@ test_files:
   - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
   - resources/js/core/template-engine/__tests__/networkResilience.stylesheet.test.ts
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-fallback.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/checkout-address-manual-entry.spec.ts
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/ckeditorGlobal.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.scriptGate.test.tsx
   - tests/Playwright/specs/layout-editor/preview-wysiwyg-single-load.spec.ts

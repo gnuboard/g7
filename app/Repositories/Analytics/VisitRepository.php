@@ -280,6 +280,7 @@ class VisitRepository implements VisitRepositoryInterface
             ->limit($limit)
             ->get()
             ->mapWithKeys(fn ($row): array => [
+                // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                 Carbon::parse($row->visit_date)->toDateString() => (int) $row->visits,
             ])
             ->all();

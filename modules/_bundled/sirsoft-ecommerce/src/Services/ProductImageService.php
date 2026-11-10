@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
+use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
@@ -219,13 +220,10 @@ class ProductImageService
             // 새 경로 생성: products/{productCode}/{filename}
             $newPath = "products/{$productCode}/{$image->stored_filename}";
 
-            // 파일 이동 (get + put + delete) — 행 disk 기준 (이동 후에도 행 disk 불변)
+            // 파일 이동 — 행 disk 기준 (이동 후에도 행 disk 불변). 상품 저장 트랜잭션 안에서는 복사해 두고 커밋되면
+            // 원본을 지운다 — 롤백되면 사본을 지워 DB 와 파일이 함께 임시 자리로 돌아간다 (StorageTransaction, #883)
             $rowStorage = $this->storageForRow($image->disk);
-            $content = $rowStorage->get('images', $image->path);
-            if ($content) {
-                $rowStorage->put('images', $newPath, $content);
-                $rowStorage->delete('images', $image->path);
-            }
+            StorageTransaction::move($rowStorage, 'images', $image->path, $newPath);
 
             // DB 업데이트: product_id 설정, temp_key 제거, path 변경, sort_order 재배치, is_thumbnail 해제
             $this->repository->update($image->id, [
@@ -242,17 +240,21 @@ class ProductImageService
         // 빈 임시 디렉토리 정리 — 임시 행이 여러 disk 에 걸칠 수 있어 disk 별로 정리.
         // 부수 작업이라 실패해도 연결을 되돌리지 않는다 — 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면
         // 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
-        try {
-            foreach ($tempImages->pluck('disk')->filter()->unique() as $tempDisk) {
-                $this->storageForRow($tempDisk)->deleteDirectory('images', "products/temp/{$tempKey}");
+        // 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
+        $tempDisks = $tempImages->pluck('disk')->filter()->unique();
+        StorageTransaction::afterCommit(function () use ($tempDisks, $tempKey) {
+            try {
+                foreach ($tempDisks as $tempDisk) {
+                    $this->storageForRow($tempDisk)->deleteDirectory('images', "products/temp/{$tempKey}");
+                }
+                $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
+            } catch (\Throwable $e) {
+                Log::warning('상품 임시 이미지 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
+                    'temp_key' => $tempKey,
+                    'error' => $e->getMessage(),
+                ]);
             }
-            $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
-        } catch (\Throwable $e) {
-            Log::warning('상품 임시 이미지 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
-                'temp_key' => $tempKey,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        });
 
         return $linkedCount;
     }
@@ -463,7 +465,8 @@ class ProductImageService
         $sourceStorage = $this->storageForRow($source->disk);
         $content = $sourceStorage->get('images', $source->path);
         if ($content) {
-            $sourceStorage->put('images', $newPath, $content);
+            // 상품 복사 저장이 롤백되면 복사본 파일도 지운다 (StorageTransaction, #883)
+            StorageTransaction::put($sourceStorage, 'images', $newPath, $content);
         } else {
             Log::warning('상품 이미지 복사 실패: 원본 파일 없음', [
                 'hash' => $sourceHash,

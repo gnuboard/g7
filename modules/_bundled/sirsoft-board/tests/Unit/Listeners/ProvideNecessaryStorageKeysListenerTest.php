@@ -6,6 +6,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Extension\HookManager;
 use Modules\Sirsoft\Board\Listeners\ProvideNecessaryStorageKeysListener;
+use Modules\Sirsoft\Board\Support\GuestUploadOwnerCookie;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
@@ -80,7 +81,8 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
         }
         $this->assertContains('g7_guest_order_token', $result['sessionStorage']);
         $this->assertSame(['other_ext_key'], $result['localStorage']);
-        $this->assertSame(['other_cookie'], $result['cookie']);
+        // 쿠키 스코프에는 앞선 값을 지키고 비회원 업로드 소유 쿠키만 더한다(#883)
+        $this->assertSame(['other_cookie', 'g7_board_guest_upload'], $result['cookie']);
         $this->assertSame(1, count(array_keys($result['sessionStorage'], $firstKey, true)));
     }
 
@@ -150,6 +152,33 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
                 "{$key} 가 {$relative} 의 저장 키 문자열과 어긋납니다."
             );
         }
+    }
+
+    /**
+     * 비회원 업로드 소유 쿠키를 필수 쿠키로 제공합니다 (#883 2단계 실측 결함).
+     *
+     * 동의 플러그인은 기능 쿠키에 동의하지 않은 방문자의 응답에서 허용목록 밖 쿠키를 모두 걷어낸다. 이 쿠키가
+     * 빠지면 비회원은 자기가 방금 올린 임시 첨부를 지우지 못하고(403) 순서도 못 바꾼다 — 쿠키 배너를 고르지 않은
+     * 비회원 전원이 겪는다(라이브 실측: 업로드 응답 Set-Cookie 0, 본인 삭제 403). 이 쿠키는 방문자가 스스로 요청한
+     * 업로드를 이어 가는 데만 쓰는 소유 증명이다(서비스 제공). 이름은 모듈 설정을 따르므로 쿠키 도우미와 대조한다.
+     *
+     * @scenario scope=cookie, consent_plugin=installed
+     *
+     * @effects provider_keys_match_the_storage_writing_code
+     *
+     * @return void 반환값 없음
+     */
+    public function test_provides_guest_upload_owner_cookie(): void
+    {
+        $result = (new ProvideNecessaryStorageKeysListener)->provide(['cookie' => ['other_cookie']]);
+
+        $this->assertSame('g7_board_guest_upload', app(GuestUploadOwnerCookie::class)->name());
+        $this->assertContains(app(GuestUploadOwnerCookie::class)->name(), $result['cookie']);
+        $this->assertContains('other_cookie', $result['cookie']);
+
+        config(['sirsoft-board.guest_upload_cookie.name' => 'renamed_guest_upload']);
+        $renamed = (new ProvideNecessaryStorageKeysListener)->provide([]);
+        $this->assertSame(['renamed_guest_upload'], $renamed['cookie'], '설정으로 바꾼 이름을 따라야 한다');
     }
 
     /**

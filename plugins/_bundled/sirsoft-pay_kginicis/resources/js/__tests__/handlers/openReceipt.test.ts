@@ -1,3 +1,4 @@
+// e2e:allow 제품 코드는 그대로이고 시험의 가짜 팝업에 인쇄 버튼 조회(querySelector)·print 를 더해 CSP 대응 리스너 계약까지 단언한다 — 실제 팝업 인쇄는 결제 실거래가 필요해 E2E 로 재현할 수 없다
 /**
  * @file openReceipt.test.ts
  * @description 영수증 창 핸들러(sirsoft-pay_kginicis.openReceipt)
@@ -49,7 +50,17 @@ describe('openReceipt 핸들러', () => {
     // @effects cbt_confirmation_document_escapes_fields
     it('CBT 결제확인서는 응답 항목으로 인쇄용 문서를 그리고 값은 이스케이프한다', () => {
         let html = '';
-        const popup = { document: { open: vi.fn(), write: (s: string) => { html += s; }, close: vi.fn() } };
+        let printClick: (() => void) | undefined;
+        const printButton = { addEventListener: vi.fn((type: string, fn: () => void) => { if (type === 'click') printClick = fn; }) };
+        const popup = {
+            print: vi.fn(),
+            document: {
+                open: vi.fn(),
+                write: (s: string) => { html += s; },
+                close: vi.fn(),
+                querySelector: vi.fn((selector: string) => (selector === '[data-print]' ? printButton : null)),
+            },
+        };
         vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 
         expect(openReceiptHandler({
@@ -65,6 +76,12 @@ describe('openReceipt 핸들러', () => {
         expect(html).toContain('KG 이니시스 CBT 결제확인서');
         expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
         expect(html).not.toContain('<img src=x');
+
+        // 인쇄 버튼은 인라인 onclick 없이 리스너로 묶는다 — strict CSP 사이트에서도 인쇄가 된다.
+        expect(html).not.toMatch(/onclick=/i);
+        expect(printButton.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+        printClick?.();
+        expect(popup.print).toHaveBeenCalledTimes(1);
     });
 
     // @scenario receipt=empty

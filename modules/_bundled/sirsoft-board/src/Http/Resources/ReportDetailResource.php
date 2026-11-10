@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -138,12 +139,14 @@ class ReportDetailResource extends BaseApiResource
     {
         if ($targetType === 'post') {
             $createdAtRaw = $reportable['created_at'] ?? null;
+            $contentMode = $reportable['content_mode'] ?? 'text';
+            $content = $reportable['content'] ?? ($firstSnapshot['content'] ?? '');
 
             return [
                 'id' => $report->target_id,
                 'title' => $reportable['title'] ?? ($firstSnapshot['title'] ?? null),
-                'content' => $reportable['content'] ?? ($firstSnapshot['content'] ?? ''),
-                'content_mode' => $reportable['content_mode'] ?? 'text',
+                'content' => $this->presentContentMedia($content, $contentMode, $report->board?->slug),
+                'content_mode' => $contentMode,
                 'created_at' => $createdAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($createdAtRaw)) : null,
                 'author' => $this->buildAuthorInfo($reportable, $firstSnapshot['author_name'] ?? ''),
             ];
@@ -179,6 +182,28 @@ class ReportDetailResource extends BaseApiResource
         }
 
         return null;
+    }
+
+    /**
+     * 게시글 본문(HTML)의 본문 미디어 정식 주소를 서명 주소로 바꿉니다.
+     *
+     * `<img>`·`<video>` 요청에는 인증 헤더가 없어, 비밀글·회원 전용 게시판의 본문 미디어를 정식 주소로 두면 신고 상세에서
+     * 403 으로 깨진다. 신고 조회 권한이 본문을 볼 자격이므로 게시글 응답(`PostResource`)과 같은 서명으로 위임한다.
+     *
+     * @param  string|null  $content  본문
+     * @param  string  $contentMode  본문 형식 (html 일 때만 바꾼다)
+     * @param  string|null  $slug  게시판 슬러그
+     * @return string|null 서명 주소로 바꾼 본문
+     */
+    private function presentContentMedia(?string $content, string $contentMode, ?string $slug): ?string
+    {
+        if ($content === null || $content === '' || $contentMode !== 'html' || $slug === null || $slug === '') {
+            return $content;
+        }
+
+        // 신고 상세는 관리자 전용 화면이다 — 신고된 글(삭제·비밀 포함)의 증거 미디어를 관리자가 `<img>`·`<video>` 로
+        // 볼 수 있도록 본문의 이 게시판 본문 미디어를 모두 서명한다(#883 검수 동작 유지, #887).
+        return app(PostContentMediaService::class)->presentContent($content, $slug, signAll: true);
     }
 
     /**

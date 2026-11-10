@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Page\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\TotalRelation;
+use App\Helpers\TimezoneHelper;
 use App\Search\SearchCategoryPayload;
 use App\Search\SearchHighlighter;
 use App\Support\LocalizedValue;
@@ -252,7 +253,8 @@ class SearchPagesListener implements HookListenerInterface
             'title_highlighted' => $this->highlightKeyword($title, $keyword),
             'content_preview' => $contentPreview,
             'content_preview_highlighted' => $this->highlightKeyword($contentPreview, $keyword),
-            'published_at' => $page->published_at?->format('Y-m-d'),
+            // 검색은 웹 요청 — 발행일은 보는 사람 시간대 날짜(UTC 날짜면 새벽 발행분이 전날로 보인다)
+            'published_at' => TimezoneHelper::toUserDateString($page->published_at),
             'url' => "/page/{$page->slug}",
         ];
     }

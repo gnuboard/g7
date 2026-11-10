@@ -1,0 +1,20 @@
+feature: 현금영수증 마이그레이션 왕복(up → down → up) 안전성
+
+description: |
+  모듈 삭제 시 delete_data 옵션으로 롤백이 실행되므로 현금영수증 마이그레이션 4종의 down() 은 방어적이어야 한다.
+  코어 업그레이드 중 부분 적용된 상태에서 up() 이 재실행되어도 SQL 오류가 없어야 한다(멱등).
+  마이그레이션은 모듈 오토로더 없이 실행될 수 있으므로 모듈 클래스를 참조하지 않는다.
+  상위 기능 계약은 cash-receipt-infrastructure.yaml 이 소유하고, 이 매니페스트는 왕복 테스트의 케이스 분류를 맡는다.
+
+axes:
+  case: [no_module_class_reference, table_round_trip, idempotent_rerun, column_round_trip, defensive_down]
+
+effects:
+  - migrations_have_no_module_class_reference
+  - migration_up_down_up_round_trip_safe
+  - cash_receipt_ledger_columns_restored_after_round_trip
+  - migration_up_rerun_is_idempotent
+  - migration_down_tolerates_missing_table
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/CashReceiptMigrationRoundTripTest.php

@@ -4,7 +4,7 @@ namespace Tests\Unit\ActivityLog;
 
 use App\ActivityLog\ChangeDetector;
 use Illuminate\Database\Eloquent\Model;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * ChangeDetector 테스트
@@ -12,10 +12,16 @@ use Tests\TestCase;
  * 모델의 $activityLogFields 메타데이터와 스냅샷을 비교하여
  * 구조화된 변경 이력을 올바르게 생성하는지 검증합니다.
  */
-class ChangeDetectorTest extends TestCase
+class ChangeDetectorTest extends PureTestCase
 {
     /**
      * 변경된 필드를 올바르게 감지하는지 확인
+     *
+     * @scenario case=text_field_change
+     *
+     * @effects changed_text_fields_reported_with_label_key
+     *
+     * @return void 반환값 없음
      */
     public function test_detects_changed_fields(): void
     {
@@ -49,6 +55,12 @@ class ChangeDetectorTest extends TestCase
 
     /**
      * 변경이 없으면 null을 반환하는지 확인
+     *
+     * @scenario case=no_change
+     *
+     * @effects unchanged_snapshot_yields_null
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_null_when_no_changes(): void
     {
@@ -68,6 +80,12 @@ class ChangeDetectorTest extends TestCase
 
     /**
      * snapshot이 null이면 null을 반환하는지 확인
+     *
+     * @scenario case=no_change
+     *
+     * @effects missing_snapshot_yields_null
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_null_when_snapshot_is_null(): void
     {
@@ -81,6 +99,12 @@ class ChangeDetectorTest extends TestCase
 
     /**
      * enum 타입 필드의 old_label_key와 new_label_key가 포함되는지 확인
+     *
+     * @scenario case=enum_field_change
+     *
+     * @effects enum_change_carries_old_and_new_label_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_enum_type_with_label_keys(): void
     {
@@ -108,6 +132,12 @@ class ChangeDetectorTest extends TestCase
 
     /**
      * enum 타입 필드의 old가 null이면 old_label_key도 null인지 확인
+     *
+     * @scenario case=enum_field_change
+     *
+     * @effects null_enum_old_value_has_null_label_key
+     *
+     * @return void 반환값 없음
      */
     public function test_enum_null_old_value_returns_null_label_key(): void
     {
@@ -128,6 +158,12 @@ class ChangeDetectorTest extends TestCase
 
     /**
      * $activityLogFields에 없는 필드는 무시되는지 확인
+     *
+     * @scenario case=untracked_field
+     *
+     * @effects untracked_fields_ignored
+     *
+     * @return void 반환값 없음
      */
     public function test_ignores_untracked_fields(): void
     {
@@ -151,6 +187,12 @@ class ChangeDetectorTest extends TestCase
 
     /**
      * $activityLogFields가 없는 모델은 null을 반환하는지 확인
+     *
+     * @scenario case=untracked_field
+     *
+     * @effects model_without_tracked_fields_yields_null
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_null_when_model_has_no_activity_log_fields(): void
     {
@@ -166,6 +208,12 @@ class ChangeDetectorTest extends TestCase
 
     /**
      * BackedEnum 객체가 스냅샷에 있을 때 값으로 변환하여 비교하는지 확인
+     *
+     * @scenario case=enum_field_change
+     *
+     * @effects backed_enum_snapshot_compared_by_value
+     *
+     * @return void 반환값 없음
      */
     public function test_converts_backed_enum_in_snapshot_to_value(): void
     {
@@ -219,6 +267,11 @@ class ChangeDetectorEnumTestModel extends Model
 
     protected $guarded = [];
 
+    /**
+     * status 속성을 테스트용 Enum 으로 캐스팅하도록 선언한다.
+     *
+     * @return array<string, string> 속성명 → 캐스트 클래스 매핑
+     */
     protected function casts(): array
     {
         return [
@@ -246,7 +299,7 @@ enum ChangeDetectorTestStatus: string
     /**
      * 다국어 라벨 키를 반환합니다.
      *
-     * @return string
+     * @return string 'test.status.' 접두어에 case 값을 붙인 라벨 키
      */
     public function labelKey(): string
     {

@@ -392,6 +392,35 @@ Route::middleware('optional.sanctum')
 | 토큰 만료 | 401 | guest 통과 |
 | 토큰 무효 | 401 | 401 |
 
+### 만료 토큰 표지 — `hadExpiredToken()` (7.1.5)
+
+`optional.sanctum` 은 만료 토큰을 비회원으로 통과시키므로, 그 요청이 뒤에서 「본인 확인」(내 글 수정·내 업로드 연결 등)에 실패하면 컨트롤러는
+비회원 기준으로 막게 됩니다. 이때 권한 없음(403)으로 답하면 화면은 「권한이 없습니다」만 보여 주지만, 실제로는 다시 로그인하면 되는 상황입니다.
+미들웨어는 만료 토큰을 실은 요청에 표지를 남기고, 컨트롤러는 그 표지로 401(`auth.token_expired`, 세션 만료)과 403(권한 없음)을 가릅니다.
+401 을 받은 화면은 토큰 갱신 → 세션 만료 안내 흐름을 탑니다.
+
+| 공개 API | 내용 |
+| --- | --- |
+| `OptionalSanctumMiddleware::EXPIRED_TOKEN_ATTRIBUTE` | 요청 속성 이름(`g7.auth.expired_token`). 만료 토큰으로 비회원 통과할 때 `true` 로 남습니다 |
+| `OptionalSanctumMiddleware::hadExpiredToken(Request $request): bool` | 이 요청이 만료 토큰을 실었는지. 토큰 없음·유효 토큰이면 `false` |
+
+```php
+use App\Http\Middleware\OptionalSanctumMiddleware;
+
+// 본인 확인 실패 응답 — 만료 토큰이면 세션 만료(401), 아니면 권한 없음(403)
+protected function ownershipDenied(Request $request, string $messageKey): JsonResponse
+{
+    if (OptionalSanctumMiddleware::hadExpiredToken($request)) {
+        return $this->error('auth.token_expired', 401);
+    }
+
+    return $this->error($messageKey, 403);
+}
+```
+
+번들 게시판 모듈의 `RespondsToExpiredSession` 트레이트가 이 방식으로 비회원 쓰기·업로드 권한이 있는 게시판의 본인 확인 실패를 가립니다.
+본인 확인과 무관한 권한 거부(역할·권한 부족)에는 쓰지 않습니다 — 만료 여부와 관계없이 403 이 맞습니다.
+
 ### 구현 파일
 
 - `app/Http/Middleware/OptionalSanctumMiddleware.php`

@@ -104,8 +104,8 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
      */
     it('「대상 보기」 버튼이 있고, 권한으로만 게이트되며(0건이어도 보인다) 기능 토글 안에 갇히지 않는다', () => {
         // 모집단은 레이아웃에서 파생한다 — 버튼이 하나도 없으면 이 단언 자체가 공허해진다.
-        // 탈퇴 잔여정보 1 + 휴면 단계 반복(4) = 5 대상.
-        expect(renderedTargetCount(viewButtons)).toBe(5);
+        // 탈퇴 잔여정보 1 + 휴면 단계 반복(4) + 최근 검색어 보관 기한(코어 7.1.5) 1 = 6 대상.
+        expect(renderedTargetCount(viewButtons)).toBe(6);
 
         for (const [button, ancestors] of viewButtons) {
             expect(button.if, button.id).toContain('can_view_targets');
@@ -263,7 +263,8 @@ describe('개인정보 탭 — 대상 보기 줄의 좁은 화면 줄바꿈 (#63
      */
     it('「대상 보기」 버튼의 부모 줄은 줄바꿈되는 flex 이고, 간격은 gap 으로 준다', () => {
         const viewButtons = collectWithAncestors(privacyTab, (n) => /^view_.*targets$/.test(n.id ?? ''));
-        expect(renderedTargetCount(viewButtons)).toBe(5);
+        // 탈퇴 1 + 휴면 4 + 최근 검색어 1 (코어 7.1.5)
+        expect(renderedTargetCount(viewButtons)).toBe(6);
 
         for (const [button, ancestors] of viewButtons) {
             const row = ancestors[ancestors.length - 1];

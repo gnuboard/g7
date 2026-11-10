@@ -5,10 +5,12 @@ namespace Modules\Sirsoft\Board\Http\Requests;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
+use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 
 /**
@@ -51,7 +53,7 @@ class UploadAttachmentRequest extends FormRequest
             return [
                 'file' => ['required', 'file'],
                 'post_id' => ['nullable', 'integer', 'min:1'],
-                'collection' => ['sometimes', 'string', 'max:100'],
+                'collection' => ['sometimes', 'string', 'max:100', Rule::notIn(Attachment::RESERVED_COLLECTIONS)],
                 'temp_key' => $this->tempKeyRules(),
             ];
         }
@@ -72,7 +74,7 @@ class UploadAttachmentRequest extends FormRequest
         $rules = [
             'file' => ['required', 'file', 'max:'.$maxSizeKB, ...$this->attachmentFileTypeRules($allowedExtensions)],
             'post_id' => ['nullable', 'integer', 'min:1'],
-            'collection' => ['sometimes', 'string', 'max:100'],
+            'collection' => ['sometimes', 'string', 'max:100', Rule::notIn(Attachment::RESERVED_COLLECTIONS)],
             'temp_key' => $this->tempKeyRules(),
         ];
 
@@ -102,6 +104,8 @@ class UploadAttachmentRequest extends FormRequest
             'file.extensions' => __('sirsoft-board::validation.attachment.file_mimes'),
             'post_id.required' => __('sirsoft-board::validation.attachment.post_id_required'),
             'post_id.integer' => __('sirsoft-board::validation.attachment.post_id_invalid'),
+            // 예약 컬렉션(본문 미디어)은 전용 업로드로만 올린다 — 일반 첨부로 올려 개수 상한을 피하지 못하게 (#883)
+            'collection.not_in' => __('sirsoft-board::validation.attachment.collection_reserved'),
         ];
     }
 

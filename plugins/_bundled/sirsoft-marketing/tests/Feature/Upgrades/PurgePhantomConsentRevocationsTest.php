@@ -11,6 +11,7 @@ use Plugins\Sirsoft\Marketing\Models\MarketingConsent;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsentHistory;
 use Plugins\Sirsoft\Marketing\Tests\PluginTestCase;
 use Plugins\Sirsoft\Marketing\Upgrades\Upgrade_1_1_2;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.1.2 업그레이드 스텝 — 동의한 적 없는 항목에 남은 「철회」 기록 정리
@@ -67,7 +68,7 @@ class PurgePhantomConsentRevocationsTest extends PluginTestCase
         $this->assertFileExists($stepFile, '1.1.2 업그레이드 스텝이 없다.');
 
         // 업그레이드 스텝은 업데이트 실행기가 파일로 불러온다 — 일반 autoload 대상이 아니다.
-        require_once $stepFile;
+        UpgradeFiles::requireOnce($stepFile);
 
         (new Upgrade_1_1_2)->run(new UpgradeContext('1.1.1', '1.1.2', '1.1.2', self::LOG_CHANNEL));
     }

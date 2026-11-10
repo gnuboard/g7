@@ -3,7 +3,7 @@
 namespace Tests\Unit\Traits;
 
 use App\Traits\NormalizesSettingsData;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 트레이트 검증용 더미 클래스 (protected 메서드 노출)
@@ -12,11 +12,25 @@ class NormalizesSettingsDataDummy
 {
     use NormalizesSettingsData;
 
+    /**
+     * 카테고리 묶음 전체 설정을 트레이트의 normalizeSettingsData() 로 정규화한다.
+     *
+     * @param  array  $settings  카테고리별로 묶인 저장 설정 값
+     * @param  array  $defaults  카테고리별 기본값 스키마
+     * @return array 정규화된 설정
+     */
     public function normalize(array $settings, array $defaults): array
     {
         return $this->normalizeSettingsData($settings, $defaults);
     }
 
+    /**
+     * 한 카테고리의 설정을 트레이트의 normalizeCategoryData() 로 정규화한다.
+     *
+     * @param  array  $settings  카테고리 하나의 저장 설정 값
+     * @param  array  $defaults  그 카테고리의 기본값 스키마
+     * @return array 정규화된 카테고리 설정
+     */
     public function normalizeCategory(array $settings, array $defaults): array
     {
         return $this->normalizeCategoryData($settings, $defaults);
@@ -32,10 +46,15 @@ class NormalizesSettingsDataDummy
  *
  * @effects settings_read_returns_schema_scalar_type
  */
-class NormalizesSettingsDataTest extends TestCase
+class NormalizesSettingsDataTest extends PureTestCase
 {
     private NormalizesSettingsDataDummy $dummy;
 
+    /**
+     * 트레이트의 protected 메서드를 노출하는 더미 인스턴스를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,6 +65,13 @@ class NormalizesSettingsDataTest extends TestCase
     // 스칼라 숫자 정규화 (int)
     // ──────────────────────────────────────────────
 
+    /**
+     * 기본값이 int 인 키에 숫자 문자열이 저장돼 있으면 int 로 바꿔 돌려준다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_numeric_string_is_cast_to_int_when_default_is_int(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -56,6 +82,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(5, $result['auto_cancel_days']);
     }
 
+    /**
+     * 앞자리 0 이 붙은 숫자 문자열("007")도 int 기본값이면 7 로 바꾼다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_zero_padded_numeric_string_is_cast_to_int(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -66,6 +99,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(7, $result['auto_cancel_days']);
     }
 
+    /**
+     * 카테고리 묶음 전체를 정규화할 때도 각 카테고리 안의 숫자 문자열이 int 로 바뀐다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_nested_category_settings_are_normalized(): void
     {
         $result = $this->dummy->normalize(
@@ -81,6 +121,13 @@ class NormalizesSettingsDataTest extends TestCase
     // 스칼라 숫자 정규화 (float)
     // ──────────────────────────────────────────────
 
+    /**
+     * 기본값이 float 인 키에 소수 문자열이 저장돼 있으면 float 로 바꾼다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_numeric_string_is_cast_to_float_when_default_is_float(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -91,6 +138,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(0.5, $result['point_value']);
     }
 
+    /**
+     * 기본값이 float 이면 정수 문자열("2")도 int 가 아닌 float(2.0)으로 바꾼다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_integer_string_is_cast_to_float_when_default_is_float(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -105,6 +159,13 @@ class NormalizesSettingsDataTest extends TestCase
     // 배열 항목 내부 정규화 (currencies 등)
     // ──────────────────────────────────────────────
 
+    /**
+     * 인덱스 배열 항목(통화 목록)은 첫 기본 항목 스키마로 모든 항목의 숫자 문자열을 캐스트한다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_numeric_strings_inside_indexed_array_items_are_cast(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -127,6 +188,13 @@ class NormalizesSettingsDataTest extends TestCase
     // 비회귀 — 캐스트 대상이 아닌 값은 불변
     // ──────────────────────────────────────────────
 
+    /**
+     * int 기본값이어도 숫자가 아닌 문자열은 캐스트하지 않고 그대로 둔다.
+     *
+     * @effects settings_read_leaves_non_castable_values_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_non_numeric_string_is_left_untouched(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -137,6 +205,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame('abc', $result['auto_cancel_days']);
     }
 
+    /**
+     * 빈 문자열은 0 으로 바꾸지 않고 그대로 둔다.
+     *
+     * @effects settings_read_leaves_non_castable_values_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_empty_string_is_left_untouched(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -147,6 +222,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame('', $result['auto_cancel_days']);
     }
 
+    /**
+     * null 값은 캐스트하지 않고 null 로 둔다.
+     *
+     * @effects settings_read_leaves_non_castable_values_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_null_is_left_untouched(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -157,6 +239,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertNull($result['auto_cancel_days']);
     }
 
+    /**
+     * 기본값이 bool 인 키는 숫자 캐스트 대상이 아니어서 문자열 "1" 이 그대로 남는다.
+     *
+     * @effects settings_read_leaves_non_castable_values_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_boolean_default_is_not_treated_as_numeric(): void
     {
         // PHP 에서 true 는 is_int 가 아니지만, 문자열 "1" 이 불리언 설정에 들어와도
@@ -169,6 +258,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame('1', $result['auto_cancel_expired']);
     }
 
+    /**
+     * 기본값이 문자열이면 숫자처럼 보이는 값("007")도 문자열 그대로 유지한다.
+     *
+     * @effects settings_read_leaves_non_castable_values_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_string_default_keeps_numeric_string_as_string(): void
     {
         // 기본값이 문자열이면(예: 사업자번호 조각) 숫자처럼 보여도 문자열을 유지해야 한다.
@@ -180,6 +276,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame('007', $result['business_number_1']);
     }
 
+    /**
+     * 기본값 스키마에 없는 키는 숫자 문자열이어도 그대로 둔다.
+     *
+     * @effects settings_read_leaves_non_castable_values_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_default_absent_key_is_left_untouched(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -190,6 +293,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame('5', $result['unknown_key']);
     }
 
+    /**
+     * 이미 int 로 저장된 값은 그대로 int 로 돌려준다(비회귀 기준선).
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_int_value_stays_int(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -200,6 +310,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(5, $result['auto_cancel_days']);
     }
 
+    /**
+     * 기본값이 다국어 배열이고 저장값이 문자열이면 기존처럼 모든 로케일에 그 문자열을 채운 배열로 바꾼다.
+     *
+     * @effects settings_read_preserves_multilingual_conversion
+     *
+     * @return void 반환값 없음
+     */
     public function test_multilingual_conversion_is_not_broken(): void
     {
         // 기존 다국어 분기(기본값 배열 + 값 문자열 → 로케일 배열)가 유지되어야 한다.
@@ -215,6 +332,13 @@ class NormalizesSettingsDataTest extends TestCase
     // 중첩 연관 배열(하위 설정 그룹) 정규화
     // ──────────────────────────────────────────────
 
+    /**
+     * 카테고리 아래 연관 배열 하위 그룹(마일리지)의 숫자 문자열도 int·float 로 바꾼다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_numeric_strings_inside_associative_group_are_cast(): void
     {
         // 카테고리 아래 한 단계 더 깊은 연관 배열도 정규화되어야 한다.
@@ -228,6 +352,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(1.5, $result['mileage']['earn_rate']);
     }
 
+    /**
+     * 여러 단계로 중첩된 연관 배열 그룹도 재귀로 내려가 숫자 문자열을 캐스트한다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_associative_group_normalization_is_recursive(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -238,6 +369,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(7, $result['a']['b']['c']);
     }
 
+    /**
+     * 다국어 맵은 연관 배열이어도 기본값이 문자열이라 그룹 재귀에서 숫자 캐스트되지 않는다.
+     *
+     * @effects settings_read_preserves_multilingual_conversion
+     *
+     * @return void 반환값 없음
+     */
     public function test_multilingual_map_is_untouched_by_group_recursion(): void
     {
         // 다국어 필드도 연관 배열이지만 기본값이 문자열이라 캐스트 대상이 아니다.
@@ -249,6 +387,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(['ko' => '5', 'en' => '5'], $result['shop_name']);
     }
 
+    /**
+     * 기본값 스키마에 대응 그룹이 없는 연관 배열은 그대로 둔다.
+     *
+     * @effects settings_read_leaves_non_castable_values_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_group_without_matching_default_is_untouched(): void
     {
         $result = $this->dummy->normalizeCategory(
@@ -259,6 +404,13 @@ class NormalizesSettingsDataTest extends TestCase
         $this->assertSame(['x' => '5'], $result['unknown_group']);
     }
 
+    /**
+     * 인덱스 배열 항목 안의 연관 그룹(limits)에 있는 숫자 문자열도 int 로 바꾼다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_numeric_strings_inside_nested_group_of_array_item_are_cast(): void
     {
         // 인덱스 배열 항목 안에 다시 연관 그룹이 있는 형태

@@ -63,6 +63,7 @@ class TemplateLayoutAttachmentService
 
         // 저장 경로 — 템플릿 식별자/날짜별 디렉토리 + UUID 파일명 (충돌 회피)
         $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $relativePath = "{$templateIdentifier}/".date('Y/m/d')."/{$storedFilename}";
 
         // 운영자가 공개 자산 디스크를 선언했으면 그쪽에 저장한다 (방문자 요청이 CDN 을 탄다).

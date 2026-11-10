@@ -43,6 +43,8 @@ class NotificationLinkContractTest extends TestCase
      * 정의가 줄어드는 정상 변경에는 걸리지 않고 붕괴에만 걸리게 한다.
      *
      * @effects notification_declaration_population_is_not_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_the_declared_definition_population_is_not_empty(): void
     {
@@ -62,7 +64,11 @@ class NotificationLinkContractTest extends TestCase
     }
 
     /**
+     * 템플릿(제목·본문·링크)이 쓰는 모든 변수가 정의의 variables 에 선언돼 있는지 검증합니다.
+     *
      * @effects every_notification_placeholder_is_declared_as_a_variable
+     *
+     * @return void 반환값 없음
      */
     public function test_every_placeholder_used_in_a_template_is_declared_as_a_variable(): void
     {

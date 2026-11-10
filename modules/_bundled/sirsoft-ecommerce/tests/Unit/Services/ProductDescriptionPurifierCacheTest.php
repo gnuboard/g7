@@ -21,6 +21,11 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
 {
     use InspectsHtmlPurifierCache;
 
+    /**
+     * HTMLPurifier 로드·검증 대상 트리를 확인하고 캐시 디렉토리와 통지 플래그를 초기화합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +53,11 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
         $this->resetPurifierCacheNoticeFlag();
     }
 
+    /**
+     * 테스트 캐시 디렉토리를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->purgePurifierCacheBase();
@@ -57,6 +67,8 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
 
     /**
      * 테스트 캐시 디렉토리를 정리합니다 (파일이 자리를 차지한 경우 포함).
+     *
+     * @return void 반환값 없음
      */
     private function purgePurifierCacheBase(): void
     {
@@ -88,6 +100,14 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
             /** @var array<int, array{level: string, message: string}> */
             public array $calls = [];
 
+            /**
+             * 로그 호출을 수준·메시지로 기록합니다.
+             *
+             * @param  mixed  $level  로그 수준
+             * @param  string|\Stringable  $message  메시지
+             * @param  array<string, mixed>  $context  문맥
+             * @return void 반환값 없음
+             */
             public function log($level, string|\Stringable $message, array $context = []): void
             {
                 $this->calls[] = ['level' => (string) $level, 'message' => (string) $message];
@@ -104,6 +124,8 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
      *
      * 정적 플래그라 같은 프로세스의 앞선 테스트가 이미 세워 두면 통지가 발화하지 않아,
      * 통지 단언이 테스트 순서에 따라 조용히 통과/실패한다.
+     *
+     * @return void 반환값 없음
      */
     private function resetPurifierCacheNoticeFlag(): void
     {
@@ -130,13 +152,23 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
     }
 
     /**
-     * 서비스가 보유한 HTMLPurifier 인스턴스를 꺼냅니다.
+     * 상품 설명 정화에 쓰인 HTMLPurifier 인스턴스를 꺼냅니다.
+     *
+     * 상품 설명은 7.1.5 부터 「본문 콘텐츠」 규칙 정화기(`contentPurifiers`, 규칙 해시별)를 쓴다(D20) — 그쪽을 먼저 보고,
+     * 없으면 기본 정화기(`purifier`)를 본다.
      *
      * @param  ProductService  $service  대상 서비스
      * @return \HTMLPurifier|null 인스턴스 (미생성이면 null)
      */
     private function purifierOf(ProductService $service): ?\HTMLPurifier
     {
+        $content = new \ReflectionProperty($service, 'contentPurifiers');
+        $content->setAccessible(true);
+        $purifiers = (array) $content->getValue($service);
+        if ($purifiers !== []) {
+            return reset($purifiers);
+        }
+
         $property = new \ReflectionProperty($service, 'purifier');
         $property->setAccessible(true);
 
@@ -153,6 +185,8 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
      * @scenario description_mode=html, cache_dir=writable
      *
      * @effects definition_cache_written_under_storage, vendor_install_directory_never_written
+     *
+     * @return void 반환값 없음
      */
     public function test_definition_cache_is_written_under_storage_not_vendor(): void
     {
@@ -190,6 +224,8 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
      * @scenario description_mode=text, cache_dir=writable
      *
      * @effects text_mode_skips_purifier_entirely
+     *
+     * @return void 반환값 없음
      */
     public function test_text_mode_never_touches_purifier(): void
     {
@@ -219,6 +255,8 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
      * @scenario description_mode=html, cache_dir=occupied_by_file
      *
      * @effects purify_still_strips_script_when_cache_disabled, vendor_install_directory_never_written, cache_disabled_notice_reaches_default_log_level
+     *
+     * @return void 반환값 없음
      */
     public function test_falls_back_to_disabled_definition_cache_when_directory_unusable(): void
     {
@@ -274,6 +312,8 @@ class ProductDescriptionPurifierCacheTest extends ModuleTestCase
      * @scenario description_mode=html, cache_dir=parent_unusable
      *
      * @effects cache_dir_creation_failure_does_not_escalate, purify_still_strips_script_when_cache_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_directory_creation_failure_does_not_escalate_to_exception(): void
     {

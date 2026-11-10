@@ -28,20 +28,24 @@ class ShellNoInlineScriptTest extends TestCase
 
     /**
      * 종전 인라인 `window.G7Config = {...}` 의 키 집합 (사용자 셸 기준, staticBase 는 게시 게이트 통과 시에만).
+     *
+     * 뒤에 더해진 키: `seoTitle`(방문자 탭 제목을 검색엔진 제목과 맞춤), `searchScopes`(검색창 최근 검색어 범위).
      */
     private const USER_CONFIG_KEYS = [
         'settings', 'plugins', 'modules', 'moduleAssets', 'pluginAssets', 'bundleUrls', 'customAssets',
         'customAssetsDisabled', 'activeModules', 'activePlugins', 'trustedScriptHosts', 'stateContracts',
         'appConfig', 'consentInitial', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
+        'searchScopes', 'seoTitle',
     ];
 
     /**
-     * 관리자 셸은 consentInitial 을 싣지 않는다 (종전과 동일).
+     * 관리자 셸은 consentInitial·searchScopes 를 싣지 않는다 (종전과 동일). `seoTitle` 은 뒤에 더해졌다.
      */
     private const ADMIN_CONFIG_KEYS = [
         'settings', 'plugins', 'modules', 'moduleAssets', 'pluginAssets', 'bundleUrls', 'customAssets',
         'customAssetsDisabled', 'activeModules', 'activePlugins', 'trustedScriptHosts', 'stateContracts',
         'appConfig', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
+        'seoTitle',
     ];
 
     /**

@@ -1,3 +1,4 @@
+// e2e:allow 다국어 칸 기록 대기 중 언마운트 저장 해제(engine-v1.88.0)는 같은 틱 경합이라 브라우저로 재현할 수 없다 — 실물 훅 시험 useLayoutDocument.saveAfterUnmount(수정 전 1 red)로 잠근다.
 /**
  * useLayoutDocument.ts — 편집기 캔버스의 레이아웃 문서 로드/패치/저장 hook
  *
@@ -33,6 +34,7 @@ import { parseEditorPath } from './useElementSelection';
 import { readSanctumToken } from '../utils/authToken';
 import { getCacheBustNonce, bumpCacheBustNonce } from '../utils/editorCacheBust';
 import { hasPending, flushPending } from './pendingCustomTranslations';
+import { hasInflightCustomTextCommits, waitForInflightCustomTextCommits } from './inflightCustomTextCommits';
 import { suffixed } from '../../../support/assetUrl';
 
 /**
@@ -695,9 +697,55 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
     [layoutName, editMode, writeCache]
   );
 
+  // 지금 문서(아직 그려지지 않은 patch 포함) — 함수형 갱신의 prev 를 그대로 돌려받는다(값은 바꾸지 않는다).
+  // documentRef 는 그린 뒤 effect 에서 갱신되므로, 방금 기록된 patch 를 저장에 반드시 실어야 할 때만 쓴다.
+  // 편집기가 닫혀(언마운트) 함수형 갱신이 돌지 않으면 그린 문서(documentRef)로 푼다 — 누른 저장이 멈추지 않고 서버까지 간다.
+  const unmountedRef = useRef(false);
+  const latestDocumentWaitersRef = useRef<Set<() => void>>(new Set());
+  useEffect(() => {
+    unmountedRef.current = false;
+    const waiters = latestDocumentWaitersRef.current;
+    return () => {
+      unmountedRef.current = true;
+      for (const fallback of Array.from(waiters)) fallback();
+    };
+  }, []);
+  const readLatestDocument = useCallback(
+    (): Promise<LoadedLayoutDocument | null> =>
+      new Promise((resolve) => {
+        if (unmountedRef.current) {
+          resolve(documentRef.current);
+          return;
+        }
+        const waiters = latestDocumentWaitersRef.current;
+        let settled = false;
+        const settle = (doc: LoadedLayoutDocument | null): void => {
+          if (settled) return;
+          settled = true;
+          waiters.delete(fallback);
+          resolve(doc);
+        };
+        const fallback = (): void => settle(documentRef.current);
+        waiters.add(fallback);
+        setDocument((prev) => {
+          settle(prev);
+          return prev;
+        });
+      }),
+    [],
+  );
+
   const save = useCallback(
     async (options?: SaveOptions): Promise<SaveResult> => {
-      const current = documentRef.current;
+      // (0) 다국어 칸 기록 대기 — 평문을 적고 빠져나간 칸은 서버에 키를 만든 뒤에야 `$t:custom.*` 토큰을 문서에
+      // 기록한다(수 초). 그 전에 저장하면 토큰이 본문에서 빠지고 막 만든 키가 orphaned 가 되므로 끝날 때까지 기다린 뒤
+      // 그 기록이 반영된 문서로 저장한다.
+      let latest: LoadedLayoutDocument | null | undefined;
+      if (hasInflightCustomTextCommits()) {
+        await waitForInflightCustomTextCommits();
+        latest = await readLatestDocument();
+      }
+      const current = latest !== undefined ? latest : documentRef.current;
       if (!current) {
         trackEditorDocument({
           op: 'save_guard_result',
@@ -971,7 +1019,7 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
         message: (body as any)?.message ?? `HTTP ${response.status}`,
       };
     },
-    [templateIdentifier, layoutName, editMode, isDirty, clearCacheKey, clearAllModeKeysForLayout, cacheKey, modalId, iterationSourcePath]
+    [templateIdentifier, layoutName, editMode, isDirty, clearCacheKey, clearAllModeKeysForLayout, cacheKey, modalId, iterationSourcePath, readLatestDocument]
   );
 
   // 현재 편집 모드(route) dirty 레이아웃 이름 집합 — 트리 배지용.

@@ -4,6 +4,26 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-02
+
+### Added
+
+- 코어 7.1.5 의 작업 잠금 문구(`extensions.errors.operation_already_running`·`operation_lock_unavailable`, `extensions.commands.bundled_update.lock_unavailable_aborted`, `settings.core_update.console.already_running`·`lock_unavailable`, `seo.console.generate_sitemap.already_running`·`lock_unavailable`, `schedule.already_running`·`run_lock_unavailable`, `privacy.console.lock_unavailable`)의 일본어 번역을 추가했습니다.
+- 코어 7.1.5 의 로그인 필요 공용 안내(`core.errors.login_required_for_action` 「この機能を使うにはログインが必要です。…」)의 일본어 번역을 추가했습니다.
+- 코어 7.1.5 의 레이아웃 편집기 페이지 설정 [스크롤] 탭(뒤로/앞으로 가기·새로고침 스크롤 복원 — `layout_editor.page_settings.tab.scroll`·`layout_editor.scroll_restoration.*`)과 「다른 페이지로 이동」 동작의 「뒤로 가기로 이 화면에 돌아올 때 스크롤」·「스크롤 애니메이션」·「이탈 확인 묻지 않기」 칸(`layout_editor.action_recipe.navigate.*`) 문구의 일본어 번역을 추가했습니다. 없으면 일본어 편집기에서 이 문구가 키 그대로 보입니다.
+- 코어 7.1.5 의 레이아웃 저장 검증에서 스크롤 복원 설정(`meta.scroll_restoration`)의 항목명(`validation.attributes.layout_meta_scroll_restoration*`) 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 항목명이 키 그대로 보입니다.
+- 코어 7.1.5 의 최근 검색어 문구(`search.history.*` — 범위 이름·API 응답·요청 항목명, 개인정보 보유기간 핸들러 `privacy.handlers.search_history`·대상 목록 열, 설정 저장 검증 `validation.settings.privacy_search_history_*`·`validation.attributes.privacy_search_history_*`, 레이아웃 편집기 동작 레시피 `layout_editor.action_recipe.record_search_keyword.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 키 그대로 보입니다.
+- 코어 7.1.5 의 관리자 브라우저 탭 제목 접미사(`seo.admin_title_suffix` 「 - {site_name} 管理画面」)의 일본어 번역을 추가했습니다.
+- 코어 7.1.5 의 확장 설치·활성화 결과 경고에서 최근 검색어 범위 선언·필수 브라우저 저장 항목을 버린 이유(`extensions.warnings.search_scopes_*`·`necessary_storage_*`)와 확장이 고칠 선언이라는 안내(`extensions.warnings.declaration_hint`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면과 명령 출력에서 이 문구가 키 그대로 보입니다.
+- 코어 7.1.5 의 본문 미디어 업로드 계약 문구(서버 `attachment.content_media.*` — 종류 이름·파일 검증·문서당 개수 초과·규칙 입력 범위, 화면 `core.content_media.client.*`·`core.content_media.policy.*` — 편집기 사전 판정 안내·「動画を挿入」「音声を挿入」 단추·확장 설정 화면의 「本文メディア」 규칙 칸)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 키 그대로 보입니다.
+- 코어 7.1.5 환경설정 「본문 콘텐츠」 저장 검증 문구(`validation.settings.embed_provider_*`·`embed_preset_unknown`·`content_custom_tag_*`·`content_custom_tag_reasons.*`)와 외부 영상 서비스 예시 주소 확인·동영상/오디오 업로드 허용 스위치의 항목명(`validation.attributes.embed_provider*`·`content_allow_uploaded_video`·`content_allow_uploaded_audio` 「動画アップロードの許可」「音声アップロードの許可」)의 일본어 번역을 추가했습니다. 확장 설정 화면 「本文メディア」 안내(`core.content_media.policy.follows_attachment`·`core_disabled_hint`)는 켜야 할 환경설정 스위치 이름까지 알려 줍니다.
+
+### Changed
+
+- 코어 7.1.5 에서 본문 미디어 화면 문구(`core.content_media.*`)가 별도 파일로 분리되어, 일본어 번역도 `frontend/partial/content_media.json` 으로 옮겼습니다. 키는 그대로입니다(안내 두 줄의 문구 변경은 위 Added 항목).
+- 코어 7.1.5 에서 레이아웃 편집기 「검색 제목」이 검색엔진 제목·방문자 탭 제목으로 쓰이게 되어, 페이지 설정 [검색엔진] 탭 소셜 공유 안내(`layout_editor.page_settings.seo.og_intro`) 일본어 번역을 새 순서에 맞게 고쳤습니다.
+- 코어 7.1.5 에서 방문자 브라우저 탭 제목이 검색엔진 제목과 같은 규칙을 쓰게 되어, 레이아웃 편집기 페이지 설정 [검색엔진] 탭 안내(`layout_editor.page_settings.seo.og_intro`·`disabled_note`)의 일본어 문구를 「OG 제목이 탭 제목에도 쓰인다·SEO 를 끈 화면은 라우트 제목 + 사이트 이름」으로 고쳤습니다.
+
 ## [1.1.3] - 2026-11-01
 
 ### Added

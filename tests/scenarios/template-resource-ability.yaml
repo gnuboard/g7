@@ -1,0 +1,15 @@
+feature: 템플릿 리소스 abilities 권한 매핑
+
+description: |
+  TemplateResource 의 abilityMap 이 레이아웃 편집 권한(can_edit_layouts → core.templates.layouts.edit)을 포함하고,
+  기존 설치·활성화·삭제 권한을 그대로 유지한 채 정확히 4개 항목만 노출하는지 지킨다.
+
+axes:
+  case: [layout_edit_ability, existing_abilities]
+
+effects:
+  - can_edit_layouts_mapped_to_layout_edit_permission
+  - existing_template_abilities_preserved
+
+test_files:
+  - tests/Unit/Resources/TemplateResourceAbilityTest.php

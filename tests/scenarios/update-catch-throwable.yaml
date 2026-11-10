@@ -1,0 +1,17 @@
+feature: 확장 업데이트 실패 시 \Throwable 포착
+
+description: |
+  PHP 의 \Error 는 \Exception 하위가 아니어서 catch (\Exception) 으로 잡히지 않는다.
+  모듈·플러그인·템플릿 매니저의 업데이트 메서드 외부 catch 블록이 \Throwable 을 잡아
+  \Error 발생 시에도 상태 복원이 누락되지 않는지 지킨다.
+
+axes:
+  case: [php_error_semantics, manager_update_source]
+
+effects:
+  - error_not_caught_by_exception_catch
+  - throwable_catch_handles_error
+  - update_outer_catch_uses_throwable
+
+test_files:
+  - tests/Unit/Extension/UpdateCatchThrowableTest.php

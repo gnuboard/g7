@@ -7,7 +7,7 @@
 <!-- @generated:models START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
-| `Page` | `pages` | 11 | creator→User, updater→User, versions→PageVersion, attachments→PageAttachment | 검색 색인 |
+| `Page` | `pages` | 11 | creator→User, updater→User, versions→PageVersion, attachments→PageAttachment, contentMedia→PageAttachment | 검색 색인 |
 | `PageAttachment` | `page_attachments` | 13 | page→Page, creator→User | - |
 | `PageVersion` | `page_versions` | 8 | page→Page, creator→User | - |
 <!-- @generated:models END -->
@@ -33,6 +33,28 @@
 `Page` 만 검색 색인 대상입니다. 색인에 실리는 컬럼과 가중치는 모델의 `searchableColumns()` ·
 `searchableWeights()` 가 선언하고, 다시 태울지 여부는 `searchIndexShouldBeUpdated()` 와
 `search.page.index_should_update` 필터가 정합니다.
+`page_attachments.collection = content_media`(1.2.2, `PageAttachment::RESERVED_COLLECTIONS`)는 편집기 본문에 넣은 미디어입니다. 파일은 처음부터
+`content-media/Y/m/d/` 에 두고, 페이지에 잇기 전까지 `page_id = null` + `temp_key` 입니다. `Page::attachments()`·첨부 연결(파일 이동)·첨부
+개수는 본문 미디어를 빼고, `Page::contentMedia()` 가 따로 봅니다. 일반 첨부 업로드는 이 컬렉션 이름을 쓸 수 없습니다.
+
+흐름(업로드·저장 동기화·서명·서빙·영구 삭제·정리)은 코어 골격 `AbstractContentMediaService` 를 상속한 `PageContentMediaFlow` 가 돌리고,
+페이지 몫은 어댑터 `Services/ContentMedia/PageContentMediaStore`(코어 계약 `ContentMediaStore`)가 답합니다(#887). 호출자는 #883 부터의
+진입점 `PageContentMediaService` 를 그대로 씁니다. 페이지 저장 트랜잭션 안에서 본문(로케일마다)을 **연결 → 복제 → 제거** 순서로 맞춥니다.
+
+- 연결: 본문이 참조한 임시 행 중 같은 임시 키 + 올린 관리자 본인 것만 잇습니다.
+- 복제: 본문이 **다른 페이지**의 본문 미디어 주소(또는 요청자가 다른 임시 키로 올린 임시 행)를 쓰면, 원본을 볼 수 있을 때(발행된 페이지 또는
+  열람권 `sirsoft-page.pages.read`)만 파일을 복사해 이 페이지 소유의 새 행·새 해시를 만들고 본문을 바꿔 다시 저장합니다. 볼 수 없으면 주소를
+  그대로 둡니다. 다시 저장해도 활동 로그·버전·`after_*` 훅은 한 번입니다.
+- 제거: 본문에서 빠진 행은 **어느 버전 본문도 그 해시를 참조하지 않을 때만** 행·파일을 영구 삭제합니다(`PageVersionRepository::referencesHash`
+  — 버전 본문은 배열 캐스트 JSON 이라 주소의 `/` 가 `\/` 로 저장되므로 12자 해시로 찾습니다). 참조하면 페이지에 붙인 채 두어 그 버전으로
+  복원했을 때 서빙됩니다. 버전 스냅샷은 동기화 뒤에 찍히므로 직전 버전이 늘 옛 본문을 가져, 뺀 미디어는 사실상 페이지를 지울 때 함께
+  지워집니다(버전 보존 한도는 두지 않습니다).
+
+버전 복원도 복원 본문을 정규화·동기화한 뒤 스냅샷을 남깁니다 — 다른 페이지 소유 미디어가 섞인 버전은 그때 볼 수 있으면 복제됩니다.
+응답 본문(미발행)은 그 페이지가 소유한 해시만 서명합니다. 페이지를 지우면 버전이 참조해 남겨 둔 것까지 본문 미디어를 모두 영구 삭제합니다
+(`PageContentMediaService::deleteContentMediaForPage()` → 골격 `purgeRows` — 파일은 커밋된 뒤, 행마다 `core.content_media.before_delete`).
+끝내 잇지 않은 임시 행은 `sirsoft-page:prune-temp-attachments` 가 지웁니다. 서빙·복제 원본 읽기·삭제·정리는 모두 행에 기록된 디스크(`disk`)에서
+하고, 새 파일(업로드·복제 사본)만 모듈 기본 디스크에 씁니다.
 <!-- @intent END -->
 
 ## 소유 테이블

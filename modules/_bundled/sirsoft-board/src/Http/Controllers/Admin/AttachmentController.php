@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
@@ -10,6 +12,7 @@ use Modules\Sirsoft\Board\Http\Requests\ReorderAttachmentsRequest;
 use Modules\Sirsoft\Board\Http\Requests\UploadAttachmentRequest;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -28,10 +31,12 @@ class AttachmentController extends AdminBaseController
      *
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
      * @param  BoardService  $boardService  게시판 서비스
+     * @param  PostService  $postService  게시글 서비스 (post_id 업로드의 같은 게시판 글 확인)
      */
     public function __construct(
         private AttachmentService $attachmentService,
-        private BoardService $boardService
+        private BoardService $boardService,
+        private PostService $postService
     ) {
         parent::__construct();
     }
@@ -52,8 +57,18 @@ class AttachmentController extends AdminBaseController
             $validated = $request->validated();
 
             // post_id가 없으면 임시 업로드 (temp_key 필수)
-            $postId = $validated['post_id'] ?? null;
+            $postId = isset($validated['post_id']) ? (int) $validated['post_id'] : null;
             $tempKey = $validated['temp_key'] ?? null;
+
+            // 기존 글에 붙이는 업로드는 이 게시판 글이어야 하고(아니면 404), 관리자 글 수정과 같은 스코프 권한이 있어야 한다
+            // (「본인 글만」 위임 관리자가 남의 글에 파일을 붙이지 못하게, #883)
+            if ($postId !== null) {
+                $post = $this->postService->getPost($slug, $postId);
+
+                if (! PermissionHelper::checkScopeAccess($post, "sirsoft-board.{$slug}.admin.posts.write")) {
+                    return $this->error('auth.scope_denied', 403);
+                }
+            }
 
             $attachment = $this->attachmentService->upload(
                 slug: $slug,
@@ -78,10 +93,17 @@ class AttachmentController extends AdminBaseController
                         'url' => $this->attachmentService->getUrl($slug, $attachment->id),
                         'order' => $attachment->order,
                         'created_at' => $attachment->created_at,
+                        // 올린 본인에게만 주는 임시 키 (사용자 업로드와 같은 응답 형태, #883)
+                        'temp_key' => $attachment->temp_key,
                     ],
                 ],
                 201
             );
+        } catch (ModelNotFoundException $e) {
+            // 이 게시판에 없는 글 번호
+            return $this->error('sirsoft-board::messages.errors.post_not_found', 404);
+        } catch (AccessDeniedHttpException $e) {
+            return $this->error('auth.scope_denied', 403);
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
             return $this->error(

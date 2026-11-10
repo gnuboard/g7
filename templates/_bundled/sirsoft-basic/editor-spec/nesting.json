@@ -99,7 +99,8 @@
         "Header",
         "NotificationCenter",
         "SlotContainer",
-        "ThemeToggle"
+        "ThemeToggle",
+        "RecentSearchCombobox"
       ]
     },
     "Nav": {

@@ -1,0 +1,31 @@
+# 시나리오 매니페스트 — 배송비 요약의 국가 코드 표기
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: shipping_fee_summary_country_prefix
+
+description: >-
+  ShippingPolicy::getFeeSummary() 는 활성 국가별 설정마다 「국가코드: 요약」을 이어 붙였다. 배송 국가가 하나뿐인
+  정책(국내만 배송)은 국가 코드가 쓸모없는 표기라 상품 상세 배송비에 「KR: 70,000원 미만 3,500원」이 보였다.
+  활성 국가가 하나면 코드 없이 요약만, 둘 이상이면 종전처럼 국가별로 구분한다. 비활성 국가는 세지 않는다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/ShippingPolicyFeeSummaryCountryPrefixTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  active_countries:
+    - one                       # 국내만
+    - many                      # 국내 + 해외
+    - one_active_one_inactive   # 해외 설정이 꺼져 있음
+
+exclusions:
+  - { active_countries: one, reason: "제외 없음 — 단일 축" }
+
+effects:
+  - fee_summary_omits_country_code_when_single   # 활성 국가 하나면 코드 생략, 둘 이상이면 국가별 구분
+
+validation:
+  audit_rule: test-scenario-reverse-mapping
+  note: |
+    화면 축(상품 상세 배송비·관리자 배송정책 목록 요약)은 같은 getFeeSummary() 를 그대로 보이므로 브라우저 실측이 덮는다.

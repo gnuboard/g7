@@ -155,6 +155,7 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 | 다운그레이드 시도 | 설치 거부 |
 | protected 팩 비활성화/제거 | `RuntimeException` |
 | 슬롯당 active 2개 이상 | application 트랜잭션이 자동으로 기존 active 강등 |
+| 같은 팩에 다른 작업 진행 중 (7.1.5+) | 설치·업데이트·활성화·비활성화·제거가 같은 작업 잠금(`extension-update:language_pack:{identifier}`)을 쓴다 — 겹치면 409(`operation_in_progress`), 잠금 저장소 오류면 503(`operation_lock_unavailable`). 업데이트가 부르는 설치는 그 잠금에 합류한다 |
 
 ## 이벤트 (HookManager 액션 훅)
 
@@ -218,6 +219,8 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 invalidate 가 무효화하는 캐시:
 - `activePacksCache` (활성 언어팩 컬렉션)
 - `activeCoreLocalesCache` (코어 활성 locale 배열)
+
+`LanguagePackService::getActiveLocales()` 는 DB 를 따로 조회하지 않고 레지스트리의 `getActivePacks('core')` 결과에서 locale 을 뽑습니다(7.1.5) — 같은 요청에서 레지스트리가 이미 읽어 둔 목록을 다시 쓰고, 무효화도 위 `invalidate()` 하나로 함께 따라갑니다.
 
 ## 트러블슈팅
 

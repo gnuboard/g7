@@ -83,6 +83,7 @@ test_files:
   - resources/js/core/__tests__/ModuleAssetLoader.customAssets.test.ts
   - tests/Playwright/specs/custom-assets.spec.ts
   - tests/Feature/Extension/VendoredAssetServingTest.php
+  - tests/Feature/Module/ModuleAssetServingTest.php
   - tests/Feature/Extension/BundledExtensionNoExternalAssetTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-uninstall-preserved-backups.test.tsx
 

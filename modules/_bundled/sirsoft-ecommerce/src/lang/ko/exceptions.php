@@ -208,4 +208,7 @@ return [
     // 택배사 관련
     'shipping_carrier_not_found' => '택배사를 찾을 수 없습니다.',
     'shipping_carrier_in_use' => '주문에서 사용 중인 택배사는 삭제할 수 없습니다. (사용 횟수: :count건)',
+
+    // 회원·주문 없이 등록하는 후기(다른 쇼핑몰 이관) 입력 오류
+    'imported_review_invalid_field' => '이관 후기 입력값이 올바르지 않습니다: :field',
 ];

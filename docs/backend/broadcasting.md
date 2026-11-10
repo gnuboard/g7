@@ -233,7 +233,9 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 ## 모듈/플러그인 채널 등록
 
 모듈/플러그인에서 WebSocket 채널이 필요한 경우 `getChannels()` 메서드를 오버라이드합니다.
-`ModuleManager`/`PluginManager`가 로드 시 자동으로 `Broadcast::channel()`에 등록합니다.
+선언한 채널은 **활성** 확장일 때 채널 인증 요청(`/api/broadcasting/auth`)을 처리하면서 `Broadcast::channel()` 에 등록됩니다.
+
+> **등록 시점 (7.1.5)**: 채널 인가 콜백(코어 `routes/channels.php` + 활성 확장 `getChannels()`)은 부팅마다 등록하지 않고, 인증 라우트가 `Broadcast::auth()` 직전에 `BroadcastChannelRegistrar::ensureRegistered()` 로 브로드캐스터당 한 번 등록합니다. 부팅마다 `Broadcast::channel()` 을 부르면 그때마다 드라이버(reverb 면 Pusher 클라이언트)가 만들어졌기 때문입니다. 라우트 처리 안에서 부르므로 라우트 캐시와 무관하며, 웹소켓을 끈 사이트(`broadcasting.default === 'null'`)는 등록하지 않습니다. 인가 콜백을 직접 읽어야 하는 코드(시험 등)는 먼저 `ensureRegistered()` 를 부릅니다.
 
 ### 모듈 예시
 

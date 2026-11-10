@@ -242,7 +242,7 @@ HTTP/1.1 200
 | currency | body | string | 예 | max 10 | 대상 통화 코드 (해당 통화 잔액에 적용) |
 | memo | body | string | 아니오 | max 1000 | 관리자 메모 (거래에 기록) |
 | description | body | string | 아니오 | max 500 | 설명 |
-| expires_at | body | date | 아니오 | — | 만료일 직접 지정 (지급 시 `use_default_expiry`=false 인 경우 적용) |
+| expires_at | body | date | 아니오 | — | 만료일 직접 지정 (지급 시 `use_default_expiry`=false 인 경우 적용). 날짜만(`YYYY-MM-DD`) 보내면 사이트 시간대 그날 23:59:59 에 만료된다 |
 | use_default_expiry | body | boolean | 아니오 | — | 지급 시 정책 기본 만료일 적용 여부 (기본 true, false 면 `expires_at` 사용) |
 
 **요청 예시**
@@ -450,7 +450,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
 | memo | body | string | 아니오 | max 1000 | 관리자 메모 보정값 (요청에 포함된 경우만 갱신, 빈 값으로 비우기 허용) |
-| expires_at | body | date | 아니오 | — | expires 일시 |
+| expires_at | body | date | 아니오 | — | 만료일. 날짜만(`YYYY-MM-DD`) 보내면 사이트 시간대 그날 23:59:59 에 만료된다(수동 지급과 같은 규칙). 목록의 `expires_at_date` 를 그대로 다시 보내도 만료 시각이 바뀌지 않는다 |
 
 **요청 예시**
 

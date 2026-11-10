@@ -3,7 +3,7 @@
 namespace Tests\Unit\Extension;
 
 use App\Extension\IdentityVerification\IdentityVerificationManager;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * IdentityVerificationManager — purpose source 정보 보존 회귀 테스트.
@@ -20,11 +20,20 @@ use Tests\TestCase;
  *   - 모듈/플러그인이 선언한 purpose 는 source_type='module'|'plugin', source_identifier=확장 식별자
  *   - source 가 미명시된 등록 (admin override / filter 훅 등) 은 source_type='admin'
  */
-class IdentityVerificationManagerPurposeSourceTest extends TestCase
+class IdentityVerificationManagerPurposeSourceTest extends PureTestCase
 {
+    /**
+     * 코어 기본 목적 4종(signup·password_reset·self_update·sensitive_action)이 source_type·source_identifier 모두 core 로 표시되는지 검증한다.
+     *
+     * @scenario case=core
+     *
+     * @effects core_purposes_tagged_core_source
+     *
+     * @return void 반환값 없음
+     */
     public function test_core_purposes_are_marked_with_core_source(): void
     {
-        $manager = new IdentityVerificationManager();
+        $manager = new IdentityVerificationManager;
         $purposes = $manager->getAllPurposes();
 
         foreach (['signup', 'password_reset', 'self_update', 'sensitive_action'] as $key) {
@@ -36,9 +45,18 @@ class IdentityVerificationManagerPurposeSourceTest extends TestCase
         }
     }
 
-    public function test_registerDeclaredPurposes_marks_module_source(): void
+    /**
+     * 모듈이 선언한 목적은 source_type=module 과 모듈 식별자를 출처로 갖는지 검증한다.
+     *
+     * @scenario case=module
+     *
+     * @effects module_declared_purpose_tagged_module_source
+     *
+     * @return void 반환값 없음
+     */
+    public function test_register_declared_purposes_marks_module_source(): void
     {
-        $manager = new IdentityVerificationManager();
+        $manager = new IdentityVerificationManager;
 
         $manager->registerDeclaredPurposes([
             'checkout_verification' => [
@@ -53,9 +71,18 @@ class IdentityVerificationManagerPurposeSourceTest extends TestCase
         $this->assertSame('sirsoft-ecommerce', $purposes['checkout_verification']['source_identifier'] ?? null);
     }
 
-    public function test_registerDeclaredPurposes_marks_plugin_source(): void
+    /**
+     * 플러그인이 선언한 목적은 source_type=plugin 과 플러그인 식별자를 출처로 갖는지 검증한다.
+     *
+     * @scenario case=plugin
+     *
+     * @effects plugin_declared_purpose_tagged_plugin_source
+     *
+     * @return void 반환값 없음
+     */
+    public function test_register_declared_purposes_marks_plugin_source(): void
     {
-        $manager = new IdentityVerificationManager();
+        $manager = new IdentityVerificationManager;
 
         $manager->registerDeclaredPurposes([
             'adult_verification' => [
@@ -70,9 +97,18 @@ class IdentityVerificationManagerPurposeSourceTest extends TestCase
         $this->assertSame('sirsoft-adult-cert', $purposes['adult_verification']['source_identifier'] ?? null);
     }
 
-    public function test_registerPurpose_without_source_defaults_to_admin(): void
+    /**
+     * 출처 없이 registerPurpose 로 등록한 목적은 source_type·source_identifier 가 admin 으로 채워지는지 검증한다.
+     *
+     * @scenario case=admin
+     *
+     * @effects unsourced_purpose_defaults_to_admin
+     *
+     * @return void 반환값 없음
+     */
+    public function test_register_purpose_without_source_defaults_to_admin(): void
     {
-        $manager = new IdentityVerificationManager();
+        $manager = new IdentityVerificationManager;
         $manager->registerPurpose('runtime_purpose', [
             'label' => 'Runtime',
             'allowed_channels' => ['email'],
@@ -83,9 +119,18 @@ class IdentityVerificationManagerPurposeSourceTest extends TestCase
         $this->assertSame('admin', $purposes['runtime_purpose']['source_identifier'] ?? null);
     }
 
+    /**
+     * 모듈이 코어 목적 signup 을 다시 선언하면 그 목적의 출처가 해당 모듈로 바뀌는지 검증한다.
+     *
+     * @scenario case=override
+     *
+     * @effects module_override_replaces_core_source
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_can_override_core_purpose_and_source_changes(): void
     {
-        $manager = new IdentityVerificationManager();
+        $manager = new IdentityVerificationManager;
         $manager->registerDeclaredPurposes([
             'signup' => ['label' => '커스텀 signup', 'allowed_channels' => ['sms']],
         ], 'module', 'sirsoft-ecommerce');

@@ -4,8 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionClass;
+use Tests\PureTestCase;
 
 /**
  * 관리자 구매확정의 활동 로그 전/후 표 (S2-D7 · #599 통합실측 세션2)
@@ -36,7 +36,7 @@ use ReflectionClass;
  *
  * 이 테스트는 **두 경로가 같은 인자수로 발화하는지**를 잠근다 — 한쪽만 고쳐지면 red 가 된다.
  */
-class AdminConfirmPassesOptionSnapshotTest extends ModuleTestCase
+class AdminConfirmPassesOptionSnapshotTest extends PureTestCase
 {
     /**
      * 주어진 클래스 소스에서 `order-option.after_confirm` 발화 줄을 모두 찾는다.
@@ -71,6 +71,8 @@ class AdminConfirmPassesOptionSnapshotTest extends ModuleTestCase
      * @scenario confirm_path=user_self
      *
      * @effects user_confirm_carries_option_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_user_self_confirm_passes_a_snapshot(): void
     {
@@ -99,6 +101,8 @@ class AdminConfirmPassesOptionSnapshotTest extends ModuleTestCase
      * @scenario confirm_path=admin_transition
      *
      * @effects admin_confirm_carries_option_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_confirm_passes_a_snapshot_too(): void
     {

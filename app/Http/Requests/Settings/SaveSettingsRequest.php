@@ -9,7 +9,9 @@ use App\Extension\Consent\ConsentManager;
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
+use App\Rules\ContentCustomTagsRule;
 use App\Rules\CspSourceHost;
+use App\Rules\EmbedCustomProviderRule;
 use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
@@ -18,10 +20,12 @@ use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
 use App\Support\AllowedExtensions;
 use App\Support\AssetUrl;
+use App\Support\Content\EmbedProviderRegistry;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\IpAccessMatcher;
 use App\Support\PhpExtensionProbe;
+use App\Support\SearchScopes;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -324,6 +328,24 @@ class SaveSettingsRequest extends FormRequest
             }
         }
 
+        // 최근 검색어 범위 행(`search_history_scopes[*].max_count|retention_days`)도 숫자 입력칸이 문자열로 보낸다 (7.1.5)
+        if (is_array($privacy['search_history_scopes'] ?? null)) {
+            foreach ($privacy['search_history_scopes'] as $index => $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                foreach (['max_count', 'retention_days'] as $field) {
+                    $value = $row[$field] ?? null;
+
+                    if (is_string($value) && $value !== '' && ctype_digit($value)) {
+                        $privacy['search_history_scopes'][$index][$field] = (int) $value;
+                        $changed = true;
+                    }
+                }
+            }
+        }
+
         if ($changed) {
             $this->merge(['privacy' => $privacy]);
         }
@@ -516,7 +538,7 @@ class SaveSettingsRequest extends FormRequest
         $rules = [
             // 탭 식별자
             // 여기 빠진 탭 이름으로 저장하면 본문이 아무리 올바라도 422 다 — 탭을 신설하면 반드시 함께 넣는다.
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy', 'content'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -530,6 +552,24 @@ class SaveSettingsRequest extends FormRequest
             'identity' => ['sometimes', 'array'],
             'analytics' => ['sometimes', 'array'],
             'privacy' => ['sometimes', 'array'],
+            'content' => ['sometimes', 'array'],
+
+            // 본문 콘텐츠 (#883) — 허용 후보·외부 영상 서비스·운영자 추가 태그·미디어 주소 유효 시간
+            'content.allow_figure_caption' => ['nullable', 'boolean'],
+            'content.allow_uploaded_video' => ['nullable', 'boolean'],
+            'content.allow_uploaded_audio' => ['nullable', 'boolean'],
+            'content.allow_external_embed' => ['nullable', 'boolean'],
+            'content.embed_presets' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail): void {
+                foreach (array_keys(is_array($value) ? $value : []) as $key) {
+                    if (! array_key_exists($key, EmbedProviderRegistry::presets()) && ! str_starts_with((string) $key, 'ext:')) {
+                        $fail(__('validation.settings.embed_preset_unknown', ['id' => $key]));
+                    }
+                }
+            }],
+            'content.embed_presets.*' => ['boolean'],
+            'content.embed_custom_providers' => ['nullable', 'array', new EmbedCustomProviderRule],
+            'content.custom_tags' => ['nullable', 'array', new ContentCustomTagsRule],
+            'content.media_url_ttl_minutes' => ['nullable', 'integer', 'min:5', 'max:1440'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -779,6 +819,13 @@ class SaveSettingsRequest extends FormRequest
             'privacy.dormant_notice_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_dormant_notice_days_min', 1).'|max:'.config('core.settings_limits.privacy_dormant_notice_days_max', 365)),
             'privacy.dormant_withdraw_enabled' => ['nullable', 'boolean'],
             'privacy.dormant_withdraw_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_retention_days_min', 1).'|max:'.config('core.settings_limits.privacy_retention_days_max', 3650)),
+            // 최근 검색어 (7.1.5) — 범위별 행 목록. 범위 id 에 점이 있어 맵이 아니라 목록으로 받는다.
+            'privacy.search_history_enabled' => ['nullable', 'boolean'],
+            'privacy.search_history_scopes' => ['sometimes', 'array'],
+            'privacy.search_history_scopes.*' => ['array'],
+            'privacy.search_history_scopes.*.scope' => ['required', 'string', 'distinct', Rule::in(SearchScopes::keys())],
+            'privacy.search_history_scopes.*.max_count' => ['required', 'integer', 'min:'.config('core.settings_limits.search_history_max_count_min', 1), 'max:'.config('core.settings_limits.search_history_max_count_max', 50)],
+            'privacy.search_history_scopes.*.retention_days' => ['required', 'integer', 'min:0', 'max:'.config('core.settings_limits.privacy_retention_days_max', 3650)],
         ];
 
         // 방문자 통계 설정은 전용 API 와 이 경로 둘 다로 저장될 수 있다 — 규칙을 한
@@ -1706,6 +1753,9 @@ class SaveSettingsRequest extends FormRequest
             'privacy.dormant_withdraw_days.integer' => __('validation.settings.privacy_days_integer'),
             'privacy.dormant_withdraw_days.min' => __('validation.settings.privacy_retention_days_min'),
             'privacy.dormant_withdraw_days.max' => __('validation.settings.privacy_retention_days_max'),
+            // 최근 검색어 범위 행 (7.1.5)
+            'privacy.search_history_scopes.*.scope.in' => __('validation.settings.privacy_search_history_scope_unknown'),
+            'privacy.search_history_scopes.*.scope.distinct' => __('validation.settings.privacy_search_history_scope_distinct'),
         ];
     }
 
@@ -1745,6 +1795,23 @@ class SaveSettingsRequest extends FormRequest
             'privacy.dormant_notice_days' => __('validation.attributes.privacy_dormant_notice_days'),
             'privacy.dormant_withdraw_enabled' => __('validation.attributes.privacy_dormant_withdraw_enabled'),
             'privacy.dormant_withdraw_days' => __('validation.attributes.privacy_dormant_withdraw_days'),
+            'privacy.search_history_enabled' => __('validation.attributes.privacy_search_history_enabled'),
+            'privacy.search_history_scopes' => __('validation.attributes.privacy_search_history_scopes'),
+            'privacy.search_history_scopes.*' => __('validation.attributes.privacy_search_history_scopes'),
+            'privacy.search_history_scopes.*.scope' => __('validation.attributes.privacy_search_history_scope'),
+            'privacy.search_history_scopes.*.max_count' => __('validation.attributes.privacy_search_history_max_count'),
+            'privacy.search_history_scopes.*.retention_days' => __('validation.attributes.privacy_search_history_retention_days'),
+            // 본문 콘텐츠 필드 (#883)
+            'content' => __('validation.attributes.content_settings'),
+            'content.allow_figure_caption' => __('validation.attributes.content_allow_figure_caption'),
+            'content.allow_uploaded_video' => __('validation.attributes.content_allow_uploaded_video'),
+            'content.allow_uploaded_audio' => __('validation.attributes.content_allow_uploaded_audio'),
+            'content.allow_external_embed' => __('validation.attributes.content_allow_external_embed'),
+            'content.embed_presets' => __('validation.attributes.content_embed_presets'),
+            'content.embed_presets.*' => __('validation.attributes.content_embed_presets'),
+            'content.embed_custom_providers' => __('validation.attributes.content_embed_custom_providers'),
+            'content.custom_tags' => __('validation.attributes.content_custom_tags'),
+            'content.media_url_ttl_minutes' => __('validation.attributes.content_media_url_ttl_minutes'),
             // 탭 묶음 자체 — 페이로드가 배열이 아닐 때 "general 필드는 배열이어야 합니다" 로
             // 키가 그대로 노출되던 자리다(운영자 화면 라벨은 한국어인데 문구만 영문 키).
             'general' => __('validation.attributes.settings_tab_general'),

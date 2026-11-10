@@ -1,0 +1,15 @@
+feature: 사용자 글 작성의 첨부 번호(attachment_ids) 연결 (#883 후속)
+
+description: |
+  사용자 글 작성(`POST boards/{slug}/posts`)이 `attachment_ids` 를 검증만 하고 서비스로 넘기지 않아 첨부가 이어지지 않던 결함.
+  이제 넘기고, 번호 연결도 소유 규칙(본인 업로드만)을 탄다.
+
+axes:
+  case: [own_and_foreign_ids]
+
+effects:
+  - own_attachment_ids_linked
+  - foreign_attachment_ids_ignored
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/UserPostStoreAttachmentIdsTest.php

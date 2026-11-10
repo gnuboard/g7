@@ -1,6 +1,6 @@
 <!-- 비즈뿌리오(알림톡·SMS) 플러그인 설정. 연결 탭은 API 자격증명·발신번호·리포트(webhook) 주소를 다루고, 템플릿 탭은 알림톡 템플릿의 DB 목록과 작성·검수 신청·승인 취소·삭제 라이프사이클을 다룬다. 탭·상태 필터·검색·페이지는 전부 URL 쿼리(tab / bz_status / bz_search / bz_page)가 SSoT 다. -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
-  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-message_bizppurio.settings.title" description="$t:sirsoft-message_bizppurio.settings.description" _e2e_allow="e2e:allow (§529) 연결 확인 필드·hasChanges 가드 추가는 레이아웃 회귀테스트(plugin_settings.test.tsx) + PHPUnit Feature(TokenCheckEndpointTest·InvalidateTokenOnSettingsSaveListenerTest)로 커버. 실연동 Playwright는 계획서 §9 방침에 따라 직접 수행(인증·발송 환경 필요) 단계에서 도입 예정 — tests/scenarios/plugin-settings.yaml 상단 audit:allow 사유 참고."/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-message_bizppurio.settings.title" description="$t:sirsoft-message_bizppurio.settings.description" _e2e_allow="e2e:allow (#160) 신청·동기화 날짜 바인딩만 서버 *_date_formatted(보는 사람 날짜)로 교체 — PHPUnit 응답 단언 + 레이아웃 Vitest(plugin_settings_manage.test.tsx) + Chrome MCP 매트릭스 S21. (§529) 연결 확인 필드·hasChanges 가드 추가는 레이아웃 회귀테스트(plugin_settings.test.tsx) + PHPUnit Feature(TokenCheckEndpointTest·InvalidateTokenOnSettingsSaveListenerTest)로 커버. 실연동 Playwright는 계획서 §9 방침에 따라 직접 수행(인증·발송 환경 필요) 단계에서 도입 예정 — tests/scenarios/plugin-settings.yaml 상단 audit:allow 사유 참고."/>
   <!-- 플러그인 설정 원본 — initLocal 로 _local.form 에 시드하고, 저장 성공 뒤 refetch 해 폼을 서버 값으로 되맞춘다(refetchOnMount 로 화면 재진입 때도 최신값). -->
   <data-source id="settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
     <error-handling>
@@ -431,7 +431,7 @@
                     <!-- 카드 메타 줄 — 데스크톱에서 별도 열인 소속·신청일·동기화일을 portable 카드에서 한 줄로 요약. -->
                     <p class="hidden">
                       <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 mt-1"/>
-                      {{$t('sirsoft-message_bizppurio.manage.owner.' + (bzRow.definition_extension_type ?? 'core'))}} {{(bzRow.definition_extension_type ?? 'core') === 'core' ? '' : ('(' + (bzRow.definition_extension_identifier ?? '') + ')')}} · {{$t('sirsoft-message_bizppurio.manage.columns.requested_at')}} {{(bzRow.requested_at ?? '').slice(0, 10) || '-'}} · {{$t('sirsoft-message_bizppurio.manage.columns.synced_at')}} {{(bzRow.last_synced_at ?? '').slice(0, 10) || '-'}}
+                      {{$t('sirsoft-message_bizppurio.manage.owner.' + (bzRow.definition_extension_type ?? 'core'))}} {{(bzRow.definition_extension_type ?? 'core') === 'core' ? '' : ('(' + (bzRow.definition_extension_identifier ?? '') + ')')}} · {{$t('sirsoft-message_bizppurio.manage.columns.requested_at')}} {{bzRow.requested_at_date_formatted || '-'}} · {{$t('sirsoft-message_bizppurio.manage.columns.synced_at')}} {{bzRow.last_synced_at_date_formatted || '-'}}
                     </p>
                   </div>
                   <div class="col-span-2 text-sm text-gray-700 dark:text-gray-200">
@@ -447,11 +447,11 @@
                   </div>
                   <div class="col-span-1 text-sm text-gray-700 dark:text-gray-200 tabular-nums">
                     <responsive on="portable" class="hidden"/>
-                    {{(bzRow.requested_at ?? '').slice(0, 10) || '-'}}
+                    {{bzRow.requested_at_date_formatted || '-'}}
                   </div>
                   <div class="col-span-1 text-sm text-gray-700 dark:text-gray-200 tabular-nums">
                     <responsive on="portable" class="hidden"/>
-                    {{(bzRow.last_synced_at ?? '').slice(0, 10) || '-'}}
+                    {{bzRow.last_synced_at_date_formatted || '-'}}
                   </div>
                   <div class="col-span-3">
                     <responsive on="portable" class="w-full pt-1"/>

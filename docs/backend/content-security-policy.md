@@ -127,13 +127,13 @@ G7 설정 대신 웹서버에 직접 걸어도 된다. 응답에 이미 `Content
 nginx:
 
 ```nginx
-add_header Content-Security-Policy "script-src 'self' js.tosspayments.com stdpay.inicis.com t1.daumcdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report" always;
+add_header Content-Security-Policy "script-src 'self' js.tosspayments.com stdpay.inicis.com t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report" always;
 ```
 
 Apache:
 
 ```apache
-Header always set Content-Security-Policy "script-src 'self' js.tosspayments.com stdpay.inicis.com t1.daumcdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report"
+Header always set Content-Security-Policy "script-src 'self' js.tosspayments.com stdpay.inicis.com t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report"
 ```
 
 설치 마법사(`/install`)는 Laravel 밖의 PHP 라 G7 설정의 헤더가 붙지 않는다. 설치 화면에도 정책을 걸려면
@@ -150,7 +150,7 @@ Header always set Content-Security-Policy "script-src 'self' js.tosspayments.com
 | KG 이니시스 | `stdpay.inicis.com` · `stgstdpay.inicis.com` | 운영 · 테스트 |
 | 나이스페이먼츠 | `web.nicepay.co.kr` | |
 | NHN KCP | `pay.kcp.co.kr` · `testpay.kcp.co.kr` · `npay.kcp.co.kr` · `testnpay.kcp.co.kr` · `spay.kcp.co.kr` · `testspay.kcp.co.kr` | SDK(`payplus_web.jsp`)가 `npay`(결제 연동)·`spay`(간편결제) 계열 스크립트를 이어서 싣는다 |
-| Daum 우편번호 | `t1.daumcdn.net` | 검색 창 내용은 별도 문서(카카오)라 이 정책의 영향을 받지 않는다 |
+| 다음 우편번호 | `t1.kakaocdn.net` (옛 주소 `t1.daumcdn.net` 도 전환기 동안 함께 선언) | 검색 창 내용은 별도 문서(`postcode.map.kakao.com` iframe)라 이 정책의 영향을 받지 않는다 |
 
 결제사·서비스사가 SDK 내부 호스트를 바꾸면 강제 모드 사이트에서 그 기능이 열리지 않는다. 결제를 쓰는
 사이트는 PG 계약 변경·SDK 공지 뒤 점검만 모드로 한 번 결제 흐름을 돌려 csp.log 를 확인한다.

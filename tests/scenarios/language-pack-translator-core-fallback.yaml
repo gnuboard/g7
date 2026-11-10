@@ -1,0 +1,18 @@
+feature: 언어팩 Translator 코어 폴백 경로
+
+description: |
+  LanguagePackTranslator 는 로케일별 코어 폴백 경로를 기록하고, 코어 그룹(lang/{locale}/*.php) 로드 시
+  기본 lang 값을 우선하되 기본에 없는 키만 폴백 경로 값으로 보완한다.
+  모듈 namespace 키(vendor::group.key)에는 코어 폴백을 적용하지 않는다.
+
+axes:
+  case: [register_path, core_group_load, namespaced_load]
+
+effects:
+  - core_fallback_path_recorded_per_locale
+  - base_value_wins_over_fallback
+  - missing_key_filled_from_fallback
+  - namespaced_key_skips_core_fallback
+
+test_files:
+  - tests/Unit/Services/LanguagePack/LanguagePackTranslatorTest.php

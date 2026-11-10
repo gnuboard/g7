@@ -33,7 +33,7 @@ final class DependencyVersionWarnings
      * 파일이 없거나 읽을 수 없으면 빈 목록 — 경고 수집이 갱신 결과를 깨뜨리지 않는다.
      *
      * @param  string  $manifestPath  manifest 파일 절대 경로
-     * @return list<array{identifier: string, name: string, type: string, required_version: string, installed_version: string|null, is_active: bool, message: string}> 충족되지 않은 의존 목록
+     * @return list<array{identifier: string, name: string, type: string, state: string, required_version: string, installed_version: string|null, is_active: bool, message: string}> 충족되지 않은 의존 목록
      */
     public static function forManifestFile(string $manifestPath): array
     {
@@ -44,13 +44,28 @@ final class DependencyVersionWarnings
 
             $manifest = json_decode(File::get($manifestPath), true);
 
-            if (! is_array($manifest) || ! is_array($manifest['dependencies'] ?? null)) {
-                return [];
-            }
-
-            return self::forDependencies($manifest['dependencies']);
+            return is_array($manifest) ? self::forManifest($manifest) : [];
         } catch (\Throwable $e) {
             Log::warning('의존 버전 검사 실패 — 경고 없이 진행합니다', ['manifest' => $manifestPath, 'error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * 읽어 둔 manifest 배열의 의존 선언을 검사합니다 — 업데이트 전 창(새 판 manifest)과 업데이트 뒤 경고가 같은 판정을 쓴다.
+     *
+     * 검사 실패가 목록·갱신 결과를 깨뜨리지 않도록 예외는 로그만 남기고 빈 목록을 돌려준다.
+     *
+     * @param  array<string, mixed>  $manifest  manifest 배열 (module.json·plugin.json·template.json 내용)
+     * @return list<array{identifier: string, name: string, type: string, state: string, required_version: string, installed_version: string|null, is_active: bool, message: string}> 충족되지 않은 의존 목록
+     */
+    public static function forManifest(array $manifest): array
+    {
+        try {
+            return is_array($manifest['dependencies'] ?? null) ? self::forDependencies($manifest['dependencies']) : [];
+        } catch (\Throwable $e) {
+            Log::warning('의존 버전 검사 실패 — 경고 없이 진행합니다', ['identifier' => $manifest['identifier'] ?? null, 'error' => $e->getMessage()]);
 
             return [];
         }
@@ -60,7 +75,7 @@ final class DependencyVersionWarnings
      * 의존 선언(`['modules' => [...], 'plugins' => [...]]`)에서 충족되지 않은 것만 골라 경고 문구를 붙입니다.
      *
      * @param  array<string, mixed>  $dependencies  manifest 의 dependencies
-     * @return list<array{identifier: string, name: string, type: string, required_version: string, installed_version: string|null, is_active: bool, message: string}> 충족되지 않은 의존 목록
+     * @return list<array{identifier: string, name: string, type: string, state: string, required_version: string, installed_version: string|null, is_active: bool, message: string}> 충족되지 않은 의존 목록
      */
     public static function forDependencies(array $dependencies): array
     {
@@ -87,6 +102,8 @@ final class DependencyVersionWarnings
                 'identifier' => (string) $item['identifier'],
                 'name' => (string) $item['name'],
                 'type' => (string) $item['type'],
+                // 판정 사유(not_installed·inactive·version_mismatch) — 연동 안내의 `state` 와 같은 값이라 화면이 같은 배지로 그린다
+                'state' => (string) $item['status'],
                 'required_version' => (string) $item['required_version'],
                 'installed_version' => $item['installed_version'],
                 'is_active' => (bool) $item['is_active'],
@@ -241,7 +258,7 @@ final class DependencyVersionWarnings
      * @param  string  $type  갱신한 확장 종류 (`module`·`plugin`·`template`)
      * @param  string  $identifier  갱신한 확장 식별자
      * @param  string  $manifestPath  갱신된 manifest 파일 경로
-     * @return list<array{identifier: string, name: string, type: string, required_version: string, installed_version: string|null, is_active: bool, message: string}> 충족되지 않은 의존 목록
+     * @return list<array{identifier: string, name: string, type: string, state: string, required_version: string, installed_version: string|null, is_active: bool, message: string}> 충족되지 않은 의존 목록
      */
     public static function afterUpdate(string $type, string $identifier, string $manifestPath): array
     {

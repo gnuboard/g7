@@ -90,6 +90,23 @@ export function useLocationSearch(enabled: boolean): string {
   return impl(enabled);
 }
 
+const readLocationPath = (): string => (typeof window === 'undefined' ? '' : window.location.pathname);
+
+/**
+ * 현재 주소 경로를 구독합니다 — 화면을 옮겨도 다시 마운트되지 않는 머리글·서랍이 경로로 상태를 정할 때 쓴다.
+ * 구독 경로는 {@link useLocationSearch} 의 옛 코어 대체와 같다(엔진 주소 교체 알림, 없으면 뒤로/앞으로).
+ *
+ * @param enabled 구독하면 true
+ * @return 현재 경로(`/search`, 구독하지 않으면 '')
+ */
+export function useLocationPath(enabled: boolean): string {
+  return useSyncExternalStore(
+    enabled ? subscribeFallback : noSubscribe,
+    enabled ? readLocationPath : noSnapshot,
+    noSnapshot,
+  );
+}
+
 /**
  * 이 사이트 안 주소(SPA 로 옮길 내부 링크)인지 판정합니다 — 판정은 코어 한 곳(`G7Core.navigation.resolveInternalHref`,
  * 엔진 navigate 와 같은 규칙: `//host`·`/\host`·경로가 `//` 로 시작하는 같은 출처 주소·실행 스킴은 내부가 아니다).

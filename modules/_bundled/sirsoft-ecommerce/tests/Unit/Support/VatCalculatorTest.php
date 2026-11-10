@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Support;
 
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 부가세 계산 헬퍼 테스트 (E5)
@@ -11,10 +11,16 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 기존 코드에 `× 10/110` 과 `/ 11` 두 표기가 섞여 있었습니다. 수학적으로 같은 식이므로
  * 헬퍼로 단일화했고, 세율이 섞인 주문에서는 옵션별 합산만이 정확합니다.
  */
-class VatCalculatorTest extends ModuleTestCase
+class VatCalculatorTest extends PureTestCase
 {
     /**
      * 10% 세율에서 과세표준 / 11 과 동일한 값을 산출하는지 테스트합니다.
+     *
+     * @scenario tax_status=taxable, tax_rate=standard_10, order_composition=single_rate
+     *
+     * @effects default_rate_matches_divide_by_eleven, vat_calculated_for_taxable_items
+     *
+     * @return void 반환값 없음
      */
     public function test_default_rate_matches_divide_by_eleven(): void
     {
@@ -29,6 +35,14 @@ class VatCalculatorTest extends ModuleTestCase
 
     /**
      * 세율 0(영세율) 과 면세는 부가세 0 인지 테스트합니다.
+     *
+     * 과세표준이 0 이하인 경우도 10% 세율에서 부가세 0 으로 떨어지는지 함께 확인합니다.
+     *
+     * @scenario tax_status=zero_rated, tax_rate=zero
+     *
+     * @effects zero_rate_yields_zero_vat
+     *
+     * @return void 반환값 없음
      */
     public function test_zero_rate_yields_zero_vat(): void
     {
@@ -38,7 +52,13 @@ class VatCalculatorTest extends ModuleTestCase
     }
 
     /**
-     * 상품별 세율이 반영되는지 테스트합니다.
+     * 상품별 세율이 반영되는지 테스트합니다 — 5% 세율이면 과세표준 / 21 로 부가세를 산출합니다.
+     *
+     * @scenario tax_status=taxable, tax_rate=reduced_5, order_composition=single_rate
+     *
+     * @effects vat_calculated_for_taxable_items
+     *
+     * @return void 반환값 없음
      */
     public function test_custom_rate_is_applied(): void
     {
@@ -47,7 +67,13 @@ class VatCalculatorTest extends ModuleTestCase
     }
 
     /**
-     * 세율이 섞인 분류에서 옵션별 합산이 이뤄지는지 테스트합니다.
+     * 세율이 섞인 분류에서 옵션별 합산이 이뤄지는지 테스트합니다 — 10%·5% 과세 옵션과 면세 옵션의 부가세 합이 1500 입니다.
+     *
+     * @scenario order_composition=mixed_rate, tax_rate=missing
+     *
+     * @effects mixed_tax_rates_summed_per_option, tax_free_item_has_no_vat
+     *
+     * @return void 반환값 없음
      */
     public function test_sum_from_classification_handles_mixed_rates(): void
     {
@@ -63,6 +89,12 @@ class VatCalculatorTest extends ModuleTestCase
 
     /**
      * 이미 계산된 vat_amount 가 있으면 그대로 합산하는지 테스트합니다.
+     *
+     * @scenario order_composition=single_rate, tax_rate=standard_10
+     *
+     * @effects vat_survives_calculation_result_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_sum_uses_precomputed_vat_amount(): void
     {
@@ -78,6 +110,12 @@ class VatCalculatorTest extends ModuleTestCase
      * 전체 과세표준에 단일 세율을 적용하는 방식과 결과가 다름을 고정합니다.
      *
      * 세율이 섞인 주문에서 단일 세율 계산은 틀린 값을 낸다 — 이것이 옵션별 합산이 필요한 이유.
+     *
+     * @scenario order_composition=mixed_rate, tax_status=taxable
+     *
+     * @effects mixed_tax_rates_summed_per_option
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_rate_differs_from_single_rate_calculation(): void
     {

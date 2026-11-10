@@ -314,6 +314,7 @@
     "checked_fields_notice": "전체 설정 저장 후 체크한 항목만 일괄 적용됩니다.",
     "no_boards_notice": "등록된 게시판이 없어 일괄 적용할 수 없습니다. 먼저 게시판을 생성해주세요.",
     "field_labels": {
+      "content_media_policy": "본문 미디어 정책",
       "type": "기본 유형",
       "per_page": "페이지당 게시글 수 (PC)",
       "per_page_mobile": "페이지당 게시글 수 (Mobile)",

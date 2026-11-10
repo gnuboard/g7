@@ -41,6 +41,9 @@ export { default as PageLoading } from './PageLoading';
 export { default as ThemeToggle } from './ThemeToggle';
 export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
+// 최근 검색어 펼침 목록을 가진 검색창 — 머리글·모바일 서랍·통합검색 화면 (엔진 G7Core.useSearchHistory)
+export { RecentSearchCombobox } from './RecentSearchCombobox';
+export type { RecentSearchComboboxProps, RecentSearchItem } from './RecentSearchCombobox';
 export { Avatar } from './Avatar';
 // 방문자 카운터 — 홈 하단 오늘·어제·최대·전체 (#682)
 export { VisitorCounter } from './VisitorCounter';
@@ -105,6 +108,8 @@ export const compositeComponents = {
   ThemeToggle: () => import('./ThemeToggle'),
   Pagination: () => import('./Pagination'),
   SearchBar: () => import('./SearchBar'),
+  // 최근 검색어 검색창 — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
+  RecentSearchCombobox: () => import('./RecentSearchCombobox'),
   Avatar: () => import('./Avatar'),
   // 방문자 카운터 (#682) — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
   VisitorCounter: () => import('./VisitorCounter'),

@@ -1404,6 +1404,12 @@ return [
 
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        'content_media' => [
+            'owner_type' => '본문 미디어 소유 종류',
+            'file' => '본문 미디어 파일',
+            'temp_key' => '임시 키',
+        ],
+        'content_media_temp_key' => '본문 미디어 임시 키',
         // 수동 결제 처리·재활성 확인 창 세 항목 (Q13·Q14)
         'apply_stock_deduction' => '재고 차감',
         'apply_mileage_deduction' => '사용 마일리지 차감',
@@ -1444,6 +1450,10 @@ return [
         'review_settings.write_deadline_days' => '리뷰 작성 기한(일)',
         'review_settings.max_images' => '리뷰 이미지 최대 개수',
         'review_settings.max_image_size_mb' => '리뷰 이미지 최대 용량(MB)',
+
+        // 상품 진열 설정
+        'product_display.related_order' => '관련 상품 순서',
+        'product_display.related_cache_hours' => '관련 상품 목록 유지 시간',
 
         // 클레임 설정
         'claim.exchange_reasons' => '교환 사유',

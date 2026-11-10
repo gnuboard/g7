@@ -4,7 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
 use ReflectionMethod;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 번들 일괄 업데이트는 같은 프로세스에서 확장을 갱신했으면 언어팩 단계를 새 PHP 프로세스로 돌린다 (W3 리허설 실측).
@@ -14,7 +14,7 @@ use Tests\TestCase;
  * 새 판 클래스를 만들다 새 바인딩(`OrderExchangeRepositoryInterface`)이 없어 실패했다(68회, 경고만). 그래서 새 클레임
  * 사유 12종의 일본어 이름이 비었다. 새 프로세스는 갱신된 확장의 프로바이더로 부팅하므로 재시드가 성공한다.
  */
-class BundledLangPackPhaseIsolationTest extends TestCase
+class BundledLangPackPhaseIsolationTest extends PureTestCase
 {
     /**
      * 확장(모듈·플러그인·템플릿)을 같은 프로세스에서 갱신했고 언어팩이 있으면 새 프로세스 대상이다.

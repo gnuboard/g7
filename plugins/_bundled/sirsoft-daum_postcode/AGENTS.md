@@ -23,11 +23,14 @@
 버튼이 나타나고, 사용자가 주소를 고르면 지정된 필드들(우편번호·기본주소·도로명·지번)이
 채워집니다.
 
-**이 확장은 코어 규정의 예외를 하나 갖습니다.** 구동 자산을 자체 제공하지 않고 Daum 의
-CDN(`t1.daumcdn.net`)에서 로드합니다 — 우편번호 SDK 는 라이브러리가 아니라 **Daum 이 운영하는
+**이 확장은 코어 규정의 예외를 하나 갖습니다.** 구동 자산을 자체 제공하지 않고 카카오의
+CDN(`t1.kakaocdn.net`)에서 로드합니다 — 우편번호 SDK 는 라이브러리가 아니라 **카카오가 운영하는
 서비스의 클라이언트**라, 자체 호스팅해도 그 서버와 통신하지 않으면 동작하지 않습니다. 그래서
 manifest 에 `trusted_script_hosts` 와 **그 사유(`trusted_script_hosts_reason`)를 함께 선언**
 합니다. 사유 없는 외부 호스트 선언은 금지이며, 이 플러그인이 그 예외 기재의 선례입니다.
+다음 우편번호가 카카오 주소로 옮겨 간 뒤에도(1.2.0) 옛 주소 `t1.daumcdn.net` 을 함께 선언해 둡니다 — 옛 주소를
+직접 싣는 템플릿 조각(사이트별 덮어쓰기 포함)이 남아 있는 동안 검색이 끊기지 않게 하려는 전환기 조치이고, 카카오가 옛
+주소를 내리면 뺍니다. 생성자도 `kakao.Postcode` 를 먼저, 없으면 `daum.Postcode` 를 씁니다(`postcodeSdk.ts`).
 
 예외를 두는 대신 **실패 경로를 갖춥니다.** SDK 를 못 불러오면(폐쇄망·광고차단기·Daum 장애)
 사용자에게 사실을 알리고 재시도 통로를 남기며, 주소를 직접 입력할 수 있게 합니다 — 검색이
@@ -75,9 +78,24 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 하므로 확보를 기다리지 않습니다.
 
 **검색 → 필드 채움**: 사용자가 버튼을 누름 → `openPostcode` 핸들러가 설정
-(`display_mode`: 레이어/팝업, 팝업 크기, 테마 색상)대로 검색 창을 엶 → 주소를 고르면, 조각이
+(클릭 시점 화면 폭이 엔진 반응형 `portable` 상한 1023px 이하면 `display_mode_mobile`: 펼치기/전체 화면, 넘으면
+`display_mode_pc`: 팝업/레이어/펼치기, 크기, 테마 색상)대로 검색 창을 엶 → 주소를 고르면, 조각이
 `callbackAction` 레이아웃 액션을 넘겼으면 그 액션만 실행하고(주소 값은 액션이 받아 직접 씀), 넘기지
 않았으면 `targetFields`(없으면 플러그인 설정 `target_fields`)가 가리키는 필드들에 값을 씁니다.
+
+**페이지 안에 펼치기(`inline`, 1.2.0 — 모바일 기본값, PC 선택지)**: 클릭 이벤트에서 누른 버튼을 찾고(비동기 경계 전에 잡는다),
+가까운 `[data-postcode-anchor]` → 버튼 조각 컨테이너에서 몇 단계 위의 입력 칸을 가진 조상(확장점 래퍼 div 가 한 겹
+더 있어 컨테이너의 부모는 아직 「우편번호 칸 + 버튼」 줄 안이다) → 컨테이너의 부모 순으로 기준 요소를 정해 그 바로
+뒤에 폭 100% 영역을 넣고 embed 합니다. 높이는 `onresize` 로 따라가고, 주소 선택·닫기 단추·같은 버튼 재클릭에 걷습니다.
+영역은 엔진 밖에서 만든 DOM 이라 Tailwind 클래스 대신 자체 `<style>`(다크 모드 `html.dark` 규칙 포함)을 한 번 싣습니다.
+이벤트가 없으면 PC 는 레이어, 모바일은 전체 화면으로 띄웁니다. 전체 화면(`fullscreen`, 모바일 선택지)은 화면 전체를
+덮는 창(제목 + 닫기)에 100% 높이로 embed 하고 선택·닫기·ESC 로 닫습니다 — 뒤로 가기는 가로채지 않습니다(엔진 라우터가 모든
+popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 레이어·전체 화면이 열려 있는 동안 ESC 는 그 창 몫이라
+`window` 캡처 단계에서 받아 다른 리스너로 넘기지 않고(`captureEscapeWhileOpen`), 닫히면 누른 버튼으로 초점을 돌립니다 —
+배송지 등록 창(템플릿 Modal) 안에서 연 검색 창에 ESC 를 누르면 아래 창까지 닫히던 결함의 대책이며, 템플릿 창 구현에 기대지
+않습니다. 초점이 카카오 검색 iframe(다른 출처) 안에 있으면 키 입력이 페이지에 오지 않아 ESC 로 닫을 수 없습니다(닫기 단추로 닫힘).
+기존 설치의 단일 `display_mode` 는 1.2.0 업그레이드 스텝이
+`display_mode_pc` 로 옮기고 `display_mode_mobile` 을 `inline` 으로 둡니다. 레이어는 `min(설정px, 100vw - 32px)` × `min(설정px, 100vh - 96px)` 로 화면에 맞춥니다.
 
 **SDK 확보 실패**: `postcodeSdk.ts` 가 스크립트 로드에 `onerror` 를 걸어 실패를 감지하고,
 `G7Core.assets.notifyFailure` 로 사용자에게 사실과 재시도 통로를 제시합니다. 필드는 편집
@@ -148,6 +166,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 | SDK 확보를 확인하지 않고 필드를 먼저 읽기 전용으로 만들기 | 확보 확인 후에만 읽기 전용 적용 (해제는 확인 없이) | 읽기 전용 + 검색 불가 = 입력 불가. 순서가 뒤집히면 실패 환경에서 필드가 잠긴 채 남는다 |
 | 선택된 주소를 이 플러그인이 직접 저장 | 필드에 쓰기(또는 `callbackAction` 에 넘기기)까지 | 저장 위치·형식은 화면을 소유한 확장이 정한다. 여기서 저장하면 그 확장마다 분기가 늘어난다 |
 | 쓸 칸을 코드에 고정 | `targetFields`·설정 `target_fields` 로 소비처가 고르게 | 사이트·화면마다 필드 구성이 다르다 |
+| 화면 위에 띄운 창(레이어·전체 화면)의 ESC 를 `document` 버블 리스너로 받기 | `captureEscapeWhileOpen` — window 캡처에서 받아 전파 중단, 닫히면 리스너 해제 | 템플릿 Modal 도 document 에서 ESC 를 받아, 창 안에서 연 검색 창에 ESC 한 번이면 아래 창까지 닫혀 입력이 사라진다 |
 | 자산 URL 을 문자열로 조립 | `G7Core.asset.plugin` | 확장자를 정적 location 이 가로채는 서버에서 조립한 URL 만 404 가 된다 |
 <!-- @intent END -->
 
@@ -156,10 +175,10 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 2개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
-| Vitest | 10개 | `vitest.config.ts` |
+| PHPUnit | 3개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
+| Vitest | 12개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

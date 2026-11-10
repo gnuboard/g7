@@ -27,7 +27,7 @@ class RegisterSettingsAttributeLabelsListener implements HookListenerInterface
      *
      * @var array<int, string>
      */
-    private const SETTINGS_FIELDS = ['display_mode', 'popup_width', 'popup_height', 'theme_color'];
+    private const SETTINGS_FIELDS = ['display_mode_pc', 'display_mode_mobile', 'popup_width', 'popup_height', 'theme_color'];
 
     /**
      * 구독 훅 메타데이터.

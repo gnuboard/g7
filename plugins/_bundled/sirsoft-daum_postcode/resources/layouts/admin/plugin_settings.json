@@ -222,7 +222,8 @@
                                 },
                                 "children": [
                                     {
-                                        "id": "field_display_mode",
+                                        "comment": "표시 방식은 기기별로 고른다(1.2.0) — 기기는 클릭 시점 화면 폭으로 가른다(1023px 이하 = 모바일·태블릿)",
+                                        "id": "field_display_mode_pc",
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
@@ -242,7 +243,7 @@
                                                         "props": {
                                                             "className": "form-label"
                                                         },
-                                                        "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.label"
+                                                        "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.label"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -250,7 +251,7 @@
                                                         "props": {
                                                             "className": "form-hint"
                                                         },
-                                                        "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.hint"
+                                                        "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.hint"
                                                     }
                                                 ]
                                             },
@@ -265,18 +266,22 @@
                                                         "type": "basic",
                                                         "name": "Select",
                                                         "props": {
-                                                            "name": "display_mode",
-                                                            "aria-label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.label",
+                                                            "name": "display_mode_pc",
+                                                            "aria-label": "$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.label",
                                                             "className": "w-full",
                                                             "disabled": "{{_computed.isPluginReadOnly}}",
                                                             "options": [
                                                                 {
                                                                     "value": "popup",
-                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.popup"
+                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.popup"
                                                                 },
                                                                 {
                                                                     "value": "layer",
-                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.layer"
+                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.layer"
+                                                                },
+                                                                {
+                                                                    "value": "inline",
+                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode_pc.inline"
                                                                 }
                                                             ]
                                                         }
@@ -285,11 +290,84 @@
                                                         "comment": "저장 오류는 상단 상자와 함께 그 칸 아래에도 보인다(어느 칸을 고쳐야 하는지, 7.1.0 실측 M1-O11)",
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{_local.errors?.display_mode}}",
+                                                        "if": "{{_local.errors?.display_mode_pc}}",
                                                         "props": {
                                                             "className": "form-error"
                                                         },
-                                                        "text": "{{_local.errors?.display_mode?.[0]}}"
+                                                        "text": "{{_local.errors?.display_mode_pc?.[0]}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_display_mode_mobile",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "props": {
+                                                            "name": "display_mode_mobile",
+                                                            "aria-label": "$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.label",
+                                                            "className": "w-full",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}",
+                                                            "options": [
+                                                                {
+                                                                    "value": "inline",
+                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.inline"
+                                                                },
+                                                                {
+                                                                    "value": "fullscreen",
+                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode_mobile.fullscreen"
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.display_mode_mobile}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.display_mode_mobile?.[0]}}"
                                                     }
                                                 ]
                                             }

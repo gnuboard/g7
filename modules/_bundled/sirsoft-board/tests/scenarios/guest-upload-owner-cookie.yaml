@@ -1,0 +1,21 @@
+feature: 비회원 임시 첨부 소유 쿠키 — 연결 전 삭제·순서 변경 (#883 2단계)
+
+description: |
+  비회원 업로드 응답에 무작위 40자 쿠키(`g7_board_guest_upload`, 경로 `/api/modules/sirsoft-board`, httpOnly,
+  SameSite=Lax)를 붙이고 첨부 행에는 그 SHA-256(`guest_owner_hash`, 응답 직렬화에서 숨김)만 둔다. 쿠키가 맞으면 비회원이
+  글에 연결되기 전의 자기 임시 첨부를 지우고 순서를 바꾼다. 연결되면 해시를 지운다. 회원이 로그인 전에 비회원으로 올린
+  첨부는 같은 쿠키로 로그인 뒤 잇는다. 템플릿 변경은 없다(같은 출처 XHR 이라 쿠키가 자동으로 실린다).
+
+axes:
+  case: [cookie_matches, cookie_missing_or_foreign, after_link, login_after_upload]
+
+effects:
+  - guest_can_delete_and_reorder_own_temp_with_cookie
+  - owner_hash_never_serialized
+  - guest_without_matching_cookie_denied
+  - owner_hash_cleared_on_link
+  - member_links_pre_login_upload_with_cookie
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/GuestTempAttachmentCookieOwnershipTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/AttachmentServiceTest.php

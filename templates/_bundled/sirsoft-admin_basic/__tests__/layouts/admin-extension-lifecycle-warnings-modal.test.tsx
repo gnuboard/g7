@@ -241,6 +241,160 @@ describe('확장 작업 경고 결과 창 — 렌더', () => {
     expect(screen.queryByText('gnuboard7-hello_plugin')).toBeNull();
     expect(screen.getByText('admin_index.g7.html').className).toContain('font-mono');
   });
+
+  /**
+   * 확장 manifest 선언 형식 오류(cause=declaration)는 다시 실행해도 같으므로 「다시 실행하세요」 문구 대신 확장 개발자에게
+   * 알리라는 문구를 쓰고, 항목 아래에 「확장 개발자가 고칠 선언」 안내를 붙인다. 다시 실행할 실패가 섞이면 종전 문구도 보인다.
+   *
+   * @scenario case=declaration_errors_tell_developer_fix
+   * @effects lifecycle_warnings_declaration_errors_not_rerun
+   */
+  it('확장 선언 형식 오류만 있으면 「다시 실행」 대신 확장 개발자가 고칠 선언이라고 안내한다', async () => {
+    const withDeclaration = {
+      ...translations,
+      admin: {
+        extensions: {
+          lifecycle_warnings: {
+            ...translations.admin.extensions.lifecycle_warnings,
+            declaration_description: '확장 개발자에게 알리세요.',
+            declaration_hint: '확장 개발자가 고칠 선언입니다',
+          },
+        },
+      },
+    };
+    const declaration = { step: 'search_scopes', target: 'acme-rates', message: '범위 이름 형식이 틀려 버렸습니다: Bad Name!', level: 'warning', cause: 'declaration' };
+    testUtils = createLayoutTest(buildLayout([declaration]), { translations: withDeclaration, locale: 'ko', componentRegistry: ComponentRegistry.getInstance() });
+    await testUtils.render();
+
+    expect(screen.getByText('확장 개발자에게 알리세요.')).toBeTruthy();
+    expect(screen.queryByText('작업 자체는 끝났습니다.')).toBeNull();
+
+    fireEvent.click(screen.getByText('자세히 보기'));
+    await waitFor(() => expect(testUtils.getState()._global.lifecycleWarningsOpen).toBe(true));
+    await testUtils.rerender();
+
+    expect(screen.getByText('범위 이름 형식이 틀려 버렸습니다: Bad Name!')).toBeTruthy();
+    expect(screen.getAllByText('확장 개발자가 고칠 선언입니다')).toHaveLength(1);
+  });
+
+  /**
+   * @scenario case=declaration_errors_tell_developer_fix
+   * @effects lifecycle_warnings_declaration_errors_not_rerun
+   */
+  it('선언 오류와 다시 실행할 실패가 섞이면 종전 문구를 쓰고 선언 오류 항목에만 안내를 붙인다', async () => {
+    const withDeclaration = {
+      ...translations,
+      admin: {
+        extensions: {
+          lifecycle_warnings: {
+            ...translations.admin.extensions.lifecycle_warnings,
+            declaration_description: '확장 개발자에게 알리세요.',
+            declaration_hint: '확장 개발자가 고칠 선언입니다',
+          },
+        },
+      },
+    };
+    testUtils = createLayoutTest(buildLayout([
+      { step: 'search_scopes', target: 'acme-rates', message: '범위 이름 형식이 틀려 버렸습니다: Bad Name!', level: 'warning', cause: 'declaration' },
+      ...WARNINGS,
+    ]), { translations: withDeclaration, locale: 'ko', componentRegistry: ComponentRegistry.getInstance() });
+    await testUtils.render();
+
+    expect(screen.getByText('작업 자체는 끝났습니다.')).toBeTruthy();
+    expect(screen.queryByText('확장 개발자에게 알리세요.')).toBeNull();
+
+    fireEvent.click(screen.getByText('자세히 보기'));
+    await waitFor(() => expect(testUtils.getState()._global.lifecycleWarningsOpen).toBe(true));
+    await testUtils.rerender();
+
+    expect(screen.getAllByText('확장 개발자가 고칠 선언입니다')).toHaveLength(1);
+  });
+});
+
+/** 창 껍데기까지 그린다 — 제목은 Modal 의 title 속성이라 본문만 그리는 buildLayout 으로는 보이지 않는다. */
+function buildModalLayout(items: Json[]): Json {
+  const modal = JSON.parse(readFileSync(join(LAYOUTS, 'partials/_modal_lifecycle_warnings.json'), 'utf-8'));
+  return {
+    version: '1.0.0',
+    layout_name: 'lifecycle_warnings_modal_title_test',
+    initGlobal: { lifecycleWarnings: items, lifecycleWarningsOpen: false },
+    components: [modal],
+  };
+}
+
+const TestModal: React.FC<any> = ({ title, children }) => (
+  <section>
+    <h2 data-testid="modal-title">{title}</h2>
+    {children}
+  </section>
+);
+
+describe('확장 작업 경고 결과 창 — 제목', () => {
+  let testUtils: ReturnType<typeof createLayoutTest>;
+
+  const withDeclarationTitle = {
+    ...translations,
+    admin: {
+      extensions: {
+        lifecycle_warnings: {
+          ...translations.admin.extensions.lifecycle_warnings,
+          declaration_title: '확장 선언에 틀린 값이 있습니다',
+          declaration_summary: '완료했지만 확장이 잘못 선언한 값 {{count}}건을 버렸습니다',
+          declaration_description: '확장 개발자에게 알리세요.',
+          declaration_hint: '확장 개발자가 고칠 선언입니다',
+        },
+      },
+    },
+  };
+  const DECLARATION = { step: 'search_scopes', target: 'acme-rates', message: '범위 이름 형식이 틀려 버렸습니다: Bad Name!', level: 'warning', cause: 'declaration' };
+
+  beforeEach(() => {
+    const registry = setupRegistry();
+    (registry as any).registry.Modal = { component: TestModal, metadata: { name: 'Modal', type: 'composite' } };
+  });
+
+  afterEach(() => {
+    if (testUtils) testUtils.cleanup();
+  });
+
+  /**
+   * 실패가 모두 확장 선언 형식 오류면 다시 실행할 「실패」가 아니다 — 제목·요약도 선언 오류라고 알린다.
+   *
+   * @scenario case=declaration_errors_tell_developer_fix
+   * @effects lifecycle_warnings_declaration_only_title
+   */
+  it('확장 선언 형식 오류만 있으면 제목·요약이 「일부 항목이 실패했습니다」 대신 선언 오류 문구다', async () => {
+    testUtils = createLayoutTest(buildModalLayout([DECLARATION, ...NOTICES]), { translations: withDeclarationTitle, locale: 'ko', componentRegistry: ComponentRegistry.getInstance() });
+    await testUtils.render();
+
+    expect(screen.getByTestId('modal-title').textContent).toBe('확장 선언에 틀린 값이 있습니다');
+    expect(screen.getByText('완료했지만 확장이 잘못 선언한 값 1건을 버렸습니다')).toBeTruthy();
+    expect(screen.queryByText(/일부 항목이 실패했습니다/)).toBeNull();
+  });
+
+  /**
+   * @scenario case=declaration_errors_tell_developer_fix
+   * @effects lifecycle_warnings_declaration_only_title
+   */
+  it('다시 실행할 실패가 섞이면 종전 제목·요약(실패 건수)을 쓴다', async () => {
+    testUtils = createLayoutTest(buildModalLayout([DECLARATION, ...WARNINGS]), { translations: withDeclarationTitle, locale: 'ko', componentRegistry: ComponentRegistry.getInstance() });
+    await testUtils.render();
+
+    expect(screen.getByTestId('modal-title').textContent).toBe('일부 항목이 실패했습니다');
+    expect(screen.getByText('완료했지만 일부 항목이 실패했습니다 (3건)')).toBeTruthy();
+    expect(screen.queryByText(/확장이 잘못 선언한 값/)).toBeNull();
+  });
+
+  /**
+   * @scenario case=notice_only_uses_notice_wording
+   * @effects lifecycle_warnings_modal_separates_notices_from_failures
+   */
+  it('안내만 있으면 안내 제목을 쓴다', async () => {
+    testUtils = createLayoutTest(buildModalLayout(NOTICES), { translations: withDeclarationTitle, locale: 'ko', componentRegistry: ComponentRegistry.getInstance() });
+    await testUtils.render();
+
+    expect(screen.getByTestId('modal-title').textContent).toBe('확인할 안내가 있습니다');
+  });
 });
 
 describe('확장 작업 경고 결과 창 — 여는 쪽', () => {

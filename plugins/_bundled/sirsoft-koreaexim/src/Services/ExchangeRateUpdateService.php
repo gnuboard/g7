@@ -87,6 +87,7 @@ class ExchangeRateUpdateService
                 || ($run->status === RunStatus::NoData && $run->finished_at !== null
                     && $run->finished_at->copy()->setTimezone('Asia/Seoul')->format('H:i') < '11:00')
             ));
+            // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
             if ($now->format('H:i') <= $this->setting('update_time', '11:30') || ! in_array($now->dayOfWeekIso, $days, true)
                 || $blocked || $attempts->isEmpty() || $attempts->count() >= 1 + $retryMax) {
                 return null;
@@ -96,6 +97,7 @@ class ExchangeRateUpdateService
         $base = $currency['default_currency'];
         $baseRow = collect($currency['currencies'])->firstWhere('code', $base);
         $data = ['trigger' => $dryRun ? RunTrigger::DryRun : $trigger, 'status' => RunStatus::Skipped,
+            // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
             'search_date' => $date ?? $now->toDateString(), 'rate_type' => RateType::tryFrom($this->setting('rate_type', 'deal_bas_r')) ?? RateType::DealBaseRate,
             'base_currency' => $base, 'base_unit' => $baseRow['base_unit'] ?? 1, 'request_count' => 0,
             'started_at' => now(), 'triggered_by' => $userId];
@@ -125,7 +127,9 @@ class ExchangeRateUpdateService
             if ($today->sum('request_count') + $data['request_count'] + 2 > 1000) {
                 return $this->finish($data, RunStatus::QuotaExceeded);
             }
+            // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
             $data['search_date'] = $search->toDateString();
+            // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
             $response = $this->client->fetch($key, $search->format('Ymd'), $dryRun ? 1 : 2);
             $data['request_count'] += $response['request_count'];
             if ($response['status'] !== RunStatus::NoData || $offset === $lookback) {

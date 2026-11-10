@@ -2,10 +2,12 @@
 
 namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
+use App\Support\ContentMedia\ContentMediaPolicyRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\NamesContentMediaPolicyFields;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Models\Board;
@@ -18,6 +20,7 @@ use Modules\Sirsoft\Board\Models\Board;
  */
 class BulkApplySettingsRequest extends FormRequest
 {
+    use NamesContentMediaPolicyFields;
     use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
 
@@ -54,6 +57,7 @@ class BulkApplySettingsRequest extends FormRequest
         'max_file_size',
         'max_file_count',
         'allowed_extensions',
+        'content_media_policy',
         'notify_admin_on_post',
         'notify_author',
         'new_display_hours',
@@ -139,6 +143,8 @@ class BulkApplySettingsRequest extends FormRequest
             'override_values.max_file_size' => ['nullable', 'integer', "min:{$limits['max_file_size_min']}", "max:{$limits['max_file_size_max']}"],
             'override_values.max_file_count' => ['nullable', 'integer', "min:{$limits['max_file_count_min']}", "max:{$limits['max_file_count_max']}"],
             'override_values.new_display_hours' => ['nullable', 'integer', "min:{$limits['new_display_hours_min']}", "max:{$limits['new_display_hours_max']}"],
+            // 본문 미디어 정책 (#883) — 형식은 코어가 정한다
+            ...ContentMediaPolicyRules::settingsRules('override_values.content_media_policy'),
         ];
     }
 
@@ -151,7 +157,9 @@ class BulkApplySettingsRequest extends FormRequest
     {
         $attributes = __('sirsoft-board::validation.attributes.bulk_apply');
 
-        return is_array($attributes) ? $attributes : [];
+        // 본문 미디어 정책 하위 칸 (#883) — 게시판 생성·수정 요청과 같은 이름
+        return (is_array($attributes) ? $attributes : [])
+            + $this->contentMediaPolicyAttributes('override_values.content_media_policy');
     }
 
     /**
@@ -163,7 +171,9 @@ class BulkApplySettingsRequest extends FormRequest
     {
         $messages = __('sirsoft-board::validation.bulk_apply');
 
-        return is_array($messages) ? $messages : [];
+        // 본문 미디어 정책 범위·확장자 문구 (#883) — 게시판 생성·수정 요청과 같은 코어 문구
+        return (is_array($messages) ? $messages : [])
+            + ContentMediaPolicyRules::messages('override_values.content_media_policy');
     }
 
     /**

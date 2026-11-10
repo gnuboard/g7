@@ -13,8 +13,8 @@
         <item>reviews</item>
         <item>qna</item>
       </data-sources>
-      <vars product_name="{{$localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}" product_description="{{$localized(product.data.meta_description) ?? $localized(product.data.short_description) ?? $localized(product.data.description) ?? ''}}" site_name="$core_settings:general.site_name" shopBase="$module_settings:sirsoft-ecommerce:basic_info.route_path"/>
-      <og type="product" title="{{_seo.product.title ?? $localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}" description="{{_seo.product.description ?? $localized(product.data.meta_description) ?? $localized(product.data.description) ?? ''}}"/>
+      <vars product_name="{{$localized(product.data.meta_title) || $localized(product.data.name) || ''}}" product_description="{{$localized(product.data.meta_description) || $localized(product.data.short_description) || $localized(product.data.description) || ''}}" site_name="$core_settings:general.site_name" shopBase="$module_settings:sirsoft-ecommerce:basic_info.route_path"/>
+      <og type="product" title="{{_seo.product.title || $localized(product.data.meta_title) || $localized(product.data.name) || ''}}" description="{{_seo.product.description || $localized(product.data.meta_description) || $localized(product.data.description) || ''}}"/>
     </seo>
   </meta>
   <!-- 상품 본체(옵션 조합·재고·가격 포함). 없거나 볼 수 없는 상품이면 토스트가 아니라 본문 자리를

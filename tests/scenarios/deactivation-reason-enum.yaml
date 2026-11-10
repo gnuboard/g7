@@ -1,0 +1,18 @@
+feature: 확장 비활성화 사유 Enum
+
+description: |
+  DeactivationReason Enum 이 DB 문자열 도메인(manual, incompatible_core)과 일치하고,
+  label·isSystemTriggered·values·isValid 헬퍼가 사용자 수동/시스템 자동 비활성화를 올바르게 표현·검증하는지 지킨다.
+
+axes:
+  case: [value_domain, label, system_triggered, value_helpers]
+
+effects:
+  - enum_values_match_db_domain
+  - korean_label_fallback_returned
+  - system_triggered_reason_distinguished
+  - values_list_complete
+  - unknown_reason_rejected
+
+test_files:
+  - tests/Unit/Extension/DeactivationReasonTest.php

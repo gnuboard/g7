@@ -51,14 +51,15 @@
             <set-state target="local" boardSearchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <search-bar data-type="composite" name="search" placeholder="$t:board.search_placeholder" value="{{query.search || ''}}" :showButton="false" class="w-full sm:w-64">
-          <on type="submit">
+        <!-- 최근 검색어 검색창(게시글 검색 범위 sirsoft-board.posts — 게시판·목록 유형을 가리지 않고 목록을 함께 쓴다). 주소의 search 는 보이기만 하고 기록하지 않는다 — 제출(Enter·목록 항목)할 때 검색창이 기록한다. 게시판이 꺼져 범위가 없으면 평범한 검색칸이다. 칸을 비우고 제출하면 검색어 조건이 풀린다(submitEmpty). -->
+        <recent-search-combobox data-type="composite" data-ref="board_search_box" scope="sirsoft-board.posts" name="search" value="{{query.search || ''}}" placeholder="$t:board.search_placeholder" :submitEmpty="true" :showClear="true" class="w-full sm:w-64" inputClassName="w-full pl-10 pr-11 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+          <on event="onSearch">
             <!-- 글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어와 검색 대상만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다. -->
             <navigate path="/board/{{route.slug}}" :mergeQuery="true">
-              <query search="{{$event.target.search.value}}" search_field="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" :page="1"/>
+              <query search="{{$args[0]}}" search_field="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" :page="1"/>
             </navigate>
           </on>
-        </search-bar>
+        </recent-search-combobox>
       </div>
     </div>
     <!-- 테이블형 게시글 목록 -->

@@ -1987,6 +1987,7 @@ class CoreUpdateService
     public function createPendingDirectory(): string
     {
         $basePath = config('app.update.pending_path');
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = date('Ymd_His');
         $pendingPath = $basePath.DIRECTORY_SEPARATOR.'core_'.$timestamp;
 
@@ -2851,11 +2852,13 @@ class CoreUpdateService
      */
     public function generateFailureReport(\Throwable $exception, string $fromVersion, string $toVersion): string
     {
+        // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
         $timestamp = date('Ymd_His');
         $reportPath = storage_path("logs/core_update_failure_{$timestamp}.log");
 
         $content = implode("\n", [
             '=== 그누보드7 코어 업데이트 실패 리포트 ===',
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             '날짜: '.date('Y-m-d H:i:s'),
             "시작 버전: {$fromVersion}",
             "대상 버전: {$toVersion}",

@@ -186,11 +186,13 @@ describe('[case:state-closure-9] 개인정보 조치 직권 실행 — 상태 �
      *
      * @effects card_polls_until_finished_and_refreshes_counts
      */
-    it('[case:state-closure-9] 탭의 다섯 대상을 조회하고, 진행 중이면 폴링·끝나면 멈추고 응답값으로만 건수를 다시 받는다', () => {
+    it('[case:state-closure-9] 탭의 여섯 대상을 조회하고, 진행 중이면 폴링·끝나면 멈추고 응답값으로만 건수를 다시 받는다', () => {
         expect(dataSource).toBeTruthy();
         expect(dataSource.endpoint).toBe('/api/admin/privacy/manual-runs');
         expect(dataSource.params.targets.split(',')).toEqual([
             'retention:user-withdrawn',
+            // 최근 검색어 보관 기한 (코어 7.1.5)
+            'retention:search-history',
             'dormant:pre_notice',
             'dormant:convert',
             'dormant:withdraw_notice',

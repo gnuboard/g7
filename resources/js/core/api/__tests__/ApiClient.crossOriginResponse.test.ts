@@ -130,7 +130,11 @@ describe('ApiClient — 교차 출처 응답은 인증 흐름을 조종하지 �
     vi.spyOn(AuthManager, 'getInstance').mockReturnValue({ refreshToken } as unknown as AuthManager);
     const onRejected = buildClientCapturingRejected();
 
-    const onsite401 = { config: { url: '/api/admin/users', headers: {} }, response: { status: 401, data: {} } };
+    // 토큰을 실어 보낸 요청(요청 인터셉터가 기록) — 무토큰 요청의 401 은 engine-v1.88.2 부터 갱신하지 않는다
+    const onsite401 = {
+      config: { url: '/api/admin/users', headers: {}, _g7AuthTokenSent: true },
+      response: { status: 401, data: {} },
+    };
     await expect(onRejected(onsite401)).rejects.toBe(onsite401);
     expect(refreshToken).toHaveBeenCalledOnce();
   });

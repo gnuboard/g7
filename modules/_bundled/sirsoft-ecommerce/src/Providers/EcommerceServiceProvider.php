@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
+use App\Support\ContentMedia\ContentMediaRegistrar;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\ClaimActivityLogRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimImageRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimPaymentRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimReasonRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ContentMediaRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BrandRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
@@ -51,6 +53,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimActivityLogRepositoryI
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceStatRepositoryInterface;
@@ -136,6 +139,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\UserAddressRepository;
 use Modules\Sirsoft\Ecommerce\Seo\EcommerceSitemapContributor;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaService;
+use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaStore;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
@@ -170,6 +175,9 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // 그래서 카테고리 배선이 아니라 기본 디스크를 주입한다. 저장 경로 접두사는 종전대로
         // 서비스가 `put('images', …)` 로 넘기는 값이 정하므로 기존 행의 경로는 바뀌지 않는다.
         ClaimAttachmentService::class,
+        // 본문 미디어는 미공개 상품이면 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않는다 (#883).
+        // 업로드·서빙·복제·정리·소유자 삭제가 모두 이 골격 서비스를 지나므로 기본 디스크는 여기 한 곳에서 받는다 (#887)
+        EcommerceContentMediaService::class,
     ];
 
     /**
@@ -223,6 +231,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         ProductLogRepositoryInterface::class => ProductLogRepository::class,
         ProductRepositoryInterface::class => ProductRepository::class,
         ProductImageRepositoryInterface::class => ProductImageRepository::class,
+        ContentMediaRepositoryInterface::class => ContentMediaRepository::class,
         ProductCommonInfoRepositoryInterface::class => ProductCommonInfoRepository::class,
         ProductLabelRepositoryInterface::class => ProductLabelRepository::class,
         ProductNoticeTemplateRepositoryInterface::class => ProductNoticeTemplateRepository::class,
@@ -273,7 +282,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     /**
      * 서비스 등록
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -302,15 +311,25 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     /**
      * 서비스 부트스트랩
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
         parent::boot();
 
         $this->registerClaimMorphMap();
-        $this->registerRateLimiters();
-        $this->registerQueueJobScopeReset();
+
+        // 본문 미디어 서빙 라우트를 미디어 출처 허용 패턴 원천으로 등록한다 — 없으면 상품 설명·공통 정보의 업로드 동영상·오디오가
+        // 저장 정화·표시에서 지워진다. 모듈이 꺼져 라우트가 없으면 패턴 생성이 이 이름을 건너뛴다 (#887)
+        if (class_exists(ContentMediaRegistrar::class)) {
+            ContentMediaRegistrar::register(EcommerceContentMediaStore::SERVE_ROUTE);
+        }
+
+        // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            $this->registerRateLimiters();
+            $this->registerQueueJobScopeReset();
+        }
 
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {
@@ -321,15 +340,18 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // Module::getMiddleware() 가 targets=['/'](무명 User SSR 셸 URI 패턴)로 선언하고,
         // 코어 ExtensionMiddlewareGate 가 요청 시점에 실행한다. (SP Kernel 직접 조작 제거)
 
-        // Sitemap 기여자 등록
-        $this->app->booted(function () {
-            if ($this->app->bound(SitemapGenerator::class)) {
-                // Repository 주입을 위해 컨테이너로 해석합니다.
-                $this->app->make(SitemapGenerator::class)->registerContributor(
-                    $this->app->make(EcommerceSitemapContributor::class)
-                );
-            }
-        });
+        // Sitemap 기여자 등록 — 생성기를 처음 해석할 때(사이트맵 생성·SEO 화면) 붙는다. 이미 해석돼 있으면 바로
+        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다 (#860). 비활성이면 걸지 않는다(#730 게이트).
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            $this->callAfterResolving(SitemapGenerator::class, function (SitemapGenerator $generator): void {
+                try {
+                    // Repository 주입을 위해 컨테이너로 해석합니다.
+                    $generator->registerContributor($this->app->make(EcommerceSitemapContributor::class));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
+        }
     }
 
     /**

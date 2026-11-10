@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.1.1 문의 정합화 데이터 마이그레이션(04/05/06) 회귀 테스트
@@ -35,15 +36,20 @@ class InquiryOrphanReplyBackfillTest extends ModuleTestCase
 
     private Product $product;
 
+    /**
+     * 1.1.1 문의 정합화 스텝 04·05·06 을 불러와 인스턴스·업그레이드 컨텍스트·대상 상품을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $migrationsDir = dirname(__DIR__, 3).'/upgrades/data/1.1.1/migrations';
 
-        require_once $migrationsDir.'/04_SoftDeleteOrphanInquiryReplyPosts.php';
-        require_once $migrationsDir.'/05_SoftDeleteInquiryPivotsForTrashedQuestionPosts.php';
-        require_once $migrationsDir.'/06_UnmarkAnsweredInquiriesWithoutLiveReplies.php';
+        UpgradeFiles::requireOnce($migrationsDir.'/04_SoftDeleteOrphanInquiryReplyPosts.php');
+        UpgradeFiles::requireOnce($migrationsDir.'/05_SoftDeleteInquiryPivotsForTrashedQuestionPosts.php');
+        UpgradeFiles::requireOnce($migrationsDir.'/06_UnmarkAnsweredInquiriesWithoutLiveReplies.php');
 
         $namespace = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_1_1\\Migrations\\';
         $orphanClass = $namespace.'SoftDeleteOrphanInquiryReplyPosts';
@@ -64,6 +70,11 @@ class InquiryOrphanReplyBackfillTest extends ModuleTestCase
         $this->product = Product::factory()->create();
     }
 
+    /**
+     * 고정해 둔 테스트 시각을 풀어 다음 테스트에 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Carbon::setTestNow();
@@ -108,6 +119,12 @@ class InquiryOrphanReplyBackfillTest extends ModuleTestCase
 
     /**
      * 04 — 부모가 삭제/부재인 답변 글만 소프트 삭제하고, 부모가 살아있는 답변은 건드리지 않는다.
+     *
+     * @scenario action=upgrade_backfill, state=orphan_reply, path=board_direct
+     *
+     * @effects orphan_replies_backfilled_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_04_soft_deletes_only_orphan_reply_posts(): void
     {
@@ -148,6 +165,12 @@ class InquiryOrphanReplyBackfillTest extends ModuleTestCase
 
     /**
      * 04 — 재실행 멱등: 이미 마킹된 고아의 deleted_at 이 갱신되지 않는다.
+     *
+     * @scenario action=upgrade_backfill, state=orphan_reply, path=board_direct
+     *
+     * @effects orphan_replies_backfilled_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_04_is_idempotent_on_rerun(): void
     {
@@ -178,6 +201,12 @@ class InquiryOrphanReplyBackfillTest extends ModuleTestCase
 
     /**
      * 05 — 질문 Post 가 삭제/부재인 살아있는 피벗만 소프트 삭제한다.
+     *
+     * @scenario action=upgrade_backfill, state=unanswered, path=board_direct
+     *
+     * @effects orphan_replies_backfilled_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_05_soft_deletes_pivots_whose_question_post_is_gone(): void
     {
@@ -211,6 +240,12 @@ class InquiryOrphanReplyBackfillTest extends ModuleTestCase
 
     /**
      * 06 — 살아있는 답변이 없는 「답변완료」 피벗만 미답변으로 정정한다.
+     *
+     * @scenario action=upgrade_backfill, state=answered, path=board_direct
+     *
+     * @effects orphan_replies_backfilled_idempotent, reply_delete_recomputes_answered
+     *
+     * @return void 반환값 없음
      */
     public function test_06_unmarks_answered_inquiries_without_live_replies(): void
     {

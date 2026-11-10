@@ -73,6 +73,9 @@ effects:
   - every_uses_cursor_call_forwards_page
   - search_deep_page_link_keeps_offset
   - search_first_page_starts_cursor
+  # 코어 판정 규칙 단위(SearchPagePolicy) — 첫 페이지는 커서 시작점, 커서 없는 깊은 페이지는 offset 유지
+  - cursor_starts_on_first_page
+  - deep_page_without_cursor_stays_on_offset
   # ── 집계 정확도 (P1) ──
   - aggregate_is_inexact_when_any_category_truncated
   - single_tab_accuracy_ignores_other_categories

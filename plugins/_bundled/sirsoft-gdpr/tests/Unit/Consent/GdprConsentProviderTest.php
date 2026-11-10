@@ -99,6 +99,21 @@ class GdprConsentProviderTest extends PluginTestCase
             $mock->shouldReceive('hasCurrentCookieConsent')->andReturn($current);
             $mock->shouldReceive('hasAnyConsentHistory')->andReturn($history);
         });
+        $this->forgetConsentRequestState();
+    }
+
+    /**
+     * 같은 테스트 안에서 의존 서비스를 바꿔 끼웠으므로 「다음 요청」처럼 요청 단위 상태를 비웁니다.
+     *
+     * 동의 매니저는 등록 목록·선택 상태를, 제공자는 주입받은 서비스를 요청 동안 쥐고 있다(#860) — 실제 요청에는
+     * 요청 중에 서비스가 바뀌는 일이 없다.
+     *
+     * @return void 반환값 없음
+     */
+    private function forgetConsentRequestState(): void
+    {
+        $this->app->forgetInstance(GdprConsentProvider::class);
+        app(ConsentManager::class)->forgetSelection();
     }
 
     /**
@@ -114,6 +129,7 @@ class GdprConsentProviderTest extends PluginTestCase
                 fn (string $identifier, ?string $key = null, mixed $default = null) => array_key_exists((string) $key, $values) ? $values[$key] : $default
             );
         });
+        $this->forgetConsentRequestState();
     }
 
     /**

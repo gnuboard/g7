@@ -9,12 +9,13 @@
             "style_label": "Editor styles",
             "fallback_notice": "Could not load the editor. Switched to a plain text box. What you write is still saved."
         },
-        "upload_failed": "Couldn't upload file: {{name}}."
+        "upload_failed": "Couldn't upload file: {{name}}.",
+        "upload_login_required": "Sign in to upload images. Your draft is kept."
     },
     "admin": {
         "uploads": {
-            "title": "Editor Uploads",
-            "description": "Review images uploaded through the editor and clean up the ones that are no longer used.",
+            "title": "Editor Direct Uploads",
+            "description": "Review images the editor plugin received directly (notification and mail template editors, etc.) and clean up the ones that are no longer used. Images, videos and audio uploaded in board, page and product description editors are stored with each post, page or product, do not appear in this list, and are cleaned up when that item is edited or deleted.",
             "refresh": "Refresh",
             "open_settings": "Open cleanup settings",
             "reference_notice": "Reference status is determined by scanning registered content such as posts, pages, and product descriptions. An image used only by an external extension that has not registered a reference source may appear as \"Unreferenced\", so verify before deleting.",

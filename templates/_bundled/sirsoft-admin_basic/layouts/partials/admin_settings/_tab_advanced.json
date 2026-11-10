@@ -1,5 +1,5 @@
 {
-    "comment": "고급 탭 — 디버그·로그 같은 운영 값과 **캐시 비우기** 버튼이 있다.\n  캐시 비우기만 설정값이 아니라 즉시 실행되는 동작이라 확인 창을 거친다.",
+    "comment": "고급 탭 — 디버그·로그 같은 운영 값과 **캐시 비우기** 버튼이 있다.\n  캐시 비우기만 설정값이 아니라 즉시 실행되는 동작이라 확인 창을 거친다.\n  e2e:allow #160 — GeoIP 최근 갱신 표시 바인딩만 서버가 만든 *_formatted(보는 사람 시간대)로 교체했다. 대체 검증: PHPUnit(CoreDisplayTimezoneTest) + Chrome MCP 매트릭스 S22 실측.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 고급 탭 콘텐츠"
@@ -1685,7 +1685,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "disabled": true,
-                                                        "value": "{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}",
+                                                        "value": "{{_local.form?.advanced?.geoip_last_updated_at_formatted || '-'}}",
                                                         "className": "md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"
                                                     }
                                                 },
@@ -1716,7 +1716,8 @@
                                                                         "geoipUpdating": false,
                                                                         "form": {
                                                                             "advanced": {
-                                                                                "geoip_last_updated_at": "{{response.data?.last_updated_at ?? ''}}"
+                                                                                "geoip_last_updated_at": "{{response.data?.last_updated_at ?? ''}}",
+                                                                                "geoip_last_updated_at_formatted": "{{response.data?.last_updated_at_formatted ?? ''}}"
                                                                             }
                                                                         }
                                                                     }

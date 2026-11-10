@@ -161,6 +161,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | requested_at | string\|null | 검수 신청 시각 (ISO 8601) |
 | approved_at | string\|null | 승인 시각 (ISO 8601) |
 | last_synced_at | string\|null | 마지막 카카오 동기화 시각 (ISO 8601) |
+| requested_at_date_formatted | string\|null | 검수 신청 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| approved_at_date_formatted | string\|null | 승인 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| last_synced_at_date_formatted | string\|null | 마지막 동기화 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
 | fallback_sms_enabled | boolean | 알림톡 실패 시 SMS 대체발송 여부 |
 | sms_only | boolean | SMS 단독 발송 여부 (알림톡 미사용) |
 | is_active | boolean | 발송 활성 여부 |
@@ -258,6 +261,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | requested_at | string\|null | 검수 신청 시각 (ISO 8601) |
 | approved_at | string\|null | 승인 시각 (ISO 8601) |
 | last_synced_at | string\|null | 마지막 동기화 시각 (ISO 8601) |
+| requested_at_date_formatted | string\|null | 검수 신청 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| approved_at_date_formatted | string\|null | 승인 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| last_synced_at_date_formatted | string\|null | 마지막 동기화 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
 | inspection_detail | array\|null | 반려 사유(comments) 등 검수 상세 |
 | fallback_sms_enabled | boolean | SMS 대체발송 여부 |
 | sms_body | object\|null | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
@@ -344,6 +350,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | requested_at | string\|null | 검수 신청 시각 (ISO 8601) |
 | approved_at | string\|null | 승인 시각 (ISO 8601) |
 | last_synced_at | string\|null | 마지막 동기화 시각 (ISO 8601) |
+| requested_at_date_formatted | string\|null | 검수 신청 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| approved_at_date_formatted | string\|null | 승인 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| last_synced_at_date_formatted | string\|null | 마지막 동기화 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
 | fallback_sms_enabled | boolean | SMS 대체발송 여부 |
 | sms_body | object\|null | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
 | sms_only | boolean | SMS 단독 발송 여부 |

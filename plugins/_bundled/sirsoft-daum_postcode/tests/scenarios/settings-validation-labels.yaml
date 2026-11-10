@@ -13,6 +13,7 @@ axes:
 effects:
   - popup_size_out_of_range_returns_422
   - popup_size_in_range_saves
+  - device_display_modes_accept_only_their_values # PC popup·layer·inline / 모바일 inline·fullscreen 만 저장(1.2.0)
   - every_settings_field_error_label_follows_request_locale
   - no_korean_field_label_in_non_korean_error
 

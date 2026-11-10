@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\MessageBizppurio\Controllers\Admin;
 
+use App\Helpers\TimezoneHelper;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -356,9 +357,16 @@ class BizppurioTemplateController extends AdminBaseController
             'template_code' => $row->template_code,
             'status' => $row->status->value,
             'has_content' => (bool) $row->getAttribute('has_content'),
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'requested_at' => $row->requested_at?->toIso8601String(),
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'approved_at' => $row->approved_at?->toIso8601String(),
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'last_synced_at' => $row->last_synced_at?->toIso8601String(),
+            // 화면 표시용 — 보는 사람 날짜(ISO 를 잘라 쓰면 UTC 날짜가 보인다)
+            'requested_at_date_formatted' => TimezoneHelper::toUserDateString($row->requested_at),
+            'approved_at_date_formatted' => TimezoneHelper::toUserDateString($row->approved_at),
+            'last_synced_at_date_formatted' => TimezoneHelper::toUserDateString($row->last_synced_at),
             'fallback_sms_enabled' => $row->fallback_sms_enabled,
             'sms_only' => $row->sms_only,
             'is_active' => $row->is_active,
@@ -384,9 +392,16 @@ class BizppurioTemplateController extends AdminBaseController
             'status' => $template->status->value,
             'is_approved' => $template->status === BizppurioTemplateStatus::Approved,
             'inspection_detail' => $template->inspection_detail,
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'requested_at' => $template->requested_at?->toIso8601String(),
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'approved_at' => $template->approved_at?->toIso8601String(),
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'last_synced_at' => $template->last_synced_at?->toIso8601String(),
+            // 화면 표시용 — 보는 사람 날짜(ISO 를 잘라 쓰면 UTC 날짜가 보인다)
+            'requested_at_date_formatted' => TimezoneHelper::toUserDateString($template->requested_at),
+            'approved_at_date_formatted' => TimezoneHelper::toUserDateString($template->approved_at),
+            'last_synced_at_date_formatted' => TimezoneHelper::toUserDateString($template->last_synced_at),
             'fallback_sms_enabled' => $template->fallback_sms_enabled,
             'sms_body' => $template->sms_body,
             'sms_only' => $template->sms_only,

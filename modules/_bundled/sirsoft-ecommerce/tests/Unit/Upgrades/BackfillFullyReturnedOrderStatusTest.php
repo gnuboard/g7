@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Psr\Log\AbstractLogger;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 전량 반품 주문 상태 보정(DataMigration) 테스트
@@ -36,8 +37,8 @@ class BackfillFullyReturnedOrderStatusTest extends ModuleTestCase
     {
         parent::setUp();
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/11_BackfillFullyReturnedOrderStatus.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/11_BackfillFullyReturnedOrderStatus.php');
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\BackfillFullyReturnedOrderStatus';
         $this->migration = new $class;

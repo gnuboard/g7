@@ -3,10 +3,12 @@
 namespace Plugins\Sirsoft\Gdpr\Models;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType;
+use Plugins\Sirsoft\Gdpr\Support\GdprConsentReadMemo;
 
 /**
  * GDPR 정책 버전 발행 이력 모델 (immutable append-only)
@@ -20,7 +22,7 @@ use Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType;
  * @property string|null $memo
  * @property array $snapshot
  * @property int|null $created_by
- * @property \Carbon\Carbon|null $created_at
+ * @property Carbon|null $created_at
  * @property-read User|null $createdBy
  */
 class GdprPolicyVersion extends Model
@@ -70,7 +72,7 @@ class GdprPolicyVersion extends Model
     /**
      * 최신 버전 1건만 조회하는 스코프 (version DESC 정렬)
      *
-     * @param Builder $query
+     * @param  Builder  $query
      * @return Builder
      */
     public function scopeCurrent(Builder $query): Builder
@@ -86,5 +88,16 @@ class GdprPolicyVersion extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * 저장·삭제되면 요청 안 동의 조회 메모를 비웁니다 (#860).
+     *
+     * @return void 반환값 없음
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn () => GdprConsentReadMemo::forgetPolicyVersion());
+        static::deleted(fn () => GdprConsentReadMemo::forgetPolicyVersion());
     }
 }

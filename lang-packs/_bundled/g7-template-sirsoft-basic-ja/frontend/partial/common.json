@@ -87,5 +87,24 @@
   "quantity_increase": "数量を増やす",
   "close_menu": "メニューを閉じる",
   "page_transitioning": "ページ切り替え中",
-  "page_loading": "ページ読み込み中"
+  "page_loading": "ページ読み込み中",
+  "lightbox": {
+    "dialog": "画像の拡大表示",
+    "carousel": "画像の切り替え表示",
+    "photo_gallery": "フォトギャラリー",
+    "slide": "写真",
+    "slide_position": "{total}枚中{index}枚目",
+    "previous": "前の写真",
+    "next": "次の写真",
+    "close": "閉じる",
+    "zoom_in": "拡大",
+    "zoom_out": "縮小",
+    "enter_fullscreen": "全画面表示",
+    "exit_fullscreen": "全画面表示を終了",
+    "play": "スライドショーを開始",
+    "pause": "スライドショーを一時停止",
+    "thumbnails": "サムネイル一覧",
+    "show_thumbnails": "サムネイル一覧を表示",
+    "hide_thumbnails": "サムネイル一覧を非表示"
+  }
 }

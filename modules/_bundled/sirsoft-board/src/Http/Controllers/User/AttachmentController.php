@@ -3,7 +3,9 @@
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Helpers\InlineMediaPolicy;
+use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,6 +16,9 @@ use Modules\Sirsoft\Board\Http\Requests\ReorderAttachmentsRequest;
 use Modules\Sirsoft\Board\Http\Requests\UploadAttachmentRequest;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Support\GuestUploadOwnerCookie;
+use Modules\Sirsoft\Board\Support\PostModifyGate;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -26,15 +31,23 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class AttachmentController extends PublicBaseController
 {
+    use RespondsToExpiredSession;
+
     /**
      * AttachmentController 생성자
      *
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
      * @param  BoardService  $boardService  게시판 서비스
+     * @param  PostService  $postService  게시글 서비스 (post_id 업로드의 같은 게시판 글 확인)
+     * @param  PostModifyGate  $postModifyGate  글 수정 판정 (post_id 업로드)
+     * @param  GuestUploadOwnerCookie  $guestOwnerCookie  비회원 업로드 소유 쿠키
      */
     public function __construct(
         private AttachmentService $attachmentService,
-        private BoardService $boardService
+        private BoardService $boardService,
+        private PostService $postService,
+        private PostModifyGate $postModifyGate,
+        private GuestUploadOwnerCookie $guestOwnerCookie
     ) {
         parent::__construct();
     }
@@ -163,19 +176,36 @@ class AttachmentController extends PublicBaseController
             }
 
             $validated = $request->validated();
+            $postId = isset($validated['post_id']) ? (int) $validated['post_id'] : null;
+
+            // 기존 글에 붙이는 업로드는 그 글을 고칠 수 있는 사람만 — 같은 게시판 글인지 보고(아니면 404),
+            // 글 수정과 같은 판정을 한다(아니면 403). 종전에는 업로드 권한만 보아 남의 글·다른 게시판 글 번호로
+            // 파일을 붙일 수 있었다(#883). 비회원 글의 검증 토큰은 저장(PUT)에서 다시 쓰므로 소비하지 않는다.
+            if ($postId !== null) {
+                $post = $this->postService->getPost($slug, $postId, 'user');
+
+                if (! $this->postModifyGate->allows($post, $request, consume: false)) {
+                    // 만료 토큰 회원이면 세션 만료(401) — 비회원으로 통과해 본인 확인이 실패했을 뿐이다 (#883 후속)
+                    return $this->ownershipDenied($request, 'sirsoft-board::messages.posts.modify_permission_denied');
+                }
+            }
+
+            // 비회원 임시 업로드는 소유 쿠키를 발급(있으면 재사용)해 그 해시를 첨부에 남긴다 — 연결 전 삭제·순서 판정용 (#883)
+            $guestToken = (Auth::id() === null && $postId === null) ? $this->guestOwnerCookie->issue($request) : null;
 
             // 첨부파일 업로드 (Service에서 처리)
             $attachment = $this->attachmentService->upload(
                 slug: $slug,
                 file: $request->file('file'),
-                postId: $validated['post_id'] ?? null,
+                postId: $postId,
                 collection: $validated['collection'] ?? 'attachments',
-                tempKey: $validated['temp_key'] ?? null
+                tempKey: $validated['temp_key'] ?? null,
+                guestOwnerHash: $guestToken !== null ? $this->guestOwnerCookie->hash($guestToken) : null
             );
 
             // FileUploader 컴포넌트가 response.data?.data 형식을 기대하므로
             // data 키 안에 한 번 더 감싸서 반환
-            return $this->success(
+            $response = $this->success(
                 'sirsoft-board::messages.attachment.upload_success',
                 [
                     'data' => [
@@ -188,10 +218,20 @@ class AttachmentController extends PublicBaseController
                         'url' => $this->attachmentService->getUrl($slug, $attachment->id),
                         'order' => $attachment->order,
                         'created_at' => $attachment->created_at,
+                        // 올린 본인에게만 주는 임시 키 — 키 없이 올렸으면 서버가 만든 키다. 비회원은 첨부 번호로 이을 때
+                        // 이 키를 함께 보내야 한다(번호만으로는 잇지 않는다, #883). 글에 바로 붙인 업로드는 null.
+                        'temp_key' => $attachment->temp_key,
                     ],
                 ],
                 201
             );
+
+            return $guestToken !== null ? $this->guestOwnerCookie->attach($response, $guestToken, $request) : $response;
+        } catch (ModelNotFoundException $e) {
+            // 이 게시판에 없는 글 번호 — 다른 게시판 글로 업로드하려던 요청
+            return $this->notFound('sirsoft-board::messages.errors.post_not_found');
+        } catch (AccessDeniedHttpException $e) {
+            return $this->forbidden('auth.scope_denied');
         } catch (AttachmentLimitExceededException $e) {
             // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
             return $this->error(
@@ -224,7 +264,8 @@ class AttachmentController extends PublicBaseController
 
             // FileUploader가 [{id, order}] 형태로 전송 → [ID => order] 매핑으로 변환
             $orders = collect($validated['order'])->pluck('order', 'id')->all();
-            $result = $this->attachmentService->reorder($slug, $orders);
+            // 비회원은 업로드 때 받은 소유 쿠키로 자기 임시 첨부의 순서를 바꾼다 (#883)
+            $result = $this->attachmentService->reorder($slug, $orders, 'user', $this->guestOwnerCookie->resolveToken($request));
 
             if (! $result) {
                 return $this->error('sirsoft-board::messages.attachment.reorder_failed', 500);
@@ -244,11 +285,13 @@ class AttachmentController extends PublicBaseController
     /**
      * 첨부파일 삭제
      *
+     * @param  Request  $request  HTTP 요청 (비회원 소유 쿠키)
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  첨부파일 ID
      * @return JsonResponse 삭제 결과 응답
      */
-    public function destroy(string $slug, int $id): JsonResponse
+    // audit:allow controller-base-request-injection reason: DELETE 본문 없음 — 비회원 소유 쿠키만 읽는다(검증할 입력 없음)
+    public function destroy(Request $request, string $slug, int $id): JsonResponse
     {
         try {
             // 게시판 존재 여부 확인
@@ -261,13 +304,14 @@ class AttachmentController extends PublicBaseController
                 return $this->notFound('sirsoft-board::messages.attachment.not_found');
             }
 
-            // 권한 확인 (Service에서 처리)
-            if (! $this->attachmentService->canDelete($attachment, Auth::id())) {
+            // 권한 확인 (Service에서 처리) — 비회원은 업로드 때 받은 소유 쿠키로 연결 전 자기 임시 첨부만 (#883)
+            $guestToken = $this->guestOwnerCookie->resolveToken($request);
+            if (! $this->attachmentService->canDelete($attachment, Auth::id(), $guestToken)) {
                 return $this->forbidden('sirsoft-board::messages.attachment.delete_forbidden');
             }
 
             // 삭제 (Service에서 처리)
-            $result = $this->attachmentService->delete($slug, $id);
+            $result = $this->attachmentService->delete($slug, $id, 'user', $guestToken);
 
             if (! $result) {
                 return $this->error('sirsoft-board::messages.attachment.delete_failed', 500);

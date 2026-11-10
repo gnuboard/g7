@@ -1153,6 +1153,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.schedules.run`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 「중복 실행 방지」를 켠 스케줄이 이미 실행 중인 경우 (`schedule.already_running`). 실행 이력을 만들지 않는다 (7.1.5) |
+| 503 | Service Unavailable | 「중복 실행 방지」 스케줄의 실행 잠금 저장소(캐시)를 쓸 수 없는 경우 (`schedule.run_lock_unavailable`). 실행 이력을 만들지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 

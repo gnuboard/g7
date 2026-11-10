@@ -1,0 +1,30 @@
+feature: 코어 첨부 다운로드 판정 필터와 비활성 확장 규칙 (#887)
+
+description: |
+  코어 공개 다운로드(`GET /api/attachment/{hash}` → `AttachmentService::getFileInfo`·`download`)는 확장을 모른다. 행을 만든 확장이
+  필터 `core.attachment.filter_can_download`(`null, Attachment, ?User`)로 원 리소스 열람 권한을 답한다 — `null`(의견 없음)은 기존 흐름,
+  `false` 는 403(`attachment.access_denied`), `true` 는 허용(기능 권한·`before_download_action`·`before_download` 는 그대로 탄다).
+  코어 일반 규칙: 행을 만든 확장(`source_type` module·plugin)이 비활성·미설치면 거부하고, 리스너가 이를 뒤집지 못한다. 리스너가 없는
+  회원 아바타·사이트 로고·기본 OG 이미지·게시판 반응 아이콘(게시판 켜짐)은 종전처럼 서빙된다. 코어 첨부 표에는 임시 업로드 키가 없다.
+
+axes:
+  case:
+    - no_listener
+    - listener_deny
+    - listener_allow
+    - inactive_extension
+    - service_paths
+    - core_table
+
+effects:
+  - core_rows_served_without_listener
+  - active_extension_row_served
+  - listener_false_forbidden
+  - listener_scoped_to_own_rows
+  - listener_true_allowed_existing_flow_kept
+  - inactive_extension_row_forbidden
+  - service_paths_share_gate
+  - core_table_has_no_temp_key
+
+test_files:
+  - tests/Feature/Attachment/AttachmentDownloadGateTest.php

@@ -30,6 +30,7 @@ use App\Extension\Exceptions\ExtensionSeederFailedException;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionEntrySource;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
@@ -76,7 +77,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -134,6 +134,11 @@ class PluginManager implements PluginManagerInterface
      * _bundled 디렉토리의 플러그인 메타데이터 (identifier => metadata)
      */
     protected array $bundledPlugins = [];
+
+    /**
+     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다(#860)
+     */
+    protected bool $pendingAndBundledLoaded = false;
 
     protected string $pendingPluginsPath;
 
@@ -227,6 +232,8 @@ class PluginManager implements PluginManagerInterface
                 // 클래스가 아직 로드되지 않은 경우에만 require
                 // (_bundled에서 이미 로드된 경우 중복 선언 방지)
                 if (! class_exists($pluginClass, false)) {
+                    // 오토로드 캐시에 없는 폴더(고아 사본)는 자기 PSR-4 를 먼저 등록한다 — 진입 클래스가 자기 소스를 상속하면 부팅이 죽는다 (#159)
+                    ExtensionManager::registerAutoloadIfMissing($directory, 'plugins:'.$pluginName);
                     require_once $pluginFile;
                     $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile);
                 }
@@ -247,9 +254,6 @@ class PluginManager implements PluginManagerInterface
 
                         // 훅 리스너 자동 등록
                         $this->registerPluginHookListeners($plugin);
-
-                        // 브로드캐스트 채널 자동 등록
-                        $this->registerPluginChannels($plugin);
                     }
                 } else {
                     // 진입 파일은 있는데 클래스가 없다(네임스페이스 오타 등) — 조용히 빠지지 않게 경고 (7.1.3)
@@ -261,11 +265,11 @@ class PluginManager implements PluginManagerInterface
             }
         }
 
-        // _pending 디렉토리 로드
-        $this->loadPendingPlugins();
-
-        // _bundled 디렉토리 로드
-        $this->loadBundledPlugins();
+        // _pending / _bundled 메타는 관리 목록·업데이트 확인처럼 실제로 쓰는 곳이 처음 읽을 때 로드한다 — 부팅마다
+        // 미설치 번들 매니페스트까지 읽지 않게(#860). 다시 load 하면 지연 상태를 처음으로 돌린다.
+        $this->pendingPlugins = [];
+        $this->bundledPlugins = [];
+        $this->pendingAndBundledLoaded = false;
     }
 
     /**
@@ -282,7 +286,7 @@ class PluginManager implements PluginManagerInterface
 
         foreach ($pending as $identifier => $metadata) {
             // 이미 활성 디렉토리에 로드된 플러그인은 제외
-            if (isset($this->plugins[$identifier])) {
+            if (isset($this->plugins[$identifier]) || isset($this->pendingPlugins[$identifier])) {
                 continue;
             }
 
@@ -304,12 +308,31 @@ class PluginManager implements PluginManagerInterface
 
         foreach ($bundled as $identifier => $metadata) {
             // 이미 활성 디렉토리 또는 pending에 로드된 플러그인은 제외
-            if (isset($this->plugins[$identifier]) || isset($this->pendingPlugins[$identifier])) {
+            if (isset($this->plugins[$identifier]) || isset($this->pendingPlugins[$identifier]) || isset($this->bundledPlugins[$identifier])) {
                 continue;
             }
 
             $this->bundledPlugins[$identifier] = $metadata;
         }
+    }
+
+    /**
+     * _pending / _bundled 플러그인 메타데이터를 처음 읽힐 때 한 번 로드합니다.
+     *
+     * 읽는 것은 매니페스트 JSON 뿐이다 — 번들 사본의 진입 클래스를 require 하지 않는다(재선언 Fatal 선례).
+     * 이미 메모리에 있는 키는 덮지 않는다(같은 주기에 갱신·재로드된 항목 보존).
+     *
+     * @return void 반환값 없음
+     */
+    protected function ensurePendingAndBundledLoaded(): void
+    {
+        if ($this->pendingAndBundledLoaded) {
+            return;
+        }
+
+        $this->pendingAndBundledLoaded = true;
+        $this->loadPendingPlugins();
+        $this->loadBundledPlugins();
     }
 
     /**
@@ -319,6 +342,8 @@ class PluginManager implements PluginManagerInterface
      */
     public function getPendingPlugins(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->pendingPlugins;
     }
 
@@ -329,6 +354,8 @@ class PluginManager implements PluginManagerInterface
      */
     public function getBundledPlugins(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->bundledPlugins;
     }
 
@@ -386,6 +413,10 @@ class PluginManager implements PluginManagerInterface
         bool $force = false,
         ?string &$failureReason = null,
     ): bool {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'install');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_install', $pluginName);
 
@@ -501,6 +532,9 @@ class PluginManager implements PluginManagerInterface
 
             // 전역 상태 공개 계약 이름 충돌 검증 (#639)
             $this->validateStateContracts('plugin:'.$plugin->getIdentifier(), $plugin->getStateContracts());
+
+            // 최근 검색어 범위 선언(search_scopes) 형식 검사 — 틀린 항목은 버리고 경고로만 알린다(설치를 막지 않음, 7.1.5)
+            $plugin->getSearchScopes(reportWarnings: true);
 
             // 플러그인 설치 실행
             $onProgress?->__invoke('validate', __('extensions.progress.validate'));
@@ -673,6 +707,10 @@ class PluginManager implements PluginManagerInterface
      */
     public function activatePlugin(string $pluginName, bool $force = false): array
     {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'activate');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_activate', $pluginName);
 
@@ -696,7 +734,7 @@ class PluginManager implements PluginManagerInterface
         $record = $this->pluginRepository->findByIdentifier($plugin->getIdentifier());
         if ($record) {
             // 멈춘 업데이트(updating 고착)는 활성화가 정리하고 진행한다 — 업데이트 프로세스가 죽은 뒤 빠져나올 길이 없었다(7.1.1 출시 전)
-            if (StuckUpdateRecovery::recover('plugin', $plugin->getIdentifier(), $record, fn (array $attributes) => $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), $attributes)) !== null) {
+            if (StuckUpdateRecovery::recover('plugin', $plugin->getIdentifier(), $record, fn (array $attributes) => $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), $attributes), lockHeld: true) !== null) {
                 self::invalidatePluginStatusCache();
                 $record = $this->pluginRepository->findByIdentifier($plugin->getIdentifier());
             }
@@ -727,6 +765,9 @@ class PluginManager implements PluginManagerInterface
 
         // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다 (#639)
         $this->validateStateContracts('plugin:'.$plugin->getIdentifier(), $plugin->getStateContracts());
+
+        // 최근 검색어 범위 선언(search_scopes) 형식 검사 — 틀린 항목은 버리고 경고로만 알린다(설치를 막지 않음, 7.1.5)
+        $plugin->getSearchScopes(reportWarnings: true);
 
         // 의존성 검증: 필요한 모듈/플러그인이 활성 상태이고 버전 제약을 충족하는지 확인 (--force 는 우회)
         $unmet = $this->collectUnmetDependencies($plugin->getDependencies());
@@ -890,6 +931,10 @@ class PluginManager implements PluginManagerInterface
         string $reason = DeactivationReason::Manual->value,
         ?string $incompatibleRequiredVersion = null,
     ): array {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'deactivate');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_deactivate', $pluginName);
 
@@ -1123,6 +1168,10 @@ class PluginManager implements PluginManagerInterface
         ?string &$failureReason = null,
         ?array &$preservedBackups = null,
     ): bool {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'uninstall');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_uninstall', $pluginName, $deleteData);
 
@@ -1336,6 +1385,8 @@ class PluginManager implements PluginManagerInterface
      */
     public function getUninstalledPlugins(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $uninstalledPlugins = [];
         // 캐시된 설치된 플러그인 identifier 목록 활용
         // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
@@ -1443,6 +1494,8 @@ class PluginManager implements PluginManagerInterface
      */
     public function getInstalledPluginsWithDetails(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $installedPlugins = [];
         $pluginRecords = $this->pluginRepository->getAllKeyedByIdentifier();
         $locale = app()->getLocale();
@@ -1505,6 +1558,13 @@ class PluginManager implements PluginManagerInterface
                         $record->update_source ?? null,
                         $this->findBundledPluginManifest($identifier),
                         $plugin->getRequiredCoreVersion()
+                    )) : []),
+                    // 업데이트 대상 판이 요구하는 의존·연동 중 지금 못 미치는 것 — 업데이트 창이 실행 전에 알린다(업데이트가 있을 때만).
+                    // 판정은 업데이트 뒤 완료 문구의 경고·안내와 같다. GitHub 출처라 대상 판 manifest 를 모르면 null.
+                    ...($updateAvailable ? $this->buildUpdateTargetRequirementFields($this->resolveUpdateTargetManifest(
+                        $record->update_source ?? null,
+                        $this->findBundledPluginManifest($identifier),
+                        $latestVersion
                     )) : []),
                     'github_url' => $plugin->getGithubUrl(),
                     'github_changelog_url' => $record->github_changelog_url ?? null,
@@ -1609,6 +1669,8 @@ class PluginManager implements PluginManagerInterface
      */
     protected function getPluginInfoFromMetadata(string $pluginName): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         // pending/bundled 메타데이터 확인
         $isPending = isset($this->pendingPlugins[$pluginName]);
         $isBundled = isset($this->bundledPlugins[$pluginName]);
@@ -1656,6 +1718,47 @@ class PluginManager implements PluginManagerInterface
         }
 
         // PHP 클래스 로드 실패 시 JSON 메타데이터 기반 폴백
+        return $this->buildPluginInfoFromManifest($pluginName, $metadata, $locale);
+    }
+
+    /**
+     * 설치·의존 판정용 플러그인 정보를 manifest(plugin.json)만으로 반환합니다.
+     *
+     * 활성 인스턴스가 있으면(부팅 때 PSR-4 가 등록된 설치본) 상세 조회와 같은 값을 돌려준다. 미설치(pending·bundled)
+     * 플러그인은 진입 파일(plugin.php)을 실행하지 않는다 — 진입 클래스가 자기 PSR-4 클래스를 상속하면 이 시점엔 부모를
+     * 못 찾고, Composer 가 그 실패를 음성 캐시(missingClasses)에 남겨 같은 프로세스의 이어지는 설치가 「Class not found」
+     * 로 죽는다(#159). 진입 파일이 자체 vendor 를 부르면 `_bundled` 경로 오토로더를 먼저 선언해 설치 마지막 단계가
+     * 「Cannot declare class」 로도 죽는다. 설치 판정이 읽는 이름·버전·의존·연동은 원래 manifest 가 SSoT 다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @return array<string, mixed>|null 플러그인 정보, 활성·pending·bundled 어디에도 없으면 null
+     */
+    public function getPluginManifestInfo(string $pluginName): ?array
+    {
+        if ($this->getPlugin($pluginName)) {
+            return $this->getPluginInfo($pluginName);
+        }
+
+        $this->ensurePendingAndBundledLoaded();
+
+        $metadata = $this->pendingPlugins[$pluginName] ?? $this->bundledPlugins[$pluginName] ?? null;
+        if ($metadata === null) {
+            return null;
+        }
+
+        return $this->buildPluginInfoFromManifest($pluginName, $metadata, app()->getLocale());
+    }
+
+    /**
+     * 미설치 플러그인의 manifest 메타데이터로 정보 배열을 만듭니다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  array<string, mixed>  $metadata  plugin.json 메타데이터
+     * @param  string  $locale  표시 로케일
+     * @return array<string, mixed> 플러그인 정보
+     */
+    protected function buildPluginInfoFromManifest(string $pluginName, array $metadata, string $locale): array
+    {
         return [
             'identifier' => $metadata['identifier'] ?? $pluginName,
             'vendor' => $metadata['vendor'] ?? '',
@@ -3403,47 +3506,6 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
-     * 플러그인의 브로드캐스트 채널을 등록합니다.
-     *
-     * 플러그인의 getChannels() 메서드에서 정의한 채널을
-     * Broadcast::channel()로 자동 등록합니다.
-     *
-     * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @return void 반환값 없음
-     */
-    protected function registerPluginChannels(PluginInterface $plugin): void
-    {
-        if (! method_exists($plugin, 'getChannels')) {
-            return;
-        }
-
-        $activeIdentifiers = self::getActivePluginIdentifiers();
-        if (! in_array($plugin->getIdentifier(), $activeIdentifiers, true)) {
-            return;
-        }
-
-        $channels = $plugin->getChannels();
-
-        foreach ($channels as $channelName => $config) {
-            $permission = $config['permission'] ?? null;
-
-            Broadcast::channel($channelName, function ($user, ...$params) use ($permission) {
-                if ($permission) {
-                    return $user->hasPermission($permission);
-                }
-
-                return true;
-            });
-
-            Log::info('플러그인 브로드캐스트 채널 등록 완료', [
-                'channel' => $channelName,
-                'plugin' => $plugin->getIdentifier(),
-                'permission' => $permission,
-            ]);
-        }
-    }
-
-    /**
      * GitHub에서 플러그인의 최신 버전을 가져옵니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
@@ -4184,6 +4246,8 @@ class PluginManager implements PluginManagerInterface
      */
     protected function reloadPlugin(string $pluginName): bool
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $pluginDir = $this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName;
         $pluginFile = $pluginDir.DIRECTORY_SEPARATOR.'plugin.php';
 
@@ -4252,18 +4316,14 @@ class PluginManager implements PluginManagerInterface
      */
     protected function evalFreshPlugin(string $pluginFile, string $pluginClass, string $pluginDir): ?PluginInterface
     {
-        $content = file_get_contents($pluginFile);
-        if ($content === false) {
+        $uid = '_fresh_'.uniqid();
+
+        // 클래스명만 변경 (namespace 유지 → use/extends 정상 작동), __DIR__·__FILE__ 은 진입 파일 위치로 (#159)
+        $content = ExtensionEntrySource::forEval($pluginFile, 'Plugin', 'Plugin'.$uid);
+        if ($content === null) {
             return null;
         }
 
-        $uid = '_fresh_'.uniqid();
-
-        // 클래스명만 변경 (namespace 유지 → use/extends 정상 작동)
-        $content = preg_replace('/\bclass\s+Plugin\b/', 'class Plugin'.$uid, $content);
-
-        // PHP 여는 태그 제거 후 메모리에서 실행
-        $content = preg_replace('/^<\?php\s*/', '', $content);
         eval($content);
 
         $namespace = substr($pluginClass, 0, strrpos($pluginClass, '\\'));
@@ -4306,6 +4366,8 @@ class PluginManager implements PluginManagerInterface
      */
     public function checkPluginUpdate(string $identifier, ?string $source = null): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $record = $this->pluginRepository->findByIdentifier($identifier);
         if (! $record) {
             return $this->buildPluginUpdateResponse(false, null, null, null, null);
@@ -4421,6 +4483,8 @@ class PluginManager implements PluginManagerInterface
      */
     private function bundledPluginUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $meta = $this->bundledPlugins[$identifier]
             ?? (ExtensionPendingHelper::loadBundledExtensions($this->pluginsPath, 'plugin.json')[$identifier] ?? null);
         $version = is_array($meta) ? ($meta['version'] ?? null) : null;
@@ -4726,6 +4790,21 @@ class PluginManager implements PluginManagerInterface
         // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
         $operationLock = ExtensionOperationLock::acquire('plugin', $identifier);
 
+        // 진행 중 하트비트 — 단계마다(30초 간격) 잠금을 늘리고, `updating` 기록 뒤에는 행 `updated_at` 도 갱신한다. 10분 넘게
+        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(#161 D4).
+        $statusUpdating = false;
+        $touch = function () use (&$statusUpdating, $identifier): void {
+            if ($statusUpdating) {
+                $this->pluginRepository->updateByIdentifier($identifier, ['updated_at' => now()]);
+            }
+        };
+        $onProgress = $operationLock->wrapProgress($onProgress, $touch);
+        $onUpgradeStep = function (...$args) use ($operationLock, $touch, $onUpgradeStep) {
+            $operationLock->keepAlive($touch, force: true);
+
+            return $onUpgradeStep !== null ? $onUpgradeStep(...$args) : null;
+        };
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_update', $identifier);
 
@@ -4847,6 +4926,7 @@ class PluginManager implements PluginManagerInterface
                 'status' => ExtensionStatus::Updating->value,
                 'updated_at' => now(),
             ]);
+            $statusUpdating = true;
 
             // 3. 스테이징 (소스에 따라 분기)
             $onProgress?->__invoke('staging', __('extensions.progress.staging'));
@@ -5014,6 +5094,7 @@ class PluginManager implements PluginManagerInterface
                 'status' => $previousStatus,
                 'updated_at' => now(),
             ]);
+            $statusUpdating = false;
 
             // 플러그인 상태 캐시 무효화 — 상태 복원 쓰기 직후에 둔다.
             // Updating 전이 직후에는 비우지 않는다: 그러면 Updating 창 안의
@@ -5081,6 +5162,10 @@ class PluginManager implements PluginManagerInterface
                 'source' => $updateSource,
             ]);
 
+            // 새 판의 최근 검색어 범위 선언(search_scopes) 형식 검사 — 설치·활성화와 같이 틀린 항목은 버리고 경고로만 알린다.
+            // 업데이트로 들어온 선언이 틀려도 로그에만 남고 결과 창·CLI 에는 보이지 않았다 (7.1.5)
+            $plugin?->getSearchScopes(reportWarnings: true);
+
             // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
             // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.
             $dependencyWarnings = DependencyVersionWarnings::afterUpdate(
@@ -5117,6 +5202,7 @@ class PluginManager implements PluginManagerInterface
                 ]), $dependencyWarnings), $integrationNotices),
             ];
         } catch (\Throwable $e) {
+            $statusUpdating = false;
             // 실패 시: 백업 복원 + 상태 복원
             Log::error('플러그인 업데이트 실패', [
                 'plugin' => $identifier,
@@ -5206,6 +5292,8 @@ class PluginManager implements PluginManagerInterface
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledPlugins[$identifier])) {
             return 'bundled';
         }
@@ -5232,6 +5320,8 @@ class PluginManager implements PluginManagerInterface
      */
     private function getBundledVersion(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledPlugins[$identifier]['version'])) {
             return $this->bundledPlugins[$identifier]['version'];
         }
@@ -5249,6 +5339,8 @@ class PluginManager implements PluginManagerInterface
      */
     private function findBundledPluginManifest(string $identifier): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledPlugins[$identifier])) {
             return $this->bundledPlugins[$identifier];
         }

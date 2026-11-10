@@ -1,4 +1,5 @@
-<!-- 주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다 -->
+<!-- 주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다
+     e2e:allow #160 — CBT 대사·편의점 운영 시각 바인딩만 서버가 만든 *_formatted(보는 사람 시간대)로 교체했다. 대체 검증: PHPUnit 응답 단언(CbtPaymentControllerTest). Chrome MCP 매트릭스 S19 는 국내 결제조회 패널만 쟀고, 개발 사이트에 해외결제(CBT) 데이터가 없어 바꾼 CBT 칸은 브라우저로 재지 않았다. 테스트 결제창이 실제 카드사·편의점 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다. -->
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{kginicis_status.data?._is_test_mode === true}}" class="mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex items-center gap-2">
@@ -25,7 +26,7 @@
         <span data-if="{{kginicis_cbt_reconciliation.data?.refund_error}}" class="font-semibold text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_refund_error</span>
         <span data-if="{{kginicis_cbt_reconciliation.data?.refund_error}}" class="text-red-950 dark:text-red-100 col-span-1 sm:col-span-3 break-all">{{kginicis_cbt_reconciliation.data?.refund_error}}</span>
         <span class="font-semibold text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_updated_at</span>
-        <span class="font-mono text-red-950 dark:text-red-100">{{kginicis_cbt_reconciliation.data?.updated_at ?? '-'}}</span>
+        <span class="font-mono text-red-950 dark:text-red-100">{{kginicis_cbt_reconciliation.data?.updated_at_formatted ?? '-'}}</span>
         <span class="font-semibold text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_reconciliation_retry_count</span>
         <span class="font-mono text-red-950 dark:text-red-100">{{kginicis_cbt_reconciliation.data?.retry_count ?? 0}}</span>
       </div>
@@ -74,9 +75,9 @@
         <span class="text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_due_at</span>
         <span class="font-mono text-blue-950 dark:text-blue-100">{{kginicis_cbt_cvs.data?.payment_term_formatted ?? kginicis_cbt_cvs.data?.payment_term ?? '-'}}</span>
         <span class="text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_last_notify</span>
-        <span class="font-mono text-blue-950 dark:text-blue-100 break-all">{{(kginicis_cbt_cvs.data?.last_notify_at ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_result ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_reason ?? '-')}}</span>
+        <span class="font-mono text-blue-950 dark:text-blue-100 break-all">{{(kginicis_cbt_cvs.data?.last_notify_at_formatted ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_result ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_notify_reason ?? '-')}}</span>
         <span class="text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_last_recheck</span>
-        <span class="font-mono text-blue-950 dark:text-blue-100 break-all">{{(kginicis_cbt_cvs.data?.last_recheck_at ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_recheck_result ?? '-')}}</span>
+        <span class="font-mono text-blue-950 dark:text-blue-100 break-all">{{(kginicis_cbt_cvs.data?.last_recheck_at_formatted ?? '-') + ' / ' + (kginicis_cbt_cvs.data?.last_recheck_result ?? '-')}}</span>
         <span class="text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-pay_kginicis.admin.cbt_cvs_notify_url</span>
         <span class="font-mono text-blue-950 dark:text-blue-100 col-span-1 sm:col-span-3 break-all">{{kginicis_cbt_cvs.data?.notify_url ?? '-'}}</span>
       </div>
@@ -85,7 +86,7 @@
         <div data-if="{{(kginicis_cbt_cvs.data?.notify_history ?? []).length === 0}}" class="text-xs pay-kginicis-tone-info">$t:sirsoft-pay_kginicis.admin.cbt_cvs_history_empty</div>
         <div data-if="{{(kginicis_cbt_cvs.data?.notify_history ?? []).length > 0}}" data-each="notify, notifyIdx in {{kginicis_cbt_cvs.data?.notify_history ?? []}}" class="space-y-1">
           <div class="grid grid-cols-[120px_1fr] sm:grid-cols-[150px_90px_1fr_80px] gap-x-2 gap-y-1 rounded-md bg-white/70 dark:bg-gray-900/30 px-2 py-1.5 text-[11px]">
-            <span class="font-mono text-blue-950 dark:text-blue-100">{{notify.received_at ?? '-'}}</span>
+            <span class="font-mono text-blue-950 dark:text-blue-100">{{notify.received_at_formatted ?? '-'}}</span>
             <span class="font-semibold pay-kginicis-tone-info-strong">{{notify.result ?? '-'}}</span>
             <span class="font-mono text-blue-950 dark:text-blue-100 break-all">{{(notify.reason ?? '-') + ' / ' + (notify.tid ?? '-')}}</span>
             <span class="font-mono text-blue-950 dark:text-blue-100">{{(notify.amount ?? '-') + ' ' + (notify.currency ?? '')}}</span>

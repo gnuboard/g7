@@ -15,6 +15,11 @@ class PluginAssetServingTest extends TestCase
 
     private string $testPluginPath;
 
+    /**
+     * 테스트용 활성 확장 행과 자산 폴더를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +40,11 @@ class PluginAssetServingTest extends TestCase
         }
     }
 
+    /**
+     * 테스트용 자산 폴더를 지우고 상위 정리를 이어 갑니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트용 파일 및 디렉토리 정리
@@ -47,6 +57,9 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 디렉토리 재귀 삭제 헬퍼 메서드
+     *
+     * @param  string  $dir  지울 디렉토리 경로
+     * @return bool 삭제에 성공하면 true
      */
     private function deleteDirectory(string $dir): bool
     {
@@ -73,6 +86,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 활성화된 플러그인의 JS 파일 서빙 성공
+     *
+     * @scenario case=serve
+     *
+     * @effects plugin_asset_serves_js_file_from_active_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_js_file_from_active_plugin(): void
     {
@@ -90,6 +109,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 활성화된 플러그인의 CSS 파일 서빙 성공
+     *
+     * @scenario case=serve
+     *
+     * @effects plugin_asset_serves_css_file_from_active_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_css_file_from_active_plugin(): void
     {
@@ -110,24 +135,34 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 비활성화 플러그인 접근 시 404 반환
+     *
+     * @scenario case=missing
+     *
+     * @effects plugin_asset_returns_404_for_inactive_plugin
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_inactive_plugin(): void
     {
-        // Arrange
-        Plugin::factory()->create([
-            'identifier' => 'inactive-plugin',
-            'status' => ExtensionStatus::Inactive->value,
-        ]);
+        // Arrange — 파일은 있고 상태만 비활성이어야 경로 검증(422)이 아니라 활성 판정을 거친다
+        file_put_contents($this->testPluginPath.'/dist/js/plugin.iife.js', 'console.log("test");');
+        $this->activePlugin->update(['status' => ExtensionStatus::Inactive->value]);
 
         // Act
-        $response = $this->get('/api/plugins/assets/inactive-plugin/dist/js/plugin.iife.js');
+        $response = $this->get('/api/plugins/assets/test-plugin/dist/js/plugin.iife.js');
 
         // Assert
-        $this->assertContains($response->status(), [302, 404]);
+        $response->assertStatus(404);
     }
 
     /**
      * 존재하지 않는 파일 접근 시 404 반환
+     *
+     * @scenario case=missing
+     *
+     * @effects plugin_asset_returns_404_for_nonexistent_file
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_file(): void
     {
@@ -140,6 +175,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * Path Traversal 공격 차단 - 기본 패턴 (../)
+     *
+     * @scenario case=traversal
+     *
+     * @effects plugin_asset_blocks_path_traversal_attack
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_path_traversal_attack(): void
     {
@@ -152,6 +193,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * Path Traversal 공격 차단 - 백슬래시 패턴 (..\)
+     *
+     * @scenario case=traversal
+     *
+     * @effects plugin_asset_blocks_path_traversal_with_backslash
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_path_traversal_with_backslash(): void
     {
@@ -164,6 +211,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * Path Traversal 공격 차단 - URL 인코딩 패턴
+     *
+     * @scenario case=traversal
+     *
+     * @effects plugin_asset_blocks_url_encoded_path_traversal
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_url_encoded_path_traversal(): void
     {
@@ -184,6 +237,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 절대 경로 차단 - Windows 경로
+     *
+     * @scenario case=traversal
+     *
+     * @effects plugin_asset_blocks_windows_absolute_path
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_windows_absolute_path(): void
     {
@@ -196,6 +255,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 절대 경로 차단 - Linux 경로
+     *
+     * @scenario case=traversal
+     *
+     * @effects plugin_asset_blocks_linux_absolute_path
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_linux_absolute_path(): void
     {
@@ -208,6 +273,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * NULL 바이트 공격 차단
+     *
+     * @scenario case=traversal
+     *
+     * @effects plugin_asset_blocks_null_byte_attack
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_null_byte_attack(): void
     {
@@ -220,6 +291,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 불허 파일 타입 차단 - PHP
+     *
+     * @scenario case=file_type
+     *
+     * @effects plugin_asset_blocks_disallowed_file_types
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_disallowed_file_types(): void
     {
@@ -236,6 +313,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 불허 파일 타입 차단 - 실행 파일들
+     *
+     * @scenario case=file_type
+     *
+     * @effects plugin_asset_blocks_various_disallowed_file_types
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_various_disallowed_file_types(): void
     {
@@ -249,6 +332,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 허용된 파일 타입 확인
+     *
+     * @scenario case=file_type
+     *
+     * @effects plugin_asset_allows_all_whitelisted_file_types
+     *
+     * @return void 반환값 없음
      */
     public function test_allows_all_whitelisted_file_types(): void
     {
@@ -288,6 +377,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 캐싱 헤더 정상 설정
+     *
+     * @scenario case=caching
+     *
+     * @effects plugin_asset_sets_caching_headers
+     *
+     * @return void 반환값 없음
      */
     public function test_sets_caching_headers(): void
     {
@@ -306,6 +401,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * ETag 헤더 생성 확인
+     *
+     * @scenario case=caching
+     *
+     * @effects plugin_asset_generates_etag_header
+     *
+     * @return void 반환값 없음
      */
     public function test_generates_etag_header(): void
     {
@@ -325,6 +426,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * ETag 매칭 시 304 Not Modified 응답
+     *
+     * @scenario case=caching
+     *
+     * @effects plugin_asset_returns_304_when_etag_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_304_when_etag_matches(): void
     {
@@ -347,6 +454,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 프로덕션 환경에서 immutable 캐싱 정책 적용
+     *
+     * @scenario case=caching
+     *
+     * @effects plugin_asset_applies_immutable_caching_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_applies_immutable_caching_in_production(): void
     {
@@ -368,6 +481,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 개발 환경에서 no-cache 정책 적용
+     *
+     * @scenario case=caching
+     *
+     * @effects plugin_asset_applies_no_cache_in_development
+     *
+     * @return void 반환값 없음
      */
     public function test_applies_no_cache_in_development(): void
     {
@@ -387,6 +506,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 플러그인 라우트 접근 가능 테스트
+     *
+     * @scenario case=route
+     *
+     * @effects plugin_asset_plugin_route_is_accessible
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_route_is_accessible(): void
     {
@@ -403,6 +528,12 @@ class PluginAssetServingTest extends TestCase
 
     /**
      * 중첩 경로 처리 테스트
+     *
+     * @scenario case=nested_path
+     *
+     * @effects plugin_asset_handles_nested_path
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_nested_path(): void
     {
@@ -425,6 +556,12 @@ class PluginAssetServingTest extends TestCase
      * 소스맵은 원본 코드 전문을 담고 있어 배포 환경에서 노출되면 안 된다.
      * 파일이 디스크에 실재하더라도(= 파일 부재로 인한 실패가 아님) 허용 확장자
      * 목록에서 제외되어 서빙이 거부되어야 한다.
+     *
+     * @scenario case=sourcemap
+     *
+     * @effects plugin_sourcemap_asset_request_rejected_even_when_file_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_sourcemap_file(): void
     {

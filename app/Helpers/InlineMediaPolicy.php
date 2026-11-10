@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Enums\ContentMediaKind;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -82,6 +83,88 @@ final class InlineMediaPolicy
         $response->headers->set('Content-Security-Policy', self::NON_INLINE_CSP);
 
         return $response;
+    }
+
+    /**
+     * 본문 동영상·오디오로 인라인 재생을 허용하는 MIME 타입 (#883 5단계 D14, #887 단일 출처)
+     *
+     * 이 목록에 들고 확장 정책·코어 「본문 콘텐츠」 설정이 그 종류를 켰을 때만 `hardenPlayable` 로 인라인 서빙한다.
+     * 그 밖에는 `harden()` 그대로(다운로드) — 기존 판정은 바뀌지 않는다. 목록은 본문 미디어 종류(`ContentMediaKind`)의
+     * 동영상·오디오 MIME 이다 — 업로드가 받는 형식과 서빙이 재생하는 형식이 갈라지지 않게 한 곳에서 만든다.
+     *
+     * @return array<int, string> MIME 목록 (동영상 → 오디오, 확장자 표 순서)
+     */
+    public static function playableMimeTypes(): array
+    {
+        return array_values(array_unique(array_merge(
+            ContentMediaKind::Video->mimeTypes(),
+            ContentMediaKind::Audio->mimeTypes(),
+        )));
+    }
+
+    /**
+     * 재생 가능 응답에 거는 CSP — 미디어 자체 출처만 허용하고 문서로 렌더되면 격리한다.
+     */
+    public const PLAYABLE_CSP = "default-src 'none'; media-src 'self'; sandbox";
+
+    /**
+     * MIME 타입이 인라인 재생 가능한 동영상·오디오인지 판정합니다 (#883 5단계).
+     *
+     * @param  string|null  $mimeType  MIME 타입 (파라미터는 무시)
+     * @return bool 재생 가능하면 true
+     */
+    public static function isInlinePlayable(?string $mimeType): bool
+    {
+        if ($mimeType === null || $mimeType === '') {
+            return false;
+        }
+
+        $normalized = strtolower(trim(explode(';', $mimeType, 2)[0]));
+
+        return in_array($normalized, self::playableMimeTypes(), true);
+    }
+
+    /**
+     * 재생 가능한 동영상·오디오 서빙 응답 헤더를 굳힙니다 (#883 5단계, D14).
+     *
+     * `nosniff` + `Content-Disposition: inline` + CSP(`media-src 'self'; sandbox`). 재생 가능 형식이 아니면 `harden()` 으로
+     * 넘긴다(다운로드 강제) — 호출자가 잘못 불러도 인라인이 넓어지지 않는다.
+     *
+     * @param  Response  $response  서빙 응답
+     * @param  string|null  $mimeType  파일 MIME 타입
+     * @param  string|null  $filename  파일명
+     * @return Response 헤더가 적용된 같은 응답
+     */
+    public static function hardenPlayable(Response $response, ?string $mimeType = null, ?string $filename = null): Response
+    {
+        $mimeType ??= $response->headers->get('Content-Type');
+
+        if (! self::isInlinePlayable($mimeType)) {
+            return self::harden($response, $mimeType, $filename);
+        }
+
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Content-Disposition', self::inlineDisposition($filename));
+        $response->headers->set('Content-Security-Policy', self::PLAYABLE_CSP);
+
+        return $response;
+    }
+
+    /**
+     * inline Content-Disposition 헤더 값을 만듭니다.
+     *
+     * @param  string|null  $filename  파일명
+     * @return string Content-Disposition 헤더 값
+     */
+    private static function inlineDisposition(?string $filename): string
+    {
+        if ($filename === null || $filename === '') {
+            return HeaderUtils::DISPOSITION_INLINE;
+        }
+
+        $fallback = preg_replace('/[^\x20-\x7e]|[\/\\\\%"]/', '_', $filename) ?: 'media';
+
+        return HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $filename, $fallback);
     }
 
     /**

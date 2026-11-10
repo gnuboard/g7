@@ -270,6 +270,19 @@ return [
     ],
 
     'attributes' => [
+        'content_media' => [
+            'file' => '本文メディアファイル',
+            'temp_key' => '一時キー',
+            'post_id' => '投稿番号',
+        ],
+        'content_media_policy' => [
+            'policy' => '本文メディアポリシー',
+            'max_per_document' => '文書あたりの本文メディア最大数',
+            'kind' => ':kind 本文メディア設定',
+            'enabled' => ':kind 本文メディアの使用',
+            'max_size_mb' => ':kind ファイルあたりの最大サイズ(MB)',
+            'extensions' => ':kind 許可拡張子',
+        ],
         'board_ids' => '掲示板の並び順',
         'settings' => [
             'basic_defaults.type' => '掲示板タイプ',
@@ -515,6 +528,10 @@ return [
             'in' => '無効なコメントステータスです。',
         ],
     ],
+    'content_media' => [
+        'temp_key_required' => '本文メディアのアップロードには一時キー(UUID)が必要です。画面を再読み込みしてからもう一度お試しください。',
+    ],
+
     'attachment' => [
         'file' => [
             'required' => 'ファイルは必須です。',
@@ -528,6 +545,7 @@ return [
         'file_mimes' => '許可されていないファイル形式です。',
         'post_id_required' => '投稿IDは必須です。',
         'post_id_invalid' => '無効な投稿IDです。',
+        'collection_reserved' => 'この添付区分ではアップロードできません。',
         'max_count_exceeded' => '最大アップロードファイル数(:max個)を超えました。',
         'extension_not_allowed' => '許可されていないファイル拡張子です::extension',
         'orders_required' => '順序情報は必須です。',

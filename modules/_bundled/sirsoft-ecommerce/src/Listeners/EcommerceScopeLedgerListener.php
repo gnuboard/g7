@@ -119,6 +119,9 @@ class EcommerceScopeLedgerListener implements HookListenerInterface
                 ),
                 'exempt' => $presetsExempt + [
                     self::R.'products.images.upload-temp' => '임시 업로드는 상품에 귀속되지 않은 temp_key 이미지라 상품 범위 대상이 없다',
+                    // 본문 미디어(#883) — 상품 id 를 받지 않는다. 상품 연결은 상품 저장(ProductService::create·update → syncDescriptionMedia) 때 일어나고 수정 범위는 그 저장 경로가 판정한다
+                    self::R.'content-media.target' => '편집기 업로드 계약(정책·엔드포인트)만 응답하고 상품 행을 읽거나 바꾸지 않는다',
+                    self::R.'content-media.upload' => '본문 미디어 업로드는 owner_id 없는 temp_key 행으로만 저장돼 상품 범위 대상이 없다',
                 ],
                 'paths' => [
                     ProductService::class.'::update',

@@ -74,4 +74,42 @@ return [
             ],
         ],
     ],
+
+    // 최근 검색어 (/api/me/search-history · 관리자 환경설정 > 개인정보 「최근 검색어」 카드, 7.1.5)
+    'history' => [
+        // 코어 예약 검색 범위 이름 — 관리자 환경설정 > 개인정보 「최근 검색어」 카드의 범위 칸.
+        'scopes' => [
+            'core_site' => '통합 검색',
+        ],
+
+        // 범위 소유자 칸 — 코어가 정한 범위.
+        'owner_core' => '코어',
+
+        // /api/me/search-history 응답 문구.
+        'messages' => [
+            'list_success' => '최근 검색어를 불러왔습니다.',
+            'record_success' => '검색어를 저장했습니다.',
+            'record_skipped' => '검색어를 저장하지 않았습니다.',
+            'delete_success' => '검색어를 삭제했습니다.',
+            'not_found' => '검색어를 찾을 수 없습니다.',
+            'clear_success' => '최근 검색어를 모두 삭제했습니다.',
+            'merge_success' => '브라우저에 있던 최근 검색어를 합쳤습니다.',
+            'auto_save_on' => '검색어 자동 저장을 켰습니다.',
+            'auto_save_off' => '검색어 자동 저장을 껐습니다.',
+            'failed' => '최근 검색어를 처리하지 못했습니다.',
+        ],
+
+        // 요청 검증 — 항목 이름과 칸별 문구.
+        'attributes' => [
+            'scope' => '검색 범위',
+            'keyword' => '검색어',
+            'items' => '병합할 검색어',
+            'searched_at' => '검색 일시',
+            'auto_save' => '자동 저장',
+        ],
+        'validation' => [
+            'scope_unknown' => '사용할 수 없는 검색 범위입니다.',
+            'items_max' => '한 번에 합칠 수 있는 검색어는 :max개까지입니다.',
+        ],
+    ],
 ];

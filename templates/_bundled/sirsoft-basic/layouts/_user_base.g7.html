@@ -307,20 +307,18 @@
       </div>
       <!-- 검색바 — 검색 공급자(게시판·쇼핑몰·페이지)가 모두 꺼졌을 때만 숨긴다(데스크톱 머리글 검색칸과 같은 기준). -->
       <div data-ref="mobile_drawer_search" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" class="p-4">
-        <div class="relative">
-          <icon name="search" size="sm" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"/>
-          <input type="text" name="q" placeholder="$t:user.search_placeholder" class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
-            <on type="keydown" key="Enter">
-              <!-- 드로어 검색 — 엔터에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다. -->
-              <sequence>
-                <set-state target="global" :mobileMenuOpen="false"/>
-                <navigate path="/search">
-                  <query q="{{$event.target.value}}"/>
-                </navigate>
-              </sequence>
-            </on>
-          </input>
-        </div>
+        <!-- 최근 검색어 검색창 — 머리글 검색칸·통합검색 화면과 같은 범위(core.site)라 목록을 함께 쓴다. 빈 칸에 초점을 두면 최근 검색어가 펼쳐지고, 제출할 때 검색창이 기록한다(기다리지 않음). -->
+        <recent-search-combobox data-type="composite" data-ref="mobile_drawer_search_box" scope="core.site" name="q" resultPath="/search" placeholder="$t:user.search_placeholder" inputClassName="w-full min-h-[44px] pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+          <on event="onSearch">
+            <!-- 드로어 검색 — 제출에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다. -->
+            <sequence>
+              <set-state target="global" :mobileMenuOpen="false"/>
+              <navigate path="/search">
+                <query q="{{$args[0]}}"/>
+              </navigate>
+            </sequence>
+          </on>
+        </recent-search-combobox>
       </div>
       <!-- 언어/통화 선택 — 회원·비회원 공통. 헤더 우측 그룹에서 이동(모바일 오버플로 해소). 통화는 이커머스 모듈이 header_currency 슬롯에 주입하므로 SlotContainer 만 배치(모듈 비활성 시 자동 미렌더). -->
       <div data-ref="mobile_drawer_prefs" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
@@ -600,7 +598,7 @@
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===
          shopProductsHref 는 봇 화면(seo-config header_nav)의 「쇼핑」 링크 전용이다 — 값과 글자가 섞인 attrs 패턴({shopBase}/products)을
          옛 코어(7.1.3 이하)의 봇 렌더가 치환하지 못해 완성된 주소 하나를 prop 으로 넘긴다. 컴포넌트는 이 prop 을 읽지 않는다. -->
-    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" searchHistoryScope="core.site" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->

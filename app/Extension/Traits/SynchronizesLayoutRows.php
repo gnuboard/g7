@@ -5,6 +5,7 @@ namespace App\Extension\Traits;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\TemplateManager;
+use App\Helpers\TimezoneHelper;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayout;
 use Illuminate\Support\Facades\Log;
@@ -125,7 +126,8 @@ trait SynchronizesLayoutRows
         return [
             'id' => $id,
             'name' => $name,
-            'updated_at' => $row->updated_at?->format('Y-m-d H:i:s'),
+            // 화면 값(확장 업데이트 모달) — 보는 사람 시간대. 콘솔 출력은 user_timezone 바인딩이 없어 사이트 시간대로 떨어진다
+            'updated_at' => TimezoneHelper::toUserDateTimeString($row->updated_at),
             'size_diff' => $currentSize - ($row->original_content_size ?? $currentSize),
             'kind' => $kind,
         ];

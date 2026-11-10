@@ -237,7 +237,9 @@ class SitemapUrlRepository implements SitemapUrlRepositoryInterface
         }
 
         try {
-            return Carbon::parse($lastmod)->format('Y-m-d H:i:s');
+            // 오프셋(+09:00 등)을 반영해 UTC 로 저장한다 — 그대로 자르면 시간대 차이만큼 어긋난다
+            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
+            return Carbon::parse($lastmod)->utc()->format('Y-m-d H:i:s');
         } catch (\Throwable) {
             return null;
         }

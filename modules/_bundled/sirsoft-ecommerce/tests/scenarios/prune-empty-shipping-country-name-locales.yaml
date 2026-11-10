@@ -1,0 +1,22 @@
+feature: 배송가능 국가명 빈 로케일 키 청소 업그레이드 (#459, 1.0.2)
+
+description: |
+  구 국가 추가 폼이 빈 입력칸을 그대로 저장해 {"ko":"프랑스","en":""} 같은 빈 문자열 로케일이 남았다.
+  PruneEmptyShippingCountryNameLocales 는 빈·공백 로케일 키를 지워 "부재" 로 정규화하고 남는 값은 trim 하되,
+  이름을 새로 채우지 않고 다른 필드·문자열 name·파일/목록 부재 설정은 건드리지 않으며 재실행해도 결과가 같다.
+
+axes:
+  case: [blank_locale, surviving_values, rerun, noop_input, non_array_name]
+
+effects:
+  - blank_locale_keys_removed
+  - surviving_values_trimmed
+  - all_blank_name_becomes_empty_object
+  - missing_locales_not_filled
+  - other_fields_preserved
+  - prune_idempotent
+  - missing_input_is_noop
+  - non_array_name_untouched
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/PruneEmptyShippingCountryNameLocalesTest.php

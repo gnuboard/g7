@@ -1,0 +1,20 @@
+feature: 페이지 본문 미디어 — 행에 기록된 디스크로 서빙·복제·제거·정리 (#887 G1)
+
+description: |
+  종전 페이지 본문 미디어 서비스는 서빙·복제 원본 읽기·본문에서 빠진 것의 삭제를 주입 저장소(지금 기본 디스크)로 고정했다. 운영자가
+  기본 디스크를 바꾸면 옛 행이 404·복제 실패·파일 잔존이 됐다. 이제 코어 골격이 행의 `disk` 로 저장소를 고르고(`RowDiskStorage`),
+  새 파일(업로드·복제 사본)만 기본 디스크에 쓴다. 페이지 삭제·임시 정리 명령도 행 디스크에서 지운다.
+
+axes:
+  operation: [serve, clone, remove, page_delete, prune]
+
+effects:
+  - serve_reads_row_disk
+  - clone_reads_row_disk_writes_default
+  - removed_unreferenced_purged_from_row_disk
+  - page_delete_purges_row_disk
+  - prune_deletes_on_row_disk
+  - prune_removes_emptied_directory_on_row_disk
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaRowDiskTest.php

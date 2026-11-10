@@ -1,0 +1,48 @@
+feature: 회원·주문 없이 등록하는 상품 후기 (다른 쇼핑몰에서 이관한 후기)
+
+description: |
+  다른 쇼핑몰에서 옮겨 온 후기는 회원·주문 연결이 없다. 작성자는 가린 이름 문자열(예: 「장*맨」)뿐이고
+  작성일은 원 쇼핑몰의 날짜다. 이런 후기를 별도 표에 두고 화면에서 합치면 관리자 후기 관리·상품 상세 후기
+  목록·상품 목록 별점 집계가 서로 다른 데이터를 보게 되므로, 후기 표(`ecommerce_product_reviews`)가
+  회원·주문 없는 행을 직접 담는다.
+
+  - 스키마: `order_option_id`·`user_id` 는 NULL 허용(외래키 유지), `author_name` VARCHAR(50) NULL 추가.
+  - 쓰기: `ProductReviewService::createImported(int $productId, array $data)` 하나. 작성 자격 검사·회원 후기
+    작성 훅(`before_create`/`after_create`)·활동 로그를 거치지 않고 `after_import` 만 발행한다.
+    같은 상품·같은 작성자 이름·같은 작성일이면 새로 만들지 않고 그 행을 갱신한다(재이관 멱등).
+  - 읽기: 회원·주문이 없는 행이 관리자 목록·상세·검색·일괄 처리·답변, 공개 후기 목록·별점 통계,
+    상품 목록 별점 집계, 사진 첨부, 주문 옵션 파기 연쇄에서 깨지지 않는다.
+
+axes:
+  content_mode: [text, html]
+  existing_row: [none, same_author_and_time]
+
+effects:
+  - imported_review_columns_nullable_with_author_name
+  - imported_review_created_without_member_or_order
+  - imported_review_timestamps_preserved
+  - imported_review_idempotent_on_same_author_and_time
+  - imported_review_html_sanitized
+  - imported_review_fires_no_member_create_hooks
+  - imported_review_reply_stored
+  - imported_review_invalid_input_rejected
+  - imported_review_resource_shows_author_name
+  - imported_review_admin_list_and_reviewer_search
+  - imported_review_admin_actions_work
+  - imported_review_public_list_and_rating_stats
+  - imported_review_counted_in_product_list_aggregate
+  - imported_review_image_upload_works
+  - imported_review_untouched_by_order_option_purge
+  - imported_review_upgrade_step_idempotent
+  - imported_review_screens_render_author_and_missing_order
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Review/ImportedProductReviewTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/ImportedReviewColumnsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/EnsureImportedReviewColumnsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/importedReviewDisplay.test.ts
+
+notes:
+  - |
+    재이관 때 관리자가 이미 바꾼 값은 지우지 않는다 — `status` 와 답변은 입력에 그 키가 있을 때만 덮어쓴다.
+    관리자가 지운(소프트 삭제) 후기는 되살리지 않고 그대로 돌려준다(`trashed()` 가 참).

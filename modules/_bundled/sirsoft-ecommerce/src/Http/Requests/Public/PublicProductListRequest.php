@@ -34,7 +34,7 @@ class PublicProductListRequest extends FormRequest
             'category_slug' => ['nullable', 'string', 'max:100'],
             'brand_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string', 'max:200'],
-            'sort' => ['nullable', 'string', 'in:latest,sales,price_asc,price_desc'],
+            'sort' => ['nullable', 'string', 'in:latest,sales,reviews,price_asc,price_desc'],
             'min_price' => ['nullable', 'integer', 'min:0'],
             'max_price' => ['nullable', 'integer', 'min:0'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],

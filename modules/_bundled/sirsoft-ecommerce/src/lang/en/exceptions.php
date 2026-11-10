@@ -205,4 +205,7 @@ return [
     // Shipping Carrier related
     'shipping_carrier_not_found' => 'Shipping carrier not found.',
     'shipping_carrier_in_use' => 'Cannot delete a shipping carrier in use by orders. (Used :count time)|Cannot delete a shipping carrier in use by orders. (Used :count times)',
+
+    // Imported review (no member/order) input error
+    'imported_review_invalid_field' => 'Invalid imported review input: :field',
 ];

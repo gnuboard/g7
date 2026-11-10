@@ -37,7 +37,21 @@ class AttachmentTempKeyTraversalTest extends BoardTestCase
         '../../../../',
         '\\',
         '.',
+        // 7.0.x 화면 꼴(temp_<시각>_<36진수>)을 흉내 낸 변종 — 예전 꼴을 받아도 구분자·`.`·인코딩·대문자는 들어오지 못한다
+        // (끝 개행은 TrimStrings 미들웨어가 검증 전에 잘라 안전한 꼴이 되므로 변종으로 두지 않는다)
+        'temp_1730000000000_../../..',
+        'temp_1730000000000_a/b',
+        'temp_../_abc',
+        'temp_1730000000000_abc%2f..',
+        'temp_1730000000000_ABC',
+        'temp__abc',
     ];
+
+    /**
+     * 7.0.x 기본 템플릿 글쓰기 화면이 만들던 임시 키 꼴
+     * (`'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)`)
+     */
+    private const LEGACY_TEMP_KEY = 'temp_1730000000000_k3j9x2abc';
 
     /**
      * 글 작성·업로드 권한이 있는 회원
@@ -249,6 +263,75 @@ class AttachmentTempKeyTraversalTest extends BoardTestCase
         $this->assertStringNotContainsString('/temp/', $attachment->path);
         $this->assertTrue(Storage::disk('modules')->exists('sirsoft-board/attachments/'.$attachment->path));
         $this->assertFalse(Storage::disk('modules')->exists($tempDir));
+    }
+
+    /**
+     * 7.0.x 기본 템플릿을 복사한 화면의 임시 키(temp_<시각>_<36진수>)로 올린 첨부도 글 저장 시 연결된다.
+     *
+     * 7.1.0 이 UUID 만 받게 좁히자 예전 글쓰기 화면은 첨부 업로드·글 등록이 모두 422 였다
+     * (템플릿 호환 대장 `request:POST …/attachments`·`…/posts` — 결정 호환 처리).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario entry_point=upload,temp_key_shape=legacy
+     *
+     * @effects legacy_temp_key_accepted, owned_temp_attachments_moved_and_temp_dir_cleaned
+     */
+    public function test_legacy_temp_upload_is_linked_and_temp_dir_cleaned_on_store(): void
+    {
+        $tempKey = self::LEGACY_TEMP_KEY;
+
+        $this->actingAs($this->memberUser, 'sanctum')
+            ->postJson($this->attachmentsUrl().'?temp_key='.$tempKey, [
+                'file' => UploadedFile::fake()->image('legacy.png'),
+            ])
+            ->assertStatus(201);
+
+        $tempDir = "sirsoft-board/attachments/{$this->getTestBoardSlug()}/temp/{$tempKey}";
+        $this->assertCount(1, Storage::disk('modules')->files($tempDir));
+
+        $response = $this->actingAs($this->memberUser, 'sanctum')
+            ->postJson($this->postsUrl(), $this->postPayload(['temp_key' => $tempKey]))
+            ->assertStatus(201);
+
+        $attachment = Attachment::query()->where('post_id', (int) $response->json('data.id'))->firstOrFail();
+        $this->assertNull($attachment->temp_key);
+        $this->assertStringNotContainsString('/temp/', $attachment->path);
+        $this->assertFalse(Storage::disk('modules')->exists($tempDir));
+        $this->assertTrue(Storage::disk('modules')->exists($this->canaryPath));
+    }
+
+    /**
+     * 7.0.x 화면은 글 수정 때도 새 임시 키를 보낸다 — 회원·관리자 수정 모두 그 키로 저장된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario entry_point=post_store,temp_key_shape=legacy
+     *
+     * @effects legacy_temp_key_accepted
+     */
+    public function test_post_store_and_update_accept_legacy_temp_key(): void
+    {
+        $this->actingAs($this->memberUser, 'sanctum')
+            ->postJson($this->postsUrl(), $this->postPayload(['temp_key' => self::LEGACY_TEMP_KEY]))
+            ->assertStatus(201);
+
+        $slug = $this->getTestBoardSlug();
+        $memberPostId = $this->createTestPost(['user_id' => $this->memberUser->id]);
+        $this->actingAs($this->memberUser, 'sanctum')
+            ->putJson("{$this->postsUrl()}/{$memberPostId}", $this->postPayload(['temp_key' => self::LEGACY_TEMP_KEY]))
+            ->assertStatus(200);
+
+        $admin = $this->createAdminUser([
+            "sirsoft-board.{$slug}.admin.posts.write",
+            "sirsoft-board.{$slug}.admin.manage",
+        ]);
+        $adminPostId = $this->createTestPost(['user_id' => $admin->id]);
+        $this->actingAs($admin)
+            ->putJson("/api/modules/sirsoft-board/admin/board/{$slug}/posts/{$adminPostId}", $this->postPayload(['temp_key' => self::LEGACY_TEMP_KEY]))
+            ->assertStatus(200);
+
+        $this->assertTrue(Storage::disk('modules')->exists($this->canaryPath));
     }
 
     /**

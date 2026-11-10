@@ -37,7 +37,8 @@ class OrchestratesCascadeInstallTest extends TestCase
         parent::setUp();
 
         // OrchestratesCascadeInstall trait 의 protected 메서드 호출용 무명 클래스
-        $this->harness = new class {
+        $this->harness = new class
+        {
             use OrchestratesCascadeInstall {
                 installSelectedDependencies as public;
                 withKeptDependencies as public;
@@ -66,7 +67,7 @@ class OrchestratesCascadeInstallTest extends TestCase
     public function test_inactive_installed_module_only_activates_no_reinstall(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
-        $moduleService->shouldReceive('getModuleInfo')
+        $moduleService->shouldReceive('getModuleManifestInfo')
             ->with('foo-module')
             ->andReturn([
                 'is_installed' => true,
@@ -93,13 +94,13 @@ class OrchestratesCascadeInstallTest extends TestCase
     public function test_uninstalled_module_installs_then_activates(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
-        $moduleService->shouldReceive('getModuleInfo')
+        $moduleService->shouldReceive('getModuleManifestInfo')
             ->with('bar-module')
             ->andReturn([
                 'is_installed' => false,
                 'status' => 'uninstalled',
             ]);
-        $moduleService->shouldReceive('installModule')->once()->with('bar-module', \Mockery::any())->andReturn(['identifier' => 'bar-module']);
+        $moduleService->shouldReceive('installModule')->once()->with('bar-module', Mockery::any())->andReturn(['identifier' => 'bar-module']);
         $moduleService->shouldReceive('activateModule')->once()->with('bar-module')->andReturn(['success' => true]);
         $this->app->instance(ModuleService::class, $moduleService);
 
@@ -118,7 +119,7 @@ class OrchestratesCascadeInstallTest extends TestCase
     public function test_active_module_is_skipped(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
-        $moduleService->shouldReceive('getModuleInfo')
+        $moduleService->shouldReceive('getModuleManifestInfo')
             ->with('baz-module')
             ->andReturn([
                 'is_installed' => true,
@@ -143,7 +144,7 @@ class OrchestratesCascadeInstallTest extends TestCase
     public function test_inactive_installed_plugin_only_activates(): void
     {
         $pluginService = Mockery::mock(PluginService::class);
-        $pluginService->shouldReceive('getPluginInfo')
+        $pluginService->shouldReceive('getPluginManifestInfo')
             ->with('foo-plugin')
             ->andReturn([
                 'is_installed' => true,
@@ -168,7 +169,7 @@ class OrchestratesCascadeInstallTest extends TestCase
     public function test_failure_reason_appends_kept_dependencies(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
-        $moduleService->shouldReceive('getModuleInfo')->with('bar-module')->andReturn(['is_installed' => false, 'status' => 'uninstalled']);
+        $moduleService->shouldReceive('getModuleManifestInfo')->with('bar-module')->andReturn(['is_installed' => false, 'status' => 'uninstalled']);
         $moduleService->shouldReceive('installModule')->once()->andReturn(['identifier' => 'bar-module']);
         $moduleService->shouldReceive('activateModule')->once()->with('bar-module')->andReturn(['success' => true]);
         $this->app->instance(ModuleService::class, $moduleService);

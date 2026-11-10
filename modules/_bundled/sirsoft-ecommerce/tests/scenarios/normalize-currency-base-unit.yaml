@@ -1,0 +1,22 @@
+feature: 통화 base_unit 정규화 업그레이드 (MP08-3, 1.0.0)
+
+description: |
+  NormalizeCurrencyBaseUnit 은 통화 설정에 통화별 base_unit 을 부여하고 "1000단위당" 전제였던 환율을
+  기본 통화 base_unit 기준으로 환산하며, NormalizeOrderSnapshotBaseUnit 은 기존 주문 통화 스냅샷을 같은 규칙으로 고친다.
+  핵심 불변식은 변환 전후 결제·환불 환산 금액이 같아야 한다는 것(환차손 0)이고, 두 스텝 모두 base_unit 가드로
+  재실행 시 이중 환산을 막는다.
+
+axes:
+  case: [settings_non_krw_base, settings_krw_base, settings_rerun, snapshot_payment, snapshot_refund, snapshot_rerun]
+
+effects:
+  - settings_base_unit_assigned
+  - settings_rate_rescaled_to_base_unit
+  - krw_base_rate_unchanged
+  - settings_normalization_idempotent
+  - snapshot_payment_amount_preserved
+  - snapshot_refund_amount_preserved
+  - snapshot_normalization_idempotent
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/NormalizeCurrencyBaseUnitTest.php

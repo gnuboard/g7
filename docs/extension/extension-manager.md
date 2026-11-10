@@ -125,15 +125,21 @@ _bundled/_pending 디렉토리는 활성 확장으로 인식하지 않습니다
 
 ### 로딩 진입점
 
-**public/index.php** 및 **artisan**에서 `ExtensionManager::registerExtensionAutoload($loader)` 호출:
+**public/index.php** 와 **artisan** 은 Laravel 부팅 전에 같은 순서를 **파일 안에서 직접(인라인)** 수행하고 `G7_EXTENSION_AUTOLOAD_REGISTERED` 상수를 세웁니다(`artisan` 은 소스 classmap 을 등록하지 않아 PSR-4 탐색만 씁니다 — 동작은 같고 클래스 탐색 비용만 다릅니다). 진입점이 등록하지 않은 부팅(기본 진입점을 거치지 않는 실행 스크립트 등)에서는 `CoreServiceProvider` 가 `ExtensionManager::registerExtensionAutoload($loader)` 를 호출하고, 설치·업데이트 중 같은 프로세스의 재등록(`reregisterRuntimeAutoload()`)도 이 함수를 씁니다:
 
 ```text
 registerExtensionAutoload($loader)
     ↓ 1. PSR-4 네임스페이스 등록 ($loader->addPsr4())
-    ↓ 2. Classmap 파일 로드 (module.php, plugin.php → require_once)
+    ↓    (소스 classmap 등록 — $loader->addClassMap())
+    ↓ 2. Classmap 파일 로드 (module.php, plugin.php → require_once, 이미 선언된 진입 클래스는 건너뜀)
     ↓ 3. Files 로드 (헬퍼 함수 등 → require_once)
-    ↓ 4. Vendor autoloads 로드 (모듈/플러그인의 vendor/autoload.php → require_once)
+    ↓ 4. Vendor autoloads 로드 (모듈/플러그인의 vendor/autoload.php → require_once, 이미 선언된 오토로더는 건너뜀)
 ```
+
+- **중복 선언 가드**: 같은 확장의 `_bundled`·`_pending`·활성 사본은 진입 클래스명과 vendor 오토로더 클래스명(`ComposerAutoloaderInit…`)이 같습니다. 경로가 달라 `require_once` 가 막지 못하므로, 이미 선언된 클래스의 다른 경로 사본은 읽지 않습니다(7.1.5~ vendor 오토로더 포함).
+- **코어 로더 선택**: 재등록·자기 복구는 `ClassLoader::getRegisteredLoaders()` 의 첫 항목이 아니라 키(vendor 디렉터리)가 코어 `vendor/` 인 로더에 등록합니다. Composer 오토로더는 자신을 맨 앞에 넣으므로 확장 vendor 를 불러온 뒤의 첫 항목은 확장 vendor 로더입니다.
+- **설치 직전 소스 classmap**: 설치·활성화·시더 실행 직전 `registerExtensionAutoloadPaths()` 가 그 확장의 PSR-4 와 함께 소스 classmap 을 등록합니다(확장 `vendor/`·`node_modules/` 제외). Composer 는 classMap 을 「없는 클래스」 기억(missingClasses)보다 먼저 보므로, 같은 프로세스에서 앞서 실패한 조회가 있어도 설치가 이어집니다.
+- **캐시에 없는 활성 폴더**: 부팅의 확장 로드(`loadModules()`·`loadPlugins()`)는 오토로드 캐시에 없는 활성 폴더(설치 기록 없이 남은 사본)만 진입 파일을 읽기 전에 그 확장의 PSR-4·소스 classmap 을 등록합니다(`registerAutoloadIfMissing()`). 캐시에 있는 확장은 추가 비용이 없습니다.
 
 **로딩 순서가 중요합니다**:
 
@@ -191,6 +197,8 @@ updateComposerAutoload() → autoload-extensions.php에 vendor_autoloads 등록
     ↓
 public/index.php / artisan → vendor/autoload.php를 require_once
 ```
+
+> 확장의 진입 파일(module.php·plugin.php)에서 자체 `vendor/autoload.php` 를 직접 불러오지 마세요. 코어가 `vendor_autoloads` 로 불러옵니다. 직접 부르던 확장도 7.1.5 부터는 중복 선언 오류가 나지 않지만 불필요합니다.
 
 ### 주요 메서드
 

@@ -25,6 +25,10 @@ axes:
   module_state:
     - installed
     - uninstalled
+  selectable_currencies:   # 가입 폼 통화 칸 (2026-11-03)
+    - one                  # 기본 통화 하나뿐(원화만) — 칸을 그리지 않는다
+    - many                 # 고를 수 있는 통화 둘 이상 — 칸을 그린다
+    - unset                # 이커머스 설정 없음
 
 effects:
   # 가입 부여 (PHPUnit)
@@ -33,6 +37,7 @@ effects:
   - default_currency_fallback_on_no_match        # 미매칭 시 default_currency 폴백
   - admin_create_assigns_or_explicit             # 관리자 회원생성 부여/폴백 또는 명시 지정
   - signup_form_default_is_session_currency      # 가입 폼 기본값=비회원 세션 통화
+  - signup_currency_field_only_when_choosable    # 고를 통화가 둘 이상일 때만 가입 폼 통화 칸 (Vitest)
   # 통화별 언어 Tag (PHPUnit + Vitest)
   - currencies_locales_multi_validated           # currencies.*.locales 배열 검증(supported_locales 외 거부)
   - locale_tag_input_renders_candidates          # 환율 카드 TagInput 후보=supported_locales
@@ -44,3 +49,4 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/AssignDefaultCurrencyOnRegisterListenerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Requests/CurrencyLocalesValidationTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/currencyLocaleTagInput.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/registerCurrencyField.test.tsx

@@ -219,19 +219,29 @@
                                             "handler": "sequence",
                                             "actions": [
                                                 {
+                                                    "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                       의존 경고·강제 활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161).",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
                                                         "isTemplateActivating": false,
-                                                        "activateWarningData": "{{error.errors}}"
+                                                        "activateWarningData": "{{error.errors?.operation_in_progress ? null : error.errors}}"
                                                     }
                                                 },
                                                 {
                                                     "handler": "closeModal"
                                                 },
                                                 {
+                                                    "handler": "toast",
+                                                    "if": "{{error.errors?.operation_in_progress}}",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
                                                     "handler": "openModal",
-                                                    "target": "template_force_activate_modal"
+                                                    "target": "template_force_activate_modal",
+                                                    "if": "{{!error.errors?.operation_in_progress}}"
                                                 }
                                             ]
                                         }

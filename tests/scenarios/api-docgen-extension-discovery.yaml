@@ -1,0 +1,22 @@
+feature: API 문서 생성기의 확장 라우트 탐색과 경로 파라미터 치환
+
+description: |
+  api:docgen 이 확장 컨트롤러에서 확장 베이스 네임스페이스를 뽑고, 경로 파라미터를 도메인 샘플로 치환하는 규칙을 고정한다.
+  도메인 단수형과 같은 파라미터만 대표 모델로 폴백하고, slug·hash 같은 보조 문자열은 샘플의 path_params 맵에 있을 때만 치환한다.
+
+axes:
+  surface: [base_namespace, domain_match, path_params]
+
+effects:
+  - extracts_base_namespace_from_extension_controller
+  - extracts_base_for_controllers_convention_without_http
+  - http_controllers_convention_wins_over_controllers
+  - returns_null_outside_controller_convention
+  - param_matching_domain_singular_is_a_match
+  - auxiliary_string_param_does_not_match_domain
+  - domain_sample_path_params_map_substitutes_string_params
+  - param_missing_from_path_params_stays_unsubstituted
+  - extension_without_path_params_applies_route_key_only
+
+test_files:
+  - tests/Unit/Console/ApiDocgenExtensionDiscoveryTest.php

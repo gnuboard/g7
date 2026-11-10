@@ -1,0 +1,17 @@
+feature: 비회원 주문 확인 실패(무토큰 401)는 로그인 화면으로 옮기지 않고 주문 조회 안내를 띄운다 (#883)
+
+description: |
+  비회원 클레임 신청·첨부·구매확정·배송지 변경은 로그인 토큰 없이 주문 조회 토큰(X-Guest-Order-Token)으로 주인을
+  증명한다. 토큰이 없거나 만료되면 서버가 401 을 주고, 종전 코어는 그것을 세션 만료로 보고 로그인 화면으로 옮겨
+  쓰던 신청서가 사라졌다. 코어(engine-v1.88.2)는 무토큰 401 을 호출자에게 돌려주고, 핸들러는 4xx 화면 안내보다
+  먼저 `G7Core.api.isAnonymousUnauthorized` 로 판정해 안내 토스트를 띄우고 입력을 그대로 둔다.
+
+axes:
+  case: [submit_claim_expired, remove_claim_image_expired, confirm_order_expired, confirm_order_other_error]
+
+effects:
+  - guest_claim_auth_failure_keeps_input_without_redirect
+  - guest_order_auth_failure_shows_lookup_guidance
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/claimGuestUnauthorized.test.ts

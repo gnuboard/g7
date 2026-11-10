@@ -36,7 +36,7 @@
 | lock_state | query | string | 아니오 | `all`, `locked`, `unlocked` | 계정 잠금 (locked = 영구 잠금 또는 해제 시각이 미래) |
 | start_date | query | date | 아니오 | — | 가입일 시작 (그날 0시부터) |
 | end_date | query | date | 아니오 | ≥ start_date | 가입일 종료 (그날 끝까지 포함) |
-| date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정) |
+| date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정). week·month 의 기본 기간은 보는 사람 시간대의 오늘로 끝난다 |
 | last_login_start | query | date | 아니오 | — | 최근 로그인 시작 |
 | last_login_end | query | date | 아니오 | ≥ last_login_start | 최근 로그인 종료 |
 | never_logged_in | query | boolean | 아니오 | `true`, `false`, `1`, `0` | 로그인 이력이 없는 회원만 (참이면 최근 로그인 기간은 무시) |
@@ -1250,6 +1250,13 @@ _단건 응답: `data` 객체의 필드._
 | password_status.change_required | boolean | `false` | 다음 로그인 때 비밀번호를 바꿔야 하는지 (관리자가 정해 준 비밀번호) |
 | password_status.postponed_until | string\|null | `null` | '다음에 변경' 연기 종료 일시 (연기 중일 때만) |
 | password_status.days_left | integer\|null | `3` | 만료까지 남은 날수 (적용되지 않으면 null) |
+| search_history | object | `{"enabled":true, …}` | 최근 검색어 — 상세 응답에만 실린다(목록은 회원마다 범위 조회가 들어 제외, 코어 7.1.5) |
+| search_history.enabled | boolean | `true` | 사이트가 최근 검색어 기능을 쓰는지 (`privacy.search_history_enabled`). 꺼도 저장된 검색어는 아래에 실린다 |
+| search_history.auto_save | boolean | `true` | 회원의 검색어 자동 저장 여부 (꺼도 저장된 검색어는 지우지 않는다) |
+| search_history.scopes | object | `{"core.site": {…}}` | 범위 id → 그 범위의 검색어. **지금 선언된 범위만**(코어 `core.site` + 활성 모듈·플러그인 선언). 확장을 끄면 그 범위는 빠진다(행은 남음). 코어 화면은 `core.site`, 확장 탭은 자기 범위를 키로 꺼내 그린다 |
+| search_history.scopes.*.owner | string | `core` | 범위 소유자 (`core` · `module:{id}` · `plugin:{id}`) |
+| search_history.scopes.*.label | string | `통합 검색` | 범위 이름 (지금 언어) |
+| search_history.scopes.*.items | array | `[{"keyword":"등산화","searched_at":"2026-11-04 19:00:00"}]` | 검색어와 마지막 검색 일시(사용자 시간대), 최신순, 범위마다 최대 50건 |
 | notify_post_complete | boolean | `false` | 게시글 작성 완료 알림 수신 여부 (게시판 모듈 알림 설정) |
 | notify_post_reply | boolean | `false` | 내 게시글 답글 알림 수신 여부 |
 | notify_comment | boolean | `false` | 내 게시글 댓글 알림 수신 여부 |

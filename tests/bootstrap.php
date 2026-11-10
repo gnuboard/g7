@@ -260,9 +260,10 @@ define('G7_EXTENSION_AUTOLOAD_REGISTERED', true);
 | _bundled 디렉토리의 확장을 활성 디렉토리보다 먼저 등록(prepend)합니다.
 | 이를 통해 _bundled에서 직접 테스트를 실행할 수 있습니다.
 |
-| 실행 순서:
-| 1. _bundled classmap (module.php/plugin.php) require_once → 선점
-| 2. _bundled PSR-4 addPsr4(prepend=true) → 우선 검색
+| 실행 순서 (확장마다):
+| 1. _bundled PSR-4 addPsr4(prepend=true) → 우선 검색 (+ composer files)
+| 2. _bundled classmap (module.php/plugin.php) require_once → 선점
+|    진입 클래스가 자기 소스 클래스를 상속할 수 있으므로 PSR-4 등록 뒤에 읽는다 (#159)
 | 3. autoload-extensions.php → 활성 디렉토리는 후순위
 |
 */
@@ -282,19 +283,6 @@ if (is_dir($bundledModulesDir)) {
 
         // _bundled 식별자 기록 (classmap 중복 방지용)
         $bundledExtensionIdentifiers[] = $moduleDir;
-
-        // Classmap 선점 (module.php)
-        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
-        $modulePhp = $modulePath.'/module.php';
-        if (file_exists($modulePhp)) {
-            $parts = explode('-', $moduleDir);
-            $vendor = ucfirst($parts[0]);
-            $modName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
-            $moduleClass = "Modules\\{$vendor}\\{$modName}\\Module";
-            if (! class_exists($moduleClass, false)) {
-                require_once $modulePhp;
-            }
-        }
 
         // composer.json에서 오토로드 정보 읽기
         $composerJson = $modulePath.'/composer.json';
@@ -324,6 +312,20 @@ if (is_dir($bundledModulesDir)) {
                 }
             }
         }
+
+        // Classmap 선점 (module.php) — PSR-4 등록 뒤에 읽는다: 진입 클래스가 자기 소스 클래스를 상속하면
+        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (#159)
+        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
+        $modulePhp = $modulePath.'/module.php';
+        if (file_exists($modulePhp)) {
+            $parts = explode('-', $moduleDir);
+            $vendor = ucfirst($parts[0]);
+            $modName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
+            $moduleClass = "Modules\\{$vendor}\\{$modName}\\Module";
+            if (! class_exists($moduleClass, false)) {
+                require_once $modulePhp;
+            }
+        }
     }
 }
 
@@ -339,19 +341,6 @@ if (is_dir($bundledPluginsDir)) {
 
         // _bundled 식별자 기록 (classmap 중복 방지용)
         $bundledExtensionIdentifiers[] = $pluginDir;
-
-        // Classmap 선점 (plugin.php)
-        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
-        $pluginPhp = $pluginPath.'/plugin.php';
-        if (file_exists($pluginPhp)) {
-            $parts = explode('-', $pluginDir);
-            $vendor = ucfirst($parts[0]);
-            $plgName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
-            $pluginClass = "Plugins\\{$vendor}\\{$plgName}\\Plugin";
-            if (! class_exists($pluginClass, false)) {
-                require_once $pluginPhp;
-            }
-        }
 
         // composer.json에서 오토로드 정보 읽기
         $composerJson = $pluginPath.'/composer.json';
@@ -379,6 +368,20 @@ if (is_dir($bundledPluginsDir)) {
                         require_once $absoluteFile;
                     }
                 }
+            }
+        }
+
+        // Classmap 선점 (plugin.php) — PSR-4 등록 뒤에 읽는다: 진입 클래스가 자기 소스 클래스를 상속하면
+        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (#159)
+        // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
+        $pluginPhp = $pluginPath.'/plugin.php';
+        if (file_exists($pluginPhp)) {
+            $parts = explode('-', $pluginDir);
+            $vendor = ucfirst($parts[0]);
+            $plgName = isset($parts[1]) ? str_replace('_', '', ucwords($parts[1], '_')) : '';
+            $pluginClass = "Plugins\\{$vendor}\\{$plgName}\\Plugin";
+            if (! class_exists($pluginClass, false)) {
+                require_once $pluginPhp;
             }
         }
     }

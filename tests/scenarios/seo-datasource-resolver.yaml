@@ -22,6 +22,8 @@ effects:
   - response_mapped_to_ds_id
   - non_seo_source_not_called
   - failure_returns_fallback
+  - transient_failure_marks_render_degraded   # 시간 초과·연결 오류·5xx 는 저하로 기록, resolve() 마다 비움
+  - client_error_not_degraded   # 4xx 는 다시 불러도 같은 결과라 저하 아님
   - route_params_substituted
   - endpoint_expressions_resolved
   - params_sent_as_query

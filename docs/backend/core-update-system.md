@@ -122,6 +122,21 @@
 └─ Step 11: 마무리 (.env 버전 갱신, 캐시 클리어, _pending 삭제, 유지보수 해제)
 ```
 
+### 동시 실행 차단 (7.1.5+)
+
+`core:update` 는 시작하자마자(옵션 검사·유지보수 진입보다 앞) 코어 작업 잠금(`core-update`, 30분)을 잡는다. 두 곳에서 동시에 돌리면 먼저 끝난 쪽이 유지보수 모드를 풀어 교체 중인 사이트가 열리고 스텝이 두 번 돌던 문제를 막는다.
+
+| 상황 | 동작 |
+|---|---|
+| 다른 `core:update` 가 진행 중 | 「다른 코어 업데이트가 진행 중」 안내 후 실패 종료 — 직전 실행이 비정상 종료됐다면 잠금 만료(30분) 뒤 다시 실행 |
+| 잠금 저장소(캐시) 오류 | 「잠금 저장소를 쓸 수 없다」 안내 후 실패 종료 — 원본 오류는 error 로그에만 |
+| 진행 중 | 진행 콜백(30초 간격)·진행 막대 단계마다 잠금을 늘리고, 캐시 비우기 직후와 번들 일괄 업데이트 직전에는 바로 늘리거나 다시 잡는다(redis·memcached 의 flush 는 잠금까지 지운다) |
+
+- 자식 프로세스(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)는 코어 잠금을 잡지 않는다 — 부모와 소유자가 달라 스스로 막힌다.
+- file 캐시의 잠금은 `storage/framework/cache/locks` 에 있어 `cache:clear` 가 지우지 않는다.
+- 번들 일괄 업데이트는 잠금 저장소 장애를 만나면 첫 항목에서 멈추고 남은 항목 수를 한 번 알린다(docs/extension/extension-update-system.md 「작업 잠금」).
+- 적용 시점: 업데이트를 실행하는 것은 **설치된(이전) 판의 명령**이다. 7.1.4 → 7.1.5 업데이트에는 이 차단이 없고, 7.1.5 에서 그다음 판으로 올릴 때부터 적용된다.
+
 ### Step 1: 업데이트 확인
 
 | 모드 | 동작 |
@@ -958,6 +973,19 @@ Artisan::call('down', [
 URL: https://example.com/{secret}
 → 쿠키 발급 → 유지보수 모드에서도 접근 가능
 ```
+
+### vendor 교체 구간의 응답 (7.1.5+)
+
+Step 8 은 운영 `vendor/` 를 비운 뒤 새 vendor 를 복사한다(수십 초). 유지보수 화면은 미들웨어(`MaintenanceModePage`)가 만드므로 이 구간에는 프레임워크를 실을 수 없다. `public/index.php` 가 vendor 를 싣기 전에 직접 최소 응답을 만든다.
+
+| 상황 | 응답 |
+|------|------|
+| `vendor/autoload.php` 없음 + 유지보수 표식(`storage/framework/down`) 있음 | 503 + `Retry-After`(down 파일의 `retry`, 없으면 60) + `Refresh`(down 파일의 `refresh`). API·JSON 요청은 `{"success":false,"message":…}` |
+| 유지보수 중 vendor 복사 도중 치명 오류(autoload 는 있으나 그것이 부르는 파일이 아직 없음) | 같은 503 — 유지보수 중에는 프레임워크 부팅 전 `display_errors` 를 끄고 종료 처리기가 치명 오류를 503 으로 바꾼다 |
+| `vendor/autoload.php` 없음 + 유지보수 아님 | 500 (일시 장애가 아니라 설치 손상 — `composer install` 또는 vendor 복구 필요). 오류 경로·스택은 본문에 싣지 않는다 |
+| 유지보수 중 + vendor 온전 | 진입점은 끼어들지 않는다 — 종전대로 유지보수 미들웨어의 다국어 화면·JSON |
+
+bypass 쿠키가 있는 관리자도 vendor 교체 구간에는 503 을 받는다(프레임워크가 없어 쿠키를 검증할 수 없다). Step 7(파일 적용)이 Step 8 보다 먼저 새 `public/index.php` 를 놓으므로, 이 처리가 없는 판에서 올리는 업데이트에도 그 업데이트의 vendor 교체 구간부터 적용된다.
 
 ### 해제
 

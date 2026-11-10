@@ -217,7 +217,8 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | available | integer | `0` | 사용 가능 마일리지 잔액 |
 | pending | integer | `0` | 적립 대기 중인 마일리지 |
 | expiring_soon | integer | `0` | 곧 소멸 예정 마일리지 |
-| expiring_date | string\|null | `2026-08-31` | 소멸 예정일 (없으면 `null`) |
+| expiring_date | string\|null | `2026-08-31T14:59:59+00:00` | 소멸 예정 시각 (ISO 8601 기계값, 없으면 `null`) |
+| expiring_date_formatted | string\|null | `2026-08-31` | 소멸 예정일 — 보는 사람 시간대 날짜 (표시용, 없으면 `null`) |
 | total_earned | integer | `0` | 누적 적립 마일리지 |
 | total_used | integer | `0` | 누적 사용 마일리지 |
 | by_currency | object | `{}` | 통화별 마일리지 내역 |

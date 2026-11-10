@@ -7,6 +7,7 @@ use App\Extension\TemplateManager;
 use App\Models\Template;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Lang;
 use Tests\TestCase;
 
 /**
@@ -108,6 +109,44 @@ class TemplateNecessaryStorageTest extends TestCase
         $this->assertSame(['ok_key'], $normalized['localStorage']);
         $this->assertArrayNotHasKey('indexedDB', $normalized);
         $this->assertSame('necessary_storage', LifecycleWarnings::current()->all()[0]['step'] ?? null);
+    }
+
+    /**
+     * 형식이 틀린 선언 경고는 무엇을 왜 버렸는지 이유별 사람 말로 말하고, 템플릿 개발자가 고칠 선언이라는
+     * 표지(cause=declaration)를 싣는다 — 관리자 결과 창이 「다시 실행하세요」 대신 개발자에게 알리라고 안내한다.
+     *
+     * @scenario declaration=invalid_items, template_state=active
+     *
+     * @effects invalid_declaration_warning_explains_reason_for_developer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_invalid_declaration_warning_explains_reason_for_developer(): void
+    {
+        app()->setLocale('ko');
+        // 묶음 파일을 먼저 읽어 둔다 — 읽기 전에 addLines 하면 같은 묶음의 다른 키가 비어 버린다
+        __('extensions.warnings.column_step');
+        Lang::addLines([
+            'extensions.warnings.necessary_storage_not_object' => 'NOT_OBJECT',
+            'extensions.warnings.necessary_storage_invalid_scope' => 'SCOPE[:names]',
+            'extensions.warnings.necessary_storage_invalid_key' => 'KEY[:items]',
+        ], 'ko');
+
+        TemplateManager::normalizeNecessaryStorage([
+            'localStorage' => ['ok_key', 'has space'],
+            'indexedDB' => ['x'],
+        ], 'zztest-ns-bad', reportWarnings: true);
+        TemplateManager::normalizeNecessaryStorage('oops', 'zztest-ns-flat', reportWarnings: true);
+
+        $items = LifecycleWarnings::current()->all();
+        $this->assertSame([
+            'step' => 'necessary_storage',
+            'target' => 'zztest-ns-bad',
+            'message' => 'SCOPE[indexedDB] / KEY[localStorage:has space]',
+            'level' => 'warning',
+            'cause' => LifecycleWarnings::CAUSE_DECLARATION,
+        ], $items[0]);
+        $this->assertSame('NOT_OBJECT', $items[1]['message'] ?? null);
     }
 
     /**

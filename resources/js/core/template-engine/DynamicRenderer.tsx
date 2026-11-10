@@ -1,3 +1,4 @@
+// e2e:allow _localInit 은퇴 슬롯 미적용(engine-v1.88.0) — 전환 경합 경로라 Chrome MCP 실제 키 재실측과 DynamicRenderer.localInitStaleScreenReapply 시험으로 잠근다.
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -42,7 +43,7 @@ import { stripTranslationParamMarkers } from './translationParamValues';
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { useTransitionState, useIdleTransitionState } from './TransitionContext';
-import { getLocalInitTracking, markLocalInitConsumed, registerTrackChangesRoot, resolveLocalInitAction, shouldResetHasChanges } from './localInitSlot';
+import { getLocalInitTracking, isLocalInitRetired, markLocalInitConsumed, registerTrackChangesRoot, resolveLocalInitAction, shouldResetHasChanges } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
 import { shallowObjectEqual } from '../hooks/useControllableState';
@@ -1663,6 +1664,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // - _localInit이 있으면 무조건 처리 시도
       // - 전역 해시 추적으로 동일 데이터 중복 적용 방지
       // - componentId 기반 키로 컴포넌트별 독립 추적
+
+      // 화면 전환으로 은퇴한 앞 화면 슬롯은 적용하지 않는다 — 새 화면이 그려지기 전 앞 화면 트리가 다시 그려지며 새로 붙는
+      // 렌더러가 그 슬롯을 적용하면 앞 화면 폼이 새 화면 _local 에 남는다 (@since engine-v1.88.0, localInitSlot.resetLocalInitTracking)
+      if (isLocalInitRetired(dataContext._localInit)) {
+        lastProcessedInitRef.current = dataContext._localInit;
+        return;
+      }
 
       if (dataContext._localInit && typeof dataContext._localInit === 'object') {
         // _forceLocalInit 플래그를 제외한 데이터만 로컬 상태에 병합

@@ -239,6 +239,34 @@ class TemplateRouteResolverTest extends TestCase
     }
 
     /**
+     * 코어 시스템 라우트(미리보기 `*\/preview/:token`, meta.is_system_route)는 봇 화면 대상이 아니라 null 을 반환합니다.
+     *
+     * 템플릿 레이아웃이 아니라 매핑하면 렌더러가 레이아웃을 읽다 실패해 봇 요청마다 오류 로그가 남았다.
+     *
+     * @effects resolver_skips_system_routes
+     *
+     * @return void 반환값 없음
+     */
+    public function test_system_route_returns_null(): void
+    {
+        $routes = [
+            [
+                'path' => '*/preview/:token',
+                'layout' => '__preview__',
+                'auth_required' => false,
+                'meta' => ['title' => 'Preview', 'is_system_route' => true],
+            ],
+        ];
+
+        $resolver = $this->createResolver(
+            ['identifier' => 'sirsoft-user_basic'],
+            $routes
+        );
+
+        $this->assertNull($resolver->resolve('/preview/abc123'));
+    }
+
+    /**
      * 활성 템플릿이 없으면 null을 반환합니다.
      *
      * @effects resolver_returns_null_when_routes_unavailable

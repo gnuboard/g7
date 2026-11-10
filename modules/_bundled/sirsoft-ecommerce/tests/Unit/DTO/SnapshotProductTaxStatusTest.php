@@ -4,8 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\DTO;
 
 use Modules\Sirsoft\Ecommerce\DTO\SnapshotProduct;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\PureTestCase;
 
 /**
  * 스냅샷 상품의 과세 종류 해석 — 손상·미지 값은 과세로 본다 (#612 W12)
@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  *
  * 시나리오 매니페스트: `tests/scenarios/order-vat-amount.yaml`
  */
-class SnapshotProductTaxStatusTest extends ModuleTestCase
+class SnapshotProductTaxStatusTest extends PureTestCase
 {
     /**
      * 손상·미지 과세 종류는 과세로 해석되는지 확인합니다.

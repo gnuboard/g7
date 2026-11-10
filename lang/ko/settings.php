@@ -215,6 +215,8 @@ return [
         'composer_failed_with_output' => 'composer install 실행에 실패했습니다.:output',
         // `core:update` 명령 콘솔 출력
         'console' => [
+            'already_running' => '다른 코어 업데이트(core:update)가 진행 중이라 시작하지 않았습니다. 직전 실행이 비정상 종료됐다면 :minutes분 뒤 다시 실행하세요.',
+            'lock_unavailable' => '코어 업데이트 잠금 저장소(캐시)를 쓸 수 없어 시작하지 않았습니다. 캐시 드라이버 상태를 확인한 뒤 다시 실행하세요.',
             'source_zip_conflict' => '--source 와 --zip 은 동시에 지정할 수 없습니다. 하나만 선택하세요.',
             'local_source_conflict' => '--local 은 --source / --zip 과 동시에 사용할 수 없습니다.',
             'zip_not_found' => '지정된 ZIP 파일이 존재하지 않습니다: :path',

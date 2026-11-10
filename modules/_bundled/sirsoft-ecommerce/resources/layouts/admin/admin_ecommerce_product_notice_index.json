@@ -6,7 +6,18 @@
     "meta": {
         "leave_guard": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}",
         "title": "$t:sirsoft-ecommerce.admin.product_notice_template.title",
-        "description": "$t:sirsoft-ecommerce.admin.product_notice_template.description"
+        "description": "$t:sirsoft-ecommerce.admin.product_notice_template.description",
+        "scroll_restoration": {
+            "containers": [
+                "#right_content_area",
+                "#template_list"
+            ],
+            "snapshot": {
+                "state": [
+                    "_global.infiniteScroll"
+                ]
+            }
+        }
     },
     "data_sources": [
         {

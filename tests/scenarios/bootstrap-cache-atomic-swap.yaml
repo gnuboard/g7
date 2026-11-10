@@ -1,0 +1,21 @@
+feature: bootstrap_cache_atomic_swap
+
+description: |
+  부팅 캐시 파일(라우트·설정·훅·확장 오토로드)을 비는 순간 없이 바꿔 끼운다(#882, 코어 7.1.5).
+  종전에는 라우트·설정 캐시를 「지운 뒤 다시 굽고」 훅·오토로드 캐시를 제자리에 덮어써, 확장을 켜고 끄는 1~2초 사이 다른 요청이
+  500(`routes-v7.php: No such file`)을 받거나 반쯤 쓰인 파일을 읽었다 — 관리자 화면은 「초기화 실패 Failed to reload routes」로 멈췄다.
+  이제 임시 파일에 다 쓴 뒤 rename 으로 바꿔 끼우고(다른 요청이 붙잡고 있으면 짧게 재시도), 굽기가 실패하면 그때 낡은 캐시를 지운다.
+  설정 화면의 「캐시 정리」·「최적화」도 같은 헬퍼를 거친다. 실측(5회 재굽기 중 동시 요청): 종전 996건 중 500 6건 → 수정 후 996건 모두 200.
+
+coverage_strategy: full
+
+axes:
+  case: [regenerate_success, regenerate_failure, write, promote_retry, route_helper_installed, hook_cache_generate, autoload_generate]
+
+effects:
+  - bootstrap_cache_never_absent_during_rebuild
+  - stale_bootstrap_cache_removed_when_rebuild_fails
+  - bootstrap_cache_swap_retries_while_file_is_held
+
+test_files:
+  - tests/Unit/Support/AtomicBootstrapCacheTest.php

@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 클레임 배지 색 어휘 ↔ 두 소비 화면의 색 사전 파리티
@@ -33,7 +33,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @effects claim_status_variant_vocabulary_covered_by_both_screens
  */
-class ClaimStatusVariantVocabularyTest extends ModuleTestCase
+class ClaimStatusVariantVocabularyTest extends PureTestCase
 {
     /** 관리자 배지 컴포넌트 (색 사전 보유) */
     private const STATUS_BADGE = __DIR__.'/../../../../../../templates/_bundled/sirsoft-admin_basic/src/components/composite/StatusBadge.tsx';
@@ -66,7 +66,13 @@ class ClaimStatusVariantVocabularyTest extends ModuleTestCase
     /**
      * 관리자 배지 컴포넌트의 색 사전이 Enum 어휘를 전부 덮습니다.
      *
-     * @return void
+     * StatusBadge 의 statusStyles 블록 키에 교환·반품·환불·취소 Enum variant 가 모두 있어야 무색 뱃지가 나지 않습니다.
+     *
+     * @scenario reason_type=exchange
+     *
+     * @effects claim_status_variant_vocabulary_covered_by_both_screens
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_status_badge_covers_every_enum_variant(): void
     {
@@ -95,7 +101,13 @@ class ClaimStatusVariantVocabularyTest extends ModuleTestCase
     /**
      * 구매자 마이페이지의 classMap 사전이 Enum 어휘를 전부 덮습니다.
      *
-     * @return void
+     * 주문 카드 파셜에서 status_variant 를 key 로 쓰는 classMap.variants 에 모든 Enum variant 가 있어야 default 색으로 뭉개지지 않습니다.
+     *
+     * @scenario claim_presence=with_claim
+     *
+     * @effects claim_status_variant_vocabulary_covered_by_both_screens
+     *
+     * @return void 반환값 없음
      */
     public function test_mypage_class_map_covers_every_enum_variant(): void
     {
@@ -134,6 +146,8 @@ class ClaimStatusVariantVocabularyTest extends ModuleTestCase
      *
      * 대상은 S10 이 새로 더한 두 그룹으로 한정한다. HEAD 전반의 선재 불일치까지 넓히면
      * 이번 변경과 무관한 모집단이 들어와 최소 범위를 넘는다(그 축은 S16 소유).
+     *
+     * @return void 반환값 없음
      */
     public function test_s10_enum_labels_agree_between_frontend_and_backend(): void
     {

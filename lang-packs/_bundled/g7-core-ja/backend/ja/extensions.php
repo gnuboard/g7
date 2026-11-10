@@ -27,6 +27,8 @@ return [
         'operation_in_progress' => '":name"に対して進行中の処理(:status)があるため、リクエストを処理できません。',
         'operation_stuck' => '":name" は :minutes 分以上「更新中」のまま止まっています。更新が途中で終了した場合は、--force で再更新すると整理してから更新を最後まで完了し、有効化すると整理だけして有効にします(終わっていない更新はもう一度実行するよう案内します)。',
         'update_already_running' => '":name"のアップデートはすでに進行中です。終了後にもう一度確認してください。',
+        'operation_already_running' => '":name"に対して別の操作（インストール・アップデート・有効化など）が進行中です。終了後にもう一度お試しください。',
+        'operation_lock_unavailable' => '操作ロックストア（キャッシュ）が使用できないため、":name"の操作を開始しませんでした。環境設定 > ドライバーのキャッシュ状態を確認してから、もう一度お試しください。',
         'zip_missing_manifest' => 'ZIP内から :file マニフェストが見つかりません: :zip',
         'zip_invalid_manifest' => 'ZIP内の :file マニフェストをJSONとして解析できません。',
         'zip_identifier_mismatch' => 'ZIPマニフェストの識別子が対象拡張と一致しません。(期待値: :expected、実際: :actual)',
@@ -74,6 +76,15 @@ return [
         'column_message' => '理由',
         'composer_install_failed' => 'Composer 依存関係のインストールに失敗しました — 拡張フォルダで composer install を手動で実行してください',
         'php_extension_missing' => 'この拡張に必要な PHP 拡張 :extensions がサーバーにありません — 関連機能が動作しない可能性があるため、インストールしてください',
+        'search_scopes_not_object' => 'search_scopes の宣言がオブジェクト形式ではないため、すべて無視しました',
+        'search_scopes_invalid_name' => 'スコープ名の形式が正しくないため破棄しました(英小文字で始まり、英小文字・数字・_・- で50文字以内): :names',
+        'search_scopes_invalid_definition' => 'スコープの宣言がオブジェクトではないため破棄しました: :names',
+        'search_scopes_max_count_out_of_range' => '保管件数が :min〜:max の整数ではないため無視し、既定値を使います: :items',
+        'search_scopes_retention_days_out_of_range' => '保管期限が :min〜:max 日の整数ではないため無視し、既定値を使います: :items',
+        'necessary_storage_not_object' => 'necessary_storage の宣言がオブジェクト形式ではないため、すべて無視しました',
+        'necessary_storage_invalid_scope' => '保存先の種類が localStorage・sessionStorage・cookie ではないか、キー一覧が配列ではないため破棄しました: :names',
+        'necessary_storage_invalid_key' => '保存キーの形式が正しくないため破棄しました(英数字・_ . : @ + - で128文字以内、前方一致は末尾に * を1つ): :items',
+        'declaration_hint' => '拡張機能が宣言した値の誤りのため、再実行しても変わりません — 拡張機能の開発者に知らせてください',
     ],
     // 必須依存(dependencies)未充足の理由 — 復旧失敗・連鎖インストール失敗・CLI が同じ文を使う (7.1.4)
     'dependency_status' => [
@@ -172,6 +183,7 @@ return [
             'upgrade_step_running' => '  • [:identifier] アップグレードステップを実行: :version',
         ],
         'bundled_update' => [
+            'lock_unavailable_aborted' => '操作ロックストア（キャッシュ）が使用できないため、一括アップデートを中断しました — 残りの:count件をスキップしました。キャッシュ状態を確認してから、もう一度実行してください。',
             'up_to_date' => '有効な拡張は最新のバンドルと一致しています。',
             'detected' => 'バンドルに新しいバージョンが含まれる拡張が検出されました:',
             'detected_items' => [

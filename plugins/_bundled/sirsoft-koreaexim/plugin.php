@@ -100,7 +100,10 @@ class Plugin extends AbstractPlugin
             'name' => ['ko' => '환율 갱신 실패', 'en' => 'Exchange rate update failed'],
             'description' => ['ko' => '환율 갱신 실패를 관리자에게 알립니다.', 'en' => 'Notifies administrators when exchange rate updates fail.'],
             'channels' => ['mail', 'database'], 'hooks' => ['sirsoft-koreaexim.update.failed'],
+            'audience' => 'staff',
             'variables' => [
+                ['key' => 'name', 'description' => '수신자(관리자) 이름'],
+                ['key' => 'app_name', 'description' => '사이트 이름'],
                 ['key' => 'status_label', 'description' => '실패 유형'],
                 ['key' => 'message', 'description' => '인증키를 제외한 상세 실패 사유'],
                 ['key' => 'search_date', 'description' => '한국시간 기준 조회일'],

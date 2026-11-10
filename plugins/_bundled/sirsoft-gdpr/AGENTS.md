@@ -53,6 +53,14 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 1.1.1 까지 설치 시점에 굳은 계산값과 운영자 목록의 `g7_order_*`(이커머스 1.3.2+ 가 직접 제공)는 1.1.2
 업그레이드가 걷어냅니다.
 
+코어 엔진의 뒤로 가기·새로고침 스크롤 기억(sessionStorage `g7_scroll_positions`, 코어 engine-v1.85.0)은 출하
+카탈로그의 세션 저장소 목록에 있습니다(1.1.4). 동의 전에도 새로고침 뒤 보던 위치로 돌아가야 하는 화면 상태라
+필수로 분류했고, 이미 설치된 사이트는 `Upgrade_1_1_4` 가 운영자 목록의 세션 저장소 칸에 없을 때만
+덧붙이며 다른 항목은 건드리지 않습니다. 필수 카테고리 고지 문구 4곳은 고치지 않았습니다 — 문구가 「… 쿠키 동의
+기록 등」으로 범주만 적고 `g7_filters_*`·`g7.identity.redirectStash` 같은 개별 키를 열거하지 않으며, 이 키를
+기능 쿠키라고 안내한 곳도 없으므로 고지가 실제 동작과 어긋나지 않습니다(아래 금지 표 「저장소 허용목록만 고치고
+동의 안내 문구는 그대로 두기」가 막는 것은 그 어긋남이다).
+
 그래서 **판정 목록은 하나**입니다. 서버(`CookieConsentMiddleware`)와 클라이언트 셋
 (`storageInterceptor` · `cookieInterceptor` · `functionalCleaner`)이 같은 설정을 같은 매칭 규칙
 (`Support\NecessaryAllowlist` ↔ `plugins/_bundled/sirsoft-gdpr/resources/js/necessaryAllowlist.ts`)으로 읽습니다. 예전에는
@@ -113,7 +121,12 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 
 **요청마다 반복되는 게이팅**: `CookieConsentMiddleware`(web/api 그룹에 prepend)가 응답 직전
 `GdprConsentService::getCurrentCookieConsents()` 로 현재 functional 동의 여부를 조회하고,
-미동의면 strictly-necessary 4종을 제외한 모든 Set-Cookie 헤더를 응답에서 제거합니다. 이
+미동의면 strictly-necessary 4종을 제외한 모든 Set-Cookie 헤더를 응답에서 제거합니다. 지울
+후보(허용목록 밖·파기 아님)가 하나도 없는 응답은 동의를 조회하지 않고 그대로 통과합니다(1.1.4).
+한 요청 안에서 미들웨어·동의 제공자·동의 현황 리소스가 묻는 현재 정책 버전과 같은 주체의 동의
+행은 요청 단위 보관함 `Support\GdprConsentReadMemo`(scoped)에 한 번만 읽어 둡니다 — 정책 버전·
+동의 행·이력 모델이 저장·삭제되면 비우고, 이벤트 없는 대량 쓰기 뒤에는 `GdprConsentService` 가
+직접 비웁니다. 서비스 자체는 지금처럼 필요할 때마다 만듭니다. 이
 서버측 게이팅과 별개로, 클라이언트에서는 `data-gdpr-category` 속성이 붙은 스크립트/iframe 과
 분석/마케팅 카테고리 도메인 매칭 리소스가 동의 전까지 로드되지 않습니다.
 
@@ -200,7 +213,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 50개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 52개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 38개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 43개 | `tests/scenarios` |
