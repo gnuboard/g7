@@ -8,6 +8,7 @@ use App\Services\PluginSettingsService;
 use Mockery;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
+use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -122,7 +123,7 @@ class SlotWidthHintListenerTest extends PluginTestCase
     {
         $filter = fn (array $positions) => [...$positions, ['key' => 'event_hero', 'label' => ['ko' => '이벤트', 'en' => 'Event'], 'order' => 200]];
         HookManager::addFilter('sirsoft-hero_section.position.registered_positions', $filter);
-        $this->app->forgetInstance(\Plugins\Sirsoft\HeroSection\Services\PositionRegistry::class);
+        $this->app->forgetInstance(PositionRegistry::class);
 
         try {
             // 저장된 힌트에 event_hero 가 없다 — 위치를 더한 확장이 켜졌다
@@ -137,7 +138,7 @@ class SlotWidthHintListenerTest extends PluginTestCase
             $this->assertCount(0, $calls);
         } finally {
             HookManager::removeFilter('sirsoft-hero_section.position.registered_positions', $filter);
-            $this->app->forgetInstance(\Plugins\Sirsoft\HeroSection\Services\PositionRegistry::class);
+            $this->app->forgetInstance(PositionRegistry::class);
         }
 
         // 위치를 더한 확장이 꺼졌다 — 저장된 힌트에 남은 event_hero 를 걷는다

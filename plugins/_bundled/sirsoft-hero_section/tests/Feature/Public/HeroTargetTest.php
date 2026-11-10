@@ -4,10 +4,10 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Public;
 
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
 use Mockery;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
-use Illuminate\Testing\TestResponse;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;

@@ -55,11 +55,11 @@ class PublicHeroService
     /**
      * 위치(동적 위치면 화면이 아는 대상 값)의 공개 노출 정보를 반환합니다.
      *
+     * 응답의 `target` 은 해석에 쓴 화면 값(받은 값의 앞뒤 공백을 걷은 값, 정적 위치는 null)이다 — 화면이 SPA 로 다른 대상으로 옮겨 간 사이 도착한 앞 대상 응답을 가려낼 수 있게.
+     *
      * @param  string  $position  위치 키 (등록 위치 — 요청이 확인했다)
      * @param  string|null  $target  화면 대상 값 (정적 위치는 쓰지 않는다)
      * @param  string  $locale  요청 언어
-     * 응답의 `target` 은 해석에 쓴 화면 값(받은 값의 앞뒤 공백을 걷은 값, 정적 위치는 null)이다 — 화면이 SPA 로 다른 대상으로 옮겨 간 사이 도착한 앞 대상 응답을 가려낼 수 있게.
-     *
      * @return array{position: string, target: string|null, target_key: string|null, settings: array<string, mixed>, banners: array<int, array<string, mixed>>} 공개 응답 본문
      */
     public function forPosition(string $position, ?string $target, string $locale): array

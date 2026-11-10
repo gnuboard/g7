@@ -268,7 +268,7 @@ class BannerActivityLogListener implements HookListenerInterface
     {
         try {
             DB::transaction($records);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('히어로섹션 일괄 활동 로그 기록 실패', ['error' => $e->getMessage()]);
         }
     }
