@@ -63,6 +63,7 @@ effects:
   - queued_run_rechecks_state_before_running
   - queued_manual_run_logs_the_admin_who_pressed_it
   - queued_run_does_not_inherit_or_leave_worker_context
+  - queued_manual_run_refused_by_lock_store_error_leaves_no_trace   # 큐로 보낸 수동 실행 × 잠금 저장소 오류 — 이력 0건, last_result 불변, 앞선 실행의 잠금 유지, run_failed 미발화
   # 실행
   - history_all_records_every_run
   - row_state_updated_without_model_events

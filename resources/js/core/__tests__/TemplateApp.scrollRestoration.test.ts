@@ -404,6 +404,53 @@ describe('TemplateApp 뒤로 가기 스크롤 복원 (engine-v1.85.0)', () => {
         expect(getScrollRecord('url:/mypage')?.y).toBe(700);
     });
 
+    // 이동 표시 없는 화면 처리가 끝나기 전에 같은 처리가 한 번 더 시작되면(언어를 연달아 두 번 바꿈) 앞 처리는 밀려 저장을 켜지 못한다.
+    // 멈춘 저장을 다시 켤 책임이 앞 처리에만 있으면 뒤 처리가 화면을 그려도 저장이 꺼진 채 남는다 — 실제로 그려 낸 처리가 켠다.
+    // @scenario entry=popstate, content_timing=already_tall, config_layer=engine_default
+    // @effects auth_unavailable_screen_keeps_entry_scroll_record
+    it('인증 확인 불가 화면에서 이동 표시 없는 화면 처리가 연달아 두 번 시작돼 앞 처리가 밀려도, 그려진 화면에서 저장이 다시 돈다', async () => {
+        await boot();
+        const auth = AuthManager.getInstance();
+        const authenticated = vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+        vi.spyOn(auth, 'getAuthType').mockReturnValue('user');
+        const appRoot = (): HTMLElement => document.getElementById('app')!;
+
+        app.getRouter().navigate('/mypage');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/mypage'));
+        await tick(50);
+        userScrollTo(1800);
+        app.getRouter().navigate('/shop/products/sample-product-1');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
+        await tick(50);
+
+        authenticated.mockReturnValue(false);
+        const recentlyUnavailable = vi.spyOn(auth, 'isRecentlyUnavailable').mockReturnValue(true);
+        const lastStatus = vi.spyOn(auth, 'getLastCheckStatus').mockReturnValue('unavailable');
+        page.y = 0;
+        traverseTo('/mypage');
+        await vi.waitFor(() => {
+            expect(appRoot().textContent).not.toBe('');
+            expect(appRoot().querySelector('#main')).toBeNull();
+        });
+
+        // 서버가 돌아왔다 — 첫 화면 처리가 레이아웃을 기다리는 사이 둘째가 시작된다
+        authenticated.mockReturnValue(true);
+        recentlyUnavailable.mockReturnValue(false);
+        lastStatus.mockReturnValue('authenticated');
+        const generationBefore = app.currentRouteChangeId;
+        const first = app.getRouter().navigateToCurrentPath();
+        const second = app.getRouter().navigateToCurrentPath();
+        // 둘째가 첫째를 밀었다(세대가 두 번 올랐다)
+        expect(app.currentRouteChangeId).toBe(generationBefore + 2);
+        await Promise.all([first, second]);
+        await vi.waitFor(() => expect(appRoot().querySelector('#main')).not.toBeNull());
+        await tick(50);
+
+        expect(getScrollRecord('url:/mypage')?.y).toBe(1800);
+        userScrollTo(700);
+        expect(getScrollRecord('url:/mypage')?.y).toBe(700);
+    });
+
     // 같은 오류 화면에서 다른 주소로 떠나는 길(새 이동) — 라우터의 이동 표시가 저장을 다시 켠다
     // @scenario entry=navigate, content_timing=already_tall, config_layer=engine_default
     // @effects auth_unavailable_screen_keeps_entry_scroll_record

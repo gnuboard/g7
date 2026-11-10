@@ -153,6 +153,12 @@ job 유형을 바로 실행으로 두면 `Bus::dispatchSync()` 로 그 자리에
 
 워커는 실린 문맥을 실행하는 동안만 복원하고 끝나면 되돌립니다 — 바로 실행과 같이 실행 로그의 행위자·IP·브라우저 정보가 누른 관리자의 것으로 남고, 같은 워커가 앞서 처리한 다른 작업의 사용자를 물려받지 않습니다. 예약 실행은 사용자 없이 돕니다. 워커가 꺼낼 때 상태를 다시 봅니다 — 행이 지워졌거나 소유 확장이 비활성이면 건너뛰고, 예약 실행은 행이 비활성이거나 실행 조건이 맞지 않으면 건너뜁니다. 워커가 timeout·강제 종료로 죽으면 `failed()` 가 실행 중 이력을 실패로 마감하고, 잠금을 풀고, `core.schedule.run_failed` 를 발화합니다.
 
+실행기가 실행 전에 거부하면([4.4](#44-실행기-scheduleexecutor)의 거부 사유 표) 실행 잡은 경고 로그 `스케줄 실행 잡 거부`(`schedule_id`, `reason`)만 남기고 정상 종료합니다. 실패로 올리지 않으므로 `failed()` 를 타지 않고, 이력·`last_result`·잠금·`core.schedule.run_failed` 를 건드리지 않습니다. 다시 큐에 넣지도 않습니다(`tries` 1). 수동 실행을 누른 요청은 이미 202 를 받았으므로 거부는 응답으로 돌아가지 않습니다 — 확인하는 길은 다음과 같습니다.
+
+- 스케줄 관리의 실행 이력에 새 줄이 생기지 않고 「마지막 실행」과 결과가 그대로다.
+- 「큐」 탭 처리 기록에는 `schedule:{id} {name}` 이 `processed` 로 남는다. 워커가 작업을 끝까지 처리했다는 뜻이고 스케줄이 실행됐다는 뜻이 아니다.
+- 로그에 경고 `스케줄 실행 잡 거부` 가 남는다. `reason` 은 `owner_inactive`, `already_running`, `run_lock_unavailable` 중 하나다. 잠금 저장소 오류면 실행기의 error 로그 `스케줄 실행 잠금 저장소 오류 — 실행하지 않습니다` 에 저장소 원본 오류가 함께 남는다.
+
 ### 4.4 실행기 (ScheduleExecutor)
 
 | 유형 | 실행 방법 |
@@ -162,13 +168,15 @@ job 유형을 바로 실행으로 두면 `Bus::dispatchSync()` 로 그 자리에
 | `url` | `Http` Facade GET. 기본 timeout 30초. 내부망 주소 차단 |
 | `job` | 허용 Job 클래스만. 바로 실행 = `dispatchSync`, 큐로 보내기 = `dispatch` |
 
-종료 코드가 0이 아니거나 예외가 나면 실패입니다. 실행 전 거부만 예외로 올라옵니다. 거부된 실행은 이력을 만들지 않습니다.
+종료 코드가 0이 아니거나 예외가 나면 실패입니다. 실행 전 거부만 예외로 올라옵니다. 거부된 실행은 이력을 만들지 않고 `last_result` 와 잠금도 건드리지 않습니다.
 
-| 거부 사유 | 예외 | 상황 | 수동 실행 응답 |
-| --- | --- | --- | --- |
-| `owner_inactive` | `ScheduleExecutionException` (`reasonCode`) | 소유 확장이 비활성 | 422 |
-| `already_running` | `ScheduleExecutionException` (`reasonCode`). `ScheduleService::runNow()` 가 `ScheduleAlreadyRunningException` 으로 바꾼다 | 수동 실행인데 앞선 실행이 잠금을 잡고 있음 (예약 실행은 조용히 건너뜀) | 409 (`schedule.already_running`) |
-| 잠금 저장소 장애 | `ScheduleRunLockUnavailableException` | 수동 실행인데 중복 방지 잠금을 잡으려다 캐시가 오류를 냄 (예약 실행은 경고 로그를 남기고 잠금 없이 실행) | 503 (`schedule.run_lock_unavailable`) |
+| 거부 사유 | 예외 | 상황 | 수동 실행 응답 (바로 실행) | 큐로 보낸 행 (워커가 꺼낼 때) |
+| --- | --- | --- | --- | --- |
+| `owner_inactive` | `ScheduleExecutionException` (`reasonCode`) | 소유 확장이 비활성 | 422 | 요청 시점에 비활성이면 큐에 넣지 않고 422. 넣은 뒤 비활성이 되면 경고 로그만 남기고 종료 |
+| `already_running` | `ScheduleExecutionException` (`reasonCode`). `ScheduleService::runNow()` 가 `ScheduleAlreadyRunningException` 으로 바꾼다 | 수동 실행인데 앞선 실행이 잠금을 잡고 있음 (예약 실행은 조용히 건너뜀) | 409 (`schedule.already_running`) | 요청은 202. 경고 로그(`reason=already_running`)만 남기고 종료 |
+| 잠금 저장소 장애 | `ScheduleRunLockUnavailableException` | 수동 실행인데 중복 방지 잠금을 잡으려다 캐시가 오류를 냄 (예약 실행은 경고 로그를 남기고 잠금 없이 실행) | 503 (`schedule.run_lock_unavailable`) | 요청은 202. 경고 로그(`reason=run_lock_unavailable`)만 남기고 종료. 다시 큐에 넣지 않는다 |
+
+큐로 보내는 행(artisan, shell, url)은 잠금을 요청 시점이 아니라 워커가 실행기를 부를 때 잡습니다. 그래서 409 와 503 은 바로 실행에서만 응답으로 돌아가고, 큐 경로의 거부는 [4.3](#43-runscheduledtaskjob-큐로-보내기)에 적은 길(실행 이력, 처리 기록, 로그)로 확인합니다. 큐 경로에서도 거부는 실패가 아니므로 실패 알림이 나가지 않습니다.
 
 응답 형식은 [api/schedules.md](api/schedules.md) 를 봅니다.
 
@@ -176,7 +184,7 @@ job 유형을 바로 실행으로 두면 `Bus::dispatchSync()` 로 그 자리에
 
 ## 5. 중복 방지·다중 서버·점검 모드
 
-- **중복 방지** — `without_overlapping > 0` 이면 실행기가 캐시 잠금 `schedule:run:{id}` 를 그 분만큼 잡습니다. 틱·수동·큐 모든 경로가 이 잠금 하나를 씁니다(Laravel `withoutOverlapping` 은 쓰지 않는다 — 큐 모드는 투입 직후 잠금이 풀리기 때문). 실행이 끝나면 잠금을 바로 풉니다. 앞 실행이 유지 시간 안에 끝나지 않으면 잠금이 만료로 풀립니다. 큐 워커가 실행 도중 죽으면(timeout·kill) 작업의 실패 처리(`RunScheduledTaskJob::failed()`)가 `ScheduleExecutor::markAbandoned()` 로 그 실행을 실패로 마감하면서 잠금을 강제로 풉니다. 캐시가 잠금을 주지 못하면(저장소 오류) 예약 실행은 잠금 없이 실행하고, 수동 실행은 실행하지 않고 503 으로 거절합니다.
+- **중복 방지** — `without_overlapping > 0` 이면 실행기가 캐시 잠금 `schedule:run:{id}` 를 그 분만큼 잡습니다. 틱·수동·큐 모든 경로가 이 잠금 하나를 씁니다(Laravel `withoutOverlapping` 은 쓰지 않는다 — 큐 모드는 투입 직후 잠금이 풀리기 때문). 실행이 끝나면 잠금을 바로 풉니다. 앞 실행이 유지 시간 안에 끝나지 않으면 잠금이 만료로 풀립니다. 큐 워커가 실행 도중 죽으면(timeout·kill) 작업의 실패 처리(`RunScheduledTaskJob::failed()`)가 `ScheduleExecutor::markAbandoned()` 로 그 실행을 실패로 마감하면서 잠금을 강제로 풉니다. 캐시가 잠금을 주지 못하면(저장소 오류) 예약 실행은 잠금 없이 실행하고, 수동 실행은 실행하지 않습니다 — 바로 실행이면 503 으로 거절하고, 큐로 보낸 행이면(요청은 이미 202) 워커의 실행 잡이 경고 로그만 남기고 끝납니다. 어느 쪽이든 거절은 실패 마감(`markAbandoned()`)을 거치지 않으므로 이력과 `last_result` 를 만들지 않고, 저장소가 돌아온 뒤에도 앞선 실행이 쥔 잠금을 풀지 않습니다.
 - **한 서버에서만 실행** — `on_one_server` 는 Laravel `onOneServer()` 입니다. 서버들이 같은 캐시(redis 등)를 써야 의미가 있습니다.
 - **점검 모드** — `run_in_maintenance` 가 켜진 행만 점검 모드에서 돕니다.
 - **30초 주기** — `frequency = everyThirtySeconds` 행은 한 분에 두 번 돕니다. 대시보드 리소스·현재 접속자 브로드캐스트가 이 주기이고, 둘 다 「실패만 기록」으로 이력을 쌓지 않습니다.

@@ -5,6 +5,7 @@ namespace Tests\Feature\Schedule;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Extension\HookContextCapture;
+use App\Extension\HookManager;
 use App\Jobs\RunScheduledTaskJob;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
@@ -12,6 +13,10 @@ use App\Models\User;
 use App\Services\Schedule\ScheduleDispatcher;
 use App\Services\Schedule\ScheduleExecutor;
 use Illuminate\Bus\Queueable;
+use Illuminate\Cache\ArrayLock;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Queue\Job as QueueJobContract;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bootstrap\SetRequestForConsole;
@@ -22,14 +27,16 @@ use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Process;
 use Mockery;
 use RuntimeException;
 use Tests\TestCase;
 
 /**
- * 큐 실행 잡 — payload 계약(K5), 실행 직전 재확인, 워커 사망 시 이력 마감, 상주 워커에서의 실행자 문맥
+ * 큐 실행 잡 — payload 계약(K5), 실행 직전 재확인, 워커 사망 시 이력 마감, 잠금 저장소 오류 거절, 상주 워커에서의 실행자 문맥
  */
 class RunScheduledTaskJobTest extends TestCase
 {
@@ -116,6 +123,112 @@ class RunScheduledTaskJobTest extends TestCase
         $this->assertSame(ScheduleResultStatus::Failed, $running->fresh()->status);
         $this->assertSame('has timed out', $running->fresh()->error_output);
         $this->assertSame(ScheduleResultStatus::Failed, $schedule->fresh()->last_result);
+    }
+
+    /**
+     * 큐로 보낸 「지금 실행」을 워커가 집는 순간 실행 잠금 저장소가 오류를 내면, 실행하지 않고 흔적 없이 끝난다.
+     *
+     * 실행기는 이 경우를 거절(`ScheduleRunLockUnavailableException`)로 알린다. 잡이 이를 실패로 올리면 `failed()` 의
+     * 실패 마감이 실패 이력과 `last_result` 실패를 만들고, 앞선 실행이 쥔 잠금을 강제로 풀고, 실패 훅을 발화한다.
+     * 실패 처리까지 그대로 타도록 sync 큐로 돌린다(예외가 잡 밖으로 나가면 sync 큐도 `failed()` 를 부른다).
+     *
+     * @scenario dispatch_mode=queue, trigger=manual, overlap=minutes, outcome=rejected
+     *
+     * @effects queued_manual_run_refused_by_lock_store_error_leaves_no_trace
+     *
+     * @return void 반환값 없음
+     */
+    public function test_queued_manual_run_refused_by_lock_store_error_leaves_no_trace(): void
+    {
+        config([
+            'schedule_security.shell.enabled' => true,
+            'schedule_security.shell.allowed_binaries' => ['i161-task'],
+        ]);
+        Process::fake();
+
+        // 실행자는 실제 회원이어야 한다 — 실패 마감이 만드는 이력의 실행자 외래 키가 깨지면 그 마감이 조용히 실패해 회귀를 가린다
+        $admin = User::factory()->create();
+        $schedule = Schedule::factory()->create([
+            'type' => 'shell',
+            'command' => 'i161-task',
+            'dispatch_mode' => 'queue',
+            'without_overlapping' => 60,
+            'timeout' => 60,
+        ]);
+        $lockName = ScheduleExecutor::LOCK_PREFIX.$schedule->id;
+
+        // 스케줄 실행 잠금을 새로 잡을 때만 오류가 나는 저장소 — 이미 잡힌 잠금의 조회·해제는 그대로 동작한다
+        // (잡으려던 순간에만 끊겼다가 돌아온 저장소. 실패 마감이 강제 해제를 부르면 실제로 풀린다).
+        $store = new class extends ArrayStore
+        {
+            /** @var bool 잠금 획득이 오류를 내는 상태인지 */
+            public bool $down = false;
+
+            /**
+             * 저장소가 끊긴 동안 스케줄 실행 잠금은 획득이 오류를 내는 잠금으로 돌려준다.
+             *
+             * @param  string  $name  잠금 이름
+             * @param  int  $seconds  잠금 유지 시간(초)
+             * @param  string|null  $owner  소유자
+             * @return Lock 잠금
+             */
+            public function lock($name, $seconds = 0, $owner = null)
+            {
+                if (! $this->down || ! str_starts_with($name, ScheduleExecutor::LOCK_PREFIX)) {
+                    return parent::lock($name, $seconds, $owner);
+                }
+
+                return new class($this, $name, $seconds, $owner) extends ArrayLock
+                {
+                    /**
+                     * 잠금 저장소에 닿지 못한다.
+                     *
+                     * @return bool 반환하지 않음
+                     *
+                     * @throws RuntimeException 언제나
+                     */
+                    public function acquire()
+                    {
+                        throw new RuntimeException('queued run lock store down C:\\fake\\g7');
+                    }
+                };
+            }
+        };
+
+        $default = config('cache.default');
+        config(['cache.stores.queued_broken_run_lock' => ['driver' => 'queued_broken_run_lock']]);
+        Cache::extend('queued_broken_run_lock', fn () => Cache::repository($store));
+        config(['cache.default' => 'queued_broken_run_lock']);
+
+        $failedHookCalls = 0;
+        HookManager::addAction('core.schedule.run_failed', function () use (&$failedHookCalls) {
+            $failedHookCalls++;
+        });
+
+        try {
+            // 앞선 실행이 잠금을 쥐고 도는 중이다
+            $this->assertTrue(Cache::lock($lockName, 3600, 'other-runner')->get());
+            $before = $schedule->fresh();
+
+            $store->down = true;
+            app(BusDispatcher::class)->dispatchSync(new RunScheduledTaskJob($schedule->id, ScheduleTriggerType::Manual, $admin->id));
+            $store->down = false;
+
+            $after = $schedule->fresh();
+
+            $this->assertSame(0, ScheduleHistory::where('schedule_id', $schedule->id)->count(), '거절된 실행이 이력을 남겼다');
+            $this->assertSame($before->last_result, $after->last_result, '거절된 실행이 last_result 를 바꿨다');
+            $this->assertEquals($before->last_run_at, $after->last_run_at, '거절된 실행이 마지막 실행 시각을 바꿨다');
+            $this->assertTrue(
+                Cache::restoreLock($lockName, 'other-runner')->isOwnedByCurrentProcess(),
+                '거절된 실행이 앞선 실행의 잠금을 풀었다'
+            );
+            $this->assertSame(0, $failedHookCalls, '거절된 실행이 실패 훅(core.schedule.run_failed)을 발화했다');
+            Process::assertNothingRan();
+        } finally {
+            config(['cache.default' => $default]);
+            Cache::forgetDriver('queued_broken_run_lock');
+        }
     }
 
     /**

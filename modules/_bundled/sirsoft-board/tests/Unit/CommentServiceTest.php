@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Tests\Unit;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
@@ -24,13 +25,13 @@ class CommentServiceTest extends ModuleTestCase
 {
     private CommentService $service;
 
-    /** @var \Mockery\MockInterface&BoardRepositoryInterface */
+    /** @var MockInterface&BoardRepositoryInterface */
     private $boardRepository;
 
-    /** @var \Mockery\MockInterface&CommentRepositoryInterface */
+    /** @var MockInterface&CommentRepositoryInterface */
     private $commentRepository;
 
-    /** @var \Mockery\MockInterface&PostRepositoryInterface */
+    /** @var MockInterface&PostRepositoryInterface */
     private $postRepository;
 
     private string $slug = 'test_board';
@@ -514,7 +515,7 @@ class CommentServiceTest extends ModuleTestCase
      *
      * @param  int|null  $userId  작성자 user_id (null이면 비회원)
      * @param  string|null  $password  해시된 비밀번호
-     * @return \Mockery\MockInterface&Comment Mock 댓글 객체
+     * @return MockInterface&Comment Mock 댓글 객체
      */
     private function createMockComment(?int $userId, ?string $password)
     {
@@ -530,7 +531,7 @@ class CommentServiceTest extends ModuleTestCase
      *
      * @param  PostStatus  $status  게시글 상태
      * @param  string|null  $deletedAt  삭제 일시
-     * @return \Mockery\MockInterface&Post Mock 게시글 객체
+     * @return MockInterface&Post Mock 게시글 객체
      */
     private function createMockPost(PostStatus $status, ?string $deletedAt = null)
     {

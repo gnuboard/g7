@@ -40,7 +40,9 @@ use Throwable;
  *   보안 가드 테스트의 `Process::fake`·`Http::fake` 가 실행부를 그대로 가로챌 수 있어야 한다.
  * - 중복 방지는 `without_overlapping`(분) 캐시 잠금 `schedule:run:{id}` 이 틱·수동·큐 모든 경로를 맡는다.
  * - 「실패만 기록」 행은 성공 시 이력을 남기지 않는다. 행 상태 갱신은 모델 이벤트를 타지 않는다.
- * - 실행이 실패해도 예외를 던지지 않고 실패 이력을 돌려준다. 실행 전 거부(비활성 확장·수동 중복)만 예외다.
+ * - 실행이 실패해도 예외를 던지지 않고 실패 이력을 돌려준다. 실행 전 거부만 예외다 — 비활성 확장과 수동 중복은
+ *   `ScheduleExecutionException`, 수동 실행의 잠금 저장소 오류는 `ScheduleRunLockUnavailableException`(503).
+ *   거부는 이력·last_result·잠금·실패 훅을 건드리지 않는다. 호출자(수동 실행 API, 큐 실행 잡)도 거부를 실패로 마감하지 않는다.
  */
 class ScheduleExecutor
 {

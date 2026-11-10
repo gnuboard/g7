@@ -14,6 +14,11 @@ description: |
   잡는다. 실행 중이면 409, 잠금 저장소 오류면 503 으로 거절하고 거절된 요청은 이력·last_result 를 남기지 않는다.
   잠금은 실행이 실패해도 풀린다.
 
+  큐로 보내는 스케줄은 요청 시점에 202 로 접수하고 잠금은 워커가 실행기를 부를 때 잡는다. 그때의 거절(실행 중, 잠금 저장소
+  오류)도 이력·last_result 를 남기지 않고 앞선 실행의 잠금을 풀지 않는다 — 실행 잡이 경고 로그만 남기고 끝난다. 이 경로의
+  시험은 실행 잡 시험 파일을 소유한 schedule-db-registry.yaml 의
+  `queued_manual_run_refused_by_lock_store_error_leaves_no_trace` 가 맡는다(RunScheduledTaskJobTest).
+
 axis_notes:
   case: |
     ext_schedule_* 는 확장 예약 선언이 등록부 행 속성으로 바뀌는 자리(옛 형식 정규화), run_* 는 「지금 실행」 경로다.

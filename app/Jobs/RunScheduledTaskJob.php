@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleTriggerType;
 use App\Exceptions\ScheduleExecutionException;
+use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Extension\HookContextCapture;
 use App\Services\Schedule\ScheduleConditionEvaluator;
 use App\Services\Schedule\ScheduleExecutor;
@@ -28,6 +29,8 @@ use Throwable;
  *
  * tries=1 — 같은 실행이 두 번 이력을 남기지 않게 재시도는 큐 화면에서 운영자가 명시적으로 한다.
  * 워커가 timeout·kill 로 죽으면 failed() 가 실행기의 running 이력을 실패로 마감한다.
+ * 실행 전 거부(소유 확장 비활성, 앞선 실행 진행 중, 수동 실행의 잠금 저장소 오류)는 경고 로그만 남기고 정상 종료한다 —
+ * 실행을 시작하지 않았으므로 이력·last_result·잠금·실패 훅을 건드리지 않는다.
  */
 class RunScheduledTaskJob implements ShouldQueue
 {
@@ -136,10 +139,20 @@ class RunScheduledTaskJob implements ShouldQueue
         try {
             $executor->execute($schedule, $this->trigger, $this->userId);
         } catch (ScheduleExecutionException $e) {
-            // 실행 전 거부(소유 확장 비활성·앞선 실행 진행 중)는 잡 실패가 아니다 — 재시도해도 같은 결과다.
+            // 실행 전 거부(소유 확장 비활성, 앞선 실행 진행 중)는 잡 실패가 아니다 — 재시도해도 같은 결과다.
             Log::warning('스케줄 실행 잡 거부', [
                 'schedule_id' => $this->scheduleId,
                 'reason' => $e->reasonCode,
+                'error' => $e->getMessage(),
+            ]);
+        } catch (ScheduleRunLockUnavailableException $e) {
+            // 수동 실행인데 잠금 저장소가 오류를 낸 거절이다 — 실행을 시작하지 않았으므로 잡 실패로 올리지 않는다.
+            // 올리면 failed() 가 실패 이력·last_result 를 만들고, 저장소가 돌아온 뒤라면 앞선 실행이 쥔 잠금까지 푼다.
+            // 다시 큐에 넣지도 않는다 — 저장소가 언제 돌아올지 모르고, 누른 사람이 다시 누를 수 있다.
+            // 저장소 원본 오류는 실행기가 error 로그로 이미 남겼다.
+            Log::warning('스케줄 실행 잡 거부', [
+                'schedule_id' => $this->scheduleId,
+                'reason' => 'run_lock_unavailable',
                 'error' => $e->getMessage(),
             ]);
         }

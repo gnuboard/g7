@@ -1391,6 +1391,9 @@ MD;
             'vite.config.core.js',
             'vitest.config.ts',
             'tsconfig.json',
+            // tsconfig.json 이 참조하는 두 설정(7.2.0) — 빠지면 업데이트 뒤 루트 설정이 없는 파일을 가리킨다.
+            'tsconfig.app.json',
+            'tsconfig.test.json',
             'composer.json.default',
             'tests',
             'docs',

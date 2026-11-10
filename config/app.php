@@ -295,7 +295,7 @@ return [
         // (종전 이 주석은 「통째 교체」로 적혀 있었으나 구현·공개 문서와 어긋난 폐기 규약이었다.
         //  그대로 되돌리면 운영자 IIS 규칙이 업데이트마다 말없이 삭제된다.)
         // 통째 교체되는 것은 루트 `index.php` 뿐이다 — 마커가 없고, 파일 주석이 수정 금지를 고지한다.
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,deploy,scripts,artisan,g7-install,index.php,.htaccess,web.config,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,deploy,scripts,artisan,g7-install,index.php,.htaccess,web.config,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,tsconfig.app.json,tsconfig.test.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         // applyUpdate 의 "신규 최상위 항목 자동 발견" 폴백이 절대 덮어쓰면 안 되는 경로 목록.
         // 런타임 데이터(`storage`), 로컬 환경(`.env*`), 별도 파이프라인 산출물(`vendor`),
         // 개발 도구 메타(`.git`, `.claude`, `.codex`, `.agents`, `.serena` 등) 를 보호한다.

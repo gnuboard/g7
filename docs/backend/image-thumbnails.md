@@ -272,7 +272,7 @@ public function preview(Request $request, int $id): Response|JsonResponse
 - 본문 미디어(`AbstractContentMediaService` 로 서빙하는 편집기 본문 이미지)는 서빙 지점에 헬퍼를 따로 부르지 않는다. 코어 골격이 게이트(`findServable()`) 뒤의 `respond()` 에서 헬퍼를 부른다. 확장이 할 일은 셋이다.
   - 서빙 컨트롤러의 서명 검증을 `hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure())` 로 한다.
   - 그다음에 본문 미디어 서빙 주소를 `core.thumbnail.filter_url_patterns` 에 더한다(예: `/api/modules/vendor-module/content-media/*`). 서명 검증을 고치기 전에 주소부터 올리면 화면이 서명 주소 뒤에 규격을 덧붙여 비공개 문서의 본문 이미지가 403 이 된다.
-  - 본문 미디어 이미지를 원본 제공자 하나에 넣는다(`gated()` 는 `true`). 원본 정보는 골격의 `thumbnailSourceFor($row)` 로 만든다. 본문 미디어가 첨부와 같은 표, 같은 저장 위치를 쓰면(게시판, 페이지) 첨부 제공자가 함께 맡고, 따로 쓰면(쇼핑몰) 제공자를 따로 둔다. 한 파일을 두 제공자의 `matches()` 가 받거나 한 행을 두 제공자가 세면 안 된다.
+  - 본문 미디어 이미지를 원본 제공자 하나에 넣는다(`gated()` 는 `true`). 제공자가 `chunk()` 로 내는 원본 정보는 서빙이 쓰는 것과 디스크, 카테고리, 경로, `gated` 가 같아야 한다(다르면 서빙과 일괄 생성의 파생본 키가 갈린다). 본문 미디어가 첨부와 같은 표, 같은 저장 위치를 쓰면(게시판, 페이지) 첨부 제공자가 함께 맡고, 이때 본문 미디어 행의 원본 정보도 첨부 서비스의 `thumbnailSourceFor()`(`AttachmentService`, `PageAttachmentService`)로 만든다. 서빙 쪽 골격의 `thumbnailSourceFor($row)` 와 메서드는 다르지만 값이 같다. 한쪽을 고치면 다른 쪽도 함께 맞춘다. 따로 쓰면(쇼핑몰) 제공자를 따로 두고 골격의 `thumbnailSourceFor($row)`(`$service->engine()->thumbnailSourceFor($row)`)를 그대로 쓴다. 한 파일을 두 제공자의 `matches()` 가 받거나 한 행을 두 제공자가 세면 안 된다.
 - 확장 저장 디렉터리를 드라이버 밖에서 `File::deleteDirectory()` 로 지우면 `app(ThumbnailStore::class)->purgeIdentifier($identifier)` 도 부른다.
 - 의존 확장은 `g7_version` 을 `>=7.2.0` 으로 선언한다.
 

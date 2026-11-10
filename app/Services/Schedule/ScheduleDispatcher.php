@@ -7,6 +7,7 @@ use App\Enums\ScheduleDispatchMode;
 use App\Enums\ScheduleTriggerType;
 use App\Enums\ScheduleType;
 use App\Exceptions\ScheduleExecutionException;
+use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Extension\HookContextCapture;
 use App\Jobs\RunScheduledTaskJob;
 use App\Models\Schedule;
@@ -54,6 +55,8 @@ class ScheduleDispatcher
      *                              (job 유형은 큐 모드여도 Job 투입 결과를 이력으로 돌려준다)
      *
      * @throws ScheduleExecutionException 소유 확장이 비활성일 때(owner_inactive), 수동 실행인데 앞선 실행이 돌고 있을 때(already_running)
+     * @throws ScheduleRunLockUnavailableException 바로 실행하는 수동 실행인데 잠금 저장소가 오류를 낼 때 (503).
+     *                                             큐로 보낸 행은 여기서 던지지 않는다 — 워커의 실행 잡이 경고 로그만 남기고 끝낸다
      */
     public function dispatch(Schedule|int $schedule, ScheduleTriggerType $trigger, ?int $userId = null): ?ScheduleHistory
     {

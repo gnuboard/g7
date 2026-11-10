@@ -450,7 +450,8 @@ export class TemplateApp {
     private currentScrollConfig: ScrollRestorationConfig | null = null;
     /**
      * 인증 확인 불가 화면이 스크롤 기억을 멈춘 채 두었는지 — 그 화면은 뒤로 가기·새로고침 표시가 멈춘 저장을 다시 켜지 않는다(오류 화면
-     * 위치가 그 히스토리 항목의 기억을 덮지 않게). 이동 표시 없이 이어지는 다음 화면 처리(언어 전환 재진입)가 저장을 다시 켠다
+     * 위치가 그 히스토리 항목의 기억을 덮지 않게). 이동 표시 없이 이어지는 다음 화면 처리(언어 전환 재진입)가 저장을 다시 켜며,
+     * 저장을 실제로 켠 자리에서만 내린다(화면 처리가 밀려 켜지 못하면 다음 처리로 넘어간다)
      * @since engine-v1.94.0
      */
     private scrollSavingHeldByErrorScreen = false;
@@ -1233,10 +1234,12 @@ export class TemplateApp {
     private async handleRouteChange(route: Route): Promise<void> {
         // 이 이동의 스크롤 복원 정보(뒤로/앞으로 가기·새로고침이면 기억한 위치) — 라우터가 표시한 직후 동기로 가져간다 (@since engine-v1.85.0)
         const scrollTicket = takeScrollRestoreTicket();
-        // 인증 확인 불가 화면이 멈춘 채 둔 스크롤 기억 — 이 화면 처리가 이동 표시 없이 왔으면(언어 전환 재진입) 끝에서 다시 켠다.
+        // 인증 확인 불가 화면이 멈춘 채 둔 스크롤 기억 — 이동 표시 없이 온 화면 처리(언어 전환 재진입)가 끝에서 다시 켠다. 여기서는
+        // 내리지 않는다: 이 처리가 더 새 처리에 밀리면 끝에서 켜지 못하므로, 실제로 켠 처리가 내려야 뒤 처리가 이어받는다.
         // 표시가 있으면 그 이동이 정한다(새 이동은 라우터가 이미 켰고, 뒤로 가기·새로고침은 복원이 켠다) (@since engine-v1.94.0)
-        const scrollSavingHeld = this.scrollSavingHeldByErrorScreen;
-        this.scrollSavingHeldByErrorScreen = false;
+        if (scrollTicket !== null) {
+            this.scrollSavingHeldByErrorScreen = false;
+        }
         let scrollConfig: ScrollRestorationConfig | null = null;
         // 떠나는 화면에서 더보기로 늘어난 데이터소스를 그 항목 키로 기억한다 — 돌아오면 그 데이터로 먼저 그린다 (@since engine-v1.85.0)
         if (scrollTicket !== null) {
@@ -2446,8 +2449,10 @@ export class TemplateApp {
             this.showRouteError(error as Error);
         } finally {
             // 복원을 시작하지 못하고 끝났다(밀림·실패) — 이 화면에서 스크롤 기억을 다시 켠다 (@since engine-v1.85.0).
-            // 인증 확인 불가 화면이 멈춘 채 둔 기억도 이동 표시 없이 온 이 화면에서 다시 켠다 (@since engine-v1.94.0)
-            if (!scrollRestoreStarted && (scrollTicket !== null || scrollSavingHeld) && routeChangeId === this.currentRouteChangeId) {
+            // 인증 확인 불가 화면이 멈춘 채 둔 기억도 이동 표시 없이 온 이 화면에서 다시 켠다 — 밀린 처리는 켜지 않고 표시를 남겨
+            // 최신 처리가 켠다 (@since engine-v1.94.0)
+            if (!scrollRestoreStarted && (scrollTicket !== null || this.scrollSavingHeldByErrorScreen) && routeChangeId === this.currentRouteChangeId) {
+                this.scrollSavingHeldByErrorScreen = false;
                 resumeScrollSaving();
             }
         }
