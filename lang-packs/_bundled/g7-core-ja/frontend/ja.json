@@ -7,29 +7,7 @@
       "$partial": "partial/assets.json"
     },
     "content_media": {
-      "client": {
-        "kind_not_allowed": "本文に挿入できないファイル形式です。挿入できる形式: {allowed}",
-        "extension_not_allowed": "この形式は挿入できません。挿入できる形式: {extensions}",
-        "file_too_large": "ファイルが大きすぎます。最大 {max}MB まで挿入できます。",
-        "limit_reached": "本文にはメディアを最大 {max} 個まで挿入できます。",
-        "upload_failed": "本文メディアをアップロードできませんでした。しばらくしてからもう一度お試しください。",
-        "video_button": "動画を挿入",
-        "audio_button": "音声を挿入"
-      },
-      "policy": {
-        "title": "本文メディア",
-        "description": "エディタ本文に直接挿入する画像・動画・音声のルールです。添付ファイル設定とは別に適用されます。",
-        "use_custom": "本文メディアのルールを個別に設定",
-        "follows_attachment": "添付ポリシーに従う — 画像は添付ファイルのサイズと許可形式を基準、動画・音声は環境設定「本文コンテンツ」で有効にすると添付ファイルのサイズを基準",
-        "kind_image": "画像",
-        "kind_video": "動画",
-        "kind_audio": "音声",
-        "enabled": "許可",
-        "max_size_mb": "ファイルあたりの最大サイズ(MB)",
-        "extensions": "許可形式",
-        "max_per_document": "文書あたりの最大数",
-        "core_disabled_hint": "動画・音声のアップロードは、環境設定「本文コンテンツ」で有効にした場合のみ受け付けます。"
-      }
+      "$partial": "partial/content_media.json"
     },
     "navigation": {
       "leave_confirm": "保存されていない変更があります。このページを離れると入力した内容は失われます。移動しますか?"

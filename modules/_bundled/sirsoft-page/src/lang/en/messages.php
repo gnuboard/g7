@@ -4,6 +4,7 @@ return [
     'content_media' => [
         'upload_success' => 'Content media uploaded.',
         'upload_failed' => 'Failed to upload content media.',
+        'target_success' => 'Content media upload contract retrieved.',
     ],
 
     /*

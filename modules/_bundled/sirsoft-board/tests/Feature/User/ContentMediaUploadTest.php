@@ -128,6 +128,8 @@ class ContentMediaUploadTest extends BoardTestCase
      */
     public function test_files_outside_policy_are_rejected(): void
     {
+        // 대체 정책의 동영상은 코어 「동영상 업로드 허용」을 따른다 — 사이트 설정 파일 값에 기대지 않게 기본값(끔)으로 고정 (#887)
+        config(['g7_settings.core.content.allow_uploaded_video' => false]);
         $tempKey = (string) Str::uuid();
 
         $this->postJson($this->uploadUrl(), [

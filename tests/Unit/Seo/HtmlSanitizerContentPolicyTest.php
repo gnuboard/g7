@@ -45,4 +45,26 @@ class HtmlSanitizerContentPolicyTest extends TestCase
         config(['g7_settings.core.content' => ContentHtmlPolicy::defaults()]);
         $this->assertStringNotContainsString('<svg', (new HtmlSanitizer)->sanitize(self::SAMPLE));
     }
+
+    /**
+     * 「그림 캡션」·「외부 영상 삽입」을 끄면 봇 화면도 사람 화면과 같다 — 캡션만 내용째 지우고 그림은 남기며, 외부 영상은 원래 주소
+     * nofollow 링크(빈 상자 없음). 같은 표본을 표시기 쪽 `ContentPolicyRuntime.test.ts` 끈 상태 사례가 판정한다 (#887).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=caption_off
+     *
+     * @effects caption_off_drops_caption_keeps_image, embed_off_becomes_link
+     */
+    public function test_bot_sanitizer_follows_switched_off_candidates(): void
+    {
+        config(['g7_settings.core.content' => ['allow_figure_caption' => false, 'allow_external_embed' => false] + ContentHtmlPolicy::defaults()]);
+        $out = (new HtmlSanitizer)->sanitize(self::SAMPLE);
+
+        $this->assertStringNotContainsString('figcaption', $out);
+        $this->assertStringNotContainsString('설명', $out);
+        $this->assertStringContainsString('<img src="/a.png" alt="a">', $out);
+        $this->assertStringContainsString('<figure class="media"><a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" rel="noopener noreferrer nofollow" target="_blank">', $out);
+        $this->assertStringNotContainsString('<oembed', $out);
+    }
 }

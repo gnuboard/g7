@@ -186,6 +186,14 @@ interface ProductRepositoryInterface
     public function find(int $id): ?Product;
 
     /**
+     * ID로 상품 조회 — 휴지통에 든(소프트 삭제된) 상품 포함
+     *
+     * @param  int  $id  상품 ID
+     * @return Product|null 상품 모델 또는 null
+     */
+    public function findWithTrashed(int $id): ?Product;
+
+    /**
      * 상품 다중 필드 일괄 업데이트
      *
      * @param  array  $ids  상품 ID 배열

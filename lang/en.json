@@ -7,29 +7,7 @@
       "$partial": "partial/en/assets.json"
     },
     "content_media": {
-      "client": {
-        "kind_not_allowed": "This file type cannot be inserted into the content. Allowed types: {allowed}",
-        "extension_not_allowed": "This format cannot be inserted. Allowed formats: {extensions}",
-        "file_too_large": "The file is too large. Up to {max}MB can be inserted.",
-        "limit_reached": "Up to {max} media items can be inserted into the content.",
-        "upload_failed": "Could not upload the media. Please try again shortly.",
-        "video_button": "Insert video",
-        "audio_button": "Insert audio"
-      },
-      "policy": {
-        "title": "Content media",
-        "description": "Rules for images, videos and audio inserted directly into the editor content. Applied separately from attachment settings.",
-        "use_custom": "Set separate content media rules",
-        "follows_attachment": "Follow the attachment policy — images use the attachment size and allowed formats; video and audio use the attachment size once enabled in Settings > Content",
-        "kind_image": "Image",
-        "kind_video": "Video",
-        "kind_audio": "Audio",
-        "enabled": "Allow",
-        "max_size_mb": "Max size per file (MB)",
-        "extensions": "Allowed formats",
-        "max_per_document": "Max items per document",
-        "core_disabled_hint": "Video and audio uploads are accepted only when enabled in Settings > Content."
-      }
+      "$partial": "partial/en/content_media.json"
     },
     "navigation": {
       "leave_confirm": "You have unsaved changes. If you leave this page, what you entered will be lost. Leave anyway?"

@@ -1,0 +1,24 @@
+feature: 게시판 본문 미디어 — 코어 공용 훅 `core.content_media.*` 발화 (#887)
+
+description: |
+  게시판 본문 미디어의 업로드·영구 삭제는 코어 골격(`AbstractContentMediaService`)이 돌리므로 공용 훅이 발화한다. 업로드는
+  `before_upload` → `filter_upload_file` → `after_upload` 순서이고 문맥(`ContentMediaContext`)은 모듈 `sirsoft-board`·문서
+  `post`·범위 = 게시판 슬러그·임시 키·요청자·파일 종류다. 게시판 첨부 훅(`sirsoft-board.attachment.*`)은 본문 미디어에 발화하지
+  않는다. 본문에서 빠진 미디어의 소프트 삭제(휴지통)는 훅이 없고, 첨부 정리 명령이 영구 삭제할 때(임시 정리·소프트 삭제 정리)
+  본문 미디어 행마다 `before_delete` 를 발화한다. 게시판 영구 삭제(`BoardService::deleteBoard`)·글 영구 삭제(문의 샘플 글
+  정리 `forceDeleteWithRepliesByIds` 앞)도 본문 미디어 행을 골격(`purgeRows`)으로 먼저 지워 행마다 한 번 발화한다. 일반 첨부의
+  정리·훅은 그대로다.
+
+axes:
+  path: [upload, prune_temp, purge_soft_deleted, board_force_delete, post_force_delete]
+
+effects:
+  - upload_hooks_fired_in_order
+  - context_names_board_post
+  - attachment_hooks_not_fired
+  - before_delete_on_purge_only_for_content_media
+  - soft_delete_does_not_fire_before_delete
+  - before_delete_once_per_row_on_document_force_delete
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/ContentMediaHooksTest.php

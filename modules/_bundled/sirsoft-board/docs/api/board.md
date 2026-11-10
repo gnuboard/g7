@@ -217,8 +217,31 @@ Content-Disposition: attachment; filename="apidoc-sample.png"
 
 **응답 필드**: 사용자 업로드(`POST boards/{slug}/content-media`)와 같다(`data.id`·`data.hash`·`data.kind`·`data.url`). 서빙은 사용자 경로 `GET boards/{slug}/content-media/{hash}` 를 함께 쓴다.
 
-- 상태: `201` · `403` 스코프 밖 글 · `404` · `422` 정책 밖 파일·임시 키 없음·업로드 상한 초과
+- 상태: `201` · `403` 스코프 밖 글 · `404` · `422` 정책 밖 파일·임시 키 없음·업로드 상한 초과·업로드 파일 필터가 돌려준 파일이 정책 밖
+- 코어 공용 훅 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 가 발화한다(1.2.3, 코어 7.1.5). 게시판 첨부 훅(`sirsoft-board.attachment.*`)은 발화하지 않는다.
 <!-- @generated:end -->
+
+---
+
+### GET /api/modules/sirsoft-board/admin/board/{slug}/content-media/target
+<!-- @generated:start:api.modules.sirsoft-board.admin.board.content-media.target -->
+- **라우트명**: `api.modules.sirsoft-board.admin.board.content-media.target`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ContentMediaController@target`
+- **인증/권한**: `auth:sanctum` + `admin` + `permission:sirsoft-board.{slug}.admin.attachments.upload` · `throttle:60,1`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | 게시판 slug |
+
+**응답 필드**: 사용자 계약(`GET boards/{slug}/content-media/target`)과 같은 모양이고 `data.endpoint` 가 관리자 업로드 주소(`/api/modules/sirsoft-board/admin/board/{slug}/content-media`)다. 받는 종류가 없으면 `data: null`.
+
+- 상태: `200` · `401` 미인증 · `403` 관리자 업로드 권한 없음 · `404` 게시판 없음
+- 관리자 글쓰기 폼 메타(`GET admin/board/{slug}/posts/form-meta`)의 `data.content_media` 는 같은 값을 계속 싣는다(호환, 폐기 예정).
+<!-- @generated:end -->
+
+**설명** 관리자 글쓰기 편집기의 본문 미디어 업로드 계약을 내는 표준 계약 엔드포인트입니다(1.2.3). 판정은 관리자 본문 미디어 업로드와 같은 `admin.attachments.upload` 권한이고, 값은 그 게시판 본문 미디어 정책입니다. 관리자 글쓰기 화면은 이 응답을 데이터소스 `content_media_target` 으로 받아 편집기 `mediaUpload` 에 넘깁니다.
 
 ---
 
@@ -859,7 +882,7 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 
-> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 관리자 업로드 권한(`admin.attachments.upload`)이 있으면 관리자 업로드 주소(`admin/board/{slug}/content-media`)를 담은 계약, 없으면 `null`. 형식은 사용자 폼 메타와 같다.
+> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 관리자 업로드 권한(`admin.attachments.upload`)이 있으면 관리자 업로드 주소(`admin/board/{slug}/content-media`)를 담은 계약, 없으면 `null`. 형식은 사용자 폼 메타와 같다. 표준 계약 엔드포인트 `GET admin/board/{slug}/content-media/target` 과 같은 값이며, 옛 화면 호환으로 계속 싣는다(폐기 예정 — 새 화면은 표준 엔드포인트를 쓴다).
 
 <!-- @generated:end -->
 
@@ -1079,7 +1102,7 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_post | boolean | `false` | guest post 여부 |
 | title | string | `API 문서 샘플 게시글` | 제목 |
-| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용 |
+| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용. HTML 본문의 본문 미디어 주소 가운데 **이 글 소유** 미디어만 한시 서명 주소로 나간다(1.2.3). 다른 글 소유 주소는 서명 없이 나가 원래 글의 열람 권한을 따른다 |
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | user 식별자 (연관 리소스 참조) |
 | trigger_type | string | `user` | 상태 변경(삭제/블라인드 등)을 유발한 주체. `report`(신고) / `admin`(관리자 직권) / `system`(시스템) / `auto_hide`(신고 누적 자동 블라인드) / `user`(사용자 직접) / `cascade`(상위 삭제 연쇄) 중 하나입니다. |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |

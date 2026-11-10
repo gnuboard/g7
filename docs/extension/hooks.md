@@ -424,6 +424,13 @@ core.attachment.download
 core.attachment.update
 core.attachment.delete
 
+# 본문 미디어 공용 훅 (7.1.5) — 모든 확장(모듈·플러그인)의 편집기 본문 미디어. 마지막 인자는 ContentMediaContext
+# (어느 확장·문서의 미디어인지). 확장별 첨부 훅은 본문 미디어에 발화하지 않는다. 상세: content-media.md 「공용 훅」
+core.content_media.before_upload        # (UploadedFile, ctx) 저장 전
+core.content_media.filter_upload_file   # (UploadedFile, ctx) → UploadedFile — 돌려준 파일은 형식·크기 판정을 다시 거친다
+core.content_media.after_upload         # (행, ctx) 행 생성 뒤
+core.content_media.before_delete        # (행, ctx) 행·파일 영구 삭제 직전에만 — 소프트 삭제 때는 발화하지 않는다
+
 # 스토리지 공개 URL 훅 (Filter) — StorageInterface::url() 결과 공급/수정/차단 (공개#100)
 # 컨텍스트 6키는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.storage.filter_url
@@ -459,6 +466,9 @@ sirsoft-page.page.filter_content_thumbnail
 # 새 원본 파일명(xxx.webp)으로 UploadedFile 을 재구성해 반환할 것 — 일부 소비처는 저장
 # 확장자를 원본 파일명에서 얻으므로, 이름을 갱신하지 않으면 확장자와 내용이 어긋난다.
 core.attachment.filter_upload_file                      # 코어 첨부 (아바타 포함)
+core.content_media.before_upload                        # 편집기 본문 미디어 — 모든 확장 공용 (7.1.5)
+core.content_media.filter_upload_file                   # 편집기 본문 미디어 — 반환 파일은 정책 판정을 다시 거침 (7.1.5)
+core.content_media.after_upload                         # 편집기 본문 미디어 (7.1.5)
 core.template_layout_attachment.before_upload           # 레이아웃 편집기 첨부 (7.0.7)
 core.template_layout_attachment.filter_upload_file      # 레이아웃 편집기 첨부 (7.0.7)
 core.template_layout_attachment.after_upload            # 레이아웃 편집기 첨부 (7.0.7)
@@ -678,9 +688,10 @@ $boards = $this->cache->remember('board_menu', function () {
 | 훅 | 타입 | 받는 값 → 돌려줄 값 |
 | --- | --- | --- |
 | `core.content.filter_embed_providers` | filter | `array $providers`(처음 `[]`) → 외부 영상 서비스 항목 목록. 항목에 `extension`(확장 식별자) 필수, 검증 실패 항목은 버린다. 운영자가 「본문 콘텐츠」 탭에서 켜야 쓰인다 |
-| `core.content.filter_media_source_patterns` | filter | `array $patterns`(구분자 없는 정규식) → 목록. 본문 `<video>`·`<audio>`·`<source>` 의 `src`·`poster` 가 맞아야 남는 서빙 주소 |
+| `core.content.filter_media_source_patterns` | filter | `array $patterns`(구분자 없는 정규식 — 확장이 등록한 서빙 라우트에서 만든 패턴) → 목록. 본문 `<video>`·`<audio>`·`<source>` 의 `src`·`poster` 가 맞아야 남는 서빙 주소를 더한다(기본 패턴 없음) |
 
-항목 형식·기본 서빙 주소 패턴·예시는 [본문 미디어 업로드 계약 — 본문 콘텐츠 규칙](content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy)을 보세요.
+항목 형식·서빙 주소 패턴 생성 규칙·예시는 [본문 미디어 업로드 계약 — 본문 콘텐츠 규칙](content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy)을 보세요.
+본문 미디어 업로드·영구 삭제 훅(`core.content_media.*`)의 인자·발화 시점은 [본문 미디어 업로드 계약 — 공용 훅](content-media.md#공용-훅-corecontent_media)에 있습니다.
 
 ### 스토리지·드라이버 확장 훅 페이로드
 

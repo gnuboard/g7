@@ -7,29 +7,7 @@
       "$partial": "partial/ko/assets.json"
     },
     "content_media": {
-      "client": {
-        "kind_not_allowed": "본문에 넣을 수 없는 파일 형식입니다. 넣을 수 있는 형식: {allowed}",
-        "extension_not_allowed": "이 형식은 넣을 수 없습니다. 넣을 수 있는 형식: {extensions}",
-        "file_too_large": "파일이 너무 큽니다. 최대 {max}MB 까지 넣을 수 있습니다.",
-        "limit_reached": "본문에는 미디어를 최대 {max}개까지 넣을 수 있습니다.",
-        "upload_failed": "본문 미디어를 올리지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
-        "video_button": "동영상 넣기",
-        "audio_button": "오디오 넣기"
-      },
-      "policy": {
-        "title": "본문 미디어",
-        "description": "편집기 본문에 바로 넣는 이미지·동영상·오디오의 규칙입니다. 첨부 파일 설정과 따로 적용됩니다.",
-        "use_custom": "본문 미디어 규칙을 따로 정함",
-        "follows_attachment": "첨부 정책을 따름 — 이미지는 첨부 파일당 크기와 허용 형식 기준, 동영상·오디오는 환경설정 「본문 콘텐츠」에서 켜면 첨부 파일당 크기 기준",
-        "kind_image": "이미지",
-        "kind_video": "동영상",
-        "kind_audio": "오디오",
-        "enabled": "허용",
-        "max_size_mb": "파일당 최대 크기(MB)",
-        "extensions": "허용 형식",
-        "max_per_document": "문서당 최대 개수",
-        "core_disabled_hint": "동영상·오디오 업로드는 환경설정 「본문 콘텐츠」에서 켜야 실제로 받습니다."
-      }
+      "$partial": "partial/ko/content_media.json"
     },
     "navigation": {
       "leave_confirm": "저장하지 않은 변경사항이 있습니다. 이 화면을 떠나면 입력한 내용이 사라집니다. 이동할까요?"

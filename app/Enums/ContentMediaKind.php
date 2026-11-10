@@ -53,6 +53,18 @@ enum ContentMediaKind: string
     }
 
     /**
+     * 이 종류의 MIME 전부 — 확장자 표 순서, 중복 제거 (#887).
+     *
+     * 서빙 헤더 판정(`InlineMediaPolicy::playableMimeTypes`)이 동영상·오디오 목록을 이 값으로 만든다 — MIME 의 단일 출처.
+     *
+     * @return array<int, string> MIME 목록
+     */
+    public function mimeTypes(): array
+    {
+        return $this->mimeTypesFor(array_keys($this->mimeMap()));
+    }
+
+    /**
      * 확장자 목록에 해당하는 MIME 목록.
      *
      * @param  array<int, string>  $extensions  확장자 목록

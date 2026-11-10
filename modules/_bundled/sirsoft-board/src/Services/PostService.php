@@ -324,7 +324,9 @@ class PostService
             $this->linkAttachments($slug, $post->id, $attachmentIds, $tempKey, $files, '생성');
 
             // 본문이 참조한 본문 미디어만 글에 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
-            $this->contentMediaService->syncWithContent($slug, $post, $tempKey, $this->contentMediaContext($post));
+            // 다른 글 소유 본문 미디어는 이 글 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            $post = $this->applyClonedContentMedia($slug, $post,
+                $this->contentMediaService->syncWithContent($slug, $post, $tempKey, $this->contentMediaContext($post)));
 
             // 훅: before_create_commit — 트랜잭션 안·글 ID 확정·첨부 연결 뒤. 확장이 같은 트랜잭션에서 자기 데이터를
             // 저장하는 자리다(sync 리스너만, 예외는 저장 전체를 되돌린다, 파일은 StorageTransaction). (#883)
@@ -415,7 +417,9 @@ class PostService
             $this->linkAttachments($slug, $updatedPost->id, $attachmentIds, $tempKey, [], '수정');
 
             // 본문 미디어 동기화 — 본문에서 빠진 것은 소프트 삭제, 새로 참조한 임시 본문 미디어는 잇는다 (#883)
-            $this->contentMediaService->syncWithContent($slug, $updatedPost, $tempKey, $this->contentMediaContext($updatedPost));
+            // 다른 글 소유 본문 미디어는 이 글 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            $updatedPost = $this->applyClonedContentMedia($slug, $updatedPost,
+                $this->contentMediaService->syncWithContent($slug, $updatedPost, $tempKey, $this->contentMediaContext($updatedPost)));
 
             // 훅: before_update_commit — 트랜잭션 안·첨부 연결 뒤 (생성의 before_create_commit 과 같은 규약, #883)
             HookManager::doAction('sirsoft-board.post.before_update_commit', $updatedPost, $slug, $data, $snapshot);
@@ -1221,6 +1225,23 @@ class PostService
     }
 
     /**
+     * 본문 미디어 동기화가 복제한 해시로 바뀐 본문을 글에 다시 저장합니다 — 저장 트랜잭션 안 (#887).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  Post  $post  저장된 글
+     * @param  array{cloned?: int, content?: string|null}  $result  `PostContentMediaService::syncWithContent` 결과
+     * @return Post 본문을 다시 저장한 글 (복제가 없으면 그대로)
+     */
+    private function applyClonedContentMedia(string $slug, Post $post, array $result): Post
+    {
+        if (($result['cloned'] ?? 0) < 1 || ! array_key_exists('content', $result) || $result['content'] === $post->content) {
+            return $post;
+        }
+
+        return $this->postRepository->update($slug, $post->id, ['content' => $result['content']]);
+    }
+
+    /**
      * 본문 미디어 삭제 주체 — 작성자 본인이 고치면 user, 남의 글을 고치면(관리 권한자) admin.
      *
      * @param  Post  $post  게시글
@@ -1232,7 +1253,6 @@ class PostService
 
         return ($userId !== null && $post->user_id !== null && (int) $post->user_id !== (int) $userId) ? 'admin' : 'user';
     }
-
 
     /**
      * 게시글에 첨부파일을 연결합니다.

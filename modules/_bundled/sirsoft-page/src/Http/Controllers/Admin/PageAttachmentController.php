@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Page\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
@@ -11,6 +10,7 @@ use Modules\Sirsoft\Page\Http\Requests\ReorderPageAttachmentsRequest;
 use Modules\Sirsoft\Page\Http\Requests\UploadPageAttachmentRequest;
 use Modules\Sirsoft\Page\Http\Resources\PageAttachmentResource;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
+use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -138,7 +138,8 @@ class PageAttachmentController extends AdminBaseController
      */
     public function settings(): JsonResponse
     {
-        // 편집기 본문 미디어 업로드 계약을 함께 싣는다 — 페이지 폼이 이미 이 응답을 읽는다 (#883)
+        // 편집기 본문 미디어 업로드 계약을 함께 싣는다 (#883). 표준 길은 `GET admin/content-media/target` 이고(#887),
+        // 이 키는 같은 값을 계속 싣는 호환 별칭이다(폐기 예정 — 옛 화면·복제 레이아웃이 읽는다)
         return $this->success(
             'sirsoft-page::messages.attachment.settings_success',
             $this->attachmentService->publicLimits() + ['content_media' => app(PageContentMediaService::class)->uploadTarget()]

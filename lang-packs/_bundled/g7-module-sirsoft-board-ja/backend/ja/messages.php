@@ -123,6 +123,7 @@ return [
     'content_media' => [
         'upload_success' => '本文メディアをアップロードしました。',
         'upload_failed' => '本文メディアをアップロードできませんでした。',
+        'target_success' => '本文メディアのアップロード条件を取得しました。',
     ],
 
     'attachment' => [

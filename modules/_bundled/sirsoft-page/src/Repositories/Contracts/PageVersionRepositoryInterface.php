@@ -57,4 +57,15 @@ interface PageVersionRepositoryInterface
      * @throws ModelNotFoundException
      */
     public function findForPage(int $pageId, int $id): PageVersion;
+
+    /**
+     * 페이지의 어느 버전 본문이든 이 본문 미디어 해시를 참조하는지 확인합니다 (#887).
+     *
+     * 버전 본문은 다국어 JSON(배열 캐스트)이라 주소의 `/` 가 `\/` 로 저장되므로, 주소가 아니라 12자 해시로 찾는다.
+     *
+     * @param  int  $pageId  페이지 ID
+     * @param  string  $hash  본문 미디어 해시 (12자 영숫자)
+     * @return bool 참조하는 버전이 하나라도 있으면 true
+     */
+    public function referencesHash(int $pageId, string $hash): bool;
 }

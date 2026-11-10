@@ -1350,8 +1350,8 @@ return [
         // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
         'content_settings' => '본문 콘텐츠 설정',
         'content_allow_figure_caption' => '그림 설명 허용',
-        'content_allow_uploaded_video' => '업로드 동영상 허용',
-        'content_allow_uploaded_audio' => '업로드 오디오 허용',
+        'content_allow_uploaded_video' => '동영상 업로드 허용',
+        'content_allow_uploaded_audio' => '오디오 업로드 허용',
         'content_allow_external_embed' => '외부 영상 삽입 허용',
         'content_embed_presets' => '외부 영상 서비스 사용 여부',
         'content_embed_custom_providers' => '직접 추가한 외부 영상 서비스',

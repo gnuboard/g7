@@ -301,10 +301,10 @@ class PageAttachmentService
 
         HookManager::doAction('sirsoft-page.attachment.before_delete', $attachment);
 
-        // 물리 파일 삭제
-        $this->storage->delete('attachments', $attachment->path);
+        // 물리 파일 삭제 — 트랜잭션 안(페이지 삭제 등)이면 커밋된 뒤에 지워, 롤백되어 행이 되돌아와도 파일이 남게 한다 (#887)
+        StorageTransaction::deleteAfterCommit($this->storage, 'attachments', $attachment->path);
 
-        // DB 소프트 삭제
+        // DB 행 삭제
         $result = $this->attachmentRepository->delete($attachment);
 
         HookManager::doAction('sirsoft-page.attachment.after_delete', $attachment);
@@ -320,6 +320,8 @@ class PageAttachmentService
      * "끝내 연결되지 않았다" 는 뜻이고, 그래서 오탐 여지가 없습니다.
      *
      * 파일 → 행 순서를 지켜, 행이 먼저 사라져 파일을 못 찾는 상태를 만들지 않습니다.
+     * 본문 미디어 임시 행(`collection = content_media`)은 대상이 아닙니다 — 코어 골격의 정리
+     * (`PageContentMediaService::pruneStaleTemp`)가 공용 삭제 훅과 함께 지웁니다 (#887).
      *
      * @param  int  $days  보존기간(일)
      * @param  int  $limit  한 회차에 처리할 최대 건수

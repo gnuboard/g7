@@ -6,7 +6,8 @@
       "pages": "페이지 목록",
       "versions": "버전 이력",
       "attachmentSettings": "첨부 설정",
-      "createAbility": "등록 권한 확인"
+      "createAbility": "등록 권한 확인",
+      "contentMediaTarget": "본문 미디어 업로드 계약"
     }
   },
   "admin": {

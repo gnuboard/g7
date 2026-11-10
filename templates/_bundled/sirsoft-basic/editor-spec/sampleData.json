@@ -1692,6 +1692,9 @@
         "parent": null
       }
     },
+    "content_media_target": {
+      "data": null
+    },
     "form_meta": {
       "data": {
         "board": {

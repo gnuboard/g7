@@ -592,6 +592,14 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function findWithTrashed(int $id): ?Product
+    {
+        return $this->model->newQuery()->withTrashed()->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function bulkUpdateFields(array $ids, array $fields): int
     {
         if (empty($ids) || empty($fields)) {

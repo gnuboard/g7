@@ -204,7 +204,7 @@ class Plugin extends AbstractPlugin
             'categories' => [
                 [
                     'identifier' => 'uploads',
-                    'name' => ['ko' => '에디터 업로드 이미지', 'en' => 'Editor Uploads'],
+                    'name' => ['ko' => '에디터 직접 업로드 이미지', 'en' => 'Editor Direct Uploads'],
                     'description' => [
                         'ko' => '에디터로 업로드된 이미지의 조회·삭제 권한',
                         'en' => 'View and delete permissions for images uploaded via the editor',
@@ -249,7 +249,7 @@ class Plugin extends AbstractPlugin
     {
         return [
             [
-                'name' => ['ko' => '에디터 업로드 이미지', 'en' => 'Editor Uploads'],
+                'name' => ['ko' => '에디터 직접 업로드 이미지', 'en' => 'Editor Direct Uploads'],
                 'slug' => 'sirsoft-ckeditor5-uploads',
                 'url' => '/admin/plugins/sirsoft-ckeditor5/uploads',
                 'icon' => 'fas fa-images',

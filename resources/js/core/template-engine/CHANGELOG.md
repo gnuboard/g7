@@ -5,6 +5,15 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.90.1] - 2026-11-09
+
+### Fixed
+
+- 「본문 콘텐츠」의 「그림 캡션」을 꺼도 사용자·관리자 화면에 캡션(`<figcaption>`)이 그대로 보이던 문제 — `figcaption` 은 DOMPurify 가 원래 받는 태그라 후보를 꺼도 금지되지 않았다. 서버 규칙에 표시 제거 태그 `render_policy.drop_tags`(캡션 끔이면 `['figcaption']`)를 더하고, `ContentPolicyRuntime.sanitize()` 가 이 태그를 `FORBID_TAGS` + `ADD_FORBID_CONTENTS` 로 내용째 지운다(그림 `figure`·`img` 는 남김). 편집기 금지 목록(`forbid_tags`)에는 넣지 않아 저장 원문은 그대로이고 다시 켜면 복원된다.
+- 「외부 영상 삽입」을 끄면 영상 주소가 사라지고 빈 `<figure class="media"></figure>` 만 남던 문제 — 끈 규칙에는 `oembed` 가 허용 태그에 없어 정화 단계에서 지워져 `renderEmbeds()` 가 링크로 바꿀 기회가 없었다. `sanitize()` 가 `oembed`(`url` 속성은 `oembed` 에서만)를 늘 통과시켜 `renderEmbeds()` 가 원래 주소 `rel="noopener noreferrer nofollow"` 새 창 링크로 바꾼다 — 봇 화면(`finalize('bot')`)과 같은 결과.
+
+배경: #883(engine-v1.90.0)의 끈 상태 표시를 실측하지 않았다(#887 점검에서 발견). 서버 짝: `ContentHtmlPolicy::displayDropTags()`·`DISPLAY_DROP_WHEN_OFF`, 봇 화면 `finalize('bot')` 도 캡션을 지운다. 회귀 잠금: `contentPolicy/__tests__/ContentPolicyRuntime.test.ts`(끈 상태 2건 + 고정본 1건, 수정 전 3건 red), 두 템플릿 `HtmlContent.contentPolicy.test.tsx`(끈 상태 2건씩, 수정 전 red).
+
 ## [engine-v1.90.0] - 2026-11-08
 
 ### Added

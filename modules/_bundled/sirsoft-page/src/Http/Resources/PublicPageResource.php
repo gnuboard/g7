@@ -3,9 +3,9 @@
 namespace Modules\Sirsoft\Page\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Page\Services\PageContentMediaService;
 
 /**
  * 페이지 API 리소스 (공개용)
@@ -63,11 +63,13 @@ class PublicPageResource extends BaseApiResource
             'slug' => $this->slug,
             'title' => $this->getLocalizedTitle(),
             // 미리보기(미발행)만 본문 미디어를 서명 주소로 — 발행 페이지는 정식 주소라 정적 캐시와 충돌하지 않는다 (#883)
+            // 서명은 이 페이지가 소유한 해시만 — 다른 페이지 소유 해시는 원본 페이지의 게이트를 따른다 (#887)
             'content' => app(PageContentMediaService::class)->presentContent(
                 is_array($this->content)
                     ? (LocalizedValue::pick($this->content, $locale) ?? '')
                     : (string) ($this->content ?? ''),
-                (bool) $this->published
+                (bool) $this->published,
+                (int) $this->id
             ),
             'content_mode' => $this->content_mode ?? 'html',
             // 본문 첫 내부 이미지 URL 캐시 — 페이지 표시 레이아웃의 og:image 가 소비 (공개 #22)

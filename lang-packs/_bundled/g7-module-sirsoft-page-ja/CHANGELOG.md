@@ -10,6 +10,7 @@
 
 - 페이지 1.2.2 의 브라우저 실측 데이터 시더 안내(`seeders.issue162_measure.*` — 실행 조건 안내·생성·정리 완료 건수)의 일본어 번역을 추가했습니다.
 - 페이지 편집기 본문 미디어 업로드(페이지 1.2.2)의 결과 안내와 검증 항목 이름 일본어 번역을 추가했습니다.
+- 페이지 편집기 본문 미디어 업로드 계약 조회(`GET admin/content-media/target`, 페이지 1.2.2)의 결과 안내(`messages.content_media.target_success`)와 화면 편집기 데이터 출처 「본문 미디어 업로드 계약」(`editor.data_source.contentMediaTarget`)의 일본어 번역을 추가했습니다.
 
 ## [1.0.4] - 2026-10-21
 

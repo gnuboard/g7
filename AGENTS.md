@@ -19,9 +19,7 @@
 
 ## 프로젝트 개요
 
-**프로젝트명**: 그누보드7
-**목적**: 오픈소스 CMS 플랫폼
-**설계 원칙**: 코어 수정 최소화, 모듈화, 플러그인 시스템, 템플릿 시스템, 동적 로딩
+**설계 원칙**: 코어 수정 최소화, 모듈화, 플러그인·템플릿 시스템, 동적 로딩
 
 ## 버전 동기화 의무
 
@@ -91,7 +89,7 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 
 ## 절대 금지 패턴 (CRITICAL RULES)
 
-표의 왼쪽은 금지, 오른쪽이 올바른 사용이다. 영역별 전문: [docs/rules/README.md](docs/rules/README.md)
+영역별 전문: [docs/rules/README.md](docs/rules/README.md)
 
 | 영역 | 문서 |
 |---|---|
@@ -104,17 +102,18 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 
 ## 파일 유형별 규정 확인
 
-파일을 수정하기 전에 그 유형의 규정 문서를 읽는다. 아래 표는 파일 규정 매핑에서 자동 생성한다 — 손으로 고치지 않는다.
+수정 전에 그 유형의 규정 문서를 읽는다. 표는 파일 규정 매핑의 자동 생성물이다(손으로 고치지 않는다).
 
 <!-- AUTO-GENERATED-START: file-type-rules -->
 | 수정 대상 파일 패턴 | 작업 전 필수 참조 |
 | --- | --- |
 | `(modules\|plugins\|templates)/_bundled/{id}/**` | 그 확장의 `AGENTS.md` · `docs/README.md` (설계 의도·동반 의무). 표면이 바뀌면 `php artisan ext:docgen --scope={type}:{id}` |
+| 확장의 본문 미디어(서빙 라우트를 `ContentMediaRegistrar` 로 등록·어댑터 `ContentMediaStore`) | [content-media](docs/extension/content-media.md) |
 | `app/Support/**/*.php` | [service-repository](docs/backend/service-repository.md), [validation](docs/backend/validation.md), [testing-guide](docs/testing-guide.md) |
 | `app/Http/View/Composers/**` | [service-repository](docs/backend/service-repository.md), [template-basics](docs/extension/template-basics.md), [testing-guide](docs/testing-guide.md) |
 | `resources/views/**/*.blade.php` | [template-basics](docs/extension/template-basics.md), [testing-guide](docs/testing-guide.md) |
 | 코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
-| `resources/js/core/{template-engine/**,TemplateApp.ts,template-engine.ts,auth/**,identity/**,support/**}` | [state-management](docs/frontend/state-management.md) |
+| `resources/js/core/{template-engine*,TemplateApp.ts,auth,identity,support,contentPolicy,contentMedia}` | [state-management](docs/frontend/state-management.md) |
 | 번들 확장 공개 표면(`src/{Services,Contracts,Repositories,Models}/**`·`routes/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
 | `**/extensions/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-extensions](docs/extension/layout-extensions.md), [layout-json](docs/frontend/layout-json.md) |
 | `(modules|plugins|templates)/**/editor-spec.json`·`editor-spec/**/*.json` | [editor-spec](docs/extension/editor-spec.md) |

@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (625)
+- [코어](#코어) (630)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -92,6 +92,7 @@
 | `core.attachment.before_download_action` | action | 2 |  |
 | `core.attachment.before_reorder` | action | 1 |  |
 | `core.attachment.before_upload` | action | 3 |  |
+| `core.attachment.filter_can_download` | filter | 3 |  |
 | `core.attachment.filter_upload_file` | filter | 1 |  |
 | `core.attachment.reorder_validation_rules` | filter | 2 |  |
 | `core.attachment.upload_batch_validation_rules` | filter | 2 |  |
@@ -136,6 +137,10 @@
 | `core.consent.registered_providers` | filter | 1 |  |
 | `core.content.filter_embed_providers` | filter | 1 |  |
 | `core.content.filter_media_source_patterns` | filter | 1 |  |
+| `core.content_media.after_upload` | action | 2 |  |
+| `core.content_media.before_delete` | action | 2 |  |
+| `core.content_media.before_upload` | action | 2 |  |
+| `core.content_media.filter_upload_file` | filter | 2 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
 | `core.custom_translation.index_validation_rules` | filter | 2 |  |

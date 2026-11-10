@@ -3,14 +3,17 @@
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Exceptions\ContentMediaLimitExceededException;
-use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Http\Controllers\Concerns\RespondsWithContentMediaTarget;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
+use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
 use Modules\Sirsoft\Board\Http\Requests\UploadContentMediaRequest;
+use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Support\GuestUploadOwnerCookie;
@@ -24,25 +27,51 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *
  * 업로드는 그 게시판 `attachments.upload` 권한(비회원 포함)과 본문 미디어 정책으로 판정한다. 「파일 첨부 사용」은 보지 않는다(D26).
  * 서빙에는 권한 미들웨어가 없다 — `<img>`·`<video>` 요청에는 Bearer 가 실리지 않으므로, 서명·글 읽기 권한·콘텐츠 게이트를
- * 서비스(`findServable`)가 맡는다.
+ * 서비스(`findServable`)가 맡는다. 편집기 업로드 계약은 표준 엔드포인트 `GET boards/{slug}/content-media/target`(#887)이 낸다.
  */
 class ContentMediaController extends PublicBaseController
 {
     use RespondsToExpiredSession;
+    use RespondsWithContentMediaTarget;
 
     /**
      * @param  PostContentMediaService  $contentMediaService  본문 미디어 서비스
      * @param  PostService  $postService  게시글 서비스 (post_id 의 같은 게시판 글 확인)
      * @param  PostModifyGate  $postModifyGate  글 수정 판정 (post_id 업로드)
      * @param  GuestUploadOwnerCookie  $guestOwnerCookie  비회원 업로드 소유 쿠키
+     * @param  BoardService  $boardService  게시판 서비스 (계약 엔드포인트의 게시판 확인)
      */
     public function __construct(
         private PostContentMediaService $contentMediaService,
         private PostService $postService,
         private PostModifyGate $postModifyGate,
         private GuestUploadOwnerCookie $guestOwnerCookie,
+        private BoardService $boardService,
     ) {
         parent::__construct();
+    }
+
+    /**
+     * 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887).
+     *
+     * 값은 그 게시판 본문 미디어 정책이고(코어는 동영상·오디오 업로드 허용 스위치로만 관여), 판정은 업로드와 같은
+     * `attachments.upload` 권한이다. 글쓰기 폼 메타 `content_media` 는 같은 값을 계속 싣는다(호환).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return JsonResponse 200 `{data: 계약|null}` / 403 / 404
+     */
+    public function target(string $slug): JsonResponse
+    {
+        $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+        if (! $board) {
+            return $this->notFound('sirsoft-board::messages.boards.not_found');
+        }
+
+        return $this->contentMediaTargetResponse(
+            $this->contentMediaService->media(),
+            $this->contentMediaService->context($slug, $board),
+            'sirsoft-board::messages.content_media.target_success',
+        );
     }
 
     /**
@@ -86,6 +115,9 @@ class ContentMediaController extends PublicBaseController
             return $guestToken !== null ? $this->guestOwnerCookie->attach($response, $guestToken, $request) : $response;
         } catch (ContentMediaLimitExceededException $e) {
             return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded'], $e->getMessageParams());
+        } catch (ValidationException $e) {
+            // 업로드 파일 필터(`core.content_media.filter_upload_file`)가 돌려준 파일이 정책에 맞지 않으면 422 (#887)
+            throw $e;
         } catch (ModelNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.errors.post_not_found');
         } catch (AccessDeniedHttpException $e) {

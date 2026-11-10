@@ -195,6 +195,7 @@ return [
     'content_media' => [
         'upload_success' => '본문 미디어를 올렸습니다.',
         'upload_failed' => '본문 미디어를 올리지 못했습니다.',
+        'target_success' => '본문 미디어 업로드 조건을 조회했습니다.',
     ],
 
     'attachment' => [

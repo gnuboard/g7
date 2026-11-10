@@ -129,6 +129,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
         return PageAttachment::query()
             ->whereNotNull('temp_key')
             ->whereNull('page_id')
+            ->where('collection', '!=', PageAttachment::COLLECTION_CONTENT_MEDIA)
             ->where('created_at', '<', $threshold)
             ->orderBy('created_at')
             ->orderBy('id')
@@ -251,5 +252,21 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
     public function linkContentMedia(PageAttachment $attachment, int $pageId, int $order): void
     {
         $attachment->update(['page_id' => $pageId, 'temp_key' => null, 'order' => $order]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findStaleTempContentMedia(Carbon $threshold, int $limit): Collection
+    {
+        return PageAttachment::query()
+            ->whereNull('page_id')
+            ->whereNotNull('temp_key')
+            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
+            ->where('created_at', '<', $threshold)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
     }
 }

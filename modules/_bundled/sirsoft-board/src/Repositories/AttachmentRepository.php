@@ -677,7 +677,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
             ->orderBy('created_at')
             ->orderBy('id')
             ->limit($limit)
-            ->get(['id', 'board_id', 'temp_key', 'disk', 'path', 'created_at']);
+            ->get(['id', 'board_id', 'temp_key', 'collection', 'disk', 'path', 'created_at']);
     }
 
     /**
@@ -694,7 +694,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
             ->orderBy('deleted_at')
             ->orderBy('id')
             ->limit($limit)
-            ->get(['id', 'board_id', 'post_id', 'disk', 'path', 'deleted_at']);
+            ->get(['id', 'board_id', 'post_id', 'collection', 'disk', 'path', 'deleted_at']);
     }
 
     /**
@@ -712,7 +712,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         return Attachment::withTrashed()
             ->whereIn('post_id', $postIds)
             ->orderBy('id')
-            ->get(['id', 'board_id', 'post_id', 'disk', 'path', 'deleted_at']);
+            ->get(['id', 'board_id', 'post_id', 'collection', 'disk', 'path', 'deleted_at']);
     }
 
     /**
@@ -823,5 +823,89 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         $attachment->trigger_type = $triggerType;
         $attachment->save();
         $attachment->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findContentMediaByHashInAnyBoard(string $hash): ?Attachment
+    {
+        return Attachment::query()
+            ->where('hash', $hash)
+            ->where('collection', Attachment::COLLECTION_CONTENT_MEDIA)
+            ->where(function ($scope) {
+                $scope->where(fn ($linked) => $linked->where('board_id', '>', 0)->whereNotNull('post_id'))
+                    ->orWhere(fn ($temp) => $temp->where('board_id', 0)->whereNull('post_id'));
+            })
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findStaleContentMedia(Carbon $threshold, int $limit): Collection
+    {
+        $temp = Attachment::query()
+            ->where('collection', Attachment::COLLECTION_CONTENT_MEDIA)
+            ->whereNotNull('temp_key')
+            ->whereNull('post_id')
+            ->where('created_at', '<', $threshold)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+
+        $removed = Attachment::onlyTrashed()
+            ->where('collection', Attachment::COLLECTION_CONTENT_MEDIA)
+            ->where('deleted_at', '<', $threshold)
+            ->orderBy('deleted_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+
+        return $temp->concat($removed)->values();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findContentMediaWithTrashedByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        return Attachment::withTrashed()
+            ->whereIn('id', $ids)
+            ->where('collection', Attachment::COLLECTION_CONTENT_MEDIA)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkContentMediaWithTrashedByBoardId(int $boardId, int $size, callable $callback): void
+    {
+        Attachment::withTrashed()
+            ->where('board_id', $boardId)
+            ->where('collection', Attachment::COLLECTION_CONTENT_MEDIA)
+            ->chunkById(max(1, $size), $callback);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findContentMediaWithTrashedByPostIds(array $postIds): Collection
+    {
+        if ($postIds === []) {
+            return new Collection;
+        }
+
+        return Attachment::withTrashed()
+            ->whereIn('post_id', $postIds)
+            ->where('collection', Attachment::COLLECTION_CONTENT_MEDIA)
+            ->orderBy('id')
+            ->get();
     }
 }

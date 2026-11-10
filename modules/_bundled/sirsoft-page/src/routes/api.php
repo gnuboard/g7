@@ -128,6 +128,14 @@ Route::prefix('admin/content-media')->middleware(['auth:sanctum', 'throttle:60,1
         ->name('upload');
 });
 
+// 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트(#887). 폼을 열 때마다 받으므로 조회 상한은 일반 관리자 조회와 같게 둔다.
+// 권한은 업로드와 같다(등록·수정 어느 쪽이든). 옛 길 `GET admin/attachments/settings` 의 `content_media` 도 같은 값을 싣는다
+Route::prefix('admin/content-media')->middleware(['auth:sanctum', 'throttle:600,1'])->name('admin.content-media.')->group(function () {
+    Route::get('/target', [PageContentMediaController::class, 'target'])
+        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
+        ->name('target');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Public Page Routes (공개 페이지 조회)

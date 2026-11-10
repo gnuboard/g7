@@ -369,4 +369,49 @@ interface AttachmentRepositoryInterface
      * @return void 반환값 없음
      */
     public function softDeleteContentMedia(Attachment $attachment, string $triggerType): void;
+
+    /**
+     * 해시로 본문 미디어를 모든 게시판에서 찾습니다 — 글에 이어진 것 또는 임시 본문 미디어, 소프트 삭제 제외 (#887 복제 원본)
+     *
+     * @param  string  $hash  해시
+     * @return Attachment|null 본문 미디어
+     */
+    public function findContentMediaByHashInAnyBoard(string $hash): ?Attachment;
+
+    /**
+     * 정리할 본문 미디어 — 기준 시각 전에 올리고 끝내 잇지 않은 임시 행 + 기준 시각 전에 소프트 삭제된 행 (#887)
+     *
+     * @param  Carbon  $threshold  기준 시각
+     * @param  int  $limit  종류마다 최대 건수
+     * @return Collection<int, Attachment> 본문 미디어 (소프트 삭제분 포함)
+     */
+    public function findStaleContentMedia(Carbon $threshold, int $limit): Collection;
+
+    /**
+     * ID 로 본문 미디어 행 전체 열을 다시 읽습니다 — 소프트 삭제분 포함 (#887 영구 삭제 훅 인자)
+     *
+     * @param  array<int, int>  $ids  첨부 ID
+     * @return Collection<int, Attachment> 본문 미디어 (본문 미디어가 아닌 ID 는 빠진다)
+     */
+    public function findContentMediaWithTrashedByIds(array $ids): Collection;
+
+    /**
+     * 게시판에 속한 본문 미디어 행을 ID 순 묶음으로 돌며 콜백을 부릅니다 — 소프트 삭제분 포함 (#887 게시판 영구 삭제)
+     *
+     * ID 기준 묶음(chunkById)이라 콜백 안에서 행을 지워도 건너뛰지 않는다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $size  묶음 크기
+     * @param  callable(Collection<int, Attachment>): mixed  $callback  묶음 콜백
+     * @return void 반환값 없음
+     */
+    public function chunkContentMediaWithTrashedByBoardId(int $boardId, int $size, callable $callback): void;
+
+    /**
+     * 게시글들에 딸린 본문 미디어 행 — 소프트 삭제분 포함 (#887 글 영구 삭제)
+     *
+     * @param  array<int, int>  $postIds  게시글 ID 목록
+     * @return Collection<int, Attachment> 본문 미디어
+     */
+    public function findContentMediaWithTrashedByPostIds(array $postIds): Collection;
 }

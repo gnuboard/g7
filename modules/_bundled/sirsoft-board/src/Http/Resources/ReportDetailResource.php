@@ -201,7 +201,9 @@ class ReportDetailResource extends BaseApiResource
             return $content;
         }
 
-        return app(PostContentMediaService::class)->presentContent($content, $slug);
+        // 신고 상세는 관리자 전용 화면이다 — 신고된 글(삭제·비밀 포함)의 증거 미디어를 관리자가 `<img>`·`<video>` 로
+        // 볼 수 있도록 본문의 이 게시판 본문 미디어를 모두 서명한다(#883 검수 동작 유지, #887).
+        return app(PostContentMediaService::class)->presentContent($content, $slug, signAll: true);
     }
 
     /**

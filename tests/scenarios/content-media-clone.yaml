@@ -1,0 +1,25 @@
+feature: 본문 미디어 소유 복제 도구 — 저장 때 다른 문서 소유 본문 미디어를 새 소유로 복제 (#887)
+
+description: |
+  본문 미디어 행은 문서 하나에 묶인다. 다른 문서(답글·복사·붙여넣기)가 같은 서빙 주소를 쓰면 원본 문서가 미디어를 빼거나
+  지워질 때 함께 깨졌다. 확장은 저장 동기화에서 `App\Support\ContentMedia\ContentMediaCloner` 로 복제 후보(상대 정식 주소로
+  미디어 태그에 쓰인, 아직 이 문서 소유가 아닌 해시)를 고르고, 원본 파일을 트랜잭션 보상 아래 복사하고, 본문 주소의 해시를
+  새 해시로 바꾼다. 원본을 인정할지(같은 확장·열람 권한)는 확장이 정한다.
+
+axes:
+  case: [foreign_hashes, replace_hashes, copy_file]
+
+effects:
+  - only_canonical_media_refs
+  - known_hashes_excluded
+  - locales_merged_deduplicated
+  - all_occurrences_replaced
+  - others_untouched
+  - derived_alt_replaced
+  - authored_alt_untouched
+  - copy_compensated_on_rollback
+  - copy_kept_on_commit
+  - missing_source_false
+
+test_files:
+  - tests/Unit/Support/ContentMedia/ContentMediaClonerTest.php

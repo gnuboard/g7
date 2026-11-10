@@ -149,3 +149,5 @@ manifest 에는 없지만 **훅으로 맞물리는 확장이 하나 더** 있습
 편집기 본문 미디어 정책입니다. 형식은 코어 `ContentMediaPolicy`(`{image|video|audio: {enabled, max_size_mb, extensions[]}, max_per_document}`)이고,
 비어 있으면(기본 `{}`) 첨부 정책(`attachment.max_size_mb`·`allowed_types` 중 이미지)으로 만든 대체 정책을 씁니다 — 이미지는 첨부 형식
 중 이미지(없으면 이미지 후보 전부)로 받고, 동영상·오디오는 코어 환경설정 「본문 콘텐츠」의 업로드 후보를 켜면 첨부 파일당 크기로 받습니다(첨부 형식에 그 종류가 없으면 후보 형식 전부). 이 판에는 설정 화면이 없어 값은 모듈 설정 파일로만 바꿉니다.
+편집 화면은 이 정책으로 만든 업로드 계약을 표준 계약 엔드포인트 `GET admin/content-media/target`(#887)으로 받습니다
+(첨부 설정 응답 `content_media` 는 같은 값을 싣는 호환 별칭).

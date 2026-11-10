@@ -2,8 +2,8 @@
 
 namespace Modules\Sirsoft\Page\Http\Controllers\Admin;
 
-use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Exceptions\ContentMediaLimitExceededException;
+use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
@@ -259,6 +259,8 @@ class PageController extends AdminBaseController
         try {
             $page = $this->pageService->getPage($id);
             $versions = $this->pageService->getVersions($page);
+            // 리소스가 발행 여부로 본문 미디어 서명을 정한다 — 이미 조회한 페이지를 관계로 넣어 버전마다 다시 읽지 않는다
+            $versions->each->setRelation('page', $page);
 
             return $this->success(
                 'sirsoft-page::messages.page.fetch_success',
@@ -283,10 +285,11 @@ class PageController extends AdminBaseController
     public function showVersion(int $id, int $versionId): JsonResponse
     {
         try {
-            $this->pageService->getPage($id);
+            $page = $this->pageService->getPage($id);
             // 경로의 페이지에 속한 버전만 조회 (교차 페이지 접근 차단)
             $version = $this->pageService->getVersion($id, $versionId);
             $version->load('creator');
+            $version->setRelation('page', $page);
 
             return $this->successWithResource(
                 'sirsoft-page::messages.page.fetch_success',
@@ -323,6 +326,9 @@ class PageController extends AdminBaseController
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
+        } catch (ContentMediaLimitExceededException $e) {
+            // 복원 본문도 저장처럼 본문 미디어를 동기화한다 — 복제할 것까지 세어 문서당 최대를 넘으면 복원 전체가 되돌아간다 (#887)
+            return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.restore_failed', 500, $e->getMessage());
         }

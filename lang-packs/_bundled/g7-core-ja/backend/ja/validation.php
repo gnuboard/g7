@@ -1166,8 +1166,8 @@ return [
         // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
         'content_settings' => '本文コンテンツ設定',
         'content_allow_figure_caption' => '画像キャプションの許可',
-        'content_allow_uploaded_video' => 'アップロード動画の許可',
-        'content_allow_uploaded_audio' => 'アップロード音声の許可',
+        'content_allow_uploaded_video' => '動画アップロードの許可',
+        'content_allow_uploaded_audio' => '音声アップロードの許可',
         'content_allow_external_embed' => '外部動画埋め込みの許可',
         'content_embed_presets' => '外部動画サービスの使用',
         'content_embed_custom_providers' => '直接追加した外部動画サービス',

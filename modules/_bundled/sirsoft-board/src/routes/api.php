@@ -503,6 +503,11 @@ Route::prefix('admin/board/{slug}/content-media')->middleware(['auth:sanctum', '
     Route::post('/', [AdminContentMediaController::class, 'upload'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
         ->name('upload');
+
+    // 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887). 권한은 업로드와 같다
+    Route::get('/target', [AdminContentMediaController::class, 'target'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
+        ->name('target');
 });
 
 /*
@@ -794,6 +799,11 @@ Route::prefix('boards/{slug}/content-media')->middleware(['optional.sanctum', 't
     Route::post('/', [UserContentMediaController::class, 'upload'])
         ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
         ->name('upload');
+
+    // 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887). 권한은 업로드와 같다(비회원 포함). 서빙 경로 `{hash}`(12자)와 겹치지 않는다
+    Route::get('/target', [UserContentMediaController::class, 'target'])
+        ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
+        ->name('target');
 });
 
 /*

@@ -63,16 +63,18 @@ describe('HtmlContent 본문 콘텐츠 규칙', () => {
      * 후보를 끈 규칙(서버 `ContentHtmlPolicy::toFrontendArray()` 실측값) — 외부 영상은 iframe 이 되지 않고, 자기 서빙 경로 video 도 지운다.
      *
      * @scenario case=policy_on
-     * @effects candidates_off_respected
+     * @effects candidates_off_respected, embed_off_link
      */
     it('후보를 끄면 외부 영상 iframe·업로드 동영상이 나오지 않는다', () => {
         installPolicy({
             ...(fixture.render_policy as any),
             forbid_tags: [...(fixture.render_policy as any).forbid_tags],
+            drop_tags: ['figcaption'],
             extra_tags: [],
             attributes: {},
             allow_external_embed: false,
             allow_uploaded_video: false,
+            embed_providers: [],
         });
         const out = html('<figure class="media"><oembed url="https://youtu.be/dQw4w9WgXcQ"></oembed></figure>'
             + '<video src="/api/modules/sirsoft-board/boards/free/content-media/AAAAAAAAAAAA" controls></video>');
@@ -80,6 +82,49 @@ describe('HtmlContent 본문 콘텐츠 규칙', () => {
         expect(out).not.toContain('<iframe');
         expect(out).not.toContain('youtube-nocookie.com');
         expect(out).not.toContain('<video');
+        // 외부 영상 삽입을 끄면 원래 주소 링크로 보인다 (#887)
+        expect(out).toContain('href="https://youtu.be/dQw4w9WgXcQ"');
+    });
+
+    /**
+     * 「그림 캡션」 끔(서버 `fromSettings(['allow_figure_caption' => false])->toFrontendArray()` 모양) — 캡션만 내용째 지우고 그림은 남긴다 (#887)
+     *
+     * @scenario case=caption_off
+     * @effects caption_off_image_kept
+     */
+    it('그림 캡션을 끄면 캡션만 지우고 그림은 남긴다', () => {
+        installPolicy({
+            ...(fixture.render_policy as any),
+            extra_tags: ['oembed', 'figure'],
+            attributes: { oembed: ['url'], figure: ['class'] },
+            drop_tags: ['figcaption'],
+        });
+        const out = html('<figure class="image"><img src="/a.png" alt="a"><figcaption>캡션887</figcaption></figure>');
+
+        expect(out).not.toContain('<figcaption');
+        expect(out).not.toContain('캡션887');
+        expect(out).toContain('<figure class="image"><img src="/a.png" alt="a"></figure>');
+    });
+
+    /**
+     * 「외부 영상 삽입」 끔(서버 `fromSettings(['allow_external_embed' => false])->toFrontendArray()` 모양) — 안내문대로 원래 주소 링크, 빈 상자 없음 (#887)
+     *
+     * @scenario case=embed_off
+     * @effects embed_off_link
+     */
+    it('외부 영상 삽입을 끄면 영상 주소를 링크로 보이고 빈 상자를 남기지 않는다', () => {
+        installPolicy({
+            ...(fixture.render_policy as any),
+            extra_tags: ['figure', 'figcaption'],
+            attributes: { figure: ['class'], figcaption: ['class'] },
+            allow_external_embed: false,
+            embed_providers: [],
+        });
+        const out = html('<figure class="media"><oembed url="https://youtu.be/dQw4w9WgXcQ"></oembed></figure>');
+
+        expect(out).not.toContain('<iframe');
+        expect(out).not.toContain('<figure class="media"></figure>');
+        expect(out).toContain('<a href="https://youtu.be/dQw4w9WgXcQ" rel="noopener noreferrer nofollow" target="_blank">https://youtu.be/dQw4w9WgXcQ</a>');
     });
 
     /**

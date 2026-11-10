@@ -69,9 +69,9 @@ class Issue162MeasureCleanupSeederTest extends ModuleTestCase
 
         $service = app(ContentMediaService::class);
         $mine = $service->upload(ContentMediaOwnerType::Product, UploadedFile::fake()->image('a.png'), (string) Str::uuid());
-        $mine->update(['owner_id' => $marker->id]);
+        $mine->update(['attachmentable_id' => $marker->id]);
         $kept = $service->upload(ContentMediaOwnerType::Product, UploadedFile::fake()->image('b.png'), (string) Str::uuid());
-        $kept->update(['owner_id' => $other->id]);
+        $kept->update(['attachmentable_id' => $other->id]);
 
         $storage = app(ModuleManager::class)->getModule('sirsoft-ecommerce')->getStorage();
         $this->assertTrue($storage->exists(ContentMediaService::CATEGORY, $mine->path), '전제: 서비스가 올린 파일이 모듈 저장소에 있다');

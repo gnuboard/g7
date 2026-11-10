@@ -63,7 +63,6 @@ use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
-use App\Extension\Storage\StorageTransactionJournal;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
@@ -79,6 +78,7 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
+use App\Extension\Storage\StorageTransactionJournal;
 use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
 use App\Extension\Support\LifecycleWarnings;
@@ -142,6 +142,7 @@ use App\Services\PluginSettingsService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
+use App\Support\Content\MediaSourceRoutes;
 use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
@@ -442,6 +443,10 @@ class CoreServiceProvider extends ServiceProvider
 
         // 트랜잭션 파일 보상 저널 (StorageTransaction) — 한 요청·잡 안의 트랜잭션 항목을 공유해야 롤백 때 되돌린다
         $this->app->singleton(StorageTransactionJournal::class);
+
+        // 본문 미디어 서빙 라우트 레지스트리 — 확장 어댑터가 부팅 때 서빙 라우트 이름을 등록하고, 미디어 출처 허용 패턴이 이를 읽는다(#887).
+        // 등록은 부팅 때 한 번이라 프로세스 수명(singleton)이어야 큐 워커·다음 요청에서도 남는다
+        $this->app->singleton(MediaSourceRoutes::class);
     }
 
     /**

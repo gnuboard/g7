@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
+use App\Support\ContentMedia\ContentMediaRegistrar;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -38,9 +39,10 @@ use Modules\Sirsoft\Board\Repositories\ReportRepository;
 use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Services\AttachmentService;
-use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
+use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaService;
+use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaStore;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
@@ -66,7 +68,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     protected array $storageServices = [
         AttachmentService::class,
         BoardService::class,
-        PostContentMediaService::class,
+        BoardContentMediaService::class,
     ];
 
     /**
@@ -133,6 +135,11 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
             $this->registerRateLimiters();
         }
+
+        // 본문 미디어 서빙 라우트를 미디어 출처 허용 패턴의 원천으로 등록한다 — 코어는 기본 출처 패턴을 두지 않으므로,
+        // 이것이 없으면 게시판 본문의 동영상·오디오가 화면·봇 정화·저장에서 지워진다. 모듈이 꺼져 라우트가 없으면
+        // 패턴 생성 쪽이 이 이름을 건너뛴다 (#887)
+        ContentMediaRegistrar::register(BoardContentMediaStore::SERVE_ROUTE);
 
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {

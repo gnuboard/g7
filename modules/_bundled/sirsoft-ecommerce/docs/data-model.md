@@ -14,9 +14,10 @@
 | `ClaimImage` | `ecommerce_claim_images` | 13 | claimable→?, creator→User | - |
 | `ClaimPayment` | `ecommerce_claim_payments` | 18 | payable→?, order→Order, mileageTransactions→MileageTransaction | - |
 | `ClaimReason` | `ecommerce_claim_reasons` | 10 | creator→User, updater→User | HasUserOverrides |
-| `ContentMedia` | `ecommerce_content_media` | 13 | - | SoftDeletes |
+| `ContentMedia` | `ecommerce_attachments` | - | - | - |
 | `Coupon` | `ecommerce_promotion_coupons` | 22 | issues→CouponIssue, products→Product, includedProducts→Product, excludedProducts→Product, categories→Category, includedCategories→Category, 외 2개 | SoftDeletes, 검색 색인 |
 | `CouponIssue` | `ecommerce_promotion_coupon_issues` | 9 | coupon→Coupon, user→User, order→Order | - |
+| `EcommerceAttachment` | `ecommerce_attachments` | 14 | - | SoftDeletes |
 | `EcommerceStat` | `ecommerce_stats` | 4 | - | - |
 | `EcommerceUserProfile` | `ecommerce_user_profiles` | 3 | user→User | - |
 | `ExtraFeeTemplate` | `ecommerce_shipping_policy_extra_fee_templates` | 7 | creator→User, updater→User | - |
@@ -153,10 +154,17 @@
 (`Order::pgTaxFreeAmount()` = 면세 + 영세, `Order::pgTaxableAmount()` = 과세표준 − 영세). 그래서 결제사 매출 내역에는
 영세가 면세로 보이며, 세무 신고의 영세 매출은 쇼핑몰의 `total_zero_rated_amount` 를 기준으로 합니다. 영세를 파는 상점은
 결제사와 복합과세(또는 영세율) 계약이 필요합니다 — 면세 상품을 파는 조건과 같습니다.
-`ecommerce_content_media`(1.3.4)는 상품 설명·상품 공통 정보 편집기 본문에 넣은 이미지·동영상·오디오입니다(`owner_type` product|common_info).
-저장 전에는 `owner_id` null + `temp_key` 이고, 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것만 소유자에 잇고 빠진 것은 소프트 삭제합니다.
-상품 이미지 테이블을 쓰지 않는 이유는 동영상에 맞지 않는 크기·썸네일 의미가 있고 공통 정보에는 첨부 저장소가 없기 때문입니다. 파일 카테고리는
-`content-media`(기본 디스크 — 미공개 상품은 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않음)입니다.
+본문 미디어(1.3.4, `ContentMedia`)는 상품 설명·상품 공통 정보 편집기 본문에 넣은 이미지·동영상·오디오입니다. 이 모듈의 **범용 첨부 표
+`ecommerce_attachments`**(게시판 `board_attachments`·페이지 `page_attachments` 와 같은 모양, #887)에 `collection = content_media` 로 둡니다 —
+`EcommerceAttachment` 가 그 표의 범용 모델이고, `ContentMedia` 는 본문 미디어 컬렉션만 보는 범위 모델입니다(다른 쓰임새가 생기면 컬렉션을 나눠
+같은 표를 씁니다). 소유 종류(product|common_info)는 `attachmentable_type`(상품·공통 정보 모델), 소유자는 `attachmentable_id`, 종류(image·video·audio)는
+`mime_type` 으로 판정합니다. 저장 전에는 `attachmentable_id` null + `temp_key` 이고, 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것을 연결 →
+(다른 소유자 미디어) 복제 → 빠진 것 소프트 삭제 순서로 맞춥니다(코어 골격 `AbstractContentMediaService`). 상품 이미지 테이블을 쓰지 않는 이유는 동영상에
+맞지 않는 크기·썸네일 의미가 있고 공통 정보에는 첨부 저장소가 없기 때문이고, 코어 공용 첨부 표(`attachments`)를 쓰지 않는 이유는 코어 표가 확장의
+임시 업로드·소유 규칙을 몰라야 하기 때문입니다. 개발 중 전용 표 `ecommerce_content_media` 는 1.3.4 업그레이드 단계가 해시·디스크·경로째 옮기고
+지웁니다(빈 표는 `2026_11_10_000002_drop_ecommerce_content_media_table` 이 지움). 파일은 모듈 저장소 카테고리 `content-media`(기본 디스크 — 미공개 상품은
+서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않음)이고, 행 `path` 는 그 카테고리 기준 경로(`{owner_type}/Y/m/d/{uuid}.ext`)입니다.
+「데이터도 삭제」 제거는 `2026_11_10_000001_create_ecommerce_attachments_table` 의 down 이 표째 지웁니다.
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -164,6 +172,7 @@
 <!-- @generated:tables START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 테이블 | 모델 |
 |---|---|
+| `ecommerce_attachments` | `ContentMedia`, `EcommerceAttachment` |
 | `ecommerce_brands` | `Brand` |
 | `ecommerce_carts` | `Cart` |
 | `ecommerce_categories` | `Category` |
@@ -171,7 +180,6 @@
 | `ecommerce_claim_images` | `ClaimImage` |
 | `ecommerce_claim_payments` | `ClaimPayment` |
 | `ecommerce_claim_reasons` | `ClaimReason` |
-| `ecommerce_content_media` | `ContentMedia` |
 | `ecommerce_mail_templates` | - |
 | `ecommerce_mileage_balances` | `MileageBalance` |
 | `ecommerce_mileage_transactions` | `MileageTransaction` |
@@ -265,7 +273,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 131개.
+마이그레이션 132개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -399,7 +407,8 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_10_26_000002_add_tax_status_to_ecommerce_order_options_table.php` | - | `ecommerce_order_options` | ✅ |
 | `2026_10_26_000003_add_total_zero_rated_amount_to_ecommerce_orders_table.php` | - | `ecommerce_orders` | ✅ |
 | `2026_11_02_000001_update_imported_review_fields_in_ecommerce_product_reviews_table.php` | - | - | ✅ |
-| `2026_11_10_000001_create_ecommerce_content_media_table.php` | `ecommerce_content_media` | - | ✅ |
+| `2026_11_10_000001_create_ecommerce_attachments_table.php` | `ecommerce_attachments` | `ecommerce_attachments` | ✅ |
+| `2026_11_10_000002_drop_ecommerce_content_media_table.php` | - | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->

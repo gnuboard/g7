@@ -2,31 +2,17 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Contracts\Extension\StorageInterface;
-use App\Enums\ContentMediaKind;
-use App\Enums\PermissionType;
 use App\Exceptions\ContentMediaLimitExceededException;
-use App\Extension\Helpers\StorageTransaction;
-use App\Rules\ContentMediaFile;
-use App\Seo\SeoRenderRequest;
 use App\Support\ContentMedia\ContentMediaPolicy;
-use App\Support\ContentMedia\ContentMediaReferenceExtractor;
-use App\Support\ContentMedia\ContentMediaResponder;
-use App\Support\ContentMedia\ContentMediaUploadTarget;
-use App\Support\ContentMedia\ContentMediaUrlRewriter;
-use App\Support\ImageResizer;
+use DateTimeInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
-use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Models\ContentMedia;
 use Modules\Sirsoft\Ecommerce\Models\Product;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaService;
+use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaStore;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -34,59 +20,65 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * 이커머스 본문 미디어 서비스 — 상품 설명·상품 공통 정보 편집기 본문의 이미지·동영상·오디오 (#883 4단계)
  *
- * 저장은 `ecommerce_content_media` 다. 파일은 처음부터 최종 경로 `{owner_type}/{Y/m/d}/{uuid}.ext`, 행은 저장 전까지 임시
- * (`owner_id` null + 임시 키)다. 상품·공통 정보 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것만 잇고, 빠진 것은 소프트 삭제한다.
+ * 상품·공통 정보 서비스, 리소스, 컨트롤러, 정리 명령이 쓰는 종전 호출 모양(소유 종류 + 소유자 ID)을 유지하는 얇은 진입점이다.
+ * 흐름은 코어 골격(`EcommerceContentMediaService` → `AbstractContentMediaService`)이 돌리고, 저장소·권한은 이 모듈 어댑터
+ * (`EcommerceContentMediaStore`)가 답한다(#887).
  *
- * 서빙 게이트: 상품은 「전시 중(visible) 또는 관리자(상품 읽기 권한) 또는 서명」, 공통 정보는 공개. 응답 본문은 공개되지 않은
- * 상품일 때만 서명한다. 정책은 모듈 설정 `product_display.content_media`, 비어 있으면 상품 이미지 규칙(동영상·오디오는 코어 「본문 콘텐츠」 스위치)이다.
+ * - 저장: 이 모듈 범용 첨부 표 `ecommerce_attachments` 의 `content_media` 컬렉션(`ContentMedia`). 파일은 처음부터 모듈 저장소
+ *   `content-media` 카테고리의 최종 경로 `{owner_type}/{Y/m/d}/{uuid}.ext`, 행은 저장 전까지 임시(소유자 null + 임시 키)다.
+ * - 저장 동기화: 상품·공통 정보 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것을 **연결 → 복제 → 제거** 순서로 맞춘다. 빠진 것은
+ *   소프트 삭제하고, 빠진 지 보존기간(기본 2일)이 지나면 임시 상품 이미지 정리 명령이 파일째 지운다(`pruneTempUploads`).
+ * - 서빙 게이트: 상품은 「전시 중 또는 관리자(상품 읽기 권한) 또는 서명」, 공통 정보는 공개. 캐시는 아무나 볼 수 있을 때(공통 정보·
+ *   전시 중 상품)만 public, 미공개 상품·임시 행은 private.
+ * - 응답 본문 서명: 공개되지 않은 상품일 때 **그 상품이 소유한 해시만** 서명한다(다른 상품 해시는 정식 주소 — 원본 게이트를 따른다).
+ * - 정책: 모듈 설정 `product_display.content_media`, 비어 있으면 상품 이미지 규칙(동영상·오디오는 코어 「본문 콘텐츠」 스위치).
  */
 class ContentMediaService
 {
     /** 서빙 라우트 이름 */
-    public const SERVE_ROUTE = 'api.modules.sirsoft-ecommerce.content-media.show';
+    public const SERVE_ROUTE = EcommerceContentMediaStore::SERVE_ROUTE;
 
     /** 서빙 주소 앞부분 (정식 주소 = 이 값 + 해시) */
-    public const SERVE_URL_PREFIX = '/api/modules/sirsoft-ecommerce/content-media/';
+    public const SERVE_URL_PREFIX = EcommerceContentMediaStore::SERVE_URL_PREFIX;
 
     /** 서빙 주소 정규식 본문 */
-    public const SERVE_PATTERN = '/api/modules/sirsoft-ecommerce/content-media/(?<hash>[A-Za-z0-9]{12})';
+    public const SERVE_PATTERN = EcommerceContentMediaStore::SERVE_PATTERN;
 
     /** 업로드 시점 상한 배수 */
-    public const UPLOAD_HEADROOM = 2;
+    public const UPLOAD_HEADROOM = EcommerceContentMediaService::UPLOAD_HEADROOM;
 
     /** 저장소 카테고리 */
-    public const CATEGORY = 'content-media';
-
-    /** 상품 이미지와 같은 대체 확장자 */
-    private const FALLBACK_EXTENSIONS = ['jpeg', 'png', 'jpg', 'gif', 'webp'];
+    public const CATEGORY = EcommerceContentMediaStore::CATEGORY;
 
     /**
-     * @param  ContentMediaRepositoryInterface  $repository  본문 미디어 리포지토리
-     * @param  StorageInterface  $storage  모듈 저장소
+     * @param  EcommerceContentMediaService  $media  골격 서비스
      */
     public function __construct(
-        private ContentMediaRepositoryInterface $repository,
-        private StorageInterface $storage,
+        private EcommerceContentMediaService $media,
     ) {}
+
+    /**
+     * 코어 골격 서비스 — 표준 계약 엔드포인트(`RespondsWithContentMediaTarget`)·소유자 삭제가 쓴다.
+     *
+     * @return EcommerceContentMediaService 골격 서비스
+     */
+    public function engine(): EcommerceContentMediaService
+    {
+        return $this->media;
+    }
 
     /**
      * 본문 미디어 정책 — 모듈 설정 `product_display.content_media`, 없으면 상품 이미지 규칙(동영상·오디오는 코어 「본문 콘텐츠」 스위치).
      *
-     * @return ContentMediaPolicy 정책
+     * @return ContentMediaPolicy 정책 (소유 종류와 무관)
      */
     public function resolvePolicy(): ContentMediaPolicy
     {
-        $value = g7_module_settings('sirsoft-ecommerce', 'product_display.content_media');
-        $fallback = ContentMediaPolicy::fromAttachmentSettings(
-            max(1, (int) ceil(((int) config('attachment.max_file_size', 10240)) / 1024)),
-            self::FALLBACK_EXTENSIONS
-        );
-
-        return ContentMediaPolicy::fromArray(is_array($value) ? $value : null, $fallback);
+        return $this->media->policy($this->store()->context(ContentMediaOwnerType::Product));
     }
 
     /**
-     * 본문 미디어를 임시로 올립니다.
+     * 본문 미디어를 임시로 올립니다 — 공용 훅 `core.content_media.before_upload`·`filter_upload_file`·`after_upload` 가 발화한다.
      *
      * @param  ContentMediaOwnerType  $ownerType  소유 종류
      * @param  UploadedFile  $file  파일 (요청 계층이 정책으로 검증함)
@@ -97,114 +89,31 @@ class ContentMediaService
      */
     public function upload(ContentMediaOwnerType $ownerType, UploadedFile $file, string $tempKey): ContentMedia
     {
-        $policy = $this->resolvePolicy();
-        $existing = $this->repository->countTemp($ownerType, $tempKey);
-        if ($existing + 1 > $policy->maxPerDocument() * self::UPLOAD_HEADROOM) {
-            throw new ContentMediaLimitExceededException($policy->maxPerDocument(), $existing + 1);
-        }
+        /** @var ContentMedia $media */
+        $media = $this->media->upload($this->store()->context($ownerType, null, $tempKey), $file);
 
-        $mime = (string) ContentMediaFile::sniffMime($file);
-        $kind = ContentMediaKind::fromMime($mime) ?? ContentMediaKind::Image;
-        $storedFilename = Str::uuid()->toString().'.'.strtolower((string) $file->getClientOriginalExtension());
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
-        $path = $ownerType->value.'/'.date('Y/m/d').'/'.$storedFilename;
-
-        $meta = null;
-        if ($kind === ContentMediaKind::Image) {
-            app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $mime);
-            $size = @getimagesize($file->getRealPath());
-            $meta = $size ? ['width' => $size[0], 'height' => $size[1]] : null;
-        }
-
-        $stream = fopen($file->getRealPath(), 'rb');
-        try {
-            StorageTransaction::put($this->storage, self::CATEGORY, $path, $stream !== false ? $stream : (string) $file->get());
-        } finally {
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }
-
-        return $this->repository->create([
-            'owner_type' => $ownerType->value,
-            'owner_id' => null,
-            'temp_key' => $tempKey,
-            'disk' => $this->storage->getDisk(),
-            'path' => $path,
-            'original_filename' => $file->getClientOriginalName(),
-            'stored_filename' => $storedFilename,
-            'mime_type' => $mime,
-            'size' => (int) filesize($file->getRealPath()),
-            'kind' => $kind->value,
-            'meta' => $meta,
-            'created_by' => Auth::id(),
-        ]);
+        return $media;
     }
 
     /**
      * 본문(로케일 배열 또는 HTML)과 본문 미디어를 맞춥니다 — 저장 트랜잭션 안에서 부른다.
+     *
+     * 순서는 연결 → 복제 → 제거다(#887 — 세 확장 공통 골격). 다른 소유자(다른 상품·공통 정보, 또는 요청자가 다른 임시 키로 올린 것)
+     * 본문 미디어는 요청자가 원본을 볼 수 있을 때만 이 소유자로 복제하고, 복제분도 문서당 최대 개수에 센다.
      *
      * @param  ContentMediaOwnerType  $ownerType  소유 종류
      * @param  int  $ownerId  소유자 ID
      * @param  mixed  $content  저장된 본문
      * @param  bool  $isHtml  HTML 모드 여부
      * @param  string|null  $tempKey  요청의 임시 키
-     * @return array{linked: int, removed: int} 처리 결과
+     * @return array{linked: int, removed: int, cloned: int, content: mixed} 처리 결과 — 복제했으면 `content` 가 새 해시로 바꾼 본문이고,
+     *                                                                       호출자가 다시 저장한다
      *
      * @throws ContentMediaLimitExceededException 문서당 최대 개수 초과
      */
     public function syncWithContent(ContentMediaOwnerType $ownerType, int $ownerId, mixed $content, bool $isHtml, ?string $tempKey): array
     {
-        $policy = $this->resolvePolicy();
-        $contents = is_array($content) ? $content : ['_' => $content];
-
-        $all = [];
-        $perLocale = [];
-        foreach ($contents as $locale => $html) {
-            $hashes = $isHtml && is_string($html) ? ContentMediaReferenceExtractor::hashes($html, self::SERVE_PATTERN) : [];
-            $perLocale[$locale] = $hashes;
-            foreach ($hashes as $hash) {
-                $all[$hash] = true;
-            }
-        }
-        $all = array_keys($all);
-
-        $linked = $this->repository->getByOwner($ownerType, $ownerId);
-        $linkedHashes = $linked->pluck('hash')->all();
-
-        $userId = Auth::id();
-        $candidates = ($tempKey !== null && $tempKey !== '')
-            ? $this->repository->getTempByHashes($ownerType, $tempKey, array_values(array_diff($all, $linkedHashes)))
-                ->filter(fn (ContentMedia $m) => $userId === null || ($m->created_by !== null && (int) $m->created_by === (int) $userId))
-                ->values()
-            : collect();
-
-        $known = array_merge($linkedHashes, $candidates->pluck('hash')->all());
-        foreach ($perLocale as $hashes) {
-            $count = count(array_intersect($hashes, $known));
-            if ($count > $policy->maxPerDocument()) {
-                throw new ContentMediaLimitExceededException($policy->maxPerDocument(), $count);
-            }
-        }
-
-        foreach ($candidates as $media) {
-            $this->repository->link($media, $ownerId);
-        }
-
-        $removed = 0;
-        $present = array_flip($all);
-        foreach ($linked as $media) {
-            if (! isset($present[$media->hash])) {
-                $this->repository->softDelete($media);
-                $removed++;
-            }
-        }
-
-        if ($candidates->isNotEmpty() || $removed > 0) {
-            Log::info('이커머스 본문 미디어 연결 동기화', ['owner_type' => $ownerType->value, 'owner_id' => $ownerId, 'linked' => $candidates->count(), 'removed' => $removed]);
-        }
-
-        return ['linked' => $candidates->count(), 'removed' => $removed];
+        return $this->media->syncWithContent($this->store()->context($ownerType, $ownerId, $tempKey), $content, $isHtml);
     }
 
     /**
@@ -215,30 +124,22 @@ class ContentMediaService
      */
     public function normalizeContent(mixed $content): mixed
     {
-        $normalize = fn ($html) => is_string($html) ? ContentMediaUrlRewriter::normalize($html, self::SERVE_PATTERN) : $html;
-
-        return is_array($content) ? array_map($normalize, $content) : $normalize($content);
+        return $this->media->normalizeContent($this->store()->context(ContentMediaOwnerType::Product), $content);
     }
 
     /**
-     * 응답 본문의 정식 주소를 서명 주소로 바꿉니다 — 공개되지 않은 소유자일 때만(공개면 정식 주소, 봇 렌더도 정식 주소).
+     * 응답 본문의 정식 주소를 서명 주소로 바꿉니다 — 공개되지 않은 소유자일 때 그 소유자가 가진 해시만(#887). 공개면 정식 주소,
+     * 봇 렌더도 정식 주소다.
      *
      * @param  mixed  $content  본문
      * @param  bool  $public  공개 소유자 여부
+     * @param  ContentMediaOwnerType  $ownerType  소유 종류
+     * @param  int|null  $ownerId  소유자 ID (저장 전이면 null — 서명할 해시 없음)
      * @return mixed 바꾼 본문
      */
-    public function presentContent(mixed $content, bool $public): mixed
+    public function presentContent(mixed $content, bool $public, ContentMediaOwnerType $ownerType, ?int $ownerId): mixed
     {
-        if ($public || SeoRenderRequest::matches(request())) {
-            return $content;
-        }
-
-        $expires = now()->addMinutes(ContentMediaUrlRewriter::ttlMinutes());
-        $sign = fn ($html) => is_string($html) && str_contains($html, '/content-media/')
-            ? ContentMediaUrlRewriter::sign($html, self::SERVE_PATTERN, fn (string $hash) => $this->signedUrl($hash, $expires))
-            : $html;
-
-        return is_array($content) ? array_map($sign, $content) : $sign($content);
+        return $this->media->presentContent($this->store()->context($ownerType, $ownerId), $content, false, $public);
     }
 
     /**
@@ -249,24 +150,19 @@ class ContentMediaService
      */
     public static function isPublicProduct(Product $product): bool
     {
-        return $product->display_status === ProductDisplayStatus::VISIBLE && $product->deleted_at === null;
+        return EcommerceContentMediaStore::isPublicProduct($product);
     }
 
     /**
      * 서명 주소.
      *
      * @param  string  $hash  해시
-     * @param  \DateTimeInterface|null  $expires  만료 (null 이면 설정값)
+     * @param  DateTimeInterface|null  $expires  만료 (null 이면 설정값)
      * @return string 서명 주소 (상대 경로)
      */
-    public function signedUrl(string $hash, ?\DateTimeInterface $expires = null): string
+    public function signedUrl(string $hash, ?DateTimeInterface $expires = null): string
     {
-        return URL::temporarySignedRoute(
-            self::SERVE_ROUTE,
-            $expires ?? now()->addMinutes(ContentMediaUrlRewriter::ttlMinutes()),
-            ['hash' => $hash],
-            absolute: false
-        );
+        return $this->media->signedUrl($this->store()->context(ContentMediaOwnerType::Product), $hash, $expires);
     }
 
     /**
@@ -277,19 +173,7 @@ class ContentMediaService
      */
     public function uploadTarget(ContentMediaOwnerType $ownerType): ?array
     {
-        $policy = $this->resolvePolicy();
-        foreach (ContentMediaKind::cases() as $kind) {
-            if ($policy->acceptsUpload($kind)) {
-                return ContentMediaUploadTarget::toArray(
-                    '/api/modules/sirsoft-ecommerce/admin/content-media',
-                    $policy,
-                    self::SERVE_PATTERN,
-                    ['owner_type' => $ownerType->value]
-                );
-            }
-        }
-
-        return null;
+        return $this->media->uploadTarget($this->store()->context($ownerType), true);
     }
 
     /**
@@ -304,38 +188,14 @@ class ContentMediaService
      */
     public function findServable(string $hash, bool $signatureVerified): ContentMedia
     {
-        $media = $this->repository->findByHash($hash);
-        if (! $media) {
-            throw new NotFoundHttpException(__('sirsoft-ecommerce::messages.content_media.not_found'));
-        }
+        /** @var ContentMedia $media */
+        $media = $this->media->findServable($this->store()->context(ContentMediaOwnerType::Product), $hash, $signatureVerified);
 
-        if ($signatureVerified) {
-            return $media;
-        }
-
-        if ($media->owner_id === null) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-
-        if ($media->owner_type === ContentMediaOwnerType::CommonInfo) {
-            return $media;
-        }
-
-        $product = Product::withTrashed()->find($media->owner_id);
-        if ($product && self::isPublicProduct($product)) {
-            return $media;
-        }
-
-        $user = Auth::user();
-        if ($product && $user && $user->hasPermission('sirsoft-ecommerce.products.read', PermissionType::Admin)) {
-            return $media;
-        }
-
-        throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        return $media;
     }
 
     /**
-     * 서빙 응답.
+     * 서빙 응답 — 행에 기록된 디스크에서 읽는다. 캐시는 아무나 볼 수 있을 때만 public.
      *
      * @param  ContentMedia  $media  본문 미디어
      * @param  Request  $request  요청
@@ -343,17 +203,19 @@ class ContentMediaService
      */
     public function respond(ContentMedia $media, Request $request): ?Response
     {
-        return ContentMediaResponder::respond($this->storage, self::CATEGORY, $media->path, [
-            'mime_type' => $media->mime_type,
-            'filename' => $media->original_filename,
-            'playable' => ContentMediaResponder::playableUnder($this->resolvePolicy(), $media->mime_type),
-            'private' => $media->owner_id === null,
-            'max_age' => 300,
-        ], $request);
+        $actor = Auth::id();
+        $context = $this->store()->contextForRow($media)->withActor($actor !== null ? (int) $actor : null);
+
+        return $this->media->respond($context, $media, $request);
     }
 
     /**
-     * 끝내 잇지 않은 오래된 임시 본문 미디어를 파일과 함께 지웁니다 (임시 상품 이미지 정리 명령이 함께 부른다).
+     * 오래된 본문 미디어를 파일과 함께 영구 삭제합니다 (임시 상품 이미지 정리 명령이 함께 부른다).
+     *
+     * 1. 끝내 잇지 않은 임시 행 — 올린 지 보존기간이 지난 것(상품·공통 정보 모두).
+     * 2. 본문에서 빠져 소프트 삭제된 행 — 빠진 지 보존기간이 지난 것(#887).
+     *
+     * 행마다 `core.content_media.before_delete` 가 발화한다. `limit` 은 두 종류 각각에 적용한다.
      *
      * @param  int  $days  보존기간(일)
      * @param  int  $limit  최대 건수
@@ -362,22 +224,16 @@ class ContentMediaService
      */
     public function pruneTempUploads(int $days, int $limit, bool $dryRun = false): array
     {
-        $rows = $this->repository->findStaleTemp(Carbon::now()->subDays($days), $limit);
-        $result = ['scanned' => $rows->count(), 'deleted' => 0, 'failed' => 0];
-        if ($dryRun) {
-            return $result;
-        }
+        return $this->media->pruneStale($days, $limit, $dryRun);
+    }
 
-        foreach ($rows as $media) {
-            if ($this->storage->exists(self::CATEGORY, $media->path) && ! $this->storage->delete(self::CATEGORY, $media->path)) {
-                $result['failed']++;
-
-                continue;
-            }
-            $this->repository->forceDelete($media);
-            $result['deleted']++;
-        }
-
-        return $result;
+    /**
+     * 이커머스 어댑터.
+     *
+     * @return EcommerceContentMediaStore 어댑터
+     */
+    private function store(): EcommerceContentMediaStore
+    {
+        return $this->media->ecommerceStore();
     }
 }
