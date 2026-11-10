@@ -53,6 +53,9 @@ class SlotWidthHintListener implements HookListenerInterface
             'core.modules.after_activate' => ['method' => 'onExtensionEvent', 'priority' => 20, 'sync' => true],
             'core.modules.after_deactivate' => ['method' => 'onExtensionEvent', 'priority' => 20, 'sync' => true],
             'core.modules.after_update' => ['method' => 'onExtensionEvent', 'priority' => 20, 'sync' => true],
+            // 켜 둔 채 바로 지워도 위치가 빠진다 — 모듈은 제거에 성공했을 때만 훅이 오고, 플러그인은 결과를 실어 온다
+            'core.modules.after_uninstall' => ['method' => 'onExtensionEvent', 'priority' => 20, 'sync' => true],
+            'core.plugins.after_uninstall' => ['method' => 'onPluginUninstall', 'priority' => 20, 'sync' => true],
         ];
     }
 
@@ -157,7 +160,23 @@ class SlotWidthHintListener implements HookListenerInterface
     }
 
     /**
-     * 다른 모듈·플러그인을 켜고 끄고 업데이트한 뒤, 저장된 힌트의 위치 목록과 지금 정적 위치 목록이 다르면 힌트를 다시 맞춥니다.
+     * 다른 플러그인을 지운 뒤 위치 목록이 바뀌었으면 힌트를 다시 맞춥니다 — 제거에 실패했으면(가드에 막힘 등) 위치는 그대로라 건너뛰고,
+     * 히어로 자신의 제거는 설정이 함께 지워지므로 저장하지 않는다.
+     *
+     * @param  mixed  ...$args  코어 훅 인자 (플러그인 식별자, 데이터 삭제 여부, 제거 결과)
+     * @return void 반환값 없음
+     */
+    public function onPluginUninstall(...$args): void
+    {
+        if (($args[0] ?? null) === self::PLUGIN || ($args[2] ?? false) !== true) {
+            return;
+        }
+
+        $this->onExtensionEvent(...$args);
+    }
+
+    /**
+     * 다른 모듈·플러그인을 켜고 끄고 업데이트·제거한 뒤, 저장된 힌트의 위치 목록과 지금 정적 위치 목록이 다르면 힌트를 다시 맞춥니다.
      * 맞추지 않으면 확장이 더한 정적 위치는 첫 배너를 등록하기 전까지 힌트가 없다(첫 방문에 받는 동안 스켈레톤이 비쳤다 사라짐).
      *
      * @param  mixed  ...$args  코어 훅 인자 (첫 인자: 확장 식별자)
@@ -169,18 +188,26 @@ class SlotWidthHintListener implements HookListenerInterface
         app()->forgetInstance(PositionRegistry::class);
 
         try {
-            $saved = app(PluginSettingsService::class)->get(self::PLUGIN, 'slot_widths');
-            $savedKeys = is_array($saved) ? array_keys($saved) : [];
+            $settings = app(PluginSettingsService::class);
             $currentKeys = array_keys($this->positions->slotWidths());
+            sort($currentKeys);
+            $stale = false;
+            // 세 힌트 중 하나라도 위치 목록이 다르면 맞춘다(아직 저장된 적 없는 힌트는 다음 저장 때 채워지므로 보지 않는다)
+            foreach (['slot_widths', 'slot_overlays', 'slot_banners'] as $hint) {
+                $saved = $settings->get(self::PLUGIN, $hint);
+                if (is_array($saved)) {
+                    $savedKeys = array_keys($saved);
+                    sort($savedKeys);
+                    $stale = $stale || $savedKeys !== $currentKeys;
+                }
+            }
         } catch (Throwable $e) {
             Log::warning('히어로섹션 위치 목록 대조 실패 — 힌트는 다음 배너·위치 설정 저장 때 맞춰진다', ['error' => $e->getMessage()]);
 
             return;
         }
 
-        sort($savedKeys);
-        sort($currentKeys);
-        if ($savedKeys !== $currentKeys) {
+        if ($stale) {
             $this->sync();
         }
     }

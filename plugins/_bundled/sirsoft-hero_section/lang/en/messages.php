@@ -27,6 +27,7 @@ return [
         'updated' => 'Slider settings saved.',
         'not_found' => 'Position not found.',
         'targets_fetched' => 'Fetched the target list.',
+        'placements_fetched' => 'Fetched the targets that have banners.',
     ],
     'console' => [
         'prune_temp_images' => [

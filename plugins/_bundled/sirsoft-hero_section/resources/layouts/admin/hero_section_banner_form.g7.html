@@ -34,8 +34,17 @@
       <field name="errorCode" :value="403"/>
     </field>
   </data-source>
-  <!-- 업로드 한도 — 플러그인 설정 API 는 설정 관리 권한이라 배너 담당자가 못 읽을 수 있어, 배너 조회 권한으로 열리는 위치 설정 응답의 `upload` 를 쓴다. 못 받으면 기본 5MB 로 안내한다 -->
+  <!-- 위치 목록·업로드 한도 — 플러그인 설정 API 는 설정 관리 권한이라 배너 담당자가 못 읽을 수 있어, 배너 조회 권한으로 열리는 위치 설정 응답의 `upload` 를 쓴다. 못 받으면 기본 5MB 로 안내한다.
+    이 응답이 와야 위치가 동적인지 안다 — 오기 전에 저장하면 대상 없이(target_key null) 보내 422 가 나므로 저장을 막는다. 받지 못하면 전역 표식(`heroPositionSettingsFailed`, 목록 화면과 같은 표식)을 세워 다시 받기를 준다 -->
   <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <error-handling>
+      <default>
+        <set-state target="global" :heroPositionSettingsFailed="true"/>
+      </default>
+    </error-handling>
+    <success>
+      <set-state target="global" :heroPositionSettingsFailed="false"/>
+    </success>
     <fallback :data="null"/>
   </data-source>
   <!-- 목록에서 고른 대상으로 등록하러 왔을 때 그 대상 이름 — 수정은 배너 응답(target_label)이 이름을 준다 -->
@@ -112,6 +121,8 @@
   <computed name="videoUploading">{{_computed.mediaType === 'video' &amp;&amp; (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}</computed>
   <computed name="videoMissing">{{_computed.mediaType === 'video' &amp;&amp; !_local.form?.videos?.pc}}</computed>
   <computed name="formPositions">{{(position_settings?.data?.positions ?? []).filter(p =&gt; p.registered !== false || p.key === _local.form?.position)}}</computed>
+  <computed name="formReady">{{Array.isArray(position_settings?.data?.positions)}}</computed>
+  <computed name="settingsFailed">{{!_computed.formReady &amp;&amp; _global?.heroPositionSettingsFailed === true}}</computed>
   <computed name="formDef">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === _local.form?.position) ?? null}}</computed>
   <computed name="formDynamic">{{_computed.formDef?.dynamic === true}}</computed>
   <computed name="formTargetTypeLabel">{{_computed.formDef?.target ? (_computed.formDef.target.label ?? $t(_computed.formDef.target.label_key)) : ''}}</computed>
@@ -667,7 +678,19 @@
             <div class="hs:flex hs:flex-wrap hs:items-center hs:justify-end hs:gap-x-3 hs:gap-y-1 hs:min-w-0">
             <!-- 저장이 잠긴 이유 — 저장 중이 아닐 때 잠긴 경우와 늘 짝이다(올리는 중이 먼저). 저장 단추의 설명으로 읽힌다 -->
             <div id="hero_save_reason" data-ref="save_reason" role="status" class="hs:text-sm hs:text-gray-600 hs:dark:text-gray-300 hs:text-right">
-              <span data-ref="save_reason_target" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; _computed.targetUnpicked}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
+              <!-- 위치 설정을 받기 전 — 위치가 동적인지 몰라 저장을 막는다. 다른 이유보다 먼저다 -->
+              <span data-ref="save_reason_settings" data-if="{{!_local.isSaving &amp;&amp; !_computed.formReady}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
+                <span data-ref="save_reason_settings_loading" data-if="{{!_computed.settingsFailed}}">$t:sirsoft-hero_section.admin.form.save_blocked.settings_loading</span>
+                <span data-ref="save_reason_settings_failed" data-if="{{_computed.settingsFailed}}">$t:sirsoft-hero_section.admin.form.save_blocked.settings_failed</span>
+                <button type="button" data-ref="save_reason_settings_retry" data-if="{{_computed.settingsFailed}}" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
+                  <on type="click">
+                    <!-- 위치 설정 다시 받기 — 받으면 저장 잠금이 풀린다 -->
+                    <refetch-data-source dataSourceId="position_settings"/>
+                  </on>
+                  $t:sirsoft-hero_section.admin.retry
+                </button>
+              </span>
+              <span data-ref="save_reason_target" data-if="{{_computed.formReady &amp;&amp; !_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; _computed.targetUnpicked}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
                 <span>$t:sirsoft-hero_section.admin.form.save_blocked.target|target={{_computed.formTargetTypeLabel}}</span>
                 <button type="button" data-ref="save_reason_target_jump" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
                   <on type="click">
@@ -677,8 +700,8 @@
                   $t:sirsoft-hero_section.admin.form.save_blocked.go_target
                 </button>
               </span>
-              <span data-ref="save_reason_uploading" data-if="{{!_local.isSaving &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading)}}">$t:sirsoft-hero_section.admin.form.upload_pending</span>
-              <span data-ref="save_reason_pc_image" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !_computed.targetUnpicked &amp;&amp; !_local.form?.images?.pc}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
+              <span data-ref="save_reason_uploading" data-if="{{_computed.formReady &amp;&amp; !_local.isSaving &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading)}}">$t:sirsoft-hero_section.admin.form.upload_pending</span>
+              <span data-ref="save_reason_pc_image" data-if="{{_computed.formReady &amp;&amp; !_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !_computed.targetUnpicked &amp;&amp; !_local.form?.images?.pc}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
                 <span>$t:sirsoft-hero_section.admin.form.save_blocked.pc_image</span>
                 <button type="button" data-ref="save_reason_pc_image_jump" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
                   <on type="click">
@@ -688,7 +711,7 @@
                   $t:sirsoft-hero_section.admin.form.save_blocked.go_pc_image
                 </button>
               </span>
-              <span data-ref="save_reason_pc_video" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !_computed.targetUnpicked &amp;&amp; !!_local.form?.images?.pc &amp;&amp; _computed.videoMissing}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
+              <span data-ref="save_reason_pc_video" data-if="{{_computed.formReady &amp;&amp; !_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !_computed.targetUnpicked &amp;&amp; !!_local.form?.images?.pc &amp;&amp; _computed.videoMissing}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
                 <span>$t:sirsoft-hero_section.admin.form.save_blocked.pc_video</span>
                 <button type="button" data-ref="save_reason_pc_video_jump" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
                   <on type="click">
@@ -699,7 +722,7 @@
                 </button>
               </span>
             </div>
-            <button data-ref="footer_save_button" type="button" aria-describedby="hero_save_reason" disabled="{{_local.isSaving || _computed.targetUnpicked || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5">
+            <button data-ref="footer_save_button" type="button" aria-describedby="hero_save_reason" disabled="{{_local.isSaving || !_computed.formReady || _computed.targetUnpicked || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5">
               <on type="click">
                 <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.
                   버튼 잠금(isSaving)만으로는 화면에 반영되기 전 같은 틱의 두 번째 클릭을 막지 못해 진입점 debounce 로 한 번만 보낸다 -->

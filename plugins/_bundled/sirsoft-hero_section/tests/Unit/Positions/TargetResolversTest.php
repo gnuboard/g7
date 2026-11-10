@@ -166,4 +166,28 @@ class TargetResolversTest extends PluginTestCase
         $categories->shouldReceive('findById')->with(3)->andReturn((new Category)->forceFill(['id' => 3, 'path' => '3', 'slug' => 'kids']));
         $this->assertSame('8', (new CategoryTargetResolver($categories))->resolve('3'));
     }
+
+    /**
+     * 대상 목록 화면의 사이트 주소는 한 번에 묻는다 — 게시판은 목록 한 번, 상품·카테고리는 id 묶음 한 번. 없는 대상은 빠진다.
+     *
+     * @scenario case=admin_placement_list
+     *
+     * @return void 반환값 없음
+     */
+    public function test_site_urls_in_one_call(): void
+    {
+        $boards = Mockery::mock(BoardRepositoryInterface::class);
+        $boards->shouldReceive('all')->once()->andReturn(new Collection([$this->board(2, 'free', '자유'), $this->board(3, 'gallery', '갤러리')]));
+        $this->assertSame(['2' => '/board/free', '3' => '/board/gallery'], (new BoardTargetResolver($boards))->siteUrls(['2', '3', '9']));
+
+        $products = Mockery::mock(ProductRepositoryInterface::class);
+        $products->shouldReceive('findByIdsKeyed')->once()->with([31, 99])->andReturn(new Collection([31 => (new Product)->forceFill(['id' => 31, 'product_code' => 'P-31'])]));
+        $urls = (new ProductTargetResolver($products))->siteUrls(['31', '99']);
+        $this->assertSame([31], array_keys($urls));
+        $this->assertStringEndsWith('/products/P-31', $urls['31']);
+
+        $categories = Mockery::mock(CategoryRepositoryInterface::class);
+        $categories->shouldReceive('findByIdsKeyed')->once()->with([2])->andReturn(new Collection([2 => (new Category)->forceFill(['id' => 2, 'path' => '1/2', 'slug' => 'men'])]));
+        $this->assertStringEndsWith('/category/men', (new CategoryTargetResolver($categories))->siteUrls(['2'])['2']);
+    }
 }

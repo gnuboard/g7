@@ -12,6 +12,7 @@
             "target_info": "Chosen target",
             "heroSectionBoard": "Board list banners",
             "positionHero": "Added position banners",
+            "placements": "Target list (targets with banners)",
             "heroSectionProduct": "Product detail banners",
             "heroSectionCategory": "Category list banners"
         },
@@ -85,7 +86,9 @@
             "category_hero": "Category list",
             "unregistered": "Unregistered position",
             "unregistered_notice": "The extension (module or plugin) that adds this position is turned off, so these banners are not shown on the site. They are kept, and appear again when the extension is turned back on. On this tab you can only review, edit and delete them.",
-            "no_auto_output": "The extension that adds this position does not say how to read the target from the page address (route_param), so the hero section does not fill the site slot itself. If that extension ships its own output fragment, banners still show; otherwise they do not appear on the site."
+            "no_auto_output": "The extension that adds this position does not say how to read the target from the page address (route_param), so the hero section does not fill the site slot itself. If that extension ships its own output fragment, banners still show; otherwise they do not appear on the site.",
+            "loading": "Loading positions",
+            "load_failed": "Could not load the positions. Select Retry to try again."
         },
         "target": {
             "board": "Board",
@@ -100,6 +103,22 @@
             "missing": "The chosen {{target}} could not be found (it may have been deleted). Its banners are kept but not shown on the site, and new banners cannot be added.",
             "missing_label": "Missing target ({{key}})",
             "count": "{{count}} banners"
+        },
+        "target_list": {
+            "title": "{{target}} items with banners",
+            "summary": "Banners in this position: {{banners}} · Targets with banners: {{targets}}",
+            "loading": "Loading the target list",
+            "empty": "No {{target}} has banners yet. Find and choose a {{target}} above to add the first banner.",
+            "counts": "{{total}} total · {{active}} showing now",
+            "manage": "Manage",
+            "pages_label": "Target list pages",
+            "prev": "Previous",
+            "next": "Next",
+            "page": "{{current}} / {{last}}",
+            "back": "Back to target list",
+            "detail_title": "Banners for {{target}}",
+            "new_hint": "To add banners to a {{target}} that has none yet, find and choose it in the picker above.",
+            "load_failed": "Could not load the target list."
         },
         "status": {
             "all": "All",
@@ -427,7 +446,9 @@
                 "pc_video": "Upload a PC video to save.",
                 "go_pc_video": "Go to the PC video field",
                 "target": "Choose a {{target}} to save.",
-                "go_target": "Go to target"
+                "go_target": "Go to target",
+                "settings_loading": "Positions are still loading, so you cannot save yet.",
+                "settings_failed": "Positions could not be loaded, so you cannot save."
             },
             "media": {
                 "type": "Media type",
@@ -441,6 +462,7 @@
                 "mobile_video_hint": "Optional · Up to {{mb}}MB · MP4, WEBM · Without it, phones play the PC video.",
                 "poster_hint": "For video banners this image is the poster. It is shown instead of the video while the video loads and for visitors who reduce motion."
             }
-        }
+        },
+        "retry": "Retry"
     }
 }

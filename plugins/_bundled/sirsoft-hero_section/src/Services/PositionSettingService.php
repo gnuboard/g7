@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Services;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use Illuminate\Support\Facades\DB;
+use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
 use Plugins\Sirsoft\HeroSection\Enums\SlideWidth;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
@@ -26,6 +27,11 @@ class PositionSettingService
      * 대상 고르기 목록 최대 건수 — 고르기 칸은 검색으로 좁힌다.
      */
     private const TARGET_LIMIT = 20;
+
+    /**
+     * 대상 목록 한 쪽의 대상 수
+     */
+    public const PLACEMENTS_PER_PAGE = 20;
 
     /**
      * PositionSettingService 생성자
@@ -240,6 +246,65 @@ class PositionSettingService
     private function staticKeys(): array
     {
         return array_values(array_keys(array_filter($this->registry()->all(), fn (PositionDefinition $definition) => ! $definition->isDynamic())));
+    }
+
+    /**
+     * 동적 위치에서 배너가 있는 대상 목록을 반환합니다(관리자 대상 목록 화면) — 대상마다 이름·사이트 주소·전체·노출 중 건수.
+     *
+     * 건수는 저장소 묶음 조회 두 번, 이름은 해석기 `labels()` 한 번, 사이트 주소는 해석기가 {@see TargetSiteUrlsInterface} 를 주면 한 번
+     * (아니면 그 쪽 안의 키만 하나씩)이다. 지워진 대상도 배너가 남았으면 `exists: false` 로 남겨 관리로 들어갈 수 있게 하고, 노출 중은 0이다.
+     *
+     * @param  string  $position  위치 키
+     * @param  int  $page  쪽 번호(1부터)
+     * @return array{position: string, data: array<int, array{key: string, label: string|null, exists: bool, site_url: string|null, total: int, active: int}>, summary: array{banners: int, targets: int}, pagination: array{current_page: int, last_page: int, total: int, per_page: int}}|null 대상 목록 (동적 위치가 아니면 null)
+     */
+    public function placements(string $position, int $page = 1): ?array
+    {
+        $resolver = $this->registry()->resolver($position);
+        if ($resolver === null) {
+            return null;
+        }
+
+        $summaries = $this->banners->targetSummaries($position, now());
+        $total = count($summaries);
+        $lastPage = max(1, (int) ceil($total / self::PLACEMENTS_PER_PAGE));
+        $page = min(max(1, $page), $lastPage);
+        $pageItems = array_slice($summaries, ($page - 1) * self::PLACEMENTS_PER_PAGE, self::PLACEMENTS_PER_PAGE, true);
+        $keys = array_map('strval', array_keys($pageItems));
+
+        $labels = $keys === [] ? [] : $resolver->labels($keys);
+        if ($resolver instanceof TargetSiteUrlsInterface) {
+            $urls = $keys === [] ? [] : $resolver->siteUrls($keys);
+        } else {
+            $urls = [];
+            foreach ($keys as $key) {
+                if (isset($labels[$key])) {
+                    $urls[$key] = $resolver->siteUrl($key);
+                }
+            }
+        }
+
+        $data = [];
+        foreach ($pageItems as $key => $counts) {
+            $key = (string) $key;
+            $exists = isset($labels[$key]);
+            $data[] = [
+                'key' => $key,
+                'label' => $labels[$key] ?? null,
+                'exists' => $exists,
+                'site_url' => $exists ? ($urls[$key] ?? null) : null,
+                'total' => $counts['total'],
+                // 지워진 대상의 배너는 사이트에 나가지 않는다(공개 조회가 대상을 풀지 못한다) — 상태가 노출 중이어도 0
+                'active' => $exists ? $counts['active'] : 0,
+            ];
+        }
+
+        return [
+            'position' => $position,
+            'data' => $data,
+            'summary' => ['banners' => array_sum(array_column($summaries, 'total')), 'targets' => $total],
+            'pagination' => ['current_page' => $page, 'last_page' => $lastPage, 'total' => $total, 'per_page' => self::PLACEMENTS_PER_PAGE],
+        ];
     }
 
     /**

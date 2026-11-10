@@ -12,6 +12,7 @@
             "target_info": "고른 대상 정보",
             "heroSectionBoard": "게시판 목록 노출 배너",
             "positionHero": "추가 위치 노출 배너",
+            "placements": "대상 목록 (배너가 있는 대상)",
             "heroSectionProduct": "상품 상세 노출 배너",
             "heroSectionCategory": "카테고리 목록 노출 배너"
         },
@@ -85,7 +86,9 @@
             "category_hero": "카테고리 목록",
             "unregistered": "등록되지 않은 위치",
             "unregistered_notice": "이 위치를 더한 확장(모듈·플러그인)이 꺼져 있어 사이트에 보이지 않습니다. 배너는 지우지 않고 남겨 두었고, 확장을 다시 켜면 그대로 보입니다. 이 탭에서는 목록 확인·수정·삭제만 할 수 있습니다.",
-            "no_auto_output": "이 위치를 더한 확장이 화면 주소에서 대상 값을 읽는 방법(route_param)을 알려 주지 않아, 히어로가 사이트 자리를 직접 채우지 않습니다. 그 확장이 자기 출력 조각을 두었다면 그대로 보이고, 아니면 배너가 사이트에 나오지 않습니다."
+            "no_auto_output": "이 위치를 더한 확장이 화면 주소에서 대상 값을 읽는 방법(route_param)을 알려 주지 않아, 히어로가 사이트 자리를 직접 채우지 않습니다. 그 확장이 자기 출력 조각을 두었다면 그대로 보이고, 아니면 배너가 사이트에 나오지 않습니다.",
+            "loading": "위치 정보를 불러오는 중입니다",
+            "load_failed": "위치 정보를 받지 못했습니다. 다시 받기를 눌러 주세요."
         },
         "target": {
             "board": "게시판",
@@ -100,6 +103,22 @@
             "missing": "고른 {{target}}을(를) 찾을 수 없습니다(지워졌을 수 있습니다). 배너는 남아 있지만 사이트에는 보이지 않고, 새 배너는 등록할 수 없습니다.",
             "missing_label": "없는 대상 ({{key}})",
             "count": "배너 {{count}}개"
+        },
+        "target_list": {
+            "title": "배너가 있는 {{target}}",
+            "summary": "이 위치의 배너 {{banners}}개 · 배너를 둔 대상 {{targets}}곳",
+            "loading": "대상 목록을 불러오는 중입니다",
+            "empty": "아직 배너를 둔 {{target}}이(가) 없습니다. 위에서 {{target}}을(를) 찾아 고르면 첫 배너를 등록할 수 있습니다.",
+            "counts": "전체 {{total}}개 · 지금 노출 {{active}}개",
+            "manage": "관리",
+            "pages_label": "대상 목록 쪽",
+            "prev": "이전",
+            "next": "다음",
+            "page": "{{current}} / {{last}}",
+            "back": "대상 목록으로",
+            "detail_title": "{{target}} 배너",
+            "new_hint": "배너가 없는 {{target}}은(는) 위 고르기 칸에서 찾아 고르면 첫 배너를 등록할 수 있습니다.",
+            "load_failed": "대상 목록을 받지 못했습니다."
         },
         "status": {
             "all": "전체",
@@ -427,7 +446,9 @@
                 "pc_video": "PC 영상을 올려야 저장할 수 있습니다.",
                 "go_pc_video": "PC 영상 칸으로 가기",
                 "target": "{{target}}을(를) 골라야 저장할 수 있습니다.",
-                "go_target": "대상 칸으로 가기"
+                "go_target": "대상 칸으로 가기",
+                "settings_loading": "위치 정보를 받는 중이라 아직 저장할 수 없습니다.",
+                "settings_failed": "위치 정보를 받지 못해 저장할 수 없습니다."
             },
             "media": {
                 "type": "미디어 종류",
@@ -441,6 +462,7 @@
                 "mobile_video_hint": "선택 · 최대 {{mb}}MB · MP4·WEBM · 올리지 않으면 휴대폰에서도 PC 영상을 재생합니다.",
                 "poster_hint": "영상 배너에서는 이 이미지가 대표 이미지입니다. 영상을 받는 동안과 움직임 줄이기를 켠 방문자에게 영상 대신 보입니다."
             }
-        }
+        },
+        "retry": "다시 받기"
     }
 }

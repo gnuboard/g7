@@ -14,6 +14,8 @@ description: |
   동적 위치는 등록한 경로 매개변수로 대상 값을 읽는다) — 실제 레이아웃 병합으로 채움·건너뜀(이미 슬라이더가 든 자리·편집기·미등록·경로
   매개변수 없음)을 보고, 자리 안의 자리·반복 템플릿(표·카드 셀, 펼침 행, 하위 행) 안의 자리도 리스너 한 번 실행으로 채우는지 본다.
   생성 조각은 실제 HeroSlider 로도 그려 본다. 외부 정적 위치의 관리·검증·공개 API, 확장을 껐다 켤 때 배너 보존을 본다.
+  관리자 대상 목록은 「관리」 주소가 저장 키를 통째로(기호 포함) 싣고 보던 쪽을 이고 가는지, 지워진 대상은 지금 노출 0인지, 목록을 받지 못하면
+  실패 안내와 다시 받기가 나오는지 본다. 위치 설정이 오기 전에는 동적 위치를 정적 화면으로 그리지 않고 등록·수정 화면 저장을 잠그는지(대상 없이 422) 본다.
 
 axes:
   case:
@@ -50,6 +52,7 @@ axes:
     - slot_hints_static_only
     - target_key_migration_roundtrip
     - admin_target_picker
+    - admin_placement_list
     - admin_form_position_target
     - dynamic_fragments_pass_route_target
     - dynamic_skeleton_needs_memory
@@ -61,6 +64,7 @@ test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerPlacementTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Public/HeroTargetTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Positions/ExternalPositionTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionPlacementsTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Installation/BannerEditorMigrationTest.php
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx

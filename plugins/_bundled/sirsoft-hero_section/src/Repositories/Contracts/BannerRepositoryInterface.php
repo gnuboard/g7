@@ -36,6 +36,15 @@ interface BannerRepositoryInterface
     public function statistics(Placement $placement, CarbonInterface $now): array;
 
     /**
+     * 동적 위치에서 배너가 있는 대상별 전체·노출 중 건수를 최근 수정 순으로 반환합니다(대상 목록 화면용) — 노출 중 판정은 공개 노출과 같은 조건이다.
+     *
+     * @param  string  $position  위치 키
+     * @param  CarbonInterface  $now  상태 판정 기준 시각
+     * @return array<string, array{total: int, active: int}> 대상 키 => 건수 (최근 수정한 대상이 앞)
+     */
+    public function targetSummaries(string $position, CarbonInterface $now): array;
+
+    /**
      * 배너가 있는 위치 키를 모두 반환합니다(등록되지 않은 위치 포함) — 「등록되지 않은 위치」 탭을 찾을 때 쓴다.
      *
      * @return array<int, string> 위치 키

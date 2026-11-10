@@ -148,6 +148,45 @@ class SlotWidthHintListenerTest extends PluginTestCase
     }
 
     /**
+     * 위치를 더한 확장을 지우면(켜 둔 채 바로 제거 포함) 남은 힌트 키를 걷는다 — 모듈은 제거에 성공했을 때만 훅이 오고, 플러그인은
+     * 결과를 실어 오므로 실패면 그대로 둔다. 히어로 자신의 제거는 설정이 함께 지워지니 저장하지 않는다. 세 힌트 중 하나만 남아도 맞춘다.
+     *
+     * @scenario surface=slot_hint_follows_registered_positions
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resyncs_after_extension_uninstall(): void
+    {
+        $stale = ['home_hero' => 'content', 'shop_hero' => 'content', 'event_hero' => 'content'];
+
+        $calls = $this->recordSaves(null, $stale);
+        HookManager::doAction('core.modules.after_uninstall', 'acme-event', [], true);
+        $this->assertCount(1, $calls);
+
+        $calls = $this->recordSaves(null, $stale);
+        HookManager::doAction('core.plugins.after_uninstall', 'acme-event', true, false);
+        $this->assertCount(0, $calls, '제거에 실패했으면 위치를 지우지 않는다');
+
+        $calls = $this->recordSaves(null, $stale);
+        HookManager::doAction('core.plugins.after_uninstall', 'acme-event', true, true);
+        $this->assertCount(1, $calls);
+
+        $calls = $this->recordSaves(null, $stale);
+        HookManager::doAction('core.plugins.after_uninstall', 'sirsoft-hero_section', true, true);
+        $this->assertCount(0, $calls, '히어로 자신의 제거는 저장하지 않는다');
+
+        // 표시 폭 힌트는 맞는데 메뉴 겹침 힌트에만 지운 위치가 남았다
+        $calls = $this->recordSaves(null, ['home_hero' => 'content', 'shop_hero' => 'content'], ['home_hero' => false, 'shop_hero' => false, 'event_hero' => false]);
+        HookManager::doAction('core.modules.after_uninstall', 'acme-event', [], true);
+        $this->assertCount(1, $calls);
+
+        // 셋 다 맞으면 저장하지 않는다
+        $calls = $this->recordSaves(['home_hero' => false, 'shop_hero' => false], ['home_hero' => 'content', 'shop_hero' => 'content'], ['home_hero' => false, 'shop_hero' => false]);
+        HookManager::doAction('core.modules.after_uninstall', 'acme-event', [], true);
+        $this->assertCount(0, $calls);
+    }
+
+    /**
      * 배너 유무 힌트는 노출 중이거나 예약된 배너가 있을 때만 참이다 — 꺼 둔 배너·기간이 끝난 배너는 사이트에 나올 일이 없다.
      *
      * @scenario surface=slot_banner_hint_from_banners
@@ -222,14 +261,16 @@ class SlotWidthHintListenerTest extends PluginTestCase
      *
      * @param  array<string, bool>|null  $bannerHint  저장돼 있다고 볼 배너 유무 힌트
      * @param  array<string, string>|null  $widthHint  저장돼 있다고 볼 표시 폭 힌트(정적 위치 목록)
+     * @param  array<string, bool>|null  $overlayHint  저장돼 있다고 볼 메뉴 겹침 힌트
      * @return \ArrayObject<int, array{0: string, 1: array<string, mixed>}> 호출 기록
      */
-    private function recordSaves(?array $bannerHint = null, ?array $widthHint = null): \ArrayObject
+    private function recordSaves(?array $bannerHint = null, ?array $widthHint = null, ?array $overlayHint = null): \ArrayObject
     {
         $calls = new \ArrayObject;
         $settings = Mockery::mock(PluginSettingsService::class);
         $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_banners')->andReturn($bannerHint);
         $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_widths')->andReturn($widthHint);
+        $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_overlays')->andReturn($overlayHint);
         $settings->shouldReceive('save')->andReturnUsing(function (string $identifier, array $data) use ($calls) {
             $calls->append([$identifier, $data]);
 

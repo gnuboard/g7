@@ -7,13 +7,14 @@ use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 use Plugins\Sirsoft\HeroSection\Contracts\TargetResolverInterface;
+use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
 
 /**
  * 상품 카테고리 대상 해석기 — 카테고리 목록 위치(`category_hero`). 저장 키는 카테고리 id, 화면 값은 주소의 slug(없을 때만 숫자 id — slug 가 먼저다).
  *
  * 이름은 상위 경로를 이어 보인다(「의류 › 남성」) — 같은 이름의 하위 카테고리를 관리자가 구분할 수 있게. 이커머스 모듈의 저장소 계약만 쓴다.
  */
-class CategoryTargetResolver implements TargetResolverInterface
+class CategoryTargetResolver implements TargetResolverInterface, TargetSiteUrlsInterface
 {
     /**
      * 경로 이름 구분자
@@ -119,6 +120,23 @@ class CategoryTargetResolver implements TargetResolverInterface
         $category = $this->category($key);
 
         return $category === null ? null : ShopPathResolver::path('category/'.$category->slug);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, string>  $keys  category id 목록
+     * @return array<string, string> category id => 사이트 경로
+     */
+    public function siteUrls(array $keys): array
+    {
+        $ids = array_values(array_unique(array_map('intval', array_filter($keys, fn ($key) => ctype_digit((string) $key)))));
+        $urls = [];
+        foreach ($ids === [] ? [] : $this->categories->findByIdsKeyed($ids) as $id => $category) {
+            $urls[(string) $id] = ShopPathResolver::path('category/'.$category->slug);
+        }
+
+        return $urls;
     }
 
     /**

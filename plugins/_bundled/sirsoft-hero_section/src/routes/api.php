@@ -54,4 +54,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::put('/position-settings/{position}', [PositionSettingController::class, 'update'])->middleware($update)->name('position-settings.update');
     Route::get('/positions/{position}/targets', [PositionTargetController::class, 'index'])
         ->where('position', '[a-z][a-z0-9_]{1,49}')->middleware($read)->name('positions.targets');
+    Route::get('/positions/{position}/placements', [PositionTargetController::class, 'placements'])
+        ->where('position', '[a-z][a-z0-9_]{1,49}')->middleware($read)->name('positions.placements');
 });

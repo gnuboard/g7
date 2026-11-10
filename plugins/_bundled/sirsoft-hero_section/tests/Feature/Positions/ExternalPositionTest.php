@@ -99,9 +99,10 @@ class ExternalPositionTest extends PluginTestCase
      * 활성 사용자 템플릿과 확장점을 둔 레이아웃을 만들고 병합 결과를 돌려줍니다.
      *
      * @param  array<int, array<string, mixed>>  $slot  확장점 노드 (여러 개 가능)
+     * @param  array<int, array<string, mixed>>  $dataSources  레이아웃이 원래 가진 데이터 소스
      * @return array<string, mixed> 병합된 레이아웃
      */
-    private function mergedLayoutWith(array $slot): array
+    private function mergedLayoutWith(array $slot, array $dataSources = []): array
     {
         $template = Template::factory()->create(['identifier' => 'test-hero-ext-user', 'type' => 'user', 'status' => 'active']);
         TemplateLayout::factory()->create([
@@ -111,7 +112,7 @@ class ExternalPositionTest extends PluginTestCase
                 'version' => '1.0.0',
                 'layout_name' => 'acme_event',
                 'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div', 'children' => $slot]],
-                'data_sources' => [],
+                'data_sources' => $dataSources,
                 'metadata' => [],
             ],
         ]);
@@ -439,6 +440,38 @@ class ExternalPositionTest extends PluginTestCase
         ]], 1);
         $this->assertSame(['heroSection_acme_output_hero'], array_column($twice['data_sources'], 'id'));
         $this->assertSame(['acme_output_hero', 'acme_output_hero'], $this->sliderPositions($twice['components']));
+    }
+
+    /**
+     * 공존 반례를 실제 레이아웃 병합 경로로 — 같은 위치를 이미 그리는 수동 슬라이더(위치 바인딩·반복 셀 안)와 데이터 소스 id 충돌 자리는
+     * 채우지 않고, 아무것도 없는 같은 모양의 자리(양성 대조)는 채운다. 충돌한 기존 데이터 소스는 그대로 남는다.
+     *
+     * @scenario case=external_output_skips
+     *
+     * @return void 반환값 없음
+     */
+    public function test_coexistence_through_layout_service(): void
+    {
+        $keys = ['acme_plain_hero', 'acme_bound_hero', 'acme_cell_hero', 'acme_clash_hero'];
+        $this->addPositions(array_map(fn ($key) => ['key' => $key, 'label' => ['ko' => $key]], $keys));
+        $manual = fn (string $position) => ['name' => 'sirsoft-hero_section.HeroSlider', 'type' => 'composite', 'props' => ['position' => $position]];
+        $foreign = ['id' => 'heroSection_acme_clash_hero', 'type' => 'api', 'endpoint' => '/api/acme-events/other', 'method' => 'GET', 'auto_fetch' => true];
+
+        $layout = $this->mergedLayoutWith([
+            ['type' => 'extension_point', 'name' => 'acme_plain_hero'],
+            ['type' => 'extension_point', 'name' => 'acme_bound_hero', 'default' => [$manual('{{"acme_bound_hero"}}')]],
+            ['type' => 'extension_point', 'name' => 'acme_cell_hero', 'default' => [['id' => 'grid', 'type' => 'composite', 'name' => 'DataGrid', 'props' => ['columns' => [['field' => 'a', 'cellChildren' => [$manual('acme_cell_hero')]]]]]]],
+            ['type' => 'extension_point', 'name' => 'acme_clash_hero'],
+        ], [$foreign]);
+
+        $this->assertSame(['acme_plain_hero'], $this->sliderPositions($this->slot($layout['components'], 'acme_plain_hero')['children'], false));
+        $this->assertSame(['{{"acme_bound_hero"}}'], $this->sliderPositions($this->slot($layout['components'], 'acme_bound_hero')['children'], false));
+        $this->assertSame([], $this->sliderPositions($this->slot($layout['components'], 'acme_cell_hero')['children'], false), '셀 안 수동 슬라이더 말고 직속 자동 슬라이더가 없다');
+        $this->assertSame([], $this->sliderPositions($this->slot($layout['components'], 'acme_clash_hero')['children'] ?? [], false));
+
+        $sources = collect($layout['data_sources'])->keyBy('id');
+        $this->assertSame(['heroSection_acme_clash_hero', 'heroSection_acme_plain_hero'], $sources->keys()->filter(fn ($id) => str_starts_with($id, 'heroSection_'))->sort()->values()->all());
+        $this->assertSame('/api/acme-events/other', $sources['heroSection_acme_clash_hero']['endpoint']);
     }
 
     /**

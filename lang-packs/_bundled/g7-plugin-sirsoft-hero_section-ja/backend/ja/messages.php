@@ -27,6 +27,7 @@ return [
         'updated' => 'スライダー設定を保存しました。',
         'not_found' => '表示位置が見つかりません。',
         'targets_fetched' => '対象一覧を読み込みました。',
+        'placements_fetched' => 'バナーがある対象リストを読み込みました。',
     ],
     'console' => [
         'prune_temp_images' => [

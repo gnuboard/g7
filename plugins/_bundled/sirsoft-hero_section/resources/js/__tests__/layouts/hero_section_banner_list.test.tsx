@@ -13,7 +13,7 @@ import list from '../../../layouts/admin/hero_section_banner_list.json';
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
-import { actionsOf, collect, evaluateBinding, evaluateComputed, findById, pick, strings, translationKeys } from './helpers';
+import { actionsOf, collect, evaluateBinding, evaluateComputed, findById, interpolate, pick, strings, translationKeys } from './helpers';
 
 const json = (node: unknown) => JSON.stringify(node);
 
@@ -137,6 +137,127 @@ describe('히어로섹션 목록 화면', () => {
     expect(noticeShown({ data: { editor: { preview_frame: { positions: { home_hero: null } } } } })).toBe(true);
     expect(noticeShown({ data: { editor: { preview_frame: { positions: { home_hero: { layout: 'home', path: '/' } } } } } })).toBe(false);
     expect(notice.props.role).toBe('status');
+  });
+
+  // @scenario case=admin_placement_list
+  it('동적 위치는 대상을 고르기 전에 배너가 있는 대상 목록을 보이고(미리보기·표·필터 없이), 고르면 대상 이름과 「대상 목록으로」가 있는 상세가 된다', () => {
+    const product = [{ key: 'product_hero', label_key: null, label: '상품 상세', registered: true, dynamic: true, target: { type: 'product', label_key: null, label: '상품' } }];
+    const listing = { data: { position: 'board_hero', data: [{ key: '2', label: '자유게시판', exists: true, site_url: '/board/free', total: 2, active: 1 }, { key: '9', label: null, exists: false, site_url: null, total: 1, active: 0 }], summary: { banners: 3, targets: 2 }, pagination: { current_page: 1, last_page: 2, total: 21, per_page: 20 } } };
+    const c = (query: any, placements: any = listing) => evaluateComputed(list as any, { query, placements, position_settings: positionSettings(product) });
+
+    expect(c({ position: 'board_hero' }).showTargetList).toBe(true);
+    expect(c({ position: 'board_hero' }).placementList).toEqual(listing.data);
+    // 탭을 옮긴 직후 앞 위치(게시판) 목록 응답이 남아 있어도 상품 탭에 쓰지 않는다
+    expect(c({ position: 'product_hero' }).placementList).toBeNull();
+    expect(c({ position: 'board_hero', target: '2' }).showTargetList).toBe(false);
+    expect(c({ position: 'board_hero', target: '2' }).placementList).toBeNull();
+    expect(c({}).showTargetList).toBe(false);
+
+    const sources = Object.fromEntries(asArray((list as any).data_sources).map((d: any) => [d.id, d]));
+    expect(sources.placements.endpoint).toBe("/api/plugins/sirsoft-hero_section/admin/positions/{{query.position || 'home_hero'}}/placements");
+    expect(sources.placements.if).toBe('{{!query.target}}');
+    expect(sources.placements.params.page).toBe('{{query.tpage || 1}}');
+
+    expect(findById(list, 'target_list_card')!.if).toBe('{{_computed.showTargetList}}');
+    expect(findById(list, 'preview_card')!.if).toBe('{{_computed.positionsReady && !_computed.showTargetList}}');
+    for (const id of ['filter_bar', 'table_header_bar', 'hero_banner_datagrid']) {
+      expect(findById(list, id)!.if, id).toBe('{{_computed.targetReady}}');
+    }
+
+    // 반복 행은 고정 id 를 달지 않는다(행마다 같은 HTML id 가 생긴다) — 목록의 첫 자식이 반복 행이다
+    const row = asArray(findById(list, 'target_list')!.children)[0];
+    expect(row.iteration).toEqual({ source: '{{_computed.placementList?.data ?? []}}', item_var: 'item' });
+    expect(json(row)).toContain('admin.target_list.counts|total={{item.total}}|active={{item.active}}');
+    expect(json(row)).toContain('admin.target.missing_label|key={{item.key}}');
+    expect(json(row)).toContain('"href":"{{item.site_url}}"');
+    expect(json(findById(list, 'target_list_summary'))).toContain('summary|banners={{_computed.placementList?.summary?.banners ?? 0}}|targets={{_computed.placementList?.summary?.targets ?? 0}}');
+    expect(findById(list, 'target_list_next')!.props.href).toContain('tpage=');
+
+    expect(findById(list, 'target_detail_header')!.if).toBe('{{_computed.isDynamic && !!_computed.currentTarget}}');
+    expect(json(findById(list, 'target_detail_title'))).toContain('admin.target_list.detail_title|target={{_computed.selectedTarget?.label ?? _computed.currentTarget}}');
+  });
+
+  // @scenario case=admin_placement_list
+  it('대상 목록의 「관리」 주소는 저장 키를 통째로 싣고(예약 문자 포함) 보던 쪽을 이고 가며, 「대상 목록으로」가 그 쪽으로 돌아온다', () => {
+    const product = [{ key: 'qa_detail_hero', label_key: null, label: '외부', registered: true, dynamic: true, target: { type: 'event', label_key: null, label: '행사' } }];
+    const page = (current: number) => ({ data: { position: 'qa_detail_hero', data: [], summary: { banners: 25, targets: 22 }, pagination: { current_page: current, last_page: 2, total: 22, per_page: 20 } } });
+    const row = asArray(findById(list, 'target_list')!.children)[0];
+    const manage = collect(row, (n) => typeof n.props?.href === 'string' && n.props.href.includes('target='))[0];
+    const manageHref = (key: string, current: number) => {
+      const computed = evaluateComputed(list as any, { query: { position: 'qa_detail_hero', ...(current > 1 ? { tpage: String(current) } : {}) }, placements: page(current), position_settings: positionSettings(product) });
+      return interpolate(manage.props.href, { item: { key } }, computed);
+    };
+    // 「&」「=」「%」가 든 키가 다른 쿼리로 갈라지지 않는다 — 고르기 칸으로 고른 것과 같은 인코딩
+    const href = manageHref('event&split=1', 2);
+    expect(new URL(href, 'http://x').searchParams.get('target')).toBe('event&split=1');
+    expect(new URL(href, 'http://x').searchParams.get('split')).toBeNull();
+    expect(new URL(href, 'http://x').searchParams.get('tpage')).toBe('2');
+    expect(new URL(manageHref('100%', 1), 'http://x').searchParams.get('target')).toBe('100%');
+    // 1쪽에서는 쪽 번호를 싣지 않는다(주소가 대상 목록 기본 그대로)
+    expect(new URL(manageHref('2', 1), 'http://x').searchParams.has('tpage')).toBe(false);
+
+    const back = findById(list, 'target_list_back')!.props.href;
+    const backHref = (query: any) => interpolate(back, { query }, evaluateComputed(list as any, { query, position_settings: positionSettings(product) }));
+    expect(backHref({ position: 'qa_detail_hero', target: 'event&split=1', tpage: '2' })).toBe('/admin/plugins/sirsoft-hero_section/banners?position=qa_detail_hero&tpage=2');
+    expect(backHref({ position: 'qa_detail_hero', target: '2' })).toBe('/admin/plugins/sirsoft-hero_section/banners?position=qa_detail_hero');
+  });
+
+  // @scenario case=admin_placement_list
+  it('대상 목록을 받지 못하면 「불러오는 중」에 머물지 않고 실패를 알리며 다시 받기를 준다 — 다른 위치·쪽의 실패 표시는 쓰지 않는다', () => {
+    const scope = (query: any, failed: string | null, placements: any = undefined) => ({ query, placements, position_settings: positionSettings(), _global: { heroPlacementsFailed: failed } });
+    const shown = (id: string, s: any) => evaluateBinding(findById(list, id)!.if, s, evaluateComputed(list as any, s));
+    const kept = { data: { position: 'board_hero', data: [{ key: '2', label: '자유게시판', exists: true, site_url: '/board/free', total: 1, active: 1 }], summary: { banners: 1, targets: 1 }, pagination: { current_page: 1, last_page: 2, total: 21, per_page: 20 } } };
+
+    const failed = scope({ position: 'board_hero' }, 'board_hero|1');
+    expect(shown('target_list_error', failed)).toBe(true);
+    expect(shown('target_list_loading', failed)).toBe(false);
+    // 2쪽 받기가 실패하면 엔진이 지킨 앞 쪽 응답을 2쪽인 것처럼 보이지 않는다
+    const failedPage2 = scope({ position: 'board_hero', tpage: '2' }, 'board_hero|2', kept);
+    expect(shown('target_list_error', failedPage2)).toBe(true);
+    expect(shown('target_list', failedPage2)).toBe(false);
+    expect(shown('target_list_summary', failedPage2)).toBe(false);
+    // 다른 위치·쪽의 실패 표시는 지금 목록에 쓰지 않는다
+    expect(shown('target_list_error', scope({ position: 'board_hero', tpage: '2' }, 'board_hero|1'))).toBe(false);
+    expect(shown('target_list_error', scope({ position: 'product_hero' }, 'board_hero|1'))).toBe(false);
+    expect(shown('target_list_loading', scope({ position: 'board_hero' }, null))).toBe(true);
+
+    const source = asArray((list as any).data_sources).find((d: any) => d.id === 'placements');
+    const mark = actionsOf(source.errorHandling, 'setState')[0];
+    expect(mark.params.target).toBe('global');
+    expect(evaluateBinding(mark.params.heroPlacementsFailed, { query: { position: 'board_hero', tpage: '2' } })).toBe('board_hero|2');
+    expect(evaluateBinding(mark.params.heroPlacementsFailed, { query: {} })).toBe('home_hero|1');
+    expect(actionsOf(source.onSuccess, 'setState')[0].params).toEqual({ target: 'global', heroPlacementsFailed: null });
+
+    const retry = findById(list, 'target_list_retry')!;
+    expect(retry.props.type).toBe('button');
+    expect(json(actionsOf(retry, 'setState')[0].params)).toBe(json({ target: 'global', heroPlacementsFailed: null }));
+    expect(actionsOf(retry, 'refetchDataSource')[0].params.dataSourceId).toBe('placements');
+  });
+
+  // @scenario case=admin_placement_list
+  it('위치 설정이 오기 전에는 동적 위치를 정적 화면(미리보기·표·슬라이더 설정)으로 그리지 않고, 받지 못하면 알리고 다시 받기를 준다', () => {
+    const shown = (id: string, s: any) => evaluateBinding(findById(list, id)!.if, s, evaluateComputed(list as any, s));
+    const before = { query: { position: 'board_hero', target: '2' }, position_settings: undefined, _global: {} };
+    expect(evaluateComputed(list as any, before).targetReady).toBe(false);
+    for (const id of ['preview_card', 'slider_card', 'filter_bar', 'hero_banner_datagrid']) {
+      expect(shown(id, before), id).toBe(false);
+    }
+    expect(shown('positions_loading', before)).toBe(true);
+    expect(shown('positions_failed', before)).toBe(false);
+    const failed = { ...before, _global: { heroPositionSettingsFailed: true } };
+    expect(shown('positions_failed', failed)).toBe(true);
+    expect(shown('positions_loading', failed)).toBe(false);
+    // 받은 뒤에는 실패 표시가 남아 있어도 화면을 그린다(정적·동적 그대로)
+    const arrived = { query: { position: 'board_hero', target: '2' }, position_settings: positionSettings(), _global: { heroPositionSettingsFailed: true } };
+    expect(shown('positions_failed', arrived)).toBe(false);
+    expect(shown('preview_card', arrived)).toBe(true);
+    expect(shown('slider_card', { query: { position: 'home_hero' }, position_settings: positionSettings(), _global: {} })).toBe(true);
+
+    const source = asArray((list as any).data_sources).find((d: any) => d.id === 'position_settings');
+    expect(actionsOf(source.errorHandling, 'setState')[0].params).toEqual({ target: 'global', heroPositionSettingsFailed: true });
+    expect(actionsOf(source.onSuccess, 'setState')[0].params).toEqual({ target: 'global', heroPositionSettingsFailed: false });
+    const retry = findById(list, 'positions_retry')!;
+    expect(actionsOf(retry, 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
   });
 
   // @scenario case=external_output_skips

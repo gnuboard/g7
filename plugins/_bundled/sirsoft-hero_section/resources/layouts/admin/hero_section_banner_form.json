@@ -74,10 +74,28 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "background",
+            "errorHandling": {
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroPositionSettingsFailed": true
+                    }
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroPositionSettingsFailed": false
+                    }
+                }
+            ],
             "fallback": {
                 "data": null
             },
-            "comment": "업로드 한도 — 플러그인 설정 API 는 설정 관리 권한이라 배너 담당자가 못 읽을 수 있어, 배너 조회 권한으로 열리는 위치 설정 응답의 `upload` 를 쓴다. 못 받으면 기본 5MB 로 안내한다"
+            "comment": "위치 목록·업로드 한도 — 플러그인 설정 API 는 설정 관리 권한이라 배너 담당자가 못 읽을 수 있어, 배너 조회 권한으로 열리는 위치 설정 응답의 `upload` 를 쓴다. 못 받으면 기본 5MB 로 안내한다.\n    이 응답이 와야 위치가 동적인지 안다 — 오기 전에 저장하면 대상 없이(target_key null) 보내 422 가 나므로 저장을 막는다. 받지 못하면 전역 표식(`heroPositionSettingsFailed`, 목록 화면과 같은 표식)을 세워 다시 받기를 준다"
         },
         {
             "id": "form_target_info",
@@ -168,6 +186,8 @@
         "videoUploading": "{{_computed.mediaType === 'video' && (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}",
         "videoMissing": "{{_computed.mediaType === 'video' && !_local.form?.videos?.pc}}",
         "formPositions": "{{(position_settings?.data?.positions ?? []).filter(p => p.registered !== false || p.key === _local.form?.position)}}",
+        "formReady": "{{Array.isArray(position_settings?.data?.positions)}}",
+        "settingsFailed": "{{!_computed.formReady && _global?.heroPositionSettingsFailed === true}}",
         "formDef": "{{(position_settings?.data?.positions ?? []).find(p => p.key === _local.form?.position) ?? null}}",
         "formDynamic": "{{_computed.formDef?.dynamic === true}}",
         "formTargetTypeLabel": "{{_computed.formDef?.target ? (_computed.formDef.target.label ?? $t(_computed.formDef.target.label_key)) : ''}}",
@@ -2715,10 +2735,57 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "comment": "위치 설정을 받기 전 — 위치가 동적인지 몰라 저장을 막는다. 다른 이유보다 먼저다",
+                                                                "id": "save_reason_settings",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.isSaving && !_computed.formReady}}",
+                                                                "props": {
+                                                                    "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "id": "save_reason_settings_loading",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{!_computed.settingsFailed}}",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.settings_loading"
+                                                                    },
+                                                                    {
+                                                                        "id": "save_reason_settings_failed",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{_computed.settingsFailed}}",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.settings_failed"
+                                                                    },
+                                                                    {
+                                                                        "id": "save_reason_settings_retry",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "if": "{{_computed.settingsFailed}}",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "위치 설정 다시 받기 — 받으면 저장 잠금이 풀린다",
+                                                                                "type": "click",
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "position_settings"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "hs:underline hs:text-blue-700 hs:dark:text-blue-300"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.retry"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
                                                                 "id": "save_reason_target",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && _computed.targetUnpicked}}",
+                                                                "if": "{{_computed.formReady && !_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && _computed.targetUnpicked}}",
                                                                 "props": {
                                                                     "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
                                                                 },
@@ -2756,14 +2823,14 @@
                                                                 "id": "save_reason_uploading",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && (_local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading)}}",
+                                                                "if": "{{_computed.formReady && !_local.isSaving && (_local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading)}}",
                                                                 "text": "$t:sirsoft-hero_section.admin.form.upload_pending"
                                                             },
                                                             {
                                                                 "id": "save_reason_pc_image",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_computed.targetUnpicked && !_local.form?.images?.pc}}",
+                                                                "if": "{{_computed.formReady && !_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_computed.targetUnpicked && !_local.form?.images?.pc}}",
                                                                 "props": {
                                                                     "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
                                                                 },
@@ -2801,7 +2868,7 @@
                                                                 "id": "save_reason_pc_video",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_computed.targetUnpicked && !!_local.form?.images?.pc && _computed.videoMissing}}",
+                                                                "if": "{{_computed.formReady && !_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_computed.targetUnpicked && !!_local.form?.images?.pc && _computed.videoMissing}}",
                                                                 "props": {
                                                                     "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
                                                                 },
@@ -2931,7 +2998,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-describedby": "hero_save_reason",
-                                                            "disabled": "{{_local.isSaving || _computed.targetUnpicked || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}",
+                                                            "disabled": "{{_local.isSaving || !_computed.formReady || _computed.targetUnpicked || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}",
                                                             "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5"
                                                         },
                                                         "children": [

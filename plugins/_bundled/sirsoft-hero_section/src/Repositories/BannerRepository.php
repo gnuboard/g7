@@ -106,6 +106,32 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
+     * @param  string  $position  위치 키
+     * @param  CarbonInterface  $now  상태 판정 기준 시각
+     * @return array<string, array{total: int, active: int}> 대상 키 => 건수
+     */
+    public function targetSummaries(string $position, CarbonInterface $now): array
+    {
+        // 대상마다 묻지 않고 두 번의 묶음 조회로 센다 — 전체(최근 수정 순)와 노출 중(공개 노출과 같은 상태 조건)
+        $totals = Banner::query()->where('position', $position)->whereNotNull('target_key')
+            ->selectRaw('target_key, COUNT(*) as aggregate, MAX(updated_at) as last_updated')
+            ->groupBy('target_key')->orderByDesc('last_updated')->orderBy('target_key')
+            ->pluck('aggregate', 'target_key')->all();
+        $active = $this->applyStatusFilter(Banner::query()->where('position', $position)->whereNotNull('target_key'), BannerStatus::Active, $now)
+            ->selectRaw('target_key, COUNT(*) as aggregate')->groupBy('target_key')
+            ->pluck('aggregate', 'target_key')->all();
+
+        $summaries = [];
+        foreach ($totals as $key => $total) {
+            $summaries[(string) $key] = ['total' => (int) $total, 'active' => (int) ($active[$key] ?? 0)];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @return array<int, string> 위치 키
      */
     public function positionKeys(): array

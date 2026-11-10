@@ -5,13 +5,14 @@ namespace Plugins\Sirsoft\HeroSection\Support\Targets;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Contracts\TargetResolverInterface;
+use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
 
 /**
  * 게시판 대상 해석기 — 게시판 목록 위치(`board_hero`). 저장 키는 게시판 id, 화면 값은 주소의 slug(없을 때만 숫자 id — slug 가 먼저다).
  *
  * 게시판 모듈이 켜져 있을 때만 위치가 등록되므로 이 클래스도 그때만 만들어진다. 게시판 모듈의 저장소 계약만 쓴다.
  */
-class BoardTargetResolver implements TargetResolverInterface
+class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInterface
 {
     /**
      * BoardTargetResolver 생성자
@@ -105,6 +106,26 @@ class BoardTargetResolver implements TargetResolverInterface
         $board = $this->board($key);
 
         return $board === null ? null : '/board/'.$board->slug;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, string>  $keys  board id 목록
+     * @return array<string, string> board id => 사이트 경로
+     */
+    public function siteUrls(array $keys): array
+    {
+        // 게시판 저장소에 id 묶음 조회가 없어 한 번에 읽는다 — 게시판 수는 운영상 수십 개다(labels 와 같은 판단)
+        $byId = $this->boards->all()->keyBy(fn (Board $board) => (string) $board->id);
+        $urls = [];
+        foreach (array_unique(array_map('strval', $keys)) as $key) {
+            if (isset($byId[$key])) {
+                $urls[$key] = '/board/'.$byId[$key]->slug;
+            }
+        }
+
+        return $urls;
     }
 
     /**

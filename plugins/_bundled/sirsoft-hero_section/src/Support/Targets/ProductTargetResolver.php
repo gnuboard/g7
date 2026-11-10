@@ -6,13 +6,14 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 use Plugins\Sirsoft\HeroSection\Contracts\TargetResolverInterface;
+use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
 
 /**
  * 상품 대상 해석기 — 상품 상세 위치(`product_hero`). 저장 키는 상품 id, 화면 값은 주소의 상품 코드(없을 때만 숫자 id — 상품 코드가 먼저다).
  *
  * 이커머스 모듈이 켜져 있을 때만 위치가 등록되므로 이 클래스도 그때만 만들어진다. 이커머스 모듈의 저장소 계약만 쓴다.
  */
-class ProductTargetResolver implements TargetResolverInterface
+class ProductTargetResolver implements TargetResolverInterface, TargetSiteUrlsInterface
 {
     /**
      * ProductTargetResolver 생성자
@@ -100,6 +101,23 @@ class ProductTargetResolver implements TargetResolverInterface
         $product = $this->product($key);
 
         return $product === null ? null : ShopPathResolver::path('products/'.$product->product_code);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, string>  $keys  product id 목록
+     * @return array<string, string> product id => 사이트 경로
+     */
+    public function siteUrls(array $keys): array
+    {
+        $ids = array_values(array_unique(array_map('intval', array_filter($keys, fn ($key) => ctype_digit((string) $key)))));
+        $urls = [];
+        foreach ($ids === [] ? [] : $this->products->findByIdsKeyed($ids) as $id => $product) {
+            $urls[(string) $id] = ShopPathResolver::path('products/'.$product->product_code);
+        }
+
+        return $urls;
     }
 
     /**

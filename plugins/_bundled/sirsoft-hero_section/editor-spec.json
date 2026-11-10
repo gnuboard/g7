@@ -771,6 +771,39 @@
           }
         }
       },
+      "placements": {
+        "data": {
+          "position": "board_hero",
+          "data": [
+            {
+              "key": "2",
+              "label": "자유게시판",
+              "exists": true,
+              "site_url": "/board/free",
+              "total": 3,
+              "active": 2
+            },
+            {
+              "key": "9",
+              "label": null,
+              "exists": false,
+              "site_url": null,
+              "total": 1,
+              "active": 0
+            }
+          ],
+          "summary": {
+            "banners": 4,
+            "targets": 2
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "total": 2,
+            "per_page": 20
+          }
+        }
+      },
       "heroSectionBoard": {
         "data": {
           "position": "board_hero",

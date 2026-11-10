@@ -36,15 +36,45 @@
   <data-source id="target_info" label_key="$t:sirsoft-hero_section.editor.data_source.target_info" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/positions/{{query.position || 'home_hero'}}/targets" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" if="{{!!query.target}}">
     <params key="{{query.target}}"/>
   </data-source>
-  <!-- 위치 목록·위치별 슬라이더 설정·업로드 한도 -->
-  <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
+  <!-- 동적 위치의 대상 목록 — 배너가 있는 대상마다 이름·사이트 주소·전체·노출 중 건수. 대상을 고르기 전에만 받는다. 정적 위치는 data 가
+    null 이다(위치마다 불러도 오류를 남기지 않는다). 화면은 `_computed.placementList` 로만 읽는다 — 응답 위치가 주소 위치와 맞을 때만(탭을 옮긴 직후 앞 위치 목록이 보이지 않게).
+    받지 못하면 그 위치·쪽을 전역 표식(`heroPlacementsFailed`)에 남겨 「불러오는 중」 대신 실패와 다시 받기를 보인다 — 데이터 소스 처리기가 쓴 지역 상태는 화면 편집 뒤 되돌아가므로 전역에 둔다.
+    엔진은 같은 주소의 앞 쪽 응답을 지키므로, 실패 표식이 맞는 동안에는 그 응답도 그리지 않는다(2쪽 실패에 1쪽 목록이 2쪽처럼 보이지 않게) -->
+  <data-source id="placements" label_key="$t:sirsoft-hero_section.editor.data_source.placements" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/positions/{{query.position || 'home_hero'}}/placements" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" if="{{!query.target}}">
+    <params page="{{query.tpage || 1}}"/>
+    <error-handling>
+      <default>
+        <set-state target="global" heroPlacementsFailed="{{(query.position || 'home_hero') + '|' + (query.tpage || 1)}}"/>
+      </default>
+    </error-handling>
+    <success>
+      <set-state target="global" :heroPlacementsFailed="null"/>
+    </success>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 위치 목록·위치별 슬라이더 설정·업로드 한도. 이 응답이 와야 지금 위치가 동적인지 안다 — 오기 전에는 화면 틀(대상 목록·미리보기·표·슬라이더 설정)을 그리지 않는다
+    (정적 위치로 잘못 그리지 않게). 받지 못하면 전역 표식(`heroPositionSettingsFailed`, 등록·수정 화면과 같은 표식)을 세워 알리고 다시 받기를 준다 -->
+  <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <set-state target="global" :heroPositionSettingsFailed="true"/>
+      </default>
+    </error-handling>
+    <success>
+      <set-state target="global" :heroPositionSettingsFailed="false"/>
+    </success>
+  </data-source>
   <computed name="currentPosition">{{query.position || 'home_hero'}}</computed>
   <computed name="currentDef">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero')) ?? null}}</computed>
+  <computed name="positionsReady">{{Array.isArray(position_settings?.data?.positions)}}</computed>
   <computed name="isDynamic">{{_computed.currentDef?.dynamic === true}}</computed>
   <computed name="isUnregistered">{{_computed.currentDef?.registered === false}}</computed>
   <computed name="currentTarget">{{_computed.isDynamic ? (query.target || '') : ''}}</computed>
   <computed name="selectedTarget">{{_computed.currentTarget &amp;&amp; target_info?.data?.position === _computed.currentPosition &amp;&amp; String(target_info?.data?.selected?.key ?? '') === _computed.currentTarget ? target_info.data.selected : null}}</computed>
-  <computed name="targetReady">{{!_computed.isDynamic || !!_computed.currentTarget}}</computed>
+  <computed name="showTargetList">{{_computed.isDynamic &amp;&amp; !_computed.currentTarget}}</computed>
+  <computed name="placementsFailed">{{_computed.showTargetList &amp;&amp; _global?.heroPlacementsFailed === _computed.currentPosition + '|' + String(query.tpage || 1)}}</computed>
+  <computed name="placementList">{{_computed.showTargetList &amp;&amp; !_computed.placementsFailed &amp;&amp; placements?.data?.position === _computed.currentPosition ? placements.data : null}}</computed>
+  <computed name="targetReady">{{_computed.positionsReady &amp;&amp; (!_computed.isDynamic || !!_computed.currentTarget)}}</computed>
   <computed name="targetMissing">{{_computed.selectedTarget?.exists === false}}</computed>
   <computed name="positionLabel">{{_computed.currentDef ? (_computed.currentDef.label ?? $t(_computed.currentDef.label_key)) : $t('sirsoft-hero_section.admin.position.' + (query.position || 'home_hero'))}}</computed>
   <computed name="targetTypeLabel">{{_computed.currentDef?.target ? (_computed.currentDef.target.label ?? $t(_computed.currentDef.target.label_key)) : ''}}</computed>
@@ -136,10 +166,32 @@
         </a>
       </nav>
       <p class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mb-6">$t:sirsoft-hero_section.admin.position.hint</p>
+      <!-- 위치 설정을 받는 중·받지 못함 — 이 응답 전에는 지금 위치가 동적인지 몰라 화면 틀을 그리지 않는다 -->
+      <p data-ref="positions_loading" data-if="{{!_computed.positionsReady &amp;&amp; _global?.heroPositionSettingsFailed !== true}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.position.loading</p>
+      <div data-ref="positions_failed" data-if="{{!_computed.positionsReady &amp;&amp; _global?.heroPositionSettingsFailed === true}}" role="alert" class="hs-alert-warning hs:mb-6">
+        <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
+        <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.position.load_failed</p>
+        <button type="button" data-ref="positions_retry" class="hs-btn hs-btn-secondary">
+          <on type="click">
+            <!-- 위치 설정 다시 받기 — 성공하면 표식이 내려가고 화면 틀이 그려진다 -->
+            <refetch-data-source dataSourceId="position_settings"/>
+          </on>
+          $t:sirsoft-hero_section.admin.retry
+        </button>
+      </div>
       <!-- 등록되지 않은 위치(D7) — 사이트에 나가지 않는 이유와 이 탭에서 할 수 있는 일 -->
       <div data-ref="unregistered_notice" data-if="{{_computed.isUnregistered}}" role="status" class="hs-alert-warning hs:mb-6">
         <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
         <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.position.unregistered_notice</p>
+      </div>
+      <!-- 대상 상세 머리 — 고른 대상 이름과 대상 목록으로 돌아가는 링크. 주소에서 target 만 빼면 대상 목록이다(새로고침·뒤로 가기도 같다).
+        목록 쪽(`tpage`)은 「관리」가 이고 왔으므로 그 쪽으로 돌아간다 -->
+      <div data-ref="target_detail_header" data-if="{{_computed.isDynamic &amp;&amp; !!_computed.currentTarget}}" class="hs:flex hs:flex-wrap hs:items-center hs:gap-x-4 hs:gap-y-2 hs:mb-3">
+        <a data-ref="target_list_back" href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}{{query.tpage ? '&amp;tpage=' + encodeURIComponent(query.tpage) : ''}}" class="hs:inline-flex hs:items-center hs:gap-1 hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline">
+          <icon name="arrow-left" class="hs:text-xs"/>
+          <span>$t:sirsoft-hero_section.admin.target_list.back</span>
+        </a>
+        <h2 data-ref="target_detail_title" class="hs:text-lg hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.target_list.detail_title|target={{_computed.selectedTarget?.label ?? _computed.currentTarget}}</h2>
       </div>
       <!-- 동적 위치 대상 고르기 — 이름으로 찾아 고르면 주소(`target`)에 담겨 목록·미리보기·순서·등록이 그 대상만 다룬다. 후보는 히어로 조회 권한으로
         받는다(게시판·상품 관리 권한이 없어도 고를 수 있다) -->
@@ -174,7 +226,7 @@
       <!-- 대상을 고르기 전 — 목록·미리보기는 비어 있고 등록·순서 변경은 막혀 있다. 왜 비었는지 알린다 -->
       <div data-ref="target_pick_first" data-if="{{_computed.isDynamic &amp;&amp; !_computed.currentTarget}}" role="status" class="hs-alert-info hs:mb-6">
         <icon name="circle-info" class="hs:text-xl hs:text-blue-600 hs:dark:text-blue-400 hs:flex-shrink-0"/>
-        <p class="hs:text-sm hs:text-blue-800 hs:dark:text-blue-200">$t:sirsoft-hero_section.admin.target.pick_first|target={{_computed.targetTypeLabel}}</p>
+        <p class="hs:text-sm hs:text-blue-800 hs:dark:text-blue-200">$t:sirsoft-hero_section.admin.target_list.new_hint|target={{_computed.targetTypeLabel}}</p>
       </div>
       <!-- 「없는 대상」(D7) — 고른 대상이 지워졌다. 배너는 남아 목록에서 고치거나 지울 수 있고, 새 등록은 막는다 -->
       <div data-ref="target_missing_notice" data-if="{{_computed.targetMissing}}" role="alert" class="hs-alert-warning hs:mb-6">
@@ -193,8 +245,54 @@
       </div>
       <div data-ref="top_cards" class="hs:grid hs:grid-cols-1 hs:gap-4 hs:mb-6">
         <responsive on="desktop" class="hs:grid hs:grid-cols-3 hs:gap-4 hs:mb-6"/>
+        <!-- 대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.
+          지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.
+          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다 -->
+        <section data-ref="target_list_card" data-if="{{_computed.showTargetList}}" aria-labelledby="hero_target_list_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
+          <responsive on="desktop" class="hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"/>
+          <div class="hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3">
+            <h2 id="hero_target_list_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.target_list.title|target={{_computed.targetTypeLabel}}</h2>
+            <span data-ref="target_list_summary" data-if="{{_computed.placementList != null}}" class="hs:text-sm hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.summary|banners={{_computed.placementList?.summary?.banners ?? 0}}|targets={{_computed.placementList?.summary?.targets ?? 0}}</span>
+          </div>
+          <p data-ref="target_list_loading" data-if="{{_computed.placementList == null &amp;&amp; !_computed.placementsFailed}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.target_list.loading</p>
+          <div data-ref="target_list_error" data-if="{{_computed.placementsFailed}}" role="alert" class="hs:flex hs:flex-wrap hs:items-center hs:justify-center hs:gap-3 hs:py-6">
+            <p class="hs:text-sm hs:text-red-700 hs:dark:text-red-300">$t:sirsoft-hero_section.admin.target_list.load_failed</p>
+            <button type="button" data-ref="target_list_retry" class="hs-btn hs-btn-secondary">
+              <on type="click">
+                <!-- 대상 목록 다시 받기 — 표식을 내려 「불러오는 중」으로 돌리고 같은 위치·쪽을 다시 받는다(또 실패하면 표식이 다시 선다) -->
+                <sequence>
+                  <set-state target="global" :heroPlacementsFailed="null"/>
+                  <refetch-data-source dataSourceId="placements"/>
+                </sequence>
+              </on>
+              $t:sirsoft-hero_section.admin.retry
+            </button>
+          </div>
+          <p data-ref="target_list_empty" data-if="{{_computed.placementList != null &amp;&amp; (_computed.placementList.data ?? []).length === 0}}" class="hs:py-6 hs:text-center hs:text-sm hs:text-gray-600 hs:dark:text-gray-300">$t:sirsoft-hero_section.admin.target_list.empty|target={{_computed.targetTypeLabel}}</p>
+          <ul data-ref="target_list" data-if="{{(_computed.placementList?.data ?? []).length &gt; 0}}" class="hs:divide-y hs:divide-gray-200 hs:dark:divide-gray-700">
+            <li data-each="item in {{_computed.placementList?.data ?? []}}" class="hs:flex hs:flex-wrap hs:items-center hs:justify-between hs:gap-3 hs:py-3">
+              <div class="hs:min-w-0 hs:flex hs:flex-col hs:gap-0.5">
+                <span data-if="{{item.exists}}" class="hs:font-medium hs:text-gray-900 hs:dark:text-white hs:break-all">{{item.label}}</span>
+                <span data-if="{{!item.exists}}" class="hs:font-medium hs:text-amber-700 hs:dark:text-amber-300 hs:break-all">$t:sirsoft-hero_section.admin.target.missing_label|key={{item.key}}</span>
+                <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.counts|total={{item.total}}|active={{item.active}}</span>
+              </div>
+              <div class="hs:flex hs:flex-wrap hs:items-center hs:gap-2">
+                <a data-if="{{!!item.site_url}}" href="{{item.site_url}}" target="_blank" rel="noopener noreferrer" class="hs:inline-flex hs:items-center hs:gap-1 hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline">
+                  <span>$t:sirsoft-hero_section.admin.preview.open_site</span>
+                  <icon name="fa-solid fa-arrow-up-right-from-square" class="hs:text-xs"/>
+                </a>
+                <a href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}&amp;target={{encodeURIComponent(item.key)}}{{(_computed.placementList?.pagination?.current_page ?? 1) &gt; 1 ? '&amp;tpage=' + _computed.placementList.pagination.current_page : ''}}" class="hs-btn hs-btn-secondary">$t:sirsoft-hero_section.admin.target_list.manage</a>
+              </div>
+            </li>
+          </ul>
+          <nav data-ref="target_list_pages" data-if="{{(_computed.placementList?.pagination?.last_page ?? 0) &gt; 1 || (_computed.placementList?.pagination?.current_page ?? 0) &gt; 1}}" aria-label="$t:sirsoft-hero_section.admin.target_list.pages_label" class="hs:flex hs:items-center hs:justify-end hs:gap-3 hs:pt-3">
+            <a data-ref="target_list_prev" data-if="{{(_computed.placementList?.pagination?.current_page ?? 1) &gt; 1}}" href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}&amp;tpage={{(_computed.placementList?.pagination?.current_page ?? 2) - 1}}" class="hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline">$t:sirsoft-hero_section.admin.target_list.prev</a>
+            <span class="hs:text-sm hs:text-gray-600 hs:dark:text-gray-300 hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.page|current={{_computed.placementList?.pagination?.current_page ?? 1}}|last={{_computed.placementList?.pagination?.last_page}}</span>
+            <a data-ref="target_list_next" data-if="{{(_computed.placementList?.pagination?.current_page ?? 1) &lt; (_computed.placementList?.pagination?.last_page ?? 0)}}" href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}&amp;tpage={{(_computed.placementList?.pagination?.current_page ?? 0) + 1}}" class="hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline">$t:sirsoft-hero_section.admin.target_list.next</a>
+          </nav>
+        </section>
         <!-- 미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다) -->
-        <section data-ref="preview_card" aria-labelledby="hero_preview_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
+        <section data-ref="preview_card" data-if="{{_computed.positionsReady &amp;&amp; !_computed.showTargetList}}" aria-labelledby="hero_preview_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
           <responsive on="desktop" class="hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"/>
           <div class="hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3">
             <div class="hs:flex hs:flex-wrap hs:items-center hs:gap-x-3 hs:gap-y-1">
@@ -224,8 +322,8 @@
           </div>
           <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, eyebrow: $localized(b.eyebrow) ?? '', description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_computed.currentPosition}}" emptyText="{{!_computed.targetReady ? $t('sirsoft-hero_section.admin.target.pick_first', {target: _computed.targetTypeLabel}) : preview === undefined ? '' : (_computed.placementCount &gt; 0 ? $t('sirsoft-hero_section.admin.preview.empty_with_counts', { scheduled: banners?.data?.statistics?.statuses?.scheduled ?? 0, inactive: banners?.data?.statistics?.statuses?.inactive ?? 0, ended: banners?.data?.statistics?.statuses?.ended ?? 0 }) : $t('sirsoft-hero_section.admin.preview.empty'))}}"/>
         </section>
-        <!-- 슬라이더 설정 — 이 위치에만 적용 -->
-        <section data-ref="slider_card" aria-labelledby="hero_slider_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4">
+        <!-- 슬라이더 설정 — 이 위치에만 적용. 위치 설정이 오기 전에는 그리지 않는다(기본값에서 고쳐 저장하면 실제 설정을 덮는다) -->
+        <section data-ref="slider_card" data-if="{{_computed.positionsReady}}" aria-labelledby="hero_slider_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4">
           <div>
             <h2 id="hero_slider_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.slider.title</h2>
             <p data-ref="slider_scope" data-if="{{!_computed.isDynamic}}" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1">$t:sirsoft-hero_section.admin.slider.scope|position={{_computed.positionLabel}}</p>
@@ -342,7 +440,7 @@
         </section>
       </div>
       <!-- 필터 줄 — 상태·제목 검색·순서 변경 -->
-      <div data-ref="filter_bar" class="hs:flex hs:flex-wrap hs:items-end hs:gap-3 hs:mb-4">
+      <div data-ref="filter_bar" data-if="{{_computed.targetReady}}" class="hs:flex hs:flex-wrap hs:items-end hs:gap-3 hs:mb-4">
         <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_filter_status">
           <span>$t:sirsoft-hero_section.admin.list.status_filter</span>
           <select id="hero_filter_status" class="hs:w-36 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{_local.filter.status}}">
@@ -458,7 +556,7 @@
           $t:sirsoft-hero_section.admin.list.bulk_delete
         </button>
       </div>
-      <div data-ref="table_header_bar" class="hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-3">
+      <div data-ref="table_header_bar" data-if="{{_computed.targetReady}}" class="hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-3">
         <span class="hs-text-label">$t:sirsoft-hero_section.admin.list.total|count={{banners?.data?.pagination?.total ?? 0}}</span>
         <select name="sortBy" aria-label="$t:common.sort_order" class="hs:w-40 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}">
           <options>
@@ -495,7 +593,7 @@
         </a>
       </div>
       <!-- 배너 표 — 쪽 넘김은 서버, 쪽 번호는 링크(pageHref). 받는 중에는 빈 문구를 숨기고, 위치가 비었으면 위 안내 카드에 맡긴다 -->
-      <data-grid data-type="composite" data-ref="hero_banner_datagrid" pageHref="/admin/plugins/sirsoft-hero_section/banners?page={page}" :pageHrefMergeQuery="true" rowLabelField="title_localized" data="{{banners?.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedIds ?? []}}" selectedCountText="" emptyMessage="{{banners === undefined || (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) === 0 ? '' : ((query.status || query.search) ? $t('sirsoft-hero_section.admin.list.empty_filtered') : $t('sirsoft-hero_section.admin.list.empty'))}}" :serverSidePagination="true" serverCurrentPage="{{banners?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{banners?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{banners?.data?.pagination?.has_more_pages ?? false}}">
+      <data-grid data-type="composite" data-ref="hero_banner_datagrid" data-if="{{_computed.targetReady}}" pageHref="/admin/plugins/sirsoft-hero_section/banners?page={page}" :pageHrefMergeQuery="true" rowLabelField="title_localized" data="{{banners?.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedIds ?? []}}" selectedCountText="" emptyMessage="{{banners === undefined || (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) === 0 ? '' : ((query.status || query.search) ? $t('sirsoft-hero_section.admin.list.empty_filtered') : $t('sirsoft-hero_section.admin.list.empty'))}}" :serverSidePagination="true" serverCurrentPage="{{banners?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{banners?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{banners?.data?.pagination?.has_more_pages ?? false}}">
         <blur-until-loaded sources="banners"/>
         <column field="thumbnail" header="$t:sirsoft-hero_section.admin.list.column.image" width="120px">
           <cell>

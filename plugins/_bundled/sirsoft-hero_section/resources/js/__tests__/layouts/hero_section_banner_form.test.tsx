@@ -324,7 +324,7 @@ describe('배너 등록·수정 화면', () => {
     const computedOf = (state: any) => evaluateComputed(form as any, { _local: state, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
     const evaluate = (expr: string, state: any) => Function('_local', '_computed', `return (${expr})`)(state, computedOf(state));
     const isDisabled = (state: any) => evaluate(disabledExpr, state);
-    const reasonIds = ['save_reason_uploading', 'save_reason_target', 'save_reason_pc_image', 'save_reason_pc_video'];
+    const reasonIds = ['save_reason_settings', 'save_reason_uploading', 'save_reason_target', 'save_reason_pc_image', 'save_reason_pc_video'];
     const shown = (state: any) => reasonIds.filter((id) => evaluate(findById(form, id)!.if.slice(2, -2), state));
     const states = [
       { form: { images: { pc: null } } },
@@ -483,6 +483,39 @@ describe('배너 등록·수정 화면', () => {
     const back = actionsOf(findById(form, 'footer_cancel_button'), 'navigate')[0];
     expect(json(back)).toContain('"target":"{{_computed.listTarget}}"');
     expect(json(back)).toContain('_computed.samePlacement ? query.page : undefined');
+  });
+
+  // @scenario case=admin_form_position_target
+  it('위치 설정을 받기 전에는 저장을 막고 이유를 보인다 — 동적 위치 배너가 대상 없이(target_key null) 나가 422 가 나지 않게, 받지 못하면 다시 받기를 준다', () => {
+    const disabledExpr = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
+    const ready = { data: { positions: [{ key: 'board_hero', label_key: 'k.board', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'k.target.board', label: null } }] } };
+    const state = { form: { position: 'board_hero', target_key: 'event-a', images: { pc: { id: 1 } } } };
+    const computedOf = (settings: any, global: any = {}) => evaluateComputed(form as any, { _local: state, _global: global, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
+    const evaluate = (expr: string, computed: any) => Function('_local', '_computed', `return (${expr})`)(state, computed);
+
+    // 받기 전: 동적 판정을 못 하므로 저장하지 않는다
+    const before = computedOf(undefined);
+    expect(before.formReady).toBe(false);
+    expect(evaluate(disabledExpr, before)).toBe(true);
+    expect(evaluate(findById(form, 'save_reason_settings')!.if.slice(2, -2), before)).toBe(true);
+    for (const id of ['save_reason_uploading', 'save_reason_target', 'save_reason_pc_image', 'save_reason_pc_video']) {
+      expect(evaluate(findById(form, id)!.if.slice(2, -2), before), id).toBe(false);
+    }
+    expect(evaluate(findById(form, 'save_reason_settings_loading')!.if.slice(2, -2), before)).toBe(true);
+    expect(evaluate(findById(form, 'save_reason_settings_failed')!.if.slice(2, -2), before)).toBe(false);
+    // 받지 못함: 실패를 알리고 다시 받기
+    const failed = computedOf(undefined, { heroPositionSettingsFailed: true });
+    expect(evaluate(findById(form, 'save_reason_settings_failed')!.if.slice(2, -2), failed)).toBe(true);
+    expect(evaluate(findById(form, 'save_reason_settings_loading')!.if.slice(2, -2), failed)).toBe(false);
+    expect(actionsOf(findById(form, 'save_reason_settings_retry'), 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
+    // 받은 뒤: 대상과 함께 저장된다
+    const after = computedOf(ready);
+    expect(evaluate(disabledExpr, after)).toBe(false);
+    expect(evaluate(findById(form, 'save_reason_settings')!.if.slice(2, -2), after)).toBe(false);
+
+    const source = layout.data_sources.find((d: any) => d.id === 'position_settings');
+    expect(actionsOf(source.errorHandling, 'setState')[0].params).toEqual({ target: 'global', heroPositionSettingsFailed: true });
+    expect(actionsOf(source.onSuccess, 'setState')[0].params).toEqual({ target: 'global', heroPositionSettingsFailed: false });
   });
 
   // @scenario case=admin_form_position_target

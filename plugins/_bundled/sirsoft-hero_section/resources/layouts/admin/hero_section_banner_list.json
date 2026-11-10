@@ -94,6 +94,42 @@
             "comment": "고른 대상의 이름·사이트 주소·존재 여부 — 동적 위치에서 대상을 골랐을 때만 받는다. 지워진 대상이면 exists=false(「없는 대상」).\n    화면은 `_computed.selectedTarget` 으로만 읽는다 — 응답의 위치·대상이 주소와 맞을 때만 쓴다. target 이 빠진 탭으로 옮기면 다시 받지 않아 앞 탭 응답이 남고,\n    다른 대상을 고른 직후 새 응답을 받는 동안에도 앞 응답이 남는다(게시판 2번 이름이 상품 2번 자리에 보이지 않게)"
         },
         {
+            "id": "placements",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.placements",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/admin/positions/{{query.position || 'home_hero'}}/placements",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "if": "{{!query.target}}",
+            "params": {
+                "page": "{{query.tpage || 1}}"
+            },
+            "errorHandling": {
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroPlacementsFailed": "{{(query.position || 'home_hero') + '|' + (query.tpage || 1)}}"
+                    }
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroPlacementsFailed": null
+                    }
+                }
+            ],
+            "fallback": {
+                "data": null
+            },
+            "comment": "동적 위치의 대상 목록 — 배너가 있는 대상마다 이름·사이트 주소·전체·노출 중 건수. 대상을 고르기 전에만 받는다. 정적 위치는 data 가\n    null 이다(위치마다 불러도 오류를 남기지 않는다). 화면은 `_computed.placementList` 로만 읽는다 — 응답 위치가 주소 위치와 맞을 때만(탭을 옮긴 직후 앞 위치 목록이 보이지 않게).\n    받지 못하면 그 위치·쪽을 전역 표식(`heroPlacementsFailed`)에 남겨 「불러오는 중」 대신 실패와 다시 받기를 보인다 — 데이터 소스 처리기가 쓴 지역 상태는 화면 편집 뒤 되돌아가므로 전역에 둔다.\n    엔진은 같은 주소의 앞 쪽 응답을 지키므로, 실패 표식이 맞는 동안에는 그 응답도 그리지 않는다(2쪽 실패에 1쪽 목록이 2쪽처럼 보이지 않게)"
+        },
+        {
             "id": "position_settings",
             "label_key": "$t:sirsoft-hero_section.editor.data_source.position_settings",
             "type": "api",
@@ -102,7 +138,25 @@
             "auto_fetch": true,
             "auth_required": true,
             "refetchOnMount": true,
-            "comment": "위치 목록·위치별 슬라이더 설정·업로드 한도"
+            "errorHandling": {
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroPositionSettingsFailed": true
+                    }
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroPositionSettingsFailed": false
+                    }
+                }
+            ],
+            "comment": "위치 목록·위치별 슬라이더 설정·업로드 한도. 이 응답이 와야 지금 위치가 동적인지 안다 — 오기 전에는 화면 틀(대상 목록·미리보기·표·슬라이더 설정)을 그리지 않는다\n    (정적 위치로 잘못 그리지 않게). 받지 못하면 전역 표식(`heroPositionSettingsFailed`, 등록·수정 화면과 같은 표식)을 세워 알리고 다시 받기를 준다"
         }
     ],
     "initLocal": {
@@ -129,11 +183,15 @@
     "computed": {
         "currentPosition": "{{query.position || 'home_hero'}}",
         "currentDef": "{{(position_settings?.data?.positions ?? []).find(p => p.key === (query.position || 'home_hero')) ?? null}}",
+        "positionsReady": "{{Array.isArray(position_settings?.data?.positions)}}",
         "isDynamic": "{{_computed.currentDef?.dynamic === true}}",
         "isUnregistered": "{{_computed.currentDef?.registered === false}}",
         "currentTarget": "{{_computed.isDynamic ? (query.target || '') : ''}}",
         "selectedTarget": "{{_computed.currentTarget && target_info?.data?.position === _computed.currentPosition && String(target_info?.data?.selected?.key ?? '') === _computed.currentTarget ? target_info.data.selected : null}}",
-        "targetReady": "{{!_computed.isDynamic || !!_computed.currentTarget}}",
+        "showTargetList": "{{_computed.isDynamic && !_computed.currentTarget}}",
+        "placementsFailed": "{{_computed.showTargetList && _global?.heroPlacementsFailed === _computed.currentPosition + '|' + String(query.tpage || 1)}}",
+        "placementList": "{{_computed.showTargetList && !_computed.placementsFailed && placements?.data?.position === _computed.currentPosition ? placements.data : null}}",
+        "targetReady": "{{_computed.positionsReady && (!_computed.isDynamic || !!_computed.currentTarget)}}",
         "targetMissing": "{{_computed.selectedTarget?.exists === false}}",
         "positionLabel": "{{_computed.currentDef ? (_computed.currentDef.label ?? $t(_computed.currentDef.label_key)) : $t('sirsoft-hero_section.admin.position.' + (query.position || 'home_hero'))}}",
         "targetTypeLabel": "{{_computed.currentDef?.target ? (_computed.currentDef.target.label ?? $t(_computed.currentDef.target.label_key)) : ''}}",
@@ -369,6 +427,66 @@
                         "text": "$t:sirsoft-hero_section.admin.position.hint"
                     },
                     {
+                        "comment": "위치 설정을 받는 중·받지 못함 — 이 응답 전에는 지금 위치가 동적인지 몰라 화면 틀을 그리지 않는다",
+                        "id": "positions_loading",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{!_computed.positionsReady && _global?.heroPositionSettingsFailed !== true}}",
+                        "props": {
+                            "role": "status",
+                            "className": "hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                        },
+                        "text": "$t:sirsoft-hero_section.admin.position.loading"
+                    },
+                    {
+                        "id": "positions_failed",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!_computed.positionsReady && _global?.heroPositionSettingsFailed === true}}",
+                        "props": {
+                            "role": "alert",
+                            "className": "hs-alert-warning hs:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.position.load_failed"
+                            },
+                            {
+                                "id": "positions_retry",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "위치 설정 다시 받기 — 성공하면 표식이 내려가고 화면 틀이 그려진다",
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "position_settings"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "hs-btn hs-btn-secondary"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.retry"
+                            }
+                        ]
+                    },
+                    {
                         "comment": "등록되지 않은 위치(D7) — 사이트에 나가지 않는 이유와 이 탭에서 할 수 있는 일",
                         "id": "unregistered_notice",
                         "type": "basic",
@@ -394,6 +512,51 @@
                                     "className": "hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.position.unregistered_notice"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "대상 상세 머리 — 고른 대상 이름과 대상 목록으로 돌아가는 링크. 주소에서 target 만 빼면 대상 목록이다(새로고침·뒤로 가기도 같다).\n        목록 쪽(`tpage`)은 「관리」가 이고 왔으므로 그 쪽으로 돌아간다",
+                        "id": "target_detail_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isDynamic && !!_computed.currentTarget}}",
+                        "props": {
+                            "className": "hs:flex hs:flex-wrap hs:items-center hs:gap-x-4 hs:gap-y-2 hs:mb-3"
+                        },
+                        "children": [
+                            {
+                                "id": "target_list_back",
+                                "type": "basic",
+                                "name": "A",
+                                "props": {
+                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}{{query.tpage ? '&tpage=' + encodeURIComponent(query.tpage) : ''}}",
+                                    "className": "hs:inline-flex hs:items-center hs:gap-1 hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrow-left",
+                                            "className": "hs:text-xs"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-hero_section.admin.target_list.back"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "target_detail_title",
+                                "type": "basic",
+                                "name": "H2",
+                                "props": {
+                                    "className": "hs:text-lg hs:font-semibold hs:text-gray-900 hs:dark:text-white"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.target_list.detail_title|target={{_computed.selectedTarget?.label ?? _computed.currentTarget}}"
                             }
                         ]
                     },
@@ -524,7 +687,7 @@
                                 "props": {
                                     "className": "hs:text-sm hs:text-blue-800 hs:dark:text-blue-200"
                                 },
-                                "text": "$t:sirsoft-hero_section.admin.target.pick_first|target={{_computed.targetTypeLabel}}"
+                                "text": "$t:sirsoft-hero_section.admin.target_list.new_hint|target={{_computed.targetTypeLabel}}"
                             }
                         ]
                     },
@@ -631,10 +794,277 @@
                         },
                         "children": [
                             {
+                                "comment": "대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.\n          지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.\n          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다",
+                                "id": "target_list_card",
+                                "type": "basic",
+                                "name": "Section",
+                                "if": "{{_computed.showTargetList}}",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
+                                        }
+                                    }
+                                },
+                                "props": {
+                                    "aria-labelledby": "hero_target_list_heading",
+                                    "className": "hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "id": "hero_target_list_heading",
+                                                    "className": "hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_list.title|target={{_computed.targetTypeLabel}}"
+                                            },
+                                            {
+                                                "id": "target_list_summary",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_computed.placementList != null}}",
+                                                "props": {
+                                                    "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_list.summary|banners={{_computed.placementList?.summary?.banners ?? 0}}|targets={{_computed.placementList?.summary?.targets ?? 0}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_list_loading",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_computed.placementList == null && !_computed.placementsFailed}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.target_list.loading"
+                                    },
+                                    {
+                                        "id": "target_list_error",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_computed.placementsFailed}}",
+                                        "props": {
+                                            "role": "alert",
+                                            "className": "hs:flex hs:flex-wrap hs:items-center hs:justify-center hs:gap-3 hs:py-6"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "hs:text-sm hs:text-red-700 hs:dark:text-red-300"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_list.load_failed"
+                                            },
+                                            {
+                                                "id": "target_list_retry",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "대상 목록 다시 받기 — 표식을 내려 「불러오는 중」으로 돌리고 같은 위치·쪽을 다시 받는다(또 실패하면 표식이 다시 선다)",
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "heroPlacementsFailed": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "placements"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "hs-btn hs-btn-secondary"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.retry"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_list_empty",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_computed.placementList != null && (_computed.placementList.data ?? []).length === 0}}",
+                                        "props": {
+                                            "className": "hs:py-6 hs:text-center hs:text-sm hs:text-gray-600 hs:dark:text-gray-300"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.target_list.empty|target={{_computed.targetTypeLabel}}"
+                                    },
+                                    {
+                                        "id": "target_list",
+                                        "type": "basic",
+                                        "name": "Ul",
+                                        "if": "{{(_computed.placementList?.data ?? []).length > 0}}",
+                                        "props": {
+                                            "className": "hs:divide-y hs:divide-gray-200 hs:dark:divide-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "iteration": {
+                                                    "source": "{{_computed.placementList?.data ?? []}}",
+                                                    "item_var": "item"
+                                                },
+                                                "props": {
+                                                    "className": "hs:flex hs:flex-wrap hs:items-center hs:justify-between hs:gap-3 hs:py-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "hs:min-w-0 hs:flex hs:flex-col hs:gap-0.5"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{item.exists}}",
+                                                                "props": {
+                                                                    "className": "hs:font-medium hs:text-gray-900 hs:dark:text-white hs:break-all"
+                                                                },
+                                                                "text": "{{item.label}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!item.exists}}",
+                                                                "props": {
+                                                                    "className": "hs:font-medium hs:text-amber-700 hs:dark:text-amber-300 hs:break-all"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.target.missing_label|key={{item.key}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.target_list.counts|total={{item.total}}|active={{item.active}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "hs:flex hs:flex-wrap hs:items-center hs:gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "A",
+                                                                "if": "{{!!item.site_url}}",
+                                                                "props": {
+                                                                    "href": "{{item.site_url}}",
+                                                                    "target": "_blank",
+                                                                    "rel": "noopener noreferrer",
+                                                                    "className": "hs:inline-flex hs:items-center hs:gap-1 hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.preview.open_site"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "fa-solid fa-arrow-up-right-from-square",
+                                                                            "className": "hs:text-xs"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "A",
+                                                                "props": {
+                                                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}&target={{encodeURIComponent(item.key)}}{{(_computed.placementList?.pagination?.current_page ?? 1) > 1 ? '&tpage=' + _computed.placementList.pagination.current_page : ''}}",
+                                                                    "className": "hs-btn hs-btn-secondary"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.target_list.manage"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_list_pages",
+                                        "type": "basic",
+                                        "name": "Nav",
+                                        "if": "{{(_computed.placementList?.pagination?.last_page ?? 0) > 1 || (_computed.placementList?.pagination?.current_page ?? 0) > 1}}",
+                                        "props": {
+                                            "aria-label": "$t:sirsoft-hero_section.admin.target_list.pages_label",
+                                            "className": "hs:flex hs:items-center hs:justify-end hs:gap-3 hs:pt-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "target_list_prev",
+                                                "type": "basic",
+                                                "name": "A",
+                                                "if": "{{(_computed.placementList?.pagination?.current_page ?? 1) > 1}}",
+                                                "props": {
+                                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}&tpage={{(_computed.placementList?.pagination?.current_page ?? 2) - 1}}",
+                                                    "className": "hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_list.prev"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "hs:text-sm hs:text-gray-600 hs:dark:text-gray-300 hs:tabular-nums"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_list.page|current={{_computed.placementList?.pagination?.current_page ?? 1}}|last={{_computed.placementList?.pagination?.last_page}}"
+                                            },
+                                            {
+                                                "id": "target_list_next",
+                                                "type": "basic",
+                                                "name": "A",
+                                                "if": "{{(_computed.placementList?.pagination?.current_page ?? 1) < (_computed.placementList?.pagination?.last_page ?? 0)}}",
+                                                "props": {
+                                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position={{_computed.currentPosition}}&tpage={{(_computed.placementList?.pagination?.current_page ?? 0) + 1}}",
+                                                    "className": "hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_list.next"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
                                 "comment": "미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다)",
                                 "id": "preview_card",
                                 "type": "basic",
                                 "name": "Section",
+                                "if": "{{_computed.positionsReady && !_computed.showTargetList}}",
                                 "responsive": {
                                     "desktop": {
                                         "props": {
@@ -773,10 +1203,11 @@
                                 ]
                             },
                             {
-                                "comment": "슬라이더 설정 — 이 위치에만 적용",
+                                "comment": "슬라이더 설정 — 이 위치에만 적용. 위치 설정이 오기 전에는 그리지 않는다(기본값에서 고쳐 저장하면 실제 설정을 덮는다)",
                                 "id": "slider_card",
                                 "type": "basic",
                                 "name": "Section",
+                                "if": "{{_computed.positionsReady}}",
                                 "props": {
                                     "aria-labelledby": "hero_slider_heading",
                                     "className": "hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4"
@@ -1253,6 +1684,7 @@
                         "id": "filter_bar",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{_computed.targetReady}}",
                         "props": {
                             "className": "hs:flex hs:flex-wrap hs:items-end hs:gap-3 hs:mb-4"
                         },
@@ -1701,6 +2133,7 @@
                         "id": "table_header_bar",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{_computed.targetReady}}",
                         "props": {
                             "className": "hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-3"
                         },
@@ -1851,6 +2284,7 @@
                         "id": "hero_banner_datagrid",
                         "type": "composite",
                         "name": "DataGrid",
+                        "if": "{{_computed.targetReady}}",
                         "blur_until_loaded": {
                             "enabled": true,
                             "data_sources": "banners"

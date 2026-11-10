@@ -71,7 +71,7 @@ export function pick(dict: unknown, dotted: string): unknown {
 export function evaluateComputed(layout: AnyNode, scope: Record<string, unknown>): Record<string, any> {
   const computed: Record<string, any> = {};
   const $t = (key: string, params?: unknown) => (params ? `${key}:${JSON.stringify(params)}` : key);
-  const full: Record<string, unknown> = { $t, $localized: (v: unknown) => v, position_settings: undefined, banners: undefined, target_info: undefined, preview: undefined, query: {}, _local: {}, ...scope };
+  const full: Record<string, unknown> = { $t, $localized: (v: unknown) => v, position_settings: undefined, banners: undefined, target_info: undefined, preview: undefined, placements: undefined, query: {}, _local: {}, _global: {}, ...scope };
   for (const [name, source] of Object.entries(layout.computed ?? {})) {
     const expr = String(source).replace(/^\{\{/, '').replace(/\}\}$/, '');
     computed[name] = Function(...Object.keys(full), '_computed', `return (${expr})`)(...Object.values(full), computed);
@@ -84,4 +84,9 @@ export function evaluateBinding(binding: string, scope: Record<string, unknown>,
   const $t = (key: string, params?: unknown) => (params ? `${key}:${JSON.stringify(params)}` : key);
   const full: Record<string, unknown> = { $t, $localized: (v: unknown) => v, ...scope };
   return Function(...Object.keys(full), '_computed', `return (${binding.replace(/^\{\{/, '').replace(/\}\}$/, '')})`)(...Object.values(full), computed);
+}
+
+/** 글자 속 바인딩(`…?a={{x}}&b={{y}}`)을 모두 풀어 실제 문자열로 만든다 — 링크 주소가 값을 어떻게 싣는지 본다. */
+export function interpolate(template: string, scope: Record<string, unknown>, computed: Record<string, unknown> = {}): string {
+  return template.replace(/\{\{([\s\S]+?)\}\}/g, (_, expr) => String(evaluateBinding(`{{${expr}}}`, scope, computed) ?? ''));
 }

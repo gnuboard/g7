@@ -117,18 +117,19 @@ test('상품 상세는 그 상품, 카테고리 목록은 그 카테고리 배�
 
 // @scenario case=admin_target_picker
 // @effects test_data_cleaned_up
-test('관리자: 동적 위치 탭은 대상을 먼저 고르게 하고, 고르면 그 대상 배너 목록·사이트 주소를 보인다', async ({ page, request, managerToken, created }) => {
+test('관리자: 동적 위치 탭은 배너 없는 대상도 찾아 고르게 하고, 고르면 그 대상 배너 목록·사이트 주소를 보인다', async ({ page, request, managerToken, created }) => {
   const title = uniqueTitle('관리자 고르기');
   created.push(await createBanner(request, managerToken, { position: 'board_hero', target_key: BOARD.free.id, title: { ko: title } }));
   await authenticatePage(page, managerToken);
 
   await page.goto(`${ADMIN_LIST}?position=board_hero`);
-  await expect(page.getByText('게시판을(를) 먼저 고르세요', { exact: false }).first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('배너가 없는 게시판은(는) 위 고르기 칸에서', { exact: false }).first()).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole('link', { name: /배너 등록/ })).toHaveCount(0);
 
   await page.getByRole('button', { name: '게시판 고르기' }).first().click();
   await page.getByRole('textbox').last().fill('자유');
-  await page.getByText('자유게시판', { exact: false }).last().click({ timeout: 30_000 });
+  // 대상 목록에도 같은 이름이 있으니 고르기 칸의 후보를 누른다
+  await page.getByRole('listbox').last().getByRole('option', { name: /자유게시판/ }).click({ timeout: 30_000 });
 
   await page.waitForURL(/target=2/);
   await expect(page.locator('#hero_banner_datagrid, table').getByText(title).first()).toBeVisible({ timeout: 30_000 });
@@ -139,10 +140,140 @@ test('관리자: 동적 위치 탭은 대상을 먼저 고르게 하고, 고르�
   await page.getByRole('link', { name: /상품 상세/ }).first().click();
   await page.waitForURL(/position=product_hero/);
   expect(new URL(page.url()).searchParams.get('target')).toBeNull();
-  await expect(page.getByText('상품을(를) 먼저 고르세요', { exact: false }).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('배너가 없는 상품은(는) 위 고르기 칸에서', { exact: false }).first()).toBeVisible({ timeout: 30_000 });
   await page.getByRole('button', { name: '상품 고르기' }).first().click();
   const listbox = page.getByRole('listbox').last();
   await expect(listbox).toBeVisible();
   await expect(listbox.getByText('이름을 입력하면 찾습니다')).toBeVisible();
   await expect(listbox.getByRole('option', { name: /자유게시판/ })).toHaveCount(0);
+});
+
+// @scenario case=admin_placement_list
+// @effects test_data_cleaned_up
+test('관리자: 동적 위치는 배너가 있는 대상 목록(전체·노출 중 건수)에서 관리로 들어가고, 대상 목록으로 돌아오며, 뒤로 가기·새로고침에도 같은 화면이다', async ({ page, request, managerToken, created }) => {
+  const shown = uniqueTitle('대상목록 노출');
+  const hidden = uniqueTitle('대상목록 비노출');
+  created.push(await createBanner(request, managerToken, { position: 'board_hero', target_key: BOARD.event.id, title: { ko: shown } }));
+  created.push(await createBanner(request, managerToken, { position: 'board_hero', target_key: BOARD.event.id, title: { ko: hidden }, is_active: false }));
+  await authenticatePage(page, managerToken);
+
+  await page.goto(`${ADMIN_LIST}?position=board_hero`);
+  const card = page.locator('section[aria-labelledby="hero_target_list_heading"]');
+  await expect(card).toBeVisible({ timeout: 60_000 });
+  // 대상을 고르기 전에는 선택된 대상처럼 「총 0건·지금 노출 0개」를 그리지 않는다
+  await expect(page.locator('#hero_banner_datagrid')).toHaveCount(0);
+  await expect(page.locator('#hero_preview_heading')).toHaveCount(0);
+
+  const eventRow = card.locator('li').filter({ has: page.getByRole('link', { name: '관리' }) }).filter({ hasText: '전체 2개 · 지금 노출 1개' });
+  await expect(eventRow).toHaveCount(1, { timeout: 30_000 });
+  await expect(eventRow.getByRole('link', { name: '사이트에서 보기' })).toHaveAttribute('href', `/board/${BOARD.event.slug}`);
+
+  await eventRow.getByRole('link', { name: '관리' }).click();
+  await page.waitForURL(new RegExp(`target=${BOARD.event.id}`));
+  await expect(page.locator('#hero_banner_datagrid, table').getByText(shown).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('#hero_banner_datagrid, table').getByText(hidden).first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2 }).filter({ hasText: '배너' }).first()).toBeVisible();
+
+  // 대상 목록으로 → 뒤로 가기(상세) → 새로고침(상세 유지)
+  await page.getByRole('link', { name: '대상 목록으로' }).click();
+  await page.waitForURL((url) => url.searchParams.get('position') === 'board_hero' && !url.searchParams.get('target'));
+  await expect(card).toBeVisible({ timeout: 30_000 });
+  await page.goBack();
+  await page.waitForURL(new RegExp(`target=${BOARD.event.id}`));
+  await page.reload();
+  await expect(page.locator('#hero_banner_datagrid, table').getByText(shown).first()).toBeVisible({ timeout: 60_000 });
+
+  // 대상 목록의 다른 대상으로 화면 링크 이동(SPA) — 앞 대상 배너가 섞이지 않는다
+  await page.getByRole('link', { name: '대상 목록으로' }).click();
+  await expect(card).toBeVisible({ timeout: 30_000 });
+  await page.evaluate(() => { (window as any).__heroSpaMark = true; });
+  const freeRow = card.locator('li').filter({ has: page.getByRole('link', { name: '관리' }) }).filter({ has: page.locator(`a[href="/board/${BOARD.free.slug}"]`) });
+  await freeRow.getByRole('link', { name: '관리' }).click();
+  await page.waitForURL(new RegExp(`target=${BOARD.free.id}`));
+  await expect(page.locator('#hero_banner_datagrid')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('#hero_banner_datagrid').getByText(shown)).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).__heroSpaMark === true)).toBe(true);
+});
+
+/**
+ * 대상 목록 응답을 꾸며 돌려줍니다 — 외부 확장이 주는 기호 키·여러 쪽을 개발 DB 를 바꾸지 않고 만든다.
+ *
+ * @param page 페이지
+ * @param items 행
+ */
+async function fakePlacements(page: Page, items: Array<Record<string, unknown>>): Promise<void> {
+  await page.route(`**${API}/admin/positions/board_hero/placements*`, async (route) => {
+    const current = Number(new URL(route.request().url()).searchParams.get('page') ?? 1);
+    await route.fulfill({ json: { success: true, message: '', data: { position: 'board_hero', data: items, summary: { banners: 25, targets: 22 }, pagination: { current_page: current, last_page: 2, total: 22, per_page: 20 } } } });
+  });
+}
+
+// @scenario case=admin_placement_list
+test('관리자: 대상 목록의 「관리」는 기호(&·=)가 든 저장 키를 통째로 싣고 보던 쪽을 이고 가며, 「대상 목록으로」가 그 쪽으로 돌아온다', async ({ page, managerToken }) => {
+  await fakePlacements(page, [{ key: 'event&split=1', label: '기호 대상', exists: true, site_url: null, total: 1, active: 1 }]);
+  await authenticatePage(page, managerToken);
+
+  await page.goto(`${ADMIN_LIST}?position=board_hero&tpage=2`);
+  const card = page.locator('section[aria-labelledby="hero_target_list_heading"]');
+  const row = card.locator('li').filter({ hasText: '기호 대상' });
+  await expect(row).toHaveCount(1, { timeout: 60_000 });
+  await row.getByRole('link', { name: '관리' }).click();
+  await page.waitForURL((url) => url.searchParams.get('target') === 'event&split=1');
+  const detail = new URL(page.url());
+  expect(detail.searchParams.get('split')).toBeNull();
+  expect(detail.searchParams.get('tpage')).toBe('2');
+
+  await page.getByRole('link', { name: '대상 목록으로' }).click();
+  await page.waitForURL((url) => !url.searchParams.get('target') && url.searchParams.get('tpage') === '2');
+  await expect(card.getByText('2 / 2')).toBeVisible({ timeout: 30_000 });
+});
+
+// @scenario case=admin_placement_list
+test('관리자: 대상 목록을 받지 못하면 「불러오는 중」에 머물지 않고 실패를 알리고, 다시 받기로 목록이 나온다', async ({ page, managerToken }) => {
+  let fail = true;
+  await page.route(`**${API}/admin/positions/board_hero/placements*`, async (route) => {
+    if (fail) {
+      await route.fulfill({ status: 500, json: { success: false, message: 'injected' } });
+      return;
+    }
+    await route.fulfill({ json: { success: true, message: '', data: { position: 'board_hero', data: [{ key: '2', label: '다시 받은 대상', exists: true, site_url: '/board/free', total: 1, active: 1 }], summary: { banners: 1, targets: 1 }, pagination: { current_page: 1, last_page: 1, total: 1, per_page: 20 } } } });
+  });
+  await authenticatePage(page, managerToken);
+
+  await page.goto(`${ADMIN_LIST}?position=board_hero`);
+  const card = page.locator('section[aria-labelledby="hero_target_list_heading"]');
+  await expect(card.getByText('대상 목록을 받지 못했습니다.')).toBeVisible({ timeout: 60_000 });
+  await expect(card.getByText('대상 목록을 불러오는 중입니다')).toHaveCount(0);
+
+  fail = false;
+  await card.getByRole('button', { name: '다시 받기' }).click();
+  await expect(card.locator('li').filter({ hasText: '다시 받은 대상' })).toHaveCount(1, { timeout: 30_000 });
+  await expect(card.getByText('대상 목록을 받지 못했습니다.')).toHaveCount(0);
+});
+
+// @scenario case=admin_form_position_target
+// @effects test_data_cleaned_up
+test('관리자: 수정 화면은 위치 설정이 오기 전에 저장을 막아 대상 없이(422) 보내지 않고, 받은 뒤 그 대상으로 저장한다', async ({ page, request, managerToken, created }) => {
+  const id = await createBanner(request, managerToken, { position: 'board_hero', target_key: BOARD.event.id, title: { ko: uniqueTitle('설정 지연 저장') } });
+  created.push(id);
+  let release: () => void = () => {};
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(`**${API}/admin/position-settings*`, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await authenticatePage(page, managerToken);
+
+  await page.goto(`/admin/plugins/sirsoft-hero_section/banners/${id}/edit?position=board_hero&target=${BOARD.event.id}`);
+  const save = page.locator('#footer_save_button');
+  await expect(page.getByText('위치 정보를 받는 중이라 아직 저장할 수 없습니다.')).toBeVisible({ timeout: 60_000 });
+  await expect(save).toBeDisabled();
+
+  release();
+  await expect(save).toBeEnabled({ timeout: 30_000 });
+  const put = page.waitForResponse((r) => r.url().endsWith(`${API}/admin/banners/${id}`) && r.request().method() === 'PUT');
+  await save.click();
+  const response = await put;
+  expect(response.status()).toBe(200);
+  expect(response.request().postDataJSON().target_key).toBe(BOARD.event.id);
 });
