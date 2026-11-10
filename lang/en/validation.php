@@ -1357,8 +1357,8 @@ return [
         // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
         'content_settings' => 'content settings',
         'content_allow_figure_caption' => 'allow image captions',
-        'content_allow_uploaded_video' => 'allow uploaded video',
-        'content_allow_uploaded_audio' => 'allow uploaded audio',
+        'content_allow_uploaded_video' => 'allow video uploads',
+        'content_allow_uploaded_audio' => 'allow audio uploads',
         'content_allow_external_embed' => 'allow external video embeds',
         'content_embed_presets' => 'external video services',
         'content_embed_custom_providers' => 'custom external video services',

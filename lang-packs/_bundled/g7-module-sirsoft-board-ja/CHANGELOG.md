@@ -14,6 +14,7 @@
 - 회원 상세 「게시글 검색어」 탭 문구(`admin.users.search_history.*` 「投稿検索語」 등)의 일본어 번역을 추가했습니다.
 - 게시판 1.2.3 의 본문 미디어 문구(업로드 성공·실패 `messages.content_media.*`, 요청 항목명·임시 키 누락 `validation.content_media.*`·`validation.attributes.content_media.*`, 게시판 설정 일괄 적용 항목 이름 `content_media_policy`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 키 그대로 보입니다.
 - 게시판 1.2.3 의 본문 미디어 정책 하위 칸 이름(`validation.attributes.content_media_policy.*` — 「本文メディアポリシー」「文書あたりの本文メディア最大数」「:kind 許可拡張子」 등)의 일본어 번역을 추가했습니다. 없으면 게시판 생성·수정·일괄 적용의 검증 문구에 필드 키가 그대로 보입니다.
+- 게시판 1.2.3 의 편집기 업로드 조건 조회 문구(`messages.content_media.target_success` 「本文メディアのアップロード条件を取得しました。」)와 레이아웃 편집기 데이터 소스 이름(`editor.data_source.content_media_target` 「本文メディアアップロード契約」)의 일본어 번역을 추가했습니다.
 
 ## [1.1.2] - 2026-11-01
 

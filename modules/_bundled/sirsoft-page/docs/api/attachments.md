@@ -175,6 +175,65 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 
 <!-- @generated:end -->
 
+> 업로드 계약을 받는 표준 길은 아래 `GET admin/content-media/target` 입니다(#887). `GET admin/attachments/settings` 응답의
+> `data.content_media` 는 같은 값을 계속 싣는 호환 별칭이며 폐기 예정입니다.
+
+---
+
+### GET /api/modules/sirsoft-page/admin/content-media/target
+
+- **라우트명**: `api.modules.sirsoft-page.admin.content-media.target`
+- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController@target`
+- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false` · `throttle:600,1`
+
+편집기 본문 미디어 업로드 계약을 돌려주는 **표준 계약 엔드포인트**입니다(#887 — 모든 확장이 `…/content-media/target` 한 가지 길로
+계약을 냅니다, 코어 [본문 미디어 계약](../../../../../docs/extension/content-media.md)). 페이지 작성·수정 화면의 데이터 소스
+`contentMediaTarget` 이 읽어 `html_editor` 확장점의 `mediaUpload` 로 넘기고, 화면이 `fields.temp_key` 에 폼 임시 키를 더합니다.
+값은 페이지 모듈 설정 `content_media`(비면 첨부 정책으로 만든 대체 정책)이고, 동영상·오디오는 코어 「본문 콘텐츠」의 업로드 허용
+스위치가 켜졌을 때만 `enabled` 입니다. 권한은 업로드와 같습니다(등록·수정 어느 쪽이든).
+
+요청 파라미터는 없습니다.
+
+**응답 필드**
+
+| 이름 | 타입 | 예시값 | 용도 |
+| --- | --- | --- | --- |
+| data | object\|null | — | 업로드 계약. 지금 받는 종류가 하나도 없으면 `null` |
+| data.version | integer | `1` | 계약 형식 판 |
+| data.endpoint | string | `/api/modules/sirsoft-page/admin/content-media` | 업로드 주소(같은 출처 상대 경로) |
+| data.fileField | string | `file` | 파일 필드 이름 |
+| data.fields | object | `{}` | 함께 보낼 폼 필드 — 화면이 `temp_key` 를 더한다 |
+| data.headers | object | `{}` | 함께 보낼 헤더(허용 목록만) |
+| data.response | object | `{"urlPath": "data.url", "idPath": "data.id", "kindPath": "data.kind"}` | 업로드 응답에서 값을 읽는 점 경로 |
+| data.mediaUrlPattern | string | `/api/modules/sirsoft-page/pages/content-media/(?<hash>[A-Za-z0-9]{12})` | 서빙 주소 정규식 본문(문서당 개수 셀 때) |
+| data.policy | object | — | 종류별(`image`·`video`·`audio`) `enabled`·`maxSizeMb`·`extensions`·`mimeTypes` + `maxPerDocument` |
+
+- 상태: `200` · `401` · `403`(등록·수정 권한 없음 — 화면은 `null` 로 받아 편집기를 종전대로 띄운다)
+
+**응답 예시 (200)**
+
+```json
+{
+  "success": true,
+  "message": "본문 미디어 업로드 계약을 조회했습니다.",
+  "data": {
+    "version": 1,
+    "endpoint": "/api/modules/sirsoft-page/admin/content-media",
+    "fileField": "file",
+    "fields": {},
+    "headers": {},
+    "response": {"urlPath": "data.url", "idPath": "data.id", "kindPath": "data.kind"},
+    "mediaUrlPattern": "/api/modules/sirsoft-page/pages/content-media/(?<hash>[A-Za-z0-9]{12})",
+    "policy": {
+      "image": {"enabled": true, "maxSizeMb": 10, "extensions": ["jpg", "jpeg", "png", "gif", "webp"], "mimeTypes": ["image/jpeg", "image/png", "image/gif", "image/webp"]},
+      "video": {"enabled": false, "maxSizeMb": 10, "extensions": ["mp4", "webm", "ogv"], "mimeTypes": ["video/mp4", "video/webm", "video/ogg"]},
+      "audio": {"enabled": false, "maxSizeMb": 10, "extensions": ["mp3", "m4a", "ogg", "oga", "wav"], "mimeTypes": ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav"]},
+      "maxPerDocument": 30
+    }
+  }
+}
+```
+
 ---
 
 ### GET /api/modules/sirsoft-page/pages/content-media/{hash}
@@ -185,7 +244,7 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 
 **요청 파라미터**: `hash`(path, `[A-Za-z0-9]{12}`) · `expires`·`signature`(query, 선택) · `Range`(header, 한 구간)
 
-**응답**: 파일 본문. 래스터 이미지는 inline, 동영상·오디오는 정책·코어 후보가 켜졌을 때 inline + `media-src 'self'` CSP, 그 밖에는 다운로드. `nosniff`·`Accept-Ranges: bytes`. 발행 페이지는 `Cache-Control: public`, 미발행은 `private`.
+**응답**: 파일 본문(그 행에 기록된 디스크에서 읽는다 — 기본 디스크를 바꾼 뒤에도 옛 행은 제자리에서 서빙, #887). 래스터 이미지는 inline, 동영상·오디오는 정책·코어 후보가 켜졌을 때 inline + `media-src 'self'` CSP, 그 밖에는 다운로드. `nosniff`·`Accept-Ranges: bytes`. 발행 페이지는 `Cache-Control: public, max-age=3600`, 미발행·임시 업로드는 `private, max-age=300`.
 
 - 상태: `200`·`206` · `403` · `404` · `416`
 <!-- @generated:end -->

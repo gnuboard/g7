@@ -14,10 +14,10 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Post;
-use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Support\SecretThreadAccess;
@@ -1062,7 +1062,8 @@ class PostResource extends BaseApiResource
             return $content;
         }
 
-        return app(PostContentMediaService::class)->presentContent($content, $slug);
+        // 서명은 이 글 소유 본문 미디어만 — 다른 글의 해시는 원본 글의 게이트를 따른다 (#887)
+        return app(PostContentMediaService::class)->presentContent($content, $slug, $this->resource instanceof Post ? $this->resource : null);
     }
 
     /**

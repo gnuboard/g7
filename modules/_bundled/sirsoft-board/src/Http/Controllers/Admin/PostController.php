@@ -2,12 +2,12 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
+use App\Exceptions\ContentMediaLimitExceededException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
-use App\Exceptions\ContentMediaLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
@@ -26,8 +26,8 @@ use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
-use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\PostContentMediaService;
+use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
@@ -589,7 +589,8 @@ class PostController extends AdminBaseController
 
             $metaData = [
                 'board' => $boardData,
-                // 편집기 본문 미디어 업로드 계약 (#883) — 관리자 업로드 권한이 있고 받는 종류가 있을 때만
+                // 편집기 본문 미디어 업로드 계약 (#883) — 관리자 업로드 권한이 있고 받는 종류가 있을 때만.
+                // 표준 계약 엔드포인트 `GET admin/board/{slug}/content-media/target`(#887)과 같은 값 — 옛 화면 호환으로 계속 싣는다(폐기 예정)
                 'content_media' => $this->checkBoardPermission($slug, 'admin.attachments.upload')
                     ? $this->contentMediaService->uploadTarget($board, admin: true)
                     : null,

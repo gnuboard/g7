@@ -740,6 +740,7 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 | `core.modules.after_{install,activate,deactivate,update,uninstall}` | 전체 SEO 캐시 + sitemap | 레이아웃 등록/변경·제거 |
 | `core.plugins.after_{install,activate,deactivate,update,uninstall}` | 전체 SEO 캐시 + sitemap | layout_extensions 변경·제거 |
 | `core.templates.after_{install,activate,deactivate,version_update,uninstall}` | 전체 SEO 캐시 + sitemap + SEO config 병합 캐시 | seo-config.json/컴포넌트 맵 변경 |
+| `core.settings.after_save`(탭 `seo`·`content`) · `core.settings.after_set`(키 `seo.*`·`content.*`) | 전체 SEO 캐시 + sitemap | SEO 설정 또는 본문 표시 규칙(그림 캡션·외부 영상·추가 태그) 변경 — 봇 화면은 본문 규칙으로 정화되므로 「본문 콘텐츠」 저장도 캐시를 비운다(`SeoSettingsCacheListener`) |
 
 > 구독은 정규 생명주기 훅 15개이고(`SeoExtensionCacheListener`), Manager 가 어드민 UI·CLI 공통으로 한 번 발화한다.
 > **비활성화·제거도 구독한다** — `SeoMiddleware` 는 캐시 적중 시 확장 활성 여부를 보지 않으므로, 끈 확장의 페이지가
@@ -1305,6 +1306,11 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
   제거·벗김 목록에서 빠집니다(`App\Support\Content\ContentHtmlPolicy`, 7.1.5). 정화 뒤 `finalize('bot')` 이 후보 태그의 속성을 정해진 것만 남기고,
   미디어 `src`·`poster` 는 서빙 주소 패턴에 맞을 때만 남기며, `<oembed url>` 은 원래 주소의 `nofollow` 링크로 바꿉니다(http(s) 가 아니면 지움).
   봇 화면에는 iframe 을 내보내지 않습니다.
+- 서빙 주소 패턴은 확장이 등록한 실제 본문 미디어 서빙 라우트에서 만들어집니다(`App\Support\Content\MediaSourceRoutes`, 7.1.5). 꺼진 확장의
+  라우트는 빠지므로 그 확장의 미디어 요소는 봇 화면에서 지워지고, 경로 모양만 흉내 낸 주소도 지워집니다. 사람 화면(`render_policy.media_src_patterns`)과
+  같은 목록입니다.
+- 「그림 캡션」을 끄면 `finalize('bot')` 이 `figcaption` 을 내용째 지우고 그림은 남깁니다 — 사람 화면(`render_policy.drop_tags`)과 같습니다.
+  「외부 영상 삽입」을 끄면 `<oembed url>` 은 늘 원래 주소 링크입니다(사람 화면도 같은 링크).
 
 차단 목록의 기준은 일반 화면 컴포넌트의 DOMPurify 설정입니다(`templates/_bundled/sirsoft-basic/src/components/composite/HtmlContent.tsx`). **한쪽만 바꾸면 두 화면의 정화 강도가 어긋나므로 함께 갱신**하세요. 계약은 `tests/Unit/Seo/HtmlSanitizerTest.php` 와 `tests/Unit/Seo/ExtensionPointPropsRenderingTest.php` 가 잠급니다.
 

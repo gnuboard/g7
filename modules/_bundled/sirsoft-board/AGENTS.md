@@ -201,6 +201,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 기존 글에 붙이는 업로드(`post_id`)를 업로드 권한만으로 통과 | 같은 게시판 글(`PostService::getPost`) + `Support\PostModifyGate::allows(..., consume: false)`(사용자)·`admin.posts.write` 스코프(관리자) | 남의 글·다른 게시판 글에 파일이 붙었다. 비회원 글 검증 토큰은 저장(PUT)에서 다시 쓰므로 업로드가 소비하지 않는다 |
 | 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory`)의 예외를 그대로 던지게 두기 | `AttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`게시판 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던지고, 그 예외가 글 저장 전체를 「게시글 등록에 실패했습니다」(500)로 되돌려 파일은 본경로·DB 는 임시 경로를 가리키는 어긋남이 남았다(#703). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
 | 레이아웃·확장 조각의 메뉴·목록·제목 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 넓어진 단추의 글이 가운데로 간다 |
+| 본문 미디어(`collection=content_media`)의 업로드·저장 동기화·영구 삭제를 게시판 코드에서 따로 구현하거나 행·파일을 직접 지우기 | 코어 본문 미디어 골격을 거친다 — `Services\ContentMedia\BoardContentMediaService`(업로드·동기화·`purgeRows`·`pruneStale`)와 어댑터 `BoardContentMediaStore`, 호출자 시그니처는 `PostContentMediaService`. 서빙 라우트 이름을 바꾸면 `BoardContentMediaStore::SERVE_ROUTE` 와 `BoardServiceProvider` 의 출처 등록(`ContentMediaRegistrar::register`)을 함께 맞춘다 | 골격을 건너뛰면 공용 훅 `core.content_media.*`(업로드·영구 삭제)가 발화하지 않아 그 훅을 구독한 플러그인이 게시판 미디어만 놓친다. 출처 등록이 빠지면 코어가 기본 출처 패턴을 두지 않으므로 본문의 동영상·오디오가 화면·봇 정화에서 지워진다(#887) |
 | 새 쿨다운·도배 방지 검사를 `has()` 로 확인하고 저장은 작성 성공 뒤 Service 에서 `put()` | `CooldownRule` 처럼 검증 시점에 같은 키를 `add()` 로 원자적으로 선점하고, 성공하면 Service 가 덮어쓰고 실패한 요청은 응답 뒤 반납한다 | 확인과 저장 사이에 들어온 동시 요청이 모두 검사를 통과해 쿨다운을 켠 게시판에 글이 여러 개 써졌다(#161). 캐시 오류면 통과시킨다 — 도배 방지가 캐시 장애로 글쓰기 전체를 막으면 안 된다 |
 <!-- @intent END -->
 
@@ -209,10 +210,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 277개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 101개 | `vitest.config.ts` |
+| PHPUnit | 281개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 102개 | `vitest.config.ts` |
 | Playwright | 39개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 189개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 193개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

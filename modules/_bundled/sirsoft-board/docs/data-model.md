@@ -68,7 +68,16 @@
 임시 키·번호 연결이 집어 가지 않습니다). 글 저장 트랜잭션 안에서 `PostContentMediaService::syncWithContent` 가 본문이 참조한 것만 DB 갱신으로
 잇고, 본문에서 빠진 것은 소프트 삭제(`trigger_type` user|admin)합니다. `Post::attachments()`·`thumbnailAttachment()`·`attachments_count` 는
 본문 미디어를 빼고, `Post::contentMedia()` 가 따로 봅니다. 게시글 삭제 연쇄·보유기간 파기는 첨부와 같이 함께 처리됩니다. 끝내 잇지 않은 임시 행은
-`sirsoft-board:prune-attachments` 의 임시 정리가 지웁니다.
+`sirsoft-board:prune-attachments` 의 임시 정리가 지웁니다. 본문 미디어 행을 영구 삭제하는 경로(임시 정리·소프트 삭제 정리·보유기간 파기, 게시판 영구 삭제,
+문의 샘플 글 영구 삭제)는 코어 본문 미디어 골격을 거쳐 행마다 `core.content_media.before_delete` 를 한 번 발화합니다(일반 첨부의 삭제·훅은 그대로).
+흐름(업로드·연결 → 복제 → 제거·서명·서빙·정리)은 코어 골격 `AbstractContentMediaService` 가 돌리고, 게시판은 어댑터
+`Services\ContentMedia\BoardContentMediaStore`(이 표의 행 모양·저장 경로·권한)와 골격 상속 `Services\ContentMedia\BoardContentMediaService`
+를 둡니다. `PostContentMediaService` 는 게시판 호출자가 쓰던 시그니처를 지키는 위임 계층입니다(1.2.3, 코어 7.1.5 #887).
+본문이 **다른 글**(다른 게시판 글 포함)의 본문 미디어 주소(답글 인용·복사·붙여넣기)나 요청자 본인이 다른 임시 키로 올린 임시 행(회원은 본인 업로드,
+비회원은 업로드 소유 쿠키 해시가 맞을 때)을 쓰면, 저장하는 사람이 원본을 서명 없이 받을 수 있을 때(원본 글이 속한 게시판의 글 읽기 권한 또는 게시판
+관리 + 삭제·비밀·블라인드 게이트)만 파일을 복사해 이 글 소유의 새 행·새 해시를 만들고 본문 주소를 이 게시판 주소로 바꿔 다시 저장합니다(#887).
+볼 수 없으면 주소를 그대로 두고, 글 응답(`PostResource`)은 그 글 소유 해시만 서명하므로 그 미디어는 원본 글의 게이트를 따릅니다(관리자 증거 열람인
+신고 상세만 모두 서명). 복제할 것도 문서당 최대 개수에 듭니다. 복제 재저장이 있어도 글 저장은 한 번으로 기록됩니다(after_* 1회·활동 로그 1건).
 
 `boards.content_media_policy`(json, 1.2.3)는 게시판별 본문 미디어 정책 `{image|video|audio: {enabled, max_size_mb, extensions[]}, max_per_document}`
 입니다. null 이면 그 게시판 첨부 정책(파일당 크기·허용 확장자 중 이미지)으로 만든 대체 정책을 씁니다 — 동영상·오디오는 코어 「본문 콘텐츠」 스위치를 따릅니다.

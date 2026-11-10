@@ -42,6 +42,7 @@
             "template",
             "slot"
         ],
+        "drop_tags": [],
         "extra_tags": [
             "figure",
             "figcaption",
@@ -60,7 +61,7 @@
         },
         "custom_tags": [],
         "media_src_patterns": [
-            "^/api/(?:modules|plugins)/[a-z0-9_-]+/(?:[a-z0-9_-]+/)*content-media/[A-Za-z0-9]{12}(?:\\?[^\"'<>\\s]*)?$"
+            "^/api/modules/sirsoft-board/boards/(?:[^/?#]+)/content-media/(?:[a-zA-Z0-9]{12})(?:\\?[^\"'<>\\s]*)?$"
         ],
         "allow_external_embed": true,
         "allow_uploaded_video": false,

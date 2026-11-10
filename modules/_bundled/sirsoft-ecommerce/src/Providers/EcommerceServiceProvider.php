@@ -3,11 +3,9 @@
 namespace Modules\Sirsoft\Ecommerce\Providers;
 
 use App\Extension\BaseModuleServiceProvider;
-use Modules\Sirsoft\Ecommerce\Repositories\ContentMediaRepository;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
+use App\Support\ContentMedia\ContentMediaRegistrar;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -46,6 +44,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\ClaimActivityLogRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimImageRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimPaymentRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ClaimReasonRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ContentMediaRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BrandRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
@@ -54,6 +53,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimActivityLogRepositoryI
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimReasonRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceStatRepositoryInterface;
@@ -139,6 +139,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\UserAddressRepository;
 use Modules\Sirsoft\Ecommerce\Seo\EcommerceSitemapContributor;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaService;
+use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaStore;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
@@ -173,8 +175,9 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // 그래서 카테고리 배선이 아니라 기본 디스크를 주입한다. 저장 경로 접두사는 종전대로
         // 서비스가 `put('images', …)` 로 넘기는 값이 정하므로 기존 행의 경로는 바뀌지 않는다.
         ClaimAttachmentService::class,
-        // 본문 미디어는 미공개 상품이면 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않는다 (#883)
-        ContentMediaService::class,
+        // 본문 미디어는 미공개 상품이면 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않는다 (#883).
+        // 업로드·서빙·복제·정리·소유자 삭제가 모두 이 골격 서비스를 지나므로 기본 디스크는 여기 한 곳에서 받는다 (#887)
+        EcommerceContentMediaService::class,
     ];
 
     /**
@@ -279,7 +282,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     /**
      * 서비스 등록
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -308,13 +311,19 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     /**
      * 서비스 부트스트랩
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
         parent::boot();
 
         $this->registerClaimMorphMap();
+
+        // 본문 미디어 서빙 라우트를 미디어 출처 허용 패턴 원천으로 등록한다 — 없으면 상품 설명·공통 정보의 업로드 동영상·오디오가
+        // 저장 정화·표시에서 지워진다. 모듈이 꺼져 라우트가 없으면 패턴 생성이 이 이름을 건너뛴다 (#887)
+        if (class_exists(ContentMediaRegistrar::class)) {
+            ContentMediaRegistrar::register(EcommerceContentMediaStore::SERVE_ROUTE);
+        }
 
         // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {

@@ -46,8 +46,8 @@ class Issue162MeasureCleanupSeeder extends Seeder
         // 없어 상품을 지워도 남으므로 행과 파일을 따로 지운다.
         $storage = app(ModuleManager::class)->getModule('sirsoft-ecommerce')->getStorage();
         $mediaRows = ContentMedia::withTrashed()
-            ->where('owner_type', ContentMediaOwnerType::Product->value)
-            ->whereIn('owner_id', $productIds)
+            ->where('attachmentable_type', ContentMediaOwnerType::Product->morphType())
+            ->whereIn('attachmentable_id', $productIds)
             ->get();
 
         DB::transaction(function () use ($productIds, $mediaRows, &$orders, &$products, &$media) {
@@ -61,8 +61,8 @@ class Issue162MeasureCleanupSeeder extends Seeder
         });
 
         foreach ($mediaRows as $row) {
-            if ($storage->exists(ContentMediaService::CATEGORY, $row->path)) {
-                $storage->delete(ContentMediaService::CATEGORY, $row->path);
+            if ($storage->exists(ContentMediaService::CATEGORY, $row->storagePath())) {
+                $storage->delete(ContentMediaService::CATEGORY, $row->storagePath());
             }
         }
 

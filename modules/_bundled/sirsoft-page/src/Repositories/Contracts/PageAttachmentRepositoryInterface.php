@@ -84,6 +84,8 @@ interface PageAttachmentRepositoryInterface
      *
      * 페이지 작성 폼에서 업로드만 하고 저장 없이 이탈하면 `temp_key` 가 남은 채
      * `page_id` 가 비어 있는 행과 그 파일이 영구 잔존합니다. 그 회수 대상을 찾습니다.
+     * 본문 미디어(`collection = content_media`)는 빼고 찾습니다 — 본문 미디어 임시 행은
+     * 코어 골격의 정리(`findStaleTempContentMedia`)가 공용 삭제 훅과 함께 지웁니다 (#887).
      *
      * @param  Carbon  $threshold  기준 시각 (이 시각 이전 업로드가 대상)
      * @param  int  $limit  최대 조회 건수
@@ -159,4 +161,13 @@ interface PageAttachmentRepositoryInterface
      * @return void 반환값 없음
      */
     public function linkContentMedia(PageAttachment $attachment, int $pageId, int $order): void;
+
+    /**
+     * 보존기간이 지나도록 페이지에 잇지 않은 임시 본문 미디어를 오래된 순으로 조회합니다 (#887)
+     *
+     * @param  Carbon  $threshold  기준 시각 (이 시각 이전 업로드가 대상)
+     * @param  int  $limit  최대 조회 건수
+     * @return Collection<int, PageAttachment> 임시 본문 미디어 (created_at 오름차순)
+     */
+    public function findStaleTempContentMedia(Carbon $threshold, int $limit): Collection;
 }

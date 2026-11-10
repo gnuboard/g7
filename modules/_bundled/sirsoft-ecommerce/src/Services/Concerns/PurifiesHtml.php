@@ -4,14 +4,16 @@ namespace Modules\Sirsoft\Ecommerce\Services\Concerns;
 
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Support\Content\ContentHtmlPolicy;
+use App\Support\Content\HtmlElementCategories;
 use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\Log;
 
 /**
  * 이 모듈이 저장하는 HTML 을 하나의 규칙으로 정화합니다.
  *
- * 상품 설명(HTML 모드)과 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관한 HTML 본문)가 같은 허용 목록을
- * 쓴다. 규칙이 서비스마다 갈리면 한쪽에서 막은 태그·속성이 다른 쪽으로 저장돼 같은 화면에 섞여 나온다.
+ * 상품 설명·상품 공통 정보(HTML 모드)와 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관한 HTML 본문)가 같은 허용 목록을
+ * 쓴다. 규칙이 서비스마다 갈리면 한쪽에서 막은 태그·속성이 다른 쪽으로 저장돼 같은 화면에 섞여 나온다. 상품 설명·공통 정보는
+ * 여기에 코어 「본문 콘텐츠」 후보를 더한 `content` 프로필, 후기는 `baseline` 프로필이다.
  *
  * HTMLPurifier 정의 캐시는 `storage/` 아래에 둔다 — 지정하지 않으면 HTMLPurifier 는 자기 설치 폴더
  * (`{module}/vendor/ezyang/htmlpurifier/library/.../DefinitionCache/Serializer/`)에 캐시를 쓰는데, 배포본의
@@ -38,10 +40,25 @@ trait PurifiesHtml
     private const PURIFIER_MODULE_IDENTIFIER = 'sirsoft-ecommerce';
 
     /**
-     * 기본 허용 목록 (상품 설명·이관 후기 공통). 「본문 콘텐츠」 규칙은 여기에 켜진 후보 요소를 더한다 — 설정에서 다시 읽으면
+     * 기본 허용 목록 (상품 설명·이관 후기 공통). 「본문 콘텐츠」 규칙은 여기에 후보 요소 전부를 더한다 — 설정에서 다시 읽으면
      * HTMLPurifier 설정이 확정돼 더 쓸 수 없다.
      */
     private const PURIFIER_BASE_ALLOWED = 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr';
+
+    /**
+     * 「본문 콘텐츠」 정의의 이 모듈 판 — 요소 분류·허용 범위를 바꾸면 올린다(정의 캐시 ID 에 붙어 옛 직렬화 정의를 버린다).
+     *
+     * 2: 후보 전부 허용(스위치는 표시에서만)·문구 콘텐츠 인라인 분류 (#887)
+     * 3: 저장 규칙·요소 분류를 코어 한 곳(`ContentHtmlPolicy::forStorage`·`HtmlElementCategories`)으로 — 모르는 서비스 oembed 보존 (#887)
+     */
+    private const PURIFIER_CONTENT_SCHEMA = 3;
+
+    /**
+     * HTMLPurifier 가 기본 정의로 아는 요소 (지연 계산)
+     *
+     * @var array<string, true>|null
+     */
+    private static ?array $purifierNativeElements = null;
 
     /**
      * HTMLPurifier 정의 캐시 디렉토리 권한
@@ -61,12 +78,12 @@ trait PurifiesHtml
      * HTML 문자열을 허용 목록으로 정화합니다.
      *
      * @param  string  $html  정화할 HTML
-     * @param  string  $profile  정화 강도 — `baseline`(종전 허용 목록, 리뷰 등) | `content`(코어 「본문 콘텐츠」 규칙을 더함, 상품 설명)
+     * @param  string  $profile  정화 강도 — `baseline`(종전 허용 목록, 리뷰 등) | `content`(코어 「본문 콘텐츠」 후보 전부·추가 태그를 더함, 상품 설명)
      * @return string 정화된 HTML
      */
     protected function purifyHtml(string $html, string $profile = 'baseline'): string
     {
-        // 상품 설명·공통 정보는 코어 「본문 콘텐츠」 규칙(그림 캡션·업로드 동영상·오디오·외부 영상)을 따른다 — 게시판 표시와 같은 규칙 (D20).
+        // 상품 설명은 코어 「본문 콘텐츠」 후보(그림 캡션·업로드 동영상·오디오·외부 영상)를 스위치와 무관하게 받는다 — 켜고 끄기는 표시에서만 (D20, #887).
         // 그 밖(이관 후기 등 외부에서 들어온 HTML)은 기존 허용 목록 그대로다(baseline).
         if ($profile === 'content') {
             return $this->purifyContentHtml($html);
@@ -80,17 +97,28 @@ trait PurifiesHtml
     }
 
     /**
-     * 「본문 콘텐츠」 규칙으로 정화합니다 — 기존 허용 목록 + 켜진 후보 요소, 정화 뒤 코어 마무리(미디어 출처·외부 영상 판정).
+     * 「본문 콘텐츠」 규칙으로 정화합니다 — 기존 허용 목록 + 후보 요소 전부 + 운영자 추가 태그, 정화 뒤 코어 마무리(미디어 출처·외부 영상 판정).
      *
-     * 정의 캐시는 규칙 해시(`ContentHtmlPolicy::htmlPurifierDefinition`)를 DefinitionRev 로 써서 설정이 바뀌면 다시 만든다.
+     * 후보 스위치(그림 캡션·업로드 동영상·오디오·외부 영상 삽입)와 외부 영상 서비스 켜고 끄기는 **표시에서만** 따른다(#887) — 저장 정화가
+     * 스위치를 따르면 끈 동안 저장한 상품 설명에서 그 요소가 지워져 다시 켜도 돌아오지 않는다. 게시판·페이지가 원문을 보존하고 표시에서
+     * 판단하는 것과 같게 한다. 위험 요소(스크립트·이벤트 속성·`javascript:` 주소·금지 태그)와 미디어 출처 검사(이 사이트 서빙 주소만)는
+     * 그대로 저장에서 지운다.
+     *
+     * 저장 규칙은 코어 한 곳(`ContentHtmlPolicy::forStorage()` — 후보 스위치·외부 영상 서비스를 모두 켠 규칙)에서 받고, 요소의 인라인·블록
+     * 분류도 코어 `HtmlElementCategories` 를 쓴다(#887). 그래서 어느 서비스에도 맞지 않는 외부 영상(`<oembed url="https://…">`)도 링크로
+     * 바꾸지 않고 원문 그대로 저장한다 — 표시가 그 시점 규칙으로 판단한다(그 서비스를 나중에 직접 추가하면 다시 영상으로 보인다).
+     *
+     * 정의 캐시는 규칙 해시(`ContentHtmlPolicy::htmlPurifierDefinition`)에 이 모듈의 정의 판(`PURIFIER_CONTENT_SCHEMA`)을 붙인 ID 로
+     * 나눈다 — 요소 분류를 바꾼 판에서 옛 직렬화 정의를 다시 쓰지 않게.
      *
      * @param  string  $html  정화할 HTML
      * @return string 정화된 HTML
      */
     protected function purifyContentHtml(string $html): string
     {
-        $policy = ContentHtmlPolicy::current();
+        $policy = ContentHtmlPolicy::forStorage();
         $definition = $policy->htmlPurifierDefinition();
+        $definition['id'] .= '-s'.self::PURIFIER_CONTENT_SCHEMA;
 
         if (! isset($this->contentPurifiers[$definition['id']])) {
             $cachePath = $this->resolvePurifierCachePath($failure);
@@ -104,10 +132,14 @@ trait PurifiesHtml
     }
 
     /**
-     * 켜진 후보 요소와 운영자 추가 태그를 HTMLPurifier 정의에 더합니다.
+     * 후보 요소와 운영자 추가 태그를 HTMLPurifier 정의에 더합니다.
      *
      * 추가 태그는 게시판 표시·봇 정화기와 같은 규칙으로 남긴다(D18) — 속성은 받지 않고, 이벤트·`javascript:` 속성은
      * `ContentHtmlPolicy::finalize` 가 한 번 더 지운다.
+     *
+     * 요소 분류는 HTML 표준을 따른다(#887) — 「문구 콘텐츠」(phrasing content)인 audio·video·mark 등은 인라인으로 정의해 문단(`<p>`)
+     * 안에 그대로 둔다. 블록으로 정의하면 HTMLPurifier 가 문단을 그 앞에서 닫아 `<p></p><audio>` 처럼 빈 문단을 남기고 요소를 문단 밖으로
+     * 뺀다. HTMLPurifier 가 이미 아는 태그(sub·sup·del·ins·address 등)는 다시 정의하지 않고 그 표준 정의를 쓴다.
      *
      * @param  \HTMLPurifier_Config  $config  기본 설정
      * @param  array{rev: int, id: string, elements: array<string, array<int, string>>}  $definition  규칙 정의
@@ -123,12 +155,18 @@ trait PurifiesHtml
             return;
         }
 
+        // 기본 정의 계산은 추가 태그가 있을 때만 한다(정의 하나를 더 만드는 비용)
+        $native = $customTags !== [] ? self::nativePurifierElements() : [];
+        $baseTags = array_map(fn ($entry) => strtok($entry, '['), explode(',', self::PURIFIER_BASE_ALLOWED));
+
         $allowed = self::PURIFIER_BASE_ALLOWED;
         foreach ($definition['elements'] as $tag => $attributes) {
             $allowed .= ','.$tag.($attributes !== [] ? '['.implode('|', $attributes).']' : '');
         }
         foreach ($customTags as $tag) {
-            $allowed .= ','.$tag;
+            if (! in_array($tag, $baseTags, true)) {
+                $allowed .= ','.$tag;
+            }
         }
         $config->set('HTML.Allowed', $allowed);
         $config->set('HTML.DefinitionID', $definition['id']);
@@ -150,11 +188,35 @@ trait PurifiesHtml
             foreach ($attributes as $attribute) {
                 $spec[$attribute] = $types[$attribute] ?? 'Text';
             }
-            $raw->addElement($tag, in_array($tag, ['source', 'track', 'oembed'], true) ? 'Inline' : 'Block', $content[$tag] ?? 'Flow', 'Common', $spec);
+            $raw->addElement($tag, HtmlElementCategories::purifierElementType($tag), $content[$tag] ?? 'Flow', 'Common', $spec);
         }
         foreach ($customTags as $tag) {
-            $raw->addElement($tag, 'Block', 'Flow', 'Common', []);
+            if (isset($native[$tag])) {
+                continue;
+            }
+            // 문구 콘텐츠면 인라인(문단 안에 놓임), 그 밖(details 등)은 지금처럼 블록. 내용은 둘 다 흐름 콘텐츠로 받는다 — 인라인만 받게
+            // 하면 svg>path·ruby>rt 처럼 함께 추가한 자식 태그(표준상 문구 콘텐츠가 아님) 앞에서 부모가 닫혀 구조가 깨진다
+            $raw->addElement($tag, HtmlElementCategories::purifierElementType($tag), 'Flow', 'Common', []);
         }
+    }
+
+    /**
+     * HTMLPurifier 가 기본 정의로 아는 요소 (프로세스당 한 번 계산).
+     *
+     * 이 요소를 운영자 추가 태그로 받으면 다시 정의하지 않는다 — 다시 정의하면 그 표준 분류·내용 모델(예: del·ins 의 문맥 따라 바뀌는
+     * 내용 모델)을 덮어 문단 구조가 깨진다. 정의 캐시를 쓰지 않는 별도 설정으로 계산한다(배포본 vendor 쓰기 방지, 공개 #125).
+     *
+     * @return array<string, true> 태그 => true
+     */
+    private static function nativePurifierElements(): array
+    {
+        if (self::$purifierNativeElements === null) {
+            $probe = \HTMLPurifier_Config::createDefault();
+            $probe->set('Cache.DefinitionImpl', null);
+            self::$purifierNativeElements = array_fill_keys(array_keys($probe->getHTMLDefinition()->info), true);
+        }
+
+        return self::$purifierNativeElements;
     }
 
     /**

@@ -1,0 +1,18 @@
+feature: 페이지 본문 미디어 — 코어 공용 훅 발화 (#887 G2)
+
+description: |
+  페이지 본문 미디어 업로드는 코어 골격이 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 를 한 번씩
+  발화한다. 문맥(`ContentMediaContext`)은 module·`sirsoft-page`·문서 `page`·임시 키·요청자다. 페이지 첨부 훅
+  (`sirsoft-page.attachment.*`)은 발화하지 않는다 — 첨부 리스너가 본문 미디어를 첨부로 오인하지 않게. 영구 삭제의
+  `before_delete` 는 page-content-media-version 매니페스트가 잠근다.
+
+axes:
+  hook: [upload]
+
+effects:
+  - upload_fires_core_hooks_once
+  - upload_context_is_page
+  - attachment_hooks_not_fired
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaHooksTest.php

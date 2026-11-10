@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Models\ContentMedia;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
+use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -104,8 +105,8 @@ class ContentMediaUploadAndSyncTest extends ModuleTestCase
         $this->assertSame($product->id, $b->fresh()->owner_id);
 
         $service->syncWithContent(ContentMediaOwnerType::Product, $product->id, ['ko' => $normalized['ko']], true, null);
-        $this->assertSoftDeleted('ecommerce_content_media', ['id' => $b->id]);
-        $this->assertNotSoftDeleted('ecommerce_content_media', ['id' => $a->id]);
+        $this->assertSoftDeleted('ecommerce_attachments', ['id' => $b->id]);
+        $this->assertNotSoftDeleted('ecommerce_attachments', ['id' => $a->id]);
     }
 
     /**
@@ -127,7 +128,7 @@ class ContentMediaUploadAndSyncTest extends ModuleTestCase
         $product = Product::factory()->create(['display_status' => ProductDisplayStatus::HIDDEN->value]);
         $media = $service->upload(ContentMediaOwnerType::Product, UploadedFile::fake()->image('a.png'), (string) Str::uuid());
 
-        app(\Modules\Sirsoft\Ecommerce\Services\ProductService::class)->update($product, [
+        app(ProductService::class)->update($product, [
             'description_mode' => 'html',
             'description' => ['ko' => '<p><img src="'.$service->signedUrl($media->hash).'"></p>'],
         ]);

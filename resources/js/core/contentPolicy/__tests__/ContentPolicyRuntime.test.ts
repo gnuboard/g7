@@ -55,6 +55,15 @@ describe('ContentPolicyRuntime', () => {
   });
 
   /**
+   * 기본 규칙(캡션 켬)에서 `drop_tags` 는 비어 있다 — 고정본은 서버 출력 그대로 (#887)
+   * @scenario case=parity_fixture
+   * @effects caption_off_drops_caption_keeps_image
+   */
+  it('기본 규칙(캡션 켬)은 지울 태그가 없다', () => {
+    expect((fixture as any).render_policy.drop_tags).toEqual([]);
+  });
+
+  /**
    * @scenario case=runtime_embed
    * @effects embed_iframe_from_id_only, unmatched_embed_becomes_link
    */
@@ -79,6 +88,60 @@ describe('ContentPolicyRuntime', () => {
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer nofollow');
     expect(holder.innerHTML).not.toContain('javascript:');
     expect(holder.querySelectorAll('oembed')).toHaveLength(0);
+  });
+
+  /**
+   * 「그림 캡션」 끔 — 서버 `ContentHtmlPolicy::fromSettings(['allow_figure_caption' => false])->toFrontendArray()` 의 모양(외부 영상은 켬).
+   * 캡션(figcaption)만 내용째 지우고 그림(figure·img)은 남긴다. 편집기 금지 목록(forbid_tags)에는 넣지 않는다 — 저장 원문은 그대로, 다시 켜면 복원 (#887)
+   * @scenario case=runtime_caption_off
+   * @effects caption_off_drops_caption_keeps_image
+   */
+  it('그림 캡션을 끄면 캡션만 내용째 지우고 그림은 남긴다', () => {
+    const runtime = runtimeWith({
+      extra_tags: ['oembed', 'figure'],
+      attributes: { oembed: ['url'], figure: ['class'] },
+      drop_tags: ['figcaption'],
+    });
+    const holder = document.createElement('div');
+    holder.innerHTML = runtime.sanitize(DOMPurify, '<figure class="image"><img src="/a.png" alt="a"><figcaption>캡션887</figcaption></figure><p>본문</p>', BASE) ?? '';
+
+    expect(holder.querySelectorAll('figcaption')).toHaveLength(0);
+    expect(holder.textContent).not.toContain('캡션887');
+    expect(holder.querySelector('figure.image > img[src="/a.png"]')).not.toBeNull();
+    expect(holder.textContent).toContain('본문');
+  });
+
+  /**
+   * 「외부 영상 삽입」 끔 — 서버 `fromSettings(['allow_external_embed' => false])->toFrontendArray()` 의 모양(oembed 규칙·서비스 없음).
+   * 봇 화면(`finalize('bot')`)과 같이 원래 주소를 nofollow 링크로 — 빈 `<figure class="media">` 를 남기지 않는다 (#887)
+   * @scenario case=runtime_embed_off
+   * @effects embed_off_becomes_link
+   */
+  it('외부 영상 삽입을 끄면 oembed 는 원래 주소 nofollow 링크가 되고 빈 상자를 남기지 않는다', () => {
+    const runtime = runtimeWith({
+      extra_tags: ['figure', 'figcaption'],
+      attributes: { figure: ['class'], figcaption: ['class'] },
+      allow_external_embed: false,
+      embed_providers: [],
+    });
+    const html = '<figure class="media"><oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed></figure>'
+      + '<figure class="media"><oembed url="https://unknown.test/v/1"></oembed></figure>'
+      + '<figure class="media"><oembed url="javascript:alert(1)"></oembed></figure>'
+      + '<p url="https://x.test">p</p>';
+    const holder = document.createElement('div');
+    holder.innerHTML = runtime.sanitize(DOMPurify, html, BASE) ?? '';
+
+    expect(holder.querySelectorAll('iframe')).toHaveLength(0);
+    expect(holder.querySelectorAll('oembed')).toHaveLength(0);
+    for (const href of ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://unknown.test/v/1']) {
+      const link = holder.querySelector(`figure.media > a[href="${href}"]`);
+      expect(link?.getAttribute('rel')).toBe('noopener noreferrer nofollow');
+      expect(link?.getAttribute('target')).toBe('_blank');
+      expect(link?.textContent).toBe(href);
+    }
+    expect(holder.innerHTML).not.toContain('javascript:');
+    // oembed 를 통과시키려고 더한 url 속성은 oembed 밖에서 쓰지 않는다
+    expect(holder.querySelector('p')?.hasAttribute('url')).toBe(false);
   });
 
   /**

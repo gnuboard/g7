@@ -20,6 +20,7 @@ use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaService;
 use Modules\Sirsoft\Board\Support\GuestUploadOwnerCookie;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
@@ -423,9 +424,11 @@ class AttachmentService
     /**
      * 현재 요청의 비회원 소유 쿠키 해시를 돌려줍니다(요청이 없거나 쿠키가 없으면 null).
      *
+     * 본문 미디어 복제 게이트(다른 임시 키로 올린 비회원 임시 본문 미디어는 소유 쿠키가 맞을 때만 복제, #887)도 이 값을 쓴다.
+     *
      * @return string|null 소유 쿠키 해시
      */
-    private function currentGuestOwnerHash(): ?string
+    public function currentGuestOwnerHash(): ?string
     {
         if ($this->runsWithoutRequest()) {
             return null;
@@ -860,6 +863,24 @@ class AttachmentService
     }
 
     /**
+     * 영구 삭제할 게시글들에 아직 남은 본문 미디어 행을 코어 본문 미디어 골격으로 지웁니다 (#887).
+     *
+     * `purgeByPostIds` 는 파일 삭제에 실패한 행을 다음 실행을 위해 남긴다. 글 자체를 영구 삭제하는 경로
+     * (`PostRepository::forceDeleteWithRepliesByIds`)는 그 행을 일괄 삭제하므로, 그 전에 본문 미디어 행만 골격으로 지워
+     * `core.content_media.before_delete` 를 거치게 한다. 일반 첨부는 건드리지 않는다.
+     *
+     * 골격 서비스를 생성자로 받지 않고 컨테이너에서 꺼내는 것은 의존 순환 때문이다 — 골격의 어댑터
+     * (`BoardContentMediaStore`)가 이 서비스(임시 행 소유 판정·콘텐츠 게이트)를 주입받는다. 아래 `purgeCollection` 도 같다.
+     *
+     * @param  array<int, int>  $postIds  게시글 ID 목록
+     * @return int 지운 본문 미디어 행 수
+     */
+    public function purgeContentMediaByPostIds(array $postIds): int
+    {
+        return $postIds === [] ? 0 : app(BoardContentMediaService::class)->purgeForPosts($postIds);
+    }
+
+    /**
      * 첨부 컬렉션을 파일 → 기록 순으로 영구 파기합니다.
      *
      * @param  Collection  $attachments  대상 첨부 목록
@@ -873,6 +894,23 @@ class AttachmentService
 
         if ($dryRun) {
             return $result;
+        }
+
+        // 본문 미디어 행은 코어 본문 미디어 골격 정리로 지운다 — 행마다 `core.content_media.before_delete` 를 발화하고,
+        // 파일 → 행 순서·파일 삭제 실패 시 행 보존은 아래 일반 첨부와 같다. 일반 첨부의 삭제·훅은 그대로다 (#887)
+        [$contentMedia, $attachments] = $attachments->partition(
+            fn (Attachment $attachment) => $attachment->collection === Attachment::COLLECTION_CONTENT_MEDIA
+        );
+        if ($contentMedia->isNotEmpty()) {
+            $mediaResult = app(BoardContentMediaService::class)->purgeSelectedRows(
+                $this->repository->findContentMediaWithTrashedByIds($contentMedia->pluck('id')->map(fn ($id) => (int) $id)->all())
+            );
+            $result['deleted'] += $mediaResult['deleted'];
+            $result['failed'] += $mediaResult['failed'];
+
+            if ($mediaResult['failed'] > 0) {
+                Log::warning("{$label} 본문 미디어 파일 삭제 실패 — 기록 보존", ['failed' => $mediaResult['failed']]);
+            }
         }
 
         foreach ($attachments as $attachment) {

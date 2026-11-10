@@ -1,4 +1,4 @@
-// e2e:allow편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
+// e2e:allow #887 화면 읽기 알림의 항목 이름 추출만 고침(만들기 행 label 이 요소라 「[object Object] 선택됨」) — 보이는 화면 변화 없음, 실제 react-select 경로 회귀는 TagInput.a11yCreateAnnounce.test.tsx. 종전: 편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import Select, { components, MultiValue, SingleValue, ActionMeta, InputActionMeta } from 'react-select';
@@ -9,6 +9,21 @@ import type { EditorAttrs } from '../../types';
 // G7Core.t() 번역 함수 참조 — 화면 읽기 안내문·태그 지우기 버튼 이름을 화면 언어로 낸다
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
+
+/**
+ * 안내문에 넣을 항목 이름 — 새 값 만들기 행의 label 은 화면용 요소(createLabelFormatter 의 <span>)라 react-select 가
+ * 그대로 넘기면 문자열 자리에서 「[object Object]」 로 읽혔다(#887, 본문 콘텐츠 「운영자 추가 태그」 실측). 만들기 행은
+ * 친 값(value)으로, 그 밖에 문자열이 아닌 label 도 value 로 읽는다.
+ */
+const announceLabel = (label: unknown, option?: any): string => {
+  if (option?.__isNew__) return String(option.value ?? '');
+  if (typeof label === 'string' || typeof label === 'number') return String(label);
+  return option?.value !== undefined && option?.value !== null ? String(option.value) : '';
+};
+
+/** 알림 대상 항목 — react-select 와 같은 순서(지운 값 → 고른 옵션 → 하나만 고르는 칸의 값). */
+const announcedOption = (props: any): any =>
+  props.removedValue ?? props.option ?? (Array.isArray(props.value) ? undefined : props.value);
 
 /**
  * react-select 라이브 영역 안내문(기본값은 영어 고정)을 템플릿 다국어 키로 바꾼다.
@@ -34,7 +49,7 @@ const ariaLiveMessages = {
     }
   },
   onChange: (props: any): string => {
-    const label = props.label ?? '';
+    const label = announceLabel(props.label, announcedOption(props));
     switch (props.action) {
       case 'deselect-option':
       case 'pop-value':
@@ -43,7 +58,7 @@ const ariaLiveMessages = {
       case 'clear':
         return t('common.tag_input.cleared');
       case 'initial-input-focus':
-        return t('common.tag_input.selected', { label: (props.labels ?? []).join(', ') });
+        return t('common.tag_input.selected', { label: (props.labels ?? []).map((item: unknown) => announceLabel(item)).filter(Boolean).join(', ') });
       case 'select-option':
         return props.isDisabled ? t('common.tag_input.disabled_option', { label }) : t('common.tag_input.selected', { label });
       default:
@@ -52,7 +67,7 @@ const ariaLiveMessages = {
   },
   onFocus: (props: any): string => {
     const { context, focused, options, selectValue } = props;
-    const label = props.label ?? '';
+    const label = announceLabel(props.label, focused);
     if (context === 'value' && selectValue) {
       return t('common.tag_input.focus_value', { label, index: selectValue.indexOf(focused) + 1, total: selectValue.length });
     }
@@ -76,7 +91,7 @@ const createMultiAriaLiveMessages = {
   ...ariaLiveMessages,
   onChange: (props: any): string =>
     props.action === 'deselect-option'
-      ? t('common.tag_input.selected', { label: props.label ?? '' })
+      ? t('common.tag_input.selected', { label: announceLabel(props.label, announcedOption(props)) })
       : ariaLiveMessages.onChange(props),
 };
 

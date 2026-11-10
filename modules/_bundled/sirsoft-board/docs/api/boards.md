@@ -3004,7 +3004,42 @@ HTTP/1.1 200
 - 상태: `201` 성공 · `401/403` 업로드 권한 없음 · `403` `post_id` 의 글을 고칠 수 없음 · `404` 게시판·글 없음 · `422` 정책 밖 파일(`errors.file`)·임시 키 없음·같은 임시 키 업로드가 문서당 최대 개수의 2배 초과(`errors.code = content_media_limit_exceeded`)
 - 비회원 응답에는 소유 쿠키 `g7_board_guest_upload`(경로 `/api/modules/sirsoft-board`, httpOnly)가 붙는다 — 첨부 업로드와 같은 쿠키다.
 - 「파일 첨부 사용」(`use_file_upload`)은 보지 않는다. 정책은 게시판 `content_media_policy`, 비어 있으면 그 게시판 첨부 정책(동영상·오디오는 코어 「본문 콘텐츠」 스위치를 따름).
+- 코어 공용 훅 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 가 발화한다(1.2.3, 코어 7.1.5). 필터가 돌려준 파일이 정책 밖이면 `422`. 게시판 첨부 훅(`sirsoft-board.attachment.*`)은 발화하지 않는다.
 <!-- @generated:end -->
+
+---
+
+### GET /api/modules/sirsoft-board/boards/{slug}/content-media/target
+<!-- @generated:start:api.modules.sirsoft-board.boards.content-media.target -->
+- **라우트명**: `api.modules.sirsoft-board.boards.content-media.target`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController@target`
+- **인증/권한**: `optional.sanctum` + `permission:user,sirsoft-board.{slug}.attachments.upload` (비회원 포함) · `throttle:60,1`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | 게시판 slug |
+
+**응답 필드** (`data` 내부 — 받는 종류가 없으면 `data: null`)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| data.version | integer | `1` | 계약 판 |
+| data.endpoint | string | `"/api/modules/sirsoft-board/boards/free/content-media"` | 업로드 주소(같은 출처 상대 경로) |
+| data.fileField | string | `"file"` | 파일 필드 이름 |
+| data.fields | object | `{}` | 함께 보낼 폼 필드 — 화면이 `temp_key`(글쓰기 임시 키)를 더한다 |
+| data.headers | object | `{}` | 함께 보낼 헤더(허용 목록만) |
+| data.response | object | `{"urlPath":"data.url","idPath":"data.id","kindPath":"data.kind"}` | 업로드 응답에서 값을 읽을 경로 |
+| data.mediaUrlPattern | string | `"/api/modules/sirsoft-board/boards/free/content-media/(?<hash>[A-Za-z0-9]{12})"` | 본문 미디어 서빙 주소 정규식(편집기 개수 판정) |
+| data.policy | object | `{"image":{"enabled":true,…},"max_per_document":30}` | 종류별 허용·파일당 크기·형식과 글 한 편 최대 개수 |
+
+- 상태: `200` · `401` 비회원에게 업로드 권한 없음 · `403` 회원에게 업로드 권한 없음 · `404` 게시판 없음
+- 값은 그 게시판 본문 미디어 정책이고, 코어는 동영상·오디오 업로드 허용 스위치로만 관여한다. 형식은 코어 `docs/extension/content-media.md` 「표준 계약 엔드포인트」.
+- 글쓰기 폼 메타(`GET boards/{slug}/posts/form-meta`)의 `data.content_media` 는 같은 값을 계속 싣는다(호환, 폐기 예정).
+<!-- @generated:end -->
+
+**설명** 사용자 글쓰기 편집기의 본문 미디어 업로드 계약을 내는 표준 계약 엔드포인트입니다(1.2.3). 판정은 본문 미디어 업로드와 같은 `attachments.upload` 권한(비회원 포함)이고 「파일 첨부 사용」은 보지 않습니다. 글쓰기 화면은 이 응답을 데이터소스 `content_media_target` 으로 받아 편집기 `mediaUpload` 에 넘기며, 실패(권한 없음 포함)는 조용히 넘겨 업로드 없이 편집기를 세웁니다.
 
 ---
 
@@ -3571,7 +3606,7 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 
-> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 이 게시판 `attachments.upload` 권한이 있고 정책이 받는 종류가 있으면 편집기 확장점 `html_editor` 의 `mediaUpload` 로 넘길 계약 객체(`version`·`endpoint`·`fileField`·`fields`·`headers`·`response`·`mediaUrlPattern`·`policy`), 없으면 `null`. 화면은 `fields.temp_key` 에 글쓰기 임시 키를 더해 넘긴다. 형식은 코어 `docs/extension/content-media.md`.
+> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 이 게시판 `attachments.upload` 권한이 있고 정책이 받는 종류가 있으면 편집기 확장점 `html_editor` 의 `mediaUpload` 로 넘길 계약 객체(`version`·`endpoint`·`fileField`·`fields`·`headers`·`response`·`mediaUrlPattern`·`policy`), 없으면 `null`. 화면은 `fields.temp_key` 에 글쓰기 임시 키를 더해 넘긴다. 형식은 코어 `docs/extension/content-media.md`. 표준 계약 엔드포인트 `GET boards/{slug}/content-media/target` 과 같은 값이며, 옛 화면 호환으로 계속 싣는다(폐기 예정 — 새 화면은 표준 엔드포인트를 쓴다).
 
 <!-- @generated:end -->
 
@@ -3689,7 +3724,7 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_post | boolean | `false` | guest post 여부 |
 | title | string | `API 문서 샘플 게시글` | 제목 |
-| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용 |
+| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용. HTML 본문의 본문 미디어 주소 가운데 **이 글 소유** 미디어만 한시 서명 주소로 나간다(1.2.3). 다른 글 소유 주소는 서명 없이 나가 원래 글의 열람 권한을 따른다(남의 비밀글 미디어 주소를 넣어도 서명되지 않음) |
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | user 식별자 (연관 리소스 참조) |
 | trigger_type | string | `user` | 상태 변경/삭제를 유발한 주체 (user 사용자 / admin 관리자 / report 신고 / system 시스템 / auto_hide 자동 블라인드 / cascade 연쇄 삭제 — TriggerType Enum) |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |

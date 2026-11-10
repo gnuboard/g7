@@ -10,25 +10,25 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:310` |
-| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:438` |
+| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:440` |
 | `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:224` |
 | `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:302` |
-| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:434` |
+| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:436` |
 | `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:174` |
 | `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:176` |
-| `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:122` |
-| `sirsoft-page.page.after_delete` | action | — | `src/Services/PageService.php:214` |
-| `sirsoft-page.page.after_publish` | action | — | `src/Services/PageService.php:247` 외 1곳 |
-| `sirsoft-page.page.after_restore` | action | — | `src/Services/PageService.php:346` |
-| `sirsoft-page.page.after_update` | action | — | `src/Services/PageService.php:183` |
-| `sirsoft-page.page.before_create` | action | — | `src/Services/PageService.php:83` |
-| `sirsoft-page.page.before_delete` | action | — | `src/Services/PageService.php:203` |
-| `sirsoft-page.page.before_publish` | action | — | `src/Services/PageService.php:233` 외 1곳 |
-| `sirsoft-page.page.before_update` | action | — | `src/Services/PageService.php:143` |
+| `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:125` |
+| `sirsoft-page.page.after_delete` | action | — | `src/Services/PageService.php:225` |
+| `sirsoft-page.page.after_publish` | action | — | `src/Services/PageService.php:258` 외 1곳 |
+| `sirsoft-page.page.after_restore` | action | — | `src/Services/PageService.php:365` |
+| `sirsoft-page.page.after_update` | action | — | `src/Services/PageService.php:190` |
+| `sirsoft-page.page.before_create` | action | — | `src/Services/PageService.php:85` |
+| `sirsoft-page.page.before_delete` | action | — | `src/Services/PageService.php:210` |
+| `sirsoft-page.page.before_publish` | action | — | `src/Services/PageService.php:244` 외 1곳 |
+| `sirsoft-page.page.before_update` | action | — | `src/Services/PageService.php:149` |
 | `sirsoft-page.page.filter_content_thumbnail` | filter | — | `src/Models/Page.php:133` |
-| `sirsoft-page.page.filter_create_data` | filter | — | `src/Services/PageService.php:85` |
+| `sirsoft-page.page.filter_create_data` | filter | — | `src/Services/PageService.php:87` |
 | `sirsoft-page.page.filter_list_query` | filter | — | `src/Services/PageService.php:68` |
-| `sirsoft-page.page.filter_update_data` | filter | — | `src/Services/PageService.php:147` |
+| `sirsoft-page.page.filter_update_data` | filter | — | `src/Services/PageService.php:153` |
 | `sirsoft-page.search.page.index_should_update` | filter | — | `src/Models/Page.php:290` |
 <!-- @generated:hooks-published END -->
 
@@ -47,6 +47,14 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 
 `page.after_restore` 는 소프트 삭제 복원이 아니라 **버전 복원**입니다. 이 모듈은 소프트 삭제를
 쓰지 않으므로 "복원" 이라는 말이 나오면 언제나 버전 이력 쪽입니다.
+
+**편집기 본문 미디어(`collection = content_media`)는 `attachment.*` 훅을 발화하지 않습니다.** 업로드와
+영구 삭제는 코어 골격이 공용 훅 `core.content_media.before_upload`·`filter_upload_file`·`after_upload`·
+`before_delete` 를 발화하고, 리스너는 문맥(`ContentMediaContext` — 확장 `sirsoft-page`, 문서 `page`,
+페이지 ID)으로 페이지 본문 미디어인지 압니다(#887, 코어 [본문 미디어 계약](../../../../docs/extension/content-media.md)).
+첨부 훅까지 발화하면 첨부 리스너(활동 로그 등)가 본문 미디어를 첨부로 오인합니다. `before_delete` 는
+영구 삭제 직전에만 옵니다 — 본문에서 빠졌어도 버전이 참조해 남겨 두는 동안에는 오지 않고, 페이지 삭제·
+임시 정리 때 옵니다.
 
 발행 훅이 `getHooks()` 선언에 없어 소스에서 자동 감지된 상태입니다. 선언에 추가하면 유형과
 설명이 표에 함께 실리며, 이 모듈처럼 훅 수가 적은 확장은 선언을 채우는 비용이 낮습니다.
@@ -182,10 +190,13 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @intent START -->
 하나뿐입니다. `prune-temp-attachments` 는 **업로드했지만 페이지 저장까지 이어지지 않은 파일**을
 정리합니다 — 편집 중 창을 닫은 세션의 부산물이라 운영 데이터가 아니며, 그래서 설정 토글 없이
-상시 동작합니다(보존 기간은 커맨드 옵션).
+상시 동작합니다(보존 기간은 커맨드 옵션). 편집기 본문에 올리고 저장하지 않은 본문 미디어
+(`collection = content_media` 임시 행)도 같은 기준으로 함께 지웁니다 — 본문 미디어는 코어 골격의 정리
+(`pruneStale`)가 행 디스크에서 지우고 행마다 `core.content_media.before_delete` 를 발화하며, 비워진 날짜
+디렉터리(`content-media/Y/m/d`)도 그 디스크에서 지웁니다(#887). 출력 건수는 둘을 합친 값입니다.
 
-이미 페이지에 연결된 첨부는 이 스케줄의 대상이 아닙니다. 페이지를 지우면 그 첨부는 삭제 흐름
-안에서 함께 정리됩니다.
+이미 페이지에 연결된 첨부는 이 스케줄의 대상이 아닙니다. 페이지를 지우면 그 첨부와 본문 미디어(버전이
+참조해 남겨 둔 것 포함)는 삭제 흐름 안에서 함께 정리됩니다(파일은 커밋 뒤).
 <!-- @intent END -->
 
 ## 알림 정의

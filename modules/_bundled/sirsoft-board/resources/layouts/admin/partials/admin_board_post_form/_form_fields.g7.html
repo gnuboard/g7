@@ -61,8 +61,8 @@
             <input type="text" name="title" value="{{_local.form?.title ?? ''}}" disabled="{{_computed.isReadOnly}}" placeholder="$t:sirsoft-board.admin.posts.form.title_placeholder" class="block focus:ring-1 dark:focus:ring-blue-400"/>
           </div>
         </div>
-        <!-- 편집기는 처음 세워질 때의 업로드 계약만 쓴다 — 계약을 담은 소스(form_meta)를 받기(실패 포함) 전에는 세우지 않는다(#883 실측: 먼저 서면 업로드 단추가 끝내 생기지 않음) -->
-        <extension-point name="html_editor" data-if="{{form_meta !== undefined}}" data-ref="content_section" mediaUpload="{{form_meta?.data?.content_media ? Object.assign({}, form_meta.data.content_media, { fields: Object.assign({}, form_meta.data.content_media.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :rows="15" :showHtmlModeToggle="true">
+        <!-- 편집기는 처음 세워질 때의 업로드 계약만 쓴다 — 계약을 담은 소스(표준 계약 엔드포인트 content_media_target, #887)와 form_meta 를 받기(실패 포함) 전에는 세우지 않는다(#883 실측: 먼저 서면 업로드 단추가 끝내 생기지 않음) -->
+        <extension-point name="html_editor" data-if="{{form_meta !== undefined &amp;&amp; content_media_target !== undefined}}" data-ref="content_section" mediaUpload="{{content_media_target?.data ? Object.assign({}, content_media_target.data, { fields: Object.assign({}, content_media_target.data.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :rows="15" :showHtmlModeToggle="true">
           <prop name="name">"content"</prop>
           <default>
             <html-editor data-type="composite" name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" disabled="{{_computed.isReadOnly}}" readOnly="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :showHtmlModeToggle="true">

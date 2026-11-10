@@ -1,0 +1,22 @@
+feature: 페이지 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트 (#887 G10)
+
+description: |
+  편집기 계약을 화면에 전하는 길을 확장마다 `GET …/content-media/target` 한 가지로 맞췄다(코어 트레이트
+  `RespondsWithContentMediaTarget`). 페이지는 `GET admin/content-media/target` — 권한은 업로드와 같고(등록·수정 어느 쪽이든),
+  값은 페이지 모듈 설정 `content_media`(비면 첨부 정책)다. 받는 종류가 없으면 `data: null`. 옛 길(`GET admin/attachments/settings`
+  의 `content_media`)은 같은 값을 계속 싣는 호환 별칭이다. 페이지 작성·수정 화면은 데이터 소스 `contentMediaTarget` 으로 받고,
+  계약을 받기(실패 포함) 전에는 편집기를 세우지 않는다.
+
+axes:
+  permission: [create, update, read_only, guest]
+
+effects:
+  - target_returns_contract_shape
+  - target_denied_without_upload_permission
+  - target_null_when_nothing_accepted
+  - legacy_settings_alias_same_value
+  - form_reads_target_data_source
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaTargetTest.php
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-form-content-media-target.test.ts

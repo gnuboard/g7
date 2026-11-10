@@ -1,0 +1,27 @@
+feature: 상품 설명 저장 정화 — 모드를 보내지 않은 수정은 저장된 모드를 따른다 (#887)
+
+description: |
+  상품 설명 저장 정화(sanitizeDescription)는 요청의 description_mode 로 HTML 여부를 판정한다. 요청에 모드가 없으면
+  저장된 상품의 모드로 판정한다 — 모드를 빼고 설명만 보낸 수정(관리자 API 부분 수정)이 HTML 상품의 설명을 정화 없이
+  저장하지 않도록(공통 정보 sanitizeContent 와 같은 판정). 요청에 모드가 있으면 요청이 우선하고, 텍스트 모드 설명은
+  손대지 않는다. 종전(1.3.3 포함)에는 요청에 모드가 없으면 text 로 보고 정화를 건너뛰었다.
+
+# axis 의미:
+#   stored_mode  — 수정 전 저장된 상품의 description_mode
+#   request_mode — 수정 요청의 description_mode (absent = 키 없음)
+axes:
+  stored_mode: [html, text]
+  request_mode: [absent, html, text]
+
+exclusions:
+  - { stored_mode: html, request_mode: html, reason: "요청 모드가 저장 모드와 같으면 종전부터 요청 모드로 정화했다 — 판정 바뀜이 없고 생성·수정 정화 시험(ContentMediaUploadAndSyncTest·ProductDescriptionPurifierCacheTest)이 이 경로를 본다" }
+  - { stored_mode: text, request_mode: text, reason: "위와 같다 — 요청·저장 모두 text 라 정화하지 않는 종전 경로" }
+
+effects:
+  - stored_html_mode_purified_without_request_mode
+  - script_removed_on_update
+  - stored_text_mode_untouched
+  - request_mode_takes_precedence
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ProductDescriptionModeFallbackTest.php

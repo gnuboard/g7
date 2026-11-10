@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Enums\PermissionType;
-use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
+use App\Exceptions\ContentMediaLimitExceededException;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Models\User;
 use App\Support\Query\PaginationLimits;
@@ -17,11 +17,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\SecretMode;
-use App\Exceptions\ContentMediaLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
+use Modules\Sirsoft\Board\Http\Controllers\Concerns\RespondsToExpiredSession;
 use Modules\Sirsoft\Board\Http\Requests\User\DestroyPostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\PostIndexRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\StorePostRequest;
@@ -36,8 +36,8 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
-use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\PostContentMediaService;
+use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Services\SecretViewTokenService;
@@ -57,9 +57,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PostController extends PublicBaseController
 {
-    use RespondsToExpiredSession;
-
     use ChecksBoardPermission;
+    use RespondsToExpiredSession;
 
     /**
      * PostController 생성자
@@ -752,7 +751,8 @@ class PostController extends PublicBaseController
             $metaData = [
                 'board' => $boardData,
                 // 편집기 본문 미디어 업로드 계약 (#883) — 이 게시판 업로드 권한이 있고 받는 종류가 있을 때만. 「파일 첨부 사용」과
-                // 무관하다(D26). 이 값을 읽지 않는 복제 템플릿은 현행 동작(관리자만 편집기 자체 업로드)
+                // 무관하다(D26). 이 값을 읽지 않는 복제 템플릿은 현행 동작(관리자만 편집기 자체 업로드).
+                // 표준 계약 엔드포인트 `GET boards/{slug}/content-media/target`(#887)과 같은 값 — 옛 화면 호환으로 계속 싣는다(폐기 예정)
                 'content_media' => $this->checkBoardPermission($slug, 'attachments.upload', PermissionType::User)
                     ? $this->contentMediaService->uploadTarget($board, admin: false)
                     : null,

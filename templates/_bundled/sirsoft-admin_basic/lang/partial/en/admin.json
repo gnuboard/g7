@@ -2686,14 +2686,14 @@
     },
     "content": {
       "candidates": {
-        "title": "Allowed elements",
-        "description": "Turn on the elements that may remain in post, page and product description content. Elements that are off are removed when displayed and saved.",
+        "title": "Allowed features",
+        "description": "Turn on the features available in post, page and product description content. Video and audio files can be uploaded in the editor only when turned on, and elements of features that are off are removed when displayed and saved.",
         "figure_caption": "Image captions",
         "figure_caption_hint": "Keep captions under images (figure, figcaption).",
-        "uploaded_video": "Uploaded videos",
-        "uploaded_video_hint": "Play videos uploaded into content (video). Only files uploaded to this site play, and the board, page or shop content media rule must also allow videos.",
-        "uploaded_audio": "Uploaded audio",
-        "uploaded_audio_hint": "Play audio uploaded into content (audio). Only files uploaded to this site play.",
+        "uploaded_video": "Allow video uploads",
+        "uploaded_video_hint": "Lets editors upload video files (such as mp4) into content and play them. If a board or the shop has its own content media rule, videos must also be turned on in that rule. Only files uploaded to this site play.",
+        "uploaded_audio": "Allow audio uploads",
+        "uploaded_audio_hint": "Lets editors upload audio files (such as mp3) into content and play them. If a board or the shop has its own content media rule, audio must also be turned on in that rule. Only files uploaded to this site play.",
         "external_embed": "External videos",
         "external_embed_hint": "Show videos inserted with the editor's \"Insert media\" in the player of a service enabled below. When off, they appear as links."
       },

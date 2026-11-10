@@ -2,10 +2,11 @@ feature: HtmlContent 가 코어 「본문 콘텐츠」 규칙(G7Core.contentPoli
 
 description: |
   규칙이 있으면 켜진 후보(그림 캡션·외부 영상)를 살리고 외부 영상은 정해진 플레이어 iframe 으로 바꾼다. 사용자 iframe·script·
-  이벤트 속성은 계속 지우고 허용 밖 서비스는 링크로. 컴포넌트 prop 으로 덧붙인 금지는 규칙으로 풀리지 않는다. 규칙이 없으면 종전 정화.
+  이벤트 속성은 계속 지우고 허용 밖 서비스는 링크로. 「그림 캡션」을 끄면 캡션만 지우고 그림은 남기며, 「외부 영상 삽입」을
+  끄면 영상 주소를 링크로 보인다(빈 상자 없음, #887). 컴포넌트 prop 으로 덧붙인 금지는 규칙으로 풀리지 않는다. 규칙이 없으면 종전 정화.
 
 axes:
-  case: [policy_on, prop_forbid, policy_off]
+  case: [policy_on, prop_forbid, policy_off, caption_off, embed_off]
 
 effects:
   - caption_kept
@@ -16,6 +17,8 @@ effects:
   - legacy_path_without_policy
   - candidates_off_respected
   - external_video_removed
+  - caption_off_image_kept
+  - embed_off_link
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/HtmlContent.contentPolicy.test.tsx

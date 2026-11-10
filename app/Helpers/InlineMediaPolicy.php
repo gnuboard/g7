@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Enums\ContentMediaKind;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -85,26 +86,21 @@ final class InlineMediaPolicy
     }
 
     /**
-     * 본문 동영상·오디오로 인라인 재생을 허용하는 MIME 타입 (#883 5단계, D14)
+     * 본문 동영상·오디오로 인라인 재생을 허용하는 MIME 타입 (#883 5단계 D14, #887 단일 출처)
      *
      * 이 목록에 들고 확장 정책·코어 「본문 콘텐츠」 설정이 그 종류를 켰을 때만 `hardenPlayable` 로 인라인 서빙한다.
-     * 그 밖에는 `harden()` 그대로(다운로드) — 기존 판정은 바뀌지 않는다.
+     * 그 밖에는 `harden()` 그대로(다운로드) — 기존 판정은 바뀌지 않는다. 목록은 본문 미디어 종류(`ContentMediaKind`)의
+     * 동영상·오디오 MIME 이다 — 업로드가 받는 형식과 서빙이 재생하는 형식이 갈라지지 않게 한 곳에서 만든다.
      *
-     * @var array<int, string>
+     * @return array<int, string> MIME 목록 (동영상 → 오디오, 확장자 표 순서)
      */
-    public const PLAYABLE_MEDIA_MIME_TYPES = [
-        'video/mp4',
-        'video/webm',
-        'video/ogg',
-        'audio/mpeg',
-        'audio/mp4',
-        'audio/x-m4a',
-        'audio/ogg',
-        'audio/wav',
-        'audio/x-wav',
-        'audio/wave',
-        'audio/vnd.wave',
-    ];
+    public static function playableMimeTypes(): array
+    {
+        return array_values(array_unique(array_merge(
+            ContentMediaKind::Video->mimeTypes(),
+            ContentMediaKind::Audio->mimeTypes(),
+        )));
+    }
 
     /**
      * 재생 가능 응답에 거는 CSP — 미디어 자체 출처만 허용하고 문서로 렌더되면 격리한다.
@@ -125,7 +121,7 @@ final class InlineMediaPolicy
 
         $normalized = strtolower(trim(explode(';', $mimeType, 2)[0]));
 
-        return in_array($normalized, self::PLAYABLE_MEDIA_MIME_TYPES, true);
+        return in_array($normalized, self::playableMimeTypes(), true);
     }
 
     /**

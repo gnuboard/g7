@@ -355,9 +355,12 @@
 `/mypage` 자체는 레이아웃이 `-` 입니다 — 진입하면 하위 탭 중 하나로 넘기는 자리이며 자기
 화면을 갖지 않습니다.
 
-본문 편집기 확장점(`html_editor`)에는 폼 메타의 본문 미디어 업로드 계약(`form_meta.data.content_media`)을
-`mediaUpload` 로 넘기고, 계약의 `fields.temp_key` 에 글쓰기 임시 키(`_local.tempKey`)를 더합니다(코어 7.1.5). 계약이 없으면
-`null` 이라 편집기는 종전 규칙(관리자만 편집기 자체 업로드)으로 동작합니다 — 이 prop 이 없는 복제 템플릿도 같습니다.
+본문 편집기 확장점(`html_editor`)에는 게시판 표준 계약 엔드포인트(`GET boards/{slug}/content-media/target`, 데이터소스
+`content_media_target`)가 준 본문 미디어 업로드 계약을 `mediaUpload` 로 넘기고, 계약의 `fields.temp_key` 에 글쓰기 임시 키
+(`_local.tempKey`)를 더합니다(코어 7.1.5, 게시판 1.2.3). 올릴 권한이 없거나 받지 못하면 그 소스는 조용히 `{data: null}` 이 되고 편집기는
+종전 규칙(관리자만 편집기 자체 업로드)으로 동작합니다 — 이 prop 이 없는 복제 템플릿도 같습니다. 편집기는 처음 세워질 때의 계약만 쓰므로
+편집기 노드는 그 소스를 받기(실패 포함) 전에는 서지 않습니다. 예전처럼 폼 메타 `form_meta.data.content_media` 를 읽는 복제 템플릿도
+게시판이 같은 값을 계속 실어 주므로 그대로 동작합니다.
 
 게시글 작성·수정(`board/form` → `_post_form`)의 옵션 카드는 폼 메타의 권한 값으로 갈립니다.
 공지 옵션은 `user_abilities.can_manage`(게시판 관리) **또는** `can_write_notice`(공지 등록) 가

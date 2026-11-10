@@ -26,6 +26,7 @@ use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
 use App\Support\RouteCacheHelper;
 use App\Support\SearchScopes;
+use App\Support\Settings\ComputedSettingFields;
 use App\Support\SettingsVersion;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
@@ -147,6 +148,8 @@ class SettingsService
      * 스키마의 frontend_name/merge_into 설정에 따라 카테고리를 자동 병합합니다.
      * (예: cache, debug → advanced)
      *
+     * 공개 설정의 화면용 계산 값(`computed: true` 필드)도 함께 싣습니다 — appendComputedFields() 참조.
+     *
      * @return array 시스템 설정 배열
      */
     public function getAllSettings(): array
@@ -192,11 +195,109 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
+        // 화면용 계산 값(frontend_schema 의 computed 필드)을 공개 설정과 같은 계산으로 싣는다(#887).
+        // 저장 응답도 이 경로로 다시 조회하므로, 화면이 저장 응답으로 전역 설정을 병합하면 같은 탭에서도 저장 뒤 계산 값을 쓴다.
+        $settings = $this->appendComputedFields($settings, $schema);
+
         // GeoIP 최근 갱신 — 저장값은 ISO8601 그대로, 화면 표시용 문자열은 보는 사람 시간대.
         // 저장 경로(saveAdvancedSettings)는 스키마에 없는 이 키를 버린다.
         $settings['advanced']['geoip_last_updated_at_formatted'] = $this->formatIsoForViewer($settings['advanced']['geoip_last_updated_at'] ?? null);
 
         return $this->overlayEnvLockedValues($settings);
+    }
+
+    /**
+     * 화면용 계산 값을 관리자 설정 묶음에 덧붙입니다 (#887).
+     *
+     * 대상은 `frontend_schema` 의 `computed: true` 필드 전부이고, 계산은 공개 설정(formatCategorySettings)과 같은
+     * computeFieldValue() 를 씁니다 — 계산 필드가 늘어도 스키마와 그 변환 한 곳만 고치면 관리자 응답도 따라옵니다.
+     * 범주 공개 여부(`expose`)는 보지 않습니다. 관리자 응답은 원본을 이미 담고 있고 계산 값은 그 원본에서 나온 값입니다.
+     * `sensitive` 계산 필드는 공개 설정과 같이 뺍니다.
+     *
+     * 화면은 저장 응답(`data.settings`)으로 전역 설정을 병합하므로, 이 값이 없으면 저장 뒤 같은 탭에서 페이지 로드 때 받은
+     * 옛 계산 값이 남습니다(예: 동영상 업로드 허용을 켜고 저장해도 `content.render_policy` 가 그대로라 본문 동영상이 지워짐).
+     * 화면이 이 값을 저장 본문에 되돌려 보내도 저장하지 않습니다 — rejectComputedForSave() 참조.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @param  array<string, mixed>  $schema  프론트엔드 스키마
+     * @return array<string, mixed> 계산 값이 더해진 설정 배열
+     */
+    private function appendComputedFields(array $settings, array $schema): array
+    {
+        foreach ($schema as $category => $categorySchema) {
+            if (str_starts_with((string) $category, '_') || ! is_array($categorySchema)) {
+                continue;
+            }
+
+            $fields = $this->computedFieldSchemas($categorySchema);
+
+            if ($fields === []) {
+                continue;
+            }
+
+            // 공개 설정과 같은 입력 — 저장소의 범주 값(기본값 병합). 저장 직후에는 saveCategory() 가 비운 캐시 뒤의 새 값이다.
+            $source = $this->getSettings((string) $category);
+
+            foreach ($fields as $fieldName => $fieldSchema) {
+                if ($fieldSchema['sensitive'] ?? false) {
+                    continue;
+                }
+
+                $value = $this->computeFieldValue($source, $fieldSchema);
+
+                foreach ($this->resolveFrontendKeyTargets((string) $category, (string) $fieldName) as [$targetCategory, $outputKey]) {
+                    if (! isset($settings[$targetCategory]) || ! is_array($settings[$targetCategory])) {
+                        $settings[$targetCategory] = [];
+                    }
+
+                    $settings[$targetCategory][$outputKey] = $value;
+                }
+            }
+        }
+
+        return $settings;
+    }
+
+    /**
+     * 범주 스키마에서 계산 필드(`computed: true`)만 고릅니다 — 판정은 터미널 설정 명령과 같은 `ComputedSettingFields` 한 곳.
+     *
+     * @param  array<string, mixed>  $categorySchema  범주 스키마
+     * @return array<string, array<string, mixed>> 필드명 => 필드 스키마
+     */
+    private function computedFieldSchemas(array $categorySchema): array
+    {
+        return ComputedSettingFields::schemas($categorySchema);
+    }
+
+    /**
+     * 저장 본문에서 계산 필드를 뺍니다 (#887).
+     *
+     * 관리자 응답이 계산 값을 함께 싣고 화면은 응답으로 만든 탭 값 전체를 저장 본문에 되돌려 보내므로, 걸러내지 않으면
+     * 계산 값이 원본 설정처럼 저장소에 굳습니다. 그 탭에 합쳐지는 범주(`frontend_name`·`merge_into`)의 계산 필드도 뺍니다.
+     *
+     * @param  string  $tab  저장 탭
+     * @param  array<string, mixed>  $settings  원본 키로 역변환한 탭 값
+     * @return array<string, mixed> 계산 필드를 뺀 탭 값
+     */
+    private function rejectComputedForSave(string $tab, array $settings): array
+    {
+        foreach ($this->configRepository->getFrontendSchema() as $category => $categorySchema) {
+            if (str_starts_with((string) $category, '_') || ! is_array($categorySchema)) {
+                continue;
+            }
+
+            $targetCategory = $categorySchema['frontend_name'] ?? $categorySchema['merge_into'] ?? $category;
+
+            if ($category !== $tab && $targetCategory !== $tab) {
+                continue;
+            }
+
+            foreach ($this->computedFieldSchemas($categorySchema) as $fieldName => $fieldSchema) {
+                unset($settings[$fieldName], $settings[$fieldSchema['frontend_key'] ?? $fieldName]);
+            }
+        }
+
+        return $settings;
     }
 
     /**
@@ -724,6 +825,9 @@ class SettingsService
 
             // frontend_key를 원본 키로 역변환
             $tabSettings = $this->reverseFrontendKeys($tabSettings);
+
+            // 응답에 실려 나간 화면용 계산 값이 되돌아와도 저장하지 않는다(#887)
+            $tabSettings = $this->rejectComputedForSave($tab, $tabSettings);
 
             // `.env` 가 소유권을 가져간 키는 저장 대상에서 제거한다. 화면의 disabled 는
             // 게이트가 아니다 — 저장 API 를 직접 호출하는 경로가 남으므로 실질 차단은 여기다.

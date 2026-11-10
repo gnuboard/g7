@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\CacheInterface;
-use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Search\SearchPagePolicy;
@@ -15,7 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
@@ -381,8 +380,8 @@ class ProductService
         // 데이터 가공 훅
         $data = HookManager::applyFilters('sirsoft-ecommerce.product.filter_update_data', $data, $product);
 
-        // XSS 방어: HTML 설명 정화
-        $data = $this->sanitizeDescription($data);
+        // XSS 방어: HTML 설명 정화 — 요청에 모드가 없으면 저장된 모드로 판정
+        $data = $this->sanitizeDescription($data, (string) ($product->description_mode ?? 'text'));
 
         // SEO 동기화 플래그 적용 (서버 SSoT — 필드 미전송 시 기존 상품값으로 폴백)
         $data = $this->applySeoSync($data, $product);
@@ -452,7 +451,7 @@ class ProductService
      * 주문 이력이 있는 상품은 삭제할 수 없습니다.
      *
      * @param  Product  $product  확인할 상품
-     * @return array{canDelete: bool, reason: string|null, relatedData: array}
+     * @return array{canDelete: bool, reason: string|null, relatedData: array} 삭제 가능 여부·불가 사유·연관 데이터 건수
      */
     public function checkCanDelete(Product $product): array
     {
@@ -527,6 +526,9 @@ class ProductService
 
             // 7. 카테고리 연결 해제 (중간 테이블)
             $product->categories()->detach();
+
+            // 7-1. 상품 설명 본문 미디어 영구 삭제 — 본문에서 빠져 소프트 삭제된 것 포함, 파일은 커밋 뒤 (#887)
+            app(ContentMediaPurger::class)->purgeForOwner(ContentMediaOwnerType::Product, $product->id);
 
             // === 미구현 연관 데이터 (테이블 생성 후 활성화) ===
 
@@ -1414,24 +1416,35 @@ class ProductService
      */
     protected function syncDescriptionMedia(Product $product, array $data): void
     {
-        app(ContentMediaService::class)->syncWithContent(
+        $result = app(ContentMediaService::class)->syncWithContent(
             ContentMediaOwnerType::Product,
             (int) $product->id,
             $product->description,
             ($product->description_mode ?? 'text') === 'html',
             isset($data['content_media_temp_key']) && is_string($data['content_media_temp_key']) ? $data['content_media_temp_key'] : null
         );
+
+        // 다른 상품·공통 정보의 본문 미디어를 이 상품 소유로 복제했으면 바뀐 설명을 다시 저장한다 — 같은 인스턴스를 갱신해
+        // 불러 둔 관계(옵션·분류·이미지)를 유지한다 (#887)
+        if (($result['cloned'] ?? 0) > 0 && array_key_exists('content', $result) && $result['content'] !== $product->description) {
+            $this->repository->update($product, ['description' => $result['content']]);
+        }
     }
 
     /**
      * 상품 설명 HTML을 정화합니다.
      *
+     * 모드는 요청의 `description_mode` 를 따르고, 요청에 없으면 저장된 모드를 따른다 — 모드를 보내지 않은 수정이 HTML 상품의 설명을
+     * 정화 없이 저장하지 않도록(공통 정보 `sanitizeContent` 와 같은 판정, #887).
+     *
      * @param  array  $data  상품 데이터
+     * @param  string  $currentMode  저장된 설명 모드 (요청에 `description_mode` 가 없을 때 — 생성은 기본값 text)
      * @return array 정화된 상품 데이터
      */
-    protected function sanitizeDescription(array $data): array
+    protected function sanitizeDescription(array $data, string $currentMode = 'text'): array
     {
-        if (! isset($data['description']) || ($data['description_mode'] ?? 'text') !== 'html') {
+        $mode = isset($data['description_mode']) && is_string($data['description_mode']) ? $data['description_mode'] : $currentMode;
+        if (! isset($data['description']) || $mode !== 'html') {
             return $data;
         }
 

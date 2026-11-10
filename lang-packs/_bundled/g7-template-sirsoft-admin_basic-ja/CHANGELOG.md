@@ -14,7 +14,7 @@
 - 관리자 기본 템플릿 1.1.5 의 확장 작업 경고 결과 창에서 확장 선언 오류를 알리는 문구(`admin.extensions.lifecycle_warnings.declaration_title`·`declaration_summary`·`declaration_description`·`declaration_hint`)의 일본어 번역을 추가했습니다.
 - 관리자 기본 템플릿 1.1.5 의 모듈·플러그인·템플릿 업데이트 창 「새 버전이 요구하는 확장을 먼저 확인하세요」 경고 상자 문구(`extensions.update_modal.requirements_*`)의 일본어 번역을 추가했습니다.
 - 관리자 기본 템플릿 1.1.5 의 사진 확대 창 화면 읽기 이름(`common.lightbox.*` — 창 이름 「画像の拡大表示」·닫기·이전·다음·확대·전체 화면·「{total}枚中{index}枚目」)의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.5 의 환경설정 「본문 콘텐츠」 탭 문구(`admin.settings.tabs.content` 「本文コンテンツ」·`admin.settings.content.*` — 허용 후보·추가 태그·외부 영상 서비스·서비스 추가 창·주소 유효 시간, 레이아웃 편집기 모달 이름 `admin.modal_label.admin_settings.embed_provider_form_modal` 「外部動画サービスの追加・編集」)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 환경설정 「본문 콘텐츠」 탭 문구(`admin.settings.tabs.content` 「本文コンテンツ」·`admin.settings.content.*` — 허용 기능(「許可する機能」 — 「動画アップロードの許可」·「音声アップロードの許可」 등)·추가 태그·외부 영상 서비스·서비스 추가 창·주소 유효 시간, 레이아웃 편집기 모달 이름 `admin.modal_label.admin_settings.embed_provider_form_modal` 「外部動画サービスの追加・編集」)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

@@ -28,7 +28,7 @@
 | 필드 | 타입 | 범위 | 의미 |
 | --- | --- | --- | --- |
 | `content.allow_figure_caption` | boolean | 기본 `true` | 그림 설명(`figcaption`) |
-| `content.allow_uploaded_video` · `content.allow_uploaded_audio` | boolean | 기본 `false` | 업로드한 동영상·오디오 재생 태그. 서빙 주소 패턴에 맞는 `src`·`poster` 만 남는다 |
+| `content.allow_uploaded_video` · `content.allow_uploaded_audio` | boolean | 기본 `false` | 동영상·오디오 업로드 허용(화면 이름 「동영상 업로드 허용」·「오디오 업로드 허용」). 꺼져 있으면 확장의 본문 미디어 규칙과 관계없이 그 종류의 업로드를 받지 않는다(`ContentMediaPolicy`). 켜면 업로드한 동영상·오디오의 재생 태그를 남기되, 서빙 주소 패턴에 맞는 `src`·`poster` 만 남는다 |
 | `content.allow_external_embed` | boolean | 기본 `true` | 외부 영상(`oembed`) — 켜진 서비스면 플레이어, 아니면 링크 |
 | `content.embed_presets` | object | 키: 프리셋 3종(`youtube`·`vimeo`·`tiktok`) 또는 `ext:{확장}:{id}` | 서비스별 켜기(불리언). 모르는 키는 422(`validation.settings.embed_preset_unknown`) |
 | `content.embed_custom_providers` | array | 최대 30 | 운영자 추가 서비스 `{id, name, enabled, url_patterns[], player_url, id_rule, aspect, allow[]}`(`enabled` 는 불리언만). 항목 번호·필드별 422 |
@@ -38,6 +38,18 @@
 공개 설정(`frontend_schema`)으로는 원본 값을 내보내지 않고 계산 값 `content.render_policy`(켜진 후보 태그·속성 규칙·미디어 출처 패턴·
 켜진 서비스의 컴파일 정규식과 플레이어 주소 틀)만 내려갑니다. 관리자 설정 응답의 `_meta.embed_extension_providers`
 (`[{key, extension, id, name}]`)는 확장이 `core.content.filter_embed_providers` 로 더한 서비스 목록으로, 화면이 켜기 칸을 그립니다.
+
+`render_policy.media_src_patterns`(미디어 출처 패턴)는 설정 값이 아니라 **확장이 등록한 실제 본문 미디어 서빙 라우트**에서 만들어집니다
+(7.1.5). 확장(모듈·플러그인)이 서빙 라우트 이름을 등록하면 그 라우트의 주소와 파라미터 제약(해시 12자 등)이 같은 출처 상대 주소 정규식
+(`^/api/…$`, 서명 쿼리 허용)이 되고, 꺼진 확장의 라우트는 빠집니다. 경로 모양만 흉내 낸 주소는 통과하지 못합니다. 등록 라우트 밖의 출처가
+필요한 확장은 필터 `core.content.filter_media_source_patterns` 로 정규식을 더합니다([미디어 출처 허용 패턴](../../extension/content-media.md#미디어-출처-허용-패턴)).
+
+화면 표시·봇 화면은 위 스위치를 따르지만 **저장 정화는 스위치와 무관합니다**(7.1.5). 저장 정화를 하는 확장은 `ContentHtmlPolicy::forStorage()`
+(후보·외부 영상 서비스를 모두 켠 규칙)와 `finalize($html, 'store')` 를 씁니다 — 끈 동안 저장해도 캡션·동영상·외부 영상이 원문에 남아 다시
+켜면 돌아옵니다. 저장 마무리는 모르는 서비스의 외부 영상(`<oembed url>`)도 링크로 바꾸지 않고 원문 그대로 두며(`url` 외 속성만 정리), 출처
+패턴에 맞지 않는 미디어 요소와 이벤트 속성·`javascript:` 주소는 지웁니다.
+
+관리자 설정 조회·저장 응답(`GET`·`POST /api/admin/settings`)에도 공개 설정의 계산 값(`frontend_schema` 의 `computed: true` — `general.site_logo_url`·`upload.allowed_extensions_formatted`·`seo.og_image_default_url`·`content.render_policy`)이 공개 설정과 같은 계산으로 실립니다. 저장 응답은 저장 뒤 값으로 계산하므로 화면이 새로고침 없이 전역 설정을 갱신할 수 있고, 저장 요청에 계산 값이 되돌아와도 서버가 버립니다.
 
 ### POST /api/admin/settings/content/embed-preview
 

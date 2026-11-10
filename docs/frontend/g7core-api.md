@@ -74,7 +74,7 @@
 | 상태 계약 | `G7Core.stateContracts` | 공개 전역 상태의 소유자와 모양 조회 | 현재 문서 |
 | 최근 검색어 | `G7Core.searchHistory`, `G7Core.useSearchHistory` | 검색 범위별 최근 검색어 읽기·기록·삭제·자동 저장 | 현재 문서 |
 | 본문 미디어 업로드 | `G7Core.contentMedia` | 편집기 본문 미디어 업로드 계약 판정(형식·크기·문서당 개수)·업로드·어댑터 교체 (engine-v1.89.0+) | [본문 미디어 계약](../extension/content-media.md#클라이언트-런타임-g7corecontentmedia) |
-| 본문 콘텐츠 규칙 | `G7Core.contentPolicy` | 코어 「본문 콘텐츠」 설정의 허용 태그·속성·미디어 출처·외부 영상 서비스 규칙 조회와 본문 정화 (engine-v1.90.0+) | [본문 미디어 계약](../extension/content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy) |
+| 본문 콘텐츠 규칙 | `G7Core.contentPolicy` | 코어 「본문 콘텐츠」 설정의 허용 태그·속성·미디어 출처·외부 영상 서비스 규칙 조회와 본문 정화 (engine-v1.90.0+) | [본문 미디어 계약](../extension/content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy) · [`render_policy` 필드 표](../extension/content-media.md#render_policy-필드) |
 | React Hooks | `G7Core.useControllableState` | 상태 패턴 훅 | [고급 API](g7core-api-advanced.md) |
 
 ### 사용 컨텍스트

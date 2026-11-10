@@ -19,7 +19,7 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 /**
  * 페이지 본문 미디어 — 업로드·연결·서빙 게이트 (#883 4단계)
  *
- * 임시로 올린 본문 미디어는 페이지 저장 때 본문(로케일마다)이 참조한 것만 이어지고, 빠지면 지워진다. 첨부 연결(파일 이동)은
+ * 임시로 올린 본문 미디어는 페이지 저장 때 본문(로케일마다)이 참조한 것만 이어지고, 빠져도 이전 버전이 참조하면 남는다(#887). 첨부 연결(파일 이동)은
  * 같은 임시 키여도 본문 미디어를 집어 가지 않는다. 서빙은 「발행 또는 열람권 또는 서명」, 응답 본문은 미발행일 때만 서명한다.
  *
  * @scenario-manifest modules/_bundled/sirsoft-page/tests/scenarios/page-content-media.yaml
@@ -44,13 +44,13 @@ class PageContentMediaTest extends ModuleTestCase
     }
 
     /**
-     * 저장 때 본문이 참조한 것만 잇고, 첨부 연결은 본문 미디어를 옮기지 않으며, 고쳐서 빼면 지운다. 서명 쿼리는 떼어 저장한다.
+     * 저장 때 본문이 참조한 것만 잇고, 첨부 연결은 본문 미디어를 옮기지 않으며, 고쳐서 빼도 이전 버전이 참조하면 남긴다. 서명 쿼리는 떼어 저장한다.
      *
      * @return void 반환값 없음
      *
      * @scenario case=sync
      *
-     * @effects referenced_linked, attachment_link_skips_content_media, removed_deleted, signed_query_stripped
+     * @effects referenced_linked, attachment_link_skips_content_media, removed_kept_while_version_references, signed_query_stripped
      */
     public function test_sync_links_referenced_and_removes_dropped(): void
     {
@@ -83,7 +83,8 @@ class PageContentMediaTest extends ModuleTestCase
         ]);
 
         $this->assertNotNull(PageAttachment::query()->find($a->id));
-        $this->assertNull(PageAttachment::query()->find($b->id), '본문에서 빠진 본문 미디어는 지운다');
+        // #887 G5: 본문에서 빠져도 이전 버전 본문이 참조하면 지우지 않고 페이지에 붙인 채 둔다(그 버전으로 복원할 수 있게)
+        $this->assertSame($page->id, (int) PageAttachment::query()->findOrFail($b->id)->page_id, '본문에서 빠져도 이전 버전이 참조하면 남긴다');
     }
 
     /**
