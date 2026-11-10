@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [7.1.5] - 2026-11-02
+## [7.1.5] - 2026-11-10
 
 API 요청 한 건마다 확장 정보를 다시 읽고 다시 조립하던 부팅 반복 비용을 줄였습니다. 응답 내용과 확장 동작은 그대로입니다.
 
