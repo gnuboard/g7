@@ -134,6 +134,8 @@ php artisan plugin:update sirsoft-hero_section --force
 | `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
 <!-- @generated:integrations END -->
 
+다른 모듈·플러그인은 위치 등록 필터로 노출 위치를 더할 수 있습니다. 위치를 등록하고, 배너가 보일 화면(템플릿 또는 자기 화면 레이아웃)에 위치 키와 같은 이름의 확장점을 두면 히어로가 그 자리에 슬라이더를 붙입니다. 히어로 코드를 고치거나 출력 조각을 복사하지 않아도 되고, 추가한 위치는 관리자에서 사이트 홈·쇼핑몰 메인처럼 따로 관리합니다. 순서와 예제는 [docs/extension-points.md](docs/extension-points.md) 「다른 확장이 위치를 더할 때 — 사이트 화면까지」에 있습니다.
+
 <!-- @intent START -->
 게시판·이커머스 모듈은 선택 연동입니다 — 켜져 있으면 히어로가 게시판 목록·상품 상세·카테고리 목록 위치를 스스로 더하고, 꺼지면 그 위치가 빠집니다(배너는 지우지 않고 「등록되지 않은 위치」로 남겨 두며, 다시 켜면 그대로 보입니다). 다른 모듈·플러그인은 필터 `sirsoft-hero_section.position.registered_positions` 로 위치를 더할 수 있습니다 — 계약과 예시는 [docs/extension-points.md](docs/extension-points.md).
 <!-- @intent END -->

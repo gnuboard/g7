@@ -63,14 +63,14 @@ class BuiltinPositionListener implements HookListenerInterface
 
         if (in_array('sirsoft-board', $active, true)) {
             $positions[] = ['key' => 'board_hero', 'label' => 'sirsoft-hero_section.admin.position.board_hero', 'order' => 100,
-                'target' => ['type' => 'board', 'label' => 'sirsoft-hero_section.admin.target.board', 'resolver' => BoardTargetResolver::class]];
+                'target' => ['type' => 'board', 'label' => 'sirsoft-hero_section.admin.target.board', 'resolver' => BoardTargetResolver::class, 'route_param' => 'slug']];
         }
 
         if (in_array('sirsoft-ecommerce', $active, true)) {
             $positions[] = ['key' => 'product_hero', 'label' => 'sirsoft-hero_section.admin.position.product_hero', 'order' => 110,
-                'target' => ['type' => 'product', 'label' => 'sirsoft-hero_section.admin.target.product', 'resolver' => ProductTargetResolver::class]];
+                'target' => ['type' => 'product', 'label' => 'sirsoft-hero_section.admin.target.product', 'resolver' => ProductTargetResolver::class, 'route_param' => 'product_code']];
             $positions[] = ['key' => 'category_hero', 'label' => 'sirsoft-hero_section.admin.position.category_hero', 'order' => 120,
-                'target' => ['type' => 'category', 'label' => 'sirsoft-hero_section.admin.target.category', 'resolver' => CategoryTargetResolver::class]];
+                'target' => ['type' => 'category', 'label' => 'sirsoft-hero_section.admin.target.category', 'resolver' => CategoryTargetResolver::class, 'route_param' => 'slug']];
         }
 
         return $positions;

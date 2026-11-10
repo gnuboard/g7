@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 플러그인 (sirsoft-hero_section) — 사이트 첫 화면 히어로섹션(메인 배너)의 데이터·관리 화면·사용자 슬라이더 소유
-2. 확장 방식: 템플릿은 확장점(`home_hero`·`shop_hero`, 동적 `board_hero`·`product_hero`·`category_hero`)을 두면 자동으로 붙고, 다른 확장은 위치 등록 필터로 위치를 더하며, 디자인은 `HeroSlider` 컴포넌트 오버라이드로 바꾼다
+2. 확장 방식: 템플릿은 확장점(`home_hero`·`shop_hero`, 동적 `board_hero`·`product_hero`·`category_hero`)을 두면 자동으로 붙고, 다른 확장은 위치 등록 필터로 위치를 더한 뒤 같은 이름의 확장점만 열면 히어로가 자리를 채우며, 디자인은 `HeroSlider` 컴포넌트 오버라이드로 바꾼다
 3. 건드리면 안 되는 것: 노출 상태를 저장하거나 PHP 에서 거르기(조회 시점 SQL 판정이 SSoT) · Repository 밖 쿼리 · 템플릿 소유 화면 직접 수정
 4. 작업 위치: `plugins/_bundled/sirsoft-hero_section` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-hero_section --force`
@@ -84,7 +84,7 @@
 
 <!-- @intent START -->
 - 템플릿: 확장점 `home_hero`·`shop_hero`(동적 `board_hero`·`product_hero`·`category_hero`)를 두면 붙는다. 디자인은 `HeroSlider` 오버라이드로 바꾼다(props 계약은 docs/extension-points.md).
-- 다른 확장: 위치 등록 필터로 위치(동적이면 대상 해석기까지)를 더한다(docs/extension-points.md 「위치 등록 필터」).
+- 다른 확장: 위치 등록 필터로 위치(동적이면 대상 해석기·`route_param` 까지)를 더하고 같은 이름의 확장점을 열면 히어로가 출력 조각을 붙인다(docs/extension-points.md 「위치 등록 필터」·「다른 확장이 위치를 더할 때」). 출력 조각은 내장 조각 파일이 원본이다 — 내장 조각을 바꾸면 `PositionFragment` 시험과 생성 표본(`generated_*.json`)도 함께 맞춘다.
 - 다른 확장: `sirsoft-hero_section.banner.*` 훅으로 저장 전후에 끼고, `sirsoft-hero_section.hero.filter_public_banners` 로 노출 목록을 가공한다.
 <!-- @intent END -->
 

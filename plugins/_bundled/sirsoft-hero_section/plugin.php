@@ -11,9 +11,10 @@ use Plugins\Sirsoft\HeroSection\Listeners\BannerActivityLogListener;
 use Plugins\Sirsoft\HeroSection\Listeners\BuiltinPositionListener;
 use Plugins\Sirsoft\HeroSection\Listeners\HeroCacheListener;
 use Plugins\Sirsoft\HeroSection\Listeners\PluginLifecycleListener;
+use Plugins\Sirsoft\HeroSection\Listeners\PositionOutputListener;
 use Plugins\Sirsoft\HeroSection\Listeners\SlotWidthHintListener;
-use Plugins\Sirsoft\HeroSection\Listeners\ThumbnailRegistrationListener;
 use Plugins\Sirsoft\HeroSection\Listeners\TargetChangeListener;
+use Plugins\Sirsoft\HeroSection\Listeners\ThumbnailRegistrationListener;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
 use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
@@ -43,6 +44,7 @@ class Plugin extends AbstractPlugin
             SlotWidthHintListener::class,
             ThumbnailRegistrationListener::class,
             TargetChangeListener::class,
+            PositionOutputListener::class,
         ];
     }
 

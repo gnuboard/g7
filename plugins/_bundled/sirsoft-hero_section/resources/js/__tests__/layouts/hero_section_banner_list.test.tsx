@@ -139,6 +139,20 @@ describe('히어로섹션 목록 화면', () => {
     expect(notice.props.role).toBe('status');
   });
 
+  // @scenario case=external_output_skips
+  it('다른 확장이 더한 동적 위치가 대상 값 경로를 주지 않아 히어로가 자리를 채우지 못하면 그 이유를 알린다', () => {
+    const notice = findById(list, 'no_auto_output_notice')!;
+    const shown = (autoOutput: boolean | undefined, registered = true) => {
+      const settings = positionSettings([{ key: 'acme_page_hero', label_key: null, label: '페이지', registered, dynamic: true, target: { type: 'page', label_key: null, label: '페이지', route_param: null }, auto_output: autoOutput }]);
+      return evaluateBinding(notice.if, { position_settings: settings }, evaluateComputed(list as any, { position_settings: settings, query: { position: 'acme_page_hero' } }));
+    };
+    expect(shown(false)).toBe(true);
+    expect(shown(true)).toBe(false);
+    expect(shown(undefined)).toBe(false);
+    expect(shown(false, false)).toBe(false);
+    expect(notice.text ?? JSON.stringify(notice)).toContain('admin.position.no_auto_output');
+  });
+
   // @scenario surface=list_row_label_and_control_names
   // @effects accessible_names_present
   it('표 행 이름은 제목이고, 선택칸·쪽 이동이 행 이름을 쓰는 표 계약을 따른다', () => {

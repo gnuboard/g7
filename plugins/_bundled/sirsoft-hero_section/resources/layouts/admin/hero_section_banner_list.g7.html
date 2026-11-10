@@ -181,6 +181,11 @@
         <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
         <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.target.missing|target={{_computed.targetTypeLabel}}</p>
       </div>
+      <!-- 다른 확장이 더한 동적 위치인데 대상 값 경로(route_param)가 없으면 히어로가 사이트 자리를 직접 채우지 못한다 — 그 확장이 자기 조각을 둘 때만 보인다 -->
+      <div data-ref="no_auto_output_notice" data-if="{{!_computed.isUnregistered &amp;&amp; _computed.currentDef?.auto_output === false}}" role="status" class="hs-alert-warning hs:mb-6">
+        <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
+        <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.position.no_auto_output</p>
+      </div>
       <!-- 활성 사용자 템플릿에 이 위치 자리(확장점)가 없으면 등록해도 사이트에 보이지 않는다 — 미리보기는 그대로 그리되 따로 알린다 -->
       <div data-ref="slot_missing_notice" data-if="{{!_computed.isUnregistered &amp;&amp; position_settings?.data?.editor?.preview_frame?.positions?.[_computed.currentPosition] === null}}" role="status" class="hs-alert-warning hs:mb-6">
         <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>

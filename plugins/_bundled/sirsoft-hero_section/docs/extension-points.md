@@ -46,7 +46,7 @@
 | `key` | ✅ | 위치 키 = 확장점 이름. 영문 소문자로 시작하고 소문자·숫자·`_` 2~50자(`/^[a-z][a-z0-9_]{1,49}$/`) |
 | `label` | ✅ | 관리자 탭 이름 — 화면 문구 키(문자열) 또는 언어별 객체(`{"ko": "…", "en": "…"}`) |
 | `order` | | 탭 순서(작을수록 앞, 기본 1000). 내장은 10·20(정적)·100·110·120(동적) |
-| `target` | | 있으면 동적 위치 — 배너가 대상마다 따로다. `type`(대상 종류 키) · `label`(대상 이름, 문구 키 또는 언어별 객체) · `resolver`(대상 해석기 클래스, `Plugins\Sirsoft\HeroSection\Contracts\TargetResolverInterface` 구현) |
+| `target` | | 있으면 동적 위치 — 배너가 대상마다 따로다. `type`(대상 종류 키) · `label`(대상 이름, 문구 키 또는 언어별 객체) · `resolver`(대상 해석기 클래스, `Plugins\Sirsoft\HeroSection\Contracts\TargetResolverInterface` 구현) · `route_param`(선택 — 화면 주소에서 대상 값을 읽을 경로 매개변수 이름, 예 `code` 면 `route.code`. 영문·숫자·`_` 1~50자. 있으면 히어로가 사이트 자리를 직접 채운다 — 아래 절) |
 
 ```php
 // 다른 플러그인의 리스너 — 이벤트 페이지마다 다른 배너를 두는 동적 위치
@@ -61,7 +61,7 @@ public function register(array $positions): array
         'key' => 'event_hero',
         'label' => ['ko' => '이벤트 페이지', 'en' => 'Event page'],
         'order' => 200,
-        'target' => ['type' => 'event', 'label' => ['ko' => '이벤트', 'en' => 'Event'], 'resolver' => EventTargetResolver::class],
+        'target' => ['type' => 'event', 'label' => ['ko' => '이벤트', 'en' => 'Event'], 'resolver' => EventTargetResolver::class, 'route_param' => 'code'],
     ];
 
     return $positions;
@@ -70,7 +70,7 @@ public function register(array $positions): array
 
 대상 해석기(`TargetResolverInterface`)는 다섯 가지를 한다 — `resolve($value)`: 화면이 아는 값(slug·코드·id)을 저장 키로(내장 해석기는 slug·상품 코드를 먼저, 없을 때만 숫자 id — 화면 주소가 가리키는 대상과 어긋나지 않게 같은 순서를 권한다), `exists($key)`: 저장 때 대상이 있는지, `labels($keys)`: 관리자 목록의 대상 이름(여러 개를 한 번에), `search($keyword, $limit)`: 관리자 대상 고르기 후보(`key`·`label`·`hint`), `siteUrl($key)`: 「사이트에서 보기」 주소. 해석기는 컨테이너로 만들어지므로 생성자 주입을 쓴다. 대상 고르기 목록은 히어로 조회 권한으로 대신 받아 준다(`GET /admin/positions/{position}/targets`) — 대상 모듈의 관리 권한이 없는 히어로 관리자도 고를 수 있다.
 
-- 어긋난 정의(키 형식 위반·이미 있는 키·이름 없음·대상 정의 불완전·해석기 계약 위반)는 버리고 경고 로그를 남긴다. 화면은 깨지지 않는다. 같은 키는 먼저 온 쪽이 이긴다 — 내장 키를 가로챌 수 없다.
+- 어긋난 정의(키 형식 위반·이미 있는 키·이름 없음·대상 정의 불완전·해석기 계약 위반·`route_param` 형식 위반)는 그 정의만 버리고 경고 로그를 남긴다. 화면은 깨지지 않는다. 같은 키는 먼저 온 쪽이 이긴다 — 내장 키를 가로챌 수 없다.
 - 슬라이더 설정(자동 넘김·효과·표시 폭 등)은 위치 단위다 — 동적 위치의 모든 대상에 함께 적용된다.
 - 위치를 더한 확장을 끄면 그 위치는 목록에서 빠지지만 배너는 지우지 않는다. 관리자 목록 끝에 「등록되지 않은 위치」 탭으로 남아 확인·수정·삭제만 되고 사이트에는 나가지 않는다. 다시 켜면 그대로 보인다. 대상이 지워져도(게시판 삭제 등) 배너는 남고 「없는 대상」으로 보인다.
 - 위치 목록은 요청마다 다시 모은다(모듈을 켜고 끄면 바로 따른다). 한 요청 안에서는 한 번만 모은다.
@@ -78,46 +78,57 @@ public function register(array $positions): array
 
 ### 다른 확장이 위치를 더할 때 — 사이트 화면까지
 
-필터로 위치를 더하면 관리자 쪽(위치 탭·배너 등록·순서·미리보기·위치별 슬라이더 설정·공개 API·공개 캐시·「등록되지 않은 위치」 보존)은 히어로가 알아서 맞춘다. **사이트 화면에 배너를 그리는 조각은 위치를 더한 확장이 직접 둔다** — 히어로는 자기가 아는 자리(`home_hero`·`shop_hero`·`board_hero`·`product_hero`·`category_hero`)에만 조각을 붙인다. 히어로 코드는 고치지 않는다.
+필터 등록은 **위치를 선언하는 일**이고, 사이트에서 배너가 보일 **자리는 템플릿이 연다**. 필터만 등록한다고 아무 화면에나 배너가 끼워지지 않는다. 위치를 더한 확장이 하는 일은 둘이다 — 히어로 코드를 고치거나 히어로 조각을 복사하지 않는다.
 
-1. **위치 등록** — 위 필터로 `key`·`label`(동적이면 `target`)을 더한다.
-2. **자리** — 배너가 붙을 화면 레이아웃 본문 맨 앞에 위치 키와 같은 이름의 빈 확장점을 둔다: `<extension-point name="event_hero"><default/></extension-point>`. 화면 전체 폭·메뉴 겹침까지 쓰려면 아래 「표시 폭」·「메뉴 겹침」 계약대로 본문 상자 클래스를 확장점 속성으로 넘긴다.
-3. **조각** — 자기 확장의 `resources/extensions/` 에 그 확장점을 겨냥한 조각을 둔다. 히어로 조각과 같은 모양이고, data-source 이름은 자기 확장 접두로, 위치 키는 자기 키로 바꾼다. 히어로가 꺼져 있으면 슬라이더 컴포넌트가 없으므로 `data-if` 로 히어로가 켜져 있을 때만 그린다(첫 화면 설정 `_global.plugins['sirsoft-hero_section']` 는 히어로가 켜져 있을 때만 있다). 공개 API 는 히어로가 꺼지면 응답이 없어 `fallback` 값(null)으로 떨어진다.
-
-   정적 위치(화면 하나에 배너 한 벌):
+1. **위치 등록** — 위 필터로 `key`·`label`(동적이면 `target` 과 `target.route_param`)을 더한다.
+2. **자리 열기** — 배너가 붙을 화면 레이아웃(자기 확장의 화면이면 그 레이아웃, 템플릿 화면이면 템플릿) 본문 맨 앞에 위치 키와 같은 이름의 확장점을 둔다.
 
    ```html
-   <extension extension-point="event_hero" mode="append" priority="50">
-     <sirsoft-hero_section.hero-slider data-type="composite" data-ref="acmeEventHero_slider" data-if="{{_global.plugins?.['sirsoft-hero_section'] != null}}" banners="{{acmeEventHero?.data?.banners ?? []}}" loading="{{acmeEventHero == null}}" skeletonWidth="{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.event_hero ?? ''}}" skeletonBanners="{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.event_hero}}" skeletonOverlay="{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.event_hero}}" editable="{{acmeEventHero?.data?.abilities?.can_update === true}}" settings="{{acmeEventHero?.data?.settings}}" position="event_hero" contentClass="{{extensionPointProps?.contentClass ?? ''}}">
-       <responsive on="desktop" contentClass="{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}"/>
-     </sirsoft-hero_section.hero-slider>
-     <data-source id="acmeEventHero" type="api" endpoint="/api/plugins/sirsoft-hero_section/hero" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="background">
-       <params position="event_hero"/>
-       <fallback :data="null"/>
-     </data-source>
-   </extension>
+   <extension-point name="acme_event_main_hero" contentClass="max-w-7xl mx-auto px-4"><default/></extension-point>
    ```
 
-   동적 위치(이벤트마다 배너 — 화면 주소 값 `route.slug` 를 대상으로 넘긴다. 경로 이름이 다르면 그 값으로 바꾼다):
+   히어로가 켜져 있으면 레이아웃을 낼 때 이 자리에 내장 위치와 같은 출력 조각을 붙인다 — 공개 API 조회(로그인했으면 토큰을 실어 수정 권한까지), 받는 동안 스켈레톤(정적 위치는 첫 로드 힌트, 동적 위치는 대상별 브라우저 기억), 배너 없음·조회 실패면 아무것도 그리지 않음, 현재 언어 문구, 관리 권한 회원의 「관리자에서 수정」 단추, 위치 설정의 표시 폭·메뉴 겹침, SPA 로 다른 대상으로 옮길 때 다시 조회하고 앞 대상 응답을 가리는 처리까지 같다. 조각은 내장 조각 파일(`home_hero`·`board_hero`)이 원본이라 내장 위치를 고치면 함께 바뀐다. 확장점 속성(`contentClass`·`contentClassDesktop`)은 아래 「표시 폭」 계약대로 본문 상자 클래스로 쓴다. 동적 위치는 `route_param` 이 가리키는 주소 값(`route.code` 등)을 대상으로 넘긴다.
+
+   예 — 이벤트 플러그인이 이벤트 메인(정적)과 이벤트 상세(동적, 주소 `/events/{code}`)에 배너를 두는 경우:
+
+   ```php
+   public function register(array $positions): array
+   {
+       $positions[] = ['key' => 'acme_event_main_hero', 'label' => ['ko' => '이벤트 메인', 'en' => 'Event main'], 'order' => 200];
+       $positions[] = ['key' => 'acme_event_page_hero', 'label' => ['ko' => '이벤트 상세', 'en' => 'Event detail'], 'order' => 210,
+           'target' => ['type' => 'event', 'label' => ['ko' => '이벤트', 'en' => 'Event'], 'resolver' => EventTargetResolver::class, 'route_param' => 'code']];
+
+       return $positions;
+   }
+   ```
 
    ```html
-   <extension extension-point="event_page_hero" mode="append" priority="50">
-     <sirsoft-hero_section.hero-slider data-type="composite" data-ref="acmeEventPageHero_slider" data-if="{{_global.plugins?.['sirsoft-hero_section'] != null}}" banners="{{acmeEventPageHero?.data?.target === String(route?.slug ?? '') ? (acmeEventPageHero?.data?.banners ?? []) : []}}" loading="{{acmeEventPageHero == null || (acmeEventPageHero?.data != null &amp;&amp; acmeEventPageHero.data.target !== String(route?.slug ?? ''))}}" editable="{{acmeEventPageHero?.data?.abilities?.can_update === true}}" settings="{{acmeEventPageHero?.data?.settings}}" position="event_page_hero" target="{{String(route?.slug ?? '')}}" contentClass="{{extensionPointProps?.contentClass ?? ''}}">
-       <responsive on="desktop" contentClass="{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}"/>
-     </sirsoft-hero_section.hero-slider>
-     <data-source id="acmeEventPageHero" type="api" endpoint="/api/plugins/sirsoft-hero_section/hero" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="background">
-       <params position="event_page_hero" target="{{route?.slug}}"/>
-       <fallback :data="null"/>
-     </data-source>
-   </extension>
+   <!-- 이벤트 메인 화면 레이아웃 -->
+   <extension-point name="acme_event_main_hero"><default/></extension-point>
+   <!-- 이벤트 상세 화면 레이아웃 (경로 /events/:code) -->
+   <extension-point name="acme_event_page_hero"><default/></extension-point>
    ```
 
-   동적 조각은 응답이 되돌려 준 `target` 이 지금 주소 값과 같을 때만 배너를 넘긴다 — SPA 로 다른 대상으로 옮긴 사이 도착한 앞 대상 응답이 보이지 않는다. 동적 위치는 첫 로드 힌트(`slot_*`)가 없어 `skeleton*` 을 넘기지 않는다. 정적 위치의 첫 로드 힌트는 히어로가 위치 목록이 바뀔 때(다른 확장을 켜고 끌 때 포함) 다시 맞추므로 따로 할 일이 없다.
-4. **의존 선언** — 히어로 없이는 의미가 없는 화면이면 `dependencies` 에, 히어로가 있을 때만 배너를 붙이는 선택 기능이면 `integrations` 에 `sirsoft-hero_section` 을 적는다.
-5. **대상 변경 반영(동적 위치)** — 대상의 주소 값이 바뀌거나 대상이 지워질 때 `app(PublicHeroService::class)->forgetTargets('위치 키')` 를 부른다(위 목록 참고).
-6. **이름** — `label` 을 언어별 객체로 주면 관리자 탭과 활동 로그 목록에 그 이름이 보인다. 화면 문구 키(문자열)로 주면 관리자 탭은 번역되지만, 활동 로그(서버 문구)는 그 키를 읽지 못해 위치 키가 그대로 보인다.
+3. **배너 관리·확인** — 관리자 「히어로섹션 관리」에 위치 탭(이벤트 메인·이벤트 상세)이 생긴다. 등록·수정·순서 변경·미리보기·위치별 슬라이더 설정·검증·권한은 내장 위치와 같다(동적 위치는 대상을 먼저 고른다). 배너를 등록하고 그 화면을 열어 보이는지 확인한다.
 
-위 두 조각은 시험용 조각(`resources/js/__tests__/fixtures/third_party_event_hero.json`·`third_party_event_page_hero.json`)과 같은 내용이다 — 시험이 히어로 자기 조각과의 계약 일치, 엔진의 실제 렌더, 히어로가 꺼졌을 때 그리지 않음을 본다. 히어로 조각 계약을 바꾸면 이 예시도 함께 고친다.
+자리 안에 다른 위치 자리를 두거나, 표·카드 셀·펼침 행·하위 행 같은 반복 템플릿 안에 자리를 두어도(코어가 확장점을 처리하는 자리) 각 자리를 한 번씩 채운다. 자리를 채우지 않는 경우 — 이미 그 위치의 히어로 슬라이더가 든 자리(내장 위치, 확장이 자기 조각을 둔 자리. 위치를 바인딩 식으로 준 슬라이더·반복 템플릿 셀 안의 슬라이더도 그 자리 것으로 본다. 안쪽 다른 자리의 슬라이더는 세지 않는다), 레이아웃에 같은 id(`heroSection_{위치 키}`)의 다른 데이터 소스가 있는 자리(경고 로그), 레이아웃 편집기에서 연 화면(붙인 노드가 편집 저장으로 레이아웃에 섞이지 않게), 등록되지 않은 위치(확장을 껐을 때), `route_param` 없는 동적 위치. 히어로를 끄면 채우는 처리도 빠져 자리는 비고(확장점의 `default` 가 보인다), 관리자에게는 히어로가 없으니 탭도 없다.
+
+| 관리자에서 보이는 것 | 뜻 | 할 일 |
+|---|---|---|
+| 위치 탭이 있음 | 위치가 등록됨(위치를 더한 확장이 켜져 있음) | — |
+| 「지금 쓰는 사이트 템플릿에서 이 배너 자리를 찾지 못했습니다」 | 활성 사용자 템플릿에 그 이름의 확장점이 없음 | 템플릿(또는 자기 화면 레이아웃)에 자리를 연다 |
+| 「…route_param 을 알려 주지 않아…」 | 동적 위치인데 대상 값 경로가 없어 히어로가 자리를 채우지 않음 | `target.route_param` 을 등록하거나 자기 조각을 둔다 |
+| 「등록되지 않은 위치」 탭 | 위치를 더한 확장이 꺼짐 — 배너는 남아 있고 사이트에 나가지 않음 | 확장을 다시 켜면 그대로 보인다 |
+| 「지금 노출 중 0개」 | 자리는 있으나 노출 중인 배너 없음(동적 위치는 그 대상에) | 배너를 등록하거나 기간·사용 여부를 확인한다 |
+
+그 밖의 의무:
+
+- **의존 선언** — 히어로 없이는 의미가 없는 화면이면 `dependencies` 에, 히어로가 있을 때만 배너를 붙이는 선택 기능이면 `integrations` 에 `sirsoft-hero_section` 을 적는다.
+- **대상 변경 반영(동적 위치)** — 대상의 주소 값이 바뀌거나 대상이 지워질 때 `app(PublicHeroService::class)->forgetTargets('위치 키')` 를 부른다(위 목록 참고).
+- **이름** — `label` 을 언어별 객체로 주면 관리자 탭과 활동 로그 목록에 그 이름이 보인다. 화면 문구 키(문자열)로 주면 관리자 탭은 번역되지만, 활동 로그(서버 문구)는 그 키를 읽지 못해 위치 키가 그대로 보인다.
+- **자기 조각을 둘 때** — 출력 모양을 바꾸거나 대상 값을 주소 매개변수 하나로 읽을 수 없으면, 자기 확장의 `resources/extensions/` 에 그 확장점을 겨냥한 조각을 둔다. 그 자리에 히어로 슬라이더가 있으면 히어로는 채우지 않는다. 히어로가 붙이는 조각(`resources/js/__tests__/fixtures/generated_acme_event_hero.json`·`generated_acme_event_page_hero.json`)을 출발점으로 data-source 이름·위치 키를 자기 것으로 바꾸고, 히어로가 꺼졌을 때 그리지 않게 `data-if="{{_global.plugins?.['sirsoft-hero_section'] != null}}"` 를 붙인다(예: `third_party_event_hero.json`·`third_party_event_page_hero.json`).
+
+히어로가 붙이는 조각과 위 표본은 시험이 지킨다 — 빌더 출력이 내장 조각과 같은지, 표본이 빌더 출력과 같은지, 실제 레이아웃 병합이 자리(중첩·반복 템플릿 포함)를 채우는지, 엔진이 그 조각과 실제 슬라이더로 배너를 그리는지 본다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -126,6 +137,7 @@ public function register(array $positions): array
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
 | `core.activity_log.filter_description_params` | filter | `ActivityLogDescriptionResolver` | `resolveDescriptionParams` | 10 |
+| `core.layout_extension.after_apply` | filter | `PositionOutputListener` | `fill` | 50 |
 | `core.modules.after_activate` | action (미선언) | `SlotWidthHintListener` | `onExtensionEvent` | 20 |
 | `core.modules.after_deactivate` | action (미선언) | `SlotWidthHintListener` | `onExtensionEvent` | 20 |
 | `core.modules.after_update` | action (미선언) | `SlotWidthHintListener` | `onExtensionEvent` | 20 |

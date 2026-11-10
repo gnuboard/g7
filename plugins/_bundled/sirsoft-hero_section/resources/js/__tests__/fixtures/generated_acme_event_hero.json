@@ -1,0 +1,47 @@
+{
+    "components": [
+        {
+            "id": "heroSection_acme_event_hero_slider",
+            "type": "composite",
+            "name": "sirsoft-hero_section.HeroSlider",
+            "responsive": {
+                "desktop": {
+                    "comment": "템플릿이 확장점으로 넘긴 본문 상자 클래스 — 데스크톱은 따로 넘긴 값(없으면 기본 값). 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구·넘김 단추에 쓴다",
+                    "props": {
+                        "contentClass": "{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}"
+                    }
+                }
+            },
+            "props": {
+                "banners": "{{heroSection_acme_event_hero?.data?.banners ?? []}}",
+                "loading": "{{heroSection_acme_event_hero == null}}",
+                "skeletonWidth": "{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.acme_event_hero ?? ''}}",
+                "skeletonBanners": "{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.acme_event_hero}}",
+                "editable": "{{heroSection_acme_event_hero?.data?.abilities?.can_update === true}}",
+                "skeletonOverlay": "{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.acme_event_hero}}",
+                "settings": "{{heroSection_acme_event_hero?.data?.settings}}",
+                "position": "acme_event_hero",
+                "contentClass": "{{extensionPointProps?.contentClass ?? ''}}"
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "heroSection_acme_event_hero",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.positionHero",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/hero",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "background",
+            "params": {
+                "position": "acme_event_hero"
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "지금 노출 중인 배너 — 로그인하지 않아도 받는다. 로그인했으면 토큰을 실어 수정 권한(abilities.can_update)을 함께 받는다. 실패하면 빈 값으로 떨어져 슬라이더를 그리지 않는다"
+        }
+    ]
+}

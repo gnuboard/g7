@@ -11,6 +11,7 @@
             "heroSectionShop": "Shop main banners",
             "target_info": "Chosen target",
             "heroSectionBoard": "Board list banners",
+            "positionHero": "Added position banners",
             "heroSectionProduct": "Product detail banners",
             "heroSectionCategory": "Category list banners"
         },
@@ -83,7 +84,8 @@
             "product_hero": "Product detail",
             "category_hero": "Category list",
             "unregistered": "Unregistered position",
-            "unregistered_notice": "The extension (module or plugin) that adds this position is turned off, so these banners are not shown on the site. They are kept, and appear again when the extension is turned back on. On this tab you can only review, edit and delete them."
+            "unregistered_notice": "The extension (module or plugin) that adds this position is turned off, so these banners are not shown on the site. They are kept, and appear again when the extension is turned back on. On this tab you can only review, edit and delete them.",
+            "no_auto_output": "The extension that adds this position does not say how to read the target from the page address (route_param), so the hero section does not fill the site slot itself. If that extension ships its own output fragment, banners still show; otherwise they do not appear on the site."
         },
         "target": {
             "board": "Board",

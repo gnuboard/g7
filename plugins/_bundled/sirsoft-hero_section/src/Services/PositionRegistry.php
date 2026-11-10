@@ -154,6 +154,10 @@ class PositionRegistry
                 || ! is_string($resolver) || ! is_subclass_of($resolver, TargetResolverInterface::class)) {
                 return $this->reject('대상 정의(type·label·resolver)가 맞지 않습니다', $key);
             }
+            $routeParam = $target['route_param'] ?? null;
+            if ($routeParam !== null && (! is_string($routeParam) || preg_match(PositionDefinition::ROUTE_PARAM_PATTERN, $routeParam) !== 1)) {
+                return $this->reject('대상 경로 매개변수(route_param) 형식이 맞지 않습니다', $key);
+            }
         }
 
         return new PositionDefinition(
@@ -163,6 +167,7 @@ class PositionRegistry
             targetType: $target['type'] ?? null,
             targetLabel: $target['label'] ?? null,
             resolver: $target['resolver'] ?? null,
+            routeParam: $target['route_param'] ?? null,
         );
     }
 

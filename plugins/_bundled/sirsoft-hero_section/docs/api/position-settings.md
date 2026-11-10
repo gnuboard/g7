@@ -49,7 +49,8 @@ _단건 응답: 위치 목록·위치별 슬라이더 설정·업로드 한도._
 | positions[].label | string\|null | `null` | 확장이 준 언어별 이름을 현재 언어로 고른 값(번역 키로 받았으면 null, 등록되지 않은 위치는 위치 키) |
 | positions[].registered | boolean | `true` | 지금 등록된 위치인지 |
 | positions[].dynamic | boolean | `false` | 대상마다 배너를 따로 두는 동적 위치인지 |
-| positions[].target | object\|null | `null` | 동적 위치의 대상 정의 `{type, label_key, label}` — 정적 위치는 null |
+| positions[].target | object\|null | `null` | 동적 위치의 대상 정의 `{type, label_key, label, route_param}` — `route_param` 은 화면 주소에서 대상 값을 읽는 경로 매개변수 이름(없으면 null). 정적 위치는 null |
+| positions[].auto_output | boolean | `true` | 템플릿에 같은 이름의 확장점만 있으면 히어로가 사이트 자리를 직접 채우는지 — 정적 위치와 `route_param` 이 있는 동적 위치는 true, 등록되지 않은 위치는 false |
 | positions[].settings | object | `{"autoplay":true,"interval_seconds":5,"effect":"slide","width":"content"}` | `autoplay`·`interval_seconds`(3·5·7)·`effect`(`slide`·`fade`·`cube`·`flip`·`coverflow`·`creative`·`none`)·`width`(`content`·`full`)·`header_overlay`(boolean)·`pagination`(`dots`·`progress`·`tabs`·`fraction`), 저장 전이면 기본값 |
 | upload.max_mb | integer | `5` | 플러그인 설정의 이미지 최대 용량(MB) |
 | upload.server_limit_mb | integer | `2` | PHP `upload_max_filesize`·`post_max_size` 중 작은 값(MB) |

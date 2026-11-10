@@ -14,6 +14,8 @@ import home from '../../../extensions/home_hero.json';
 import board from '../../../extensions/board_hero.json';
 import staticFragment from '../fixtures/third_party_event_hero.json';
 import dynamicFragment from '../fixtures/third_party_event_page_hero.json';
+import generatedStatic from '../fixtures/generated_acme_event_hero.json';
+import generatedDynamic from '../fixtures/generated_acme_event_page_hero.json';
 
 /** 슬라이더 자리 표시 — 엔진이 넘긴 props 를 글자로 보인다(슬라이더 자체 동작은 HeroSlider 시험이 본다). */
 const SliderProbe: React.FC<any> = ({ position, target, banners, loading }) => (
@@ -95,6 +97,27 @@ describe('다른 확장이 더한 위치의 조각', () => {
     cleanups.push(c.test.cleanup);
     const stale = c.container.querySelector('[data-testid="hero-slider"]')!;
     expect(stale.textContent).not.toContain('봄 이벤트');
+    expect(stale.getAttribute('data-loading')).toBe('true');
+  });
+
+  // @scenario case=external_output_renders
+  it('히어로가 자리를 채운 조각(생성 표본 — PHPUnit 이 빌더 출력과 같은지 본다)도 엔진이 그 위치 배너를 그린다 — 동적은 등록한 경로 매개변수(route.code) 값의 응답일 때만', async () => {
+    const a = await renderFragment(generatedStatic, 'heroSection_acme_event_hero', { data: { position: 'acme_event_hero', target: null, banners: [{ id: 11, title: '자동 이벤트 배너' }], settings: {} } }, { initialState: { _global: heroOn } });
+    cleanups.push(a.test.cleanup);
+    const slider = a.container.querySelector('[data-testid="hero-slider"]')!;
+    expect(slider.getAttribute('data-position')).toBe('acme_event_hero');
+    expect(slider.textContent).toContain('자동 이벤트 배너');
+
+    const b = await renderFragment(generatedDynamic, 'heroSection_acme_event_page_hero', { data: { position: 'acme_event_page_hero', target: 'summer', banners: [{ id: 12, title: '여름 페이지 배너' }], settings: {} } }, { initialState: { _global: heroOn }, routeParams: { code: 'summer' } });
+    cleanups.push(b.test.cleanup);
+    const page = b.container.querySelector('[data-testid="hero-slider"]')!;
+    expect(page.getAttribute('data-target')).toBe('summer');
+    expect(page.textContent).toContain('여름 페이지 배너');
+
+    const c = await renderFragment(generatedDynamic, 'heroSection_acme_event_page_hero', { data: { position: 'acme_event_page_hero', target: 'spring', banners: [{ id: 13, title: '봄 페이지 배너' }], settings: {} } }, { initialState: { _global: heroOn }, routeParams: { code: 'summer' } });
+    cleanups.push(c.test.cleanup);
+    const stale = c.container.querySelector('[data-testid="hero-slider"]')!;
+    expect(stale.textContent).not.toContain('봄 페이지 배너');
     expect(stale.getAttribute('data-loading')).toBe('true');
   });
 

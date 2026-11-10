@@ -17,6 +17,11 @@ final class PositionDefinition
     public const KEY_PATTERN = '/^[a-z][a-z0-9_]{1,49}$/';
 
     /**
+     * 화면 주소에서 대상 값을 읽을 경로 매개변수 이름 형식(`route.{이름}`)
+     */
+    public const ROUTE_PARAM_PATTERN = '/^[A-Za-z_][A-Za-z0-9_]{0,49}$/';
+
+    /**
      * PositionDefinition 생성자
      *
      * @param  string  $key  위치 키
@@ -25,6 +30,7 @@ final class PositionDefinition
      * @param  string|null  $targetType  대상 종류 (정적 위치면 null)
      * @param  string|array<string, string>|null  $targetLabel  대상 이름
      * @param  class-string<TargetResolverInterface>|null  $resolver  대상 해석기 클래스
+     * @param  string|null  $routeParam  화면 주소에서 대상 값을 읽을 경로 매개변수 이름(자동 출력에 쓴다, 없으면 자동 출력하지 않는다)
      */
     public function __construct(
         public readonly string $key,
@@ -33,6 +39,7 @@ final class PositionDefinition
         public readonly ?string $targetType = null,
         public readonly string|array|null $targetLabel = null,
         public readonly ?string $resolver = null,
+        public readonly ?string $routeParam = null,
     ) {}
 
     /**

@@ -1,0 +1,46 @@
+{
+    "components": [
+        {
+            "id": "heroSection_acme_event_page_hero_slider",
+            "type": "composite",
+            "name": "sirsoft-hero_section.HeroSlider",
+            "responsive": {
+                "desktop": {
+                    "comment": "템플릿이 확장점으로 넘긴 본문 상자 클래스 — 데스크톱은 따로 넘긴 값(없으면 기본 값). 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구·넘김 단추에 쓴다",
+                    "props": {
+                        "contentClass": "{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}"
+                    }
+                }
+            },
+            "props": {
+                "banners": "{{heroSection_acme_event_page_hero?.data?.target === String(route?.code ?? '') ? (heroSection_acme_event_page_hero?.data?.banners ?? []) : []}}",
+                "loading": "{{heroSection_acme_event_page_hero == null || (heroSection_acme_event_page_hero?.data != null && heroSection_acme_event_page_hero.data.target !== String(route?.code ?? ''))}}",
+                "editable": "{{heroSection_acme_event_page_hero?.data?.abilities?.can_update === true}}",
+                "settings": "{{heroSection_acme_event_page_hero?.data?.settings}}",
+                "position": "acme_event_page_hero",
+                "target": "{{String(route?.code ?? '')}}",
+                "contentClass": "{{extensionPointProps?.contentClass ?? ''}}"
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "heroSection_acme_event_page_hero",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.positionHero",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/hero",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "background",
+            "params": {
+                "position": "acme_event_page_hero",
+                "target": "{{route?.code}}"
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "이 게시판의 노출 배너 — 로그인하지 않아도 받는다. 로그인했으면 토큰을 실어 수정 권한(abilities.can_update)을 함께 받는다. 주소 값이 바뀌면 엔진이 다시 부른다"
+        }
+    ]
+}

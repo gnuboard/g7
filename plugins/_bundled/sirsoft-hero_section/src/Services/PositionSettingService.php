@@ -64,7 +64,10 @@ class PositionSettingService
                 'type' => $definition->targetType,
                 'label_key' => $definition->targetLabelKey(),
                 'label' => $definition->targetLabel(),
+                'route_param' => $definition->routeParam,
             ] : null,
+            // 템플릿에 같은 이름의 확장점만 있으면 히어로가 그 자리를 채우는가 — 동적 위치는 대상 값 경로가 있어야 한다
+            'auto_output' => ! $definition->isDynamic() || $definition->routeParam !== null,
             'settings' => $settingsOf($definition->key),
         ], $this->registry()->all()));
 
@@ -77,6 +80,7 @@ class PositionSettingService
                 'registered' => false,
                 'dynamic' => false,
                 'target' => null,
+                'auto_output' => false,
                 'settings' => $settingsOf($key),
             ];
         }

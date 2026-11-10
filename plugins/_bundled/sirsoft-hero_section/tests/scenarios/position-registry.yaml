@@ -10,6 +10,10 @@ description: |
   모듈 DB 상태에 기대지 않도록 PHPUnit 은 켜진 모듈을 고정하고(`PinsActiveModules`), 동적 위치는 시험용 위치 `fake_hero`(가짜 해석기)로 본다 —
   제3 확장이 위치를 더하는 길과 같다. 내장 해석기 3종은 모듈 저장소를 목으로 바꿔 따로 본다 — 화면 값은 slug·상품 코드를 먼저 찾고 없을 때만 숫자 id 로 찾는다(숫자 slug 가 다른 대상 id 와 겹치면 slug 쪽). 위치를 더한 확장이 자기 화면에 두는 조각은
   문서 예시와 같은 시험용 조각으로 히어로 자기 조각과의 계약 일치·엔진 실제 렌더·히어로 꺼짐을 본다.
+  다른 확장이 더한 위치는 템플릿이 같은 이름의 확장점만 두면 히어로가 레이아웃을 낼 때 자리를 채운다(내장 조각 파일이 원본인 출력 조각,
+  동적 위치는 등록한 경로 매개변수로 대상 값을 읽는다) — 실제 레이아웃 병합으로 채움·건너뜀(이미 슬라이더가 든 자리·편집기·미등록·경로
+  매개변수 없음)을 보고, 자리 안의 자리·반복 템플릿(표·카드 셀, 펼침 행, 하위 행) 안의 자리도 리스너 한 번 실행으로 채우는지 본다.
+  생성 조각은 실제 HeroSlider 로도 그려 본다. 외부 정적 위치의 관리·검증·공개 API, 확장을 껐다 켤 때 배너 보존을 본다.
 
 axes:
   case:
@@ -17,6 +21,11 @@ axes:
     - builtin_dynamic_positions_follow_modules
     - third_party_position_added
     - third_party_fragment_contract
+    - external_output_shares_builtin_fragment
+    - external_output_renders
+    - external_output_skips
+    - external_static_position_managed
+    - external_position_lifecycle
     - third_party_fragment_renders
     - invalid_position_definitions_dropped
     - builtin_target_resolvers
@@ -51,11 +60,13 @@ test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerPlacementTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Public/HeroTargetTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Positions/ExternalPositionTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Installation/BannerEditorMigrationTest.php
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_extensions.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/third_party_fragments.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/external_position_output.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/dynamic-positions.spec.ts
 
