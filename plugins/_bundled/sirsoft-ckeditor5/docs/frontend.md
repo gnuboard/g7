@@ -170,6 +170,15 @@ html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언. 하
 `main.css` 를 고칠 때는 파일 머리말의 우선순위 규칙을 지킵니다. 이 파일은 부팅 때 실리고 동봉 `ckeditor5.css` 는 편집기·본문이
 뜰 때 뒤늦게 실리므로, 같은 우선순위면 동봉 CSS 가 이깁니다 — 그래서 다크가 아닌 보정 규칙에는 `:root ` 접두를 붙이고,
 CKEditor 변수 덮어쓰기는 `.dark` 가 아니라 `html.dark` 에 둡니다. 실행 중에 정해지는 값은 `el.style.x = …`·
-`el.style.setProperty()` 로 싣습니다(정책이 막지 않습니다). CKEditor 라이브러리가 스스로 넣는 스타일은 이 플러그인이
-바꾸지 않습니다.
+`el.style.setProperty()` 로 싣습니다(정책이 막지 않습니다).
+
+편집 화면의 서식(정렬·들여쓰기·글자색·배경색·표 테두리·이미지 크기)은 CKEditor 가 요소의 `style` 속성으로 씁니다.
+엄격한 정책은 그 속성 쓰기를 막으므로, `resources/js/handlers/editingViewStyle.ts` 의 함수 플러그인이 편집 화면 변환기
+(`editor.editing.view.domConverter`)의 `setDomElementAttribute` 를 인스턴스 단위로 덮어써 `style` 만
+`el.style.cssText` 로 입힙니다. `initEditor.ts` 가 편집기를 만들 때마다 `extraPlugins` 로 항상 싣습니다. 안전 판정은
+CKEditor 원본과 같게 하고 거짓이면 원본으로 넘깁니다. 저장용 변환기와 프로토타입은 건드리지 않아 저장되는 HTML 은
+그대로입니다. 동봉 판을 올릴 때는 그 메서드의 이름·인자·안전 판정이 그대로인지 확인합니다.
+
+CKEditor 가 스스로 넣는 스타일 가운데 이 플러그인이 바꾸지 않는 것은 색상 선택기(자기 안에 넣는 `<style>` 요소 —
+정책을 강제하면 판이 접힙니다), 끌어 놓기 미리보기 그릇의 `style` 문자열, 저장용 HTML 을 만들 때 보고되는 위반입니다.
 <!-- @intent END -->

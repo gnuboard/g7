@@ -26,6 +26,10 @@ import { categorizeUrl } from './blocker-domains';
 const BLOCKED_ATTR = 'data-gdpr-category';
 const PLACEHOLDER_CLASS = 'gdpr-blocked-embed';
 const ORIGINAL_DATA_ATTR = 'data-gdpr-original';
+/** placeholder 가 들고 있는, 보존 문자열에서 떼어 낸 style 목록 (JSON 배열) */
+const ORIGINAL_STYLES_ATTR = 'data-gdpr-original-styles';
+/** 보존 문자열 속 요소가 style 목록의 몇 번째 값을 받는지 가리키는 순번 표식 */
+const STYLE_REF_ATTR = 'data-gdpr-style-ref';
 
 /**
  * MutationObserver SELECTOR — 도메인 매칭 위해 src/href 가진 모든 대상 태그 +
@@ -266,11 +270,68 @@ function replaceWithPlaceholder(el: HTMLElement, category: string): void {
     placeholder.className = PLACEHOLDER_CLASS;
     placeholder.dataset.gdprBlockedCategory = category;
     placeholder.dataset.gdprOriginalTag = el.tagName.toLowerCase();
+    // style 은 문자열에 싣지 않고 따로 둔다 — outerHTML 을 읽기 전에 떼어야 보존 문자열에서 빠진다
+    const styles = detachInlineStyles(el);
     placeholder.setAttribute(ORIGINAL_DATA_ATTR, el.outerHTML);
+    if (styles.length > 0) {
+        placeholder.setAttribute(ORIGINAL_STYLES_ATTR, JSON.stringify(styles));
+    }
     placeholder.setAttribute('aria-hidden', 'true');
     placeholder.style.display = 'none';
 
     el.replaceWith(placeholder);
+}
+
+/**
+ * 요소와 자손의 style 을 떼어 목록으로 돌려준다 — 요소에는 순번 표식만 남긴다.
+ *
+ * 스타일 보안 정책(`style-src-attr 'none'`)은 HTML 문자열 속 `style="…"` 을 막는다(파싱만 해도 위반이 보고된다).
+ * 보존 문자열에 style 을 싣지 않고, 복원한 뒤 `el.style.cssText` 로 입힌다 — CSSOM 대입은 정책이 막지 않는다.
+ * 사본(cloneNode)을 쓰지 않고 원본을 직접 고친다(img 사본은 로드를 시작해 차단이 깨진다) — 원본은 곧 placeholder 로 바뀐다.
+ *
+ * @param el 차단 대상
+ * @return 순번대로 모은 cssText 목록 (style 이 하나도 없으면 빈 배열)
+ */
+function detachInlineStyles(el: HTMLElement): string[] {
+    const styles: string[] = [];
+    const targets = [el, ...Array.from(el.querySelectorAll<HTMLElement>('[style]'))];
+
+    for (const target of targets) {
+        if (!target.hasAttribute('style')) continue;
+
+        target.setAttribute(STYLE_REF_ATTR, String(styles.length));
+        styles.push(target.style?.cssText ?? '');
+        target.removeAttribute('style');
+    }
+
+    return styles;
+}
+
+/**
+ * 복원한 요소 묶음에 떼어 둔 style 을 CSSOM 으로 다시 입히고 순번 표식을 지운다.
+ *
+ * 목록이 없거나 깨졌으면(이전 버전이 만든 placeholder) 표식만 지운다.
+ *
+ * @param root 복원한 요소를 담은 임시 컨테이너
+ * @param serialized `data-gdpr-original-styles` 값 (JSON 배열 문자열) 또는 null
+ */
+function reattachInlineStyles(root: HTMLElement, serialized: string | null): void {
+    let styles: unknown = [];
+    if (serialized) {
+        try {
+            styles = JSON.parse(serialized);
+        } catch {
+            styles = [];
+        }
+    }
+
+    root.querySelectorAll<HTMLElement>(`[${STYLE_REF_ATTR}]`).forEach((target) => {
+        const cssText = Array.isArray(styles) ? styles[Number(target.getAttribute(STYLE_REF_ATTR))] : undefined;
+        target.removeAttribute(STYLE_REF_ATTR);
+        if (typeof cssText === 'string' && cssText !== '' && target.style) {
+            target.style.cssText = cssText;
+        }
+    });
 }
 
 /**
@@ -287,6 +348,7 @@ function restoreElement(placeholder: HTMLElement): void {
 
     const tmp = document.createElement('div');
     tmp.innerHTML = original;
+    reattachInlineStyles(tmp, placeholder.getAttribute(ORIGINAL_STYLES_ATTR));
     const restored = tmp.firstElementChild;
     if (restored === null) {
         placeholder.remove();

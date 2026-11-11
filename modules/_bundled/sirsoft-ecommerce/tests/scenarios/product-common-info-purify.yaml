@@ -17,6 +17,8 @@ effects:
   - switches_ignored_on_store
   - update_uses_stored_mode
   - text_mode_untouched
+  - editor_formatting_kept_on_store     # 편집기 서식(정렬·들여쓰기·줄 간격·표·병합 셀·이미지 크기)은 저장에서 남는다
+  - dangerous_style_values_removed      # position·z-index·url()·expression 은 지운다
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/ProductCommonInfoPurifyTest.php

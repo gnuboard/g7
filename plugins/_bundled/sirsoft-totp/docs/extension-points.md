@@ -9,7 +9,7 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-totp.credential.admin_reset` | action | — | `src/Services/TotpEnrollmentService.php:207` |
+| `sirsoft-totp.credential.admin_reset` | action | — | `src/Services/TotpEnrollmentService.php:216` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

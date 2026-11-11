@@ -206,6 +206,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭. 개인정보 이용내역의 연간 통지는 별도 자동 작업 | 정책 재동의와 처리 내역 안내는 서로 다른 작업이며 연간 통지는 정책 버전을 발행하지 않는다 |
 | 저장소 허용목록만 고치고 동의 안내 문구는 그대로 두기 | 목록·문구 4곳·업그레이드 스텝을 한 작업 단위로 | 안내가 "이 항목은 기능 쿠키이고 거부하면 저장되지 않는다" 라고 말하는데 실제로는 항상 저장되면, 고지 자체가 사실과 달라진다 |
 | 처리방침 링크를 다른 확장의 주소 규칙으로 조합(`/page/{slug}` 등) 하거나 화면에서 경로를 이어 붙이기 | 운영자가 적은 `privacy_policy_url` 을 서버가 `Support\PrivacyPolicyUrl` 로 걸러 내보낸 값 그대로 href 로 쓴다 | 선언하지 않은 확장의 주소 규칙에 기대면 그 확장이 없거나 규칙이 바뀔 때 링크가 조용히 404 가 된다. 판정(저장 검증·공개 응답·메일 링크·스냅샷 비교)이 한 곳이 아니면 저장은 막혔는데 출력은 새는 틈이 생긴다 |
+| 차단한 요소를 `style` 속성째 `outerHTML` 문자열로 보존했다가 `innerHTML` 로 되살리기 | `blocker.ts` 가 보존 전에 style 을 떼어 placeholder 의 `data-gdpr-original-styles` 에 두고(요소에는 순번 표식 `data-gdpr-style-ref`), 되살린 뒤 `el.style.cssText` 로 입힌다 | 엄격한 스타일 보안 정책(`style-src-attr 'none'`)은 문자열 속 `style` 을 막는다(파싱만 해도 위반이 보고된다) — 동의 뒤 되살아난 영상·지도가 크기·테두리를 잃는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -214,9 +215,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 52개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 38개 | `vitest.config.ts` |
+| Vitest | 39개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 43개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 44개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

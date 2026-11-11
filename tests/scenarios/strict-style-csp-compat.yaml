@@ -39,7 +39,7 @@ axes:
     - core_views_no_inline_style         # resources/views 원본 전수
     - admin_shell_no_inline_style        # 관리자 셸 HTML
     - user_shell_no_inline_style         # 사용자 셸 HTML
-    - standalone_pages_no_inline_style   # 오류 5종·IP 제한 403·점검·DB 계정 오류
+    - standalone_pages_no_inline_style   # 오류 5종·묶음(4xx·5xx)과 402·419·429·IP 제한 403·점검·DB 계정 오류
     # 엔진 런타임 UI
     - error_screen_no_inline_style       # 오류 화면·레이아웃 오류 UI·시스템 배너
     # 레이아웃 편집기 · DevTools
@@ -73,6 +73,7 @@ effects:
   - content_style_unchanged_without_flag
   - content_style_deferred_with_flag
   - content_style_candidate_tag_style_dropped          # 정해진 속성만 받는 태그의 style 은 지연해도 버려진다
+  - content_figure_size_style_kept                     # figure 의 style(이미지 크기 비율)은 남기고, 지연 경로에서는 data-g7-style 로 옮긴다
   # 전환 덮개 — 실제 TemplateApp
   - overlay_rules_without_style_element
   - overlay_marker_survives_in_head                    # <head> 의 같은 id 표식이 덮개 생존 신호다
@@ -94,6 +95,8 @@ effects:
   - core_css_files_served
   # 서버 HTML
   - shell_html_has_no_inline_style
+  - error_pages_render_core_views                    # 오류 응답이 코어 오류 뷰(제목·홈 링크·레이아웃·번역 키)로 그려진다
+  - fallback_error_pages_use_core_views              # 전용 뷰가 없던 오류(402·405·419·429·5xx 등)도 코어 화면 + 정적 CSS 로 그린다
   # 엔진 런타임 UI
   - error_screen_styled_by_core_css_classes
   - error_screen_dark_mode_by_media_query
@@ -117,6 +120,7 @@ effects:
   - shell_stall_notice_hidden_by_core_css              # 지연 안내의 계산된 display 가 none
   - style_csp_spa_navigation_without_violation         # 링크 클릭 화면 이동 뒤에도 위반 0
   - error_screen_styled_under_style_csp                # 레이아웃 API 500 오류 화면 제목 24px
+  - editor_formatting_visible_under_style_csp          # 글쓰기 편집기의 가운데 정렬이 편집 화면에 보이고 저장 형식은 그대로다
 
 test_files:
   - resources/js/core/style/__tests__/RuntimeStyleSheet.test.ts
@@ -127,6 +131,8 @@ test_files:
   - resources/js/core/__tests__/coreCss.contract.test.ts
   - resources/js/core/template-engine/__tests__/coreRuntime.noInlineStyle.test.ts
   - tests/Feature/View/ShellNoInlineStyleTest.php
+  - tests/Feature/View/ErrorPagesNoInlineStyleTest.php
+  - tests/Feature/ErrorPageTest.php
   - resources/js/core/template-engine/layout-editor/__tests__/noInlineStyleElement.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/LayoutEditorChrome.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorTemplateAssets.test.ts
@@ -138,11 +144,15 @@ notes: |
     - 스타일 정책 문자열·헤더 조합·설정 저장·설정 화면: tests/scenarios/csp-header-setting.yaml
     - 설치 화면의 인라인 스타일 0: tests/scenarios/strict-csp-compat.yaml (installer_* effects, tests/installer/installer-no-inline.test.cjs)
     - 번들 템플릿의 본문 출력·아이콘 미리보기·로딩 막대: 각 템플릿의 tests/scenarios/content-inline-style-deferral.yaml
-    - 플러그인: sirsoft-ckeditor5 editor-no-inline-style.yaml, sirsoft-daum_postcode postcode-no-inline-style.yaml
+    - 플러그인: sirsoft-ckeditor5 editor-no-inline-style.yaml·editor-editing-view-style.yaml, sirsoft-daum_postcode postcode-no-inline-style.yaml,
+      sirsoft-pay_kginicis standalone-pages-no-inline-style.yaml, sirsoft-pay_nhnkcp strict-csp-kcp-frame.yaml, sirsoft-totp bootstrap-qr-render.yaml,
+      sirsoft-gdpr blocker-restore-style.yaml
 
   브라우저 실측(style_csp_*)은 Chromium 만 돈다(Firefox·Safari 미측정). 문서 응답에 정책 헤더를 덧붙여 재현하므로
-  활성 템플릿 사본이 수정된 번들이어야 통과한다. 스스로 스타일을 넣는 외부 라이브러리 화면(CKEditor 5 글쓰기·Monaco 코드 편집기·
-  react-select 태그 입력·다음 우편번호)은 고칠 수 없어 spec 의 상수 목록에 사유와 함께 두고 fixme 로 건다.
+  활성 템플릿·플러그인 사본이 수정된 번들이어야 통과한다. 스스로 스타일을 넣는 외부 라이브러리 화면(CKEditor 5 색상 선택기·Monaco 코드 편집기·
+  react-select 태그 입력·다음 우편번호)은 고칠 수 없어 spec 의 상수 목록에 사유와 함께 두고 fixme 로 건다. CKEditor 5 편집 화면의
+  서식(정렬·색·표·이미지 크기)은 편집기 플러그인이 CSSOM 으로 입혀 고쳤고 editor_formatting_visible_under_style_csp 가 잠근다
+  (플러그인 쪽 단위 계약: sirsoft-ckeditor5 editor-editing-view-style.yaml).
 
   overlay_legacy_algorithm·layout_editor_chrome_regression·layout_editor_asset_regression 은 이번 작업으로 단언이
   바뀐 기존 회귀 테스트다. 덮개 알고리즘 테스트는 구현을 테스트 안에 복제해 단언하므로 실제 경로는

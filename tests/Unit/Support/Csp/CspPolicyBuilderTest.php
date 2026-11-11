@@ -8,6 +8,7 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\TrustedScriptHosts;
+use App\Support\TrustedStyleHosts;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -20,7 +21,7 @@ use Tests\TestCase;
  * 모드는 `.env` 탈출구(config `core.csp.mode_override`)가 저장값보다 우선한다.
  *
  * 스타일 정책(7.1.6)은 강도 2단계(basic = `style-src-elem`, strict = `style-src` + `style-src-attr 'none'`)이고
- * 호스트는 활성 템플릿 externals 의 외부 스타일시트 + 운영자 입력이다. 모드와 탈출구(`core.csp.style_mode_override`)는
+ * 호스트는 활성 템플릿 externals 의 외부 스타일시트 + 켜진 확장 선언(`trusted_style_hosts` + 필터 훅) + 운영자 입력이다. 모드와 탈출구(`core.csp.style_mode_override`)는
  * 스크립트와 따로 정하며, 두 모드의 조합이 나가는 헤더 수(0·1·2)를 정한다. `build()` 문자열은 그대로다.
  *
  * 확장 관리자는 모의 객체로 바꿔 집계 입력을 고정한다 — 실제 활성 확장은 설치 상태마다 달라진다.
@@ -65,6 +66,7 @@ class CspPolicyBuilderTest extends TestCase
     protected function tearDown(): void
     {
         HookManager::clearFilter(TrustedScriptHosts::FILTER_HOOK);
+        HookManager::clearFilter(TrustedStyleHosts::FILTER_HOOK);
 
         parent::tearDown();
     }
@@ -361,6 +363,87 @@ class CspPolicyBuilderTest extends TestCase
         $this->assertSame(['js.tosspayments.com', 'sdk.example.com'], $builder->autoHosts());
         $this->assertStringNotContainsString('fonts.example.com', $builder->build());
         $this->assertStringNotContainsString('cdn.example.com', $builder->build());
+    }
+
+    /**
+     * 켜진 모듈·플러그인이 manifest `trusted_style_hosts` 로 선언한 호스트는 스타일 정책에 자동으로 들어간다.
+     *
+     * 결제사 결제창처럼 외부 스크립트가 자기 호스트의 CSS 파일을 싣는 확장이 있다. 선언할 길이 없으면 스타일 정책을
+     * 강제한 사이트에서 결제창이 화면을 덮지 못한다(운영자가 추가 호스트를 직접 넣어야 했다). 꺼진 확장의 선언은
+     * 빠지고, 스타일 선언은 `script-src` 에 섞이지 않으며, 필터 훅으로도 더할 수 있다.
+     *
+     * @scenario case=style_source_extension_declared
+     *
+     * @effects csp_style_extension_declared_hosts_included, csp_style_inactive_extension_hosts_excluded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_확장이_선언한_스타일_호스트는_자동으로_합산된다(): void
+    {
+        $extension = fn (array $styleHosts, array $scriptHosts = []) => new class($styleHosts, $scriptHosts)
+        {
+            /**
+             * 선언 호스트를 받아 둡니다.
+             *
+             * @param  array<int, string>  $styleHosts  스타일 선언 호스트
+             * @param  array<int, string>  $scriptHosts  스크립트 선언 호스트
+             */
+            public function __construct(private array $styleHosts, private array $scriptHosts) {}
+
+            /**
+             * manifest 스타일 선언 호스트를 돌려줍니다.
+             *
+             * @return array<int, string> 선언 호스트
+             */
+            public function getTrustedStyleHosts(): array
+            {
+                return $this->styleHosts;
+            }
+
+            /**
+             * manifest 스크립트 선언 호스트를 돌려줍니다.
+             *
+             * @return array<int, string> 선언 호스트
+             */
+            public function getTrustedScriptHosts(): array
+            {
+                return $this->scriptHosts;
+            }
+        };
+        $activePlugin = $extension(['StdPay.Example.com', 'stdpay.example.com'], ['sdk.example.com']);
+        $inactivePlugin = $extension(['inactive-style.example.com']);
+        $activeModule = $extension(['module-css.example.com', "evil.example.com; style-src-attr 'unsafe-inline'"]);
+
+        $modules = \Mockery::mock(ModuleManager::class);
+        $modules->shouldReceive('getActiveModules')->andReturn([$activeModule]);
+        $modules->shouldReceive('getAllModules')->andReturn([$activeModule]);
+        $this->instance(ModuleManager::class, $modules);
+
+        $plugins = \Mockery::mock(PluginManager::class);
+        $plugins->shouldReceive('getActivePlugins')->andReturn([$activePlugin]);
+        $plugins->shouldReceive('getAllPlugins')->andReturn([$activePlugin, $inactivePlugin]);
+        $this->instance(PluginManager::class, $plugins);
+
+        HookManager::addFilter(
+            TrustedStyleHosts::FILTER_HOOK,
+            fn (array $current) => array_merge($current, ['hook-css.example.com']),
+            priority: 1
+        );
+
+        $builder = new CspPolicyBuilder;
+
+        $this->assertSame(['hook-css.example.com', 'module-css.example.com', 'stdpay.example.com'], $builder->styleAutoHosts());
+        $this->assertSame(
+            "style-src-elem 'self' hook-css.example.com module-css.example.com stdpay.example.com; report-uri /api/csp-report",
+            $builder->buildStyle()
+        );
+        $this->assertStringNotContainsString('inactive-style', $builder->buildStyle());
+        $this->assertStringNotContainsString('unsafe-inline', $builder->buildStyle());
+
+        // 스타일 선언은 스크립트 정책에, 스크립트 선언은 스타일 정책에 섞이지 않는다
+        $this->assertSame(['sdk.example.com'], $builder->autoHosts());
+        $this->assertStringNotContainsString('stdpay.example.com', $builder->build());
+        $this->assertStringNotContainsString('sdk.example.com', $builder->buildStyle());
     }
 
     /**

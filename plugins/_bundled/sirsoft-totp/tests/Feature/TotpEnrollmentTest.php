@@ -3,6 +3,8 @@
 namespace Plugins\Sirsoft\Totp\Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Plugins\Sirsoft\Totp\Models\TotpCredential;
@@ -55,7 +57,7 @@ class TotpEnrollmentTest extends PluginTestCase
      * 등록을 확정합니다.
      *
      * @param  string  $secret  평문 시크릿
-     * @return \Illuminate\Testing\TestResponse 확정 응답
+     * @return TestResponse 확정 응답
      */
     private function confirmEnrollment(string $secret)
     {
@@ -102,7 +104,7 @@ class TotpEnrollmentTest extends PluginTestCase
     {
         $secret = $this->startEnrollment();
 
-        $raw = \Illuminate\Support\Facades\DB::table('totp_credentials')
+        $raw = DB::table('totp_credentials')
             ->where('user_id', $this->user->id)
             ->value('secret');
 
@@ -196,6 +198,58 @@ class TotpEnrollmentTest extends PluginTestCase
         $second = $this->startEnrollment();
 
         $this->assertNotSame($first, $second);
+    }
+
+    /**
+     * 읽을 수 없는 미확정 자격증명(사이트 암호화 키가 바뀐 뒤 남은 행)이 있어도 등록을 다시 시작할 수 있는지 확인합니다.
+     *
+     * 등록을 하다 만 행의 시크릿은 예전 키로 암호화돼 있어 복호화되지 않는다. 종전에는 새 시크릿으로 덮어쓰는
+     * 과정에서 옛 값을 읽다가 예외가 나 [등록 시작] 이 500 으로 끝났고, 그 계정은 등록할 방법이 없었다.
+     *
+     * @scenario enrollment=start, state=pending_unreadable
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function starting_over_an_unreadable_pending_credential_issues_a_fresh_secret(): void
+    {
+        $this->startEnrollment();
+        // 예전 키로 암호화된 값을 흉내 낸다 — 현재 키로는 복호화되지 않는 문자열
+        DB::table('totp_credentials')
+            ->where('user_id', $this->user->id)
+            ->update(['secret' => 'not-decryptable-with-the-current-key']);
+
+        $secret = $this->startEnrollment();
+
+        $this->assertSame(1, TotpCredential::where('user_id', $this->user->id)->count());
+        $credential = TotpCredential::where('user_id', $this->user->id)->first();
+        $this->assertSame($secret, $credential->secret, '새 시크릿이 현재 키로 저장되지 않았습니다.');
+        $this->assertNull($credential->confirmed_at);
+
+        // 새 시크릿으로 등록을 끝까지 마칠 수 있다
+        $this->confirmEnrollment($secret)->assertStatus(200);
+    }
+
+    /**
+     * 읽을 수 없는 미확정 자격증명에 코드를 내면 서버 오류가 아니라 「코드가 맞지 않음」으로 답하는지 확인합니다.
+     *
+     * @scenario enrollment=confirm, state=pending_unreadable
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function confirming_an_unreadable_pending_credential_is_rejected_without_a_server_error(): void
+    {
+        $this->startEnrollment();
+        DB::table('totp_credentials')
+            ->where('user_id', $this->user->id)
+            ->update(['secret' => 'not-decryptable-with-the-current-key']);
+
+        $this->postJson('/api/plugins/sirsoft-totp/enrollment/confirm', ['code' => '123456'])->assertStatus(422);
+
+        $this->assertNull(
+            DB::table('totp_credentials')->where('user_id', $this->user->id)->value('confirmed_at')
+        );
     }
 
     /**

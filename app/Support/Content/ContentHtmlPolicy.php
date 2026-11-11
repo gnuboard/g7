@@ -33,7 +33,7 @@ final class ContentHtmlPolicy
      */
     public const CANDIDATES = [
         'allow_figure_caption' => [
-            'figure' => ['class'],
+            'figure' => ['class', 'style'],
             'figcaption' => ['class'],
         ],
         'allow_uploaded_video' => [
@@ -47,7 +47,7 @@ final class ContentHtmlPolicy
         ],
         'allow_external_embed' => [
             'oembed' => ['url'],
-            'figure' => ['class'],
+            'figure' => ['class', 'style'],
         ],
     ];
 

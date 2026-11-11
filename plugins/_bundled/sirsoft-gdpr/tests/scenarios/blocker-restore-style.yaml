@@ -1,0 +1,30 @@
+feature: 차단했다가 복원하는 요소의 style 을 CSSOM 으로 되살린다 — 스타일 보안 정책 호환
+
+description: |
+  차단 엔진(`blocker.ts`)은 동의 전 요소를 `outerHTML` 문자열로 보존했다가(`data-gdpr-original`) 동의 후 `innerHTML` 로
+  되살린다. 운영자가 `style-src-attr 'none'` 을 걸면 문자열 속 `style="…"` 이 막힌다(파싱만 해도 위반이 보고된다).
+  동의 후 되살아난 영상·지도 iframe 이 크기·테두리를 잃었다.
+
+  보존하기 전에 요소와 자손의 style 을 떼어 따로 둔다 — 요소에는 순번 표식(`data-gdpr-style-ref`)만 남기고, 값은
+  placeholder 의 `data-gdpr-original-styles`(JSON 배열)에 둔다. 복원한 뒤 표식을 따라 `el.style.cssText` 로 입히고
+  표식을 지운다. CSSOM 대입은 정책이 막지 않는다. 사본(cloneNode)을 쓰지 않고 원본을 직접 고친다 — img 사본은
+  로드를 시작해 차단이 깨진다. style 이 없던 요소와 script 복원 분기는 종전 그대로다.
+
+axes:
+  restore:
+    - iframe_with_style       # 속성으로 차단한 iframe (style 있음)
+    - img_with_style          # 도메인으로 차단한 img (style 있음)
+    - descendant_with_style   # 자손에 style 이 있는 요소
+    - element_without_style   # style 이 없는 요소
+    - legacy_placeholder      # 스타일 목록이 없거나 깨진 placeholder
+    - script_with_src         # script 복원 분기
+
+effects:
+  - preserved_markup_has_no_style_attribute      # 보존 문자열에 style 속성이 없다
+  - restored_element_keeps_style_via_cssom       # 복원한 요소의 cssText 가 원래와 같다
+  - restored_descendants_keep_style_via_cssom    # 자손의 style 도 순서대로 복원된다
+  - unstyled_element_preserved_as_before         # style 이 없으면 종전과 같다
+  - script_restore_branch_unchanged              # script 는 새 요소로 만들고 표식을 옮기지 않는다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/blocker.restoreStyle.test.ts

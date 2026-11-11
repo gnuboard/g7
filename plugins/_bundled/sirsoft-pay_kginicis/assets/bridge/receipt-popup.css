@@ -1,0 +1,74 @@
+/*
+ * CBT 결제확인서 팝업의 모양 — 인쇄용 문서 한 장(제목·안내·항목 표·인쇄 버튼).
+ *
+ * 팝업 HTML 문자열의 `<style>` 블록에 두지 않는다. 빈 팝업은 여는 문서의 스타일 보안 정책을 물려받아,
+ * 사이트가 `style-src 'self'` 를 걸면 인라인 스타일이 막혀 결제확인서가 무스타일로 뜬다.
+ * 빌드 대상이 아니다 — 플러그인 자산 경로로 그대로 서빙된다.
+ */
+body {
+    margin: 0;
+    padding: 32px;
+    background: #f8fafc;
+    color: #111827;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+main {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 28px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+}
+h1 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    line-height: 1.35;
+}
+.notice {
+    margin: 0 0 24px;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.6;
+}
+dl {
+    margin: 0;
+    border-top: 1px solid #e5e7eb;
+}
+.row {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+dt {
+    color: #6b7280;
+    font-size: 14px;
+}
+dd {
+    margin: 0;
+    color: #111827;
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.actions {
+    margin-top: 24px;
+    text-align: right;
+}
+button {
+    border: 0;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+}
+@media (max-width: 520px) {
+    body { padding: 16px; }
+    main { padding: 20px; }
+    .row { grid-template-columns: 1fr; gap: 6px; }
+}

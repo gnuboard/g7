@@ -151,5 +151,12 @@ class BridgeNoInlineScriptTest extends PluginTestCase
         $this->assertBridgeOnly($mobile, 'escrow-confirm.js');
         $this->assertStringContainsString('data-mode="mobile-submit"', $mobile);
         $this->assertStringContainsString('data-form="mobile_confirm_form"', $mobile);
+
+        // 모양도 인라인으로 싣지 않는다(스타일 보안 정책) — 같은 출처 CSS 링크 하나만 둔다
+        foreach ([$pc, $mobile] as $html) {
+            $this->assertSame(0, preg_match('/<style\b/i', $html), '<style> 요소가 남아 있다');
+            $this->assertSame(0, preg_match('/<[a-z][^>]*\sstyle\s*=/i', $html), 'style 속성이 남아 있다');
+            $this->assertStringContainsString('assets/bridge/escrow-confirm.css', $html);
+        }
     }
 }

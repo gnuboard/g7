@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-11
+
+### Fixed
+
+- 스타일 보안 정책(CSP `style-src`)을 건 사이트에서 PC 결제창을 띄우는 프레임의 여백 없음·투명 배경이 적용되지 않던 문제를 고쳤습니다. 화면에 직접 써 넣던 스타일을 플러그인 CSS 파일로 옮겼습니다.
+
 ## [1.1.3] - 2026-11-10
 
 ### Changed

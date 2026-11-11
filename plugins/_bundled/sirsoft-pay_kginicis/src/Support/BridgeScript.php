@@ -40,6 +40,20 @@ final class BridgeScript
     }
 
     /**
+     * 독립 페이지의 스타일시트 `<link>` 태그를 만듭니다.
+     *
+     * 사이트가 스타일 보안 정책(`style-src 'self'`)을 걸면 `<style>` 요소와 `style="…"` 속성이 막힌다. 이 플러그인이
+     * 직접 내는 HTML 페이지의 모양은 같은 출처 정적 파일(`assets/bridge/*.css`)로 싣는다.
+     *
+     * @param  string  $file  `assets/bridge/` 아래 파일명 (예: `escrow-confirm.css`)
+     * @return string 스타일시트 링크 태그 HTML
+     */
+    public static function stylesheetTag(string $file): string
+    {
+        return '<link rel="stylesheet" href="'.e(self::url($file)).'">';
+    }
+
+    /**
      * 비실행 JSON 데이터 블록을 만듭니다 (`</script>` 탈출 방지 이스케이프 포함).
      *
      * @param  string  $id  요소 id
@@ -54,7 +68,7 @@ final class BridgeScript
     }
 
     /**
-     * 브리지 스크립트 URL 을 만듭니다 (플러그인 자산 경로 + 플러그인 버전 캐시 무효화).
+     * 브리지 자산(스크립트·스타일시트) URL 을 만듭니다 (플러그인 자산 경로 + 플러그인 버전 캐시 무효화).
      *
      * @param  string  $file  `assets/bridge/` 아래 파일명
      * @return string 같은 출처 자산 URL

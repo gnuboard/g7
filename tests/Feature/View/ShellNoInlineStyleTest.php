@@ -6,6 +6,7 @@ use App\Models\Template;
 use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 /**
@@ -166,7 +167,7 @@ class ShellNoInlineStyleTest extends TestCase
     }
 
     /**
-     * 독립 화면 뷰 목록 — 오류 화면 5종, IP 제한 403, 점검, DB 계정 오류.
+     * 독립 화면 뷰 목록 — 오류 화면 5종, 묶음·대체 오류 화면 5종, IP 제한 403, 점검, DB 계정 오류.
      *
      * @return array<string, array{0: string, 1: array<string, mixed>}> 뷰 이름과 데이터
      */
@@ -179,6 +180,12 @@ class ShellNoInlineStyleTest extends TestCase
             'errors.404' => ['errors.404', []],
             'errors.500' => ['errors.500', []],
             'errors.503' => ['errors.503', []],
+            // 전용 화면이 없던 응답 — 묶음 뷰(4xx·5xx)와, 프레임워크 자체 뷰를 가리는 402·419·429
+            'errors.4xx' => ['errors.4xx', ['exception' => new HttpException(405)]],
+            'errors.5xx' => ['errors.5xx', ['exception' => new HttpException(502)]],
+            'errors.402' => ['errors.402', ['exception' => new HttpException(402)]],
+            'errors.419' => ['errors.419', ['exception' => new HttpException(419)]],
+            'errors.429' => ['errors.429', ['exception' => new HttpException(429)]],
             'maintenance' => ['maintenance', []],
             'database-credential-error' => ['database-credential-error', ['reason' => 'blocked']],
         ];

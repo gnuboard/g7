@@ -110,4 +110,24 @@ describe('ContentPolicyRuntime — 인라인 스타일 없음', () => {
     expect(deferred).not.toContain('position:fixed');
     expect(deferred).not.toContain('data-g7-style');
   });
+
+  /**
+   * @scenario case=content_style_defer_flag
+   * @effects content_figure_size_style_kept
+   */
+  it('그림 묶음(figure)의 style 은 남긴다 — 편집기에서 줄인 이미지 크기가 글 보기에서도 유지된다', () => {
+    // 종전 규칙은 figure 에 class 만 받아, 50% 로 줄인 이미지가 글 보기에서는 100% 로 나왔다(정책과 무관하게 항상).
+    expect(fixture.render_policy.attributes.figure).toContain('style');
+
+    const runtime = runtimeWith();
+    const html = '<figure class="image image_resized" style="width:50%;"><img src="/a.png" alt="a"></figure>';
+
+    const plain = runtime.sanitize(DOMPurify, html, BASE) ?? '';
+    expect(plain).toContain('<figure class="image image_resized" style="width:50%;">');
+
+    // 지연 경로(엄격한 스타일 정책 호환)에서는 data-g7-style 로 옮겨 화면에 붙인 뒤 입힌다 — 버리지 않는다
+    const deferred = runtime.sanitize(DOMPurify, html, { ...BASE, G7_DEFER_STYLE: true }) ?? '';
+    expect(deferred).toContain('<figure class="image image_resized" data-g7-style="width:50%;">');
+    expect(deferred).not.toMatch(/\sstyle=/);
+  });
 });

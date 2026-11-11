@@ -6,6 +6,7 @@ use App\Extension\TemplateManager;
 use App\Rules\CspSourceHost;
 use App\Support\TemplateExternals;
 use App\Support\TrustedScriptHosts;
+use App\Support\TrustedStyleHosts;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -31,7 +32,8 @@ use Illuminate\Support\Facades\Log;
  * (config `core.csp.style_mode_override`)로 따로 두며, 두 탈출구는 서로 영향을 주지 않는다.
  *
  * 스타일 허용 호스트는 활성 템플릿 externals 의 외부 스타일시트 호스트
- * ({@see TemplateExternals::externalStyleHosts()}) + 운영자 추가 입력(`security.csp_extra_style_hosts`)이다.
+ * ({@see TemplateExternals::externalStyleHosts()}) + 켜진 확장의 `trusted_style_hosts` 선언({@see TrustedStyleHosts::hosts()})
+ * + 운영자 추가 입력(`security.csp_extra_style_hosts`)이다.
  *
  * 인스턴스 단위로 결과를 기억한다(요청당 한 번 조립 — 미들웨어·설정 응답이 각자 새 인스턴스를 쓴다).
  */
@@ -161,8 +163,9 @@ class CspPolicyBuilder
     /**
      * 스타일 정책에 자동으로 합산되는 호스트를 돌려줍니다.
      *
-     * 활성 템플릿 externals 의 외부 스타일시트 호스트({@see TemplateExternals::externalStyleHosts()})뿐이다 —
-     * 확장 선언용 키는 두지 않는다.
+     * 활성 템플릿 externals 의 외부 스타일시트 호스트({@see TemplateExternals::externalStyleHosts()})와, 켜진
+     * 모듈·플러그인이 manifest `trusted_style_hosts`(+ 필터 훅)로 선언한 호스트({@see TrustedStyleHosts::hosts()})다.
+     * 확장 선언은 결제사 결제창처럼 외부 스크립트가 스스로 싣는 CSS 파일을 위한 것이다.
      *
      * @return array<int, string> 소문자·중복 제거·정렬된 호스트 목록
      */
@@ -172,7 +175,10 @@ class CspPolicyBuilder
             return $this->styleAutoHosts;
         }
 
-        $hosts = $this->templateExternalHosts(fn (array $externals): array => TemplateExternals::externalStyleHosts($externals));
+        $hosts = array_merge(
+            TrustedStyleHosts::hosts(),
+            $this->templateExternalHosts(fn (array $externals): array => TemplateExternals::externalStyleHosts($externals))
+        );
 
         return $this->styleAutoHosts = $this->normalizeHosts($hosts, 'style-auto');
     }

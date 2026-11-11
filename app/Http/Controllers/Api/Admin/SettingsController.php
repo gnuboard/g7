@@ -124,7 +124,7 @@ class SettingsController extends AdminBaseController
      * - `auto_hosts`: 활성 확장 선언에서 자동 합산된 호스트
      * - `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값 (없으면 null) — 있으면 스타일 모드 선택을 잠근다 (7.1.6)
      * - `style_preview`: 지금 저장값으로 붙을 스타일 정책 문자열 (모드가 끔이어도 미리 보여 준다)
-     * - `style_auto_hosts`: 활성 템플릿의 외부 스타일시트에서 자동 합산된 호스트
+     * - `style_auto_hosts`: 활성 템플릿의 외부 스타일시트와 켜진 확장의 `trusted_style_hosts` 선언에서 자동 합산된 호스트
      *
      * @return array{override: string|null, preview: string, auto_hosts: array<int, string>, style_override: string|null, style_preview: string, style_auto_hosts: array<int, string>} CSP 메타
      */

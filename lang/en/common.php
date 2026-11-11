@@ -35,7 +35,7 @@ return [
         'github_download_failed' => 'Failed to download from GitHub.',
         'github_archive_download_failed' => 'Failed to download archive. (:url)',
         'zip_file_not_found' => 'ZIP file not found.',
-        'archive_php_extension_missing' => 'Extracting this archive requires the PHP extension(s) :extensions on the server. Ask your server administrator to install them.',
+        'archive_php_extension_missing' => 'Extracting this archive requires PHP extension support on the server: :extensions. Ask your server administrator to install it.',
         'zip_open_failed' => 'Failed to open ZIP file.',
     ],
 

@@ -15,6 +15,7 @@ import {
     ckeditorTranslationUrl,
 } from './ckeditorAssets';
 import { ensureCkeditorGlobal } from './ckeditorGlobal';
+import { EditingViewCssomStyle } from './editingViewStyle';
 import { buildLocaleTabContent } from './localeLabel';
 import { notifyEditorAssetFailure } from './editorFailureNotice';
 import { attachReadOnlySync, readOnlyFromContainer } from './readOnlySync';
@@ -715,7 +716,9 @@ async function createEditorInstance(
         };
     }
 
-    const extraPlugins: any[] = [];
+    // 편집 화면의 서식(style)을 CSSOM 으로 입힌다 — 스타일 정책이 속성 쓰기를 막아도 정렬·색·표·이미지 크기가 보인다.
+    // 정책을 켰는지와 무관하게 항상 싣는다(같은 화면이 두 갈래로 그려지지 않게).
+    const extraPlugins: any[] = [EditingViewCssomStyle];
     if (options.imageUpload) {
         // Bearer 부착·401 처리는 G7Core.api 가 맡는다 — 로그인 토큰을 여기서 읽지 않는다.
         // 계약이 있으면 계약 경로(화면이 정한 주소·정책), 없으면 종전 경로 (#883)
@@ -726,9 +729,7 @@ async function createEditorInstance(
     if (mediaButtons.length > 0) {
         extraPlugins.push(createMediaUploadButtonsPlugin(options.mediaTarget, mediaButtons));
     }
-    if (extraPlugins.length > 0) {
-        editorConfig.extraPlugins = extraPlugins;
-    }
+    editorConfig.extraPlugins = extraPlugins;
 
     const editor = await CKEDITOR.ClassicEditor.create(element, editorConfig);
 

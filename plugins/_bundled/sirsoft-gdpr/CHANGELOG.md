@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.5] - 2026-11-11
+
+### Fixed
+
+- 엄격한 스타일 보안 정책(CSP `style-src-attr 'none'`)을 건 사이트에서, 동의 전에 막아 두었다가 동의 뒤 되살린 외부 콘텐츠(영상·지도 등)가 원래의 크기·테두리 같은 모양을 잃던 문제를 고쳤습니다. 되살린 뒤 원래 모양을 다시 입힙니다.
+
 ## [1.1.4] - 2026-11-10
 
 ### Added
