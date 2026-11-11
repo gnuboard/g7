@@ -5,7 +5,7 @@
   오른쪽 미리보기는 저장 전 입력값과 별도로 고른 콘텐츠 언어를 사용자 슬라이더로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자
   화면을 떠나지 않게 미리보기 자리로 바꾼다. 위치는 위치 레지스트리 목록에서 고르고, 동적 위치(게시판마다·상품마다 등)면 대상도 고른다 —
   위치를 바꾸면 대상을 비운다(대상 키는 위치마다 다른 공간이다). 등록은 목록에서 보던 위치·대상(`query.position`·`query.target`)으로 시작한다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지
-  않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다. 위치 정보가 응답돼도 선택한 위치 정의가 없으면 저장을 잠그고 다시 받기를 제공한다. -->
+  않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다. 위치 정보가 응답돼도 선택한 위치 정의가 없으면 저장을 잠근다 — 위치 목록이 비었으면 다시 받기를, 목록은 왔는데 고른 위치만 없으면 다른 위치를 고르라고 안내한다. -->
 <layout name="hero_section_banner_form" version="1.0.0" extends="_admin_base">
   <meta leave_guard="{{_local.hasChanges === true}}" title="{{route.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}"/>
   <!-- 수정 진입일 때만 원본을 받아 폼에 한 번 심는다(initLocal). 성공 콜백에서 폼을 다시 쓰지 않는다 — 재조회가 손댄 값을 덮고 「고친 것 있음」 을 되살리지 않게 -->
@@ -124,7 +124,8 @@
   <computed name="formPositions">{{_computed.positionDefs.filter(p =&gt; p.registered !== false || p.key === _local.form?.position)}}</computed>
   <computed name="formDef">{{_computed.positionDefs.find(p =&gt; p.key === _local.form?.position) ?? null}}</computed>
   <computed name="formReady">{{!!_computed.formDef}}</computed>
-  <computed name="settingsFailed">{{!_computed.formReady &amp;&amp; (_global?.heroPositionSettingsFailed === true || position_settings !== undefined)}}</computed>
+  <computed name="formMissing">{{!_computed.formReady &amp;&amp; _computed.positionDefs.length &gt; 0 &amp;&amp; _global?.heroPositionSettingsFailed !== true}}</computed>
+  <computed name="settingsFailed">{{!_computed.formReady &amp;&amp; !_computed.formMissing &amp;&amp; (_global?.heroPositionSettingsFailed === true || position_settings !== undefined)}}</computed>
   <computed name="formDynamic">{{_computed.formDef?.dynamic === true}}</computed>
   <computed name="formTargetTypeLabel">{{_computed.formDef?.target ? (_computed.formDef.target.label ?? $t(_computed.formDef.target.label_key)) : ''}}</computed>
   <computed name="targetUnpicked">{{_computed.formDynamic &amp;&amp; !_local.form?.target_key}}</computed>
@@ -681,8 +682,10 @@
             <div id="hero_save_reason" data-ref="save_reason" role="status" class="hs:text-sm hs:text-gray-600 hs:dark:text-gray-300 hs:text-right">
               <!-- 위치 설정을 받기 전 — 위치가 동적인지 몰라 저장을 막는다. 다른 이유보다 먼저다 -->
               <span data-ref="save_reason_settings" data-if="{{!_local.isSaving &amp;&amp; !_computed.formReady}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
-                <span data-ref="save_reason_settings_loading" data-if="{{!_computed.settingsFailed}}">$t:sirsoft-hero_section.admin.form.save_blocked.settings_loading</span>
+                <span data-ref="save_reason_settings_loading" data-if="{{!_computed.settingsFailed &amp;&amp; !_computed.formMissing}}">$t:sirsoft-hero_section.admin.form.save_blocked.settings_loading</span>
                 <span data-ref="save_reason_settings_failed" data-if="{{_computed.settingsFailed}}">$t:sirsoft-hero_section.admin.form.save_blocked.settings_failed</span>
+                <!-- 없는 위치(주소로 연 등록) — 다시 받아도 오지 않으므로 위치를 다시 고르게 한다 -->
+                <span data-ref="save_reason_settings_missing" data-if="{{_computed.formMissing}}">$t:sirsoft-hero_section.admin.form.save_blocked.position_missing</span>
                 <button type="button" data-ref="save_reason_settings_retry" data-if="{{_computed.settingsFailed}}" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
                   <on type="click">
                     <!-- 위치 설정 다시 받기 — 받으면 저장 잠금이 풀린다 -->

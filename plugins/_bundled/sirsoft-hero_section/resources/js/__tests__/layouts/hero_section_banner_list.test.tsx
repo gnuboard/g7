@@ -685,7 +685,6 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 완료�
     ['null 응답', null],
     ['data null', { data: null }],
     ['빈 위치 배열', { data: { positions: [] } }],
-    ['현재 위치 정의 누락', { data: { positions: [{ key: 'home_hero', dynamic: false }] } }],
     ['위치 배열 형식 오류', { data: { positions: {} } }],
   ] as const;
   // @scenario case=admin_placement_list
@@ -698,5 +697,32 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 완료�
     expect(visible('positions_failed')).toBe(true);
     for (const id of ['preview_card', 'slider_card', 'filter_bar', 'hero_banner_datagrid']) expect(visible(id), id).toBe(false);
     expect(actionsOf(findById(list, 'positions_retry'), 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
+  });
+});
+
+// @scenario case=admin_placement_list
+describe('[case:components-misc-hero-position-settings-invalid-response] 위치 목록은 왔는데 주소의 위치만 없으면 다시 받기 대신 없는 위치로 알린다', () => {
+  const defs = { data: { positions: [{ key: 'home_hero', registered: true, dynamic: false }] } };
+  // @scenario case=admin_placement_list
+  it('확장이 꺼지고 남은 배너도 없는 위치 주소 — 다시 받아도 오지 않으므로 다시 받기를 두지 않고 탭으로 옮기게 한다', () => {
+    const scope = { query: { position: 'gone_hero' }, position_settings: defs, _global: {} };
+    const computed = evaluateComputed(list as any, scope);
+    const visible = (id: string) => evaluateBinding(findById(list, id)!.if, scope, computed);
+    expect(computed.positionsReady).toBe(false);
+    expect(computed.positionsMissing).toBe(true);
+    expect(visible('position_missing')).toBe(true);
+    expect(visible('positions_failed')).toBe(false);
+    expect(visible('positions_loading')).toBe(false);
+    for (const id of ['preview_card', 'slider_card', 'filter_bar', 'hero_banner_datagrid']) expect(visible(id), id).toBe(false);
+    expect(evaluateBinding(findById(list, 'position_tab_{{tab.key}}')!.iteration.source, scope, computed)).toEqual(defs.data.positions);
+  });
+
+  // @scenario case=admin_placement_list
+  it('요청이 실패해 앞 응답이 남은 경우는 없는 위치가 아니라 받지 못함이다 — 다시 받기를 보인다', () => {
+    const scope = { query: { position: 'board_hero' }, position_settings: defs, _global: { heroPositionSettingsFailed: true } };
+    const computed = evaluateComputed(list as any, scope);
+    const visible = (id: string) => evaluateBinding(findById(list, id)!.if, scope, computed);
+    expect(visible('position_missing')).toBe(false);
+    expect(visible('positions_failed')).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 {
-    "comment": "히어로섹션 관리 목록 — 위치별 배너. 위치 탭은 위치 레지스트리(내장 정적·동적 위치, 제3 확장이 더한 위치) 그대로다. 동적 위치(게시판마다·\n  상품마다·카테고리마다)는 대상을 먼저 고르고(`query.target`), 목록·미리보기·순서·등록이 그 대상만 다룬다. 위치·대상·상태·검색·정렬·쪽은 전부\n  URL 쿼리라 새로고침·뒤로 가기·주소 공유에도 같은 조건이 다시 열린다. 확장이 꺼져 등록되지 않은 위치에 배너가 남았으면 끝에 그 탭이 보이고,\n  그 탭에서는 목록 확인·수정·삭제만 된다. 위쪽에 지금 노출 중인 배너 미리보기와 그 위치의 슬라이더 설정, 아래쪽에 표·일괄 작업·순서 변경 창이 있다.\n  노출 상태 필터·정렬은 서버가 기간 조건으로 처리한다(화면에서 거르지 않는다). 선택 묶음은 위치·필터·쪽이 바뀌면 비운다 —\n  다른 위치 배너가 일괄 작업에 섞이지 않게. 위치 응답이 끝나도 현재 위치 정의가 없으면 정적 화면으로 추정하지 않고 다시 받기를 제공한다.",
+    "comment": "히어로섹션 관리 목록 — 위치별 배너. 위치 탭은 위치 레지스트리(내장 정적·동적 위치, 제3 확장이 더한 위치) 그대로다. 동적 위치(게시판마다·\n  상품마다·카테고리마다)는 대상을 먼저 고르고(`query.target`), 목록·미리보기·순서·등록이 그 대상만 다룬다. 위치·대상·상태·검색·정렬·쪽은 전부\n  URL 쿼리라 새로고침·뒤로 가기·주소 공유에도 같은 조건이 다시 열린다. 확장이 꺼져 등록되지 않은 위치에 배너가 남았으면 끝에 그 탭이 보이고,\n  그 탭에서는 목록 확인·수정·삭제만 된다. 위쪽에 지금 노출 중인 배너 미리보기와 그 위치의 슬라이더 설정, 아래쪽에 표·일괄 작업·순서 변경 창이 있다.\n  노출 상태 필터·정렬은 서버가 기간 조건으로 처리한다(화면에서 거르지 않는다). 선택 묶음은 위치·필터·쪽이 바뀌면 비운다 —\n  다른 위치 배너가 일괄 작업에 섞이지 않게. 위치 응답이 끝나도 현재 위치 정의가 없으면 정적 화면으로 추정하지 않는다 — 위치 목록이 비었으면 다시 받기를, 목록은 왔는데 주소의 위치만 없으면(확장이 꺼지고 남은 배너도 없음) 없는 위치 안내를 보인다.",
     "version": "1.0.0",
     "layout_name": "hero_section_banner_list",
     "extends": "_admin_base",
@@ -185,7 +185,8 @@
         "currentPosition": "{{query.position || 'home_hero'}}",
         "currentDef": "{{(_computed.positionDefs).find(p => p.key === (query.position || 'home_hero')) ?? null}}",
         "positionsReady": "{{!!_computed.currentDef}}",
-        "positionsFailed": "{{!_computed.positionsReady && (_global?.heroPositionSettingsFailed === true || position_settings !== undefined)}}",
+        "positionsMissing": "{{!_computed.positionsReady && _computed.positionDefs.length > 0 && _global?.heroPositionSettingsFailed !== true}}",
+        "positionsFailed": "{{!_computed.positionsReady && !_computed.positionsMissing && (_global?.heroPositionSettingsFailed === true || position_settings !== undefined)}}",
         "isDynamic": "{{_computed.currentDef?.dynamic === true}}",
         "isUnregistered": "{{_computed.currentDef?.registered === false}}",
         "currentTarget": "{{_computed.isDynamic ? (query.target || '') : ''}}",
@@ -433,7 +434,7 @@
                         "id": "positions_loading",
                         "type": "basic",
                         "name": "P",
-                        "if": "{{!_computed.positionsReady && !_computed.positionsFailed}}",
+                        "if": "{{!_computed.positionsReady && !_computed.positionsFailed && !_computed.positionsMissing}}",
                         "props": {
                             "role": "status",
                             "className": "hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
@@ -485,6 +486,35 @@
                                     "className": "hs-btn hs-btn-secondary"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.retry"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "없는 위치 — 서버는 등록되지 않은 위치를 배너가 남았을 때만 내준다. 다시 받아도 오지 않으므로 다시 받기 대신 위 탭으로 옮기게 한다",
+                        "id": "position_missing",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.positionsMissing}}",
+                        "props": {
+                            "role": "status",
+                            "className": "hs-alert-warning hs:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.position.missing"
                             }
                         ]
                     },

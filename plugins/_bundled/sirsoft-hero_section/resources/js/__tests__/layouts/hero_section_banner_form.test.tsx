@@ -544,7 +544,6 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 수정 
     ['null 응답', null],
     ['data null', { data: null }],
     ['빈 위치 배열', { data: { positions: [] } }],
-    ['현재 위치 정의 누락', { data: { positions: [{ key: 'home_hero', dynamic: false }] } }],
     ['위치 배열 형식 오류', { data: { positions: {} } }],
   ] as const;
   // @scenario case=admin_form_position_target
@@ -557,5 +556,37 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 수정 
     expect(evaluateBinding(findById(form, 'save_reason_settings_failed')!.if, scope, computed)).toBe(true);
     expect(evaluateBinding(findById(form, 'save_reason_settings_loading')!.if, scope, computed)).toBe(false);
     expect(actionsOf(findById(form, 'save_reason_settings_retry'), 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
+  });
+});
+
+// @scenario case=admin_form_position_target
+describe('[case:components-misc-hero-position-settings-invalid-response] 고른 위치가 위치 목록에 없으면 다시 받기 대신 위치를 다시 고르게 한다', () => {
+  const defs = { data: { positions: [{ key: 'home_hero', registered: true, dynamic: false }] } };
+  // @scenario case=admin_form_position_target
+  it('없는 위치로 연 등록 화면은 저장을 잠그고 「없는 위치」 이유를 보이며, 다른 위치를 고르면 풀린다', () => {
+    const scope = (position: string) => ({ _local: { form: { position, images: { pc: { id: 1 } } } }, position_settings: defs, banner: undefined, form_target_info: undefined, _global: {} });
+    const missing = scope('gone_hero');
+    const computed = evaluateComputed(form as any, missing);
+    const visible = (id: string) => evaluateBinding(findById(form, id)!.if, missing, computed);
+    expect(computed.formMissing).toBe(true);
+    expect(computed.settingsFailed).toBe(false);
+    expect(evaluateBinding(findById(form, 'footer_save_button')!.props.disabled, missing, computed)).toBe(true);
+    expect(visible('save_reason_settings_missing')).toBe(true);
+    expect(visible('save_reason_settings_failed')).toBe(false);
+    expect(visible('save_reason_settings_loading')).toBe(false);
+    expect(visible('save_reason_settings_retry')).toBe(false);
+    expect(computed.formPositions.map((p: any) => p.key)).toEqual(['home_hero']);
+    const picked = scope('home_hero');
+    const after = evaluateComputed(form as any, picked);
+    expect(after.formMissing).toBe(false);
+    expect(evaluateBinding(findById(form, 'footer_save_button')!.props.disabled, picked, after)).toBe(false);
+  });
+
+  // @scenario case=admin_form_position_target
+  it('요청이 실패해 앞 응답이 남은 경우는 받지 못함이다 — 다시 받기를 보인다', () => {
+    const scope = { _local: { form: { position: 'board_hero', target_key: '9' } }, position_settings: defs, banner: undefined, form_target_info: undefined, _global: { heroPositionSettingsFailed: true } };
+    const computed = evaluateComputed(form as any, scope);
+    expect(computed.formMissing).toBe(false);
+    expect(computed.settingsFailed).toBe(true);
   });
 });

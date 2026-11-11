@@ -88,7 +88,8 @@
             "unregistered_notice": "The extension (module or plugin) that adds this position is turned off, so these banners are not shown on the site. They are kept, and appear again when the extension is turned back on. On this tab you can only review, edit and delete them.",
             "no_auto_output": "The extension that adds this position does not say how to read the target from the page address (route_param), so the hero section does not fill the site slot itself. If that extension ships its own output fragment, banners still show; otherwise they do not appear on the site.",
             "loading": "Loading positions",
-            "load_failed": "Could not load the positions. Select Retry to try again."
+            "load_failed": "Could not load the positions. Select Retry to try again.",
+            "missing": "This position does not exist right now. The extension that added it is turned off and no banners are left, or the address is wrong. Choose another position from the tabs above."
         },
         "target": {
             "board": "Board",
@@ -448,7 +449,8 @@
                 "target": "Choose a {{target}} to save.",
                 "go_target": "Go to target",
                 "settings_loading": "Positions are still loading, so you cannot save yet.",
-                "settings_failed": "Positions could not be loaded, so you cannot save."
+                "settings_failed": "Positions could not be loaded, so you cannot save.",
+                "position_missing": "The selected position does not exist, so the banner cannot be saved. Choose a position again."
             },
             "media": {
                 "type": "Media type",

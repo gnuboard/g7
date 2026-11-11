@@ -283,7 +283,6 @@ const unusablePositionSettings = [
   ['루트 null', null],
   ['data null', { success: true, data: null }],
   ['빈 배열', { success: true, data: { positions: [] } }],
-  ['현재 위치 누락', { success: true, data: { positions: [{ key: 'home_hero', registered: true, dynamic: false }] } }],
   ['배열 형식 오류', { success: true, data: { positions: {} } }],
 ] as const;
 
@@ -329,3 +328,32 @@ for (const [shape, payload] of unusablePositionSettings) {
     expect(response.request().postDataJSON().target_key).toBe(BOARD.event.id);
   });
 }
+
+/** 서버는 등록되지 않은 위치를 배너가 남았을 때만 내준다 — 위치 목록은 왔는데 주소의 위치만 없으면 다시 받아도 오지 않는다. 실제 응답으로 본다. */
+const GONE_POSITION = 'qa_gone_hero';
+
+// @scenario case=admin_placement_list
+test('관리자: 위치 목록에 없는 위치 주소는 다시 받기 대신 없는 위치로 알리고 탭으로 옮길 수 있다', async ({ page, managerToken }) => {
+  await authenticatePage(page, managerToken);
+  await page.goto(`${ADMIN_LIST}?position=${GONE_POSITION}`);
+  await expect(page.getByText('이 위치는 지금 없습니다', { exact: false })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('button', { name: '다시 받기', exact: true })).toHaveCount(0);
+  await expect(page.getByText('위치 정보를 불러오는 중입니다', { exact: true })).toHaveCount(0);
+  await expect(page.locator('table')).toHaveCount(0);
+  await expect(page.locator('section[aria-labelledby="hero_slider_heading"]')).toHaveCount(0);
+  await page.locator('a[href$="?position=home_hero"]').first().click();
+  await expect(page.locator('section[aria-labelledby="hero_slider_heading"]')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('이 위치는 지금 없습니다', { exact: false })).toHaveCount(0);
+});
+
+// @scenario case=admin_form_position_target
+test('관리자: 없는 위치로 연 등록 화면은 다시 받기 대신 위치를 다시 고르게 하고 저장을 잠근다', async ({ page, managerToken }) => {
+  await authenticatePage(page, managerToken);
+  await page.goto(`${ADMIN_LIST}/create?position=${GONE_POSITION}`);
+  await expect(page.getByText('고른 위치가 없어 저장할 수 없습니다', { exact: false })).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('#footer_save_button')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '다시 받기', exact: true })).toHaveCount(0);
+  await page.getByRole('radio', { name: '사이트 홈', exact: true }).check();
+  await expect(page.getByText('고른 위치가 없어 저장할 수 없습니다', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('PC 이미지를 올려야 저장할 수 있습니다', { exact: false })).toBeVisible();
+});
