@@ -14,6 +14,8 @@
  * @scenario-manifest tests/scenarios/postcode-display-modes.yaml
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { openPostcodeHandler } from '../handlers/openPostcode';
 import {
@@ -21,6 +23,12 @@ import {
     getPostcodeConstructor,
     isPostcodeSdkReady,
 } from '../handlers/postcodeSdk';
+
+/**
+ * 검색 창 스타일 원본 — 규칙은 핸들러가 싣지 않고 이 파일(빌드 산출물 `dist/css/plugin.css`)에 있다.
+ * vitest 는 플러그인 디렉터리에서 실행한다.
+ */
+const MAIN_CSS = readFileSync(resolve(process.cwd(), 'resources/css/main.css'), 'utf8');
 
 /** 가짜 SDK 인스턴스 기록 */
 interface FakeInstance {
@@ -134,7 +142,6 @@ describe('우편번호 검색 창 표시 방식', () => {
     afterEach(() => {
         document.body.innerHTML = '';
         document.body.style.overflow = '';
-        document.getElementById('g7-postcode-inline-style')?.remove();
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         delete (window as any).kakao;
         delete (window as any).daum;
@@ -355,7 +362,7 @@ describe('우편번호 검색 창 표시 방식', () => {
          * @scenario case=inline
          * @effects inline_area_visible_in_dark_mode
          */
-        it('다크 모드용 테두리·배경 규칙을 한 번만 싣는다', async () => {
+        it('다크 모드용 테두리·배경 규칙은 플러그인 CSS 파일에 있고, 핸들러는 <style> 을 싣지 않는다', async () => {
             const { button } = mountAddressGroup();
             const action = { handler: 'openPostcode', params: { displayModePc: 'inline' } };
 
@@ -363,11 +370,9 @@ describe('우편번호 검색 창 표시 방식', () => {
             await openPostcodeHandler(action, { event: clickEvent(button) } as any);
             await openPostcodeHandler(action, { event: clickEvent(button) } as any);
 
-            const styles = document.querySelectorAll('#g7-postcode-inline-style');
-            expect(styles).toHaveLength(1);
-            expect(styles[0].textContent).toContain('.dark .g7-postcode-inline');
-            expect(styles[0].textContent).toMatch(/\.dark \.g7-postcode-inline\s*\{[^}]*border-color/);
-            expect(styles[0].textContent).toMatch(/\.dark \.g7-postcode-inline\s*\{[^}]*background/);
+            expect(document.querySelectorAll('style')).toHaveLength(0);
+            expect(MAIN_CSS).toMatch(/\.dark \.g7-postcode-inline\s*\{[^}]*border-color/);
+            expect(MAIN_CSS).toMatch(/\.dark \.g7-postcode-inline\s*\{[^}]*background/);
         });
 
         /**
@@ -396,11 +401,13 @@ describe('우편번호 검색 창 표시 방식', () => {
                 {} as any
             );
 
+            // 설정값은 CSS 변수로 싣고, 「화면 크기와 견줘 작은 쪽」 규칙은 플러그인 CSS 파일에 있다
             const layer = document.getElementById('daum-postcode-layer')!;
-            const style = layer.getAttribute('style') ?? '';
 
-            expect(style).toContain('width: min(500px, calc(100vw - 32px))');
-            expect(style).toContain('height: min(600px, calc(100vh - 96px))');
+            expect(layer.style.getPropertyValue('--dp-width')).toBe('500px');
+            expect(layer.style.getPropertyValue('--dp-height')).toBe('600px');
+            expect(MAIN_CSS).toMatch(/#daum-postcode-layer\s*\{[^}]*width: min\(var\(--dp-width[^)]*\), calc\(100vw - 32px\)\)/);
+            expect(MAIN_CSS).toMatch(/#daum-postcode-layer\s*\{[^}]*height: min\(var\(--dp-height[^)]*\), calc\(100vh - 96px\)\)/);
             expect(kakaoInstances).toHaveLength(1);
             expect(kakaoInstances[0].embed).toHaveBeenCalledWith(layer);
         });
@@ -451,9 +458,9 @@ describe('우편번호 검색 창 표시 방식', () => {
                 { event: clickEvent(button) } as any
             );
 
-            const style = document.getElementById('daum-postcode-layer')!.getAttribute('style') ?? '';
-            expect(style).toContain('width: min(700px, calc(100vw - 32px))');
-            expect(style).toContain('height: min(800px, calc(100vh - 96px))');
+            const layer = document.getElementById('daum-postcode-layer')!;
+            expect(layer.style.getPropertyValue('--dp-width')).toBe('700px');
+            expect(layer.style.getPropertyValue('--dp-height')).toBe('800px');
             expect(document.querySelector('.g7-postcode-inline')).toBeNull();
         });
 
@@ -499,9 +506,11 @@ describe('우편번호 검색 창 표시 방식', () => {
             expect(dialog).not.toBeNull();
             expect(dialog.getAttribute('role')).toBe('dialog');
             expect(dialog.getAttribute('aria-modal')).toBe('true');
-            const style = dialog.getAttribute('style') ?? '';
-            expect(style).toContain('position: fixed');
-            expect(style).toContain('inset: 0');
+            // 화면 전체를 덮는 규칙은 클래스로 건다(style 속성 문자열을 쓰지 않는다)
+            expect(dialog.classList.contains('g7-postcode-inline-fullscreen')).toBe(true);
+            expect(dialog.hasAttribute('style')).toBe(false);
+            expect(MAIN_CSS).toMatch(/^\.g7-postcode-inline-fullscreen\s*\{[^}]*position: fixed/m);
+            expect(MAIN_CSS).toMatch(/^\.g7-postcode-inline-fullscreen\s*\{[^}]*inset: 0/m);
 
             expect(dialog.textContent).toContain('주소 검색');
             const close = dialog.querySelector('button') as HTMLButtonElement;

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-11
+
+### Fixed
+
+- 엄격한 스타일 보안 정책(CSP `style-src 'self'; style-src-attr 'none'`)을 건 사이트에서 편집기의 다크 모드·높이·다국어 탭 모양과 「미디어 넣기」 미리보기, 글 본문의 표·목록·다크 모드 보정이 빠지던 문제를 고쳤습니다. 이 플러그인이 화면에 직접 써 넣던 스타일을 플러그인 CSS 파일로 옮겼습니다. CKEditor 가 스스로 넣는 스타일은 그대로여서, 이 정책을 건 사이트에서는 편집 화면 일부가 다르게 보일 수 있습니다.
+
 ## [1.1.3] - 2026-11-10
 
 ### Added

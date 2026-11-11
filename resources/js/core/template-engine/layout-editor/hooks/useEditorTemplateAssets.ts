@@ -33,6 +33,20 @@ import {
 import { reseedPendingIntoEngine } from './pendingCustomTranslations';
 import { suffixed } from '../../../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
+import { has as hasRules, setRules } from '../../../style/RuntimeStyleSheet';
+import { createLogger } from '../../../utils/Logger';
+
+const logger = createLogger('useEditorTemplateAssets');
+
+/**
+ * 편집기 CSS 자산의 런타임 시트 키(표식 요소의 id).
+ *
+ * @param href CSS URL
+ * @returns 규칙 묶음 키
+ */
+export function editorAssetStyleKey(href: string): string {
+  return `g7le-asset:${href}`;
+}
 
 export interface EditorTemplateAssetsState {
   componentRegistry: ComponentRegistry | null;
@@ -152,18 +166,22 @@ function injectScript(src: string): Promise<void> {
 /**
  * 편집기 CSS 주입. 권한 가드된 admin 엔드포인트(`/api/admin/...`)는 `<link>` 태그가
  * Authorization 헤더를 못 실어 401/리다이렉트(500)로 떨어지므로, Bearer 토큰을 실은
- * fetch 로 텍스트를 받아 `<style>` 로 주입한다(다크 격리 CSS 가
- * 편집 권한 가드 엔드포인트로 이동). 공개 자산(`/api/templates/assets/...`)이나 외부
- * URL 은 종전대로 `<link>` 로 주입(인증 불필요).
+ * fetch 로 텍스트를 받아 런타임 시트로 붙인다(다크 격리 CSS 가
+ * 편집 권한 가드 엔드포인트로 이동). `<style>` 요소를 만들지 않는다 — 엄격한 스타일
+ * 정책(`style-src 'self'`)에서도 적용되게 `RuntimeStyleSheet`(키 `g7le-asset:{href}`)를 쓴다.
+ * 공개 자산(`/api/templates/assets/...`)이나 외부 URL 은 종전대로 `<link>` 로 주입(인증 불필요).
  *
  * @param href CSS URL
  */
 async function injectStylesheet(href: string): Promise<void> {
   if (typeof document === 'undefined') return;
-  const marker = `[data-g7le-asset="${href}"]`;
-  if (document.querySelector(`link${marker}, style${marker}`)) return;
+  const key = editorAssetStyleKey(href);
+  if (hasRules(key)) return;
+  for (const link of Array.from(document.querySelectorAll('link[data-g7le-asset]'))) {
+    if (link.getAttribute('data-g7le-asset') === href) return;
+  }
 
-  // 권한 가드된 admin CSS 엔드포인트는 Bearer fetch → <style> 주입
+  // 권한 가드된 admin CSS 엔드포인트는 Bearer fetch → 런타임 시트
   const isGuardedAdminCss = href.includes('/api/admin/');
   if (isGuardedAdminCss) {
     try {
@@ -174,10 +192,11 @@ async function injectStylesheet(href: string): Promise<void> {
       const res = await fetch(href, { headers, credentials: 'same-origin' });
       if (res.ok) {
         const css = await res.text();
-        const style = document.createElement('style');
-        style.textContent = css;
-        style.setAttribute('data-g7le-asset', href);
-        document.head.appendChild(style);
+        // 생성형 시트의 replaceSync 는 @import 를 무시한다 — 조용히 빠지지 않게 알린다
+        if (/@import\b/i.test(css)) {
+          logger.warn(`[g7le] 편집기 CSS 의 @import 는 적용되지 않습니다: ${href}`);
+        }
+        setRules(key, css, { markerAttrs: { 'data-g7le-asset': href } });
         return;
       }
       // 실패 시 <link> 폴백(공개 변종이 가능하면 동작)
@@ -222,7 +241,7 @@ export function useEditorTemplateAssets(
         const manifest = await fetchEditorAssets(templateIdentifier);
         if (cancelled) return;
 
-        // 2. CSS 주입 — 권한 가드된 admin CSS 는 Bearer fetch→<style>(다크 격리),
+        // 2. CSS 주입 — 권한 가드된 admin CSS 는 Bearer fetch→런타임 시트(다크 격리),
         //    공개/외부 URL 은 <link>. 가드 CSS fetch 가 캔버스 다크 스타일을 좌우하므로 await.
         for (const href of manifest.css ?? []) {
           await injectStylesheet(href);

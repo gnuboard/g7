@@ -539,9 +539,24 @@
 
 `refetchDataSource` 핸들러로 단독 데이터를 다시 부르는 경우는 `wait_for` 트리거 대상이 아니다. 이 경우 컴포넌트 단위 `blur_until_loaded` 의 객체 형태(`{ enabled: true, data_sources: ["xxx"] }`)로 처리한다 — 페이지 단위 vs 컴포넌트 단위의 역할 분리를 유지한다.
 
-`target` 지정 시 CSS `<style>` 태그를 `<head>`에 주입하여 타겟 요소에 `::after` 의사 요소로 오버레이를 생성합니다. 타겟 요소에 `position:relative; z-index:0`을 설정하여 명시적 stacking context를 생성하므로, `::after`가 타겟 내부에 갇히고 헤더/네비게이션 등 형제 요소를 절대 가리지 않습니다. `target` 미지정 시 `document.body`에 `position:fixed` div를 삽입하는 폴백 방식을 사용합니다.
+`target` 지정 시 문서에 런타임 CSS 규칙을 붙여 타겟 요소에 `::after` 의사 요소로 오버레이를 생성합니다. 타겟 요소에 `position:relative; z-index:0`을 설정하여 명시적 stacking context를 생성하므로, `::after`가 타겟 내부에 갇히고 헤더/네비게이션 등 형제 요소를 절대 가리지 않습니다. `target` 미지정 시 `document.body`에 `position:fixed` div를 삽입하는 폴백 방식을 사용합니다.
 
-> **핵심**: `<style>` 태그는 React 렌더 트리 외부(`<head>`)에 삽입되므로, `renderTemplate()` 시 DOM 교체에도 소멸하지 않습니다. CSS 규칙은 셀렉터 기반으로 새로 렌더된 DOM에도 자동 적용됩니다.
+> **핵심**: 규칙은 React 렌더 트리 밖(문서 수준)에 붙으므로, `renderTemplate()` 시 DOM 교체에도 소멸하지 않습니다. CSS 규칙은 셀렉터 기반으로 새로 렌더된 DOM에도 자동 적용됩니다.
+
+#### 규칙을 붙이는 방식 (engine-v1.91.0)
+
+덮개 규칙은 `<style>` 요소가 아니라 스크립트가 만든 스타일시트 객체(`document.adoptedStyleSheets`)로 붙습니다. `<style>` 요소는 엄격한 스타일 정책(`style-src 'self'`, `style-src-elem 'self'`)에서 적용되지 않아 덮개가 보이지 않기 때문입니다([콘텐츠 보안 정책](../backend/content-security-policy.md#1-무엇을-막는가)).
+
+| 덮개 | 규칙 묶음 키 | `<head>` 의 표식 요소 |
+| ---- | ------------ | --------------------- |
+| `opaque`·`blur`·`fade` (`target` 지정) | `g7-transition-overlay` | `<meta id="g7-transition-overlay" data-g7-runtime-style="adopted">` |
+| `skeleton`·`spinner` | `g7-skeleton-overlay-style` | `<meta id="g7-skeleton-overlay-style" data-g7-runtime-style="adopted">` |
+
+- **표식 요소**: 규칙이 붙어 있는 동안 `<head>` 에 같은 id 의 `<meta>` 가 있고, 덮개를 걷으면 함께 사라집니다. 스타일시트 객체는 DOM 에 보이지 않으므로, 덮개가 떠 있는지는 이 요소의 유무로 확인합니다(E2E: [e2e-testing.md](../testing/e2e-testing.md)).
+- **`target` 미지정 폴백**: `document.body` 에 붙는 `<div id="g7-transition-overlay">` 는 스타일 객체 대입으로 꾸미므로 정책과 무관합니다.
+- **기본 스피너**(`spinner.component` 미지정): 모양은 코어 정적 CSS(`g7-core.css`)의 `.g7-spinner-overlay`·`.g7-spinner` 클래스가 줍니다. 배경·스피너 색은 CSS 변수 `--g7-overlay-bg`·`--g7-spinner-color` 로 바꿉니다. 회전 애니메이션 이름은 `g7-spin` 입니다.
+- **구형 브라우저**: `document.adoptedStyleSheets` 를 지원하지 않으면 `<style id="{키}" data-g7-runtime-style="element">` 로 대신 붙입니다. 이 브라우저에서 스타일 정책을 강제하면 덮개가 표시되지 않습니다(화면 이동과 내용은 정상).
+- 확장이 같은 방식으로 실행 중 규칙을 붙이려면 `G7Core.style.setRules(key, css)` 를 씁니다([module-assets.md](../extension/module-assets.md#인라인-스타일을-쓰지-않습니다-코어-716)).
 
 ### 스타일 옵션
 

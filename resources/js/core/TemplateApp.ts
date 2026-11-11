@@ -58,6 +58,7 @@ import { beginLocaleSwitchHandoff, closeLocaleSwitchHandoff, clearLocaleSwitchHa
 import { createPublicApi, createTracker, type TrackerHandle } from './analytics';
 import { defaultConsentRuntimeDeps, getConsentRuntime, installConsentRuntime } from './consent';
 import { defaultSearchHistoryRuntimeDeps, installSearchHistoryRuntime } from './searchHistory';
+import { setRules as setRuntimeStyleRules, remove as removeRuntimeStyleRules } from './style/RuntimeStyleSheet';
 import {
     mergeScrollRestorationConfig,
     notifyScrollRestoreDataReady,
@@ -424,8 +425,12 @@ export class TemplateApp {
     private extensionCacheVersion: number = 0;
     /** 현재 레이아웃의 전역 헤더 규칙 (API 호출 시 자동 적용) */
     private currentGlobalHeaders: any[] = [];
-    /** 전환 오버레이 DOM 요소 @since engine-v1.23.0 */
-    private transitionOverlayEl: HTMLDivElement | null = null;
+    /**
+     * 전환 오버레이 — target 미지정 시의 덮개 `<div>`, 또는 target 지정 시 런타임 규칙 핸들.
+     * 둘 다 `remove()` 로 걷는다(engine-v1.91.0: `<style>` 요소 대신 `RuntimeStyleSheet` 핸들).
+     * @since engine-v1.23.0
+     */
+    private transitionOverlayEl: { remove(): void } | null = null;
     /** 스켈레톤 오버레이 React 루트 @since engine-v1.24.0 */
     private skeletonOverlayRoot: any = null;
     /** 스켈레톤 오버레이 컨테이너 DOM 요소 @since engine-v1.24.0 */
@@ -3241,16 +3246,17 @@ export class TemplateApp {
         }
 
         if (normalized.target) {
-            // CSS <style> 주입 + ::after 의사 요소 방식
-            // - <head>에 삽입 → React 렌더 트리 외부 (재렌더 시 소멸하지 않음)
+            // 런타임 CSS 규칙 + ::after 의사 요소 방식
+            // - 문서 수준 규칙 → React 렌더 트리 외부 (재렌더 시 소멸하지 않음)
             // - ::after는 부모의 스태킹 컨텍스트 내부 → 형제 요소(header 등) 가림 불가
             // - React가 DOM 교체해도 같은 ID에 CSS 규칙 재매칭
+            // - <style> 요소를 만들지 않는다 — 엄격한 스타일 정책에서 막혀 덮개가 사라진다(#163).
+            //   <head> 에는 같은 id 의 표식 요소가 남는다(덮개 생존 신호 계약).
             const selector = `#${CSS.escape(normalized.target)}`;
-            const style = document.createElement('style');
-            style.id = 'g7-transition-overlay';
-            style.textContent = `${selector}{position:relative;z-index:0;}${selector}::after{content:'';position:absolute;inset:0;background:${bgCss};${extraCss}z-index:2147483647;pointer-events:none;}`;
-            document.head.appendChild(style);
-            this.transitionOverlayEl = style as unknown as HTMLDivElement;
+            this.transitionOverlayEl = setRuntimeStyleRules(
+                'g7-transition-overlay',
+                `${selector}{position:relative;z-index:0;}${selector}::after{content:'';position:absolute;inset:0;background:${bgCss};${extraCss}z-index:2147483647;pointer-events:none;}`
+            );
         } else {
             // 폴백: target 미지정 시 전체 화면 DOM 오버레이
             const overlay = document.createElement('div');
@@ -3355,18 +3361,17 @@ export class TemplateApp {
         const isDark = document.documentElement.classList.contains('dark');
         const bgColor = isDark ? 'rgb(17,24,39)' : 'rgb(249,250,251)';
 
-        // Step 1: CSS <style> 주입으로 즉시 이전 컨텐츠 가림 (동기, DOM 즉시 반영)
+        // Step 1: 런타임 CSS 규칙으로 즉시 이전 컨텐츠 가림 (동기, 즉시 반영 — <style> 요소 없이, #163)
         // ::after 의사 요소는 React 렌더와 무관하게 즉시 적용됨
         // renderTemplate()이 #app DOM을 교체해도 새 #target에 ::after가 재매칭됨
         const cssTargetId = skeletonScope === 'fullpage' ? 'app'
             : skeletonScope === 'fallback' ? fallbackTarget!
             : target;
         const selector = `#${CSS.escape(cssTargetId)}`;
-        const style = document.createElement('style');
-        style.id = 'g7-skeleton-overlay-style';
-        style.textContent = `${selector}{position:relative;z-index:0;}${selector}::after{content:'';position:absolute;inset:0;background:${bgColor};z-index:2147483646;pointer-events:none;}`;
-        document.head.appendChild(style);
-        this.transitionOverlayEl = style as unknown as HTMLDivElement;
+        this.transitionOverlayEl = setRuntimeStyleRules(
+            'g7-skeleton-overlay-style',
+            `${selector}{position:relative;z-index:0;}${selector}::after{content:'';position:absolute;inset:0;background:${bgColor};z-index:2147483646;pointer-events:none;}`
+        );
 
         // Step 2: 스켈레톤 React 컨테이너를 document.body에 생성 (React 관리 #app 외부)
         // renderTemplate()이 #app 내부 DOM을 교체해도 body 직속 컨테이너는 파괴되지 않음
@@ -3562,20 +3567,14 @@ export class TemplateApp {
         // 기존 오버레이 제거
         this.hideSkeletonOverlay();
 
-        // CSS 주입 — 타겟에 position:relative만 설정 + keyframes 정의
+        // 런타임 CSS 규칙 — 타겟에 position:relative만 설정한다.
+        // 회전 keyframes(`g7-spin`)는 코어 정적 CSS(g7-core.css)에 있다 — 번들 템플릿 PageLoading 이 그 이름에 기댄다(#163).
         // 비주얼 스타일(배경색, z-index 등)은 컴포넌트가 결정
         const cssTargetId = spinnerScope === 'fullpage' ? 'app'
             : spinnerScope === 'fallback' ? fallbackTarget!
             : target;
         const selector = `#${CSS.escape(cssTargetId)}`;
-        const style = document.createElement('style');
-        style.id = 'g7-skeleton-overlay-style';
-        style.textContent = [
-            `${selector}{position:relative;}`,
-            `@keyframes g7-spin{to{transform:rotate(360deg)}}`,
-        ].join('');
-        document.head.appendChild(style);
-        this.transitionOverlayEl = style as unknown as HTMLDivElement;
+        this.transitionOverlayEl = setRuntimeStyleRules('g7-skeleton-overlay-style', `${selector}{position:relative;}`);
 
         // 번역 텍스트를 미리 해석 (flushSync 내에서 G7Core.t()가 동작하지 않을 수 있음)
         const resolvedText = spinnerConfig?.text
@@ -3653,9 +3652,15 @@ export class TemplateApp {
             logger.log(`Spinner component "${spinnerConfig.component}" not found in registry, using default spinner`);
         }
 
-        // 기본 스피너 폴백 (커스텀 컴포넌트 미지정 시)
-        // 폴백만 인라인 스타일 사용 — 커스텀 컴포넌트 사용 시 이 코드는 실행되지 않음
-        container.innerHTML = `<div style="position:absolute;inset:0;z-index:2147483647;overflow:hidden;background:var(--g7-overlay-bg, rgb(249,250,251));display:flex;align-items:center;justify-content:center;"><div style="width:32px;height:32px;border:3px solid var(--g7-spinner-color, #9ca3af);border-top-color:transparent;border-radius:50%;animation:g7-spin 0.8s linear infinite;"></div></div>`;
+        // 기본 스피너 폴백 (커스텀 컴포넌트 미지정 시) — 커스텀 컴포넌트 사용 시 이 코드는 실행되지 않음.
+        // 모양은 코어 정적 CSS(g7-core.css)의 클래스로 준다. HTML 문자열의 style 속성은 엄격한 스타일 정책에서
+        // 막혀 스피너가 보이지 않는다(#163). 색은 종전대로 CSS 변수 --g7-overlay-bg·--g7-spinner-color 로 바꾼다.
+        const fallbackOverlay = document.createElement('div');
+        fallbackOverlay.className = 'g7-spinner-overlay';
+        const fallbackSpinner = document.createElement('div');
+        fallbackSpinner.className = 'g7-spinner';
+        fallbackOverlay.appendChild(fallbackSpinner);
+        container.replaceChildren(fallbackOverlay);
     }
 
     /**
@@ -3729,9 +3734,8 @@ export class TemplateApp {
             }
             this.skeletonOverlayContainer = null;
         }
-        // 스켈레톤 전용 CSS style 태그 제거 (hideTransitionOverlay에서 못 잡은 경우)
-        const styleEl = document.getElementById('g7-skeleton-overlay-style');
-        if (styleEl) styleEl.remove();
+        // 스켈레톤 전용 런타임 규칙 제거 (hideTransitionOverlay에서 못 잡은 경우)
+        removeRuntimeStyleRules('g7-skeleton-overlay-style');
         // spinner 재생성 상태 초기화
         this._spinnerState = null;
     }

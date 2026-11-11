@@ -126,6 +126,9 @@ function sandbox(pulledBy) {
         setTimeout: () => 0,
         // showError 가 부르는 화면 전환 함수는 이 시험의 관심 밖이다
         hideInstallationStartSection() {}, showInstallationProgressSection() {}, hideAbortButton() {}, setTaskStatus() {}, scrollResultIntoView() {},
+        // installer-boot.js 의 보이기·숨기기 도우미 (초기 숨김이 hidden 클래스라 보이기는 클래스를 뗀다)
+        installerShow(node, display) { if (!node) return; node.classList.remove('hidden'); node.style.display = display || ''; },
+        installerHide(node) { if (node) node.style.display = 'none'; },
         installationCompleted: false,
         lastRollbackFailure: null,
         INSTALLATION_TASKS: [],

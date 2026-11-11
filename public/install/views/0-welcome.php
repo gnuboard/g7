@@ -16,17 +16,16 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
 
 <div class="welcome-wrapper">
     <div class="installer-container" id="welcome-step">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h1 class="installer-title" style="margin-bottom: 0;">
+        <div class="u-flex-between u-mb-lg">
+            <h1 class="installer-title u-mb-0">
                 <?= lang('welcome_title') ?>
             </h1>
             <button
                 id="theme-toggle-btn"
-                class="theme-toggle"
+                class="theme-toggle u-m-0"
                 type="button"
                 aria-label="<?= lang('toggle_theme') ?>"
                 title="<?= lang('toggle_theme') ?>"
-                style="margin: 0;"
             >
                 <span id="theme-toggle-icon">🌙</span>
             </button>
@@ -122,17 +121,17 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         <pre class="fix-command"><?= htmlspecialchars($groupCommand) ?></pre>
                         <button class="btn-copy" data-action="copyWelcomeCommand"><?= lang('copy_command') ?></button>
                     </div>
-                    <p class="fix-guide-label" style="margin-top: 1rem;"><?= lang('ownership_mismatch_option_chown') ?></p>
+                    <p class="fix-guide-label u-mt-md"><?= lang('ownership_mismatch_option_chown') ?></p>
                     <div class="code-box">
                         <pre class="fix-command"><?= htmlspecialchars("sudo chown -R {$webUser}:{$webUser} {$storagePath}") ?></pre>
                         <button class="btn-copy" data-action="copyWelcomeCommand"><?= lang('copy_command') ?></button>
                     </div>
-                    <p class="fix-guide-label" style="margin-top: 1rem;"><?= lang('ownership_mismatch_option_777') ?></p>
+                    <p class="fix-guide-label u-mt-md"><?= lang('ownership_mismatch_option_777') ?></p>
                     <div class="code-box">
                         <pre class="fix-command"><?= htmlspecialchars("chmod -R 777 {$storagePath}") ?></pre>
                         <button class="btn-copy" data-action="copyWelcomeCommand"><?= lang('copy_command') ?></button>
                     </div>
-                    <p class="fix-guide-hint" style="margin-top: 0.75rem;"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
+                    <p class="fix-guide-hint u-mt-075"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
                 <?php elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues', 'windows_readonly'])): ?>
                     <?php if (isWindows()): ?>
                         <?php if ($storageResult['error_type'] === 'windows_readonly'): ?>
@@ -184,16 +183,14 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
 
         <!-- 세션 쿠키 차단 경고 배너 (round-trip 검증 실패 시 JS 가 표시) -->
         <div id="session-cookie-blocked-banner"
-             class="alert alert-warning"
-             role="alert"
-             style="display:none;margin-bottom:1rem;">
-            <div class="alert-header" style="display:flex;justify-content:space-between;align-items:center;">
+             class="alert alert-warning u-mb-md hidden"
+             role="alert">
+            <div class="alert-header u-flex-between">
                 <strong><?= lang('session_cookie_blocked_title') ?></strong>
                 <button type="button"
                         data-action="hideElement" data-arg="session-cookie-blocked-banner"
                         class="btn-close"
-                        aria-label="<?= lang('session_cookie_blocked_dismiss') ?>"
-                        style="background:transparent;border:0;cursor:pointer;font-size:1.25rem;">×</button>
+                        aria-label="<?= lang('session_cookie_blocked_dismiss') ?>">×</button>
             </div>
             <p><?= lang('session_cookie_blocked_description') ?></p>
             <ol>
@@ -201,7 +198,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                 <li><?= lang('session_cookie_blocked_remedy_2') ?></li>
                 <li><?= lang('session_cookie_blocked_remedy_3') ?></li>
             </ol>
-            <p style="font-size:0.85rem;opacity:0.75;"><?= lang('session_cookie_blocked_technical_detail') ?></p>
+            <p class="u-note"><?= lang('session_cookie_blocked_technical_detail') ?></p>
         </div>
 
         <!-- 언어 선택 및 다음 버튼 폼 -->

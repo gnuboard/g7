@@ -188,9 +188,13 @@ return [
     | CSP 모드를 무시하고 그 값을 씁니다. 강제 모드로 관리자 화면까지 막혔을 때 G7_CSP_MODE=off 로
     | 빠져나옵니다. config:cache 를 쓰는 서버는 .env 수정 뒤 `php artisan config:clear` 가 필요합니다.
     | 비워 두면(기본) 화면 설정을 따릅니다.
+    |
+    | 스타일 정책(7.1.6)의 탈출구는 G7_CSP_STYLE_MODE 로 따로 둡니다(값은 같은 세 가지). 두 탈출구는
+    | 서로 독립입니다 — G7_CSP_MODE=off 가 스타일 정책을 끄지 않고, 그 반대도 같습니다.
     */
     'csp' => [
         'mode_override' => env('G7_CSP_MODE'),
+        'style_mode_override' => env('G7_CSP_STYLE_MODE'),
     ],
 
     /*

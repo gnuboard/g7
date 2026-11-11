@@ -1994,7 +1994,27 @@
         "auto_hosts": "Automatically included hosts (declared by active extensions)",
         "auto_hosts_empty": "No active extension declares an external script host.",
         "preview": "Policy preview",
-        "preview_hint": "Based on saved values. Save first if you changed the mode or hosts."
+        "preview_hint": "Based on saved values. Save first if you changed the mode or hosts.",
+        "style": {
+          "title": "Style policy",
+          "desc": "Adds a style-source policy to site page responses so CSS from untrusted origins and inline styles are not applied. It is turned on and off separately from the script policy.",
+          "mode": "Style mode",
+          "mode_desc": "Report only does not block anything and writes violations to the server log (storage/logs/csp-*.log). Enforce does not apply violating styles.",
+          "level": "Strictness",
+          "level_basic": "Basic — block <style> blocks and external CSS files that are not allowed",
+          "level_strict": "Strict — Basic plus block style attributes on tags",
+          "level_desc": "Basic keeps most screens working as they are. Strict also blocks style attributes that third-party libraries add themselves, so more screens break.",
+          "enforce_warning": "Check storage/logs/csp-*.log with 'Report only' first and switch to Enforce only when there are no violations.",
+          "known_issues_basic": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors and the background theme are lost. If your site uses these screens, keep this on 'Report only'.",
+          "known_issues_strict": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors, the background theme and line highlights are lost; the post editor (CKEditor) — text color, alignment, background color and font size of saved content are not shown while editing (they still show when viewing the post). If your site uses these screens, keep this on 'Report only'.",
+          "override_notice": "G7_CSP_STYLE_MODE={{mode}} in .env takes precedence over this setting. To change it, edit .env and run php artisan config:clear.",
+          "extra_hosts": "Additional allowed style hosts (press Enter after each)",
+          "extra_hosts_placeholder": "fonts.example.com",
+          "extra_hosts_hint": "Add hosts only when CSS files load from somewhere other than the automatically included hosts below. Enter a host only (e.g. fonts.example.com, *.example.com, https://fonts.example.com).",
+          "auto_hosts": "Automatically included style hosts (declared by the active template)",
+          "auto_hosts_empty": "The active template declares no external stylesheet host.",
+          "preview": "Style policy preview"
+        }
       }
     },
     "identity": {

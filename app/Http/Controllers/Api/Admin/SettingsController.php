@@ -83,7 +83,7 @@ class SettingsController extends AdminBaseController
      * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
-     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts}` (#158)
+     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (#158, 스타일 3키는 7.1.6)
      * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
      * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
      *
@@ -119,8 +119,11 @@ class SettingsController extends AdminBaseController
      * - `override`: `.env G7_CSP_MODE` 탈출구 값 (없으면 null) — 있으면 화면의 모드 선택을 잠근다
      * - `preview`: 지금 저장값으로 붙을 정책 문자열 (모드가 끔이어도 미리 보여 준다)
      * - `auto_hosts`: 활성 확장 선언에서 자동 합산된 호스트
+     * - `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값 (없으면 null) — 있으면 스타일 모드 선택을 잠근다 (7.1.6)
+     * - `style_preview`: 지금 저장값으로 붙을 스타일 정책 문자열 (모드가 끔이어도 미리 보여 준다)
+     * - `style_auto_hosts`: 활성 템플릿의 외부 스타일시트에서 자동 합산된 호스트
      *
-     * @return array{override: string|null, preview: string, auto_hosts: array<int, string>} CSP 메타
+     * @return array{override: string|null, preview: string, auto_hosts: array<int, string>, style_override: string|null, style_preview: string, style_auto_hosts: array<int, string>} CSP 메타
      */
     private function buildCspMeta(): array
     {
@@ -130,6 +133,9 @@ class SettingsController extends AdminBaseController
             'override' => $builder->modeOverride(),
             'preview' => $builder->build(),
             'auto_hosts' => $builder->autoHosts(),
+            'style_override' => $builder->styleModeOverride(),
+            'style_preview' => $builder->buildStyle(),
+            'style_auto_hosts' => $builder->styleAutoHosts(),
         ];
     }
 

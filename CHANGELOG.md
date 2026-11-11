@@ -4,6 +4,26 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [7.1.6] - 2026-11-11
+
+엄격한 스타일 정책(`style-src`)을 건 사이트에서도 화면이 제대로 그려지게 하고, 환경설정에서 스타일 정책을 켤 수 있게 했습니다.
+
+### Added
+
+- 환경설정 > 보안 > 「콘텐츠 보안 정책(CSP)」에 「스타일 정책」을 추가했습니다. 적용 모드(끔·점검만·강제)를 스크립트 정책과 따로 고르고, 차단 강도는 기본(`<style>` 블록과 허용하지 않은 외부 CSS 파일 차단)과 엄격(기본 + 태그의 `style` 속성 차단) 두 단계입니다. 두 정책의 모드가 다르면 강제용 헤더와 점검용 헤더가 함께 나갑니다. 기본값은 끔이고 사용자·관리자 화면 모두에 적용됩니다. 문서: `docs/backend/content-security-policy.md`
+- `.env` 탈출구 `G7_CSP_STYLE_MODE`(`off`·`report_only`·`enforce`)를 추가했습니다. 스타일 정책을 강제한 뒤 관리자 화면이 깨져 설정을 되돌릴 수 없으면 `G7_CSP_STYLE_MODE=off` 를 적고 `php artisan config:clear` 를 실행합니다. 스크립트 정책의 `G7_CSP_MODE` 와 서로 독립입니다.
+- 설정 키 `security.csp_style_mode`·`security.csp_style_level`·`security.csp_extra_style_hosts` 와 설정 응답 메타 `_meta.csp.style_override`·`style_preview`·`style_auto_hosts` 를 추가했습니다. 활성 템플릿이 외부에서 싣는 스타일시트의 호스트는 스타일 정책에 자동으로 허용됩니다.
+- 확장용 프런트 API `G7Core.style.setRules`·`remove`·`has`(`<style>` 요소 없이 실행 중에 CSS 규칙 붙이기)와 `G7Core.inlineStyle`(본문 HTML 의 `style` 속성을 화면에 붙인 뒤 입히기)을 추가했습니다(템플릿 엔진 engine-v1.91.0). 확장 개발 안내: `docs/extension/module-assets.md` 「인라인 스타일을 쓰지 않습니다」
+
+### Changed
+
+- 스스로 스타일을 넣는 외부 라이브러리 화면은 스타일 정책 강제 시 깨질 수 있습니다(목록은 설정 화면 경고와 운영 문서).
+- 페이지 이동 덮개가 떠 있는 동안 `<head>` 에 남는 표식 요소(`#g7-transition-overlay`·`#g7-skeleton-overlay-style`)가 `<style>` 에서 `<meta>` 로 바뀌었습니다. id 는 그대로이므로, 이 요소를 태그 이름으로 찾던 테스트·확장 코드는 id 로 찾도록 고칩니다.
+
+### Fixed
+
+- 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)을 건 사이트에서 정상 화면 아래에 「화면을 불러오지 못했습니다」 안내가 늘 보이고, 오류 화면·시스템 배너·페이지 이동 표시·로딩 스피너가 스타일 없이 그려지던 문제를 고쳤습니다. 관리자·사용자 화면, 오류·점검 화면, 설치 화면, 레이아웃 편집기가 인라인 스타일 없이 그려지고, 본문 서식은 그대로 보입니다. (#163 @glitter-gim 님께서 제보해주셨습니다.)
+
 ## [7.1.5] - 2026-11-10
 
 API 요청 한 건마다 확장 정보를 다시 읽고 다시 조립하던 부팅 반복 비용을 줄였습니다. 응답 내용과 확장 동작은 그대로입니다.

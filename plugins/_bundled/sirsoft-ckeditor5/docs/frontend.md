@@ -51,7 +51,7 @@
 |---|---|
 | `initEditor` | 컨테이너에 편집기를 붙이고 `form.{name}_mode = 'html'` 설정. **자산 확보 실패 시 평문 입력창 폴백 + 사용자 통지 + 재시도 통로** |
 | `destroyEditor` | 화면을 떠날 때 인스턴스 해제 (누수 방지) |
-| `injectContentCss` | 읽기 화면에 본문 스타일 주입 |
+| `injectContentCss` | 읽기 화면에 동봉 본문 CSS(`ckeditor5.css`) 링크 주입 — 보정 규칙은 플러그인 CSS 파일이 맡는다 |
 
 `initEditor` 의 폴백 경로가 이 플러그인에서 가장 조심스러운 코드입니다. 편집기를 못 불러왔을
 때 **빈 컨테이너를 남기면 안 되고**(글을 쓸 수 없는데 화면에 설명이 없습니다), 폴백으로 내려간
@@ -126,6 +126,7 @@
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `dist/vendor/ckeditor5/43.3.1` | 동봉 제3자 자산 (자체 제공) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
@@ -134,11 +135,12 @@
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-두 항목의 성격이 다릅니다.
+항목마다 성격이 다릅니다.
 
 | 경로 | 성격 |
 |---|---|
 | `dist/js/plugin.iife.js` | 이 플러그인의 빌드 산출물 — 소스(`resources/js/**`)를 고치면 `--production` 으로 다시 굽고 커밋 |
+| `dist/css/plugin.css` | 엔트리가 import 하는 `resources/css/main.css` 를 빌드가 뽑아낸 것 — `plugin.json` 의 `assets.css` 가 선언(1.1.4) |
 | `dist/vendor/ckeditor5/43.3.1/` | **동봉한 제3자 자산** — CKEditor 5 본체. CDN 이 아니라 여기서 same-origin 으로 서빙 |
 
 동봉 자산이 이 플러그인 설계의 핵심입니다. CDN 도달 실패는 예외도 서버 로그도 남기지 않고
@@ -152,4 +154,22 @@ html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언. 하
 
 배포 산출물이므로 `sourceMappingURL` 참조를 남기지 않습니다(`.map` 은 커밋 대상이 아니라
 404 가 됩니다). 자산 URL 은 문자열로 조립하지 않고 `G7Core.asset.plugin` 을 씁니다.
+
+**이 플러그인의 코드는 인라인 스타일을 만들지 않습니다(1.1.4).** 엄격한 스타일 정책
+(`style-src 'self'; style-src-attr 'none'`)에서 `<style>` 요소, HTML 문자열의 `style="…"`, `setAttribute('style', …)`
+가 막히기 때문입니다. 종전에 핸들러가 `<style>` 로 싣던 규칙은 모두 `resources/css/main.css` 에 있습니다.
+
+| 종전 | 지금 |
+|---|---|
+| 읽기 화면 본문 보정 `<style>`(다크·표 너비·목록) | `main.css` 1·2절. 읽기 화면 전용 규칙은 `:where(:not(.ck-editor__editable))` 로 편집 영역을 뺀다 |
+| 다국어 탭 `<style>` | `main.css` 3절 |
+| 편집기 다크 변수 `<style>` + `<html>` class 관측자 | `main.css` 4절 `html.dark` 스코프 — 관측자 없음 |
+| 편집기 높이 `<style id="ckeditor5-height-style-…">` | 컨테이너의 `data-ckeditor5-min-height` 속성 + `--ckeditor5-min-height` 변수(해제 때 걷는다), 규칙은 `main.css` 5절 |
+| 미디어 미리보기 `style="…"` 문자열 | 클래스 `g7-ck-embed-preview`·`g7-ck-embed-preview__frame`, 규칙은 `main.css` 6절 |
+
+`main.css` 를 고칠 때는 파일 머리말의 우선순위 규칙을 지킵니다. 이 파일은 부팅 때 실리고 동봉 `ckeditor5.css` 는 편집기·본문이
+뜰 때 뒤늦게 실리므로, 같은 우선순위면 동봉 CSS 가 이깁니다 — 그래서 다크가 아닌 보정 규칙에는 `:root ` 접두를 붙이고,
+CKEditor 변수 덮어쓰기는 `.dark` 가 아니라 `html.dark` 에 둡니다. 실행 중에 정해지는 값은 `el.style.x = …`·
+`el.style.setProperty()` 로 싣습니다(정책이 막지 않습니다). CKEditor 라이브러리가 스스로 넣는 스타일은 이 플러그인이
+바꾸지 않습니다.
 <!-- @intent END -->

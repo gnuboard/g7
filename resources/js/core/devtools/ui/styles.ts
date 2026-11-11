@@ -6,6 +6,8 @@
  * @module DevToolsStyles
  */
 
+import { has, setRules } from '../../style/RuntimeStyleSheet';
+
 /**
  * DevTools 전용 인라인 CSS 스타일
  */
@@ -1475,15 +1477,16 @@ details[open] > .g7dt-summary::before {
 }
 `;
 
+/** DevTools 패널 규칙 묶음 키(표식 요소의 id) */
+export const DEVTOOLS_STYLE_KEY = 'g7-devtools-styles';
+
 /**
- * DevTools 스타일을 DOM에 주입합니다.
+ * DevTools 스타일을 문서에 붙입니다(중복 호출은 한 번만 적용).
+ *
+ * `<style>` 요소를 만들지 않는다 — 엄격한 스타일 정책(`style-src 'self'`)에서도 패널이 그려지게
+ * 런타임 시트(`RuntimeStyleSheet`)로 붙인다.
  */
 export const injectDevToolsStyles = (): void => {
-    const styleId = 'g7-devtools-styles';
-    if (document.getElementById(styleId)) return;
-
-    const styleElement = document.createElement('style');
-    styleElement.id = styleId;
-    styleElement.textContent = DEVTOOLS_STYLES;
-    document.head.appendChild(styleElement);
+    if (has(DEVTOOLS_STYLE_KEY)) return;
+    setRules(DEVTOOLS_STYLE_KEY, DEVTOOLS_STYLES);
 };

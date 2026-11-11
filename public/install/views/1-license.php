@@ -33,7 +33,7 @@ $isLicenseAgreed = isset($_SESSION['license_agreed']) && $_SESSION['license_agre
         <?php endif; ?>
 
         <form method="POST" class="installer-form">
-            <label class="form-checkbox" style="justify-content: flex-end;">
+            <label class="form-checkbox u-justify-end">
                 <span><?= htmlspecialchars(lang('i_agree')) ?></span>
                 <input type="checkbox" name="agree" value="1" id="license-agree" class="checkbox-input" <?= $isLicenseAgreed ? 'checked' : '' ?>>
             </label>

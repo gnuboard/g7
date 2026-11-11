@@ -168,6 +168,7 @@
 | 로그 사본 테이블(알림 로그·메일 로그·신고 스냅샷·레이아웃 미리보기)을 참조 소스로 등록 | 원본 콘텐츠 테이블만 등록 | 사본은 자체 보존기간으로 지워진다 — 로그가 지워지는 순간 이미지가 고아가 되는 역전이 생긴다 |
 | 참조 판정을 해시 토큰 하나로만 수행 | 해시와 저장 파일명 두 토큰을 OR 로 검사 | 본문에 박히는 URL 형태가 둘(API 폴백형·디스크 직접형)이라, 한쪽만 보면 다른 형태를 미참조로 오판한다 |
 | 비활성 설치 모듈이 있는 상태에서 정리를 강행 | `hasPotentiallyMissingSources()` 로 감지해 중단 | 비활성 모듈의 콘텐츠는 훅을 등록하지 않으므로 판정에서 빠진다 (fail-open 방지) |
+| 핸들러에서 `<style>` 요소·HTML 문자열의 `style="…"`·`setAttribute('style', …)` 로 스타일 싣기 | 고정 규칙은 `resources/css/main.css`(→ `dist/css/plugin.css`), 실행 중 값은 `el.style.x = …`·`el.style.setProperty()` | 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 앞의 셋이 막혀 편집기가 다크 모드·높이·탭 모양을 잃는다. 뒤의 둘은 막히지 않는다 |
 | 동봉 자산 버전을 올리면서 일부 기재만 갱신 | 디렉토리명·레이아웃 조각의 `scripts.src`·의존성 핀·소스 상수·테스트 단언을 한 버전으로 | 하나만 어긋나도 그 자산이 404 가 되는데 빌드와 테스트는 통과한다 |
 <!-- @intent END -->
 
@@ -177,9 +178,9 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 20개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 36개 | `vitest.config.ts` |
+| Vitest | 37개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 23개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 24개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
