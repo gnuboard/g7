@@ -206,7 +206,71 @@ _단건 응답: 저장한 위치 설정._
 
 **설명**
 
-위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다), `pagination`(선택, 페이징 모양 `dots` 점·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호·`pill` 알약 번호 — 빼면 지금 값을 유지하고 처음 저장이면 `dots`), `max_height_pc`·`max_height_mobile`(선택, 기기별 최대 높이 160~2000 정수 px 또는 `null` — 비율대로 그리다가 이 높이에서 멈추고 넘치는 이미지는 초점 기준으로 위아래를 자른다. `null` 이면 비율대로(화면 전체 폭은 640px 에서 멈춤), 빼면 지금 값을 유지하고 처음 저장이면 `null`. PC·태블릿은 화면 폭 768px 이상, 휴대폰은 767px 이하). 처음 저장하면 행을 만든다. 등록되지 않은 위치(모르는 키·확장이 꺼진 위치)는 404. 동적 위치도 위치 단위 설정이라 그 위치의 모든 대상에 함께 적용된다. 그 위치(모든 대상)의 공개 캐시는 즉시 비워진다.
+위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다), `pagination`(선택, 페이징 모양 `dots` 점·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호·`pill` 알약 번호 — 빼면 지금 값을 유지하고 처음 저장이면 `dots`), `max_height_pc`·`max_height_mobile`(선택, 기기별 최대 높이 160~2000 정수 px 또는 `null` — 비율대로 그리다가 이 높이에서 멈추고 넘치는 이미지는 초점 기준으로 위아래를 자른다. `null` 이면 비율대로(화면 전체 폭은 640px 에서 멈춤), 빼면 지금 값을 유지하고 처음 저장이면 `null`. PC·태블릿은 화면 폭 768px 이상, 휴대폰은 767px 이하). 처음 저장하면 행을 만든다. 등록되지 않은 위치(모르는 키·확장이 꺼진 위치)는 404. 동적 위치에서는 이 값이 그 위치의 **기본값**이다 — 대상(게시판·카테고리 등)이 따로 정하지 않은 항목은 이 값을 따르고, 대상별 재정의는 아래 `targets/{target}` 로 정한다. 그 위치(모든 대상)의 공개 캐시는 즉시 비워진다.
+
+
+### GET /api/plugins/sirsoft-hero_section/admin/position-settings/{position}/targets/{target}
+
+- **라우트명**: `api.plugins.sirsoft-hero_section.admin.target-settings.show`
+- **컨트롤러**: `Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\TargetSettingController@show`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-hero_section.banners.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| position | path | string | 예 | 동적 위치 키 | 대상이 있는 위치(게시판·상품·카테고리, 외부 확장이 등록한 동적 위치) |
+| target | path | string | 예 | 1~100자, `/` 제외 | 위치 해석기가 정한 정규 대상 키(게시판·카테고리 id 등). URL 인코딩한다 |
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시 | 용도/설명 |
+| --- | --- | --- | --- |
+| position | string | `board_hero` | 위치 키 |
+| target | object | `{"key":"1","label":"공지사항","exists":true}` | 대상 키·이름·지금 있는지. 지운 대상이면 `label: null`, `exists: false` |
+| position_settings | object | `{"autoplay":true,"effect":"slide",…}` | 위치 기본값(위치 행이 없으면 플러그인 기본값) |
+| overrides | object | `{"effect":"fade","max_height_mobile":null}` | 이 대상이 명시한 항목만. 키가 없으면 상속, `false`·`null` 은 명시값. 없으면 `{}`(빈 객체) |
+| settings | object | `{"autoplay":true,"effect":"fade",…}` | 최종 값 — 플러그인 기본값 → 위치 → 대상 재정의 순서로 덮은 결과. 공개 API 가 그 대상에 내는 값과 같다 |
+| sources | object | `{"effect":"target","autoplay":"position",…}` | 항목별 출처 `default`·`position`·`target` |
+
+**설명**
+
+한 대상의 슬라이더 설정을 읽는다. 열기만으로 행을 만들지 않는다. 정적 위치·미등록 위치는 404. 지금 없는 대상도 조회할 수 있다(남은 재정의를 보고 지울 수 있게).
+
+### PUT /api/plugins/sirsoft-hero_section/admin/position-settings/{position}/targets/{target}
+
+- **라우트명**: `api.plugins.sirsoft-hero_section.admin.target-settings.update`
+- **컨트롤러**: `Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\TargetSettingController@update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-hero_section.banners.update`
+
+**요청 본문**
+
+| 이름 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- |
+| overrides | object | 예 | 키는 `autoplay`·`interval_seconds`·`effect`·`width`·`header_overlay`·`pagination`·`max_height_pc`·`max_height_mobile` 만 | 이 대상의 재정의 **전체**. 각 값 규칙은 위치 설정 PUT 과 같다(최대 높이는 160~2000 정수 또는 `null`) |
+
+```http
+PUT /api/plugins/sirsoft-hero_section/admin/position-settings/board_hero/targets/1 HTTP/1.1
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{"overrides": {"effect": "fade", "autoplay": false, "max_height_mobile": null}}
+```
+
+**설명**
+
+재정의 묶음을 통째로 바꾼다 — 빠진 항목은 상속으로 돌아가고, 빈 객체(`{}`)를 보내면 행을 지워 모두 위치 기본값이 된다. 응답은 GET 과 같은 모양. 모르는 항목·잘못된 값은 422, 지금 없는 대상에 새로 저장하면 422(`validation.target.not_found`), 정적·미등록 위치는 404. 저장하면 그 대상의 공개 캐시만 비우고(위치의 다른 대상·위치 기본값은 그대로) 훅 `sirsoft-hero_section.target_setting.after_update` 를 낸다. 바뀐 것이 있으면 활동 로그 `hero_target_setting.update` 를 남긴다.
+
+### DELETE /api/plugins/sirsoft-hero_section/admin/position-settings/{position}/targets/{target}
+
+- **라우트명**: `api.plugins.sirsoft-hero_section.admin.target-settings.destroy`
+- **컨트롤러**: `Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\TargetSettingController@destroy`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-hero_section.banners.update`
+
+**설명**
+
+이 대상의 재정의를 모두 지워 위치 기본값으로 되돌린다(배너·위치 기본값·다른 대상은 그대로). 되돌릴 것이 없어도 성공하고 같은 결과를 낸다. 지금 없는 대상의 남은 재정의도 지울 수 있다. 응답은 GET 과 같은 모양(`overrides: {}`). 훅 `sirsoft-hero_section.target_setting.after_reset` 을 내고, 지운 것이 있으면 활동 로그 `hero_target_setting.reset` 을 남긴다.
 
 
 ## 편집 화면 메타

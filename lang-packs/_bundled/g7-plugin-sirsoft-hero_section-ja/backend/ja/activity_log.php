@@ -28,6 +28,8 @@ return [
         'hero_banner_image_update' => 'ヒーローセクションバナー「:banner_title」の:device画像を置換しました。',
         'hero_banner_image_remove' => 'ヒーローセクションバナー「:banner_title」の:device画像を削除しました。',
         'hero_position_update' => 'ヒーローセクション:position位置のスライダー設定を変更しました。',
+        'hero_target_setting_update' => 'ヒーローセクション:position位置の対象:target_keyのスライダー設定を変更しました。',
+        'hero_target_setting_reset' => 'ヒーローセクション:position位置の対象:target_keyを位置の既定値に戻しました。',
         'hero_banner_video_update' => 'ヒーローセクションバナー「:banner_title」の:device動画を置き換えました。',
         'hero_banner_video_remove' => 'ヒーローセクションバナー「:banner_title」の:device動画を削除しました。',
     ],
@@ -49,6 +51,7 @@ return [
         'pagination' => 'ページング表示',
         'max_height_pc' => 'PC・タブレットの最大高さ(px)',
         'max_height_mobile' => 'スマートフォンの最大高さ(px)',
+        'overrides' => '対象の上書き',
         'target_key' => '対象',
     ],
     'positions' => [

@@ -33,6 +33,8 @@ class HeroCacheListener implements HookListenerInterface
             'sirsoft-hero_section.banner.after_bulk_delete' => ['method' => 'onBulkDelete'] + $sync,
             'sirsoft-hero_section.banner.after_reorder' => ['method' => 'onReorder'] + $sync,
             'sirsoft-hero_section.position_setting.after_update' => ['method' => 'onPositionSetting'] + $sync,
+            'sirsoft-hero_section.target_setting.after_update' => ['method' => 'onTargetSetting'] + $sync,
+            'sirsoft-hero_section.target_setting.after_reset' => ['method' => 'onTargetSetting'] + $sync,
             'core.plugin_settings.after_save' => ['method' => 'onPluginSettingsSaved'] + $sync,
             'core.plugin_settings.after_reset' => ['method' => 'onPluginSettingsSaved'] + $sync,
             'core.settings.after_save' => ['method' => 'onCoreSettingsSaved'] + $sync,
@@ -144,6 +146,19 @@ class HeroCacheListener implements HookListenerInterface
     public function onPositionSetting(PositionSetting $setting, array $snapshot = []): void
     {
         $this->hero->invalidate($setting->position);
+    }
+
+    /**
+     * 대상 재정의 저장·초기화 뒤 그 대상의 공개 캐시만 비웁니다(같은 위치의 다른 대상·다른 위치는 그대로).
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @param  mixed  ...$rest  재정의 값·바꾸기 전 값(쓰지 않는다)
+     * @return void 반환값 없음
+     */
+    public function onTargetSetting(string $position, string $targetKey, ...$rest): void
+    {
+        $this->hero->invalidate($position, $targetKey);
     }
 
     /**

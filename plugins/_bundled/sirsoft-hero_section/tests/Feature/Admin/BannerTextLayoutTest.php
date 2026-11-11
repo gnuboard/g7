@@ -64,6 +64,8 @@ class BannerTextLayoutTest extends PluginTestCase
             'pc_x' => 30, 'pc_y' => 50, 'mobile_x' => 50, 'mobile_y' => 50, 'overlay' => 'dark',
             'text_pc_x' => 50, 'text_pc_y' => 0, 'text_mobile_x' => 100, 'text_mobile_y' => 40, 'text_width' => 60,
             'animation' => 'letters', 'animation_speed' => 'fast', 'animation_delay' => 0.3, 'tone' => 'light',
+            // 보내지 않은 구성·바탕색·기기별 폭·그림 효과는 종전 모습의 기본값으로 응답한다
+            'layout' => 'background', 'background_color' => null, 'text_width_pc' => null, 'text_width_mobile' => null, 'media_animation' => 'none',
         ], $detail['presentation']);
 
         $public = $this->getJson($this->api('/hero?position=home_hero&locale=en'))->assertOk()->json('data.banners.0');

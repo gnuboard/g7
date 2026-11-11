@@ -11,6 +11,8 @@ use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Repositories\Contracts\TargetSettingRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Repositories\TargetSettingRepository;
 use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 use Plugins\Sirsoft\HeroSection\Support\Positions\PositionDefinition;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
@@ -18,8 +20,10 @@ use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
 /**
  * 위치별 슬라이더 설정 서비스
  *
- * 위치 목록은 위치 레지스트리(`PositionRegistry`, 위치 키 = 확장점 이름)가 정하고, 저장된 행이 없으면 기본값을 쓴다. 설정은 위치 단위다 —
- * 동적 위치(게시판마다·상품마다 등)도 대상마다 따로 두지 않는다(D6). 첫 로드 힌트(`slot_*`)는 정적 위치만 낸다 — 대상마다 값을 줄 수 없다(D8).
+ * 위치 목록은 위치 레지스트리(`PositionRegistry`, 위치 키 = 확장점 이름)가 정하고, 저장된 행이 없으면 기본값을 쓴다. 동적 위치(게시판마다·
+ * 상품마다 등)는 위치 기본 설정 위에 대상이 명시한 항목만 재정의할 수 있다 — 적용 순서는 플러그인 기본값 → 위치 기본 설정 → 대상 재정의이고,
+ * 재정의에 키가 없으면 상속, `false`·`null` 은 명시값이다({@see resolvedFor()}). 첫 로드 힌트(`slot_*`)는 정적 위치만 낸다 — 대상마다 값을
+ * 줄 수 없다(D8). 동적 위치의 받는 동안 모양은 브라우저가 위치 + 대상 단위로 기억한다.
  */
 class PositionSettingService
 {
@@ -39,12 +43,27 @@ class PositionSettingService
      * @param  PositionSettingRepositoryInterface  $settings  위치 설정 Repository
      * @param  BannerRepositoryInterface  $banners  배너 저장소(위치별 배너 유무 힌트의 원본)
      * @param  PreviewFrameResolver  $frames  관리자 미리보기 구좌 틀 해석기
+     * @param  TargetSettingRepositoryInterface|null  $targets  대상별 재정의 저장소 — 업데이트 명령이 옛 서비스 제공자(이 바인딩이 없는 판)로 부팅된
+     *                                                          채 새 코드를 부르는 동안에는 비어 들어온다. 쓰는 시점에 다시 찾는다({@see targetSettings()})
      */
     public function __construct(
         private PositionSettingRepositoryInterface $settings,
         private BannerRepositoryInterface $banners,
         private PreviewFrameResolver $frames,
+        private ?TargetSettingRepositoryInterface $targets = null,
     ) {}
+
+    /**
+     * 대상별 재정의 저장소를 꺼냅니다 — 생성 때 받지 못했으면(업데이트 도중 옛 제공자) 바인딩을, 그것도 없으면 구현을 컨테이너에서 받는다.
+     *
+     * @return TargetSettingRepositoryInterface 대상별 재정의 저장소
+     */
+    private function targetSettings(): TargetSettingRepositoryInterface
+    {
+        return $this->targets ??= app()->bound(TargetSettingRepositoryInterface::class)
+            ? app(TargetSettingRepositoryInterface::class)
+            : app(TargetSettingRepository::class);
+    }
 
     /**
      * 위치 목록과 위치별 설정, 업로드 한도를 반환합니다(관리자 화면용).
@@ -224,14 +243,147 @@ class PositionSettingService
     }
 
     /**
-     * 한 위치의 설정 값을 반환합니다(행이 없으면 기본값).
+     * 한 위치(동적 위치면 그 대상)의 최종 설정 값을 반환합니다 — 공개 API 와 관리자 미리보기가 쓰는 같은 해석기({@see resolvedFor()}).
      *
      * @param  string  $position  위치 키
+     * @param  string|null  $targetKey  대상 키 (정적 위치·대상 없음은 null — 위치 기본 설정)
      * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool, pagination: string, max_height_pc: int|null, max_height_mobile: int|null} 설정 값
      */
-    public function settingsFor(string $position): array
+    public function settingsFor(string $position, ?string $targetKey = null): array
     {
-        return $this->settings->findByPosition($position)?->toSettings() ?? PositionSetting::DEFAULTS;
+        return $this->resolvedFor($position, $targetKey)['settings'];
+    }
+
+    /**
+     * 설정을 플러그인 기본값 → 위치 기본 설정 → 대상 재정의 순으로 겹쳐 최종 값과 항목별 출처를 냅니다.
+     *
+     * 재정의는 키가 있을 때만 쓴다(`array_key_exists`) — 자동 재생 `false`·최대 높이 `null` 같은 명시값이 상속으로 바뀌지 않는다.
+     * 정적 위치·대상 없음은 재정의를 보지 않는다.
+     *
+     * @param  string  $position  위치 키
+     * @param  string|null  $targetKey  대상 키
+     * @return array{settings: array<string, mixed>, position_settings: array<string, mixed>, overrides: array<string, mixed>, sources: array<string, string>} 최종 값·위치 값·재정의·출처(default|position|target)
+     */
+    public function resolvedFor(string $position, ?string $targetKey = null): array
+    {
+        $row = $this->settings->findByPosition($position);
+        $positionSettings = $row?->toSettings() ?? PositionSetting::DEFAULTS;
+        $overrides = $targetKey === null || $targetKey === '' ? [] : ($this->targetSettings()->find($position, $targetKey)?->overrideValues() ?? []);
+
+        $settings = [];
+        $sources = [];
+        foreach ($positionSettings as $key => $value) {
+            if (array_key_exists($key, $overrides)) {
+                $settings[$key] = $this->castSetting($key, $overrides[$key]);
+                $sources[$key] = 'target';
+            } else {
+                $settings[$key] = $value;
+                $sources[$key] = $row === null ? 'default' : 'position';
+            }
+        }
+
+        return ['settings' => $settings, 'position_settings' => $positionSettings, 'overrides' => $overrides, 'sources' => $sources];
+    }
+
+    /**
+     * 동적 위치 한 대상의 설정 화면 자료를 반환합니다 — 대상 이름·존재, 위치 기본값, 재정의, 최종 값과 출처.
+     *
+     * @param  string  $position  위치 키 (동적 위치 — 컨트롤러가 확인했다)
+     * @param  string  $targetKey  대상 키
+     * @return array{position: string, target: array{key: string, label: string|null, exists: bool}, position_settings: array<string, mixed>, overrides: array<string, mixed>, settings: array<string, mixed>, sources: array<string, string>} 대상 설정
+     */
+    public function targetDetail(string $position, string $targetKey): array
+    {
+        $label = $this->registry()->resolver($position)?->labels([$targetKey])[$targetKey] ?? null;
+        $resolved = $this->resolvedFor($position, $targetKey);
+
+        return [
+            'position' => $position,
+            'target' => ['key' => $targetKey, 'label' => $label, 'exists' => $label !== null],
+            'position_settings' => $resolved['position_settings'],
+            'overrides' => $resolved['overrides'],
+            'settings' => $resolved['settings'],
+            'sources' => $resolved['sources'],
+        ];
+    }
+
+    /**
+     * 위치가 동적 위치(대상별 재정의를 받는 위치)인지 반환합니다.
+     *
+     * @param  string  $position  위치 키
+     * @return bool 등록된 동적 위치면 true
+     */
+    public function isDynamic(string $position): bool
+    {
+        return $this->registry()->isDynamic($position);
+    }
+
+    /**
+     * 대상이 지금 있는지 반환합니다(해석기 판정).
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @return bool 있으면 true
+     */
+    public function targetExists(string $position, string $targetKey): bool
+    {
+        return (bool) $this->registry()->resolver($position)?->exists($targetKey);
+    }
+
+    /**
+     * 대상 재정의 묶음을 바꿉니다 — 빠진 항목은 상속으로 돌아가고, 빈 묶음이면 대상 전체가 위치 기본값으로 돌아간다. 위치 기본 설정과
+     * 배너는 건드리지 않는다.
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @param  array<string, mixed>  $overrides  검증된 명시 항목
+     * @param  int|null  $actorId  바꾼 회원 ID
+     * @return array<string, mixed> 저장 뒤 대상 설정({@see targetDetail()})
+     */
+    public function updateTarget(string $position, string $targetKey, array $overrides, ?int $actorId): array
+    {
+        $clean = [];
+        foreach (array_intersect_key($overrides, PositionSetting::DEFAULTS) as $key => $value) {
+            $clean[$key] = $this->castSetting($key, $value);
+        }
+        [, $before] = $this->targetSettings()->replace($position, $targetKey, $clean, $actorId);
+
+        HookManager::doAction('sirsoft-hero_section.target_setting.after_update', $position, $targetKey, $clean, $before);
+
+        return $this->targetDetail($position, $targetKey);
+    }
+
+    /**
+     * 대상 재정의를 모두 지워 위치 기본값으로 되돌립니다(배너·위치 기본 설정은 그대로).
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @return array<string, mixed> 되돌린 뒤 대상 설정({@see targetDetail()})
+     */
+    public function resetTarget(string $position, string $targetKey): array
+    {
+        $before = $this->targetSettings()->delete($position, $targetKey);
+
+        HookManager::doAction('sirsoft-hero_section.target_setting.after_reset', $position, $targetKey, $before ?? []);
+
+        return $this->targetDetail($position, $targetKey);
+    }
+
+    /**
+     * 설정 항목 값을 응답 모양으로 맞춥니다(저장 규칙이 형식을 막고, 여기서는 정수·참거짓·null 만 맞춘다).
+     *
+     * @param  string  $key  항목
+     * @param  mixed  $value  값
+     * @return mixed 맞춘 값
+     */
+    private function castSetting(string $key, mixed $value): mixed
+    {
+        return match ($key) {
+            'autoplay', 'header_overlay' => (bool) $value,
+            'interval_seconds' => (int) $value,
+            'max_height_pc', 'max_height_mobile' => $value === null ? null : (int) $value,
+            default => (string) $value,
+        };
     }
 
     /**

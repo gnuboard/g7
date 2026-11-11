@@ -245,6 +245,7 @@ class Plugin extends AbstractPlugin
         return [
             'hero_section_banner_images',
             'hero_section_banners',
+            'hero_section_target_settings',
             'hero_section_position_settings',
         ];
     }

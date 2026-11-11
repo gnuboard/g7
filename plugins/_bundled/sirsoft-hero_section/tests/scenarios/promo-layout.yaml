@@ -1,0 +1,30 @@
+feature: 히어로섹션 배너 구성 — 배경형·프로모션형
+
+description: |
+  배너마다 구성을 고른다. 배경형(기본·기존 배너)은 미디어가 띠 전체를 덮고 문구가 그 위에 놓인다. 프로모션형은 바탕색 위에
+  문구 칸과 그림 칸을 나눈다(PC 는 문구 가로 위치로 좌우, 휴대폰은 세로 위치로 위아래). 기기별 문구 폭은 비우면 공통 폭,
+  제목·설명은 여러 줄, 순차 등장(머리글 0·제목 0.3·설명 0.6초, 각 0.4초)과 그림 등장 효과(0.8초)를 따로 고른다.
+  새 키가 없는 옛 배너는 배경형 그대로 읽히고 다시 저장되지 않는다. 구성을 바꿔도 다른 표현값은 남는다.
+
+axes:
+  surface:
+    - promo_layout_saved
+    - promo_layout_legacy_defaults
+    - promo_layout_switch_back
+    - promo_layout_validation
+    - promo_layout_legacy_render
+    - promo_layout_render
+    - promo_motion
+    - promo_multiline
+    - promo_layout_form
+
+effects:
+  - legacy_banner_not_rewritten
+  - other_presentation_kept_on_layout_switch
+  - promo_preset_fills_draft_only
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerPromoLayoutTest.php
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderPromoLayout.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/target-settings.spec.ts

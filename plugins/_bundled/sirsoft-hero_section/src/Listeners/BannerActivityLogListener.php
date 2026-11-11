@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
+use Plugins\Sirsoft\HeroSection\Models\TargetSetting;
 use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Throwable;
 
@@ -44,6 +45,8 @@ class BannerActivityLogListener implements HookListenerInterface
             'sirsoft-hero_section.banner.after_reorder' => ['method' => 'handleReordered', 'priority' => 20],
             'sirsoft-hero_section.banner_image.after_change' => ['method' => 'handleImageChanged', 'priority' => 20],
             'sirsoft-hero_section.position_setting.after_update' => ['method' => 'handlePositionSetting', 'priority' => 20],
+            'sirsoft-hero_section.target_setting.after_update' => ['method' => 'handleTargetSetting', 'priority' => 20],
+            'sirsoft-hero_section.target_setting.after_reset' => ['method' => 'handleTargetReset', 'priority' => 20],
         ];
     }
 
@@ -214,6 +217,51 @@ class BannerActivityLogListener implements HookListenerInterface
             'description_key' => self::KEY.'hero_position_update',
             'description_params' => ['position' => $setting->position],
             'changes' => ChangeDetector::detect($setting, $snapshot),
+        ]);
+    }
+
+    /**
+     * 대상 재정의 저장을 기록합니다 — 바꾸기 전·후 재정의 묶음(명시 항목만)을 함께 남긴다.
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @param  array<string, mixed>  $overrides  저장한 재정의
+     * @param  array<string, mixed>  $before  바꾸기 전 재정의
+     * @return void 반환값 없음
+     */
+    public function handleTargetSetting(string $position, string $targetKey, array $overrides = [], array $before = []): void
+    {
+        if ($overrides === $before) {
+            return;
+        }
+        $this->logActivity('hero_target_setting.update', [
+            'loggable_type' => TargetSetting::class,
+            'loggable_id' => null,
+            'description_key' => self::KEY.'hero_target_setting_update',
+            'description_params' => ['position' => $position, 'target_key' => $targetKey],
+            'properties' => ['target' => $this->targetName($position, $targetKey), 'before' => $before, 'after' => $overrides],
+        ]);
+    }
+
+    /**
+     * 대상 재정의 초기화(위치 기본값으로 되돌리기)를 기록합니다 — 지울 재정의가 없었으면 남기지 않는다.
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @param  array<string, mixed>  $before  지우기 전 재정의
+     * @return void 반환값 없음
+     */
+    public function handleTargetReset(string $position, string $targetKey, array $before = []): void
+    {
+        if ($before === []) {
+            return;
+        }
+        $this->logActivity('hero_target_setting.reset', [
+            'loggable_type' => TargetSetting::class,
+            'loggable_id' => null,
+            'description_key' => self::KEY.'hero_target_setting_reset',
+            'description_params' => ['position' => $position, 'target_key' => $targetKey],
+            'properties' => ['target' => $this->targetName($position, $targetKey), 'before' => $before],
         ]);
     }
 

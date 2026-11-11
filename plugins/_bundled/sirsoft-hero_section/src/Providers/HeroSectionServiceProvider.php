@@ -9,7 +9,9 @@ use Plugins\Sirsoft\HeroSection\Repositories\BannerRepository;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Repositories\Contracts\TargetSettingRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\PositionSettingRepository;
+use Plugins\Sirsoft\HeroSection\Repositories\TargetSettingRepository;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
 use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
@@ -37,6 +39,7 @@ class HeroSectionServiceProvider extends BasePluginServiceProvider
         BannerRepositoryInterface::class => BannerRepository::class,
         BannerImageRepositoryInterface::class => BannerImageRepository::class,
         PositionSettingRepositoryInterface::class => PositionSettingRepository::class,
+        TargetSettingRepositoryInterface::class => TargetSettingRepository::class,
     ];
 
     /**

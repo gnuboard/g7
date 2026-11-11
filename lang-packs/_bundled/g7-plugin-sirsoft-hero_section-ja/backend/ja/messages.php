@@ -22,6 +22,11 @@ return [
         'source_label' => 'ヒーローセクションのバナー画像',
         'list_preset_label' => 'バナー一覧',
     ],
+    'target_setting' => [
+        'fetched' => '対象のスライダー設定を読み込みました。',
+        'updated' => 'この対象のスライダー設定を保存しました。',
+        'reset' => 'この対象を位置の既定値に戻しました。',
+    ],
     'position' => [
         'fetched' => '表示位置設定を読み込みました。',
         'updated' => 'スライダー設定を保存しました。',

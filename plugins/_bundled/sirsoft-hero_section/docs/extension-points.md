@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 24종 / 호출 지점 24곳.
+발행 훅 26종 / 호출 지점 26곳. 이 중 2종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -36,6 +36,8 @@
 
 <!-- @intent START -->
 배너 서비스가 `sirsoft-hero_section.banner.{before,after}_{create,update,delete,bulk_status,bulk_delete,reorder}`·`filter_create_data`·`filter_update_data`·`filter_list_params`, 공개 노출 가공용 `sirsoft-hero_section.hero.filter_public_banners` 를 발행한다 — 다른 확장은 이 훅으로 배너 저장을 막거나 노출 목록을 바꾼다. 순서 훅(`before_reorder`·`after_reorder`)의 셋째 인자와 `filter_public_banners` 의 넷째 인자는 동적 위치의 대상 키다(정적 위치는 null). 앞 인자는 그대로라 기존 구독자는 바꾸지 않아도 된다. 배너 훅의 배너·스냅샷에는 `target_key` 가 함께 실린다.
+
+동적 위치의 대상별 슬라이더 설정은 `sirsoft-hero_section.target_setting.after_update`(인자: 위치 키, 대상 키, 저장한 재정의, 저장 전 재정의)와 `sirsoft-hero_section.target_setting.after_reset`(인자: 위치 키, 대상 키, 지우기 전 재정의)을 낸다. 히어로는 이 훅으로 그 대상의 공개 캐시만 비우고(대상 버전) 활동 로그를 남긴다. 재정의 배열에는 명시한 항목만 있다(키 없음 = 상속).
 
 ### 위치 등록 필터 `sirsoft-hero_section.position.registered_positions`
 
@@ -111,7 +113,7 @@ public function register(array $positions): array
    <extension-point name="acme_event_page_hero"><default/></extension-point>
    ```
 
-3. **배너 관리·확인** — 관리자 「히어로섹션 관리」에 위치 탭(이벤트 메인·이벤트 상세)이 생긴다. 등록·수정·순서 변경·미리보기·위치별 슬라이더 설정·검증·권한은 내장 위치와 같다(동적 위치는 대상을 먼저 고른다). 배너를 등록하고 그 화면을 열어 보이는지 확인한다.
+3. **배너 관리·확인** — 관리자 「히어로섹션 관리」에 위치 탭(이벤트 메인·이벤트 상세)이 생긴다. 등록·수정·순서 변경·미리보기·위치별 슬라이더 설정·검증·권한은 내장 위치와 같다(동적 위치는 대상을 먼저 고른다). 동적 위치의 위치 슬라이더 설정은 **모든 대상의 기본값**이고, 대상을 고르면 「이 대상 설정」 카드에서 항목마다 그 대상만 따로 정하거나 위치 기본값으로 되돌린다 — 확장이 따로 할 일은 없다. 재정의는 해석기가 준 정규 대상 키로 저장되므로, 대상 키를 바꾸지 않는 한 주소 값이 바뀌어도 유지된다. 배너를 등록하고 그 화면을 열어 보이는지 확인한다.
 
 자리 안에 다른 위치 자리를 두거나, 표·카드 셀·펼침 행·하위 행 같은 반복 템플릿 안에 자리를 두어도(코어가 확장점을 처리하는 자리) 각 자리를 한 번씩 채운다. 자리를 채우지 않는 경우 — 이미 그 위치의 히어로 슬라이더가 든 자리(내장 위치, 확장이 자기 조각을 둔 자리. 위치를 바인딩 식으로 준 슬라이더·반복 템플릿 셀 안의 슬라이더도 그 자리 것으로 본다. 안쪽 다른 자리의 슬라이더는 세지 않는다), 레이아웃에 같은 id(`heroSection_{위치 키}`)의 다른 데이터 소스가 있는 자리(경고 로그), 레이아웃 편집기에서 연 화면(붙인 노드가 편집 저장으로 레이아웃에 섞이지 않게), 등록되지 않은 위치(확장을 껐을 때), `route_param` 없는 동적 위치. 히어로를 끄면 채우는 처리도 빠져 자리는 비고(확장점의 `default` 가 보인다), 관리자에게는 히어로가 없으니 탭도 없다.
 
@@ -178,6 +180,10 @@ public function register(array $positions): array
 | `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `BannerActivityLogListener` | `handlePositionSetting` | 20 |
 | `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `HeroCacheListener` | `onPositionSetting` | - |
 | `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `SlotWidthHintListener` | `onPositionSetting` | 20 |
+| `sirsoft-hero_section.target_setting.after_reset` | action (미선언) | `BannerActivityLogListener` | `handleTargetReset` | 20 |
+| `sirsoft-hero_section.target_setting.after_reset` | action (미선언) | `HeroCacheListener` | `onTargetSetting` | - |
+| `sirsoft-hero_section.target_setting.after_update` | action (미선언) | `BannerActivityLogListener` | `handleTargetSetting` | 20 |
+| `sirsoft-hero_section.target_setting.after_update` | action (미선언) | `HeroCacheListener` | `onTargetSetting` | - |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -274,7 +280,7 @@ _등록하는 알림 정의가 없습니다._
 
 ## 표시 설정·관리자 미리보기 계약
 
-`HeroSlider`의 배너 객체는 선택적 `presentation`을 받습니다. `pc_x`, `pc_y`, `mobile_x`, `mobile_y`는 0~100의 이미지 초점이며 `overlay`는 none/dark/light입니다. PC와 모바일 표시 비율은 각각 1920×640·750×1000으로 고정해 순서 변경이 영역 높이를 바꾸지 않습니다. 문구 값은 `text_{pc|mobile}_{x|y}`(0~100 — 띠의 세로 위치와 상자의 가로 위치), `text_width`(30~100%), `animation`(none·rise·fade·left·right·zoom·blur·letters)·`animation_speed`(slow 1초·normal 0.6초·fast 0.35초)·`animation_delay`(0~2초), `tone`(dark·light)입니다. 등장 효과는 활성 장이 될 때마다 줄마다 0.2초씩 늦게 재생하고, 움직임 줄이기면 끕니다. 템플릿 오버라이드도 이 계약을 반영해야 합니다.
+`HeroSlider`의 배너 객체는 선택적 `presentation`을 받습니다. `pc_x`, `pc_y`, `mobile_x`, `mobile_y`는 0~100의 이미지 초점이며 `overlay`는 none/dark/light입니다. PC와 모바일 표시 비율은 각각 1920×640·750×1000으로 고정해 순서 변경이 영역 높이를 바꾸지 않습니다. 문구 값은 `text_{pc|mobile}_{x|y}`(0~100 — 띠의 세로 위치와 상자의 가로 위치), `text_width`(30~100%), `animation`(none·rise·fade·left·right·zoom·blur·letters)·`animation_speed`(slow 1초·normal 0.6초·fast 0.35초)·`animation_delay`(0~2초), `tone`(dark·light)입니다. 등장 효과는 활성 장이 될 때마다 줄마다 0.2초씩 늦게 재생하고, 움직임 줄이기면 끕니다. 구성 값은 `layout`(background·promo), `background_color`(`#RRGGBB`), `text_width_pc`·`text_width_mobile`(비우면 `text_width`), `media_animation`(none·fade·right — 미디어 감싸개 `.hs-slider__media` 에 0.8초 기준), `animation: sequence`(줄 간격 0.3초·한 줄 0.4초)입니다. 프로모션형 마크업은 `.hs-slider__slide--promo > .hs-promo > .hs-promo__box > (.hs-promo__text > .hs-slider__text, .hs-slider__media.hs-promo__media)` 이고, 장에 `data-hs-side-pc`(left·right)·`data-hs-stack-mobile`(text·media)와 바탕색 변수 `--hs-slide-bg` 가 실립니다. 새 키가 없는 배너는 배경형으로 그립니다. 템플릿 오버라이드도 이 계약을 반영해야 합니다.
 
 `HeroSlider` 의 편집 전용 속성: `onTextMove(spot, device)`(주면 문구 상자를 끌거나 화살표 1%·Shift 10% 로 옮기고 놓을 때 알린다 — `forceDevice` 와 함께), `replay`(값이 바뀌면 등장 효과를 다시 재생). `HeroBannerPreview` 는 이를 `onTextPositionChange(patch)`(`{ text_{기기}_x, text_{기기}_y }`)로 편집 화면에 알리고 효과가 있으면 「효과 다시 보기」 단추를 둔다. `HeroTextPositionPad`(9칸 빠른 선택·가로/세로 숫자·기기 전환, `onChange(patch)`·`onDeviceChange(device)`)도 플러그인이 등록한다.
 

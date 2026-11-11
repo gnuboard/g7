@@ -14,7 +14,8 @@
             "positionHero": "Added position banners",
             "placements": "Target list (targets with banners)",
             "heroSectionProduct": "Product detail banners",
-            "heroSectionCategory": "Category list banners"
+            "heroSectionCategory": "Category list banners",
+            "target_settings": "Target slider settings"
         },
         "state": {
             "with_data": "With banners",
@@ -180,7 +181,7 @@
                 "pill": "Pill counter (‹ 1 / 5 ›)"
             },
             "pagination_hint": "Shown when there are two or more banners. The progress bar shows the time left until the next banner; banner name tabs show only bars on phones. The pill counter shows previous and next buttons with the number below the text on the left, and the side arrows are hidden.",
-            "scope_dynamic": "Applies to every {{target}} in the {{position}} position."
+            "scope_dynamic": "Defaults for the {{position}} position. Items not set for each {{target}} follow these values."
         },
         "list": {
             "create": "Add banner",
@@ -296,7 +297,8 @@
                 "pc_hint": "Recommended 1920×640 · up to {{mb}}MB · JPG, PNG, WEBP",
                 "mobile": "Mobile image",
                 "mobile_hint": "Optional · recommended 750×1000 · up to {{mb}}MB · Without it, mobile shows the PC image.",
-                "size_mismatch": "The uploaded image is {{width}}×{{height}}. It differs from the recommended size ({{recommended}}) and may be cropped on some screens."
+                "size_mismatch": "The uploaded image is {{width}}×{{height}}. It differs from the recommended size ({{recommended}}) and may be cropped on some screens.",
+                "pc_promo_hint": "Desktop artwork for the artwork column. It keeps its aspect ratio, so a landscape transparent PNG or WebP that fits the width beside the text (e.g. 1480×800) works best. Up to {{mb}}MB."
             },
             "link_url": "Link URL",
             "link_url_placeholder": "/shop/products or https://example.com",
@@ -377,7 +379,8 @@
                     "right": "From the right",
                     "zoom": "Zoom in",
                     "blur": "Unblur",
-                    "letters": "Letter by letter"
+                    "letters": "Letter by letter",
+                    "sequence": "Sequential (eyebrow → title → description)"
                 },
                 "speed": "Speed",
                 "speeds": {
@@ -396,7 +399,17 @@
                 "drag_role": "movable text",
                 "drag_label": "Text position {{x}}% horizontal, {{y}}% vertical — drag or use the arrow keys to move",
                 "drag_hint": "Drag the text in the preview, or select it and use the arrow keys (10% at a time with Shift).",
-                "replay": "Replay effect"
+                "replay": "Replay effect",
+                "width_pc": "Desktop & tablet text width (%)",
+                "width_mobile": "Mobile text width (%)",
+                "width_follow": "Empty follows common {{width}}%",
+                "media_animation": "Artwork entrance",
+                "promo_spot_hint": "In the promotion layout, a horizontal position above 50 puts the text on the right and the artwork on the left. On mobile, a vertical position below 50 puts the text above; otherwise the artwork is above. The vertical position is the height inside the text column.",
+                "media_animations": {
+                    "none": "None",
+                    "fade": "Fade in",
+                    "right": "From the right"
+                }
             },
             "conflict_merge": {
                 "title": "Compare the latest version with my changes",
@@ -471,8 +484,48 @@
                 "mobile_video": "Mobile video",
                 "mobile_video_hint": "Optional · Up to {{mb}}MB · MP4, WEBM · Without it, phones play the PC video.",
                 "poster_hint": "For video banners this image is the poster. It is shown instead of the video while the video loads and for visitors who reduce motion."
+            },
+            "layout": {
+                "title": "Banner layout",
+                "label": "Layout",
+                "background": "Background",
+                "promo": "Promotion",
+                "background_hint": "The image or video covers the whole banner and the text sits on top (the existing style).",
+                "promo_hint": "Splits a background color into a text column and an artwork column. On desktop they sit side by side; on mobile they stack. Artwork keeps its aspect ratio and is not cropped. Type text in the text fields instead of putting it in the image.",
+                "background_color": "Background color",
+                "background_color_none": "None",
+                "background_color_clear": "Clear background color",
+                "preset": "Apply promotion presets",
+                "preset_hint": "Text at middle-left on desktop at 40% width, artwork above text on mobile, sequential entrance, artwork from the right, default white text turned dark — you can change everything afterwards, and slider settings are not changed."
+            },
+            "applied": {
+                "values": "Applied settings: {{effect}} · {{width}} · {{pagination}} · max height desktop {{pc}} / mobile {{mobile}}",
+                "from_target": "Includes settings for this target only. Change them in \"Settings for this target\" on the banner list.",
+                "from_position": "These are the position defaults. Change them in the slider settings on the banner list."
             }
         },
-        "retry": "Retry"
+        "retry": "Retry",
+        "target_settings": {
+            "title": "Settings for this target",
+            "scope": "Applies only to {{target}} in the {{position}} position. Only items marked \"This target only\" are saved; the rest follow the position defaults above.",
+            "loading": "Loading settings for this target.",
+            "missing": "This target no longer exists. You cannot save new settings, but you can reset the remaining ones to the position defaults.",
+            "own_label": "Set {{item}} for this target only",
+            "source_target": "This target",
+            "source_position": "Position default",
+            "no_limit": "No limit",
+            "save": "Save target settings",
+            "reset": "Reset to position defaults",
+            "items": {
+                "autoplay": "Autoplay",
+                "interval_seconds": "Interval",
+                "effect": "Transition effect",
+                "width": "Width",
+                "header_overlay": "Menu overlay",
+                "pagination": "Pagination style",
+                "max_height_pc": "Desktop & tablet max height (px)",
+                "max_height_mobile": "Mobile max height (px)"
+            }
+        }
     }
 }

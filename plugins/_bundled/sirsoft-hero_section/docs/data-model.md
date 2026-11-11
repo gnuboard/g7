@@ -10,10 +10,11 @@
 | `Banner` | `hero_section_banners` | 26 | images→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 13 | banner→Banner | - |
 | `PositionSetting` | `hero_section_position_settings` | 10 | - | - |
+| `TargetSetting` | `hero_section_target_settings` | 4 | - | - |
 <!-- @generated:models END -->
 
 <!-- @intent START -->
-`Banner`(배너)·`BannerImage`(PC·모바일 이미지와 영상 파일)·`PositionSetting`(위치별 슬라이더 설정)을 둔다. 노출 상태는 컬럼이 아니라 `Banner::status` 접근자(조회 시점 계산)다.
+`Banner`(배너)·`BannerImage`(PC·모바일 이미지와 영상 파일)·`PositionSetting`(위치별 슬라이더 설정 — 동적 위치에서는 그 위치의 기본값)·`TargetSetting`(동적 위치의 대상별 슬라이더 재정의)을 둔다. 노출 상태는 컬럼이 아니라 `Banner::status` 접근자(조회 시점 계산)다.
 
 배너 미디어 종류는 `media_type`(`image` 기본·`video`, Enum `BannerMediaType`)이다. 유튜브 등 제3자 영상 플랫폼은 받지 않는다 — 옛 유튜브 배너는 업그레이드 마이그레이션이 이미지 배너로 바꾸고 `youtube_id` 컬럼을 지운다. 파일 행은 `kind`(`image`·`video`, Enum `MediaKind`)와 `device`(`pc`·`mobile`)로 배너당 기기·종류마다 하나다. 등록·수정 요청의 선택 키는 이미지 `pc_image_id`·`mobile_image_id`, 영상 `pc_video_id`·`mobile_video_id` 다. 어느 미디어 종류든 PC 이미지(대표 이미지)는 필수다.
 <!-- @intent END -->
@@ -26,16 +27,21 @@
 | `hero_section_banner_images` | `BannerImage` |
 | `hero_section_banners` | `Banner` |
 | `hero_section_position_settings` | `PositionSetting` |
+| `hero_section_target_settings` | `TargetSetting` |
 <!-- @generated:tables END -->
 
 <!-- @intent START -->
-`hero_section_banners`·`hero_section_banner_images`·`hero_section_position_settings` 를 소유한다. 다국어 문구는 `text` 컬럼에 `{ko:…, en:…}` JSON 으로 저장한다. 플러그인 삭제(데이터 삭제 선택) 때만 지운다.
+`hero_section_banners`·`hero_section_banner_images`·`hero_section_position_settings`·`hero_section_target_settings` 를 소유한다.
+
+`hero_section_target_settings` 는 (`position`, `target_key`) 가 고유한 대상별 재정의 행이다. `overrides` JSON 에는 운영자가 명시한 슬라이더 항목만 담는다 — 키가 없으면 위치 기본값을 상속하고, `false`·`null` 은 명시값(자동 재생 끔·최대 높이 제한 없음)이다. 해석 순서는 `PositionSetting::DEFAULTS` → 위치 행 → 대상 재정의. 모든 항목을 상속으로 돌리면 행을 지운다. 대상(게시판·카테고리 등)이 지워져도 행을 남겨 관리 화면에서 「없는 대상」으로 보이고 되돌릴 수 있다(배너와 같은 계약). 기존 설치는 이 테이블이 비어 있어 모든 대상이 위치 기본값을 그대로 따른다 — 백필 없음.
+
+배너 `presentation` JSON 의 구성 키(`layout`·`background_color`·`text_width_pc`·`text_width_mobile`·`media_animation`)는 컬럼이 아니라 JSON 키라 마이그레이션이 없다. 없는 키는 `Banner::DEFAULT_PRESENTATION`(배경형·폭 상속·그림 효과 없음)으로 읽고, 읽기만으로 저장값을 다시 쓰지 않는다. 다국어 문구는 `text` 컬럼에 `{ko:…, en:…}` JSON 으로 저장한다. 플러그인 삭제(데이터 삭제 선택) 때만 지운다.
 <!-- @intent END -->
 
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 11개.
+마이그레이션 12개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -50,6 +56,7 @@
 | `2026_11_09_000009_remove_youtube_from_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
 | `2026_11_10_000010_add_target_key_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
 | `2026_11_11_000011_add_max_height_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
+| `2026_11_11_000012_create_hero_section_target_settings_table.php` | `hero_section_target_settings` | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -63,16 +70,18 @@
 |---|---|---|---|
 | `AnimationSpeed` | `string` | 3 | `slow`, `normal`, `fast` |
 | `BannerDevice` | `string` | 2 | `pc`, `mobile` |
+| `BannerLayout` | `string` | 2 | `background`, `promo` |
 | `BannerMediaType` | `string` | 2 | `image`, `video` |
 | `BannerStatus` | `string` | 4 | `active`, `scheduled`, `ended`, `inactive` |
 | `BannerTone` | `string` | 2 | `dark`, `light` |
 | `DisplayPeriod` | `string` | 2 | `always`, `range` |
+| `MediaAnimation` | `string` | 3 | `none`, `fade`, `right` |
 | `MediaKind` | `string` | 2 | `image`, `video` |
 | `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
 | `SlidePagination` | `string` | 5 | `dots`, `progress`, `tabs`, `fraction`, `pill` |
 | `SlideWidth` | `string` | 2 | `content`, `full` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |
-| `TextAnimation` | `string` | 8 | `none`, `rise`, `fade`, `left`, `right`, `zoom`, `blur`, `letters` |
+| `TextAnimation` | `string` | 9 | `none`, `rise`, `fade`, `left`, `right`, `zoom`, `blur`, `letters`, `외 1개` |
 | `TextOverlay` | `string` | 3 | `none`, `dark`, `light` |
 <!-- @generated:enums END -->
 
@@ -93,6 +102,8 @@
 | `BannerRepositoryInterface` | 인터페이스 | 배너 Repository 인터페이스 — 배너 쿼리는 모두 여기서 만든다. |
 | `PositionSettingRepository` | 구현 | 위치별 슬라이더 설정 Repository |
 | `PositionSettingRepositoryInterface` | 인터페이스 | 위치별 슬라이더 설정 Repository 인터페이스 |
+| `TargetSettingRepository` | 구현 | 동적 위치 대상별 슬라이더 설정 저장소 |
+| `TargetSettingRepositoryInterface` | 인터페이스 | 동적 위치 대상별 슬라이더 설정 저장소 |
 <!-- @generated:repositories END -->
 
 <!-- @intent START -->

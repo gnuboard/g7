@@ -30,6 +30,8 @@ return [
         'hero_banner_video_update' => 'Replaced the :device video of hero banner ":banner_title".',
         'hero_banner_video_remove' => 'Removed the :device video of hero banner ":banner_title".',
         'hero_position_update' => 'Changed slider settings for hero position :position.',
+        'hero_target_setting_update' => 'Changed slider settings for target :target_key in hero position :position.',
+        'hero_target_setting_reset' => 'Reset target :target_key in hero position :position to the position defaults.',
     ],
     'positions' => [
         'home_hero' => 'Site home',
@@ -57,5 +59,6 @@ return [
         'header_overlay' => 'Menu overlay',
         'max_height_pc' => 'Desktop & tablet max height (px)',
         'max_height_mobile' => 'Mobile max height (px)',
+        'overrides' => 'Target overrides',
     ],
 ];

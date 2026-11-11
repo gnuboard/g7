@@ -5,6 +5,7 @@ use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\BannerController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\BannerImageController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\PositionSettingController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\PositionTargetController;
+use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\TargetSettingController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Public\BannerImageController as PublicBannerImageController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Public\HeroController;
 
@@ -52,6 +53,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
 
     Route::get('/position-settings', [PositionSettingController::class, 'index'])->middleware($read)->name('position-settings.index');
     Route::put('/position-settings/{position}', [PositionSettingController::class, 'update'])->middleware($update)->name('position-settings.update');
+    // 동적 위치 대상별 재정의 — 대상 키는 해석기의 정규 키(최대 100자, 경로 구분자 제외)
+    Route::get('/position-settings/{position}/targets/{target}', [TargetSettingController::class, 'show'])
+        ->where(['position' => '[a-z][a-z0-9_]{1,49}', 'target' => '[^/]{1,100}'])->middleware($read)->name('target-settings.show');
+    Route::put('/position-settings/{position}/targets/{target}', [TargetSettingController::class, 'update'])
+        ->where(['position' => '[a-z][a-z0-9_]{1,49}', 'target' => '[^/]{1,100}'])->middleware($update)->name('target-settings.update');
+    Route::delete('/position-settings/{position}/targets/{target}', [TargetSettingController::class, 'destroy'])
+        ->where(['position' => '[a-z][a-z0-9_]{1,49}', 'target' => '[^/]{1,100}'])->middleware($update)->name('target-settings.destroy');
     Route::get('/positions/{position}/targets', [PositionTargetController::class, 'index'])
         ->where('position', '[a-z][a-z0-9_]{1,49}')->middleware($read)->name('positions.targets');
     Route::get('/positions/{position}/placements', [PositionTargetController::class, 'placements'])

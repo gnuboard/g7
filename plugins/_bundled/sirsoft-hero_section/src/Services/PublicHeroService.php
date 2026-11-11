@@ -233,7 +233,8 @@ class PublicHeroService
         $rows = $this->banners->exposureCandidatesForPlacement($placement, $now);
 
         return [
-            'settings' => $this->positions->settingsFor($placement->position),
+            // 동적 위치는 그 대상의 재정의까지 겹친 최종 값 — 캐시 키가 위치 버전 + 대상 버전이라 대상 A 값이 B 에 새지 않는다
+            'settings' => $this->positions->settingsFor($placement->position, $placement->targetKey),
             'banners' => $rows->map(fn (Banner $banner) => PublicBannerPresenter::present($banner, $locale))->values()->all(),
         ];
     }

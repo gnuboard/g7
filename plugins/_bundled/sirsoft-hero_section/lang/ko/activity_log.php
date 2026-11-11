@@ -30,6 +30,8 @@ return [
         'hero_banner_video_update' => '히어로섹션 배너 「:banner_title」의 :device 영상을 교체했습니다.',
         'hero_banner_video_remove' => '히어로섹션 배너 「:banner_title」의 :device 영상을 뺐습니다.',
         'hero_position_update' => '히어로섹션 :position 위치의 슬라이더 설정을 바꿨습니다.',
+        'hero_target_setting_update' => '히어로섹션 :position 위치의 대상 :target_key 슬라이더 설정을 바꿨습니다.',
+        'hero_target_setting_reset' => '히어로섹션 :position 위치의 대상 :target_key 를 위치 기본값으로 되돌렸습니다.',
     ],
     'positions' => [
         'home_hero' => '사이트 홈',
@@ -57,5 +59,6 @@ return [
         'header_overlay' => '메뉴 겹치기',
         'max_height_pc' => 'PC·태블릿 최대 높이(px)',
         'max_height_mobile' => '휴대폰 최대 높이(px)',
+        'overrides' => '대상 재정의',
     ],
 ];

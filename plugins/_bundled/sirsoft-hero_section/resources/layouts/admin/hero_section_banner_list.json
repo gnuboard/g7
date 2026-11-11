@@ -94,6 +94,26 @@
             "comment": "고른 대상의 이름·사이트 주소·존재 여부 — 동적 위치에서 대상을 골랐을 때만 받는다. 지워진 대상이면 exists=false(「없는 대상」).\n    화면은 `_computed.selectedTarget` 으로만 읽는다 — 응답의 위치·대상이 주소와 맞을 때만 쓴다. target 이 빠진 탭으로 옮기면 다시 받지 않아 앞 탭 응답이 남고,\n    다른 대상을 고른 직후 새 응답을 받는 동안에도 앞 응답이 남는다(게시판 2번 이름이 상품 2번 자리에 보이지 않게)"
         },
         {
+            "id": "target_settings",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.target_settings",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/admin/position-settings/{{query.position || 'home_hero'}}/targets/{{encodeURIComponent(query.target || '')}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "if": "{{!!query.target}}",
+            "errorHandling": {
+                "404": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "동적 위치 한 대상의 슬라이더 설정 — 위치 기본값·대상 재정의·최종 값·항목별 출처. 대상을 골랐을 때만 받는다. 정적 위치(404)는 조용히 넘기고,\n    화면은 응답의 위치·대상이 지금 주소와 같을 때만 쓴다(대상을 옮긴 직후 앞 대상 응답이 섞이지 않게)"
+        },
+        {
             "id": "placements",
             "label_key": "$t:sirsoft-hero_section.editor.data_source.placements",
             "type": "api",
@@ -166,6 +186,8 @@
         },
         "previewDevice": "pc",
         "sliderForm": null,
+        "targetForm": null,
+        "targetSaving": false,
         "sliderSaving": false,
         "targetSearchResults": []
     },
@@ -204,6 +226,14 @@
         "targetOptions": "{{[...(_computed.selectedTarget ? [{value: _computed.selectedTarget.key, label: _computed.selectedTarget.label ?? $t('sirsoft-hero_section.admin.target.missing_label', {key: _computed.selectedTarget.key})}] : []), ...(_local.targetSearchResults ?? []).filter(o => o.position === _computed.currentPosition && o.value !== query.target)]}}",
         "sitePath": "{{_computed.isDynamic ? (_computed.selectedTarget?.site_url ?? '') : (position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? '')}}",
         "currentSettings": "{{(_computed.positionDefs).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: null, max_height_mobile: null} }}",
+        "targetFormKey": "{{_computed.currentPosition + '|' + _computed.currentTarget}}",
+        "targetData": "{{_computed.isDynamic && _computed.currentTarget && target_settings?.data?.position === _computed.currentPosition && String(target_settings?.data?.target?.key ?? '') === _computed.currentTarget ? target_settings.data : null}}",
+        "targetDraft": "{{(_local.targetForm?.key === _computed.targetFormKey ? _local.targetForm.overrides : _computed.targetData?.overrides) ?? {} }}",
+        "targetOverridden": "{{Object.keys(_computed.targetDraft ?? {})}}",
+        "targetBase": "{{_computed.targetData?.position_settings ?? _computed.currentSettings}}",
+        "targetEffective": "{{({..._computed.targetBase, ..._computed.targetDraft})}}",
+        "targetDirty": "{{!!_computed.targetData && JSON.stringify(_computed.targetDraft ?? {}) !== JSON.stringify(_computed.targetData.overrides ?? {})}}",
+        "previewSettings": "{{_computed.targetData ? ({...((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : null) ?? _computed.targetBase), ..._computed.targetDraft}) : (_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings)}}",
         "maxHeightLimits": "{{({min: 160, max: 2000, overlay_hint: 320, ...(position_settings?.data?.editor?.max_height_limits ?? {})})}}",
         "maxHeightOverlayTight": "{{[(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings) ?? {}].some(d => d.header_overlay === true && d.width === 'full' && ['max_height_pc', 'max_height_mobile'].some(f => d[f] != null && d[f] < _computed.maxHeightLimits.overlay_hint))}}",
         "maxHeightInvalid": "{{['max_height_pc', 'max_height_mobile'].some(f => { const v = (_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings)?.[f]; return v != null && (!Number.isInteger(v) || v < _computed.maxHeightLimits.min || v > _computed.maxHeightLimits.max); })}}"
@@ -1228,7 +1258,7 @@
                                         "name": "sirsoft-hero_section.HeroBannerPreview",
                                         "props": {
                                             "banners": "{{(preview?.data?.data ?? []).map(b => ({...b, title: b.title_localized, eyebrow: $localized(b.eyebrow) ?? '', description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}",
-                                            "settings": "{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}",
+                                            "settings": "{{_computed.previewSettings}}",
                                             "device": "{{_local.previewDevice}}",
                                             "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
                                             "position": "{{_computed.currentPosition}}",
@@ -1864,6 +1894,964 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "text": "$t:sirsoft-hero_section.admin.slider.save"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "이 대상 설정 — 동적 위치에서 대상을 골랐을 때만. 항목마다 「이 대상만 따로」를 켠 것만 저장하고(빠진 항목 =\n          위치 기본값 상속), 끈 항목은 위치 기본값을 따라 바뀐다. 처음 열어도 위치 값을 복제해 저장하지 않는다. 자동 재생 끔·최대 높이 비움(제한 없음)도\n          이 대상만의 명시값이다. 「위치 기본값으로 되돌리기」는 이 대상의 재정의만 지운다(배너·위치 기본값·다른 대상은 그대로)",
+                                "id": "target_settings_card",
+                                "type": "basic",
+                                "name": "Section",
+                                "if": "{{_computed.isDynamic && _computed.targetReady}}",
+                                "props": {
+                                    "aria-labelledby": "hero_target_settings_heading",
+                                    "className": "hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "id": "hero_target_settings_heading",
+                                                    "className": "hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_settings.title"
+                                            },
+                                            {
+                                                "id": "target_settings_scope",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.target_settings.scope|position={{_computed.positionLabel}}|target={{_computed.selectedTarget?.label ?? _computed.currentTarget}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_settings_loading",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!_computed.targetData}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.target_settings.loading"
+                                    },
+                                    {
+                                        "id": "target_settings_missing",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_computed.targetData?.target?.exists === false}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.target_settings.missing"
+                                    },
+                                    {
+                                        "id": "target_row_autoplay",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, autoplay: _computed.targetEffective.autoplay} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'autoplay'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_autoplay",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.autoplay')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('autoplay')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs-flex-between hs:gap-3",
+                                                    "htmlFor": "hero_target_autoplay"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.autoplay"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, autoplay: $event.target.checked}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "checkbox",
+                                                            "id": "hero_target_autoplay",
+                                                            "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                            "checked": "{{_computed.targetEffective.autoplay === true}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('autoplay')}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_autoplay",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_autoplay",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('autoplay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_row_interval_seconds",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, interval_seconds: _computed.targetEffective.interval_seconds} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'interval_seconds'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_interval_seconds",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.interval_seconds')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('interval_seconds')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                    "htmlFor": "hero_target_interval_seconds"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.interval_seconds"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, interval_seconds: Number($event.target.value)}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "id": "hero_target_interval_seconds",
+                                                            "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                            "value": "{{String(_computed.targetEffective.interval_seconds)}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('interval_seconds')}}",
+                                                            "options": [
+                                                                {
+                                                                    "value": "3",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.seconds|n=3"
+                                                                },
+                                                                {
+                                                                    "value": "5",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.seconds|n=5"
+                                                                },
+                                                                {
+                                                                    "value": "7",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.seconds|n=7"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_interval_seconds",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_interval_seconds",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('interval_seconds') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_row_effect",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, effect: _computed.targetEffective.effect} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'effect'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_effect",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.effect')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('effect')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                    "htmlFor": "hero_target_effect"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.effect"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, effect: $event.target.value}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "id": "hero_target_effect",
+                                                            "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                            "value": "{{String(_computed.targetEffective.effect)}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('effect')}}",
+                                                            "options": [
+                                                                {
+                                                                    "value": "slide",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.effects.slide"
+                                                                },
+                                                                {
+                                                                    "value": "fade",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.effects.fade"
+                                                                },
+                                                                {
+                                                                    "value": "cube",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.effects.cube"
+                                                                },
+                                                                {
+                                                                    "value": "flip",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.effects.flip"
+                                                                },
+                                                                {
+                                                                    "value": "coverflow",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.effects.coverflow"
+                                                                },
+                                                                {
+                                                                    "value": "creative",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.effects.creative"
+                                                                },
+                                                                {
+                                                                    "value": "none",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.effects.none"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_effect",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_effect",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('effect') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_row_width",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, width: _computed.targetEffective.width} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'width'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_width",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.width')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('width')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                    "htmlFor": "hero_target_width"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.width"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, width: $event.target.value}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "id": "hero_target_width",
+                                                            "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                            "value": "{{String(_computed.targetEffective.width)}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('width')}}",
+                                                            "options": [
+                                                                {
+                                                                    "value": "content",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.widths.content"
+                                                                },
+                                                                {
+                                                                    "value": "full",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.widths.full"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_width",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_width",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('width') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_row_header_overlay",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, header_overlay: _computed.targetEffective.header_overlay} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'header_overlay'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_header_overlay",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.header_overlay')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('header_overlay')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs-flex-between hs:gap-3",
+                                                    "htmlFor": "hero_target_header_overlay"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.header_overlay"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, header_overlay: $event.target.checked}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "checkbox",
+                                                            "id": "hero_target_header_overlay",
+                                                            "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                            "checked": "{{_computed.targetEffective.header_overlay === true}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('header_overlay')}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_header_overlay",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_header_overlay",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('header_overlay') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_row_pagination",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, pagination: _computed.targetEffective.pagination} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'pagination'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_pagination",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.pagination')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('pagination')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                    "htmlFor": "hero_target_pagination"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.pagination"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, pagination: $event.target.value}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "id": "hero_target_pagination",
+                                                            "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                            "value": "{{String(_computed.targetEffective.pagination)}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('pagination')}}",
+                                                            "options": [
+                                                                {
+                                                                    "value": "dots",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.paginations.dots"
+                                                                },
+                                                                {
+                                                                    "value": "progress",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.paginations.progress"
+                                                                },
+                                                                {
+                                                                    "value": "tabs",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.paginations.tabs"
+                                                                },
+                                                                {
+                                                                    "value": "fraction",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.paginations.fraction"
+                                                                },
+                                                                {
+                                                                    "value": "pill",
+                                                                    "label": "$t:sirsoft-hero_section.admin.slider.paginations.pill"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_pagination",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_pagination",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('pagination') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_row_max_height_pc",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, max_height_pc: _computed.targetEffective.max_height_pc} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'max_height_pc'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_max_height_pc",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.max_height_pc')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('max_height_pc')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                    "htmlFor": "hero_target_max_height_pc"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.max_height_pc"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "비우면 null — 「제한 없음」을 이 대상만의 명시값으로 둔다(상속과 다르다)",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, max_height_pc: $event.target.value === '' ? null : Number($event.target.value)}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "number",
+                                                            "id": "hero_target_max_height_pc",
+                                                            "inputMode": "numeric",
+                                                            "min": "{{_computed.maxHeightLimits.min}}",
+                                                            "max": "{{_computed.maxHeightLimits.max}}",
+                                                            "step": 1,
+                                                            "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                            "placeholder": "$t:sirsoft-hero_section.admin.target_settings.no_limit",
+                                                            "value": "{{_computed.targetEffective.max_height_pc ?? ''}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('max_height_pc')}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_max_height_pc",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_max_height_pc",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('max_height_pc') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_row_max_height_mobile",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-[auto_1fr_auto] hs:items-center hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 항목만 따로 — 켜면 지금 적용값을 명시값으로 담고, 끄면 항목을 빼 위치 기본값을 상속한다(작업본만, 저장해야 반영)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, max_height_mobile: _computed.targetEffective.max_height_mobile} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'max_height_mobile'))})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_target_inherit_max_height_mobile",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
+                                                    "aria-label": "{{$t('sirsoft-hero_section.admin.target_settings.own_label', {item: $t('sirsoft-hero_section.admin.target_settings.items.max_height_mobile')})}}",
+                                                    "checked": "{{_computed.targetOverridden.includes('max_height_mobile')}}",
+                                                    "disabled": "{{!_computed.canWrite || !_computed.targetData}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                    "htmlFor": "hero_target_max_height_mobile"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.items.max_height_mobile"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "비우면 null — 「제한 없음」을 이 대상만의 명시값으로 둔다(상속과 다르다)",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, max_height_mobile: $event.target.value === '' ? null : Number($event.target.value)}})}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "number",
+                                                            "id": "hero_target_max_height_mobile",
+                                                            "inputMode": "numeric",
+                                                            "min": "{{_computed.maxHeightLimits.min}}",
+                                                            "max": "{{_computed.maxHeightLimits.max}}",
+                                                            "step": 1,
+                                                            "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                            "placeholder": "$t:sirsoft-hero_section.admin.target_settings.no_limit",
+                                                            "value": "{{_computed.targetEffective.max_height_mobile ?? ''}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('max_height_mobile')}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_source_max_height_mobile",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_target_source_max_height_mobile",
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "{{_computed.targetOverridden.includes('max_height_mobile') ? $t('sirsoft-hero_section.admin.target_settings.source_target') : $t('sirsoft-hero_section.admin.target_settings.source_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs:flex hs:flex-wrap hs:gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "target_settings_save",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{_computed.canWrite}}",
+                                                "actions": [
+                                                    {
+                                                        "comment": "이 대상만 저장 — 켠 항목만 overrides 로 보낸다. 진행 깃발은 성공·실패 양쪽에서 푼다. 성공하면 다시 받아 작업본을 비운다",
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetSaving": true
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-hero_section/admin/position-settings/{{_computed.currentPosition}}/targets/{{encodeURIComponent(_computed.currentTarget)}}",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "PUT",
+                                                                    "body": {
+                                                                        "overrides": "{{_computed.targetDraft}}"
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "targetSaving": false,
+                                                                            "targetForm": null
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "{{response.message}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "target_settings"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "targetSaving": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5",
+                                                    "disabled": "{{_local.targetSaving || !_computed.targetDirty || _computed.targetData?.target?.exists === false || ['max_height_pc', 'max_height_mobile'].some(f => _computed.targetDraft[f] != null && (!Number.isInteger(_computed.targetDraft[f]) || _computed.targetDraft[f] < _computed.maxHeightLimits.min || _computed.targetDraft[f] > _computed.maxHeightLimits.max))}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "if": "{{_local.targetSaving}}",
+                                                        "props": {
+                                                            "name": "spinner",
+                                                            "className": "hs-spinner-sm"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.save"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "target_settings_reset",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{_computed.canWrite}}",
+                                                "actions": [
+                                                    {
+                                                        "comment": "위치 기본값으로 되돌리기 — 이 대상의 재정의만 지운다(DELETE). 배너·위치 기본값·다른 대상은 그대로",
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "targetSaving": true
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "target": "/api/plugins/sirsoft-hero_section/admin/position-settings/{{_computed.currentPosition}}/targets/{{encodeURIComponent(_computed.currentTarget)}}",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "DELETE"
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "targetSaving": false,
+                                                                            "targetForm": null
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "{{response.message}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "target_settings"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "targetSaving": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "hs-btn hs-btn-secondary",
+                                                    "disabled": "{{_local.targetSaving || !_computed.targetData || Object.keys(_computed.targetData.overrides ?? {}).length === 0}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-hero_section.admin.target_settings.reset"
+                                                    }
+                                                ]
                                             }
                                         ]
                                     }

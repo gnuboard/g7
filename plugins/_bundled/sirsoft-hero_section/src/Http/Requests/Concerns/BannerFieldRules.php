@@ -10,9 +10,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\HeroSection\Enums\AnimationSpeed;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
+use Plugins\Sirsoft\HeroSection\Enums\BannerLayout;
 use Plugins\Sirsoft\HeroSection\Enums\BannerMediaType;
 use Plugins\Sirsoft\HeroSection\Enums\BannerTone;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
+use Plugins\Sirsoft\HeroSection\Enums\MediaAnimation;
 use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Enums\TextAlign;
 use Plugins\Sirsoft\HeroSection\Enums\TextAnimation;
@@ -111,6 +113,12 @@ trait BannerFieldRules
             'presentation.animation_speed' => ['sometimes', 'required', Rule::enum(AnimationSpeed::class)],
             'presentation.animation_delay' => ['sometimes', 'required', 'numeric', 'between:0,'.Banner::ANIMATION_DELAY_MAX, 'multiple_of:0.1'],
             'presentation.tone' => ['sometimes', 'required', Rule::enum(BannerTone::class)],
+            'presentation.layout' => ['sometimes', 'required', Rule::enum(BannerLayout::class)],
+            'presentation.background_color' => ['sometimes', 'nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            // 기기별 문구 폭 — 비우면(null) 공통 text_width 를 따른다(옛 배너 그대로)
+            'presentation.text_width_pc' => ['sometimes', 'nullable', 'integer', 'between:'.Banner::TEXT_WIDTH_MIN.','.Banner::TEXT_WIDTH_MAX],
+            'presentation.text_width_mobile' => ['sometimes', 'nullable', 'integer', 'between:'.Banner::TEXT_WIDTH_MIN.','.Banner::TEXT_WIDTH_MAX],
+            'presentation.media_animation' => ['sometimes', 'required', Rule::enum(MediaAnimation::class)],
         ];
     }
 

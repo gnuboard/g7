@@ -14,7 +14,8 @@
             "positionHero": "추가 위치 노출 배너",
             "placements": "대상 목록 (배너가 있는 대상)",
             "heroSectionProduct": "상품 상세 노출 배너",
-            "heroSectionCategory": "카테고리 목록 노출 배너"
+            "heroSectionCategory": "카테고리 목록 노출 배너",
+            "target_settings": "대상 슬라이더 설정"
         },
         "state": {
             "with_data": "배너 있음",
@@ -180,7 +181,7 @@
                 "pill": "알약 번호 (‹ 1 / 5 ›)"
             },
             "pagination_hint": "배너가 2장 이상일 때 보입니다. 진행 막대는 다음 배너로 넘어가기까지 남은 시간을 보여 주고, 배너 이름 탭은 휴대폰에서 막대만 보입니다. 알약 번호는 문구 아래 왼쪽에 이전·다음 단추와 함께 보이고, 양옆 화살표는 그리지 않습니다.",
-            "scope_dynamic": "{{position}} 위치의 모든 {{target}}에 함께 적용됩니다."
+            "scope_dynamic": "{{position}} 위치의 기본값입니다. {{target}}마다 따로 정하지 않은 항목은 이 값을 따릅니다."
         },
         "list": {
             "create": "배너 등록",
@@ -296,7 +297,8 @@
                 "pc_hint": "권장 1920×640 · 최대 {{mb}}MB · JPG·PNG·WEBP",
                 "mobile": "모바일 이미지",
                 "mobile_hint": "선택 · 권장 750×1000 · 최대 {{mb}}MB · 등록하지 않으면 모바일에서도 PC 이미지를 사용합니다.",
-                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다."
+                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다.",
+                "pc_promo_hint": "그림 칸에 들어갈 PC 그림입니다. 비율을 지켜 보이므로 문구 칸을 뺀 넓이에 맞는 가로형(예: 1480×800) 투명 PNG·WebP 를 권장합니다. 최대 {{mb}}MB."
             },
             "link_url": "이동할 주소",
             "link_url_placeholder": "/shop/products 또는 https://example.com",
@@ -377,7 +379,8 @@
                     "right": "오른쪽에서",
                     "zoom": "확대",
                     "blur": "흐림 걷힘",
-                    "letters": "글자 하나씩"
+                    "letters": "글자 하나씩",
+                    "sequence": "순차 등장 (머리글→제목→설명)"
                 },
                 "speed": "속도",
                 "speeds": {
@@ -396,7 +399,17 @@
                 "drag_role": "옮길 수 있는 문구",
                 "drag_label": "문구 위치 가로 {{x}}%, 세로 {{y}}% — 끌거나 화살표 키로 옮깁니다",
                 "drag_hint": "미리보기의 문구를 끌거나, 문구를 누른 뒤 화살표 키(Shift 와 함께 10%씩)로 옮길 수 있습니다.",
-                "replay": "효과 다시 보기"
+                "replay": "효과 다시 보기",
+                "width_pc": "PC·태블릿 문구 폭(%)",
+                "width_mobile": "휴대폰 문구 폭(%)",
+                "width_follow": "비우면 공통 {{width}}%",
+                "media_animation": "그림 등장 효과",
+                "promo_spot_hint": "프로모션형에서 문구 가로 위치가 50 을 넘으면 문구가 오른쪽·그림이 왼쪽에 옵니다. 휴대폰 세로 위치가 50 보다 작으면 문구가 위, 그 밖은 그림이 위입니다. 세로 위치는 문구 칸 안의 높이입니다.",
+                "media_animations": {
+                    "none": "없음",
+                    "fade": "서서히",
+                    "right": "오른쪽에서"
+                }
             },
             "conflict_merge": {
                 "title": "최신본과 내 변경 비교",
@@ -471,8 +484,48 @@
                 "mobile_video": "모바일 영상",
                 "mobile_video_hint": "선택 · 최대 {{mb}}MB · MP4·WEBM · 올리지 않으면 휴대폰에서도 PC 영상을 재생합니다.",
                 "poster_hint": "영상 배너에서는 이 이미지가 대표 이미지입니다. 영상을 받는 동안과 움직임 줄이기를 켠 방문자에게 영상 대신 보입니다."
+            },
+            "layout": {
+                "title": "배너 구성",
+                "label": "구성",
+                "background": "배경형",
+                "promo": "프로모션형",
+                "background_hint": "이미지·영상이 배너 전체를 덮고 문구가 그 위에 겹칩니다(기존 방식).",
+                "promo_hint": "바탕색 위에 문구 칸과 그림 칸을 나눕니다. PC 는 문구·그림이 좌우로, 휴대폰은 위아래로 놓입니다. 그림은 비율을 지키고 잘리지 않습니다. 글자는 이미지에 넣지 말고 문구 칸에 입력하세요.",
+                "background_color": "바탕색",
+                "background_color_none": "없음",
+                "background_color_clear": "바탕색 지우기",
+                "preset": "프로모션형 추천값 적용",
+                "preset_hint": "문구 PC 왼쪽 가운데·폭 40%, 휴대폰 그림 위·문구 아래, 순차 등장, 그림 오른쪽에서, 기본 흰색 글자는 짙은 색으로 — 적용한 뒤에도 바꿀 수 있고 슬라이더 설정은 바꾸지 않습니다."
+            },
+            "applied": {
+                "values": "적용 설정: {{effect}} · {{width}} · {{pagination}} · 최대 높이 PC {{pc}} / 휴대폰 {{mobile}}",
+                "from_target": "이 대상만의 설정이 포함돼 있습니다. 바꾸려면 배너 목록의 「이 대상 설정」에서 바꿉니다.",
+                "from_position": "위치 기본값입니다. 바꾸려면 배너 목록의 슬라이더 설정에서 바꿉니다."
             }
         },
-        "retry": "다시 받기"
+        "retry": "다시 받기",
+        "target_settings": {
+            "title": "이 대상 설정",
+            "scope": "{{position}} 위치의 {{target}}에만 적용됩니다. 「이 대상만 따로」를 켠 항목만 저장되고, 나머지는 위 위치 기본값을 따릅니다.",
+            "loading": "이 대상의 설정을 불러오는 중입니다.",
+            "missing": "이 대상은 지금 없습니다. 새로 저장할 수는 없고, 남은 설정을 위치 기본값으로 되돌릴 수 있습니다.",
+            "own_label": "{{item}} 이 대상만 따로 정하기",
+            "source_target": "이 대상",
+            "source_position": "위치 기본값",
+            "no_limit": "제한 없음",
+            "save": "이 대상 설정 저장",
+            "reset": "위치 기본값으로 되돌리기",
+            "items": {
+                "autoplay": "자동 재생",
+                "interval_seconds": "전환 간격",
+                "effect": "전환 효과",
+                "width": "표시 폭",
+                "header_overlay": "메뉴 겹치기",
+                "pagination": "페이징 모양",
+                "max_height_pc": "PC·태블릿 최대 높이(px)",
+                "max_height_mobile": "휴대폰 최대 높이(px)"
+            }
+        }
     }
 }

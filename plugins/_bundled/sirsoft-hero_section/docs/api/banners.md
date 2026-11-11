@@ -1161,6 +1161,8 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 
 `presentation` 에는 문구 값도 들어갑니다 — `text_pc_x`·`text_pc_y`·`text_mobile_x`·`text_mobile_y`(문구 자리, 0~100 정수: 0 왼쪽·위, 100 오른쪽·아래), `text_width`(문구 상자 폭 30~100%), `animation`(`none`·`rise`·`fade`·`left`·`right`·`zoom`·`blur`·`letters`), `animation_speed`(`slow`·`normal`·`fast`), `animation_delay`(첫 줄 시작 지연 0~2초, 0.1초 단위), `tone`(배너 바탕 밝기 `dark`·`light` — 메뉴 겹치기 때 메뉴 글자색). 보내지 않은 키는 기본값(왼쪽 아래·전폭·효과 없음·보통·0·어두움 = 종전 화면)으로 응답하고, 모르는 키는 422 입니다. 문자열 숫자는 정수(지연은 소수 한 자리)로 바꿔 저장합니다.
 
+배너 구성 키 — `layout`(`background` 배경형: 미디어가 띠 전체를 덮고 문구가 그 위 · `promo` 프로모션형: 바탕색 위에 문구 칸과 그림 칸을 나눔. PC 는 `text_pc_x` ≤ 50 이면 문구 왼쪽·그림 오른쪽, 넘으면 반대. 휴대폰은 `text_mobile_y` < 50 이면 문구 위·그림 아래, 아니면 그림 위·문구 아래), `background_color`(`#RRGGBB` 또는 `null` — 프로모션형 띠 바탕, 배경형은 이미지 받기 전 바탕), `text_width_pc`·`text_width_mobile`(기기별 문구 폭 30~100% 또는 `null` — `null` 이면 `text_width`), `media_animation`(그림 등장 `none`·`fade`·`right`, 0.8초 기준·속도 설정을 따름). `animation` 에 `sequence`(머리글 0·제목 0.3·설명 0.6초 차례로, 각 0.4초)가 더해졌다. 제목·설명의 줄바꿈은 글자 그대로 저장·응답하고 화면은 줄을 나눠 보인다(HTML 로 해석하지 않음). 새 키가 없는 기존 배너는 `layout: background`·`media_animation: none`·기기별 폭 `null` 로 응답하며 저장값을 다시 쓰지 않는다. 구성을 바꿔도 다른 표현 키는 그대로 남는다.
+
 머리글은 `eyebrow`(제목 위 짧은 한 줄, 언어별 최대 50자, 선택)·`eyebrow_visible`(boolean)·`eyebrow_color`(#RRGGBB)로 받습니다. 보이기·색은 생략하면 저장된 값(처음이면 보임·`#FFFFFF`)을 지킵니다. 정렬은 제목(`title_align`)을 따릅니다.
 
 수정 화면은 상세 응답의 정수 `revision`을 PUT 본문에 그대로 보냅니다. 서버는 트랜잭션 안에서 최신 부모 행을 잠그고 비교해, 다른 수정이나 일괄 상태 변경이 먼저 저장되었으면 409를 반환합니다. 충돌 응답은 기존 배너·이미지를 바꾸지 않습니다. 기존 API 호출의 revision 생략은 호환되지만, 사용자 편집 화면에서는 항상 보내야 합니다. 이미지 검증 전에 확인 가능한 오래된 세대도 먼저 409로 안내합니다.

@@ -7,7 +7,7 @@ import { useSwiperStyles } from '../../support/swiperStyles';
 import { sitePath } from '../../apiUrl';
 import { mediaSrc, responsiveSrcset, sliderImageSizes, type SliderBox } from '../../support/thumbnail';
 import { HeroVideoMedia, useHeroScreen, type HeroVideo } from '../../support/media';
-import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
+import { LetterText, lineDelay, mediaMotion, textMotion, textWidth, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
 export type { HeroVideo } from '../../support/media';
 export type { HeroTextPresentation, TextSpot } from '../../support/text';
@@ -89,7 +89,15 @@ export interface HeroBanner {
   /**
    * 기기별 이미지 초점(%)·선택적 문구 배경과 문구 자리(기기별 가로·세로 %, 폭 %)·등장 효과(효과·속도·시작 지연)·바탕 밝기(메뉴 글자색)
    */
-  presentation?: ({ pc_x?: number; pc_y?: number; mobile_x?: number; mobile_y?: number; overlay?: 'none' | 'dark' | 'light' } & HeroTextPresentation) | null;
+  presentation?: ({
+    pc_x?: number; pc_y?: number; mobile_x?: number; mobile_y?: number; overlay?: 'none' | 'dark' | 'light';
+    /** 구성 — 배경형(background, 기본·옛 배너) · 프로모션형(promo: 바탕색 위에 문구 칸과 그림 칸을 나눈다) */
+    layout?: 'background' | 'promo' | string;
+    /** 바탕색(#RRGGBB) — 프로모션형 띠 바탕, 배경형은 미디어를 받기 전 바탕 */
+    background_color?: string | null;
+    /** 그림 등장 효과 — 없음·서서히·오른쪽에서 */
+    media_animation?: 'none' | 'fade' | 'right' | string | null;
+  } & HeroTextPresentation) | null;
 }
 
 /** 전환 효과 — Swiper 효과 이름과 같고, none 은 0ms 슬라이드 */
@@ -1096,6 +1104,9 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const mainSrcSet = main ? responsiveSrcset(main.url, main.width, mainSrc) : undefined;
   // srcset 이 있으면 상자를 잰 뒤에만 주소를 붙인다 — 재기 전 sizes(100vw)로 큰 후보를 받기 시작했다가 잰 값으로 다시 받지 않게
   const measuring = !!mainSrcSet && boxPending;
+  const promo = banner.presentation?.layout === 'promo';
+  const background = /^#[0-9A-Fa-f]{6}$/.test(String(banner.presentation?.background_color ?? '')) ? String(banner.presentation!.background_color) : null;
+  const mediaFx = mediaMotion(focus, reduced);
   const image = main ? (
     <picture className="hs-slider__picture">
       <img
@@ -1157,10 +1168,11 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
 
   const text = (
     <div
-      className={`hs-slider__text${overlayClass(banner.presentation?.overlay)}${textBox ? ' hs-slider__text--boxed' : ''}`}
+      className={`hs-slider__text${overlayClass(banner.presentation?.overlay)}${textBox && !promo ? ' hs-slider__text--boxed' : ''}`}
       style={textVars(focus, forceDevice, drag.dragging)}
     >
-      {wrapBox(textBox, (
+      {/* 프로모션형은 바깥(.hs-promo__box)이 본문 상자라 문구 띠가 상자를 다시 감싸지 않는다 */}
+      {wrapBox(promo ? '' : textBox, (
         <div
           key={`motion-${replay}`}
           ref={drag.boxRef}
@@ -1183,35 +1195,65 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     </div>
   );
 
+  const video = media === 'video' && (
+    <HeroVideoMedia
+      sources={banner.videos ?? {}}
+      forceDevice={forceDevice}
+      posters={forceDevice ? { pc: mediaSrc(main), mobile: mediaSrc(main) } : { pc: mediaSrc(pc), mobile: mediaSrc(mobile) }}
+      playing={playing}
+      active={active}
+      loop={loop}
+      eager={eager}
+      reduced={reduced}
+      onEnded={onMediaEnded}
+      onFailed={onMediaFailed}
+    />
+  );
+  // 그림 등장 효과 — 고른 배너만 미디어를 감싼다(효과 없는 옛 배너는 화면 구조가 종전 그대로). 다시 보기(replay)면 처음부터 다시 재생
+  const mediaStyle = { '--hs-media-duration': `${mediaFx.duration}s`, '--hs-media-delay': `${mediaFx.delay}s` } as React.CSSProperties;
+  const mediaNodes = mediaFx.name === 'none' && !promo
+    ? <>{image}{video}</>
+    : (
+      <div key={`media-${replay}`} className={`hs-slider__media${promo ? ' hs-promo__media' : ''} hs-slider__media--${mediaFx.name}`} style={mediaStyle}>
+        {image}
+        {video}
+      </div>
+    );
+  // 프로모션형 — 바탕색 위에 문구 칸과 그림 칸을 나눈다. 가로 위치(x)가 50 을 넘으면 문구가 오른쪽, 휴대폰 세로 위치(y)가 50 보다 작으면
+  // 문구가 위에 온다(그 밖은 그림이 위). 문구 칸 안의 세로 위치·폭·바탕·효과는 배경형과 같은 값을 쓴다
+  const promoSides = promo ? {
+    'data-hs-side-pc': textSpot(focus, forceDevice ?? 'pc').x > 50 ? 'right' : 'left',
+    'data-hs-stack-mobile': textSpot(focus, forceDevice ?? 'mobile').y < 50 ? 'text' : 'media',
+  } : {};
+
   return (
     <div
-      className={`hs-slider__slide${active ? ' hs-slider__slide--active' : ''}${media ? ` hs-slider__slide--${media}` : ''}`}
+      className={`hs-slider__slide${active ? ' hs-slider__slide--active' : ''}${media ? ` hs-slider__slide--${media}` : ''}${promo ? ' hs-slider__slide--promo' : ''}`}
       role="group"
       aria-roledescription={t('sirsoft-hero_section.slider.slide_role', '슬라이드')}
       aria-label={slideLabel(index, count)}
       aria-hidden={active ? undefined : true}
       data-banner-id={banner.id}
       data-index={index}
+      style={background ? ({ '--hs-slide-bg': background } as React.CSSProperties) : undefined}
+      {...promoSides}
     >
       {wholeLink && (
         <a ref={linkRef} className="hs-slider__link" {...link!} aria-label={linkName} tabIndex={active ? undefined : -1} />
       )}
-      {image}
-      {media === 'video' && (
-        <HeroVideoMedia
-          sources={banner.videos ?? {}}
-          forceDevice={forceDevice}
-          posters={forceDevice ? { pc: mediaSrc(main), mobile: mediaSrc(main) } : { pc: mediaSrc(pc), mobile: mediaSrc(mobile) }}
-          playing={playing}
-          active={active}
-          loop={loop}
-          eager={eager}
-          reduced={reduced}
-          onEnded={onMediaEnded}
-          onFailed={onMediaFailed}
-        />
+      {promo ? (
+        <div className={`hs-promo${textBox ? '' : ' hs-promo--inset'}`}>
+          <div className={`hs-promo__box${textBox ? ` ${textBox}` : ''}`}>
+            <div className="hs-promo__text" style={{ '--hs-promo-tw': textWidth(focus, forceDevice ?? 'pc') } as React.CSSProperties}>{text}</div>
+            {mediaNodes}
+          </div>
+        </div>
+      ) : (
+        <>
+          {mediaNodes}
+          {text}
+        </>
       )}
-      {text}
     </div>
   );
 };

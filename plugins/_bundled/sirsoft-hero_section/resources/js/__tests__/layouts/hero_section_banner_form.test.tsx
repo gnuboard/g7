@@ -289,23 +289,66 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=admin_max_height_setting
-  it('편집 미리보기는 고른 위치의 표시 폭과 기기별 최대 높이를 받아 사이트와 같은 높이에서 문구 자리·넘침을 본다', () => {
+  it('편집 미리보기는 이 배너가 나갈 자리의 최종 설정(위치 기본값, 동적 위치면 대상 재정의까지)의 표시 폭·기기별 최대 높이를 받는다', () => {
     const preview = findById(form, 'form_preview')!;
-    const positionDefs = [
-      { key: 'home_hero', settings: { width: 'full', max_height_pc: 400, max_height_mobile: null } },
-      { key: 'shop_hero', settings: { width: 'content' } },
-    ];
-    const settings = (position: string) => evaluateBinding(preview.props.settings, { _local: { form: { position } } }, { positionDefs });
-    expect(settings('home_hero')).toMatchObject({ width: 'full', max_height_pc: 400, max_height_mobile: null });
-    // 최대 높이를 받은 적 없는 위치(옛 응답)도 비운 것(null)으로 — 비율대로
-    expect(settings('shop_hero')).toMatchObject({ width: 'content', max_height_pc: null, max_height_mobile: null });
+    const positionSettings = { data: { positions: [
+      { key: 'home_hero', dynamic: false, settings: { width: 'full', max_height_pc: 400, max_height_mobile: null } },
+      { key: 'board_hero', dynamic: true, target: { type: 'board' }, settings: { width: 'content', max_height_pc: null, max_height_mobile: null } },
+    ] } };
+    const settings = (local: any, targetSettings: any = undefined) => {
+      const computed = evaluateComputed(form as any, { position_settings: positionSettings, _local: local, form_target_settings: targetSettings, form_target_info: undefined, banner: undefined, route: {} });
+      return evaluateBinding(preview.props.settings, { _local: local }, computed);
+    };
+    expect(settings({ form: { position: 'home_hero' } })).toMatchObject({ width: 'full', max_height_pc: 400, max_height_mobile: null });
+    // 동적 위치 — 대상 설정 응답이 지금 위치·대상과 같을 때만 그 최종 값
+    const target = { data: { position: 'board_hero', target: { key: '4' }, settings: { width: 'full', max_height_pc: 320, max_height_mobile: null }, overrides: { width: 'full', max_height_pc: 320 } } };
+    expect(settings({ form: { position: 'board_hero', target_key: '4' } }, target)).toMatchObject({ width: 'full', max_height_pc: 320 });
+    // 다른 대상의 응답이 남아 있으면 쓰지 않고 위치 기본값
+    expect(settings({ form: { position: 'board_hero', target_key: '9' } }, target)).toMatchObject({ width: 'content', max_height_pc: null });
+  });
+
+  // @scenario surface=promo_layout_form
+  // @effects promo_preset_fills_draft_only
+  it('배너 구성(배경형·프로모션형)·바탕색·추천값 단추·기기별 문구 폭·그림 등장 효과·순차 등장·제목 여러 줄을 입력한다 — 추천값은 작업본에만 넣는다', () => {
+    const radio = findById(form, 'layout_radio')!;
+    expect(radio.props.name).toBe('presentation.layout');
+    expect(json(radio)).toContain('"value":"background"');
+    expect(json(radio)).toContain('"value":"promo"');
+    const presetNode = findById(form, 'layout_preset_promo')!;
+    const preset = json(actionsOf(presetNode, 'setState'));
+    for (const piece of ["layout: 'promo'", 'text_width_pc: 40', 'text_width_mobile: 100', "animation: 'sequence'", "media_animation: 'right'", 'text_pc_y: 50', 'text_mobile_y: 100']) expect(preset).toContain(piece);
+    expect(actionsOf(presetNode, 'apiCall')).toHaveLength(0);
+    // 밝은 바탕에 흰 글자가 묻히지 않게 — 기본 흰색 계열 글자색만 짙은 색으로, 운영자가 고른 색은 그대로
+    const params = actionsOf(presetNode, 'setState')[0].params;
+    const colorsFor = (current: Record<string, string>) => ['title_color', 'description_color', 'eyebrow_color']
+      .map((key) => evaluateBinding(params[`form.${key}`], { _local: { form: current } }));
+    expect(colorsFor({ title_color: '#ffffff', description_color: '#E5E7EB', eyebrow_color: '#FFFFFF' })).toEqual(['#111827', '#4B5563', '#4B5563']);
+    expect(colorsFor({ title_color: '#B91C1C', description_color: '#1F2937', eyebrow_color: '#0EA5E9' })).toEqual(['#B91C1C', '#1F2937', '#0EA5E9']);
+    for (const id of ['hero_text_width_pc', 'hero_text_width_mobile']) {
+      const input = collect(form, (n) => n.props?.id === id)[0];
+      expect(json(actionsOf(input, 'setState'))).toContain("$event.target.value === '' ? null : Number($event.target.value)");
+    }
+    const media = collect(form, (n) => n.props?.id === 'hero_media_animation')[0];
+    const values = (node: any) => collect(node, (n) => n.name === 'Option' || n.name === 'option').map((n: any) => n.props?.value);
+    expect(values(media)).toEqual(['none', 'fade', 'right']);
+    const anim = collect(form, (n) => n.props?.id === 'hero_text_animation')[0];
+    expect(values(anim)).toContain('sequence');
+    const title = collect(form, (n) => n.props?.name === 'title')[0];
+    expect(title.props.inputType).toBe('textarea');
+    expect(findById(form, 'applied_settings')).toBeTruthy();
+    for (const lang of [ko, en] as any[]) {
+      for (const key of ['title', 'label', 'background', 'promo', 'background_hint', 'promo_hint', 'background_color', 'preset', 'preset_hint']) expect(lang.admin.form.layout[key], key).toBeTruthy();
+      for (const key of ['width_pc', 'width_mobile', 'width_follow', 'media_animation', 'promo_spot_hint']) expect(lang.admin.form.text_layout[key], key).toBeTruthy();
+      expect(lang.admin.form.text_layout.animations.sequence).toBeTruthy();
+      expect(lang.admin.form.applied.values).toContain('{{effect}}');
+    }
   });
 
   // @scenario surface=form_section_order_image_first
   // @effects form_guides_operator_before_save
-  it('입력 순서는 기본 정보 → 미디어 → 이미지 → 이미지 표시 → 문구 → 문구 위치·효과 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
+  it('입력 순서는 기본 정보 → 배너 구성 → 미디어 → 이미지 → 이미지 표시 → 문구 → 문구 위치·효과 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
     const sections = asArray<any>(findById(form, 'form_sections')!.children).map((n) => n.id).filter((id) => String(id).endsWith('_card'));
-    expect(sections).toEqual(['basic_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'text_layout_card', 'link_card', 'period_card']);
+    expect(sections).toEqual(['basic_card', 'layout_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'text_layout_card', 'link_card', 'period_card']);
   });
 
   // @scenario surface=form_preview_first_on_mobile

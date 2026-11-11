@@ -71,7 +71,7 @@ export function pick(dict: unknown, dotted: string): unknown {
 export function evaluateComputed(layout: AnyNode, scope: Record<string, unknown>): Record<string, any> {
   const computed: Record<string, any> = {};
   const $t = (key: string, params?: unknown) => (params ? `${key}:${JSON.stringify(params)}` : key);
-  const full: Record<string, unknown> = { $t, $localized: (v: unknown) => v, position_settings: undefined, banners: undefined, target_info: undefined, preview: undefined, placements: undefined, query: {}, _local: {}, _global: {}, ...scope };
+  const full: Record<string, unknown> = { $t, $localized: (v: unknown) => v, position_settings: undefined, banners: undefined, target_info: undefined, preview: undefined, placements: undefined, target_settings: undefined, form_target_settings: undefined, query: {}, _local: {}, _global: {}, ...scope };
   for (const [name, source] of Object.entries(layout.computed ?? {})) {
     const expr = String(source).replace(/^\{\{/, '').replace(/\}\}$/, '');
     computed[name] = Function(...Object.keys(full), '_computed', `return (${expr})`)(...Object.values(full), computed);

@@ -114,6 +114,29 @@
                 "data": null
             },
             "comment": "목록에서 고른 대상으로 등록하러 왔을 때 그 대상 이름 — 수정은 배너 응답(target_label)이 이름을 준다"
+        },
+        {
+            "id": "form_target_settings",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.target_settings",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/admin/position-settings/{{_local.form?.position ?? banner?.data?.position ?? query.position ?? 'home_hero'}}/targets/{{encodeURIComponent(_local.form?.target_key ?? banner?.data?.target_key ?? query.target ?? '')}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{!!(_local.form?.target_key ?? banner?.data?.target_key ?? query.target)}}",
+            "loading_strategy": "background",
+            "errorHandling": {
+                "404": {
+                    "handler": "suppress"
+                },
+                "422": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "고른 동적 위치 대상의 최종 슬라이더 설정(위치 기본값 + 대상 재정의) — 미리보기와 「적용 설정」 요약이 쓴다. 대상을 고르면 다시 받는다.\n    정적 위치·대상 없음은 받지 않고 위치 설정을 쓴다. 응답이 지금 위치·대상과 같을 때만 쓴다"
         }
     ],
     "initLocal": {
@@ -151,7 +174,12 @@
                 "animation": "none",
                 "animation_speed": "normal",
                 "animation_delay": 0,
-                "tone": "dark"
+                "tone": "dark",
+                "layout": "background",
+                "background_color": null,
+                "text_width_pc": null,
+                "text_width_mobile": null,
+                "media_animation": "none"
             },
             "link_url": "",
             "link_new_window": false,
@@ -200,8 +228,12 @@
         "listPosition": "{{_local.form?.position || query.position || 'home_hero'}}",
         "listTarget": "{{_computed.formDynamic ? (_local.form?.target_key || undefined) : undefined}}",
         "samePlacement": "{{_computed.listPosition === (query.position || 'home_hero') && (_computed.listTarget ?? '') === (query.target ?? '')}}",
-        "pcSizeMismatch": "{{!!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}",
-        "mobileSizeMismatch": "{{!!_local.form?.images?.mobile?.width && (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}"
+        "formLayout": "{{_local.form?.presentation?.layout === 'promo' ? 'promo' : 'background'}}",
+        "formTargetSettings": "{{_computed.formDynamic && _local.form?.target_key && form_target_settings?.data?.position === _local.form?.position && String(form_target_settings?.data?.target?.key ?? '') === String(_local.form?.target_key) ? form_target_settings.data : null}}",
+        "formSettings": "{{_computed.formTargetSettings?.settings ?? _computed.formDef?.settings ?? {} }}",
+        "formSettingsFromTarget": "{{Object.keys(_computed.formTargetSettings?.overrides ?? {}).length > 0}}",
+        "pcSizeMismatch": "{{_computed.formLayout === 'background' && !!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}",
+        "mobileSizeMismatch": "{{_computed.formLayout === 'background' && !!_local.form?.images?.mobile?.width && (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}"
     },
     "permissions": [
         "sirsoft-hero_section.banners.update"
@@ -277,7 +309,12 @@
                         "animation": "none",
                         "animation_speed": "normal",
                         "animation_delay": 0,
-                        "tone": "dark"
+                        "tone": "dark",
+                        "layout": "background",
+                        "background_color": null,
+                        "text_width_pc": null,
+                        "text_width_mobile": null,
+                        "media_animation": "none"
                     },
                     "link_url": "",
                     "link_new_window": false,
@@ -635,13 +672,24 @@
                                                                         "comment": "고른 대상을 폼에 담는다 — 이름은 후보에서 찾아 두어 고르기 칸 글자로 쓴다",
                                                                         "type": "change",
                                                                         "event": "onChange",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "form.target_key": "{{$args[0] || null}}",
-                                                                            "formTargetLabel": "{{(_local.formTargetResults ?? []).find(o => o.value === $args[0])?.label ?? null}}",
-                                                                            "hasChanges": true
-                                                                        }
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.target_key": "{{$args[0] || null}}",
+                                                                                    "formTargetLabel": "{{(_local.formTargetResults ?? []).find(o => o.value === $args[0])?.label ?? null}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "form_target_settings"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ],
                                                                 "props": {
@@ -707,6 +755,209 @@
                                                                     "className": "hs-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.form.is_active_hint"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "배너 구성 — 배경형(기존: 미디어가 배너 전체를 덮고 문구가 위에 겹침) · 프로모션형(바탕색 위에 문구 칸과 그림 칸을 나눔). 구성을 바꿔도\n            다른 표현값(문구 자리·폭·효과·초점)은 그대로 남아 배경형으로 돌아오면 원래 모습이다. 「추천값 적용」은 이 배너 작업본에만 넣고 슬라이더 설정은 바꾸지 않는다",
+                                        "id": "layout_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "hs-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "hs-card-title"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.layout.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs-row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "layout_radio",
+                                                        "type": "composite",
+                                                        "name": "RadioGroup",
+                                                        "responsive": {
+                                                            "portable": {
+                                                                "props": {
+                                                                    "inline": false
+                                                                }
+                                                            }
+                                                        },
+                                                        "props": {
+                                                            "name": "presentation.layout",
+                                                            "inline": true,
+                                                            "label": "$t:sirsoft-hero_section.admin.form.layout.label",
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:sirsoft-hero_section.admin.form.layout.background",
+                                                                    "value": "background"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-hero_section.admin.form.layout.promo",
+                                                                    "value": "promo"
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "layout_hint_background",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_computed.formLayout === 'background'}}",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.admin.form.layout.background_hint"
+                                                    },
+                                                    {
+                                                        "id": "layout_hint_promo",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_computed.formLayout === 'promo'}}",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.admin.form.layout.promo_hint"
+                                                    },
+                                                    {
+                                                        "id": "field_background_color",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "hs:flex hs:flex-wrap hs:items-center hs:gap-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "hs-form-label",
+                                                                    "htmlFor": "hero_background_color"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.layout.background_color"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "바탕색 — 프로모션형 띠 바탕(배경형은 미디어를 받기 전 바탕). 대문자 #RRGGBB 로 담는다",
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.presentation": "{{({...(_local.form?.presentation ?? {}), background_color: String($event.target.value).toUpperCase()})}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "color",
+                                                                    "id": "hero_background_color",
+                                                                    "className": "hs:h-9 hs:w-14 hs:rounded hs:border hs:border-gray-300 hs:dark:border-gray-600",
+                                                                    "value": "{{_local.form?.presentation?.background_color ?? '#F4F5F8'}}",
+                                                                    "disabled": "{{_local.isSaving}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "background_color_value",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "hs:text-sm hs:text-gray-600 hs:dark:text-gray-300 hs:tabular-nums"
+                                                                },
+                                                                "text": "{{_local.form?.presentation?.background_color ?? $t('sirsoft-hero_section.admin.form.layout.background_color_none')}}"
+                                                            },
+                                                            {
+                                                                "id": "background_color_clear",
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.presentation": "{{({...(_local.form?.presentation ?? {}), background_color: null})}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "hs-btn hs-btn-secondary",
+                                                                    "disabled": "{{_local.isSaving || !_local.form?.presentation?.background_color}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.layout.background_color_clear"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "hs:flex hs:flex-wrap hs:items-center hs:gap-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "layout_preset_promo",
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "프로모션형 추천값 — 문구 PC 왼쪽 가운데·폭 40%, 휴대폰 그림 위·문구 아래·폭 100%, 순차 등장, 그림 오른쪽에서. 바탕색은 비어 있을 때만 연회색,\n                      글자색은 아직 기본 흰색 계열일 때만 짙은 색(밝은 바탕에 흰 글자가 묻히지 않게 — 고른 색은 그대로). 적용한 뒤에도 바꿀 수 있다. 위치·대상 슬라이더 설정은 바꾸지 않는다",
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.presentation": "{{({...(_local.form?.presentation ?? {}), layout: 'promo', background_color: _local.form?.presentation?.background_color ?? '#F4F5F8', text_pc_x: 0, text_pc_y: 50, text_mobile_x: 0, text_mobile_y: 100, text_width_pc: 40, text_width_mobile: 100, overlay: 'none', animation: 'sequence', animation_speed: 'normal', animation_delay: 0, media_animation: 'right'})}}",
+                                                                            "form.title_color": "{{String(_local.form?.title_color ?? '').toUpperCase() === '#FFFFFF' ? '#111827' : _local.form?.title_color}}",
+                                                                            "form.description_color": "{{String(_local.form?.description_color ?? '').toUpperCase() === '#E5E7EB' ? '#4B5563' : _local.form?.description_color}}",
+                                                                            "form.eyebrow_color": "{{String(_local.form?.eyebrow_color ?? '').toUpperCase() === '#FFFFFF' ? '#4B5563' : _local.form?.eyebrow_color}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "hs-btn hs-btn-secondary",
+                                                                    "disabled": "{{_local.isSaving}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.layout.preset"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "hs-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.layout.preset_hint"
                                                             }
                                                         ]
                                                     }
@@ -1092,10 +1343,21 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
+                                                                "if": "{{_computed.formLayout === 'background'}}",
                                                                 "props": {
                                                                     "className": "hs-form-hint hs:mb-2"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.form.image.pc_hint|mb={{_computed.uploadMb}}"
+                                                            },
+                                                            {
+                                                                "id": "pc_image_promo_hint",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.formLayout === 'promo'}}",
+                                                                "props": {
+                                                                    "className": "hs-form-hint hs:mb-2"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.image.pc_promo_hint|mb={{_computed.uploadMb}}"
                                                             },
                                                             {
                                                                 "id": "pc_image_poster_hint",
@@ -1623,6 +1885,8 @@
                                                                 "props": {
                                                                     "name": "title",
                                                                     "layout": "tabs",
+                                                                    "inputType": "textarea",
+                                                                    "rows": 2,
                                                                     "maxLength": 100,
                                                                     "required": true,
                                                                     "placeholder": "$t:sirsoft-hero_section.admin.form.title_placeholder",
@@ -2024,6 +2288,116 @@
                                                         ]
                                                     },
                                                     {
+                                                        "comment": "기기별 문구 폭 — 비우면 위 공통 폭을 따른다(옛 배너 그대로). 프로모션형은 PC 폭이 문구 칸 폭이다",
+                                                        "id": "field_text_width_devices",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "hs:grid hs:grid-cols-1 hs:sm:grid-cols-2 hs:gap-4"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                                    "htmlFor": "hero_text_width_pc"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "hs-form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.width_pc"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.presentation": "{{({...(_local.form?.presentation ?? {}), text_width_pc: $event.target.value === '' ? null : Number($event.target.value)})}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "number",
+                                                                            "id": "hero_text_width_pc",
+                                                                            "inputMode": "numeric",
+                                                                            "min": "{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}",
+                                                                            "max": "{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}",
+                                                                            "step": 5,
+                                                                            "className": "hs-input",
+                                                                            "placeholder": "{{$t('sirsoft-hero_section.admin.form.text_layout.width_follow', {width: _local.form?.presentation?.text_width ?? 100})}}",
+                                                                            "value": "{{_local.form?.presentation?.text_width_pc ?? ''}}",
+                                                                            "disabled": "{{_local.isSaving}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "hs:flex hs:flex-col hs:gap-1",
+                                                                    "htmlFor": "hero_text_width_mobile"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "hs-form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.width_mobile"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.presentation": "{{({...(_local.form?.presentation ?? {}), text_width_mobile: $event.target.value === '' ? null : Number($event.target.value)})}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "number",
+                                                                            "id": "hero_text_width_mobile",
+                                                                            "inputMode": "numeric",
+                                                                            "min": "{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}",
+                                                                            "max": "{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}",
+                                                                            "step": 5,
+                                                                            "className": "hs-input",
+                                                                            "placeholder": "{{$t('sirsoft-hero_section.admin.form.text_layout.width_follow', {width: _local.form?.presentation?.text_width ?? 100})}}",
+                                                                            "value": "{{_local.form?.presentation?.text_width_mobile ?? ''}}",
+                                                                            "disabled": "{{_local.isSaving}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.['presentation.text_width_pc'] || _local.errors?.['presentation.text_width_mobile']}}",
+                                                        "props": {
+                                                            "className": "hs-form-error"
+                                                        },
+                                                        "text": "{{(_local.errors?.['presentation.text_width_pc'] ?? _local.errors?.['presentation.text_width_mobile'])?.[0] ?? ''}}"
+                                                    },
+                                                    {
                                                         "id": "field_animation",
                                                         "type": "basic",
                                                         "name": "Div",
@@ -2126,6 +2500,14 @@
                                                                                     "value": "letters"
                                                                                 },
                                                                                 "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.letters"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "sequence"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.sequence"
                                                                             }
                                                                         ]
                                                                     }
@@ -2154,7 +2536,7 @@
                                                                             "id": "hero_text_animation_speed",
                                                                             "name": "presentation.animation_speed",
                                                                             "className": "hs-input hs-select",
-                                                                            "disabled": "{{(_local.form?.presentation?.animation ?? 'none') === 'none'}}"
+                                                                            "disabled": "{{(_local.form?.presentation?.animation ?? 'none') === 'none' && (_local.form?.presentation?.media_animation ?? 'none') === 'none'}}"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -2212,7 +2594,7 @@
                                                                             "max": "{{position_settings?.data?.editor?.animation_delay_limits?.max ?? 2}}",
                                                                             "step": 0.1,
                                                                             "className": "hs-input",
-                                                                            "disabled": "{{(_local.form?.presentation?.animation ?? 'none') === 'none'}}"
+                                                                            "disabled": "{{(_local.form?.presentation?.animation ?? 'none') === 'none' && (_local.form?.presentation?.media_animation ?? 'none') === 'none'}}"
                                                                         }
                                                                     }
                                                                 ]
@@ -2235,6 +2617,70 @@
                                                             "className": "hs-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.admin.form.text_layout.animation_hint"
+                                                    },
+                                                    {
+                                                        "comment": "그림 등장 효과 — 문구 효과와 따로 재생한다(속도·시작 지연은 위와 같다). 움직임 줄이기면 재생하지 않는다",
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "hs:flex hs:flex-col hs:gap-1",
+                                                            "htmlFor": "hero_media_animation"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "hs-form-label"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.media_animation"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "id": "hero_media_animation",
+                                                                    "name": "presentation.media_animation",
+                                                                    "className": "hs-input hs-select"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "none"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.media_animations.none"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "fade"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.media_animations.fade"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "right"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.media_animations.right"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "promo_spot_hint",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_computed.formLayout === 'promo'}}",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.promo_spot_hint"
                                                     },
                                                     {
                                                         "id": "field_tone",
@@ -3154,6 +3600,30 @@
                                         }
                                     },
                                     {
+                                        "comment": "적용 설정 요약 — 이 배너가 나갈 자리(위치, 동적 위치면 그 대상)의 최종 슬라이더 설정. 배너 저장과 따로이며, 바꾸려면 목록의 슬라이더 설정에서",
+                                        "id": "applied_settings",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!_computed.formDef}}",
+                                        "props": {
+                                            "className": "hs:text-xs hs:text-gray-600 hs:dark:text-gray-300 hs:mb-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "applied_settings_values",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "text": "$t:sirsoft-hero_section.admin.form.applied.values|effect={{$t('sirsoft-hero_section.admin.slider.effects.' + (_computed.formSettings?.effect ?? 'slide'))}}|width={{$t('sirsoft-hero_section.admin.slider.widths.' + (_computed.formSettings?.width ?? 'content'))}}|pagination={{$t('sirsoft-hero_section.admin.slider.paginations.' + (_computed.formSettings?.pagination ?? 'dots'))}}|pc={{_computed.formSettings?.max_height_pc ?? $t('sirsoft-hero_section.admin.target_settings.no_limit')}}|mobile={{_computed.formSettings?.max_height_mobile ?? $t('sirsoft-hero_section.admin.target_settings.no_limit')}}"
+                                            },
+                                            {
+                                                "id": "applied_settings_scope",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "text": "{{_computed.formSettingsFromTarget ? $t('sirsoft-hero_section.admin.form.applied.from_target') : $t('sirsoft-hero_section.admin.form.applied.from_position')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "id": "form_preview",
                                         "type": "composite",
                                         "name": "sirsoft-hero_section.HeroBannerPreview",
@@ -3185,7 +3655,7 @@
                                             "localeNames": "{{_global.appConfig?.localeNames ?? null}}",
                                             "locale": "{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}",
                                             "defaultLocale": "{{position_settings?.data?.editor?.default_locale}}",
-                                            "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (_computed.positionDefs).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content', max_height_pc: (_computed.positionDefs).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.max_height_pc ?? null, max_height_mobile: (_computed.positionDefs).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.max_height_mobile ?? null })}}",
+                                            "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: _computed.formSettings?.width ?? 'content', max_height_pc: _computed.formSettings?.max_height_pc ?? null, max_height_mobile: _computed.formSettings?.max_height_mobile ?? null })}}",
                                             "device": "{{_local.previewDevice}}",
                                             "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
                                             "position": "{{_local.form?.position ?? 'home_hero'}}",

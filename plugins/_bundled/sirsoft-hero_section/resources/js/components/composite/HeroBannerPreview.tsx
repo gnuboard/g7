@@ -345,7 +345,9 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
     : undefined;
   // 효과 다시 보기 — 값이 바뀌면 슬라이더가 문구 등장 효과를 처음부터 다시 재생한다
   const [replay, setReplay] = useState(0);
-  const animated = !!draft && !!draft.presentation?.animation && draft.presentation.animation !== 'none';
+  // 문구 등장 효과나 그림 등장 효과 중 하나라도 있으면 다시 보기를 준다
+  const animated = !!draft && ((!!draft.presentation?.animation && draft.presentation.animation !== 'none')
+    || (!!draft.presentation?.media_animation && draft.presentation.media_animation !== 'none'));
   const close = () => { if (dialog.current?.open) dialog.current.close(); setExpanded(false); opener.current?.focus(); };
   const Div = basic('Div', 'div');
   const P = basic('P', 'p');

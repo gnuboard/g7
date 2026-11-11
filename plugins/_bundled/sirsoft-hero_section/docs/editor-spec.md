@@ -57,7 +57,9 @@
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 4 | `*/admin/plugins/sirsoft-hero_section/banners` · `hero_delete_modal` · `hero_bulk_delete_modal` · `hero_reorder_modal` |
 
-_이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
+**프리뷰 샘플이 없는 `data_source` 2개** — 편집기 캔버스에서 이 자리만 빈 화면이 됩니다. 실제 화면은 정상이라 오류도 경고도 남지 않습니다.
+
+`form_target_settings` · `target_settings`
 <!-- @generated:editor-spec-samples END -->
 
 <!-- @intent START -->

@@ -2,10 +2,12 @@
 
 namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Installation;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Repositories\Contracts\TargetSettingRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
@@ -47,7 +49,7 @@ class BannerEditorMigrationTest extends PluginTestCase
             $this->assertSame(1, $updated->lock_version);
             $this->assertSame(['mobile_x' => 80], $updated->presentation);
         } finally {
-            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);
@@ -89,7 +91,7 @@ class BannerEditorMigrationTest extends PluginTestCase
             $this->assertSame('image', DB::table('hero_section_banners')->where('id', $youtube)->value('media_type'));
             $this->assertSame('video', DB::table('hero_section_banners')->where('id', $video)->value('media_type'));
         } finally {
-            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);
@@ -134,7 +136,7 @@ class BannerEditorMigrationTest extends PluginTestCase
             $this->assertNotNull($banner->pcImage);
             $this->assertNull($banner->pcVideo);
         } finally {
-            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);
@@ -183,7 +185,7 @@ class BannerEditorMigrationTest extends PluginTestCase
             $this->assertFalse($setting->toSettings()['header_overlay']);
             $this->assertSame('full', $setting->toSettings()['width']);
         } finally {
-            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);
@@ -222,7 +224,7 @@ class BannerEditorMigrationTest extends PluginTestCase
             $this->assertSame('dots', $setting->toSettings()['pagination']);
             $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'full', 'header_overlay' => true, 'pagination' => 'dots', 'max_height_pc' => null, 'max_height_mobile' => null], $setting->toSettings());
         } finally {
-            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);
@@ -266,11 +268,60 @@ class BannerEditorMigrationTest extends PluginTestCase
             $saved = $repository->update($setting, ['max_height_pc' => 480, 'max_height_mobile' => 2000])->toSettings();
             $this->assertSame([480, 2000], [$saved['max_height_pc'], $saved['max_height_mobile']]);
         } finally {
-            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);
             DB::purge('hero_height_smoke');
+        }
+    }
+
+    /**
+     * 대상별 설정 테이블 마이그레이션의 up→down→up — 처음에는 비어 있어(기존 위치 설정 행은 그대로) 모든 대상이 상속이고, 위치 + 대상 유일 키로
+     * 같은 대상의 두 번째 행을 막는다. 두 번 올려도 오류가 없고 저장소 원자 저장·삭제가 돈다.
+     *
+     * @scenario case=target_settings_migration_roundtrip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_target_settings_migration_roundtrip(): void
+    {
+        $original = DB::getDefaultConnection();
+        config(['database.connections.hero_tset_smoke' => array_replace(config('database.connections.'.$original), [
+            'prefix' => 'h12_'.bin2hex(random_bytes(3)).'_', 'prefix_indexes' => true,
+        ])]);
+        DB::setDefaultConnection('hero_tset_smoke');
+        try {
+            foreach (glob(dirname(__DIR__, 3).'/database/migrations/*.php') as $file) {
+                (require $file)->up();
+            }
+            DB::table('hero_section_position_settings')->insert(['position' => 'board_hero', 'autoplay' => 1, 'interval_seconds' => 5, 'effect' => 'fade', 'width' => 'full', 'header_overlay' => 0, 'pagination' => 'pill', 'created_at' => now(), 'updated_at' => now()]);
+            $migration = require dirname(__DIR__, 3).'/database/migrations/2026_11_11_000012_create_hero_section_target_settings_table.php';
+            $this->assertTrue(Schema::hasTable('hero_section_target_settings'));
+            $this->assertSame(0, DB::table('hero_section_target_settings')->count(), '기존 데이터는 모두 상속(재정의 없음)');
+
+            $migration->down();
+            $this->assertFalse(Schema::hasTable('hero_section_target_settings'));
+            $migration->up();
+            $migration->up();
+            $this->assertSame('fade', DB::table('hero_section_position_settings')->where('position', 'board_hero')->value('effect'), '위치 설정 행은 그대로');
+
+            $repository = app(TargetSettingRepositoryInterface::class);
+            [$row] = $repository->replace('board_hero', '4', ['autoplay' => false, 'max_height_pc' => null], null);
+            $this->assertSame(['autoplay' => false, 'max_height_pc' => null], $row->overrideValues());
+            $repository->replace('board_hero', '4', ['effect' => 'cube'], null);
+            $this->assertSame(1, DB::table('hero_section_target_settings')->count(), '같은 대상은 한 행');
+            $this->assertSame(['effect' => 'cube'], $repository->delete('board_hero', '4'));
+            $this->assertSame(0, DB::table('hero_section_target_settings')->count());
+
+            $this->expectException(QueryException::class);
+            DB::table('hero_section_target_settings')->insert([['position' => 'board_hero', 'target_key' => '4', 'overrides' => '{}'], ['position' => 'board_hero', 'target_key' => '4', 'overrides' => '{}']]);
+        } finally {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+                Schema::dropIfExists($table);
+            }
+            DB::setDefaultConnection($original);
+            DB::purge('hero_tset_smoke');
         }
     }
 
@@ -318,7 +369,7 @@ class BannerEditorMigrationTest extends PluginTestCase
             $this->assertSame(1, $repository->nextSortOrder(Placement::of('home_hero')));
             $this->assertSame(0, $repository->nextSortOrder(Placement::of('board_hero', '2')));
         } finally {
-            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+            foreach (['hero_section_target_settings', 'hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);

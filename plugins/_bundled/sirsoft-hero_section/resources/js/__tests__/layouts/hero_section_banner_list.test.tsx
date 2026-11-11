@@ -415,7 +415,11 @@ describe('히어로섹션 목록 화면', () => {
     expect(select.props.value).toContain("width ?? 'content'");
     expect(json(actionsOf(select, 'setState'))).toContain('width: $event.target.value');
     // 미리보기는 같은 위치의 작업본을 먼저 본다
-    expect(findById(list, 'hero_preview')!.props.settings).toBe('{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}');
+    expect(findById(list, 'hero_preview')!.props.settings).toBe('{{_computed.previewSettings}}');
+    // 정적 위치 — 같은 위치의 작업본, 없으면 위치 설정
+    const preview = (local: any) => evaluateComputed(list as any, { position_settings: positionSettings(), _local: local }).previewSettings;
+    expect(preview({ sliderForm: { position: 'home_hero', width: 'full' } }).width).toBe('full');
+    expect(preview({ sliderForm: { position: 'shop_hero', width: 'full' } }).width).not.toBe('full');
     const button = findById(list, 'slider_save_button')!;
     expect(json(actionsOf(button, 'apiCall')[0])).toContain("\"width\":\"{{_local.sliderForm.width ?? 'content'}}\"");
     expect(button.props.disabled).toContain("(_computed.currentSettings.width ?? 'content')");
@@ -514,6 +518,46 @@ describe('히어로섹션 목록 화면', () => {
       expect(lang.admin.slider.max_height_pc).toBeTruthy();
     }
     expect((ko as any).admin.slider.max_height_pc).toContain('태블릿');
+  });
+
+  // @scenario surface=target_settings_admin_card
+  it('동적 위치에서 대상을 고르면 「이 대상 설정」 카드가 8개 항목을 보이고, 항목을 켠 것만 작업본에 담아 저장·되돌리기는 그 대상 주소로 보낸다', () => {
+    const card = findById(list, 'target_settings_card')!;
+    expect(card.if).toBe('{{_computed.isDynamic && _computed.targetReady}}');
+    const keys = ['autoplay', 'interval_seconds', 'effect', 'width', 'header_overlay', 'pagination', 'max_height_pc', 'max_height_mobile'];
+    for (const key of keys) {
+      expect(findById(list, `target_row_${key}`), key).toBeTruthy();
+      const toggle = collect(list, (n) => n.props?.id === `hero_target_inherit_${key}`)[0];
+      expect(json(actionsOf(toggle, 'setState'))).toContain(`e[0] !== '${key}'`);
+    }
+    const save = findById(list, 'target_settings_save')!;
+    const put = actionsOf(save, 'apiCall')[0];
+    expect(json(put)).toContain('/targets/{{encodeURIComponent(_computed.currentTarget)}}');
+    expect(put.method ?? put.params?.method).toBe('PUT');
+    expect(json(put)).toContain('"overrides":"{{_computed.targetDraft}}"');
+    const reset = actionsOf(findById(list, 'target_settings_reset')!, 'apiCall')[0];
+    expect(reset.method ?? reset.params?.method).toBe('DELETE');
+    expect(json(findById(list, 'target_settings_reset'))).toContain('target_settings');
+    for (const lang of [ko, en] as any[]) {
+      for (const key of ['title', 'scope', 'loading', 'missing', 'own_label', 'source_target', 'source_position', 'no_limit', 'save', 'reset']) expect(lang.admin.target_settings[key], key).toBeTruthy();
+      for (const key of keys) expect(lang.admin.target_settings.items[key], key).toBeTruthy();
+    }
+  });
+
+  // @scenario surface=target_settings_admin_card
+  it('대상 작업본은 지금 위치·대상 응답에만 붙고, 최종 값은 위치 기본값 위에 켠 항목만 겹친다 — false·null 명시값도 덮고, 미리보기도 같은 값을 쓴다', () => {
+    const settingsResponse = (target: string) => ({ data: { position: 'board_hero', target: { key: target, exists: true }, overrides: { autoplay: false, max_height_pc: null }, position_settings: { autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: 400, max_height_mobile: null } } });
+    const computed = (query: any, target_settings: any, local: any = {}) => evaluateComputed(list as any, { position_settings: positionSettings(), query, target_settings, _local: local });
+    const c = computed({ position: 'board_hero', target: '4' }, settingsResponse('4'));
+    expect(c.targetOverridden).toEqual(['autoplay', 'max_height_pc']);
+    expect(c.targetEffective).toMatchObject({ autoplay: false, max_height_pc: null, effect: 'slide', interval_seconds: 5 });
+    expect(c.previewSettings).toMatchObject({ autoplay: false, max_height_pc: null, effect: 'slide' });
+    expect(c.targetDirty).toBe(false);
+    expect(computed({ position: 'board_hero', target: '9' }, settingsResponse('4')).targetData).toBeNull();
+    const draft = computed({ position: 'board_hero', target: '4' }, settingsResponse('4'), { targetForm: { key: 'board_hero|4', overrides: { effect: 'fade' } } });
+    expect(draft.targetEffective).toMatchObject({ effect: 'fade', autoplay: true, max_height_pc: 400 });
+    expect(draft.targetDirty).toBe(true);
+    expect(computed({ position: 'board_hero', target: '4' }, settingsResponse('4'), { targetForm: { key: 'board_hero|5', overrides: { effect: 'fade' } } }).targetEffective.effect).toBe('slide');
   });
 
   // @scenario surface=list_preview_empty_message

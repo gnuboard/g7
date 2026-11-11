@@ -81,6 +81,7 @@ return [
         'header_overlay' => '메뉴 겹치기',
         'max_height_pc' => 'PC·태블릿 최대 높이',
         'max_height_mobile' => '휴대폰 최대 높이',
+        'overrides' => '대상 재정의',
         'ids' => '선택한 배너',
         'ids_item' => '선택한 배너',
     ],
