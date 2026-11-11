@@ -136,6 +136,8 @@ abstract class AbstractContentMediaService
         $kind = ContentMediaKind::fromMime($mime);
         $context = $context->withKind($kind);
 
+        // audit:allow stored-filename-client-extension 이름 확장자는 업로드 규칙(ContentMediaFile)이 본문 미디어
+        // 정책의 허용 목록·파일 내용과 교차 검증한 값이다 — 내용과 짝이 맞지 않는 이름은 여기 오기 전에 거부된다.
         $storedFilename = Str::uuid()->toString().'.'.strtolower((string) $file->getClientOriginalExtension());
         $path = $this->store->storagePath($context, $storedFilename);
 

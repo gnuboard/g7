@@ -35,7 +35,6 @@ return [
     'layout_guest_permission_denied' => 'Authentication required to access this layout. (Required: :required_permissions)',
     'invalid_permission_type' => 'Invalid permission type.',
     'role_denied' => 'Role access denied.',
-    'email_not_registered' => 'Email address is not registered.',
     'guest_permission_denied' => 'Guests are not allowed to perform this action. Login required.',
     'scope_denied' => 'You do not have access to this resource.',
     'scope_type_all' => 'All',
@@ -57,7 +56,7 @@ return [
     // Password reset
     'reset_token_invalid' => 'Invalid password reset token.',
     'reset_token_expired' => 'Password reset token has expired. Please request again.',
-    'password_reset_email_sent' => 'Password reset email has been sent.',
+    'password_reset_email_sent' => 'If this email is registered, we have sent a password reset link. Please check your inbox.',
     'email_send_failed' => 'Failed to send email. Please try again later.',
     // `auth:process-password-expiry` command output
     'console' => [

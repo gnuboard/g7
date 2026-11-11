@@ -59,6 +59,24 @@ interface IdentityVerificationLogRepositoryInterface
     ): ?IdentityVerificationLog;
 
     /**
+     * 같은 프로바이더·수신 대상·목적으로 주어진 시각 이후에 발행된 가장 최근 challenge 를 찾습니다.
+     * 발송이 실패로 끝난 challenge 는 제외합니다 — 받지 못한 메일 때문에 재요청을 막지 않습니다.
+     * 재요청 대기 판정에 사용합니다.
+     *
+     * @param  string  $providerId  프로바이더 id
+     * @param  string  $targetHash  수신 대상 sha256 해시
+     * @param  string  $purpose  IDV 목적
+     * @param  \DateTimeInterface  $since  이 시각 이후 발행분만
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findLatestRequestedSince(
+        string $providerId,
+        string $targetHash,
+        string $purpose,
+        \DateTimeInterface $since,
+    ): ?IdentityVerificationLog;
+
+    /**
      * 특정 토큰(verification_token) 으로 verified 상태의 challenge 를 찾습니다.
      * IdvTokenRule 이 register 검증 시 사용합니다.
      *

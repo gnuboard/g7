@@ -167,7 +167,7 @@ _단건 응답: `data` 객체의 필드._
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 여덟 필드로 구성 |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 아홉 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
@@ -175,6 +175,7 @@ _단건 응답: `data` 객체의 필드._
 | _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
 | _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
 | _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.kakaocdn.net","t1.daumcdn.net"],"style_override":null,"style_preview":"style-src-elem 'self'; report-uri /api/csp-report","style_auto_hosts":[]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트. 스타일 정책 3키(7.1.6) — `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 스타일 모드 선택을 잠근다. `G7_CSP_MODE` 와 독립) · `style_preview`: **저장된 값** 기준으로 붙을 스타일 정책 문자열(강도 `basic` 은 `style-src-elem 'self' …; report-uri …`, `strict` 는 `style-src 'self' …; style-src-attr 'none'; report-uri …`. 모드가 끔이어도 미리 보여 준다) · `style_auto_hosts`: 활성 관리자·사용자 템플릿 externals 의 외부 스타일시트(`style`·`webfont`·`as` 가 `style` 인 `preload`)에서 자동 합산된 호스트 |
+| _meta.public_disk_hardening | object\|null | `{"ok":true,"nosniff":true,"disposition":true,"status":200,"checked_at":"2026-11-10T21:00:00+09:00"}` | 드라이버 탭 「공개 자산 스토리지」 카드의 경고 판정 메타(7.1.6). 공개 자산 디스크를 로컬 공개 디스크(`public`)로 두고 드라이버 탭을 저장하면 서버가 `/storage` 직접 주소의 응답 헤더를 점검해 남긴 결과다. `ok` 는 nosniff 와 내려받기 지시가 모두 있으면 true, 응답은 받았는데 하나라도 없으면 false(화면이 경고), 서버가 자기 주소에 닿지 못해 판정할 수 없으면 null. 점검한 적이 없거나 다른 디스크를 쓰면 필드 값이 null `ok` 는 점검 파일이 내려왔는데(200) 헤더가 없거나 접근이 막혔을 때(403) `false`, 리다이렉트·404·서버 오류처럼 확인할 수 없는 응답이면 `null`(경고 없음) |
 | _meta.search_scopes | array | `[{"scope":"core.site","owner":"core","owner_label":"코어","label":"통합 검색","default_max_count":10,"default_retention_days":0}]` | 개인정보 탭 「최근 검색어」 카드의 범위 메타(7.1.5) — 코어 `core.site` + 활성 모듈·플러그인이 manifest `search_scopes` 로 선언한 범위, 선언 순서. `owner` 는 `core`·`module:{id}`·`plugin:{id}`, `label`·`owner_label` 은 요청 언어 글자, `default_*` 는 선언값(없으면 10개·0=기한 없음) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -288,14 +289,14 @@ HTTP/1.1 200
 | general.maintenance_mode | body | boolean | 아니오 | — | 점검 모드 사용 여부 (사이트 접근 차단) |
 | general.site_logo | body | array | 아니오 | — | 사이트 로고 이미지 |
 | mail.mailer | body | string | 아니오 | — | 메일 발송 드라이버 (smtp/mailgun/ses) |
-| mail.host | body | string | 아니오 | max 255 | 호스트 주소 |
+| mail.host | body | string | 아니오 | max 255 | 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | mail.port | body | integer | 아니오 | min 1, max 65535 | 포트 번호 |
 | mail.username | body | string | 아니오 | max 255 | 사용자명 (로그인/인증 아이디) |
 | mail.password | body | string | 아니오 | max 255 | 비밀번호 |
 | mail.encryption | body | string | 아니오 | — | 전송 암호화 방식 (tls/ssl) |
 | mail.mailgun_domain | body | string | 아니오 | max 255 | Mailgun 도메인 |
 | mail.mailgun_secret | body | string | 아니오 | max 255 | Mailgun 시크릿 키 |
-| mail.mailgun_endpoint | body | string | 아니오 | max 255 | Mailgun 엔드포인트 |
+| mail.mailgun_endpoint | body | string | 아니오 | max 255 | Mailgun 엔드포인트 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | mail.ses_key | body | string | 아니오 | max 255 | SES 액세스 키 |
 | mail.ses_secret | body | string | 아니오 | max 255 | SES 시크릿 키 |
 | mail.ses_region | body | string | 아니오 | max 255 | SES 리전 |
@@ -303,6 +304,7 @@ HTTP/1.1 200
 | mail.from_name | body | string | 아니오 | max 255 | mail.from 이름 (식별자) |
 | upload.max_file_size | body | integer | 아니오 | min 1, max 1024 | 업로드 허용 최대 파일 크기 |
 | upload.allowed_extensions | body | string | 아니오 | — | 업로드 허용 확장자 목록 |
+| upload.layout_attachment_extensions | body | string | 아니오 | 500자 이하 | 레이아웃 첨부 허용 확장자 (콤마 문자열 또는 배열, 기본 `jpg,jpeg,png,gif,webp`). 소문자 배열로 저장한다. 빈 목록은 422 — 비우면 "제한 없음" 이 아니다 |
 | upload.image_max_width | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 너비 (px) |
 | upload.image_max_height | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 높이 (px) |
 | upload.image_quality | body | integer | 아니오 | min 1, max 100 | 이미지 리사이즈 시 압축 품질 (1~100) |
@@ -336,6 +338,8 @@ HTTP/1.1 200
 | security.auth_token_lifetime | body | integer | 아니오 | min 0, max 3600 | 인증 토큰 유효 시간 (분) |
 | security.max_login_attempts | body | integer | 아니오 | min 0, max 100 | 로그인 실패 허용 횟수 (초과 시 잠금) |
 | security.login_lockout_time | body | integer | 아니오 | min 0, max 1440 | 로그인 잠금 지속 시간 (분) |
+| security.password_reset_rate_limit_per_minute | body | integer | 아니오 | min 1, max 1000 | 비밀번호 찾기·재설정의 같은 IP 분당 허용 횟수 (기본 10). 찾기와 재설정·토큰 확인은 이 값을 함께 쓰되 따로 센다. 0(끄기)은 받지 않는다 |
+| security.register_rate_limit_per_minute | body | integer | 아니오 | min 1, max 1000 | 회원가입의 같은 IP 분당 허용 횟수 (기본 10) |
 | security.ip_restriction_enabled | body | boolean | 아니오 | — | IP 접근 제한 마스터 토글 (기본 false). 끄면 아래 목록·규칙은 저장만 되고 적용되지 않는다 |
 | security.admin_allowed_ips | body | array | 아니오 | max 100 | 관리자 영역(관리자 화면·코어/확장 관리자 API·관리자 로그인 API)에 접근을 허용할 IP·CIDR 목록. **빈 목록 = 이 축 미적용**. 앞뒤 공백·빈 항목·중복은 저장 전에 정리된다 |
 | security.admin_allowed_ips.* | body | string | 아니오 | IPv4·IPv6·CIDR (`203.0.113.0/24`, `2001:db8::/32`) | 허용 항목. 호스트명·범위 표기(`a-b`)·와일드카드(`192.168.*`)는 422 |
@@ -387,19 +391,20 @@ HTTP/1.1 200
 | advanced.geoip_auto_update_enabled | body | boolean | 아니오 | — | GeoIP DB 자동 업데이트 사용 여부 (주 1회 자동 재다운로드) |
 | drivers.storage_driver | body | string | 아니오 | — | 스토리지 드라이버 (local/s3) |
 | drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
+| drivers.public_asset_extensions | body | string | 아니오 | 500자 이하 | 공개 디스크로 내보낼 확장자 (콤마 문자열 또는 배열, 기본 `jpg,jpeg,png,gif,webp,avif`). 이 목록 밖의 파일은 공개 디스크에 저장하지 않는다. 빈 목록은 422 |
 | drivers.s3_bucket | body | string | 아니오 | max 255 | S3 버킷명 |
 | drivers.s3_region | body | string | 아니오 | max 64, 소문자 영숫자·하이픈 (`^[a-z0-9-]+$`) | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`, MinIO 관례는 `us-east-1`) |
 | drivers.s3_access_key | body | string | 아니오 | max 255 | S3 액세스 키 |
 | drivers.s3_secret_key | body | string | 아니오 | max 255 | S3 시크릿 키 |
-| drivers.s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님) |
-| drivers.s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`) |
+| drivers.s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님). 계정 정보(`user:pass@`)·링크로컬·메타데이터 호스트는 422 |
+| drivers.s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`). 스킴·호스트·포트까지만(경로·쿼리·계정 정보 불가), 링크로컬·메타데이터 호스트는 422 |
 | drivers.s3_use_path_style | body | boolean | 아니오 | — | S3 path-style 주소 사용 여부 — MinIO 등 path-style 전용 스토리지에서 true |
 | drivers.cache_driver | body | string | 아니오 | — | 캐시 드라이버 (file/redis/memcached) |
-| drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 |
+| drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422. `/` 로 시작하는 유닉스 소켓 절대 경로, `tls://`·`rediss://` 접두, 대괄호 없는 IPv6(`::1`)는 허용 |
 | drivers.redis_port | body | integer | 아니오 | min 1, max 65535 | Redis 포트 번호 |
 | drivers.redis_password | body | string | 아니오 | max 255 | Redis 비밀번호 |
 | drivers.redis_database | body | integer | 아니오 | min 0, max 15 | Redis 데이터베이스 번호 |
-| drivers.memcached_host | body | string | 아니오 | max 255 | Memcached 호스트 주소 |
+| drivers.memcached_host | body | string | 아니오 | max 255 | Memcached 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422. `/` 로 시작하는 유닉스 소켓 절대 경로, `tls://`·`rediss://` 접두, 대괄호 없는 IPv6(`::1`)는 허용 |
 | drivers.memcached_port | body | integer | 아니오 | min 1, max 65535 | Memcached 포트 번호 |
 | drivers.session_driver | body | string | 아니오 | — | 세션 드라이버 (file/database/redis) |
 | drivers.session_lifetime | body | integer | 아니오 | min 1, max 43200 | 세션 유효 시간 (분) |
@@ -410,11 +415,11 @@ HTTP/1.1 200
 | drivers.websocket_app_id | body | string | 아니오 | max 255 | drivers.websocket app 식별자 |
 | drivers.websocket_app_key | body | string | 아니오 | max 255 | WebSocket 앱 키 |
 | drivers.websocket_app_secret | body | string | 아니오 | max 255 | WebSocket 앱 시크릿 |
-| drivers.websocket_host | body | string | 아니오 | max 255 | WebSocket 호스트 주소 |
+| drivers.websocket_host | body | string | 아니오 | max 255 | WebSocket 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | drivers.websocket_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 포트 번호 |
 | drivers.websocket_scheme | body | string | 아니오 | — | WebSocket 스킴 (http/https) |
 | drivers.websocket_verify_ssl | body | boolean | 아니오 | — | WebSocket 서버 SSL 인증서 검증 여부 |
-| drivers.websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버 호스트 주소 (서버측 발행 대상) |
+| drivers.websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버 호스트 주소 (서버측 발행 대상) — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | drivers.websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 (서버측 발행 대상) |
 | drivers.websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https — 서버측 발행 대상) |
 | drivers.search_engine_driver | body | string | 아니오 | — | 검색 엔진 드라이버 (Scout 엔진 선택) |
@@ -1948,6 +1953,8 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 
 폼에 입력한 드라이버 접속 정보(S3·Redis·Memcached·Websocket 등)로 실제 연결을 시도해 결과를 반환합니다. 설정을 저장하기 전에 접속 정보가 유효한지 확인하는 용도입니다. 모든 테스트 통과 시 성공 메시지, 일부 실패 시에도 HTTP 성공 응답으로 항목별 결과(`all_passed=false` 포함)를 함께 반환합니다.
 
+연결 대상 주소는 저장(`POST /api/admin/settings`)과 같은 규칙으로 검증합니다(7.1.6). 호스트 칸은 호스트명·IP 만 받고(경로·쿼리·계정 정보·포트·공백은 422), 링크로컬·클라우드 메타데이터 주소(`169.254.0.0/16`·`fe80::/10`·`100.100.100.200`·`metadata.google.internal` 등)는 「허용되지 않는 주소입니다」 로 422 입니다. localhost·사내 IP 는 정상 구성이라 그대로 허용합니다. 연결 테스트는 응답의 리다이렉트를 따라가지 않습니다(3xx 응답은 "서버가 응답했다" 로 봅니다). 연결을 시도한 뒤의 실패 사유(연결 거부·시간 초과 등)는 `error` 에 원문 그대로 실립니다.
+
 
 ### POST /api/admin/settings/test-outbound-proxy
 <!-- @generated:start:api.admin.settings.test-outbound-proxy -->
@@ -2009,7 +2016,7 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우 |
+| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우, 프록시 호스트가 링크로컬·클라우드 메타데이터 주소인 경우(「허용되지 않는 주소입니다」) |
 
 <!-- @generated:end -->
 
@@ -2113,7 +2120,7 @@ _단건 응답: `data` 객체의 필드 (발송 성공 시에만 반환)._
 
 **설명**
 
-폼에 입력한 메일 설정으로 지정한 주소에 테스트 메일을 발송합니다. 요청에서 전달한 값(호스트·포트·인증 정보 등)을 저장된 메일 설정 위에 임시로 덮어써 그 값으로만 발송을 시도하므로, 설정을 저장하기 전에 실제 발송 가능 여부를 검증할 수 있습니다. 성공 시 발송한 제목/본문을 응답에 포함하고, 실패 시 오류 사유와 함께 500 을 반환합니다.
+폼에 입력한 메일 설정으로 지정한 주소에 테스트 메일을 발송합니다. 요청에서 전달한 값(호스트·포트·인증 정보 등)을 저장된 메일 설정 위에 임시로 덮어써 그 값으로만 발송을 시도하므로, 설정을 저장하기 전에 실제 발송 가능 여부를 검증할 수 있습니다. 성공 시 발송한 제목/본문을 응답에 포함하고, 실패 시 오류 사유와 함께 500 을 반환합니다. 메일 서버 호스트(`host`)와 Mailgun 엔드포인트(`mailgun_endpoint`)는 저장과 같은 규칙으로 검증합니다(7.1.6) — 호스트명·IP 만 받고, 링크로컬·클라우드 메타데이터 주소는 422 입니다.
 
 
 ### GET /api/admin/settings/{key}

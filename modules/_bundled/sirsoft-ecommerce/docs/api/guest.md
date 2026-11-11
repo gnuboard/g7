@@ -1320,3 +1320,16 @@ Content-Type: application/json
 <!-- @generated:end -->
 
 **설명** 회원 승인과 같은 멱등 확정 흐름입니다. 결제창에서 돌아온 비회원 화면은 토큰을 잃지 않도록 결제창 진입 전 상태를 그대로 유지해야 합니다(토큰이 없으면 승인 호출이 404 가 된다).
+
+
+## 요청 제한 (1.3.5+)
+
+비회원 주문을 바꾸는 라우트는 한 제한기(`sirsoft-ecommerce.guest-order-write`, 기본 분당 20회)로 합산한다.
+
+| 대상 | 라우트 (`/guest/orders/{orderNumber}` 아래) |
+| --- | --- |
+| 센다 | `POST /cancel` · `POST /estimate-refund` · `PUT /shipping-address` · `POST /options/{optionId}/confirm` · `POST /cash-receipt` |
+| 세지 않는다 | `GET /cash-receipt` (조회) |
+| 별도 제한기 | 주문 조회 인증(`guest-order-verify`, 분당 20회) · 클레임 블록(`guest-claims`, 분당 120회) · 클레임 첨부 업로드(`guest-claim-uploads`, 분당 20회) — 종전 그대로 |
+
+한도는 모듈 설정 `rate_limits`(`config/ecommerce.php`)의 분당 횟수이고, 로그인 회원은 회원 단위로·비회원은 IP 단위로 센다 — 같은 IP 의 회원끼리, 회원과 비회원끼리 서로의 한도를 깎지 않는다. 넘으면 `429` 와 `Retry-After` 헤더(남은 초)를 돌려준다 (문구는 로그인 요청 제한과 같은 `auth.too_many_attempts`).

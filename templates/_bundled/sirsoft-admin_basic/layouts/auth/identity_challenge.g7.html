@@ -79,11 +79,11 @@
               <div class="text-center">
                 <button type="button" disabled="{{(_local.resendCooldown ?? 0) > 0}}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed">
                   <on type="click">
-                    <!-- 코드 재발송. 쿨다운 30초를 **응답 전에** 걸어 연타를 막는다(실패해도 풀지 않는다 —
+                    <!-- 코드 재발송. 쿨다운 60초(서버의 재요청 제한과 같은 값)를 **응답 전에** 걸어 연타를 막는다(실패해도 풀지 않는다 —
                          서버가 거절한 경우에도 곧바로 다시 두드리면 같은 결과다). 새 챌린지는 id 부터
                          만료까지 통째로 갈리므로 시도 횟수와 오류 문구도 함께 초기화한다. -->
                     <sequence>
-                      <set-state target="local" :resendCooldown="30"/>
+                      <set-state target="local" :resendCooldown="60"/>
                       <api-call target="/api/identity/challenges" method="POST">
                         <success>
                           <set-state target="local" challenge_id="{{response.data.id ?? _local.challenge_id}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" :attempts="0" :error="null"/>

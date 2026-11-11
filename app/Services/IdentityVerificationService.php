@@ -9,6 +9,7 @@ use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -27,6 +28,11 @@ use Illuminate\Support\Str;
  */
 class IdentityVerificationService
 {
+    /**
+     * 같은 수신 주소·같은 목적의 인증 메일 재요청 대기 시간(초)
+     */
+    public const CHALLENGE_COOLDOWN_SECONDS = 60;
+
     /**
      * @param  IdentityVerificationManager  $manager  프로바이더 레지스트리
      * @param  IdentityVerificationLogRepositoryInterface  $logRepository  로그 Repository
@@ -67,6 +73,54 @@ class IdentityVerificationService
         HookManager::doAction('core.identity.after_request', $challenge, $purpose, $target, $context);
 
         return $challenge;
+    }
+
+    /**
+     * 같은 수신 주소·같은 목적의 인증 메일을 다시 요청하려면 몇 초를 더 기다려야 하는지 반환합니다.
+     *
+     * 공개 「인증번호 받기」 가 쓴다 — 로그인하지 않아도 아무 주소로 요청할 수 있어, 제한이 없으면 한 주소에
+     * 인증 메일을 계속 보낼 수 있다. 메일 프로바이더로 이메일 대상에 보낼 때만 판정하고, 그 밖(다른 수단,
+     * 이메일 없는 대상)은 0 이다. 서비스가 직접 발행하는 경로(로그인 2단계 인증·가입 직후 발송)는 이 판정을
+     * 거치지 않는다.
+     *
+     * @param  string  $purpose  인증 목적
+     * @param  User|array  $target  인증 대상
+     * @param  string|null  $providerId  명시 프로바이더 id (null 이면 목적의 기본 프로바이더)
+     * @return int 남은 대기 시간(초). 바로 요청할 수 있으면 0
+     */
+    public function cooldownRemaining(string $purpose, User|array $target, ?string $providerId = null): int
+    {
+        $email = $target instanceof User ? (string) $target->email : (string) ($target['email'] ?? '');
+
+        if ($email === '') {
+            return 0;
+        }
+
+        try {
+            $provider = $this->manager->resolveForPurpose($purpose, $providerId);
+        } catch (\Throwable) {
+            // 프로바이더를 정할 수 없는 요청은 발행 단계가 같은 사유로 거절한다 — 여기서는 판정하지 않는다.
+            return 0;
+        }
+
+        if ($provider->getId() !== MailIdentityProvider::ID) {
+            return 0;
+        }
+
+        $latest = $this->logRepository->findLatestRequestedSince(
+            MailIdentityProvider::ID,
+            MailIdentityProvider::targetHash($email),
+            $purpose,
+            Carbon::now()->subSeconds(self::CHALLENGE_COOLDOWN_SECONDS),
+        );
+
+        if ($latest === null || $latest->created_at === null) {
+            return 0;
+        }
+
+        $elapsed = (int) floor($latest->created_at->diffInSeconds(Carbon::now(), true));
+
+        return max(0, self::CHALLENGE_COOLDOWN_SECONDS - $elapsed);
     }
 
     /**

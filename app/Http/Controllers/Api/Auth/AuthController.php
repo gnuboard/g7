@@ -352,7 +352,15 @@ class AuthController extends AuthBaseController
                 $validated['redirect_prefix'] ?? null
             );
 
-            return $this->success('auth.password_reset_email_sent');
+            $response = $this->success('auth.password_reset_email_sent');
+
+            // 메일·알림은 응답을 보낸 뒤에 나가지만, 요청을 일찍 끝낼 수 없는 실행 환경(PHP-FPM 이 아닌
+            // CGI·모듈 방식)에서는 웹서버가 그 작업이 끝날 때까지 응답의 끝을 알리지 않아 가입 주소만
+            // 늦게 끝난다. 본문 길이를 알리고 프록시 버퍼링을 꺼서, 받는 쪽이 본문을 다 받은 순간 끝나게 한다.
+            $response->headers->set('Content-Length', (string) strlen((string) $response->getContent()));
+            $response->headers->set('X-Accel-Buffering', 'no');
+
+            return $response;
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'auth.password_reset_failed');
         }

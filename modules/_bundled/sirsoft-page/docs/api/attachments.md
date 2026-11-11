@@ -116,6 +116,8 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 
 **설명** 페이지 첨부파일을 업로드합니다. `file`(필수)과 함께 이미 저장된 페이지에 귀속시키려면 `page_id`, 아직 저장 전이면 `temp_key`(임시 귀속 후 페이지 저장 시 `store`/`update` 의 `temp_key` 로 확정)를 보냅니다. `collection` 으로 첨부 그룹을 구분합니다. 응답은 FileUploader 컴포넌트 규약(`data.data`)에 맞춰 `PageAttachmentResource` 를 201 로 반환합니다. 권한은 `pages.create` 를 요구합니다. 7.1.0 부터 등록·수정 권한 중 하나만 있어도 됩니다. `page_id` 를 붙이면 그 페이지의 수정 권한과 담당 범위(스코프)를 서비스가 다시 확인하고, 밖이면 403(`auth.scope_denied`)입니다.
 
+허용 형식은 모듈 설정 `attachment.allowed_types`(MIME 목록)이며, **파일 내용(MIME)과 이름 확장자를 둘 다** 봅니다(1.2.3) — 이름 확장자 허용 목록은 같은 MIME 설정에서 파생하므로 새 설정은 없습니다. 내용은 PNG 이고 이름만 `.html` 인 파일은 422 입니다. 저장 파일의 확장자는 올린 이름이 아니라 파일 내용으로 정하고(`stored_filename`·`path`), 내려받는 이름은 `original_filename` 그대로입니다. 텍스트 계열(csv·md 등)은 `.txt` 로 저장됩니다. 다만 허용 형식에 이름 확장자를 알 수 없는 형식(확장자 표에 없는 MIME, `application/octet-stream`)이 하나라도 들어 있으면 이름 확장자는 보지 않고 내용만 봅니다 — 그 형식의 정상 파일이 이름 때문에 거부되지 않게 하기 위해서입니다. 저장 파일명은 어느 경우든 내용 기준입니다.
+
 업로드 정책(최대 개수 · 최대 용량 · 허용 형식)은 모듈 환경설정 `attachment.*` 가 SSoT 입니다. 용량은 `attachment.max_size_mb`(MB), 형식은 `attachment.allowed_types`(MIME 목록)로 판정하며, 형식 목록을 비우면 형식을 제한하지 않습니다(설정 키 자체가 없으면 모듈 기본 목록으로 폴백). 개수는 `attachment.max_count` 를 기준으로 **직접 업로드 · 임시 업로드(`temp_key`) 연결 · 이미 연결된 첨부** 를 합산해 판정하며, 초과 시 `422`(`errors.code = attachment_limit_exceeded`)를 반환하며, 안내 문구(`message`)는 허용 개수와 시도한 개수를 담아 응답 시점의 언어로 만들어집니다. 이 판정은 업로드 엔드포인트뿐 아니라 페이지 생성·수정 저장 시점에도 동일하게 적용됩니다. `max_count` 가 0 이면 개수를 제한하지 않습니다.
 
 

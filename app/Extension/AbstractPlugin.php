@@ -1510,11 +1510,19 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
      * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
      *
+     * 저장할 파일의 확장자를 함께 주면 그 확장자가 「공개 디스크로 내보낼 확장자」 안일 때만 디스크
+     * 이름을 돌려줍니다 (7.1.6). 확장자를 주지 않으면 종전과 같습니다.
+     *
      * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
+     * @param  string|null  $extension  저장할 파일의 확장자 (null 이면 확장자 판정 없음)
      * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
      */
-    protected function resolvePublicAssetDisk(?string $override = null): ?string
+    protected function resolvePublicAssetDisk(?string $override = null, ?string $extension = null): ?string
     {
+        if ($extension !== null) {
+            return PublicAssetDisk::resolveForExtension($extension, $override);
+        }
+
         return PublicAssetDisk::resolve($override);
     }
 

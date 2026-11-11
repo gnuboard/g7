@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Support\PublicDiskHardening;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 
@@ -39,6 +40,7 @@ class StorageLinkHelper
      *
      * @param  LoggerInterface|null  $logger  로그 채널 격리용 주입 로거.
      *                                        `null` 이면 `Log::channel('upgrade')` 로 폴백.
+     * @return void 반환값 없음
      */
     public static function ensurePublicStorageLink(?LoggerInterface $logger = null): void
     {
@@ -46,6 +48,9 @@ class StorageLinkHelper
 
         $publicStorage = public_path('storage');
         $storageSource = storage_path('app/public');
+
+        // 공개 디스크 직접 주소의 웹서버 보호 규칙 파일을 함께 보장한다 (링크 상태와 무관하게, 멱등).
+        static::ensurePublicDiskHardening($logger);
 
         // 1) 이미 정상 symlink → no-op (멱등)
         if (is_link($publicStorage)) {
@@ -105,6 +110,29 @@ class StorageLinkHelper
     }
 
     /**
+     * 공개 디스크 루트에 웹서버 보호 규칙 파일(`.htaccess`)이 놓여 있게 합니다(멱등).
+     *
+     * 규칙 생성 클래스는 7.1.6 에서 처음 생겼다 — 이전 버전 메모리에서 불려도 죽지 않게 존재를 확인한다.
+     *
+     * @param  LoggerInterface  $logger  로거
+     * @return void 반환값 없음
+     */
+    protected static function ensurePublicDiskHardening(LoggerInterface $logger): void
+    {
+        if (! class_exists(PublicDiskHardening::class) || ! is_dir(storage_path('app/public'))) {
+            return;
+        }
+
+        try {
+            if (! PublicDiskHardening::ensureHtaccess()) {
+                $logger->warning('[storage-link] 공개 디스크 보호 규칙 파일(.htaccess)을 쓰지 못했습니다 — 권한을 확인하세요');
+            }
+        } catch (\Throwable $e) {
+            $logger->warning('[storage-link] 공개 디스크 보호 규칙 파일 생성 실패', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * `symlink()` 로 링크를 생성하고, 실패 시 Windows junction 폴백을 시도합니다.
      *
      * Windows 에서 PHP `symlink()` 는 `SeCreateSymbolicLink` 권한이 필요하지만 junction
@@ -150,6 +178,7 @@ class StorageLinkHelper
      * `lchown`/`lchgrp` 을 사용한다. 비-POSIX(Windows) 또는 함수 부재/권한 부족 시 무해하게 skip.
      *
      * @param  string  $link  방금 생성한 링크 경로
+     * @return void 반환값 없음
      */
     protected static function inheritParentOwnership(string $link): void
     {

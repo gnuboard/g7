@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
+use App\Rules\ConnectionEndpointUrl;
+use App\Rules\ConnectionHost;
 use App\Services\DriverRegistryService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -76,26 +78,26 @@ class TestDriverConnectionRequest extends FormRequest
             's3_region' => ['nullable', 'string', 'max:64', self::S3_REGION_FORMAT],
             's3_access_key' => ['nullable', 'string', 'max:255'],
             's3_secret_key' => ['nullable', 'string', 'max:255'],
-            's3_url' => ['nullable', 'url', 'max:500'],
-            's3_endpoint' => ['nullable', 'url', 'max:500'],
+            's3_url' => ['nullable', 'url', 'max:500', new ConnectionEndpointUrl(allowPath: true)],
+            's3_endpoint' => ['nullable', 'url', 'max:500', new ConnectionEndpointUrl],
             's3_use_path_style' => ['nullable', 'boolean'],
 
             // Redis 설정
-            'redis_host' => ['nullable', 'string', 'max:255'],
+            'redis_host' => ['nullable', 'string', 'max:255', new ConnectionHost(allowSocketAndTls: true)],
             'redis_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'redis_password' => ['nullable', 'string', 'max:255'],
             'redis_database' => ['nullable', 'integer', 'min:0', 'max:15'],
 
             // Memcached 설정
-            'memcached_host' => ['nullable', 'string', 'max:255'],
+            'memcached_host' => ['nullable', 'string', 'max:255', new ConnectionHost(allowSocketAndTls: true)],
             'memcached_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
 
             // Websocket 설정 — client(브라우저 접속) / server(백엔드 broadcast HTTP API) endpoint 분리
             'websocket_app_key' => ['nullable', 'string', 'max:255'],
-            'websocket_host' => ['nullable', 'string', 'max:255'],
+            'websocket_host' => ['nullable', 'string', 'max:255', new ConnectionHost],
             'websocket_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'websocket_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
-            'websocket_server_host' => ['nullable', 'string', 'max:255'],
+            'websocket_server_host' => ['nullable', 'string', 'max:255', new ConnectionHost],
             'websocket_server_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
         ];

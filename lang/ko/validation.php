@@ -818,7 +818,6 @@ return [
         'email' => [
             'required' => '이메일은 필수입니다.',
             'email' => '올바른 이메일 형식이 아닙니다.',
-            'exists' => '등록되지 않은 이메일입니다.',
             'unique' => '이미 사용 중인 이메일입니다.',
         ],
         'password' => [
@@ -965,6 +964,12 @@ return [
         'allowed_extensions_required' => '허용 확장자를 입력해주세요.',
         'allowed_extensions_max' => '허용 확장자는 500자를 초과할 수 없습니다.',
         'allowed_extensions_invalid_type' => '허용 확장자는 문자열 또는 배열이어야 합니다.',
+        'layout_attachment_extensions_required' => '레이아웃 첨부 허용 확장자를 하나 이상 입력해주세요.',
+        'rate_limit_per_minute_range' => '분당 허용 횟수는 1 이상 1000 이하의 정수로 입력해주세요.',
+        'host_format_invalid' => '호스트명 또는 IP 주소만 입력해주세요. 경로·포트·계정 정보·공백은 넣을 수 없습니다.',
+        'host_blocked' => '허용되지 않는 주소입니다.',
+        'endpoint_path_not_allowed' => '주소에 경로·쿼리를 넣을 수 없습니다. 스킴·호스트·포트까지만 입력해주세요.',
+        'public_asset_extensions_required' => '공개 디스크로 내보낼 확장자를 하나 이상 입력해주세요.',
         'image_max_width_integer' => '이미지 최대 너비는 정수여야 합니다.',
         'image_max_width_min' => '이미지 최대 너비는 100px 이상이어야 합니다.',
         'image_max_width_max' => '이미지 최대 너비는 10000px 이하여야 합니다.',
@@ -1577,6 +1582,8 @@ return [
         'password_expiry_action' => '비밀번호 만료 시 동작',
         'password_expiry_remind_days' => '변경 연기 기간',
         'password_expiry_batch_size' => '1회 실행당 안내 상한',
+        'password_reset_rate_limit_per_minute' => '비밀번호 찾기·재설정 분당 허용 횟수',
+        'register_rate_limit_per_minute' => '회원가입 분당 허용 횟수',
         'activity_log_retention_days' => '활동 로그 보관 기간',
         'password_expiry_policy' => '비밀번호 만료',
         'current_password' => '현재 비밀번호',
@@ -1629,5 +1636,7 @@ return [
         'log_level' => '로그 레벨',
         'log_days' => '로그 보관 일수',
         'public_asset_disk' => '공개 자산 디스크',
+        'public_asset_extensions' => '공개 디스크로 내보낼 확장자',
+        'layout_attachment_extensions' => '레이아웃 첨부 허용 확장자',
     ],
 ];

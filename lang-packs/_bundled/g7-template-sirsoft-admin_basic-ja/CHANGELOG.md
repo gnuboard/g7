@@ -9,6 +9,11 @@
 ### Added
 
 - 관리자 기본 템플릿 1.1.6 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 카드 「스타일 정책」 구획 문구(`admin.settings.security.csp.style.*` 18개 — 「スタイルポリシー」·적용 모드·차단 강도(「基本」·「厳格」)·강제 경고·강제 시 깨지는 화면 안내·`.env` 우선 안내·추가 허용 호스트·자동 포함 호스트·정책 미리보기)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 구획 문구가 키 그대로 보입니다.
+- 관리자 기본 템플릿 1.1.6 의 환경설정 새 입력칸 문구(`admin.settings.upload.layout_attachment_extensions`·`_hint`, `admin.settings.drivers.public_asset.extensions`·`extensions_hint`·`hardening_warning`, `admin.settings.security.password_reset_rate_limit_per_minute`·`register_rate_limit_per_minute`·`rate_limit_per_minute_hint`)의 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 관리자 비밀번호 찾기 성공 안내(`auth.forgot_password.success`)를 관리자 기본 템플릿 1.1.6 의 새 문구에 맞췄습니다.
 
 ## [1.1.4] - 2026-11-10
 

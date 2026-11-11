@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
+use App\Rules\ConnectionHost;
 use App\Support\EnvPriority;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -40,7 +41,9 @@ class TestMailRequest extends FormRequest
             'from_name' => ['required', 'string', 'max:255'],
 
             // SMTP 필드 (mailer가 smtp일 때만 필수)
-            'host' => $mailer === 'smtp' ? ['required', 'string', 'max:255'] : ['sometimes', 'nullable', 'string', 'max:255'],
+            'host' => $mailer === 'smtp'
+                ? ['required', 'string', 'max:255', new ConnectionHost]
+                : ['sometimes', 'nullable', 'string', 'max:255', new ConnectionHost],
             'port' => $mailer === 'smtp' ? ['required', 'integer', 'min:1', 'max:65535'] : ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
             'username' => ['sometimes', 'nullable', 'string', 'max:255'],
             'password' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -49,7 +52,7 @@ class TestMailRequest extends FormRequest
             // Mailgun 필드 (mailer가 mailgun일 때만 필수)
             'mailgun_domain' => $mailer === 'mailgun' ? ['required', 'string', 'max:255'] : ['sometimes', 'nullable', 'string', 'max:255'],
             'mailgun_secret' => $mailer === 'mailgun' ? ['required', 'string', 'max:255'] : ['sometimes', 'nullable', 'string', 'max:255'],
-            'mailgun_endpoint' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'mailgun_endpoint' => ['sometimes', 'nullable', 'string', 'max:255', new ConnectionHost],
 
             // SES 필드 (mailer가 ses일 때만 필수)
             'ses_key' => $mailer === 'ses' ? ['required', 'string', 'max:255'] : ['sometimes', 'nullable', 'string', 'max:255'],

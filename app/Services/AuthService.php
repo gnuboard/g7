@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Contracts\Extension\MailFallbackAwareProviderInterface;
 use App\Contracts\Extension\UserScopedIdentityProviderInterface;
@@ -150,7 +151,13 @@ class AuthService
         // 사전 잠금 체크 — 잠긴 계정은 Auth::attempt 자체를 시도하지 않는다.
         // (실패 카운트가 0 으로 리셋된 잠금 상태에서 Failed 이벤트가 다시
         //  카운트를 올려 재잠금 시각을 갱신하는 부작용 방지)
-        $this->assertNotLocked($this->userRepository->findByEmail($email));
+        $account = $this->userRepository->findByEmail($email);
+        $this->assertNotLocked($account);
+
+        // 가입되지 않은 주소도 같은 횟수 실패 뒤에는 같은 잠금 응답을 받는다 (가입 여부 비노출).
+        if ($account === null) {
+            $this->assertUnknownEmailNotLocked($email);
+        }
 
         if (! Auth::attempt(['email' => $email, 'password' => $password])) {
             // 실패 카운트 증가/잠금 처리는 HandleFailedLoginListener 에서 담당
@@ -468,6 +475,28 @@ class AuthService
         throw new AccountLockedException(
             lockedUntil: $user->locked_until,
             remainingMinutes: $remaining,
+        );
+    }
+
+    /**
+     * 가입되지 않은 주소가 잠금 흉내 상태면 가입 계정과 같은 잠금 예외를 던집니다.
+     *
+     * @param  string  $email  로그인에 쓰인 이메일
+     * @return void 반환값 없음
+     *
+     * @throws AccountLockedException 그 주소의 실패가 임계 횟수에 이르렀을 때
+     */
+    private function assertUnknownEmailNotLocked(string $email): void
+    {
+        $lock = app(UnknownEmailLockService::class)->lockState($email);
+
+        if ($lock === null) {
+            return;
+        }
+
+        throw new AccountLockedException(
+            lockedUntil: $lock['locked_until'],
+            remainingMinutes: $lock['remaining_minutes'],
         );
     }
 
@@ -1129,30 +1158,52 @@ class AuthService
     /**
      * 비밀번호 찾기 요청을 처리합니다.
      *
+     * 가입 여부를 응답으로 알려 주지 않는다 — 가입되지 않은 주소도 예외 없이 끝나고, 컨트롤러는 같은 응답을
+     * 돌려준다. 응답 시간으로도 갈리지 않게 세 경로(미가입 · 재요청 대기 중 · 발송)가 같은 해시 연산을 한 번씩
+     * 하고, 메일 발송·활동 기록을 일으키는 훅은 응답을 보낸 뒤에 발화한다.
+     *
+     * 같은 주소로 `auth.passwords.users.throttle`(초) 안에 다시 요청하면 토큰을 바꾸지 않고 메일도 다시 보내지
+     * 않는다 — 남의 주소로 재설정 메일을 계속 보내는 것을 막는다.
+     *
+     * 관리자 화면에서 온 요청이어도 관리자가 아닌 계정에는 일반 재설정 주소를 보낸다.
+     *
      * @param  string  $email  사용자 이메일
      * @param  string|null  $redirectPrefix  리다이렉트 경로 접두사 (예: 'admin')
-     * @return void
-     *
-     * @throws ValidationException 등록되지 않은 이메일일 때
+     * @return void 반환값 없음
      */
     public function forgotPassword(string $email, ?string $redirectPrefix = null): void
     {
         $user = $this->userRepository->findByEmail($email);
 
+        // 토큰 생성 (64자 랜덤 문자열) — 해시 연산은 어느 경로에서나 한 번 한다(응답 시간 균일).
+        $token = Str::random(64);
+        $tokenHash = Hash::make($token);
+
         if (! $user) {
-            throw ValidationException::withMessages([
-                'email' => [__('auth.email_not_registered')],
-            ]);
+            return;
         }
 
-        // 토큰 생성 (64자 랜덤 문자열)
-        $token = Str::random(64);
+        // 재요청 대기 — 직전 발송에서 정해진 시간이 지나지 않았으면 조용히 끝낸다.
+        $cooldownSeconds = (int) config('auth.passwords.users.throttle', 60);
+        $existing = $this->passwordResetTokenRepository->findByEmail($user->email);
+
+        if ($cooldownSeconds > 0
+            && $existing?->created_at !== null
+            && $existing->created_at->copy()->addSeconds($cooldownSeconds)->isFuture()
+        ) {
+            return;
+        }
 
         // 기존 토큰 삭제 후 새 토큰 저장 (해시로 저장)
-        $this->passwordResetTokenRepository->updateOrCreateByEmail($email, [
-            'token' => Hash::make($token),
+        $this->passwordResetTokenRepository->updateOrCreateByEmail($user->email, [
+            'token' => $tokenHash,
             'created_at' => now(),
         ]);
+
+        // 관리자 화면 주소는 관리자 계정에만 보낸다.
+        if ($redirectPrefix === 'admin' && ! $user->isAdmin()) {
+            $redirectPrefix = null;
+        }
 
         // 리셋 URL 생성 (extract_data 필터에서 사용)
         $resetPath = $redirectPrefix
@@ -1163,10 +1214,31 @@ class AuthService
             'email' => $user->email, // audit:allow resource-member-email-ungated 재설정 메일 URL 쿼리(응답 아님)
         ]);
 
-        // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리
-        HookManager::doAction('core.auth.after_reset_password_request', $user, [
-            'reset_url' => $resetUrl,
-        ]);
+        // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리.
+        // 응답을 보낸 뒤에 발화한다: 발송 시간이 응답 시간에 실리면 가입 주소만 느려진다.
+        defer(static function () use ($user, $resetUrl): void {
+            HookManager::doAction('core.auth.after_reset_password_request', $user, [
+                'reset_url' => $resetUrl,
+            ]);
+        });
+    }
+
+    /**
+     * 토큰 기록이 없을 때 대신 비교할 해시를 반환합니다.
+     *
+     * 가입되지 않은 주소·토큰을 받은 적 없는 주소도 토큰이 틀린 주소와 같은 비용의 해시 비교를 하게 한다.
+     * 해시 한 개를 만들어 캐시에 두고 다시 쓴다(매번 만들면 그 경로만 더 느려진다).
+     * 재설정 요청 검증의 토큰 사전확인도 같은 해시를 쓴다.
+     *
+     * @return string 비교용 해시
+     */
+    public function resetTokenDecoyHash(): string
+    {
+        return (string) app(CacheInterface::class)->remember(
+            'auth.reset_token_decoy_hash',
+            static fn (): string => Hash::make(Str::random(64)),
+            2592000
+        );
     }
 
     /**
@@ -1178,18 +1250,14 @@ class AuthService
      */
     public function validateResetToken(string $token, string $email): array
     {
-        // 1. 사용자 존재 확인
+        // 1·2. 사용자와 토큰 레코드 조회 — 가입되지 않은 주소와 토큰 기록이 없는 주소는 토큰이 틀린 것과
+        //      같은 문구로 답한다(계정 존재를 알려 주지 않는다). 해시 비교도 같은 횟수로 한다.
         $user = $this->userRepository->findByEmail($email);
-        if (! $user) {
-            return [
-                'valid' => false,
-                'error' => __('auth.email_not_registered'),
-            ];
-        }
+        $record = $user ? $this->passwordResetTokenRepository->findByEmail($email) : null;
 
-        // 2. 토큰 레코드 조회
-        $record = $this->passwordResetTokenRepository->findByEmail($email);
         if (! $record) {
+            Hash::check($token, $this->resetTokenDecoyHash());
+
             return [
                 'valid' => false,
                 'error' => __('auth.reset_token_invalid'),
@@ -1227,22 +1295,18 @@ class AuthService
      * @param  string  $password  새로운 비밀번호
      * @return void
      *
-     * @throws ValidationException 등록되지 않은 이메일이거나 토큰이 유효하지 않을 때
+     * @throws ValidationException 토큰이 유효하지 않을 때 (가입되지 않은 이메일도 같은 오류)
      */
     public function resetPassword(string $token, string $email, string $password): void
     {
+        // 가입되지 않은 주소와 토큰 기록이 없는 주소는 토큰이 틀린 것과 같은 필드·문구로 답한다
+        // (계정 존재를 알려 주지 않는다). 해시 비교도 같은 횟수로 한다.
         $user = $this->userRepository->findByEmail($email);
-
-        if (! $user) {
-            throw ValidationException::withMessages([
-                'email' => [__('auth.email_not_registered')],
-            ]);
-        }
-
-        // 토큰 조회
-        $record = $this->passwordResetTokenRepository->findByEmail($email);
+        $record = $user ? $this->passwordResetTokenRepository->findByEmail($email) : null;
 
         if (! $record) {
+            Hash::check($token, $this->resetTokenDecoyHash());
+
             throw ValidationException::withMessages([
                 'token' => [__('auth.reset_token_invalid')],
             ]);

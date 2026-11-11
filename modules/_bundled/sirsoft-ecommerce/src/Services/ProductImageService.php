@@ -8,6 +8,7 @@ use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
+use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -22,7 +23,6 @@ use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -36,7 +36,6 @@ class ProductImageService
 {
     use ReappliesPermissionScope;
     use ResolvesRowStorage;
-    use ResolvesStoredExtension;
 
     /**
      * ProductImageService 생성자
@@ -94,7 +93,8 @@ class ProductImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.product-image.filter_upload_file', $file);
 
         // 저장 경로 결정
-        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
+        $extension = StoredFileExtension::resolve($file, 'jpg');
+        $storedFilename = Str::uuid().'.'.$extension;
 
         if ($productId) {
             $product = $this->productRepository->find($productId);
@@ -107,10 +107,13 @@ class ProductImageService
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
-        $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
+        // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
+        $storage = $this->storageForUpload($extension);
+
+        $storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         // Disk 정보는 스토리지 드라이버에서 가져옴
-        $disk = $this->storage->getDisk();
+        $disk = $storage->getDisk();
 
         // 현재 컬렉션의 최대 sort_order 조회
         $maxSortOrder = $productId

@@ -68,6 +68,18 @@
           <span data-if="{{_local.errors?.['security.login_lockout_time']}}" class="form-error">{{_local.errors?.['security.login_lockout_time']?.[0] ?? ''}}</span>
           <p class="text-hint mt-1">$t:admin.settings.security.zero_means_unlimited</p>
         </div>
+        <div data-ref="field_password_reset_rate_limit_per_minute" class="">
+          <label class="form-label">$t:admin.settings.security.password_reset_rate_limit_per_minute</label>
+          <input type="number" name="security.password_reset_rate_limit_per_minute" placeholder="10" min="{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_min ?? 1}}" max="{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.password_reset_rate_limit_per_minute'] ? 'input-error' : ''}}"/>
+          <span data-if="{{_local.errors?.['security.password_reset_rate_limit_per_minute']}}" class="form-error">{{_local.errors?.['security.password_reset_rate_limit_per_minute']?.[0] ?? ''}}</span>
+          <p class="text-hint mt-1">$t:admin.settings.security.rate_limit_per_minute_hint</p>
+        </div>
+        <div data-ref="field_register_rate_limit_per_minute" class="">
+          <label class="form-label">$t:admin.settings.security.register_rate_limit_per_minute</label>
+          <input type="number" name="security.register_rate_limit_per_minute" placeholder="10" min="{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_min ?? 1}}" max="{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['security.register_rate_limit_per_minute'] ? 'input-error' : ''}}"/>
+          <span data-if="{{_local.errors?.['security.register_rate_limit_per_minute']}}" class="form-error">{{_local.errors?.['security.register_rate_limit_per_minute']?.[0] ?? ''}}</span>
+          <p class="text-hint mt-1">$t:admin.settings.security.rate_limit_per_minute_hint</p>
+        </div>
         <div data-ref="field_two_factor_auth" class="">
           <label class="form-label">$t:admin.settings.security.two_factor_auth</label>
           <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">

@@ -35,11 +35,21 @@ trait ProvidesStreamingAccess
     {
         $fullPath = $this->resolvePath($category, $path);
 
+        // 공개 디스크의 최후 관문·객체 저장소 형식 옵션 — put() 과 같은 규칙 (GuardsPublicDiskWrites)
+        $options = [];
+        if (method_exists($this, 'refusesPublicDiskWrite')) {
+            if ($this->refusesPublicDiskWrite($category, $fullPath)) {
+                return false;
+            }
+
+            $options = $this->objectStorageWriteOptions($fullPath, $stream);
+        }
+
         if (method_exists($this, 'ensurePreservationMarker')) {
             $this->ensurePreservationMarker();
         }
 
-        return (bool) Storage::disk($this->disk)->writeStream($fullPath, $stream);
+        return (bool) Storage::disk($this->disk)->writeStream($fullPath, $stream, $options);
     }
 
     /**
