@@ -225,6 +225,11 @@
                         "required": false,
                         "description": "받는 동안 메뉴를 겹칠지 — 확장점 조각이 플러그인 설정 힌트(`slot_overlays`)를 넘긴다. 켜져 있으면 스켈레톤도 메뉴 밑으로 들어가 배너가 와도 화면이 위아래로 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양."
                     },
+                    "skeletonMaxHeight": {
+                        "type": "HeroMaxHeight | null",
+                        "required": false,
+                        "description": "받는 동안 스켈레톤의 기기별 최대 높이 — 확장점 조각이 플러그인 설정 힌트(`slot_max_heights`)를 넘긴다. 실제 배너와 같은 높이에서 멈춰 배너가 와도 아래 본문이 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양."
+                    },
                     "skeletonBanners": {
                         "type": "boolean",
                         "required": false,

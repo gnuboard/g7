@@ -55,5 +55,7 @@ return [
         'width' => 'Width',
         'pagination' => 'Pagination style',
         'header_overlay' => 'Menu overlay',
+        'max_height_pc' => 'Desktop & tablet max height (px)',
+        'max_height_mobile' => 'Mobile max height (px)',
     ],
 ];

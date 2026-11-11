@@ -134,6 +134,27 @@ describe('미리보기 구좌 틀', () => {
     }
   });
 
+  // @scenario surface=admin_max_height_setting
+  // @effects preview_follows_max_height_before_save
+  it('틀이 없으면 미리보기 높이는 비율대로 재다가 그 기기 최대 높이(비웠으면 화면 전체 폭만 640px)에서 멈춘다', () => {
+    const height = (device: 'pc' | 'mobile', settings?: Record<string, unknown>) => {
+      const { iframe, view } = mountFrame(<HeroBannerPreview banners={banners} device={device} settings={settings as any} />);
+      const value = Number(iframe.getAttribute('height'));
+      view.unmount();
+      return value;
+    };
+    // 비율대로 — PC 1366/3, 휴대폰 390/0.75
+    expect(height('pc')).toBe(456);
+    expect(height('mobile')).toBe(520);
+    expect(height('pc', { max_height_pc: 300 })).toBe(300);
+    expect(height('mobile', { max_height_pc: 300 })).toBe(520);
+    expect(height('mobile', { max_height_mobile: 400 })).toBe(400);
+    // 최대 높이가 비율 높이보다 크면 비율대로
+    expect(height('mobile', { max_height_mobile: 1600 })).toBe(520);
+    // 화면 전체 폭은 비웠을 때 640px — 이 두 기기 폭에서는 비율 높이가 더 낮다
+    expect(height('mobile', { width: 'full' })).toBe(520);
+  });
+
   // @scenario surface=preview_frame_content_box
   // @effects preview_follows_width_before_save
   it('본문 폭이면 구좌 틀의 본문 상자(기기 폭에 맞는 클래스)로 슬라이더를 감싼다', () => {

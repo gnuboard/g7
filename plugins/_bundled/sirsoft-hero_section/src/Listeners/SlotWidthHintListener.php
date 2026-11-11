@@ -11,9 +11,9 @@ use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 use Throwable;
 
 /**
- * 위치별 표시 폭·메뉴 겹침·배너 유무 힌트(`slot_widths`·`slot_overlays`·`slot_banners`)를 플러그인 설정에 맞춰 둔다 — 사용자 화면은 첫 로드 때 플러그인
- * 설정(`_global.plugins`)을 받으므로, 배너 응답이 오기 전 스켈레톤을 실제와 같은 폭(본문 폭·화면 전체)과 같은 자리(메뉴 밑으로
- * 겹침)로 그릴 수 있다.
+ * 위치별 표시 폭·메뉴 겹침·최대 높이·배너 유무 힌트(`slot_widths`·`slot_overlays`·`slot_max_heights`·`slot_banners`)를 플러그인 설정에 맞춰 둔다 — 사용자 화면은
+ * 첫 로드 때 플러그인 설정(`_global.plugins`)을 받으므로, 배너 응답이 오기 전 스켈레톤을 실제와 같은 폭(본문 폭·화면 전체)·같은 높이 상한과
+ * 같은 자리(메뉴 밑으로 겹침)로 그릴 수 있다.
  *
  * 원본은 위치 설정 테이블 하나다. 플러그인 설정 저장 직전 필터에서 그 값으로 매번 다시 채우므로, 환경설정 화면이 옛 값을 되돌려
  * 보내도 덮이지 않는다. 표시 폭이 바뀌거나 설정을 초기화했거나 플러그인을 켜고 올렸을 때 다시 저장해 맞춘다.
@@ -99,13 +99,14 @@ class SlotWidthHintListener implements HookListenerInterface
 
         $settings['slot_widths'] = $this->positions->slotWidths();
         $settings['slot_overlays'] = $this->positions->slotOverlays();
+        $settings['slot_max_heights'] = $this->positions->slotMaxHeights();
         $settings['slot_banners'] = $this->positions->slotBanners();
 
         return $settings;
     }
 
     /**
-     * 표시 폭·메뉴 겹치기가 바뀐 저장이면 힌트를 다시 맞춥니다(다른 값만 바뀌었으면 플러그인 설정을 건드리지 않는다).
+     * 표시 폭·메뉴 겹치기·최대 높이가 바뀐 저장이면 힌트를 다시 맞춥니다(다른 값만 바뀌었으면 플러그인 설정을 건드리지 않는다).
      *
      * @param  PositionSetting  $setting  저장된 설정 행
      * @param  array<string, mixed>  $snapshot  저장 전 값
@@ -116,7 +117,9 @@ class SlotWidthHintListener implements HookListenerInterface
         $after = $setting->toSettings();
         $width = $snapshot['width'] ?? PositionSetting::DEFAULTS['width'];
         $overlay = (bool) ($snapshot['header_overlay'] ?? PositionSetting::DEFAULTS['header_overlay']);
-        if ($width !== $after['width'] || $overlay !== $after['header_overlay']) {
+        $height = fn (string $field) => isset($snapshot[$field]) ? (int) $snapshot[$field] : null;
+        if ($width !== $after['width'] || $overlay !== $after['header_overlay']
+            || $height('max_height_pc') !== $after['max_height_pc'] || $height('max_height_mobile') !== $after['max_height_mobile']) {
             $this->sync();
         }
     }
@@ -192,8 +195,8 @@ class SlotWidthHintListener implements HookListenerInterface
             $currentKeys = array_keys($this->positions->slotWidths());
             sort($currentKeys);
             $stale = false;
-            // 세 힌트 중 하나라도 위치 목록이 다르면 맞춘다(아직 저장된 적 없는 힌트는 다음 저장 때 채워지므로 보지 않는다)
-            foreach (['slot_widths', 'slot_overlays', 'slot_banners'] as $hint) {
+            // 힌트 중 하나라도 위치 목록이 다르면 맞춘다(아직 저장된 적 없는 힌트는 다음 저장 때 채워지므로 보지 않는다)
+            foreach (['slot_widths', 'slot_overlays', 'slot_max_heights', 'slot_banners'] as $hint) {
                 $saved = $settings->get(self::PLUGIN, $hint);
                 if (is_array($saved)) {
                     $savedKeys = array_keys($saved);
@@ -225,7 +228,7 @@ class SlotWidthHintListener implements HookListenerInterface
         try {
             app(PluginSettingsService::class)->save(self::PLUGIN, []);
         } catch (Throwable $e) {
-            Log::error('히어로섹션 표시 폭·메뉴 겹침·배너 유무 힌트 저장 실패', ['error' => $e->getMessage()]);
+            Log::error('히어로섹션 표시 폭·메뉴 겹침·최대 높이·배너 유무 힌트 저장 실패', ['error' => $e->getMessage()]);
         } finally {
             self::$syncing = false;
         }

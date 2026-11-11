@@ -79,6 +79,8 @@ return [
         'width' => 'width',
         'pagination' => 'pagination style',
         'header_overlay' => 'menu overlay',
+        'max_height_pc' => 'desktop & tablet max height',
+        'max_height_mobile' => 'mobile max height',
         'ids' => 'selected banners',
         'ids_item' => 'selected banner',
     ],

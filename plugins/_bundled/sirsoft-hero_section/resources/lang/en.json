@@ -159,7 +159,14 @@
                 "content": "Fit to content width",
                 "full": "Full screen width"
             },
-            "width_hint": "Full screen width stretches the image edge to edge and keeps the title and button aligned with the page content. On screens wider than 1920px the height stops at 640px and the image is cropped top and bottom around its focus point.",
+            "width_hint": "Full screen width stretches the image edge to edge and keeps the title and button aligned with the page content. On screens wider than 1920px the height stops at 640px (or the maximum height below, if set) and the image is cropped top and bottom around its focus point.",
+            "max_height": "Maximum height",
+            "max_height_pc": "Desktop & tablet (px)",
+            "max_height_mobile": "Mobile (px)",
+            "max_height_placeholder": "Follow ratio",
+            "max_height_hint": "The banner grows with its aspect ratio and stops at this height; images that overflow are cropped top and bottom around their focus point. Desktop & tablet means screens 768px wide or wider; mobile means 767px or narrower. Leave empty to follow the ratio (full screen width stops at 640px). {{min}}–{{max}}px.",
+            "max_height_invalid": "Enter a whole number between {{min}} and {{max}}px, or leave it empty.",
+            "max_height_overlay_tight": "With menu overlay on, the text starts below the menu. If the maximum height is under {{min}}px the text area gets tight and may scroll, so check it on the site (the editing preview does not overlay the menu).",
             "header_overlay": "Menu overlay",
             "header_overlay_hint": "Lays the site menu transparently over the banner. The menu gets its background back when visitors scroll down, and its text color follows the background set for each banner.",
             "header_overlay_needs_full": "Menu overlay only applies on the site when the width is \"Full screen width\".",
@@ -169,9 +176,10 @@
                 "dots": "Dots",
                 "progress": "Dots with progress bar",
                 "tabs": "Banner name tabs",
-                "fraction": "Number (01 / 05)"
+                "fraction": "Number (01 / 05)",
+                "pill": "Pill counter (‹ 1 / 5 ›)"
             },
-            "pagination_hint": "Shown when there are two or more banners. The progress bar shows the time left until the next banner; banner name tabs show only bars on phones.",
+            "pagination_hint": "Shown when there are two or more banners. The progress bar shows the time left until the next banner; banner name tabs show only bars on phones. The pill counter shows previous and next buttons with the number below the text on the left, and the side arrows are hidden.",
             "scope_dynamic": "Applies to every {{target}} in the {{position}} position."
         },
         "list": {

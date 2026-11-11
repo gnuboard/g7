@@ -47,7 +47,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | position | string | `home_hero` | 위치 키 |
 | target | string\|null | `free` | 해석에 쓴 화면 값 — 받은 값에서 앞뒤 공백만 걷는다(정적 위치는 null) — 조각이 SPA 이동 뒤 도착한 앞 대상 응답을 가려낸다 |
 | target_key | string\|null | `2` | 화면 값을 푼 대상 키(정적 위치·풀지 못한 값은 null) |
-| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 그 위치 슬라이더 설정(`width`: `content` 본문 폭·`full` 화면 전체, `header_overlay`, `pagination`: `dots`·`progress`·`tabs`·`fraction`) |
+| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 그 위치 슬라이더 설정(`width`: `content` 본문 폭·`full` 화면 전체, `header_overlay`, `pagination`: `dots`·`progress`·`tabs`·`fraction`·`pill`, `max_height_pc`·`max_height_mobile`: 기기별 최대 높이 px 또는 `null`) |
 | banners[] | array | `[{"id":659,"title":"Autumn Arrivals","description":"최대 30…` | 지금 노출 중인 배너(순서대로, 0건이면 빈 배열) |
 | banners[].id | integer | `659` | 배너 식별자 |
 | banners[].title | string | `Autumn Arrivals` | 요청 언어로 고른 제목(요청 언어 → 기본 언어 → en) |

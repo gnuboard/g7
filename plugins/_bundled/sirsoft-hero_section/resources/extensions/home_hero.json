@@ -42,6 +42,7 @@
                 "skeletonBanners": "{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.home_hero}}",
                 "editable": "{{heroSectionHome?.data?.abilities?.can_update === true}}",
                 "skeletonOverlay": "{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.home_hero}}",
+                "skeletonMaxHeight": "{{_global.plugins?.['sirsoft-hero_section']?.slot_max_heights?.home_hero ?? null}}",
                 "settings": "{{heroSectionHome?.data?.settings}}",
                 "position": "home_hero",
                 "contentClass": "{{extensionPointProps?.contentClass ?? ''}}"

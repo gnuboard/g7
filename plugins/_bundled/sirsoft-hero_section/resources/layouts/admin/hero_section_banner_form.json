@@ -3185,7 +3185,7 @@
                                             "localeNames": "{{_global.appConfig?.localeNames ?? null}}",
                                             "locale": "{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}",
                                             "defaultLocale": "{{position_settings?.data?.editor?.default_locale}}",
-                                            "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (_computed.positionDefs).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}",
+                                            "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (_computed.positionDefs).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content', max_height_pc: (_computed.positionDefs).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.max_height_pc ?? null, max_height_mobile: (_computed.positionDefs).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.max_height_mobile ?? null })}}",
                                             "device": "{{_local.previewDevice}}",
                                             "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
                                             "position": "{{_local.form?.position ?? 'home_hero'}}",

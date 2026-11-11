@@ -103,6 +103,9 @@ class PositionSettingService
                 // 문구 상자 폭·등장 지연 입력 범위 — 저장 규칙(BannerFieldRules)과 같은 상수라 화면이 허용한 값이 저장에서 422 가 되지 않는다
                 'text_width_limits' => ['min' => Banner::TEXT_WIDTH_MIN, 'max' => Banner::TEXT_WIDTH_MAX],
                 'animation_delay_limits' => ['min' => 0, 'max' => Banner::ANIMATION_DELAY_MAX],
+                // 기기별 최대 높이(px) 입력 범위 — 저장 규칙(UpdatePositionSettingRequest)과 같은 상수
+                // overlay_hint: 메뉴 겹치기와 함께 쓸 때 문구 자리가 좁아질 수 있다고 알리는 높이(안내만, 저장은 막지 않는다)
+                'max_height_limits' => ['min' => PositionSetting::MAX_HEIGHT_MIN, 'max' => PositionSetting::MAX_HEIGHT_MAX, 'overlay_hint' => PositionSetting::MAX_HEIGHT_OVERLAY_HINT],
                 'preview_frame' => $this->frames->resolve(),
             ],
         ];
@@ -140,6 +143,24 @@ class PositionSettingService
         }
 
         return $overlays;
+    }
+
+    /**
+     * 정적 위치별 기기별 최대 높이(px, 비우면 null)를 반환합니다 — 사용자 화면이 첫 로드 때 받는 플러그인 설정 힌트(`slot_max_heights`)의 원본이다
+     * (받는 동안의 스켈레톤도 같은 높이에서 멈춰 배너가 와도 아래 본문이 밀리지 않게).
+     *
+     * @return array<string, array{pc: int|null, mobile: int|null}> 위치 키 => 기기별 최대 높이
+     */
+    public function slotMaxHeights(): array
+    {
+        $saved = $this->settings->allKeyed();
+        $heights = [];
+        foreach ($this->staticKeys() as $key) {
+            $settings = isset($saved[$key]) ? $saved[$key]->toSettings() : PositionSetting::DEFAULTS;
+            $heights[$key] = ['pc' => $settings['max_height_pc'], 'mobile' => $settings['max_height_mobile']];
+        }
+
+        return $heights;
     }
 
     /**
@@ -206,7 +227,7 @@ class PositionSettingService
      * 한 위치의 설정 값을 반환합니다(행이 없으면 기본값).
      *
      * @param  string  $position  위치 키
-     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool, pagination: string} 설정 값
+     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool, pagination: string, max_height_pc: int|null, max_height_mobile: int|null} 설정 값
      */
     public function settingsFor(string $position): array
     {
@@ -217,7 +238,7 @@ class PositionSettingService
      * 위치 설정을 저장합니다.
      *
      * @param  string  $position  위치 키 (등록 위치 — 컨트롤러가 확인했다)
-     * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string, header_overlay?: bool, pagination?: string}  $data  검증된 설정 값 (width·header_overlay·pagination 을 빼면 지금 값 유지)
+     * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string, header_overlay?: bool, pagination?: string, max_height_pc?: int|null, max_height_mobile?: int|null}  $data  검증된 설정 값 (width·header_overlay·pagination·최대 높이를 빼면 지금 값 유지)
      * @param  int|null  $actorId  바꾼 회원 ID
      * @return PositionSetting 저장된 설정 행
      */

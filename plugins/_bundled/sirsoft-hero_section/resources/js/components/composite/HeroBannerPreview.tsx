@@ -69,7 +69,9 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   const [body, setBody] = useState<HTMLElement | null>(null);
   const documentBody = useRef<HTMLElement | null>(null);
   const viewport = device === 'pc' ? 1366 : 390;
-  const height = device === 'pc' ? viewport / 3 : viewport / 0.75;
+  // 틀이 없을 때의 슬라이더 높이 — 비율대로 그리다가 위치 설정의 그 기기 최대 높이(비웠으면 화면 전체 폭만 640px)에서 멈춘다(main.css 와 같은 규칙)
+  const cap = (device === 'pc' ? settings?.max_height_pc : settings?.max_height_mobile) ?? (settings?.width === 'full' ? 640 : null);
+  const height = Math.min(device === 'pc' ? viewport / 3 : viewport / 0.75, typeof cap === 'number' && cap > 0 ? cap : Infinity);
   const [width, setWidth] = useState(viewport);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [box, setBox] = useState<{ top: number; height: number; width: number } | null>(null);

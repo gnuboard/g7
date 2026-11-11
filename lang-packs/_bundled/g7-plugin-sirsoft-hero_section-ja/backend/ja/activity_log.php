@@ -47,6 +47,8 @@ return [
         'eyebrow' => 'ヘッダー',
         'header_overlay' => 'メニュー重複',
         'pagination' => 'ページング表示',
+        'max_height_pc' => 'PC・タブレットの最大高さ(px)',
+        'max_height_mobile' => 'スマートフォンの最大高さ(px)',
         'target_key' => '対象',
     ],
     'positions' => [

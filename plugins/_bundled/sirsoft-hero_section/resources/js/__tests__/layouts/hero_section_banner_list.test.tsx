@@ -432,8 +432,8 @@ describe('히어로섹션 목록 화면', () => {
   it('페이징 모양(점·진행 막대 점·배너 이름 탭·번호)을 고르면 작업본에 담겨 미리보기가 저장 전에 따라가고, 저장 본문에 실리며 바뀐 것이 없으면 잠긴다', () => {
     const select = collect(list, (n) => n.props?.id === 'hero_slider_pagination')[0];
     expect(select.name).toBe('Select');
-    // 서버 Enum(SlidePagination)과 같은 4개
-    expect(select.props.options.map((o: { value: string }) => o.value)).toEqual(['dots', 'progress', 'tabs', 'fraction']);
+    // 서버 Enum(SlidePagination)과 같은 5개
+    expect(select.props.options.map((o: { value: string }) => o.value)).toEqual(['dots', 'progress', 'tabs', 'fraction', 'pill']);
     expect(select.props.value).toContain("pagination ?? 'dots'");
     expect(select.props.disabled).toBe('{{!_computed.canWrite}}');
     expect(json(actionsOf(select, 'setState'))).toContain('pagination: $event.target.value');
@@ -443,8 +443,77 @@ describe('히어로섹션 목록 화면', () => {
     for (const lang of [ko, en] as any[]) {
       expect(lang.admin.slider.pagination).toBeTruthy();
       expect(lang.admin.slider.pagination_hint).toBeTruthy();
-      for (const key of ['dots', 'progress', 'tabs', 'fraction']) expect(lang.admin.slider.paginations[key]).toBeTruthy();
+      for (const key of ['dots', 'progress', 'tabs', 'fraction', 'pill']) expect(lang.admin.slider.paginations[key]).toBeTruthy();
     }
+  });
+
+  // @scenario surface=admin_max_height_setting
+  // @effects preview_follows_max_height_before_save
+  it('기기별 최대 높이(PC·휴대폰)는 숫자 칸이고, 비우면 null 로 작업본에 담겨 미리보기가 저장 전에 따라가며, 저장 본문에 실리고 바뀐 것이 없으면 잠긴다', () => {
+    for (const [id, field] of [['hero_slider_max_height_pc', 'max_height_pc'], ['hero_slider_max_height_mobile', 'max_height_mobile']] as const) {
+      const input = collect(list, (n) => n.props?.id === id)[0];
+      expect(input.name).toBe('Input');
+      expect(input.props.type).toBe('number');
+      expect(input.props.min).toBe('{{_computed.maxHeightLimits.min}}');
+      expect(input.props.max).toBe('{{_computed.maxHeightLimits.max}}');
+      expect(input.props.value).toContain(`.${field} ?? ''`);
+      expect(input.props.disabled).toBe('{{!_computed.canWrite}}');
+      // 칸을 비우면 null(비율대로), 아니면 숫자
+      const handler = json(actionsOf(input, 'setState'));
+      expect(handler).toContain(`${field}: $event.target.value === '' ? null : Number($event.target.value)`);
+      const button = findById(list, 'slider_save_button')!;
+      expect(json(actionsOf(button, 'apiCall')[0])).toContain(`"${field}":"{{_local.sliderForm.${field} ?? null}}"`);
+      expect(button.props.disabled).toContain(`(_local.sliderForm.${field} ?? null) === (_computed.currentSettings.${field} ?? null)`);
+    }
+    // 입력 범위는 편집 메타에서, 오기 전에는 저장 규칙과 같은 기본값
+    expect(evaluateComputed(list as any, { position_settings: positionSettings() }).maxHeightLimits).toEqual({ min: 160, max: 2000, overlay_hint: 320 });
+    const limited = { data: { ...positionSettings().data, editor: { ...positionSettings().data.editor, max_height_limits: { min: 200, max: 900 } } } };
+    // 서버가 일부 값만 주면(옛 응답) 나머지는 기본값
+    expect(evaluateComputed(list as any, { position_settings: limited }).maxHeightLimits).toEqual({ min: 200, max: 900, overlay_hint: 320 });
+    // 기본 설정(위치 설정이 비어 있을 때)에도 두 칸이 비어 있다
+    const defaults = evaluateComputed(list as any, { position_settings: positionSettings() }).currentSettings;
+    expect([defaults.max_height_pc, defaults.max_height_mobile]).toEqual([null, null]);
+  });
+
+  // @scenario surface=admin_max_height_setting
+  it('최대 높이가 범위 밖이거나 정수가 아니면 안내를 보이고 저장을 잠근다 — 비운 칸은 괜찮다', () => {
+    const invalid = (sliderForm: Record<string, unknown>) =>
+      evaluateComputed(list as any, { position_settings: positionSettings(), _local: { sliderForm: { position: 'home_hero', ...sliderForm } } }).maxHeightInvalid;
+    expect(invalid({ max_height_pc: null, max_height_mobile: null })).toBe(false);
+    expect(invalid({ max_height_pc: 160, max_height_mobile: 2000 })).toBe(false);
+    expect(invalid({ max_height_pc: 159 })).toBe(true);
+    expect(invalid({ max_height_mobile: 2001 })).toBe(true);
+    expect(invalid({ max_height_pc: 400.5 })).toBe(true);
+    // 다른 위치의 작업본은 보지 않는다
+    expect(evaluateComputed(list as any, { position_settings: positionSettings(), _local: { sliderForm: { position: 'shop_hero', max_height_pc: 10 } } }).maxHeightInvalid).toBe(false);
+    expect(findById(list, 'max_height_invalid')!.if).toBe('{{_computed.maxHeightInvalid}}');
+    expect(findById(list, 'slider_save_button')!.props.disabled).toContain('_computed.maxHeightInvalid');
+    for (const lang of [ko, en] as any[]) {
+      for (const key of ['max_height', 'max_height_pc', 'max_height_mobile', 'max_height_placeholder', 'max_height_hint', 'max_height_invalid']) expect(lang.admin.slider[key]).toBeTruthy();
+      expect(lang.admin.slider.max_height_invalid).toContain('{{min}}');
+      expect(lang.admin.slider.max_height_invalid).toContain('{{max}}');
+    }
+  });
+
+  // @scenario surface=admin_max_height_setting
+  it('메뉴 겹치기(화면 전체 폭)와 낮은 최대 높이를 같이 쓰면 문구 자리가 좁아질 수 있다고 알리되 저장은 막지 않는다', () => {
+    const tight = (sliderForm: Record<string, unknown>) =>
+      evaluateComputed(list as any, { position_settings: positionSettings(), _local: { sliderForm: { position: 'home_hero', ...sliderForm } } }).maxHeightOverlayTight;
+    expect(tight({ header_overlay: true, width: 'full', max_height_pc: 300 })).toBe(true);
+    expect(tight({ header_overlay: true, width: 'full', max_height_mobile: 319 })).toBe(true);
+    // 기준값 이상·비움이면 알리지 않는다
+    expect(tight({ header_overlay: true, width: 'full', max_height_pc: 320, max_height_mobile: null })).toBe(false);
+    // 메뉴 겹치기가 꺼졌거나 본문 폭이면(사이트에 겹침이 적용되지 않음) 알리지 않는다
+    expect(tight({ header_overlay: false, width: 'full', max_height_pc: 200 })).toBe(false);
+    expect(tight({ header_overlay: true, width: 'content', max_height_pc: 200 })).toBe(false);
+    const notice = findById(list, 'max_height_overlay_tight')!;
+    expect(notice.if).toBe('{{_computed.maxHeightOverlayTight}}');
+    expect(findById(list, 'slider_save_button')!.props.disabled).not.toContain('maxHeightOverlayTight');
+    for (const lang of [ko, en] as any[]) {
+      expect(lang.admin.slider.max_height_overlay_tight).toContain('{{min}}');
+      expect(lang.admin.slider.max_height_pc).toBeTruthy();
+    }
+    expect((ko as any).admin.slider.max_height_pc).toContain('태블릿');
   });
 
   // @scenario surface=list_preview_empty_message

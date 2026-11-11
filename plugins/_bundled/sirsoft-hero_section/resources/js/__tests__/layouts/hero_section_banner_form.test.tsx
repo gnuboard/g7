@@ -288,6 +288,19 @@ describe('배너 등록·수정 화면', () => {
     expect(preview.props.position).toBe("{{_local.form?.position ?? 'home_hero'}}");
   });
 
+  // @scenario surface=admin_max_height_setting
+  it('편집 미리보기는 고른 위치의 표시 폭과 기기별 최대 높이를 받아 사이트와 같은 높이에서 문구 자리·넘침을 본다', () => {
+    const preview = findById(form, 'form_preview')!;
+    const positionDefs = [
+      { key: 'home_hero', settings: { width: 'full', max_height_pc: 400, max_height_mobile: null } },
+      { key: 'shop_hero', settings: { width: 'content' } },
+    ];
+    const settings = (position: string) => evaluateBinding(preview.props.settings, { _local: { form: { position } } }, { positionDefs });
+    expect(settings('home_hero')).toMatchObject({ width: 'full', max_height_pc: 400, max_height_mobile: null });
+    // 최대 높이를 받은 적 없는 위치(옛 응답)도 비운 것(null)으로 — 비율대로
+    expect(settings('shop_hero')).toMatchObject({ width: 'content', max_height_pc: null, max_height_mobile: null });
+  });
+
   // @scenario surface=form_section_order_image_first
   // @effects form_guides_operator_before_save
   it('입력 순서는 기본 정보 → 미디어 → 이미지 → 이미지 표시 → 문구 → 문구 위치·효과 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {

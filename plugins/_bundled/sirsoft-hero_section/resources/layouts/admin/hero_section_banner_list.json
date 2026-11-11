@@ -203,7 +203,10 @@
         "placementCount": "{{_computed.isDynamic ? (banners?.data?.statistics?.targets?.[_computed.currentTarget] ?? 0) : (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0)}}",
         "targetOptions": "{{[...(_computed.selectedTarget ? [{value: _computed.selectedTarget.key, label: _computed.selectedTarget.label ?? $t('sirsoft-hero_section.admin.target.missing_label', {key: _computed.selectedTarget.key})}] : []), ...(_local.targetSearchResults ?? []).filter(o => o.position === _computed.currentPosition && o.value !== query.target)]}}",
         "sitePath": "{{_computed.isDynamic ? (_computed.selectedTarget?.site_url ?? '') : (position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? '')}}",
-        "currentSettings": "{{(_computed.positionDefs).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots'} }}"
+        "currentSettings": "{{(_computed.positionDefs).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: null, max_height_mobile: null} }}",
+        "maxHeightLimits": "{{({min: 160, max: 2000, overlay_hint: 320, ...(position_settings?.data?.editor?.max_height_limits ?? {})})}}",
+        "maxHeightOverlayTight": "{{[(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings) ?? {}].some(d => d.header_overlay === true && d.width === 'full' && ['max_height_pc', 'max_height_mobile'].some(f => d[f] != null && d[f] < _computed.maxHeightLimits.overlay_hint))}}",
+        "maxHeightInvalid": "{{['max_height_pc', 'max_height_mobile'].some(f => { const v = (_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings)?.[f]; return v != null && (!Number.isInteger(v) || v < _computed.maxHeightLimits.min || v > _computed.maxHeightLimits.max); })}}"
     },
     "permissions": [
         "sirsoft-hero_section.banners.read"
@@ -1483,6 +1486,10 @@
                                                         {
                                                             "value": "fraction",
                                                             "label": "$t:sirsoft-hero_section.admin.slider.paginations.fraction"
+                                                        },
+                                                        {
+                                                            "value": "pill",
+                                                            "label": "$t:sirsoft-hero_section.admin.slider.paginations.pill"
                                                         }
                                                     ]
                                                 }
@@ -1553,6 +1560,145 @@
                                         ]
                                     },
                                     {
+                                        "comment": "기기별 최대 높이 — 비율대로 그리다가 이 높이에서 멈춘다. 비우면 비율대로(화면 전체 폭은 640px). 고치면 저장 전에 위 미리보기가 바로 바뀐다",
+                                        "id": "slider_max_height",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "role": "group",
+                                            "aria-labelledby": "hero_slider_max_height_label",
+                                            "className": "hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "id": "hero_slider_max_height_label"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.slider.max_height"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs:grid hs:grid-cols-2 hs:gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "hs:flex hs:flex-col hs:gap-1",
+                                                            "htmlFor": "hero_slider_max_height_pc"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "hs:text-xs hs:text-gray-600 hs:dark:text-gray-300"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.slider.max_height_pc"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "PC 최대 높이 — 비우면 null(비율대로), 아니면 숫자로 작업본에 담는다",
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "sliderForm": "{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, max_height_pc: $event.target.value === '' ? null : Number($event.target.value)})}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "id": "hero_slider_max_height_pc",
+                                                                    "inputMode": "numeric",
+                                                                    "min": "{{_computed.maxHeightLimits.min}}",
+                                                                    "max": "{{_computed.maxHeightLimits.max}}",
+                                                                    "step": 1,
+                                                                    "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                                    "placeholder": "$t:sirsoft-hero_section.admin.slider.max_height_placeholder",
+                                                                    "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).max_height_pc ?? ''}}",
+                                                                    "disabled": "{{!_computed.canWrite}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "hs:flex hs:flex-col hs:gap-1",
+                                                            "htmlFor": "hero_slider_max_height_mobile"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "hs:text-xs hs:text-gray-600 hs:dark:text-gray-300"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.slider.max_height_mobile"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "휴대폰 최대 높이 — 비우면 null(비율대로), 아니면 숫자로 작업본에 담는다",
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "sliderForm": "{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, max_height_mobile: $event.target.value === '' ? null : Number($event.target.value)})}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "id": "hero_slider_max_height_mobile",
+                                                                    "inputMode": "numeric",
+                                                                    "min": "{{_computed.maxHeightLimits.min}}",
+                                                                    "max": "{{_computed.maxHeightLimits.max}}",
+                                                                    "step": 1,
+                                                                    "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
+                                                                    "placeholder": "$t:sirsoft-hero_section.admin.slider.max_height_placeholder",
+                                                                    "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).max_height_mobile ?? ''}}",
+                                                                    "disabled": "{{!_computed.canWrite}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.slider.max_height_hint|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}"
+                                            },
+                                            {
+                                                "id": "max_height_invalid",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_computed.maxHeightInvalid}}",
+                                                "props": {
+                                                    "role": "status",
+                                                    "className": "hs:text-xs hs:text-red-700 hs:dark:text-red-300"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.slider.max_height_invalid|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}"
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "comment": "메뉴 겹치기 — 화면 전체 폭일 때만 사이트에 적용된다(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 본문 폭에서도 켜 둘 수는 있고 안내만 한다",
                                         "type": "basic",
                                         "name": "Label",
@@ -1600,6 +1746,18 @@
                                         "text": "$t:sirsoft-hero_section.admin.slider.header_overlay_hint"
                                     },
                                     {
+                                        "comment": "메뉴 겹치기 + 낮은 최대 높이 — 문구가 메뉴 높이만큼 아래에서 시작해 자리가 좁아질 수 있다. 편집 미리보기는 메뉴를 겹치지 않으므로 사이트에서 확인하라고만 알린다(저장은 막지 않는다)",
+                                        "id": "max_height_overlay_tight",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_computed.maxHeightOverlayTight}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "hs:text-xs hs:text-amber-700 hs:dark:text-amber-300"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.slider.max_height_overlay_tight|min={{_computed.maxHeightLimits.overlay_hint}}"
+                                    },
+                                    {
                                         "id": "header_overlay_needs_full",
                                         "type": "basic",
                                         "name": "P",
@@ -1640,7 +1798,9 @@
                                                                 "effect": "{{_local.sliderForm.effect}}",
                                                                 "width": "{{_local.sliderForm.width ?? 'content'}}",
                                                                 "header_overlay": "{{_local.sliderForm.header_overlay === true}}",
-                                                                "pagination": "{{_local.sliderForm.pagination ?? 'dots'}}"
+                                                                "pagination": "{{_local.sliderForm.pagination ?? 'dots'}}",
+                                                                "max_height_pc": "{{_local.sliderForm.max_height_pc ?? null}}",
+                                                                "max_height_mobile": "{{_local.sliderForm.max_height_mobile ?? null}}"
                                                             }
                                                         },
                                                         "onSuccess": [
@@ -1688,7 +1848,7 @@
                                         "props": {
                                             "type": "button",
                                             "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5",
-                                            "disabled": "{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay && Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) && _local.sliderForm.effect === _computed.currentSettings.effect && (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') && (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) && (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots'))}}"
+                                            "disabled": "{{_local.sliderSaving || _computed.maxHeightInvalid || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay && Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) && _local.sliderForm.effect === _computed.currentSettings.effect && (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') && (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) && (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots') && (_local.sliderForm.max_height_pc ?? null) === (_computed.currentSettings.max_height_pc ?? null) && (_local.sliderForm.max_height_mobile ?? null) === (_computed.currentSettings.max_height_mobile ?? null))}}"
                                         },
                                         "children": [
                                             {

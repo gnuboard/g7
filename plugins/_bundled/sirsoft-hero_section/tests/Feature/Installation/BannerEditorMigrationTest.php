@@ -220,13 +220,57 @@ class BannerEditorMigrationTest extends PluginTestCase
             $migration->up();
             $setting = app(PositionSettingRepositoryInterface::class)->findByPosition('shop_hero');
             $this->assertSame('dots', $setting->toSettings()['pagination']);
-            $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'full', 'header_overlay' => true, 'pagination' => 'dots'], $setting->toSettings());
+            $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'full', 'header_overlay' => true, 'pagination' => 'dots', 'max_height_pc' => null, 'max_height_mobile' => null], $setting->toSettings());
         } finally {
             foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
                 Schema::dropIfExists($table);
             }
             DB::setDefaultConnection($original);
             DB::purge('hero_page_smoke');
+        }
+    }
+
+    /**
+     * 최대 높이 마이그레이션의 up→down→up 에서 기존 위치 설정은 비운 채(null, 비율대로) 남고, 두 번 올려도 오류가 없으며 위치 설정을 읽는
+     * Repository·저장이 그대로 돈다.
+     *
+     * @scenario case=max_height_migration_roundtrip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_max_height_migration_roundtrip_keeps_existing_rows(): void
+    {
+        $original = DB::getDefaultConnection();
+        config(['database.connections.hero_height_smoke' => array_replace(config('database.connections.'.$original), [
+            'prefix' => 'h11_'.bin2hex(random_bytes(3)).'_', 'prefix_indexes' => true,
+        ])]);
+        DB::setDefaultConnection('hero_height_smoke');
+        try {
+            foreach (glob(dirname(__DIR__, 3).'/database/migrations/*.php') as $file) {
+                (require $file)->up();
+            }
+            $migration = require dirname(__DIR__, 3).'/database/migrations/2026_11_11_000011_add_max_height_to_hero_section_position_settings.php';
+            $migration->down();
+            $this->assertFalse(Schema::hasColumn('hero_section_position_settings', 'max_height_pc'));
+            $this->assertFalse(Schema::hasColumn('hero_section_position_settings', 'max_height_mobile'));
+
+            // 최대 높이 열이 없던 때의 행
+            DB::table('hero_section_position_settings')->insert(['position' => 'home_hero', 'autoplay' => 1, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'full', 'header_overlay' => 0, 'pagination' => 'tabs', 'created_at' => now(), 'updated_at' => now()]);
+
+            $migration->up();
+            $migration->up();
+            $repository = app(PositionSettingRepositoryInterface::class);
+            $setting = $repository->findByPosition('home_hero');
+            $this->assertSame(['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'full', 'header_overlay' => false, 'pagination' => 'tabs', 'max_height_pc' => null, 'max_height_mobile' => null], $setting->toSettings());
+
+            $saved = $repository->update($setting, ['max_height_pc' => 480, 'max_height_mobile' => 2000])->toSettings();
+            $this->assertSame([480, 2000], [$saved['max_height_pc'], $saved['max_height_mobile']]);
+        } finally {
+            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+                Schema::dropIfExists($table);
+            }
+            DB::setDefaultConnection($original);
+            DB::purge('hero_height_smoke');
         }
     }
 

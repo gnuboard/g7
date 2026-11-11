@@ -31,6 +31,7 @@
         "skeletonWidth": "{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.event_hero ?? ''}}",
         "skeletonBanners": "{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.event_hero}}",
         "skeletonOverlay": "{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.event_hero}}",
+        "skeletonMaxHeight": "{{_global.plugins?.['sirsoft-hero_section']?.slot_max_heights?.event_hero ?? null}}",
         "editable": "{{acmeEventHero?.data?.abilities?.can_update === true}}",
         "settings": "{{acmeEventHero?.data?.settings}}",
         "position": "event_hero",

@@ -55,5 +55,7 @@ return [
         'width' => '표시 폭',
         'pagination' => '페이징 모양',
         'header_overlay' => '메뉴 겹치기',
+        'max_height_pc' => 'PC·태블릿 최대 높이(px)',
+        'max_height_mobile' => '휴대폰 최대 높이(px)',
     ],
 ];

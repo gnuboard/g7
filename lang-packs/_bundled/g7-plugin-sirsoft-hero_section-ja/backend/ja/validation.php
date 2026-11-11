@@ -68,6 +68,8 @@ return [
         'eyebrow_color' => 'ヘッダー色',
         'header_overlay' => 'メニュー重なり',
         'pagination' => 'ページネーション表示',
+        'max_height_pc' => 'PC・タブレットの最大高さ',
+        'max_height_mobile' => 'スマートフォンの最大高さ',
         'target_key' => '対象',
         'target' => '対象',
         'keyword' => '検索語',

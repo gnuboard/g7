@@ -117,15 +117,39 @@ export interface HeroSliderSettings {
 
   /**
    * 페이징 모양 — 점(dots, 기본) · 진행 막대 점(progress, 지금 장 점이 길어지고 자동 넘김까지 남은 시간이 찬다) ·
-   * 배너 이름 탭(tabs, 장마다 배너 제목과 진행 막대, 휴대폰에서는 막대만) · 번호(fraction, 「01 / 05」). 모르는 값은 점.
+   * 배너 이름 탭(tabs, 장마다 배너 제목과 진행 막대, 휴대폰에서는 막대만) · 번호(fraction, 「01 / 05」) ·
+   * 알약 번호(pill, 문구 아래 왼쪽 둥근 상자 안의 「‹ 1 / 5 ›」 — 좌우 화살표 대신 상자 안 단추로 넘긴다). 모르는 값은 점.
    */
   pagination?: HeroPagination;
+
+  /**
+   * PC 최대 높이(px) — 비율(1920:640)대로 그리다가 이 높이에서 멈추고, 넘치는 이미지는 초점 기준으로 위아래를 자른다.
+   * 비우면(null) 비율대로(화면 전체 폭은 640px 에서 멈춤).
+   */
+  max_height_pc?: number | null;
+
+  /** 휴대폰 최대 높이(px) — 화면 폭 767px 이하에서 비율(750:1000)대로 그리다가 멈추는 높이. 비우면 비율대로(화면 전체 폭은 640px 에서 멈춤) */
+  max_height_mobile?: number | null;
 }
 
-/** 페이징 모양 — 서버 Enum `SlidePagination` 과 같다 */
-export type HeroPagination = 'dots' | 'progress' | 'tabs' | 'fraction';
+/** 기기별 최대 높이(px) — 비운 기기는 null */
+export interface HeroMaxHeight {
+  pc?: number | null;
+  mobile?: number | null;
+}
 
-const PAGINATIONS: readonly HeroPagination[] = ['dots', 'progress', 'tabs', 'fraction'];
+/**
+ * 최대 높이 값을 쓸 수 있는 px 숫자로 고릅니다(0 이하·숫자가 아니면 null — 비율대로).
+ *
+ * @param value 설정·힌트·기억 값
+ * @returns px 또는 null
+ */
+const heightOf = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null);
+
+/** 페이징 모양 — 서버 Enum `SlidePagination` 과 같다 */
+export type HeroPagination = 'dots' | 'progress' | 'tabs' | 'fraction' | 'pill';
+
+const PAGINATIONS: readonly HeroPagination[] = ['dots', 'progress', 'tabs', 'fraction', 'pill'];
 
 /**
  * 장 번호를 두 자리로 맞춥니다(「01 / 05」).
@@ -195,6 +219,12 @@ export interface HeroSliderProps {
    * 배너가 와도 화면이 위아래로 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양.
    */
   skeletonOverlay?: boolean;
+
+  /**
+   * 받는 동안 스켈레톤의 기기별 최대 높이 — 확장점 조각이 플러그인 설정 힌트(`slot_max_heights`)를 넘긴다. 실제 배너와 같은 높이에서 멈춰
+   * 배너가 와도 아래 본문이 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양.
+   */
+  skeletonMaxHeight?: HeroMaxHeight | null;
 
   /**
    * 받는 동안 자리를 잡을지 — 확장점 조각이 첫 로드 플러그인 설정 힌트(`slot_banners`)로 넘긴다. 첫 접속은 브라우저 기억이 없으므로
@@ -387,6 +417,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   loading = false,
   skeletonWidth = '',
   skeletonOverlay,
+  skeletonMaxHeight,
   skeletonBanners,
   editable = false,
   onTextMove,
@@ -405,13 +436,15 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const remembered = useMemo(() => readMemory(slot), [slot]);
   const width = settings.width;
   const overlaySetting = settings.header_overlay === true;
+  const maxPc = heightOf(settings.max_height_pc);
+  const maxMobile = heightOf(settings.max_height_mobile);
   const firstTone = toneOf(banners[0]);
   useEffect(() => {
     // 응답이 온 때만 기억한다(공개 API 는 늘 표시 폭을 함께 준다) — 받기에 실패한 방문을 「0건」으로 기억하면 다음 방문에 스켈레톤 없이 배너가 끼어든다
     if (!loading && width !== undefined) {
-      writeMemory(slot, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone });
+      writeMemory(slot, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone, ...(maxPc !== null ? { maxPc } : {}), ...(maxMobile !== null ? { maxMobile } : {}) });
     }
-  }, [loading, slot, count, width, overlaySetting, firstTone]);
+  }, [loading, slot, count, width, overlaySetting, firstTone, maxPc, maxMobile]);
   const full = settings.width === 'full';
   const box = contentClass.trim();
   // 화면 전체 폭이면 문구·넘김 단추를 본문 상자에 맞춘다 — 넓은 화면에서 글이 화면 끝에 붙지 않고 본문과 같은 줄에 선다
@@ -598,9 +631,17 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
   const pcRatio = FALLBACK_RATIO.pc;
   const mobileRatio = FALLBACK_RATIO.mobile;
+  // 최대 높이 — 받는 동안(배너 없음)에는 힌트(없으면 직전 방문 기억)를, 배너가 오면 위치 설정을 따른다. 비운 기기는 변수를 두지 않아 CSS 기본(비율대로)
+  const heights = count === 0
+    ? { pc: skeletonMaxHeight ? heightOf(skeletonMaxHeight.pc) : heightOf(remembered?.maxPc), mobile: skeletonMaxHeight ? heightOf(skeletonMaxHeight.mobile) : heightOf(remembered?.maxMobile) }
+    : { pc: maxPc, mobile: maxMobile };
+  const pcHeight = forceDevice === 'mobile' ? heights.mobile : heights.pc;
+  const mobileHeight = forceDevice === 'pc' ? heights.pc : heights.mobile;
   const style = {
     '--hs-ratio-pc': forceDevice === 'mobile' ? mobileRatio : pcRatio,
     '--hs-ratio-mobile': forceDevice === 'pc' ? pcRatio : mobileRatio,
+    ...(pcHeight !== null ? { '--hs-max-height-pc': `${pcHeight}px` } : {}),
+    ...(mobileHeight !== null ? { '--hs-max-height-mobile': `${mobileHeight}px` } : {}),
     ...(framed ? { '--hs-index': index } : {}),
   } as React.CSSProperties;
 
@@ -643,6 +684,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       go(1);
     }
   };
+
+  // 배너 이름 탭 — 화면 전체 폭이면 일시정지 단추처럼 본문 상자 안에 둔다. 그래야 양옆 여백(일시정지 단추 자리)이 본문 상자 기준이 되어
+  // 상자 안으로 들어간 단추와 겹치지 않는다(휴대폰에서 8px 겹쳤다). 층은 클릭을 막지 않고 탭 단추만 받는다
+  const wrapTabs = (tabs: React.ReactNode) => (textBox
+    ? <div className="hs-slider__tabs-layer"><div className={`hs-slider__tabs-box ${textBox}`}>{tabs}</div></div>
+    : tabs);
 
   const controls = (count > 1 || hasMedia) && (
         <div className={`hs-slider__controls${textBox ? ' hs-slider__controls--boxed' : ''}`}>
@@ -752,18 +799,38 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         <>
           {/* Swiper 기본 화살표·점 모양(navigation·pagination CSS 선언을 손 CSS 로 옮겨 자기 클래스에 둠)을 쓰되, 단추는 이름 붙은
               button 으로 직접 그린다 — Swiper 모듈은 요소를 바깥 문서에서 찾아 편집 미리보기(iframe)에서는 붙지 않는다 */}
-          <button type="button" className="hs-slider__arrow hs-slider__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
-          <button type="button" className="hs-slider__arrow hs-slider__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
-          {pagination === 'fraction' ? (
+          {pagination !== 'pill' && (
+            <>
+              <button type="button" className="hs-slider__arrow hs-slider__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
+              <button type="button" className="hs-slider__arrow hs-slider__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
+            </>
+          )}
+          {pagination === 'pill' ? (
+            // 알약 번호 — 문구 아래 왼쪽(화면 전체 폭이면 본문 상자 왼쪽 끝)의 둥근 상자 안에 이전·번호·다음. 번호는 슬라이드 이름이 읽어 주므로 감추고,
+            // 화살표 대신 이 두 단추가 넘김을 맡는다(휴대폰에서도 보인다). 층은 클릭을 막지 않고 단추만 받는다
+            <div className="hs-slider__pill-layer">
+              <div className={`hs-slider__pill-box ${textBox || 'hs-slider__pill-box--inset'}`}>
+                <div className="hs-slider__pagination hs-slider__pill">
+                  <button type="button" className="hs-slider__pill-button hs-slider__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
+                  <span className="hs-slider__pill-count" aria-hidden="true">
+                    <span className="hs-slider__pill-current">{index + 1}</span>
+                    <span className="hs-slider__pill-sep">/</span>
+                    <span data-hs-fraction="total">{count}</span>
+                  </span>
+                  <button type="button" className="hs-slider__pill-button hs-slider__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
+                </div>
+              </div>
+            </div>
+          ) : pagination === 'fraction' ? (
             // 번호 — 장 번호는 슬라이드 이름이 읽어 주므로 화면 읽기에서는 감춘다
             <div className="hs-slider__pagination hs-slider__fraction" aria-hidden="true">
               <span className="hs-slider__fraction-current">{twoDigits(index + 1)}</span>
               <span>/</span>
               <span data-hs-fraction="total">{twoDigits(count)}</span>
             </div>
-          ) : pagination === 'tabs' ? (
+          ) : pagination === 'tabs' ? wrapTabs(
             // 배너 이름 탭 — 이름은 보이는 글자(휴대폰에서는 화면 읽기용으로만 남김)가 단추 이름이다
-            <div className="hs-slider__pagination hs-slider__tabs">
+            <div className={`hs-slider__pagination hs-slider__tabs${textBox ? ' hs-slider__tabs--boxed' : ''}`}>
               {banners.map((banner, i) => (
                 <button
                   key={banner.id}
@@ -776,7 +843,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
                   <span className="hs-slider__tab-label">{banner.title || banner.image_alt || t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}</span>
                 </button>
               ))}
-            </div>
+            </div>,
           ) : (
             <div className={`hs-slider__pagination hs-slider__bullets hs-slider__pagination--${pagination}`}>
               {banners.map((banner, i) => (
@@ -871,6 +938,12 @@ interface SlotMemory {
 
   /** 직전 첫 장의 바탕 밝기 */
   tone?: 'dark' | 'light';
+
+  /** 직전 PC 최대 높이(px) — 비웠으면 남기지 않는다 */
+  maxPc?: number | null;
+
+  /** 직전 휴대폰 최대 높이(px) — 비웠으면 남기지 않는다 */
+  maxMobile?: number | null;
 }
 
 /** 저장 키 접두 — 플러그인 식별자로 다른 확장과 섞이지 않게 */
@@ -907,7 +980,7 @@ function readMemory(slot?: string): SlotMemory | null {
   try {
     const value = JSON.parse(window.localStorage.getItem(MEMORY_KEY + slot) ?? 'null');
     return value && typeof value.banners === 'number'
-      ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark' }
+      ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark', maxPc: heightOf(value.maxPc), maxMobile: heightOf(value.maxMobile) }
       : null;
   } catch {
     return null;

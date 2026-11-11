@@ -86,7 +86,10 @@
   <computed name="placementCount">{{_computed.isDynamic ? (banners?.data?.statistics?.targets?.[_computed.currentTarget] ?? 0) : (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0)}}</computed>
   <computed name="targetOptions">{{[...(_computed.selectedTarget ? [{value: _computed.selectedTarget.key, label: _computed.selectedTarget.label ?? $t('sirsoft-hero_section.admin.target.missing_label', {key: _computed.selectedTarget.key})}] : []), ...(_local.targetSearchResults ?? []).filter(o =&gt; o.position === _computed.currentPosition &amp;&amp; o.value !== query.target)]}}</computed>
   <computed name="sitePath">{{_computed.isDynamic ? (_computed.selectedTarget?.site_url ?? '') : (position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? '')}}</computed>
-  <computed name="currentSettings">{{(_computed.positionDefs).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots'} }}</computed>
+  <computed name="currentSettings">{{(_computed.positionDefs).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: null, max_height_mobile: null} }}</computed>
+  <computed name="maxHeightLimits">{{({min: 160, max: 2000, overlay_hint: 320, ...(position_settings?.data?.editor?.max_height_limits ?? {})})}}</computed>
+  <computed name="maxHeightOverlayTight">{{[(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings) ?? {}].some(d =&gt; d.header_overlay === true &amp;&amp; d.width === 'full' &amp;&amp; ['max_height_pc', 'max_height_mobile'].some(f =&gt; d[f] != null &amp;&amp; d[f] &lt; _computed.maxHeightLimits.overlay_hint))}}</computed>
+  <computed name="maxHeightInvalid">{{['max_height_pc', 'max_height_mobile'].some(f =&gt; { const v = (_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings)?.[f]; return v != null &amp;&amp; (!Number.isInteger(v) || v &lt; _computed.maxHeightLimits.min || v &gt; _computed.maxHeightLimits.max); })}}</computed>
   <init-local>
     <field name="filter">
       <field name="search" value=""/>
@@ -388,6 +391,7 @@
                 <option value="progress">$t:sirsoft-hero_section.admin.slider.paginations.progress</option>
                 <option value="tabs">$t:sirsoft-hero_section.admin.slider.paginations.tabs</option>
                 <option value="fraction">$t:sirsoft-hero_section.admin.slider.paginations.fraction</option>
+                <option value="pill">$t:sirsoft-hero_section.admin.slider.paginations.pill</option>
               </options>
               <on type="change">
                 <!-- 페이징 모양 — 작업본에 담는다 -->
@@ -411,6 +415,32 @@
             </select>
             <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.width_hint</span>
           </label>
+          <!-- 기기별 최대 높이 — 비율대로 그리다가 이 높이에서 멈춘다. 비우면 비율대로(화면 전체 폭은 640px). 고치면 저장 전에 위 미리보기가 바로 바뀐다 -->
+          <div data-ref="slider_max_height" role="group" aria-labelledby="hero_slider_max_height_label" class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">
+            <span id="hero_slider_max_height_label">$t:sirsoft-hero_section.admin.slider.max_height</span>
+            <div class="hs:grid hs:grid-cols-2 hs:gap-3">
+              <label class="hs:flex hs:flex-col hs:gap-1" htmlFor="hero_slider_max_height_pc">
+                <span class="hs:text-xs hs:text-gray-600 hs:dark:text-gray-300">$t:sirsoft-hero_section.admin.slider.max_height_pc</span>
+                <input type="number" id="hero_slider_max_height_pc" inputMode="numeric" min="{{_computed.maxHeightLimits.min}}" max="{{_computed.maxHeightLimits.max}}" :step="1" class="hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" placeholder="$t:sirsoft-hero_section.admin.slider.max_height_placeholder" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).max_height_pc ?? ''}}" disabled="{{!_computed.canWrite}}">
+                  <on type="change">
+                    <!-- PC 최대 높이 — 비우면 null(비율대로), 아니면 숫자로 작업본에 담는다 -->
+                    <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, max_height_pc: $event.target.value === '' ? null : Number($event.target.value)})}}"/>
+                  </on>
+                </input>
+              </label>
+              <label class="hs:flex hs:flex-col hs:gap-1" htmlFor="hero_slider_max_height_mobile">
+                <span class="hs:text-xs hs:text-gray-600 hs:dark:text-gray-300">$t:sirsoft-hero_section.admin.slider.max_height_mobile</span>
+                <input type="number" id="hero_slider_max_height_mobile" inputMode="numeric" min="{{_computed.maxHeightLimits.min}}" max="{{_computed.maxHeightLimits.max}}" :step="1" class="hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" placeholder="$t:sirsoft-hero_section.admin.slider.max_height_placeholder" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).max_height_mobile ?? ''}}" disabled="{{!_computed.canWrite}}">
+                  <on type="change">
+                    <!-- 휴대폰 최대 높이 — 비우면 null(비율대로), 아니면 숫자로 작업본에 담는다 -->
+                    <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, max_height_mobile: $event.target.value === '' ? null : Number($event.target.value)})}}"/>
+                  </on>
+                </input>
+              </label>
+            </div>
+            <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.max_height_hint|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}</span>
+            <span data-ref="max_height_invalid" data-if="{{_computed.maxHeightInvalid}}" role="status" class="hs:text-xs hs:text-red-700 hs:dark:text-red-300">$t:sirsoft-hero_section.admin.slider.max_height_invalid|min={{_computed.maxHeightLimits.min}}|max={{_computed.maxHeightLimits.max}}</span>
+          </div>
           <!-- 메뉴 겹치기 — 화면 전체 폭일 때만 사이트에 적용된다(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 본문 폭에서도 켜 둘 수는 있고 안내만 한다 -->
           <label class="hs-flex-between hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_header_overlay">
             <span>$t:sirsoft-hero_section.admin.slider.header_overlay</span>
@@ -422,8 +452,10 @@
             </input>
           </label>
           <p data-ref="header_overlay_hint" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.header_overlay_hint</p>
+          <!-- 메뉴 겹치기 + 낮은 최대 높이 — 문구가 메뉴 높이만큼 아래에서 시작해 자리가 좁아질 수 있다. 편집 미리보기는 메뉴를 겹치지 않으므로 사이트에서 확인하라고만 알린다(저장은 막지 않는다) -->
+          <p data-ref="max_height_overlay_tight" data-if="{{_computed.maxHeightOverlayTight}}" role="status" class="hs:text-xs hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.slider.max_height_overlay_tight|min={{_computed.maxHeightLimits.overlay_hint}}</p>
           <p data-ref="header_overlay_needs_full" data-if="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true &amp;&amp; ((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content') !== 'full'}}" role="status" class="hs:text-xs hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.slider.header_overlay_needs_full</p>
-          <button type="button" data-ref="slider_save_button" data-if="{{_computed.canWrite}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect &amp;&amp; (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') &amp;&amp; (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) &amp;&amp; (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots'))}}">
+          <button type="button" data-ref="slider_save_button" data-if="{{_computed.canWrite}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5" disabled="{{_local.sliderSaving || _computed.maxHeightInvalid || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect &amp;&amp; (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') &amp;&amp; (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) &amp;&amp; (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots') &amp;&amp; (_local.sliderForm.max_height_pc ?? null) === (_computed.currentSettings.max_height_pc ?? null) &amp;&amp; (_local.sliderForm.max_height_mobile ?? null) === (_computed.currentSettings.max_height_mobile ?? null))}}">
             <on type="click">
               <!-- 설정 저장 — 진행 깃발은 성공·실패 양쪽에서 푼다. 작업본은 비우지 않는다: 다시 받은 서버 값과 같아지면 저장 버튼이 저절로 잠긴다(비우면 재조회 도착 전 옛 값이 잠깐 보인다). 작업본은 위치를 함께 들고 있어 다른 위치 탭에서는 쓰이지 않는다 -->
               <sequence>
@@ -438,7 +470,7 @@
                     <set-state target="local" :sliderSaving="false"/>
                     <toast type="error" message="{{error.message}}"/>
                   </fail>
-                  <body autoplay="{{_local.sliderForm.autoplay}}" interval_seconds="{{Number(_local.sliderForm.interval_seconds)}}" effect="{{_local.sliderForm.effect}}" width="{{_local.sliderForm.width ?? 'content'}}" header_overlay="{{_local.sliderForm.header_overlay === true}}" pagination="{{_local.sliderForm.pagination ?? 'dots'}}"/>
+                  <body autoplay="{{_local.sliderForm.autoplay}}" interval_seconds="{{Number(_local.sliderForm.interval_seconds)}}" effect="{{_local.sliderForm.effect}}" width="{{_local.sliderForm.width ?? 'content'}}" header_overlay="{{_local.sliderForm.header_overlay === true}}" pagination="{{_local.sliderForm.pagination ?? 'dots'}}" max_height_pc="{{_local.sliderForm.max_height_pc ?? null}}" max_height_mobile="{{_local.sliderForm.max_height_mobile ?? null}}"/>
                 </api-call>
               </sequence>
             </on>

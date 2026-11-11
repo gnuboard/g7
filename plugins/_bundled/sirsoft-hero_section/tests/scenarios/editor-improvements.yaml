@@ -8,6 +8,7 @@ axes:
     - presentation_roundtrip
     - text_layout_migration_roundtrip
     - pagination_migration_roundtrip
+    - max_height_migration_roundtrip
     - bulk_revision_conflict
     - site_clock_metadata
     - migration_roundtrip

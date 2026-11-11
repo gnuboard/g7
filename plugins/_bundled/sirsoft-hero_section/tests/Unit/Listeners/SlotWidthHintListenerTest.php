@@ -92,6 +92,47 @@ class SlotWidthHintListenerTest extends PluginTestCase
     }
 
     /**
+     * 최대 높이 힌트(`slot_max_heights`)도 위치 설정 값으로 채운다 — 비운 기기는 null, 행이 없는 위치는 둘 다 null.
+     *
+     * @scenario surface=slot_max_height_hint_from_position_settings
+     *
+     * @return void 반환값 없음
+     */
+    public function test_filter_fills_max_height_hint_from_position_settings(): void
+    {
+        PositionSetting::query()->create(['position' => 'home_hero', 'autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide', 'max_height_pc' => 480]);
+
+        $filled = HookManager::applyFilters('core.plugin_settings.filter_save_data', ['slot_max_heights' => ['home_hero' => ['pc' => 999, 'mobile' => 999]]], 'sirsoft-hero_section');
+        $this->assertSame(['home_hero' => ['pc' => 480, 'mobile' => null], 'shop_hero' => ['pc' => null, 'mobile' => null]], $filled['slot_max_heights']);
+    }
+
+    /**
+     * 최대 높이가 바뀐 위치 설정 저장이면 힌트를 다시 맞추고, 같은 값으로 다시 저장하면 건드리지 않는다.
+     *
+     * @scenario surface=slot_max_height_hint_from_position_settings
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resaves_hint_when_max_height_changes(): void
+    {
+        $calls = $this->recordSaves();
+
+        $url = $this->api('/admin/position-settings/home_hero');
+        $base = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide'];
+        // 처음 저장 — 비운 채면 다시 저장하지 않는다
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_pc' => null])->assertOk();
+        // 휴대폰 최대 높이를 정함 — 한 번
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_mobile' => 520])->assertOk();
+        // 같은 값 — 저장하지 않는다
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_mobile' => 520])->assertOk();
+        // PC 를 정함 — 한 번, 휴대폰을 비움 — 한 번
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_pc' => 400])->assertOk();
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_mobile' => null])->assertOk();
+
+        $this->assertCount(3, $calls);
+    }
+
+    /**
      * 이 플러그인의 설정 초기화·활성화·업데이트 뒤 힌트를 다시 맞춘다 — 다른 플러그인 사건은 위치 목록이 그대로면 반응하지 않는다.
      *
      * @scenario surface=slot_width_hint_from_position_settings
@@ -262,15 +303,17 @@ class SlotWidthHintListenerTest extends PluginTestCase
      * @param  array<string, bool>|null  $bannerHint  저장돼 있다고 볼 배너 유무 힌트
      * @param  array<string, string>|null  $widthHint  저장돼 있다고 볼 표시 폭 힌트(정적 위치 목록)
      * @param  array<string, bool>|null  $overlayHint  저장돼 있다고 볼 메뉴 겹침 힌트
+     * @param  array<string, array{pc: int|null, mobile: int|null}>|null  $maxHeightHint  저장돼 있다고 볼 최대 높이 힌트
      * @return \ArrayObject<int, array{0: string, 1: array<string, mixed>}> 호출 기록
      */
-    private function recordSaves(?array $bannerHint = null, ?array $widthHint = null, ?array $overlayHint = null): \ArrayObject
+    private function recordSaves(?array $bannerHint = null, ?array $widthHint = null, ?array $overlayHint = null, ?array $maxHeightHint = null): \ArrayObject
     {
         $calls = new \ArrayObject;
         $settings = Mockery::mock(PluginSettingsService::class);
         $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_banners')->andReturn($bannerHint);
         $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_widths')->andReturn($widthHint);
         $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_overlays')->andReturn($overlayHint);
+        $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_max_heights')->andReturn($maxHeightHint);
         $settings->shouldReceive('save')->andReturnUsing(function (string $identifier, array $data) use ($calls) {
             $calls->append([$identifier, $data]);
 

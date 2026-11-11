@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | `Banner` | `hero_section_banners` | 26 | images→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 13 | banner→Banner | - |
-| `PositionSetting` | `hero_section_position_settings` | 8 | - | - |
+| `PositionSetting` | `hero_section_position_settings` | 10 | - | - |
 <!-- @generated:models END -->
 
 <!-- @intent START -->
@@ -35,7 +35,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 10개.
+마이그레이션 11개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -49,6 +49,7 @@
 | `2026_11_02_000008_add_pagination_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
 | `2026_11_09_000009_remove_youtube_from_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
 | `2026_11_10_000010_add_target_key_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
+| `2026_11_11_000011_add_max_height_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -68,7 +69,7 @@
 | `DisplayPeriod` | `string` | 2 | `always`, `range` |
 | `MediaKind` | `string` | 2 | `image`, `video` |
 | `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
-| `SlidePagination` | `string` | 4 | `dots`, `progress`, `tabs`, `fraction` |
+| `SlidePagination` | `string` | 5 | `dots`, `progress`, `tabs`, `fraction`, `pill` |
 | `SlideWidth` | `string` | 2 | `content`, `full` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |
 | `TextAnimation` | `string` | 8 | `none`, `rise`, `fade`, `left`, `right`, `zoom`, `blur`, `letters` |
@@ -100,6 +101,6 @@
 
 ## 편집 표시 설정과 동시 수정
 
-추가 마이그레이션은 `hero_section_banners.presentation`(nullable JSON)과 `lock_version`(unsigned integer, 기본 0)을 더합니다. 기존 배너는 중앙 초점·배경 없음으로 해석합니다. `presentation` 에는 문구 자리·폭·등장 효과·바탕 밝기도 들어가며(컬럼을 늘리지 않는다), 없는 키는 `Banner::DEFAULT_PRESENTATION`(왼쪽 아래·전폭·효과 없음·어두움)으로 응답합니다. `000007` 은 머리글 `eyebrow`(다국어 JSON text, nullable)·`eyebrow_visible`(기본 true)·`eyebrow_color`(기본 `#FFFFFF`)와 위치 설정 `header_overlay`(boolean, 기본 false)를 더합니다 — 기존 배너는 머리글이 비어 있고 기존 위치는 겹치기가 꺼져 있어 화면이 그대로라 업그레이드 스텝이 없습니다. 모델은 presentation을 배열로, 세대를 정수로 캐스팅하며 클라이언트의 lock_version 직접 대입을 허용하지 않습니다. 일반 수정·일괄 사용 여부 변경은 세대를 증가시킵니다. 수정·단건 및 일괄 삭제는 부모 행 잠금 순서를 공유합니다.
+추가 마이그레이션은 `hero_section_banners.presentation`(nullable JSON)과 `lock_version`(unsigned integer, 기본 0)을 더합니다. 기존 배너는 중앙 초점·배경 없음으로 해석합니다. `presentation` 에는 문구 자리·폭·등장 효과·바탕 밝기도 들어가며(컬럼을 늘리지 않는다), 없는 키는 `Banner::DEFAULT_PRESENTATION`(왼쪽 아래·전폭·효과 없음·어두움)으로 응답합니다. `000007` 은 머리글 `eyebrow`(다국어 JSON text, nullable)·`eyebrow_visible`(기본 true)·`eyebrow_color`(기본 `#FFFFFF`)와 위치 설정 `header_overlay`(boolean, 기본 false)를 더합니다 — 기존 배너는 머리글이 비어 있고 기존 위치는 겹치기가 꺼져 있어 화면이 그대로라 업그레이드 스텝이 없습니다. `000011` 은 위치 설정 `max_height_pc`·`max_height_mobile`(unsigned smallint, nullable — 기기별 최대 높이 px)을 더합니다. 기존 위치는 비어 있어 종전처럼 비율대로(화면 전체 폭은 640px 에서 멈춤) 그리므로 업그레이드 스텝이 없습니다. 모델은 presentation을 배열로, 세대를 정수로 캐스팅하며 클라이언트의 lock_version 직접 대입을 허용하지 않습니다. 일반 수정·일괄 사용 여부 변경은 세대를 증가시킵니다. 수정·단건 및 일괄 삭제는 부모 행 잠금 순서를 공유합니다.
 
 > **`disk` 컬럼 (#878)** — 배너 파일를 올린 스토리지 디스크다. 업로드 때 공개 자산 디스크 설정(플러그인 `public_asset_disk` > 코어 전역)이 정한 디스크가 기록되고, 이후 서빙·썸네일 원본·삭제·전체 정리는 이 값을 따른다(설정을 바꿔도 옛 행은 그대로). 이 디스크가 직접 URL 을 내면(public·CDN) 응답의 `direct_url` 이 채워진다. 설정에서 사라진 디스크(고아)는 기본 디스크로 물러나 404 가 된다.

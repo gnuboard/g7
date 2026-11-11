@@ -79,6 +79,8 @@ return [
         'width' => '표시 폭',
         'pagination' => '페이징 모양',
         'header_overlay' => '메뉴 겹치기',
+        'max_height_pc' => 'PC·태블릿 최대 높이',
+        'max_height_mobile' => '휴대폰 최대 높이',
         'ids' => '선택한 배너',
         'ids_item' => '선택한 배너',
     ],

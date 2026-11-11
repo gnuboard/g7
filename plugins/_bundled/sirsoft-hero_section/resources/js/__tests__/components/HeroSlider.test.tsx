@@ -665,6 +665,55 @@ describe('HeroSlider', () => {
     expect(container.querySelector('.hs-slider__bullet, .hs-slider__tab')).toBeNull();
   });
 
+  // @scenario surface=slider_pagination_tabs
+  it('배너 이름 탭은 화면 전체 폭이면 일시정지 단추와 같은 본문 상자 안에 두고, 본문 폭이면 종전처럼 구획에 바로 둔다', () => {
+    const full = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, width: 'full', pagination: 'tabs' }} contentClass="max-w-7xl mx-auto px-8" />);
+    const tabs = full.container.querySelector('.hs-slider__tabs-layer > .hs-slider__tabs-box > .hs-slider__tabs.hs-slider__tabs--boxed') as HTMLElement;
+    expect(tabs).not.toBeNull();
+    expect(tabs.parentElement?.className).toContain('max-w-7xl mx-auto px-8');
+    // 일시정지 단추도 같은 상자 클래스 안
+    expect(full.container.querySelector('.hs-slider__controls-box.max-w-7xl [data-hs-control="toggle"]')).not.toBeNull();
+    expect(tabs.querySelectorAll('button.hs-slider__tab')).toHaveLength(2);
+    full.unmount();
+    const content = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, width: 'content', pagination: 'tabs' }} contentClass="max-w-7xl mx-auto px-8" />);
+    expect(content.container.querySelector('.hs-slider__tabs-layer')).toBeNull();
+    expect(content.container.querySelector('section.hs-slider > .hs-slider__tabs:not(.hs-slider__tabs--boxed)')).not.toBeNull();
+  });
+
+  // @scenario surface=slider_pagination_pill
+  it('알약 번호는 문구 아래 왼쪽 둥근 상자에 「‹ 1 / 3 ›」을 두고, 양옆 화살표는 그리지 않으며, 상자 안 단추로 넘긴다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false, pagination: 'pill' }} contentClass="max-w-7xl mx-auto px-8" />);
+    expect(container.querySelector('section')?.className).toContain('hs-slider--pagination-pill');
+    const pill = container.querySelector('.hs-slider__pill-layer .hs-slider__pill') as HTMLElement;
+    expect(pill).not.toBeNull();
+    // 본문 폭이면 문구와 같은 안쪽 여백에서 시작한다
+    expect(container.querySelector('.hs-slider__pill-box')?.className).toContain('hs-slider__pill-box--inset');
+    const count = pill.querySelector('.hs-slider__pill-count') as HTMLElement;
+    expect(count.getAttribute('aria-hidden')).toBe('true');
+    expect([count.querySelector('.hs-slider__pill-current')?.textContent, count.querySelector('[data-hs-fraction="total"]')?.textContent]).toEqual(['1', '3']);
+    // 양옆 화살표 없이 상자 안의 이름 붙은 두 단추만
+    expect(container.querySelectorAll('.hs-slider__arrow')).toHaveLength(0);
+    const buttons = Array.from(pill.querySelectorAll<HTMLButtonElement>('button.hs-slider__pill-button'));
+    expect(buttons.map((b) => [b.type, b.getAttribute('aria-label')])).toEqual([['button', '이전 배너'], ['button', '다음 배너']]);
+    fireEvent.click(buttons[1]);
+    expect(count.querySelector('.hs-slider__pill-current')?.textContent).toBe('2');
+    fireEvent.click(buttons[0]);
+    fireEvent.click(buttons[0]);
+    expect(count.querySelector('.hs-slider__pill-current')?.textContent).toBe('3');
+    expect(container.querySelector('.hs-slider__bullet, .hs-slider__tab, .hs-slider__fraction')).toBeNull();
+  });
+
+  // @scenario surface=slider_pagination_pill
+  it('알약 번호는 화면 전체 폭이면 본문 상자 왼쪽 끝에 맞추고, 배너가 1장이면 그리지 않는다', () => {
+    const full = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, width: 'full', pagination: 'pill' }} contentClass="max-w-7xl mx-auto px-8" />);
+    const box = full.container.querySelector('.hs-slider__pill-box') as HTMLElement;
+    expect(box.className).toContain('max-w-7xl mx-auto px-8');
+    expect(box.className).not.toContain('hs-slider__pill-box--inset');
+    full.unmount();
+    const single = render(<HeroSlider banners={[banner(1)]} settings={{ autoplay: false, pagination: 'pill' }} />);
+    expect(single.container.querySelector('.hs-slider__pill')).toBeNull();
+  });
+
   // @scenario surface=index_resets_when_banners_change
   // @effects slider_controls_follow_banner_count
   it('배너 목록이 바뀌면 첫 장으로 돌아간다', () => {
@@ -951,6 +1000,57 @@ describe('HeroSlider', () => {
     it('배너가 없다는 힌트면 받는 동안 사이트 메뉴도 겹치지 않는다(메뉴가 투명해졌다 돌아오지 않게)', () => {
       render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners={false} skeletonWidth="full" skeletonOverlay />);
       expect(document.documentElement.getAttribute('data-header-overlay')).toBeNull();
+    });
+
+    // @scenario surface=slider_max_height_vars
+    it('위치 설정의 기기별 최대 높이를 px 변수로 달고, 비운 기기는 변수를 두지 않는다(CSS 기본 — 비율대로)', () => {
+      const { container, rerender } = render(<HeroSlider banners={[banner(1)]} settings={{ width: 'content', max_height_pc: 480, max_height_mobile: null }} position="home_hero" />);
+      const slider = container.querySelector('section.hs-slider') as HTMLElement;
+      expect(slider.style.getPropertyValue('--hs-max-height-pc')).toBe('480px');
+      expect(slider.style.getPropertyValue('--hs-max-height-mobile')).toBe('');
+      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:home_hero')!)).toEqual({ banners: 1, width: 'content', overlay: false, tone: 'dark', maxPc: 480 });
+
+      // 0 이하·숫자가 아닌 값은 비운 것으로 본다
+      rerender(<HeroSlider banners={[banner(1)]} settings={{ max_height_pc: 0, max_height_mobile: 'tall' as unknown as number }} position="home_hero" />);
+      const cleared = container.querySelector('section.hs-slider') as HTMLElement;
+      expect(cleared.style.getPropertyValue('--hs-max-height-pc')).toBe('');
+      expect(cleared.style.getPropertyValue('--hs-max-height-mobile')).toBe('');
+    });
+
+    // @scenario surface=slider_max_height_vars
+    it('미리보기의 기기 고정은 비율처럼 최대 높이도 그 기기 값으로 맞바꾼다', () => {
+      const settings = { max_height_pc: 400, max_height_mobile: 520 };
+      const mobile = render(<HeroSlider banners={[banner(1)]} settings={settings} forceDevice="mobile" />);
+      const mobileSlider = mobile.container.querySelector('section.hs-slider') as HTMLElement;
+      expect(mobileSlider.style.getPropertyValue('--hs-max-height-pc')).toBe('520px');
+      expect(mobileSlider.style.getPropertyValue('--hs-max-height-mobile')).toBe('520px');
+      mobile.unmount();
+      const pc = render(<HeroSlider banners={[banner(1)]} settings={settings} forceDevice="pc" />);
+      const pcSlider = pc.container.querySelector('section.hs-slider') as HTMLElement;
+      expect(pcSlider.style.getPropertyValue('--hs-max-height-pc')).toBe('400px');
+      expect(pcSlider.style.getPropertyValue('--hs-max-height-mobile')).toBe('400px');
+    });
+
+    // @scenario surface=skeleton_max_height_from_hint
+    it('받는 동안 스켈레톤은 첫 로드 최대 높이 힌트를 브라우저 기억보다 먼저 쓰고, 힌트가 없으면 직전 방문의 높이를 쓴다', () => {
+      window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 2, width: 'content', maxPc: 300, maxMobile: 360 }));
+      const hinted = render(<HeroSlider banners={[]} loading position="home_hero" skeletonMaxHeight={{ pc: 480, mobile: null }} />);
+      const hintedSkeleton = hinted.container.querySelector('section.hs-slider--skeleton') as HTMLElement;
+      expect(hintedSkeleton.style.getPropertyValue('--hs-max-height-pc')).toBe('480px');
+      // 힌트가 그 기기를 비웠으면 기억이 아니라 비율대로다(운영자가 지운 값을 옛 기억이 되살리지 않게)
+      expect(hintedSkeleton.style.getPropertyValue('--hs-max-height-mobile')).toBe('');
+      hinted.unmount();
+
+      const remembered = render(<HeroSlider banners={[]} loading position="home_hero" />);
+      const rememberedSkeleton = remembered.container.querySelector('section.hs-slider--skeleton') as HTMLElement;
+      expect(rememberedSkeleton.style.getPropertyValue('--hs-max-height-pc')).toBe('300px');
+      expect(rememberedSkeleton.style.getPropertyValue('--hs-max-height-mobile')).toBe('360px');
+
+      // 배너가 오면 위치 설정을 따른다
+      remembered.rerender(<HeroSlider banners={[banner(1)]} loading={false} settings={{ max_height_pc: null, max_height_mobile: 520 }} position="home_hero" />);
+      const slider = remembered.container.querySelector('section.hs-slider') as HTMLElement;
+      expect(slider.style.getPropertyValue('--hs-max-height-pc')).toBe('');
+      expect(slider.style.getPropertyValue('--hs-max-height-mobile')).toBe('520px');
     });
 
     // @scenario surface=loading_skeleton_remembers_slot

@@ -51,7 +51,7 @@ _단건 응답: 위치 목록·위치별 슬라이더 설정·업로드 한도._
 | positions[].dynamic | boolean | `false` | 대상마다 배너를 따로 두는 동적 위치인지 |
 | positions[].target | object\|null | `null` | 동적 위치의 대상 정의 `{type, label_key, label, route_param}` — `route_param` 은 화면 주소에서 대상 값을 읽는 경로 매개변수 이름(없으면 null). 정적 위치는 null |
 | positions[].auto_output | boolean | `true` | 템플릿에 같은 이름의 확장점만 있으면 히어로가 사이트 자리를 직접 채우는지 — 정적 위치와 `route_param` 이 있는 동적 위치는 true, 등록되지 않은 위치는 false |
-| positions[].settings | object | `{"autoplay":true,"interval_seconds":5,"effect":"slide","width":"content"}` | `autoplay`·`interval_seconds`(3·5·7)·`effect`(`slide`·`fade`·`cube`·`flip`·`coverflow`·`creative`·`none`)·`width`(`content`·`full`)·`header_overlay`(boolean)·`pagination`(`dots`·`progress`·`tabs`·`fraction`), 저장 전이면 기본값 |
+| positions[].settings | object | `{"autoplay":true,"interval_seconds":5,"effect":"slide","width":"content"}` | `autoplay`·`interval_seconds`(3·5·7)·`effect`(`slide`·`fade`·`cube`·`flip`·`coverflow`·`creative`·`none`)·`width`(`content`·`full`)·`header_overlay`(boolean)·`pagination`(`dots`·`progress`·`tabs`·`fraction`·`pill`)·`max_height_pc`·`max_height_mobile`(px 또는 `null`), 저장 전이면 기본값 |
 | upload.max_mb | integer | `5` | 플러그인 설정의 이미지 최대 용량(MB) |
 | upload.server_limit_mb | integer | `2` | PHP `upload_max_filesize`·`post_max_size` 중 작은 값(MB) |
 | upload.effective_mb | integer | `2` | 실제로 받을 수 있는 크기 = 둘 중 작은 값 — 업로더 `maxSize`·안내에 쓴다 |
@@ -175,7 +175,7 @@ _단건 응답: 저장한 위치 설정._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | position | string | `home_hero` | 위치 키 |
-| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 저장된 `autoplay`·`interval_seconds`·`effect`·`width`·`header_overlay`·`pagination` |
+| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 저장된 `autoplay`·`interval_seconds`·`effect`·`width`·`header_overlay`·`pagination`·`max_height_pc`·`max_height_mobile` |
 
 **응답 예시**
 
@@ -206,9 +206,9 @@ _단건 응답: 저장한 위치 설정._
 
 **설명**
 
-위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다), `pagination`(선택, 페이징 모양 `dots` 점·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호 — 빼면 지금 값을 유지하고 처음 저장이면 `dots`). 처음 저장하면 행을 만든다. 등록되지 않은 위치(모르는 키·확장이 꺼진 위치)는 404. 동적 위치도 위치 단위 설정이라 그 위치의 모든 대상에 함께 적용된다. 그 위치(모든 대상)의 공개 캐시는 즉시 비워진다.
+위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다), `pagination`(선택, 페이징 모양 `dots` 점·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호·`pill` 알약 번호 — 빼면 지금 값을 유지하고 처음 저장이면 `dots`), `max_height_pc`·`max_height_mobile`(선택, 기기별 최대 높이 160~2000 정수 px 또는 `null` — 비율대로 그리다가 이 높이에서 멈추고 넘치는 이미지는 초점 기준으로 위아래를 자른다. `null` 이면 비율대로(화면 전체 폭은 640px 에서 멈춤), 빼면 지금 값을 유지하고 처음 저장이면 `null`. PC·태블릿은 화면 폭 768px 이상, 휴대폰은 767px 이하). 처음 저장하면 행을 만든다. 등록되지 않은 위치(모르는 키·확장이 꺼진 위치)는 404. 동적 위치도 위치 단위 설정이라 그 위치의 모든 대상에 함께 적용된다. 그 위치(모든 대상)의 공개 캐시는 즉시 비워진다.
 
 
 ## 편집 화면 메타
 
-관리자 위치 설정 GET 응답의 `editor`는 사이트 `timezone`, ISO 8601 `server_now`, `default_locale`, 활성 언어 코드 목록 `locales`를 제공합니다. 등록·수정 화면은 이 값을 미리보기 언어와 기간 상태 안내에 사용합니다. 플러그인 환경설정 관리 권한 없이 배너 조회 권한으로 받을 수 있습니다.
+관리자 위치 설정 GET 응답의 `editor`는 사이트 `timezone`, ISO 8601 `server_now`, `default_locale`, 활성 언어 코드 목록 `locales`, 최대 높이 입력 범위 `max_height_limits`(`{min, max}` px — 저장 규칙과 같은 상수, `overlay_hint` 는 메뉴 겹치기와 함께 쓸 때 문구 자리가 좁아질 수 있다고 안내하는 높이 — 안내만 하고 저장은 막지 않는다)를 제공합니다. 등록·수정 화면은 이 값을 미리보기 언어와 기간 상태 안내에 사용합니다. 플러그인 환경설정 관리 권한 없이 배너 조회 권한으로 받을 수 있습니다.

@@ -121,6 +121,59 @@ test('번호 — 「01 / 03」을 보이고 넘기면 「02」로 바뀐다 (des
   await expect(fraction.locator('.hs-slider__fraction-current')).toHaveText('02');
 });
 
+for (const viewport of ['desktop', 'mobile'] as const) {
+  test.describe(`pill ${viewport}`, () => {
+    test.use({ hasTouch: viewport === 'mobile' });
+
+    // @scenario surface=slider_pagination_pill
+    // @effects pagination_follows_position_setting
+    test(`알약 번호 — 문구 아래 왼쪽 둥근 상자에 「1 / 3」과 이전·다음 단추를 두고 양옆 화살표는 없으며, 문구와 겹치지 않는다 (${viewport})`, async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS[viewport]);
+      // 자동 넘김을 켜 일시정지 단추가 있는 상태에서 같은 줄인지 보고, 장이 넘어가지 않게 먼저 멈춘다
+      await injectBanners(page, { autoplay: true, interval_seconds: 7, pagination: 'pill' });
+      await gotoUser(page, '/');
+      const pill = hs(page).locator('.hs-slider__pill-layer .hs-slider__pill');
+      await expect(pill).toBeVisible({ timeout: 30_000 });
+      const toggleButton = hs(page).locator('[data-hs-control="toggle"]');
+      if (viewport === 'mobile') await toggleButton.tap();
+      else await toggleButton.click();
+      await expect(toggleButton).toHaveAttribute('aria-pressed', 'true');
+      await expect(pill.locator('.hs-slider__pill-count')).toHaveText(/1\s*\/\s*3/);
+      await expect(hs(page).locator('.hs-slider__arrow')).toHaveCount(0);
+      const geometry = await hs(page).evaluate((section) => {
+        const box = (selector: string) => section.querySelector(selector)?.getBoundingClientRect();
+        const s = section.getBoundingClientRect();
+        const p = box('.hs-slider__pill')!;
+        const text = box('.hs-slider__slide--active .hs-slider__textbox')!;
+        const toggle = box('[data-hs-control="toggle"]');
+        return { toggleCenter: toggle ? toggle.top + toggle.height / 2 : null, pillCenter: p.top + p.height / 2, pillLeft: p.left - s.left, pillBottomGap: s.bottom - p.bottom, pillHeight: p.height, textLeft: text.left - s.left, textBottom: text.bottom, pillTop: p.top, bg: getComputedStyle(section.querySelector('.hs-slider__pill')!).backgroundColor, radius: getComputedStyle(section.querySelector('.hs-slider__pill')!).borderRadius };
+      });
+      // 문구와 같은 왼쪽 줄, 아래 넘김 단추 자리 안(문구 아래)
+      expect(Math.abs(geometry.pillLeft - geometry.textLeft), JSON.stringify(geometry)).toBeLessThanOrEqual(2);
+      expect(geometry.textBottom).toBeLessThanOrEqual(geometry.pillTop);
+      expect(geometry.pillHeight).toBe(32);
+      expect(geometry.pillBottomGap).toBeGreaterThanOrEqual(16);
+      // 일시정지 단추와 같은 줄(세로 가운데 ±1px)
+      expect(geometry.toggleCenter, JSON.stringify(geometry)).not.toBeNull();
+      expect(Math.abs(geometry.toggleCenter! - geometry.pillCenter), JSON.stringify(geometry)).toBeLessThanOrEqual(1);
+      expect(geometry.bg).toBe('rgba(17, 24, 39, 0.9)');
+      expect(parseFloat(geometry.radius)).toBeGreaterThanOrEqual(16);
+
+      const next = pill.getByRole('button', { name: '다음 배너', exact: true });
+      if (viewport === 'mobile') await next.tap();
+      else await next.click();
+      await expect(hs(page).locator('.hs-slider__slide--active')).toHaveAttribute('data-index', '1');
+      await expect(pill.locator('.hs-slider__pill-current')).toHaveText('2');
+      // Swiper 반복 모드는 넘어가는 동안 들어온 넘김을 무시한다(양옆 화살표와 같다) — 전환이 끝난 뒤 누른다
+      await page.waitForTimeout(1000);
+      const prev = pill.getByRole('button', { name: '이전 배너', exact: true });
+      if (viewport === 'mobile') await prev.tap();
+      else await prev.click();
+      await expect(pill.locator('.hs-slider__pill-current')).toHaveText('1');
+    });
+  });
+}
+
 /**
  * 위치 설정을 읽는다.
  *
