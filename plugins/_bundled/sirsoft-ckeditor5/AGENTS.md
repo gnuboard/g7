@@ -181,7 +181,7 @@
 | PHPUnit | 21개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
 | Vitest | 38개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 25개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 26개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
