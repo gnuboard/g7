@@ -1686,6 +1686,8 @@
       "max_file_size": "최대 파일 크기",
       "allowed_extensions": "허용 확장자",
       "allowed_extensions_hint": "허용할 파일 확장자를 쉼표로 구분하여 입력하세요.",
+      "layout_attachment_extensions": "레이아웃 첨부 허용 확장자",
+      "layout_attachment_extensions_hint": "레이아웃 편집기에서 올릴 수 있는 형식입니다. 쉼표로 구분해 입력하세요. 이미지 외 형식은 공개 디스크로 내보내지 않으면 다운로드로 제공됩니다.",
       "image_settings": "이미지 설정",
       "image_settings_desc": "업로드되는 이미지의 자동 리사이즈 및 품질 설정입니다.",
       "image_max_width": "최대 너비",
@@ -1802,6 +1804,9 @@
       "auth_token_lifetime": "인증 토큰 유지시간 (분)",
       "max_login_attempts": "최대 로그인 시도 횟수",
       "login_lockout_time_full": "로그인 시도 횟수 초과시 차단 시간 (분)",
+      "password_reset_rate_limit_per_minute": "비밀번호 찾기·재설정 분당 허용 횟수",
+      "register_rate_limit_per_minute": "회원가입 분당 허용 횟수",
+      "rate_limit_per_minute_hint": "같은 IP 에서 1분 동안 받을 요청 수입니다(1~1000). 사내망처럼 여러 사람이 한 IP 를 쓰면 올리세요.",
       "zero_means_unlimited": "0을 입력하면 무한대로 설정됩니다.",
       "app_key": "어플리케이션 키 관리",
       "app_key_desc": "암호화에 사용되는 어플리케이션 키를 관리합니다.",
@@ -2067,7 +2072,10 @@
         "title": "공개 자산 스토리지",
         "desc": "완전 공개 자산(상품·카테고리·리뷰·에디터 이미지, 레이아웃 배경 이미지 등)의 직접 URL 서빙 디스크를 설정합니다. 사용 안 함이면 기존 스트리밍 방식으로 동작합니다. 켠 뒤 업로드한 파일만 직접 URL 로 발급되며, 그 주소는 저장된 레이아웃에 그대로 남습니다.",
         "disk": "디스크",
-        "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다."
+        "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다.",
+        "extensions": "공개 디스크로 내보낼 확장자",
+        "extensions_hint": "이 목록의 형식만 공개 디스크에 저장되어 직접 URL 로 제공됩니다. 그 밖의 형식은 기존 디스크에 저장되어 서버를 거쳐 제공됩니다. 이미지가 아닌 형식을 넣으면 직접 URL 에서도 다운로드로만 제공됩니다.",
+        "hardening_warning": "웹서버 보호 규칙이 적용되지 않았습니다. /storage 직접 주소 응답에 보호 헤더가 없습니다 — 설치 문서의 nginx/Apache 설정을 확인하세요."
       },
       "cache": {
         "title": "캐시",

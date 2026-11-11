@@ -1,0 +1,24 @@
+feature: 페이지 첨부 — 이름 확장자 검사와 내용 기준 저장 확장자 (#891)
+
+description: |
+  허용 형식 설정은 MIME 목록 하나뿐이다. 내용(MIME)만 검사하면 내용은 PNG 이고 이름만 `.html` 인 파일이 통과하고,
+  저장 경로가 올린 이름의 확장자를 그대로 쓰면 그 확장자로 저장된다. 이름 확장자 허용 목록을 같은 MIME 설정에서
+  파생하고(새 설정 없음), 저장 확장자는 내용에서 정한다. 내려받는 이름은 원본 그대로다.
+
+axes:
+  case:
+    - disguised_name
+    - name_and_content_differ_within_allowlist
+    - genuine
+    - text_family
+    - text_family_other_names
+    - allowlist_empty
+
+effects:
+  - disguised_name_upload_returns_422
+  - uploaded_name_extension_never_reaches_stored_path
+  - name_extension_allowlist_derived_from_mime_setting
+  - text_family_stored_as_txt_with_original_download_name
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentStoredExtensionTest.php

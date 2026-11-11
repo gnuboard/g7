@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Support;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\ModuleManager;
 use App\Extension\Storage\ModuleStorageDriver;
 
 /**
@@ -34,7 +35,24 @@ class AssetStorage
     }
 
     /**
+     * 모듈 기본 디스크 이름을 반환합니다.
+     *
+     * 공개 자산 디스크로 내보낼 수 없는 파일을 저장할 자리다. 모듈 인스턴스가 없으면(등록 전 환경)
+     * 모듈 저장소 기본값을 쓴다.
+     *
+     * @return string 디스크 이름
+     */
+    public static function defaultDisk(): string
+    {
+        $module = app(ModuleManager::class)->getModule('sirsoft-ecommerce');
+
+        return $module?->getStorageDisk() ?? 'modules';
+    }
+
+    /**
      * memoize 캐시를 비웁니다 (테스트 격리용).
+     *
+     * @return void 반환값 없음
      */
     public static function flush(): void
     {

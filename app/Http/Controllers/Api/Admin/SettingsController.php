@@ -29,6 +29,7 @@ use App\Services\SearchHistoryService;
 use App\Services\SettingsService;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
+use App\Support\PublicDiskHardeningProbe;
 use App\Support\SearchScopes;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
@@ -86,6 +87,7 @@ class SettingsController extends AdminBaseController
      * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (#158, 스타일 3키는 7.1.6)
      * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
      * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
+     * - `public_disk_hardening`: `/storage` 직접 주소 보호 헤더 점검 결과 `{ok, nosniff, disposition, status, checked_at}` 또는 null (드라이버 탭 경고, 7.1.6)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -110,6 +112,7 @@ class SettingsController extends AdminBaseController
             'csp' => $this->buildCspMeta(),
             'search_scopes' => $this->searchHistoryService->settingsMeta(),
             'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
+            'public_disk_hardening' => PublicDiskHardeningProbe::cached(),
         ];
     }
 

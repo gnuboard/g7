@@ -1,0 +1,18 @@
+feature: 본인인증 메일 재전송 대기
+
+description: |
+  본인인증 메일의 재전송 버튼이 서버의 재요청 제한(같은 이메일·같은 목적 60초)과 같은 대기를 거는지.
+  
+  서버가 60초 안의 재요청을 받지 않게 된 뒤(코어 7.1.6) 화면 대기가 30초로 남아 있으면 그 사이 누른 사용자가
+  「N초 후 다시 요청할 수 있습니다」 오류를 본다. 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02]
+  # c01: 전체화면의 재전송 버튼이 누르는 즉시 60초 대기를 건다
+  # c02: 모달의 재전송 버튼이 누르는 즉시 60초 대기를 건다
+
+effects:
+  - resend_cooldown_matches_server_limit
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/identity-challenge-resend-cooldown.test.tsx

@@ -90,6 +90,32 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
+     * 같은 프로바이더·수신 대상·목적으로 주어진 시각 이후에 발행된 가장 최근 challenge 를 찾습니다.
+     * 발송이 실패로 끝난 challenge 는 제외합니다.
+     *
+     * @param  string  $providerId  프로바이더 id
+     * @param  string  $targetHash  수신 대상 sha256 해시
+     * @param  string  $purpose  IDV 목적
+     * @param  \DateTimeInterface  $since  이 시각 이후 발행분만
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findLatestRequestedSince(
+        string $providerId,
+        string $targetHash,
+        string $purpose,
+        \DateTimeInterface $since,
+    ): ?IdentityVerificationLog {
+        return IdentityVerificationLog::query()
+            ->where('provider_id', $providerId)
+            ->where('target_hash', $targetHash)
+            ->where('purpose', $purpose)
+            ->where('status', '!=', IdentityVerificationStatus::Failed->value)
+            ->where('created_at', '>', $since)
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+    /**
      * 미소비·미만료 검증 토큰으로 로그를 조회합니다.
      *
      * 만료 술어(expires_at > now)는 이 지점이 단일 관문이다. 정책 미들웨어·정책 서비스·

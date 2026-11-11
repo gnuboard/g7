@@ -522,7 +522,7 @@ return [
             'required' => 'Please select an image file.',
             'file' => 'The file is not valid.',
             'image' => 'Only image files are allowed.',
-            'mimes' => 'Supported image formats: jpeg, png, jpg, gif, svg, webp',
+            'mimes' => 'Supported image formats: jpeg, png, jpg, gif, webp',
             'max' => 'Image file size must be 10MB or less.',
         ],
         'temp_key' => [

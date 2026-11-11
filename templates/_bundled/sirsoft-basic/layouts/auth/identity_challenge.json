@@ -324,7 +324,7 @@
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "resendCooldown": 30
+                                                                            "resendCooldown": 60
                                                                         }
                                                                     },
                                                                     {
@@ -445,41 +445,61 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
-                                                        "comment": "인증 메일 다시 보내기 — 코드 입력과 달리 대기 시간을 걸지 않는다(메일이 안 왔을 때 바로 다시 눌러야 하는 화면). 새 건 번호만 받아 둔다.",
+                                                        "comment": "인증 메일 다시 보내기 — 서버가 같은 주소·목적의 재요청을 60초 동안 받지 않으므로 코드 입력 화면과 같은 대기를 건다. 새 건 번호만 받아 둔다.",
                                                         "type": "click",
-                                                        "handler": "apiCall",
-                                                        "target": "/api/identity/challenges",
-                                                        "params": {
-                                                            "method": "POST",
-                                                            "body": {
-                                                                "purpose": "{{_local.purpose ?? 'password_reset'}}",
-                                                                "target": "{{query.target ?? ''}}"
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "resendCooldown": 60
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "target": "/api/identity/challenges",
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "purpose": "{{_local.purpose ?? 'password_reset'}}",
+                                                                        "target": "{{query.target ?? ''}}"
+                                                                    }
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "challenge_id": "{{response.data.id ?? _local.challenge_id}}"
+                                                                    }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                }
                                                             }
-                                                        },
-                                                        "onSuccess": {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "challenge_id": "{{response.data.id ?? _local.challenge_id}}"
-                                                            }
-                                                        },
-                                                        "onError": {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "{{error.message}}"
-                                                            }
-                                                        }
+                                                        ]
                                                     }
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors"
+                                                    "disabled": "{{(_local.resendCooldown ?? 0) > 0}}",
+                                                    "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "if": "{{(_local.resendCooldown ?? 0) > 0}}",
+                                                        "text": "$t:user.identity.challenge.resend_cooldown|seconds={{_local.resendCooldown ?? 0}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{(_local.resendCooldown ?? 0) <= 0}}",
                                                         "text": "$t:user.identity.challenge.resend_link"
                                                     }
                                                 ]

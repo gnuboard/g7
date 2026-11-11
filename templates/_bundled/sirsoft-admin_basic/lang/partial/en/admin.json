@@ -1710,6 +1710,8 @@
       "max_file_size": "Max File Size",
       "allowed_extensions": "Allowed Extensions",
       "allowed_extensions_hint": "Enter allowed file extensions separated by commas.",
+      "layout_attachment_extensions": "Allowed Extensions for Layout Attachments",
+      "layout_attachment_extensions_hint": "File types that can be uploaded in the layout editor, separated by commas. Non-image types are served as downloads unless they are exported to the public disk.",
       "image_settings": "Image Settings",
       "image_settings_desc": "Auto-resize and quality settings for uploaded images.",
       "image_max_width": "Max Width",
@@ -1826,6 +1828,9 @@
       "auth_token_lifetime": "Auth Token Lifetime (minutes)",
       "max_login_attempts": "Max Login Attempts",
       "login_lockout_time_full": "Lockout Time After Exceeding Login Attempts (minutes)",
+      "password_reset_rate_limit_per_minute": "Password Reset Requests per Minute",
+      "register_rate_limit_per_minute": "Sign-up Requests per Minute",
+      "rate_limit_per_minute_hint": "Number of requests accepted from the same IP in one minute (1-1000). Raise it if many people share one IP, such as an office network.",
       "zero_means_unlimited": "Set to 0 for unlimited.",
       "app_key": "Application Key Management",
       "app_key_desc": "Manage the application key used for encryption.",
@@ -2095,7 +2100,10 @@
         "title": "Public Asset Storage",
         "desc": "Configure the disk for serving fully public assets (product, category, review, and editor images, layout background images, etc.) via direct URLs. When disabled, the existing streaming method is used. Only files uploaded after enabling this get direct URLs, and those addresses stay in the saved layout.",
         "disk": "Disk",
-        "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used."
+        "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used.",
+        "extensions": "Extensions Exported to the Public Disk",
+        "extensions_hint": "Only these file types are stored on the public disk and served by direct URL. Other types stay on the existing disk and are served through the server. Non-image types listed here are served as downloads even by direct URL.",
+        "hardening_warning": "Web server protection rules are not applied. Responses from /storage direct URLs have no protective headers — check the nginx/Apache settings in the installation guide."
       },
       "cache": {
         "title": "Cache",

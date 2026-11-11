@@ -69,6 +69,18 @@ class IdentityVerificationController extends PublicBaseController
             $providerId = null;
         }
 
+        // 같은 수신 주소·같은 목적의 재요청 대기 — 새 challenge 를 만들지 않고 남은 시간을 알린다.
+        // 로그인하지 않아도 아무 주소로 요청할 수 있는 입구라, 제한이 없으면 한 주소에 메일을 계속 보낸다.
+        $cooldown = $this->service->cooldownRemaining((string) $validated['purpose'], $target, $providerId);
+        if ($cooldown > 0) {
+            return $this->error(
+                'identity.errors.challenge_cooldown',
+                429,
+                null,
+                ['seconds' => $cooldown, 'count' => $cooldown]
+            )->header('Retry-After', (string) $cooldown);
+        }
+
         // 428 이 알려 준 정책 — 메일 발송부가 그 정책별 문구를 고르고 이력에 출처 정책을 남긴다.
         $originPolicy = $this->policyService->findUsableForChallenge(
             $validated['policy_key'] ?? null,

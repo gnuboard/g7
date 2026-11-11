@@ -130,6 +130,7 @@ return [
     'driver_unusable_s3_adapter' => 'S3 storage adapter (league/flysystem-aws-s3-v3) is not installed.',
     'driver_unusable_redis_client' => 'Neither the phpredis extension nor the predis library is available.',
     'driver_unusable_memcached_extension' => 'The memcached PHP extension is not installed.',
+    'connection_target_blocked' => 'This address is not allowed.',
     'websocket_invalid_host' => 'The Websocket host setting is invalid. Enter the address only — credentials (@) and protocols other than http/https are not allowed.',
     'websocket_connection_refused' => 'Could not connect to Websocket server. Please check if the server is running.',
 

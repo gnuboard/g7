@@ -522,7 +522,7 @@ return [
             'required' => '이미지 파일을 선택해주세요.',
             'file' => '유효한 파일이 아닙니다.',
             'image' => '이미지 파일만 업로드 가능합니다.',
-            'mimes' => '지원하는 이미지 형식: jpeg, png, jpg, gif, svg, webp',
+            'mimes' => '지원하는 이미지 형식: jpeg, png, jpg, gif, webp',
             'max' => '이미지 파일 크기는 10MB 이하여야 합니다.',
         ],
         'temp_key' => [

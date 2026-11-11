@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.4] - 2026-11-10
+
+### Changed
+
+- 카테고리 이미지 업로드 형식 안내(`validation.category_images.file.mimes`)에서 받지 않는 형식(svg)을 뺐습니다(이커머스 1.3.5).
+
 ## [1.2.3] - 2026-11-10
 
 ### Added

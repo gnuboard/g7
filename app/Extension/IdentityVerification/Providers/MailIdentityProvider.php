@@ -129,6 +129,21 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
+     * 수신 이메일의 대상 해시를 계산합니다 (로그의 `target_hash` 와 같은 값).
+     *
+     * 발행과 재요청 대기 판정이 같은 계산을 쓴다 — 따로 재면 대소문자만 바꾼 주소가 다른 대상으로 갈린다.
+     *
+     * @param  string  $email  수신 이메일
+     * @return string sha256 해시
+     *
+     * @since 7.1.6
+     */
+    public static function targetHash(string $email): string
+    {
+        return hash('sha256', mb_strtolower($email));
+    }
+
+    /**
      * 인증 챌린지를 발급하고 메일을 발송합니다.
      *
      * @param  User|array  $target  대상 사용자 또는 식별 정보
@@ -151,7 +166,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
         $renderHint = $this->resolveRenderHint($purpose);
         $ttlMinutes = (int) config('settings.identity.challenge_ttl_minutes', 15);
         $maxAttempts = (int) config('settings.identity.max_attempts', 5);
-        $targetHash = hash('sha256', mb_strtolower($email));
+        $targetHash = self::targetHash($email);
 
         $metadata = [];
         $publicPayload = [];

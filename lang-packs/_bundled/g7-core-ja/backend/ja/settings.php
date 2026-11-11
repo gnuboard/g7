@@ -107,6 +107,7 @@ return [
     'driver_unusable_s3_adapter' => 'S3ストレージアダプター(league/flysystem-aws-s3-v3)がインストールされていません。',
     'driver_unusable_redis_client' => 'phpredis拡張とpredisライブラリのどちらも利用できません。',
     'driver_unusable_memcached_extension' => 'memcached PHP拡張がインストールされていません。',
+    'connection_target_blocked' => '許可されていないアドレスです。',
     'websocket_invalid_host' => 'Websocketホスト設定が正しくありません。ホストにはアドレスのみを入力し、アカウント情報(@)またはhttp/https以外のプロトコルは使用できません。',
     'websocket_connection_refused' => 'Websocketサーバーに接続できません。サーバーが実行中であるか確認してください。',
     'invalid_email' => '無効なメールアドレスです。',

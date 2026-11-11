@@ -2038,6 +2038,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `orderNumber` 에 해당하는 주문이 없거나 접근 권한이 없는 경우도 포함 (CancelPaymentRequest 의 주문 해석 실패) |
+| 429 | Too Many Requests | 체크아웃·주문 생성과 합산한 요청이 분당 한도(기본 30회, 회원 단위·비회원은 IP 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초) — [checkout.md](checkout.md) 「요청 제한」 |
 
 <!-- @generated:end -->
 
@@ -2360,6 +2361,7 @@ HTTP/1.1 201
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다. 필드별 메시지는 `error.errors` 에 담긴다 |
 | 409 | Conflict | 적용한 쿠폰을 다른 주문이 먼저 사용한 경우 (`errors.code = coupon_already_used`, `errors.coupon_issue_id` 에 해당 발급 ID). 주문은 생성되지 않고 쿠폰도 소모되지 않으므로 그대로 재시도할 수 있습니다 |
 | 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우. 응답 payload 로 인증 수단·목적이 함께 내려간다 |
+| 429 | Too Many Requests | 체크아웃·주문 생성 요청이 분당 한도(기본 30회, 회원 단위·비회원은 IP 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초) — [checkout.md](checkout.md) 「요청 제한」 |
 | 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.` — `messages.order.create_failed`). 원인은 서버 로그 `Order create: unexpected failure` 항목에 예외 클래스·메시지·발생 위치가 기록된다 |
 
 <!-- @generated:end -->
@@ -3118,6 +3120,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 재주문 도메인 규칙 위반 — 장바구니 담기 불가·수량 한도 초과 등 (`재주문에 실패했습니다.`) |
+| 429 | Too Many Requests | 장바구니 쓰기와 합산한 요청이 분당 한도(기본 120회, 회원 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초, 1.3.5) |
 | 500 | Internal Server Error | 서버 내부 오류 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->

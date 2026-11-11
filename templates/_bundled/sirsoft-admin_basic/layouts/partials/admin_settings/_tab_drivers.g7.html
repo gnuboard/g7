@@ -147,6 +147,16 @@
           </div>
         </div>
         <div data-ref="public_asset_s3_help" data-if="{{_local.form?.drivers?.public_asset_disk === 's3'}}" class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:admin.settings.drivers.public_asset.s3_help</div>
+        <div data-ref="field_public_asset_extensions" class="">
+          <label class="form-label">$t:admin.settings.drivers.public_asset.extensions</label>
+          <input type="text" name="drivers.public_asset_extensions" placeholder="jpg,jpeg,png,gif,webp,avif" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['drivers.public_asset_extensions'] ? 'input-error' : ''}}"/>
+          <p class="form-hint">$t:admin.settings.drivers.public_asset.extensions_hint</p>
+          <span data-if="{{_local.errors?.['drivers.public_asset_extensions']}}" class="form-error">{{_local.errors?.['drivers.public_asset_extensions']?.[0] ?? ''}}</span>
+        </div>
+        <div data-ref="public_disk_hardening_warning" data-if="{{_local.form?._meta?.public_disk_hardening?.ok === false}}" class="text-warning-soft mt-2" data-testid="public-disk-hardening-warning">
+          <span>$t:admin.settings.drivers.public_asset.hardening_warning</span>
+          <a data-ref="public_disk_hardening_doc_link" href="https://github.com/gnuboard/g7/blob/main/docs/requirements.md" target="_blank" rel="noopener noreferrer" class="ml-1 underline hover:no-underline">docs/requirements.md</a>
+        </div>
       </div>
     </div>
     <div data-ref="card_cache_settings" class="admin-card">

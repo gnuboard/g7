@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.4] - 2026-11-10
+
+### Changed
+
+- 비밀번호 찾기 성공 안내(`auth.forgot_password.success`)를 사용자 기본 템플릿 1.3.2 의 새 문구에 맞췄습니다.
+
 ## [1.2.3] - 2026-11-10
 
 ### Added

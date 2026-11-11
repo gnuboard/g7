@@ -728,7 +728,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "비밀번호 재설정 이메일이 발송되었습니다.",
+    "message": "가입된 이메일이면 비밀번호 재설정 링크를 보냈습니다. 메일함을 확인해 주세요.",
     "data": null
 }
 ```
@@ -737,13 +737,16 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우, 또는 등록되지 않은 이메일인 경우 (`auth.password_reset_failed` — `error.errors.email` 에 `auth.email_not_registered` 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (이메일 형식·필수 값). 가입 여부로는 422 가 나지 않는다 |
+| 429 | Too Many Requests | 같은 IP 의 분당 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정값(기본 10) |
 
 <!-- @generated:end -->
 
 **설명**
 
-비밀번호 재설정 메일 발송을 요청한다(공개). `email` 로 계정을 찾아 재설정 링크 메일을 보내고 `message: auth.password_reset_email_sent` 를 반환한다. `redirect_prefix` 는 재설정 링크가 향할 화면을 구분하는 값으로 관리자 흐름(`admin_forgot_password.g7.html`)에서는 `admin` 을 전달해 링크가 관리자 재설정 화면을 가리키게 한다(미지정 시 사용자 화면). 계정 열거 방지를 위해 이메일 존재 여부와 무관하게 동일 응답을 주는 것이 원칙이다.
+비밀번호 재설정 메일 발송을 요청한다(공개). `email` 로 계정을 찾아 재설정 링크 메일을 보내고 `message: auth.password_reset_email_sent` 를 반환한다. `redirect_prefix` 는 재설정 링크가 향할 화면을 구분하는 값으로 관리자 흐름(`admin_forgot_password.g7.html`)에서는 `admin` 을 전달해 링크가 관리자 재설정 화면을 가리키게 한다(미지정 시 사용자 화면). 단, 관리자가 아닌 계정에는 `admin` 을 전달해도 사용자 재설정 화면 링크를 보낸다.
+
+계정 존재를 알려 주지 않는다(7.1.6): 가입되지 않은 이메일도 **같은 200·같은 본문**을 받고, 응답 시간으로도 갈리지 않게 메일 발송·활동 기록은 응답을 보낸 뒤에 처리한다. 같은 이메일로 60초 안에 다시 요청하면 같은 200 을 주되 토큰을 바꾸지 않고 메일도 다시 보내지 않는다. 요청 수는 같은 IP 기준 분당 한도(보안 환경설정 `password_reset_rate_limit_per_minute`, 기본 10)로 제한하며 넘으면 429 다 — 이 한도는 로그인, 재설정·토큰 확인과 따로 센다.
 
 
 ### POST /api/auth/login
@@ -834,7 +837,7 @@ HTTP/1.1 200
 
 **설명**
 
-일반 사용자 로그인(공개). 관리자 로그인과 달리 `isAdmin()` 검사가 없다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user` 를 반환하며 `message: auth.login_success`. 계정 잠금 시 `423 auth.account_locked` 를 잠금 해제까지 남은 정보(`errors.locked_until`, `errors.retry_after_seconds`)와 함께 반환한다. 보안 환경설정의 잠금 시간이 `0`(무한대)이면 무기한 잠금이 되어 `423 auth.account_locked_permanently` 와 함께 `errors.permanent=true`, `errors.locked_until=null`, `errors.retry_after_seconds=null` 을 반환하며 `Retry-After` 헤더도 붙지 않는다. 이 경우 해제 수단은 관리자 해제 API(`POST /api/admin/users/{user}/unlock`) 와 본인의 비밀번호 재설정(`POST /api/auth/reset-password`)이다. 실패 횟수는 보안 환경설정의 잠금 시간 안의 연속 실패만 센다 — 직전 실패가 잠금 시간보다 오래됐으면 1 부터 다시 센다(잠금 시간 `0` 이면 기간 없이 누적). 실패 횟수 증가·잠금과 성공 시 초기화는 큐 드라이버와 무관하게 로그인 요청 안에서 바로 반영된다 — 큐로 미루면 워커가 없는 사이트에서 잠금이 걸리지 않는다. 프론트 로그인 폼(`partials/auth/_register_form.g7.html` 인접)에서 소비한다.
+일반 사용자 로그인(공개). 관리자 로그인과 달리 `isAdmin()` 검사가 없다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user` 를 반환하며 `message: auth.login_success`. 계정 잠금 시 `423 auth.account_locked` 를 잠금 해제까지 남은 정보(`errors.locked_until`, `errors.retry_after_seconds`)와 함께 반환한다. 보안 환경설정의 잠금 시간이 `0`(무한대)이면 무기한 잠금이 되어 `423 auth.account_locked_permanently` 와 함께 `errors.permanent=true`, `errors.locked_until=null`, `errors.retry_after_seconds=null` 을 반환하며 `Retry-After` 헤더도 붙지 않는다. 이 경우 해제 수단은 관리자 해제 API(`POST /api/admin/users/{user}/unlock`) 와 본인의 비밀번호 재설정(`POST /api/auth/reset-password`)이다. 실패 횟수는 보안 환경설정의 잠금 시간 안의 연속 실패만 센다 — 직전 실패가 잠금 시간보다 오래됐으면 1 부터 다시 센다(잠금 시간 `0` 이면 기간 없이 누적). 실패 횟수 증가·잠금과 성공 시 초기화는 큐 드라이버와 무관하게 로그인 요청 안에서 바로 반영된다 — 큐로 미루면 워커가 없는 사이트에서 잠금이 걸리지 않는다. 가입되지 않은 이메일의 실패도 같은 기준으로 세어 같은 횟수 뒤에는 가입 계정과 같은 `423` 응답(같은 본문 모양)을 돌려준다(7.1.6) — 잠금 응답의 차이로 가입 여부를 알 수 없게 하기 위함이며, 이 기록은 캐시에만 있고(무기한 잠금 설정에서도 최대 24시간) 회원 데이터·잠금 알림과는 무관하다. 프론트 로그인 폼(`partials/auth/_register_form.g7.html` 인접)에서 소비한다.
 
 **비밀번호를 바꿔야 하는 경우 (#736)**: 비밀번호(·2단계 인증)를 통과했어도 비밀번호가 만료됐거나(`security.password_expiry_*`) 관리자가 정해 준 비밀번호면 **토큰을 발급하지 않는다**. 대신 `200` 과 함께 `message: auth.password_change_required`(만료) / `auth.password_change_required_admin_assigned` 및 아래 필드를 반환하며, 클라이언트는 `POST /api/auth/login/password-change`(연기는 `/postpone`)로 새 비밀번호를 보내야 로그인이 완료된다. 순서는 2단계 인증이 먼저다 — 2단계 인증이 켜져 있으면 이 응답은 `POST /api/auth/login/two-factor` 가 돌려준다.
 
@@ -1362,12 +1365,13 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`auth.register_failed` — `error.errors` 에 필드별 메시지) |
 | 428 | Precondition Required | 가입 전 본인인증 정책이 매칭되었으나 유효한 `verification_token` 이 없는 경우 (`core.auth.before_register` 훅) |
+| 429 | Too Many Requests | 같은 IP 의 분당 가입 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정 `register_rate_limit_per_minute`(기본 10) |
 
 <!-- @generated:end -->
 
 **설명**
 
-회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. `agree_*` 동의 파라미터(약관/개인정보/이메일수신/마케팅/제3자제공/정보공개)는 가입 시점의 동의 이력으로 기록된다 — 그중 `agree_email_subscription`/`agree_marketing_consent`/`agree_third_party_consent`/`agree_info_disclosure` 및 `preferred_currency`/`preferred_shipping_country` 는 marketing·ecommerce 확장이 훅(`core.auth.register_validation_rules`)으로 주입하는 파라미터로, 해당 확장 비활성 시 무시된다. 검증 실패 시 `422 auth.register_failed`.
+회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. `agree_*` 동의 파라미터(약관/개인정보/이메일수신/마케팅/제3자제공/정보공개)는 가입 시점의 동의 이력으로 기록된다 — 그중 `agree_email_subscription`/`agree_marketing_consent`/`agree_third_party_consent`/`agree_info_disclosure` 및 `preferred_currency`/`preferred_shipping_country` 는 marketing·ecommerce 확장이 훅(`core.auth.register_validation_rules`)으로 주입하는 파라미터로, 해당 확장 비활성 시 무시된다. 검증 실패 시 `422 auth.register_failed`. 요청 수는 같은 IP 기준 분당 한도로 제한한다(7.1.6, 보안 환경설정 `register_rate_limit_per_minute`). 이미 쓰는 이메일 안내 문구는 가입 흐름을 위해 그대로 둔다.
 
 
 ### POST /api/auth/reset-password
@@ -1423,13 +1427,14 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반했거나, 토큰이 유효하지 않거나 만료된 경우 (`auth.password_reset_failed` — `error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반했거나, 토큰이 유효하지 않거나 만료된 경우 (`auth.password_reset_failed` — `error.errors` 에 필드별 메시지). 가입되지 않은 이메일은 토큰이 틀린 것과 같은 `error.errors.token` 으로 답한다 |
+| 429 | Too Many Requests | 같은 IP 의 분당 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정값(기본 10) |
 
 <!-- @generated:end -->
 
 **설명**
 
-비밀번호 재설정을 실제 반영한다(공개). 재설정 메일의 `token` 과 `email`, 새 `password` 를 받아 비밀번호를 갱신하고 `message: auth.password_reset_success`. 토큰 만료/불일치 등 검증 실패 시 `422 auth.password_reset_failed`. 반영 전 토큰 유효성만 먼저 확인하려면 `/api/auth/validate-reset-token` 을 사용한다.
+비밀번호 재설정을 실제 반영한다(공개). 재설정 메일의 `token` 과 `email`, 새 `password` 를 받아 비밀번호를 갱신하고 `message: auth.password_reset_success`. 토큰 만료/불일치 등 검증 실패 시 `422 auth.password_reset_failed`. 반영 전 토큰 유효성만 먼저 확인하려면 `/api/auth/validate-reset-token` 을 사용한다. 가입되지 않은 이메일과 토큰이 틀린 이메일은 같은 필드(`token`)·같은 문구로 답해 계정 존재를 알려 주지 않는다(7.1.6). 요청 수는 같은 IP 기준 분당 한도로 제한하며(`/api/auth/validate-reset-token` 과 한 카운터, 비밀번호 찾기와는 별도) 넘으면 429 다.
 
 **재설정은 로그인 잠금도 푼다.** 재설정 메일을 받아 링크를 연 것이 본인 확인이므로, 반영과 같은 트랜잭션에서 로그인 실패 횟수·잠금(시한·무기한 모두)을 초기화한다. 잠금은 이메일만 알면 남이 걸 수 있어, 이 경로가 없으면 피해자는 차단 시간이 끝나기를 기다리거나 관리자 해제를 받아야 했다. 실제로 잠겨 있던 계정이면 `core.auth.account_unlocked` 훅이 `reason=password_reset` 과 함께 발화되어 활동 로그에 "비밀번호 재설정으로 계정 잠금 해제" 로 남는다.
 
@@ -1623,13 +1628,14 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 위반, 또는 토큰이 유효하지 않거나 만료된 경우 / 미등록 이메일 (`auth.reset_token_invalid` — `error.errors.token` 에 사유 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 위반, 또는 토큰이 유효하지 않거나 만료된 경우 (`auth.reset_token_invalid` — `error.errors.token` 에 사유 메시지). 가입되지 않은 이메일은 토큰이 틀린 것과 같은 문구로 답한다 |
+| 429 | Too Many Requests | 같은 IP 의 분당 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정값(기본 10) |
 
 <!-- @generated:end -->
 
 **설명**
 
-비밀번호 재설정 토큰의 유효성만 사전 확인한다(공개, 비밀번호 미변경). 재설정 화면(`admin_reset_password.g7.html`/`auth/reset_password.g7.html`) 진입 시 토큰/이메일이 유효한지 먼저 검사해, 만료·위조 링크면 즉시 오류 화면을 보이고 유효하면 새 비밀번호 입력 폼을 노출하는 용도다. 실제 반영은 `/api/auth/reset-password` 가 담당한다.
+비밀번호 재설정 토큰의 유효성만 사전 확인한다(공개, 비밀번호 미변경). 재설정 화면(`admin_reset_password.g7.html`/`auth/reset_password.g7.html`) 진입 시 토큰/이메일이 유효한지 먼저 검사해, 만료·위조 링크면 즉시 오류 화면을 보이고 유효하면 새 비밀번호 입력 폼을 노출하는 용도다. 실제 반영은 `/api/auth/reset-password` 가 담당한다. 가입되지 않은 이메일도 토큰이 틀린 것과 같은 응답을 받는다(7.1.6). 요청 수는 `/api/auth/reset-password` 와 한 카운터로 같은 IP 기준 분당 한도를 받는다.
 
 
 ### POST /api/user/auth/logout

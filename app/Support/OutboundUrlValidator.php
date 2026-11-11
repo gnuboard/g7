@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Symfony\Component\HttpFoundation\IpUtils;
+
 /**
  * 서버가 외부로 나가는(outbound) HTTP 요청의 목적지 URL 을 검증하는 순수 유틸.
  *
@@ -178,6 +180,167 @@ class OutboundUrlValidator
         }
 
         return $host === '' ? null : $host;
+    }
+
+    /**
+     * 링크로컬·클라우드 메타데이터 주소 대역 (CIDR)
+     *
+     * 관리자가 정하는 서버 연결 대상(웹소켓·저장소·캐시·메일·프록시)은 localhost·사내 IP 가 정상 구성이라
+     * 사설 대역 전체를 막지 않는다. 어떤 정상 구성에도 나오지 않는 이 대역만 막는다.
+     *
+     * @var array<int, string>
+     */
+    private const METADATA_CIDRS = [
+        '169.254.0.0/16',       // IPv4 링크로컬 (AWS·GCP·Azure 인스턴스 메타데이터 169.254.169.254 포함)
+        '100.100.100.200/32',   // Alibaba Cloud 인스턴스 메타데이터
+        'fe80::/10',            // IPv6 링크로컬
+        'fd00:ec2::254/128',    // AWS IPv6 인스턴스 메타데이터
+    ];
+
+    /**
+     * 클라우드 메타데이터 서비스의 호스트명 (정규화 후 대조)
+     *
+     * @var array<int, string>
+     */
+    private const METADATA_HOST_NAMES = [
+        'metadata.google.internal',
+        'metadata.goog',
+        'instance-data',
+        'instance-data.ec2.internal',
+    ];
+
+    /**
+     * host 가 링크로컬·클라우드 메타데이터 주소인지 판정한다.
+     *
+     * 숫자 대역과 호스트명 목록 대조만 한다 — 이름 해석(DNS)은 하지 않는다. 메타데이터 주소로 풀리는
+     * 공개 이름은 이 판정의 대상이 아니다.
+     *
+     * @param  string  $host  host 문자열 (예: '169.254.169.254', '[fe80::1]', 'metadata.google.internal')
+     * @return bool 링크로컬·메타데이터 주소이면 true
+     *
+     * @since 7.1.6
+     */
+    public static function isMetadataHost(string $host): bool
+    {
+        $host = strtolower(trim($host));
+
+        if (str_starts_with($host, '[') && str_ends_with($host, ']')) {
+            // 영역 표기(`fe80::1%eth0`, URL 안에서는 `%25eth0`)는 주소 대역과 무관하므로 떼고 본다.
+            $host = (string) preg_replace('/%.*$/', '', substr($host, 1, -1));
+        }
+
+        if ($host === '') {
+            return false;
+        }
+
+        // IP 리터럴이 아니면 연결 계층과 같은 규칙으로 정규화한다 (전각 점·후행 점·대소문자).
+        if (filter_var($host, FILTER_VALIDATE_IP) === false) {
+            $host = self::normalizeHost($host) ?? '';
+
+            if ($host === '') {
+                return false;
+            }
+
+            if (in_array($host, self::METADATA_HOST_NAMES, true)) {
+                return true;
+            }
+
+            // 정규화 결과가 IP 리터럴이 됐을 때(전각 점으로 쓴 IP 등)만 대역 대조로 넘어간다.
+            if (filter_var($host, FILTER_VALIDATE_IP) === false) {
+                return false;
+            }
+        }
+
+        return IpUtils::checkIp(self::unwrapIpv4Mapped($host), self::METADATA_CIDRS);
+    }
+
+    /**
+     * URL 의 host 가 링크로컬·클라우드 메타데이터 주소인지 판정한다.
+     *
+     * @param  string  $url  검사할 URL (스킴 포함)
+     * @return bool host 를 읽을 수 있고 그 host 가 링크로컬·메타데이터 주소이면 true
+     *
+     * @since 7.1.6
+     */
+    public static function isMetadataUrl(string $url): bool
+    {
+        $host = parse_url(trim($url), PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' && self::isMetadataHost($host);
+    }
+
+    /**
+     * host 가 숫자로 감춘 IP 표기인지 판정한다.
+     *
+     * `2852039166`(10진수 하나)·`169.254.43518`(축약)·`0xA9FEA9FE`(16진수)·`0251.0376.0251.0376`(8진수)처럼
+     * IP 리터럴로 인정되지 않는 숫자 표기는 주소 대역 대조에 걸리지 않지만, 연결 계층은 IP 로 풀어 연결한다.
+     * 호스트명의 최상위 라벨은 숫자만이거나 16진 표기(`0x…`)일 수 없다는 규칙으로 가른다 — 맨 앞 라벨이
+     * `0x` 로 시작하는 정상 도메인(`0xcafe.example.com`)은 해당하지 않는다.
+     *
+     * @param  string  $host  host 문자열
+     * @return bool 숫자로 감춘 IP 표기이면 true (정상 IP 리터럴·호스트명은 false)
+     *
+     * @since 7.1.6
+     */
+    public static function isNumericDisguisedHost(string $host): bool
+    {
+        $host = trim($host);
+
+        if ($host === '' || str_starts_with($host, '[') || filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return false;
+        }
+
+        $normalized = self::normalizeHost($host);
+
+        if ($normalized === null || filter_var($normalized, FILTER_VALIDATE_IP) !== false) {
+            return false;
+        }
+
+        $lastLabel = substr(strrchr('.'.$normalized, '.') ?: '', 1);
+
+        return $lastLabel === '' || ctype_digit($lastLabel) || str_starts_with(strtolower($lastLabel), '0x');
+    }
+
+    /**
+     * URL 이 연결 대상으로 허용되지 않는 주소인지 판정한다.
+     *
+     * 링크로컬·클라우드 메타데이터 주소이거나, 숫자로 감춘 IP 표기이면 true. 주소(URL) 칸의 요청 검증과
+     * 연결 테스트 직전 확인이 같이 쓴다.
+     *
+     * @param  string  $url  검사할 URL (스킴 포함)
+     * @return bool 연결을 시도하면 안 되는 주소이면 true
+     *
+     * @since 7.1.6
+     */
+    public static function isRefusedConnectionUrl(string $url): bool
+    {
+        $host = parse_url(trim($url), PHP_URL_HOST);
+
+        if (! is_string($host) || $host === '') {
+            return false;
+        }
+
+        return self::isMetadataHost($host) || self::isNumericDisguisedHost($host);
+    }
+
+    /**
+     * IPv4-mapped IPv6(`::ffff:a.b.c.d`)를 IPv4 로 풉니다. 그 밖의 주소는 그대로 돌려줍니다.
+     *
+     * @param  string  $ip  IP 리터럴
+     * @return string 풀린 IPv4 또는 원래 주소
+     */
+    private static function unwrapIpv4Mapped(string $ip): string
+    {
+        $packed = @inet_pton($ip);
+
+        if ($packed !== false && strlen($packed) === 16
+            && substr($packed, 0, 12) === str_repeat("\x00", 10)."\xff\xff") {
+            $ipv4 = inet_ntop(substr($packed, 12));
+
+            return is_string($ipv4) ? $ipv4 : $ip;
+        }
+
+        return $ip;
     }
 
     /**

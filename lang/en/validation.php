@@ -817,7 +817,6 @@ return [
         'email' => [
             'required' => 'Email is required.',
             'email' => 'Please enter a valid email address.',
-            'exists' => 'This email is not registered.',
             'unique' => 'This email is already in use.',
         ],
         'password' => [
@@ -1059,6 +1058,12 @@ return [
         'allowed_extensions_required' => 'Please enter the allowed extensions.',
         'allowed_extensions_max' => 'Allowed extensions may not be greater than 500 characters.',
         'allowed_extensions_invalid_type' => 'Allowed extensions must be a string or an array.',
+        'layout_attachment_extensions_required' => 'Please enter at least one allowed extension for layout attachments.',
+        'rate_limit_per_minute_range' => 'The per-minute limit must be an integer between 1 and 1000.',
+        'host_format_invalid' => 'Enter a host name or IP address only. Paths, ports, credentials and spaces are not allowed.',
+        'host_blocked' => 'This address is not allowed.',
+        'endpoint_path_not_allowed' => 'The address cannot contain a path or query. Enter the scheme, host and port only.',
+        'public_asset_extensions_required' => 'Please enter at least one extension to export to the public disk.',
         'image_max_width_integer' => 'Max image width must be an integer.',
         'image_max_width_min' => 'Max image width must be at least 100 pixels.',
         'image_max_width_max' => 'Max image width may not be greater than 10000 pixels.',
@@ -1584,6 +1589,8 @@ return [
         'password_expiry_action' => 'password expiry action',
         'password_expiry_remind_days' => 'change postponement period',
         'password_expiry_batch_size' => 'notices per run limit',
+        'password_reset_rate_limit_per_minute' => 'password reset requests per minute',
+        'register_rate_limit_per_minute' => 'sign-up requests per minute',
         'activity_log_retention_days' => 'activity log retention period',
         'password_expiry_policy' => 'password expiry',
         'current_password' => 'current password',
@@ -1636,5 +1643,7 @@ return [
         'log_level' => 'log level',
         'log_days' => 'log retention days',
         'public_asset_disk' => 'public asset disk',
+        'public_asset_extensions' => 'extensions exported to the public disk',
+        'layout_attachment_extensions' => 'allowed extensions for layout attachments',
     ],
 ];

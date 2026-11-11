@@ -51,6 +51,11 @@ return [
         'security_max_login_attempts_max' => 100,
         'security_login_lockout_time_min' => 0,
         'security_login_lockout_time_max' => 1440,
+        // 같은 IP 의 분당 요청 한도 — 0(끄기)은 받지 않는다
+        'security_password_reset_rate_limit_per_minute_min' => 1,
+        'security_password_reset_rate_limit_per_minute_max' => 1000,
+        'security_register_rate_limit_per_minute_min' => 1,
+        'security_register_rate_limit_per_minute_max' => 1000,
         // 비밀번호 정책 (#736) — 판독부(PasswordPolicy·PasswordExpiryService)도 이 값으로 양쪽 클램프한다
         'security_password_repeated_chars_length_min' => 3,
         'security_password_repeated_chars_length_max' => 6,
@@ -305,6 +310,11 @@ return [
     */
     'storage' => [
         'public_asset_disk' => '',
+
+        // 공개 자산 디스크로 내보낼 확장자 (소문자, 점 없이). 이 목록 밖의 파일은 공개 디스크에
+        // 저장하지 않고 기존 디스크에 두어 서버를 거쳐 내려보낸다. 값은 관리자 환경설정
+        // (drivers.public_asset_extensions)에서 주입한다.
+        'public_asset_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
     ],
 
     /*

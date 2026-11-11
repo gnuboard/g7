@@ -837,6 +837,81 @@
                                 "className": "text-sm text-gray-500 dark:text-gray-400 mt-2"
                             },
                             "text": "$t:admin.settings.drivers.public_asset.s3_help"
+                        },
+                        {
+                            "id": "field_public_asset_extensions",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.drivers.public_asset.extensions"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "drivers.public_asset_extensions",
+                                        "placeholder": "jpg,jpeg,png,gif,webp,avif",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input {{_local.errors?.['drivers.public_asset_extensions'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.drivers.public_asset.extensions_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['drivers.public_asset_extensions']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['drivers.public_asset_extensions']?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "public_disk_hardening_warning",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.public_disk_hardening?.ok === false}}",
+                            "props": {
+                                "className": "text-warning-soft mt-2",
+                                "data-testid": "public-disk-hardening-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.settings.drivers.public_asset.hardening_warning"
+                                },
+                                {
+                                    "id": "public_disk_hardening_doc_link",
+                                    "type": "basic",
+                                    "name": "A",
+                                    "props": {
+                                        "href": "https://github.com/gnuboard/g7/blob/main/docs/requirements.md",
+                                        "target": "_blank",
+                                        "rel": "noopener noreferrer",
+                                        "className": "ml-1 underline hover:no-underline"
+                                    },
+                                    "text": "docs/requirements.md"
+                                }
+                            ]
                         }
                     ]
                 }

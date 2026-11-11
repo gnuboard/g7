@@ -472,7 +472,7 @@ return [
             'required' => '画像ファイルを選択してください。',
             'file' => '有効なファイルではありません。',
             'image' => '画像ファイルのみアップロード可能です。',
-            'mimes' => 'サポートされている画像形式: jpeg、png、jpg、gif、svg、webp',
+            'mimes' => 'サポートされている画像形式: jpeg、png、jpg、gif、webp',
             'max' => '画像ファイルサイズは10MB以下である必要があります。',
         ],
         'temp_key' => [
