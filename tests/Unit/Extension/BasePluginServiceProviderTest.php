@@ -5,6 +5,7 @@ namespace Tests\Unit\Extension;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Extension\BasePluginServiceProvider;
+use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\PluginManager;
 use Mockery;
 use Tests\TestCase;
@@ -23,9 +24,9 @@ class BasePluginServiceProviderTest extends TestCase
     /**
      * $pluginIdentifier 만 정한 프로바이더가 PluginManager 에서 그 식별자의 플러그인을 찾아 플러그인 캐시를 소비자에 주입한다.
      *
-     * @scenario extension_kind=plugin,service_kind=cache_service,global_binding_state=absent,manager_state=plugin_null_fallback,consumer_type=single_class
+     * @scenario extension_kind=plugin,service_kind=cache_service,global_binding_state=absent,manager_state=plugin_resolved,consumer_type=single_class
      *
-     * @effects inline_adapter_used_when_plugin_not_registered_in_manager
+     * @effects cache_service_receives_plugin_cache_driver_with_correct_identifier_prefix
      *
      * @return void 반환값 없음
      */
@@ -49,6 +50,33 @@ class BasePluginServiceProviderTest extends TestCase
         $consumer = $this->app->make(FixtureCacheConsumer::class);
 
         $this->assertSame($pluginCache, $consumer->cache);
+    }
+
+    /**
+     * PluginManager 가 그 식별자의 플러그인을 돌려주지 못하면(등록 전 해석 등) 식별자만으로 만든 플러그인 캐시 드라이버를 소비자에 주입한다.
+     *
+     * @scenario extension_kind=plugin,service_kind=cache_service,global_binding_state=absent,manager_state=plugin_null_fallback,consumer_type=single_class
+     *
+     * @effects inline_adapter_used_when_plugin_not_registered_in_manager
+     *
+     * @return void 반환값 없음
+     */
+    public function test_falls_back_to_identifier_only_cache_driver_when_plugin_is_not_registered(): void
+    {
+        $pluginManager = Mockery::mock(PluginManager::class);
+        $pluginManager->shouldReceive('getPlugin')
+            ->with('vendor-test_plugin')
+            ->andReturn(null);
+
+        $this->app->instance(PluginManager::class, $pluginManager);
+
+        $provider = new TestBasePluginServiceProviderFixture($this->app, 'vendor-test_plugin');
+        $provider->setCacheServices([FixtureCacheConsumer::class]);
+        $provider->register();
+
+        $consumer = $this->app->make(FixtureCacheConsumer::class);
+
+        $this->assertInstanceOf(PluginCacheDriver::class, $consumer->cache);
     }
 
     /**

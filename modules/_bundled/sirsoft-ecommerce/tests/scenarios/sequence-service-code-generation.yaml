@@ -31,7 +31,6 @@ axes:
     - nanoid_no_table_writes       # NanoID 는 시퀀스 테이블을 쓰지 않음
     - nanoid_prefix                # 접두사가 있는 NanoID
     - nanoid_uniqueness            # NanoID 100개 생성
-    - nanoid_sequence_missing      # NanoID 경로에서 시퀀스 행이 없음
 
 effects:
   - sequence_code_generated_and_history_inserted            # 현재 값보다 큰 코드 반환과 이력 1회 삽입

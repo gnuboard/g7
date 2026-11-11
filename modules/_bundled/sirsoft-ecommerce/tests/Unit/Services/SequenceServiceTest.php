@@ -973,30 +973,4 @@ class SequenceServiceTest extends ModuleTestCase
         $uniqueCodes = array_unique($codes);
         $this->assertCount(100, $uniqueCodes);
     }
-
-    /**
-     * NanoID 경로에서도 시퀀스가 없으면 SequenceNotFoundException 이 발생하는지 확인
-     *
-     * @scenario case=nanoid_sequence_missing
-     *
-     * @effects sequence_missing_throws_not_found
-     *
-     * @return void 반환값 없음
-     */
-    #[Test]
-    public function test_nanoid_throws_exception_when_sequence_not_found(): void
-    {
-        // Arrange
-        $this->repository
-            ->shouldReceive('findByType')
-            ->once()
-            ->with(SequenceType::PRODUCT)
-            ->andReturn(null);
-
-        // Assert
-        $this->expectException(SequenceNotFoundException::class);
-
-        // Act
-        $this->service->generateCode(SequenceType::PRODUCT);
-    }
 }

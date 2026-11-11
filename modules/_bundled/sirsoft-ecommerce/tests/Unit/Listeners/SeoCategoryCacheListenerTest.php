@@ -56,7 +56,7 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 리스너가 올바른 훅-메서드 매핑을 반환하는지 확인 (3개 훅 모두 onCategoryChange)
+     * 리스너가 올바른 훅-메서드 매핑을 반환하는지 확인 (생성, 수정은 onCategoryChange, 삭제는 onCategoryDelete)
      *
      * @scenario listener=category, area=subscription
      *

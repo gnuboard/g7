@@ -36,7 +36,7 @@ effects:
   - module_settings_frontend_exposure_skips_modules_without_settings
   # 초기화와 정리
   - module_settings_reset_succeeds_when_settings_file_deleted
-  - module_settings_clear_cache_runs_without_error
+  - module_settings_clear_cache_drops_cached_entry
   - module_settings_delete_settings_directory_succeeds
 
 # E2E axis 없음: 판정은 서버측 서비스 단위이고 화면 변경이 없다.

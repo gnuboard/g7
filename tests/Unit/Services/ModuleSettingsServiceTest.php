@@ -839,7 +839,7 @@ class ModuleSettingsServiceTest extends TestCase
      *
      * @scenario operation=clear_cache
      *
-     * @effects module_settings_clear_cache_runs_without_error
+     * @effects module_settings_clear_cache_drops_cached_entry
      *
      * @return void 반환값 없음
      */
@@ -864,15 +864,16 @@ class ModuleSettingsServiceTest extends TestCase
             $this->layoutService
         );
 
+        $cache = new \ReflectionProperty(ModuleSettingsService::class, 'settingsCache');
+
         // 첫 번째 조회 (캐시에 저장됨)
         $service->get($identifier);
+        $this->assertArrayHasKey($identifier, $cache->getValue($service), '조회한 설정이 캐시에 담겨야 한다');
 
         // 캐시 초기화
         $service->clearCache($identifier);
 
-        // 캐시가 초기화되었으므로 다시 getModule이 호출되어야 함
-        // (이 테스트는 내부 동작을 확인하는 것이 어려우므로 예외 없이 실행되는지만 확인)
-        $this->assertTrue(true);
+        $this->assertArrayNotHasKey($identifier, $cache->getValue($service), '비운 식별자의 캐시 항목이 남아 있으면 안 된다');
     }
 
     /**
