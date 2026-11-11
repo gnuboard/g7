@@ -24,7 +24,7 @@ axes:
   # c13: 재전송 sequence 의 첫 setState 가 identityChallenge.code 를 즉시 빈 문자열로 초기화
   # c14: code Input 이 비표준 events 래퍼를 사용하지 않는다
   # c15: code Input 의 onChange 가 actions: [{event:"onChange", setState global}] 패턴
-  # c16: _admin_base.json modals 배열에 _identity_challenge_modal 포함
+  # c16: _admin_base.g7.html modals 배열에 _identity_challenge_modal 포함
   # c17: routes.json 에 */admin/identity/challenge 라우트 등록
   # c18: verify onSuccess 가 resolveIdentityChallenge { verified } 호출
   # c19: extends 가 _admin_base 로 설정되어 admin 컨텍스트 일관
