@@ -323,7 +323,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 42 / 368 |
+| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 45 / 392 |
 
 
 ### 확장 API 레퍼런스 (21개 확장, 자동 스캔)

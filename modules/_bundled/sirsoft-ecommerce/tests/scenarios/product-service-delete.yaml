@@ -1,0 +1,39 @@
+feature: 상품 삭제 서비스 (삭제 가능 판정, 연관 데이터 정리, 주문 이력 가드)
+
+description: |
+  ProductService::checkCanDelete() 는 주문 이력이 있으면 삭제 불가와 사유를 돌려주고, 주문 수와
+  연관 데이터(이미지, 옵션, 추가옵션, 라벨 연결) 건수를 함께 알린다.
+  ProductService::delete() 는 연관 행을 명시적으로 지우고 이미지 파일 디렉토리와 카테고리 연결을 정리한다.
+  주문 이력이 있는 상품은 컨트롤러를 거치지 않고 서비스를 직접 불러도 도메인 가드가
+  ProductHasOrderHistoryException 으로 막고 상품을 보존한다.
+
+  같은 시험 파일의 문의 스레드 정리 시험 두 건은 그 파일을 함께 소유한
+  inquiry-single-reply-lifecycle.yaml 의 효과(product_delete_cleans_thread, board_not_configured_safe)로 연결한다.
+
+axes:
+  case:
+    - check_no_orders               # 주문 이력 없는 상품의 삭제 가능 판정
+    - check_with_orders             # 주문 이력 1건
+    - check_many_orders             # 주문 이력 여러 건
+    - check_related_counts          # 연관 데이터가 있는 상품
+    - delete_with_related_data      # 이미지, 옵션, 추가옵션, 라벨 연결이 있는 상품 삭제
+    - delete_with_image_files       # 스토리지에 이미지 파일이 있는 상품 삭제
+    - delete_with_categories        # 카테고리가 연결된 상품 삭제
+    - delete_without_related_data   # 연관 데이터가 없는 상품 삭제
+    - delete_with_order_history     # 주문 이력이 있는 상품 삭제 시도
+
+effects:
+  - product_delete_check_allows_without_orders         # canDelete=true, reason=null, 주문 수 0
+  - product_delete_check_blocks_with_order_history     # canDelete=false 와 사유
+  - product_delete_check_reports_order_count           # 주문 수를 정확히 보고
+  - product_delete_check_reports_related_data_counts   # 이미지, 옵션, 추가옵션, 라벨 연결 건수 보고
+  - product_delete_removes_related_rows                # 상품과 연관 행이 모두 삭제
+  - product_delete_removes_image_files_from_storage    # 상품 이미지 디렉토리의 파일 삭제
+  - product_delete_detaches_categories                 # 카테고리 피벗 연결 해제
+  - product_delete_succeeds_without_related_data       # 연관 데이터 없이도 삭제 성공
+  - product_delete_blocked_by_order_history_guard      # 주문 이력이 있으면 예외와 상품 보존
+
+# E2E axis 없음: 판정은 전부 서버측이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceDeleteTest.php

@@ -39,6 +39,7 @@ axes:
   force_flag: [present, absent]                                            # bundled prompt 우회 여부
   bundled_updates_count: [zero, modules_only, plugins_only, templates_only, lang_packs_only, mixed]
   from_to_relation: [from_lt_to, from_eq_to_forced]                       # version_compare 분기
+  steps_only: [present, absent]                                            # --steps-only: 스텝만 실행하고 보조 단계를 모두 생략
 
 exclusions:
   - { invocation_origin: parent_spawn_with_skip_options, skip_migrations: absent, reason: "부모(beta.6+) spawn 시엔 5개 옵션 모두 전달 — 일부 절단 시뮬은 인위적 비현실 분기" }
@@ -88,6 +89,9 @@ effects:
   - ExecuteUpgradeStepsCommand_standalone_invocation_without_env_runs_all_five_steps_intact
   - execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
   - ExecuteUpgradeStepsCommand_sweeps_empty_staging_directories_left_by_parent
+  # §7 --steps-only (스텝만 실행)
+  - ExecuteUpgradeStepsCommand_steps_only_runs_only_upgrade_steps              # 권한 정상화와 사전, 사후 단계 없이 스텝만 호출한다
+  - ExecuteUpgradeStepsCommand_steps_only_overrides_standalone_default_steps   # spawn 플래그가 없어도 단독 실행의 다섯 단계 자동 수행보다 우선한다
 
 test_files:
   - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php

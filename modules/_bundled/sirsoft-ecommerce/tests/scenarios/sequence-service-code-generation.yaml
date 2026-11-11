@@ -1,0 +1,59 @@
+feature: 채번 서비스 코드 생성 (순차, 하이브리드, NanoID, 이력 정리, 초기화)
+
+description: |
+  SequenceService::generateCode() 는 시퀀스 설정의 알고리즘에 따라 코드를 만든다.
+  순차와 하이브리드는 행 잠금으로 시퀀스를 읽어 다음 값을 계산하고, 코드 이력을 삽입한 뒤 현재 값을 갱신한다.
+  최댓값에 닿으면 순환 설정에 따라 최솟값으로 돌아가거나 SequenceOverflowException 을 던진다.
+  코드는 접두사와 자릿수 채움을 적용한 형식으로 나온다. 최대 보관 수가 정해져 있고 이력 건수가 그보다 많으면
+  오래된 코드를 지운다. 이력 삽입이 UNIQUE 제약 위반이면 SequenceCodeDuplicateException 으로 바꾸고,
+  그 밖의 DB 오류는 그대로 전파한다.
+  NanoID 는 시퀀스 테이블 쓰기 없이 대문자와 숫자 16자 코드를 만든다.
+  시퀀스가 없으면 어느 알고리즘이든 SequenceNotFoundException 이다.
+  initializeSequence() 는 유형의 기본 설정으로 시퀀스를 만들고 옵션으로 준 값을 덮어쓴다.
+
+axes:
+  case:
+    - hybrid_generate              # 하이브리드 알고리즘 코드 생성
+    - sequence_missing             # 시퀀스 행이 없음
+    - overflow_no_cycle            # 최댓값 도달, 순환 꺼짐
+    - overflow_cycle               # 최댓값 도달, 순환 켜짐
+    - sequential_increment         # 순차 알고리즘 증가
+    - sequential_prefix            # 접두사와 자릿수 채움
+    - initialize_default           # 기본 설정 초기화
+    - history_over_limit           # 이력 건수가 최대 보관 수 초과
+    - history_unlimited            # 최대 보관 수 0(무제한)
+    - history_within_limit         # 이력 건수가 최대 보관 수 이하
+    - initialize_default_history   # 초기화의 기본 최대 보관 수
+    - initialize_custom_history    # 초기화 옵션으로 준 최대 보관 수
+    - duplicate_code               # 이력 삽입 UNIQUE 제약 위반
+    - other_query_error            # 중복이 아닌 DB 오류
+    - nanoid_generate              # NanoID 코드 생성
+    - nanoid_no_table_writes       # NanoID 는 시퀀스 테이블을 쓰지 않음
+    - nanoid_prefix                # 접두사가 있는 NanoID
+    - nanoid_uniqueness            # NanoID 100개 생성
+    - nanoid_sequence_missing      # NanoID 경로에서 시퀀스 행이 없음
+
+effects:
+  - sequence_code_generated_and_history_inserted            # 현재 값보다 큰 코드 반환과 이력 1회 삽입
+  - sequence_missing_throws_not_found                       # 시퀀스가 없으면 SequenceNotFoundException
+  - sequence_overflow_throws_without_cycle                  # 순환 꺼짐이면 SequenceOverflowException
+  - sequence_overflow_cycles_to_min_value                   # 순환 켜짐이면 최솟값으로 복귀
+  - sequence_sequential_increments_by_step                  # 현재 값 + 증가분을 저장하고 코드로 반환
+  - sequence_code_formatted_with_prefix_and_padding         # 접두사 + 자릿수 채움 형식
+  - sequence_initialized_with_type_default_config           # 유형 기본 설정으로 생성
+  - sequence_history_trimmed_to_max_count                   # 보관 수만 남기고 오래된 코드 삭제
+  - sequence_history_untouched_when_unlimited               # 무제한이면 건수 조회와 정리 없음
+  - sequence_history_untouched_within_limit                 # 보관 수 이하면 삭제 없음
+  - sequence_initialized_with_default_history_count         # 상품 시퀀스 기본 최대 보관 수 0
+  - sequence_initialize_accepts_custom_history_count        # 옵션의 최대 보관 수가 생성 데이터에 실림
+  - sequence_duplicate_insert_throws_duplicate_exception    # UNIQUE 위반을 SequenceCodeDuplicateException 으로 변환
+  - sequence_other_query_errors_propagate                   # 그 밖의 QueryException 은 그대로 전파
+  - sequence_nanoid_code_is_16_uppercase_alphanumerics      # 대문자와 숫자 16자
+  - sequence_nanoid_skips_sequence_table_writes             # 행 잠금, 이력 삽입, 값 갱신, 이력 정리 호출 없음
+  - sequence_nanoid_code_carries_prefix                     # 접두사 + 16자
+  - sequence_nanoid_codes_are_unique                        # 100개가 서로 겹치지 않음
+
+# E2E axis 없음: 저장소를 모의한 서비스 단위 판정이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SequenceServiceTest.php

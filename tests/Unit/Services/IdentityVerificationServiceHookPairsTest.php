@@ -23,12 +23,29 @@ use Tests\TestCase;
  */
 class IdentityVerificationServiceHookPairsTest extends TestCase
 {
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
+    /**
+     * 취소가 성공하면 before_cancel, after_cancel 훅이 차례로 한 번씩 나가고 after 의 결과 인자가 true 다.
+     *
+     * @scenario surface=service_lifecycle_hooks
+     *
+     * @effects cancel_fires_before_and_after_hooks_on_success
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_dispatches_before_and_after_hooks_on_success(): void
     {
         $fired = [];
@@ -70,6 +87,15 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $this->assertTrue($fired[1]['args'][2]);
     }
 
+    /**
+     * 취소할 기록이 없어도 두 훅이 나가며 before 의 기록 인자는 null, after 의 결과 인자는 false 다.
+     *
+     * @scenario surface=service_lifecycle_hooks
+     *
+     * @effects cancel_fires_hook_pair_with_false_when_log_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_dispatches_after_hook_with_false_when_log_missing(): void
     {
         $fired = [];
@@ -99,6 +125,15 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $this->assertFalse($fired[1]['args'][2]);
     }
 
+    /**
+     * 토큰 소비가 성공하면 before_consume_token, after_consume_token 훅이 차례로 나가고 after 의 결과 인자가 true 다.
+     *
+     * @scenario surface=service_lifecycle_hooks
+     *
+     * @effects consume_token_fires_before_and_after_hooks_on_success
+     *
+     * @return void 반환값 없음
+     */
     public function test_consume_token_dispatches_before_and_after_hooks_on_success(): void
     {
         $fired = [];
@@ -135,6 +170,15 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $this->assertTrue($fired[1]['args'][2]);
     }
 
+    /**
+     * 토큰에 맞는 기록이 없어도 두 훅이 나가며 before 의 기록 인자는 null, after 의 결과 인자는 false 다.
+     *
+     * @scenario surface=service_lifecycle_hooks
+     *
+     * @effects consume_token_fires_hook_pair_with_false_when_log_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_consume_token_dispatches_after_hook_with_false_when_log_missing(): void
     {
         $fired = [];

@@ -6,6 +6,7 @@ use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleDispatchMode;
 use App\Enums\ScheduleHistoryMode;
+use App\Enums\ScheduleRejectReason;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Enums\ScheduleType;
@@ -42,7 +43,9 @@ use Throwable;
  * - 「실패만 기록」 행은 성공 시 이력을 남기지 않는다. 행 상태 갱신은 모델 이벤트를 타지 않는다.
  * - 실행이 실패해도 예외를 던지지 않고 실패 이력을 돌려준다. 실행 전 거부만 예외다 — 비활성 확장과 수동 중복은
  *   `ScheduleExecutionException`, 수동 실행의 잠금 저장소 오류는 `ScheduleRunLockUnavailableException`(503).
- *   거부는 이력·last_result·잠금·실패 훅을 건드리지 않는다. 호출자(수동 실행 API, 큐 실행 잡)도 거부를 실패로 마감하지 않는다.
+ *   거부는 last_result·잠금·실패 훅을 건드리지 않는다. 호출자(수동 실행 API, 큐 실행 잡)도 거부를 실패로 마감하지 않는다.
+ *   바로 실행의 거부는 응답으로 끝나 이력이 없고, 큐로 보낸 수동 실행의 거부만 실행 잡이 `recordRejected()` 로
+ *   「거절됨」 이력 한 줄을 남긴다(요청이 이미 202 로 끝나 화면에 알릴 길이 이력뿐이다).
  */
 class ScheduleExecutor
 {
@@ -155,6 +158,34 @@ class ScheduleExecutor
         HookManager::doAction('core.schedule.run_failed', $schedule, $history, $error);
 
         return $history;
+    }
+
+    /**
+     * 큐로 보낸 수동 실행을 시작하지 않고 돌려보낸 사실을 이력에 남깁니다.
+     *
+     * 바로 실행은 거절을 응답(409, 503)으로 곧장 알리지만, 큐로 보낸 실행은 요청이 이미 202 로 끝난 뒤
+     * 워커에서 거절된다 — 누른 사람이 이력 창에서 볼 수 있게 「거절됨」 행 하나만 남긴다.
+     * 실행이 아니므로 「실패만 기록」 행에도 남기고, 행 상태(`last_result`, `last_run_at`, `next_run_at`)와
+     * 잠금, 실행 전후 훅, 실패 훅(실패 알림)은 건드리지 않는다.
+     *
+     * @param  Schedule  $schedule  스케줄
+     * @param  ScheduleRejectReason  $reason  거절 사유
+     * @param  int|null  $userId  수동 실행자 ID
+     * @return ScheduleHistory 남긴 거절 이력
+     */
+    public function recordRejected(Schedule $schedule, ScheduleRejectReason $reason, ?int $userId = null): ScheduleHistory
+    {
+        $now = now();
+
+        return $this->historyRepository->create([
+            'schedule_id' => $schedule->id,
+            'started_at' => $now,
+            'ended_at' => $now,
+            'status' => ScheduleResultStatus::Rejected,
+            'reject_reason' => $reason,
+            'trigger_type' => ScheduleTriggerType::Manual,
+            'triggered_by' => $userId,
+        ]);
     }
 
     /**

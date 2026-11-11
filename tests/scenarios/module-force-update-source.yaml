@@ -1,0 +1,20 @@
+feature: 모듈 강제 업데이트의 출처 판정
+
+description: |
+  모듈을 강제로 업데이트할 때 어디서 받아 올지를 `ModuleManager::resolveForceUpdateSource()` 가 정한다.
+  번들에 있으면 번들을 쓰고, 번들이 없으면 모듈이 밝힌 GitHub 주소로 넘어가며, 둘 다 없으면 출처가 없다(null).
+  번들과 GitHub 주소가 함께 있으면 번들이 먼저다.
+
+axes:
+  case: [bundled_only, github_only, no_source, bundled_and_github]
+
+effects:
+  - force_update_source_is_bundled_when_bundle_exists
+  - force_update_source_falls_back_to_github_without_bundle
+  - force_update_source_is_null_without_bundle_or_github
+  - force_update_source_prefers_bundled_over_github
+
+# E2E axis 없음: 판정은 서버 안의 순수 분기이고 화면 변경이 없다.
+
+test_files:
+  - tests/Unit/Extension/ModuleForceUpdateSourceTest.php

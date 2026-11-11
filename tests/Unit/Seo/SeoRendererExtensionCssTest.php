@@ -52,8 +52,11 @@ class SeoRendererExtensionCssTest extends TestCase
     protected function tearDown(): void
     {
         File::deleteDirectory(dirname($this->templateRoot));
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

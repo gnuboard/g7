@@ -568,6 +568,14 @@ class AnnualNoticeCommandTest extends PluginTestCase
      */
     public function test_core_dispatch_channel_context_preserves_legacy_and_empty_selection(): void
     {
+        // 채널 준비 여부를 고정한다 — 메일 준비 판정은 이 PC 에 저장된 코어 메일 설정을 읽으므로, 고정하지 않으면
+        // 메일을 설정해 둔 개발 PC 에서만 「키 부재」 회차가 메일까지 2건을 보낸다.
+        $checker = $this->createMock(ChannelReadinessCheckerInterface::class);
+        $checker->method('isReady')->willReturnCallback(fn (string $channel) => $channel !== 'mail');
+        $checker->method('check')->willReturnCallback(fn (string $channel) => $channel === 'mail'
+            ? ['ready' => false, 'reason' => 'notification.readiness.mail_from_address_not_configured']
+            : ['ready' => true, 'reason' => null]);
+        $this->app->instance(ChannelReadinessCheckerInterface::class, $checker);
         $user = $this->oldUser();
         Notification::fake();
         foreach ([null, [], ['database']] as $selected) {

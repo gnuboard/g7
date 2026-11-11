@@ -35,8 +35,11 @@ class BaseNotificationTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
@@ -297,8 +300,8 @@ class BaseNotificationTest extends TestCase
     /**
      * 테스트용 구체 알림 클래스를 생성합니다.
      *
-     * @param string $hookPrefix 훅 접두사
-     * @param string $notificationType 알림 유형
+     * @param  string  $hookPrefix  훅 접두사
+     * @param  string  $notificationType  알림 유형
      * @return BaseNotification 테스트용 구체 알림
      */
     private function createConcreteNotification(

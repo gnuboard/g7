@@ -59,6 +59,7 @@ axes:
     - overlay_fragment_passes_route_path
     - list_image_thumbnail_preset
     - list_modal_footer_fixed
+    - popup_list   # 화면이 내놓는 정렬 옵션과 서버 게이트 허용 집합의 대조(PHPUnit)
 
 effects:
   - modal_buttons_in_fixed_footer
@@ -98,6 +99,8 @@ effects:
   - preview_sticky_on_desktop_and_alt_placeholder   # 넓은 화면에서 미리보기가 따라 내려오고 대체 텍스트 칸은 기본 언어 값을 자리표시로 보인다
   - save_lock_reason_and_field_errors_linked   # 저장이 잠긴 이유를 단추가 가리키고 필수·오류 상태를 입력칸에 잇는다
   - actual_size_preview_modal   # 「실제 크기로 보기」가 지금 입력 값·기기를 배율 1 큰 창으로 연다
+  # 화면과 서버 게이트의 대조
+  - sort_options_within_gate   # 레이아웃이 내놓는 정렬 옵션이 전부 서버 게이트의 허용 집합 안에 있다(벗어나면 그 옵션을 고를 때 422)
 
 test_files:
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_list.test.tsx
@@ -105,4 +108,5 @@ test_files:
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/plugin_settings.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupConflictResolver.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupPeriodHint.test.tsx
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Layouts/LayoutSortOptionGateParityTest.php
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_layer_extension.test.tsx

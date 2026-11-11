@@ -162,6 +162,7 @@ class InstallerCompletionEnvFlagTest extends TestCase
      */
     private function frontControllerVerdict(string $env): bool
     {
+        // meta:allow raw-source-read — 구간을 가르는 표식(`// region:install-flag`)이 주석이라 원문이 필요하다. 글자를 대조하지 않고 그 구간을 실행해 판정한다.
         $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/index.php');
         $start = strpos($source, '// region:install-flag');
         $end = strpos($source, '// endregion:install-flag');

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Exports\Declarations;
 
+use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Exports\ExportExclusion;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 
@@ -49,6 +50,8 @@ final class OrderOptionDeclaration implements ModelDeclaration
             'subtotal_paid_amount' => ['type' => 'money', 'personal' => false, 'summable' => true],
             'subtotal_tax_amount' => ['type' => 'money', 'personal' => false, 'summable' => true],
             'subtotal_tax_free_amount' => ['type' => 'money', 'personal' => false, 'summable' => true],
+            // 주문 시점에 기록한 과세 종류 — 이 칸이 없던 시절의 행은 비어 있다
+            'tax_status' => ['type' => 'enum', 'personal' => false, 'enum' => ProductTaxStatus::class],
             'subtotal_earned_points_amount' => ['type' => 'money', 'personal' => false, 'summable' => true],
             'subtotal_cash_equivalent_amount' => ['type' => 'money', 'personal' => false, 'summable' => true],
             'unit_weight' => ['type' => 'decimal', 'personal' => false],

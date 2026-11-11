@@ -12,6 +12,8 @@ axes:
 
 effects:
   - schedule_history_modal_shows_runs_and_output
+  # 큐로 보낸 「즉시 실행」이 워커에서 거절되면(이미 실행 중, 잠금 저장소 오류) 이력 창에 「거절됨」 표시와 사유 한 줄이 보인다(7.2.0)
+  - schedule_history_modal_shows_rejected_run_with_reason
   # 예약 작업 목록의 다음·마지막 실행 시각은 ISO 원문이 아니라 읽을 수 있는 날짜로 보인다(7.1.0 잔여 관측 R-13)
   - schedule_list_shows_readable_run_times
   # 즉시 실행 창을 Esc·X 로 닫고 다시 열어도 지난 결과 없이 [즉시 실행] 버튼이 보인다(2026-10-07 재실측)

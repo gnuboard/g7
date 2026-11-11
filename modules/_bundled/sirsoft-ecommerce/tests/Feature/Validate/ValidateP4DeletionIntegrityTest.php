@@ -39,9 +39,11 @@ class ValidateP4DeletionIntegrityTest extends ModuleTestCase
     protected function tearDown(): void
     {
         Schema::enableForeignKeyConstraints();
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

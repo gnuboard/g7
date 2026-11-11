@@ -46,9 +46,11 @@ class SitemapIndexerLocTest extends TestCase
     {
         HookManager::clearFilter(SitemapIndexer::COLLECT_FILTER);
         AssetUrl::forceBasePrefix(null);
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

@@ -130,6 +130,8 @@ class ResourceFieldDescriber
         'exit_code' => '실행 종료 코드 (0=성공, 그 외=실패)',
         'output' => '실행 표준 출력 내용',
         'error_output' => '실행 표준 에러 출력 내용 (없으면 빈 문자열/null)',
+        'reject_reason' => '거절 사유 코드 (status=rejected 일 때: already_running, run_lock_unavailable, owner_inactive / 그 밖에는 null)',
+        'reject_reason_label' => '거절 사유의 사람이 읽는 문구 (읽는 사람의 언어, 거절 행이 아니면 null)',
         'memory_usage' => '실행 중 최대 메모리 사용량 (바이트)',
 
         // 캐시/파일/집계 (일회성 동작 응답)

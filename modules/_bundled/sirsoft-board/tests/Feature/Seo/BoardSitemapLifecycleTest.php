@@ -104,9 +104,11 @@ class BoardSitemapLifecycleTest extends BoardTestCase
     protected function tearDown(): void
     {
         $this->cleanSitemapRows();
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

@@ -1,5 +1,5 @@
 {
-    "comment": "한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로\n  갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.\n  실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.\n  출력 상자는 즉시 실행 창·큐 작업 상세 창과 같은 상자다(줄 접기, 상자 안 세로 스크롤). 대상은 표시 명칭(작업명)으로 보이고\n  식별자는 작은 글씨로 덧붙인다. 이력을 받는 동안에는 진행 표시를 둔다(예전에는 빈 칸이었다).",
+    "comment": "e2e:allow 브라우저 실측(2026-11-11) — 이력 창에서 거절 행 2건(잠금 저장소 장애, 실행 중)이 1280px 과 390px 두 폭에서 회색 「거절됨」 표시(47x20)와 사유 문구 한 단락으로 그려지고 가로 넘침 0, 같은 창의 성공 행 8건은 종전대로임을 화면에서 확인. 이력 API 응답의 status_label 과 reject_reason_label 이 화면 글자와 같다.\n  한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로\n  갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.\n  실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.\n  출력 상자는 즉시 실행 창·큐 작업 상세 창과 같은 상자다(줄 접기, 상자 안 세로 스크롤). 대상은 표시 명칭(작업명)으로 보이고\n  식별자는 작은 글씨로 덧붙인다. 이력을 받는 동안에는 진행 표시를 둔다(예전에는 빈 칸이었다).\n  큐로 보낸 「즉시 실행」이 워커에서 거절되면(이미 실행 중, 잠금 저장소 오류 등) 「거절됨」 표시와 사유 한 줄이 실린다 —\n  요청은 접수로 끝났으므로 누른 사람이 거절을 알 수 있는 곳이 여기뿐이다.",
     "meta": {
         "is_partial": true,
         "description": "스케줄 실행 이력 모달",
@@ -202,6 +202,18 @@
                                             }
                                         },
                                         {
+                                            "comment": "거절됨: 큐로 보낸 「즉시 실행」을 워커가 시작하지 않고 돌려보낸 기록. 문구는 서버가 보는 사람의 언어로 실어 준다.",
+                                            "id": "history_rejected_{{$idx}}",
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{item.status === 'rejected'}}",
+                                            "props": {
+                                                "color": "gray",
+                                                "size": "md",
+                                                "text": "{{item.status_label}}"
+                                            }
+                                        },
+                                        {
                                             "type": "composite",
                                             "name": "Badge",
                                             "if": "{{item.trigger_type === 'manual'}}",
@@ -259,6 +271,16 @@
                                     "text": "$t:admin.schedules.history.triggered_by|user={{item.triggered_by?.name}}"
                                 }
                             ]
+                        },
+                        {
+                            "id": "history_reject_reason_{{$idx}}",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{item.status === 'rejected' && item.reject_reason_label}}",
+                            "props": {
+                                "className": "mt-2 text-label break-words"
+                            },
+                            "text": "{{item.reject_reason_label}}"
                         },
                         {
                             "type": "basic",

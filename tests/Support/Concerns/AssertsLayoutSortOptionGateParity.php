@@ -216,13 +216,18 @@ trait AssertsLayoutSortOptionGateParity
     }
 
     /**
-     * 옵션 값에서 정렬 컬럼을 뽑습니다 (`valid_to_asc` → `valid_to`).
+     * 옵션 값에서 정렬 컬럼을 뽑습니다 (`valid_to_asc` → `valid_to`, `sort_order:asc` → `sort_order`).
      *
      * @param  string  $value  옵션 값
      * @return string 정렬 컬럼
      */
     private function columnFromOptionValue(string $value): string
     {
+        // `컬럼:방향` — 컬럼 이름 자체가 `_asc` 로 끝날 수 있는 화면(예: `sort_order`)이 쓰는 구분자
+        if (preg_match('/^(.+):(?:asc|desc)$/', $value, $m) === 1) {
+            return $m[1];
+        }
+
         $parts = explode('_', $value);
 
         if (count($parts) > 1 && in_array(end($parts), ['asc', 'desc'], true)) {
@@ -313,8 +318,53 @@ trait AssertsLayoutSortOptionGateParity
             return $this->splitColumns($m[1]);
         }
 
-        if (preg_match("/'sort_by'\s*=>\s*\[.*?Rule::in\(\s*\[(.*?)\]/s", $source, $m)) {
+        // `Rule::in(Foo::SORTABLE_COLUMNS)` — 상수를 가리키면 그 값을 읽는다. 이 가지가 없으면 아래 가지가 같은 규칙 배열을
+        // 지나 다음 줄(`sort_order` 의 asc, desc)을 정렬 컬럼으로 오인한다.
+        if (preg_match("/'sort_by'\s*=>\s*\[[^\]]*?Rule::in\(\s*([A-Za-z_\\\\][A-Za-z0-9_\\\\]*)::([A-Z_][A-Z0-9_]*)\s*\)/", $source, $m)) {
+            $columns = $this->resolveClassConstant($class, $source, $m[1], $m[2]);
+
+            if ($columns !== []) {
+                return $columns;
+            }
+        }
+
+        if (preg_match("/'sort_by'\s*=>\s*\[[^\]]*?Rule::in\(\s*\[(.*?)\]/s", $source, $m)) {
             return $this->splitColumns(str_replace("'", '', $m[1]));
+        }
+
+        return [];
+    }
+
+    /**
+     * FormRequest 소스가 가리키는 클래스 상수(문자열 목록)를 읽습니다.
+     *
+     * @param  string  $requestClass  FormRequest 클래스명 (`self`·`static` 과 네임스페이스의 기준)
+     * @param  string  $source  FormRequest 소스
+     * @param  string  $name  소스에 적힌 클래스 이름 (짧은 이름·전체 이름·`self`)
+     * @param  string  $constant  상수 이름
+     * @return array<int, string> 상수 값 중 문자열 항목 (읽지 못하면 빈 배열)
+     */
+    private function resolveClassConstant(string $requestClass, string $source, string $name, string $constant): array
+    {
+        $reflection = new ReflectionClass($requestClass);
+        $short = ltrim($name, '\\');
+
+        if (in_array($short, ['self', 'static'], true)) {
+            $candidates = [$requestClass];
+        } else {
+            $candidates = [$short, $reflection->getNamespaceName().'\\'.$short];
+
+            if (preg_match('/^use\s+([A-Za-z0-9_\\\\]+\\\\'.preg_quote($short, '/').')\s*;/m', $source, $use)) {
+                array_unshift($candidates, $use[1]);
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            if (class_exists($candidate) && defined($candidate.'::'.$constant)) {
+                $value = constant($candidate.'::'.$constant);
+
+                return is_array($value) ? array_values(array_filter($value, 'is_string')) : [];
+            }
         }
 
         return [];

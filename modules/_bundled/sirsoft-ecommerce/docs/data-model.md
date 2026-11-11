@@ -156,6 +156,11 @@
 (`Order::pgTaxFreeAmount()` = 면세 + 영세, `Order::pgTaxableAmount()` = 과세표준 − 영세). 그래서 결제사 매출 내역에는
 영세가 면세로 보이며, 세무 신고의 영세 매출은 쇼핑몰의 `total_zero_rated_amount` 를 기준으로 합니다. 영세를 파는 상점은
 결제사와 복합과세(또는 영세율) 계약이 필요합니다 — 면세 상품을 파는 조건과 같습니다.
+
+내보내기(1.4.0)는 이 장부를 그대로 싣습니다 — 주문 파일에 `total_zero_rated_amount`(영세율 금액 합계, 합계 행 대상), 주문 옵션과
+상품 옵션 파일에 `tax_status`(과세 종류)가 항목으로 있습니다. 주문 옵션의 `tax_status` 는 주문 시점에 기록한 값이라 그 칸이 없던
+시절의 행은 비어 있고, 상품 옵션의 `tax_status` 는 비어 있으면 상품 값을 따른다는 뜻입니다. 모델에 컬럼을 더하면 내보내기 선언
+(`Exports\Declarations\*Declaration`)의 `fields()` 나 `excluded()` 에도 반드시 함께 적습니다(선언 누락은 시험이 잡습니다).
 본문 미디어(1.3.4, `ContentMedia`)는 상품 설명·상품 공통 정보 편집기 본문에 넣은 이미지·동영상·오디오입니다. 이 모듈의 **범용 첨부 표
 `ecommerce_attachments`**(게시판 `board_attachments`·페이지 `page_attachments` 와 같은 모양, #887)에 `collection = content_media` 로 둡니다 —
 `EcommerceAttachment` 가 그 표의 범용 모델이고, `ContentMedia` 는 본문 미디어 컬렉션만 보는 범위 모델입니다(다른 쓰임새가 생기면 컬렉션을 나눠

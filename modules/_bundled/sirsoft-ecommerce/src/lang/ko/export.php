@@ -26,6 +26,7 @@ return [
             'total_tax_amount' => '과세 금액 합계',
             'total_vat_amount' => '부가세 합계',
             'total_tax_free_amount' => '면세 금액 합계',
+            'total_zero_rated_amount' => '영세율 금액 합계',
             'total_points_used_amount' => '마일리지 사용액',
             'total_deposit_used_amount' => '예치금 사용액',
             'total_due_amount' => '결제 예정 금액',
@@ -163,6 +164,7 @@ return [
             'subtotal_paid_amount' => '실결제 소계',
             'subtotal_tax_amount' => '과세 소계',
             'subtotal_tax_free_amount' => '면세 소계',
+            'tax_status' => '과세 종류',
             'subtotal_earned_points_amount' => '적립 예정 마일리지 소계',
             'subtotal_cash_equivalent_amount' => '현금성 결제 소계',
             'unit_weight' => '단위 무게(g)',
@@ -200,6 +202,7 @@ return [
             'mileage_value' => '적립 마일리지 값',
             'mileage_type' => '적립 방식',
             'is_default' => '기본 옵션 여부',
+            'tax_status' => '옵션 과세 종류',
             // 상품 단위 값과 같은 이름이면 「옵션 1개당 1행」 파일에서 두 열을 구별할 수 없다
             'sku' => '옵션 SKU',
             'list_price' => '옵션 정가',

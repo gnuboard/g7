@@ -1605,7 +1605,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | 커맨드 | 없으면 생기는 일 |
 |---|---|
 | `cancel-pending-orders` | 입금하지 않은 주문이 재고를 계속 점유합니다 |
-| `prune-expired-carts` · `prune-temp-orders` · `prune-temp-product-images` | 임시 데이터가 무한히 쌓입니다 |
+| `prune-expired-carts` · `prune-temp-orders` · `prune-temp-product-images` | 임시 데이터가 무한히 쌓입니다 (`prune-temp-product-images` 는 이름과 달리 저장하지 않았거나 본문에서 빠진 본문 미디어도 같은 보존기간으로 지웁니다) |
 | `earn-mileage` | "배송완료 N일 후 적립" 같은 지연 적립이 영영 이루어지지 않습니다 |
 | `expire-mileage` · `notify-expiring-mileage` | 소멸 기한이 지난 마일리지가 계속 사용 가능하고, 사전 안내가 나가지 않습니다 |
 | `reconcile-mileage-balance` | 표시용 잔액 캐시가 원장과 어긋난 채 남습니다 (원장이 SSoT 이므로 금전 판정 자체는 안전합니다) |

@@ -89,8 +89,11 @@ class GenericNotificationViaTest extends TestCase
         NotificationTemplate::where('definition_id', $this->definition->id)->delete();
         $this->definition->delete();
 
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

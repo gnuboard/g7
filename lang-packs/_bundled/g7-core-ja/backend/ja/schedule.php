@@ -88,6 +88,12 @@ return [
         'failed' => '失敗',
         'running' => '実行中',
         'never' => '未実行',
+        'rejected' => '拒否',
+    ],
+    'reject_reason' => [
+        'already_running' => '前の実行がまだ終了していないため、実行しませんでした（重複実行防止）。',
+        'run_lock_unavailable' => '実行ロックストア（キャッシュ）が使用できないため、実行しませんでした。',
+        'owner_inactive' => 'このスケジュールを所有する拡張が無効のため、実行しませんでした。',
     ],
     'trigger_type' => [
         'scheduled' => '予約実行',

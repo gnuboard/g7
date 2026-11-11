@@ -204,7 +204,9 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
      */
     public function getRecentRuns(int $limit = 20, ?string $excludeCodeEventPrefix = null): Collection
     {
-        $query = ScheduleHistory::query()->with('schedule');
+        // 거절 행은 실행이 아니다 — 「최근 실행」 목록에 싣지 않는다(그 스케줄의 이력 창에서 본다).
+        $query = ScheduleHistory::query()->with('schedule')
+            ->where('status', '!=', ScheduleResultStatus::Rejected);
 
         if ($excludeCodeEventPrefix !== null && $excludeCodeEventPrefix !== '') {
             $pattern = addcslashes($excludeCodeEventPrefix, '\\%_').'%';

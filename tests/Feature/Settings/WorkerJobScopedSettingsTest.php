@@ -80,7 +80,7 @@ class WorkerJobScopedSettingsTest extends TestCase
     public function 설정이_바뀌면_알림_채널_드라이버를_새로_만든다(): void
     {
         $mirror = Mockery::mock(ExtensionSettingsMirror::class);
-        $mirror->shouldReceive('refreshCore', 'refreshAllModules', 'refreshAllPlugins');
+        $mirror->shouldReceive('refreshCore', 'refreshAllModules', 'refreshAllPlugins', 'refreshAllTemplates');
         $this->app->instance(ExtensionSettingsMirror::class, $mirror);
 
         $manager = $this->app->make(ChannelManager::class);

@@ -74,7 +74,7 @@ class ScheduleListRequest extends FormRequest
             'extension_identifier' => 'nullable|string|max:255',
             'type' => $withAll(ScheduleType::values()),
             'status' => $withAll(['active', 'inactive']),
-            'last_result' => $withAll(ScheduleResultStatus::values()),
+            'last_result' => $withAll(ScheduleResultStatus::lastResultValues()),
 
             // 상세 필터
             'frequency' => $withAll(ScheduleFrequency::values()),

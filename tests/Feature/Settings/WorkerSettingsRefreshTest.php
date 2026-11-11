@@ -61,7 +61,7 @@ class WorkerSettingsRefreshTest extends TestCase
         $mirror->shouldReceive('refreshCore')->andReturnUsing(function () use (&$count) {
             $count++;
         });
-        $mirror->shouldReceive('refreshAllModules', 'refreshAllPlugins');
+        $mirror->shouldReceive('refreshAllModules', 'refreshAllPlugins', 'refreshAllTemplates');
         $this->app->instance(ExtensionSettingsMirror::class, $mirror);
 
         return function () use (&$count) {
@@ -128,6 +128,7 @@ class WorkerSettingsRefreshTest extends TestCase
         $mirror->shouldReceive('refreshCore')->once();
         $mirror->shouldReceive('refreshAllModules')->once();
         $mirror->shouldReceive('refreshAllPlugins')->once();
+        $mirror->shouldReceive('refreshAllTemplates')->once();
         $this->app->instance(ExtensionSettingsMirror::class, $mirror);
 
         $this->startJob();

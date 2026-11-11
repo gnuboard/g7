@@ -56,8 +56,11 @@ class TempAttachmentLinkOrderTest extends FeatureTestCase
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'link-order-%')->forceDelete();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

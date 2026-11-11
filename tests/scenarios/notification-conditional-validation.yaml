@@ -1,0 +1,31 @@
+feature: 알림 템플릿 제목과 알림 정의 채널의 조건부 검증
+
+description: |
+  알림 템플릿 수정 요청과 알림 정의 수정 요청의 검증 규칙을 저장 구조와 실행 시점 채널 목록에 맞춘다.
+
+  템플릿 제목(subject)은 컬럼이 비어 있어도 되므로 보내지 않거나 null 로 보내도 통과한다. 보냈다면 다국어 배열
+  형식은 그대로 검증한다. 본문(body)은 컬럼이 필수이므로 계속 필수다.
+
+  정의의 채널(channels)은 설정에 선언된 채널과 확장이 `core.notification.filter_available_channels` 필터로
+  더한 채널을 허용한다. 목록에 없는 임의 문자열은 거절한다. 다만 그 정의에 이미 저장된 채널은 목록 밖이어도
+  통과시켜, 채널을 주던 확장이 꺼진 뒤에도 기존 정의를 고칠 수 있게 한다.
+
+axes:
+  case: [subject_omitted, subject_null, subject_not_array, body_omitted,
+         channel_available, channel_unknown, channel_persisted_unavailable, channel_added_by_hook]
+
+effects:
+  # 템플릿 수정 요청
+  - notification_template_subject_is_optional              # subject 를 보내지 않거나 null 이어도 검증을 통과한다
+  - notification_template_subject_validated_when_present   # subject 가 배열이 아니면 subject 오류로 실패한다
+  - notification_template_body_remains_required            # body 가 없으면 body 오류로 실패한다
+  # 정의 수정 요청
+  - notification_definition_accepts_available_channel      # 설정에 선언된 채널은 통과한다
+  - notification_definition_rejects_unknown_channel        # 목록에 없는 채널은 channels.0 오류로 실패한다
+  - notification_definition_accepts_persisted_channel      # 이미 저장된 채널은 목록 밖이어도 통과한다
+  - notification_definition_accepts_hook_added_channel     # 필터 훅으로 더한 채널은 규칙을 통과한다
+
+# E2E axis 없음: 판정은 전부 서버측 검증 규칙이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - tests/Feature/Api/Admin/NotificationConditionalValidationTest.php

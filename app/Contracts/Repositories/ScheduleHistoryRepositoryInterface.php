@@ -93,7 +93,7 @@ interface ScheduleHistoryRepositoryInterface
      * 7.2.0 부터 예약 작업 대부분이 `schedules` 행(`source=database`)이라, 코드 예약 이력만
      * 보여 주는 화면은 거의 비어 버린다. 이름 접두사로 걸러 낼 코드 이력을 지정할 수 있다 —
      * 예전 판 웹 러너가 DB 스케줄 이벤트(`schedule:{id}`)에 실행기 이력과 짝으로 남긴 기록이
-     * 같은 실행을 두 줄로 보이게 하기 때문이다.
+     * 같은 실행을 두 줄로 보이게 하기 때문이다. 거절 행(`status=rejected`)은 실행이 아니라서 싣지 않는다.
      *
      * @param  int  $limit  최대 건수
      * @param  string|null  $excludeCodeEventPrefix  빼낼 코드 이력의 이벤트 이름 접두사 (null 이면 빼지 않음)

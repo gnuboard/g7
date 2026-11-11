@@ -74,6 +74,70 @@ class ScheduleHistoryOutputTest extends TestCase
     }
 
     /**
+     * 큐로 보낸 수동 실행의 거절 행은 상태 「거절됨」과 사유(코드, 읽는 사람 언어의 문구)를 싣고, 상태로 걸러 볼 수 있다.
+     * 스케줄 목록의 「최근 결과」 조건은 거절을 받지 않는다(거절은 실행 결과가 아니다).
+     *
+     * @scenario surface=admin_schedule_history_modal
+     *
+     * @effects schedule_history_modal_shows_rejected_run_with_reason
+     *
+     * @return void 반환값 없음
+     */
+    public function test_history_list_shows_rejected_row_with_reason(): void
+    {
+        $admin = $this->makeScheduleReader();
+        $schedule = Schedule::create([
+            'name' => '거절 확인 스케줄',
+            'description' => '거절 확인',
+            'type' => 'artisan',
+            'command' => 'inspire',
+            'expression' => '* * * * *',
+            'frequency' => 'everyMinute',
+            'is_active' => false,
+            'created_by' => $admin->id,
+        ]);
+        ScheduleHistory::create([
+            'schedule_id' => $schedule->id,
+            'started_at' => now()->subMinutes(2),
+            'ended_at' => now()->subMinute(),
+            'duration' => 1,
+            'status' => 'success',
+            'trigger_type' => 'scheduled',
+        ]);
+        ScheduleHistory::create([
+            'schedule_id' => $schedule->id,
+            'started_at' => now(),
+            'ended_at' => now(),
+            'status' => 'rejected',
+            'reject_reason' => 'already_running',
+            'trigger_type' => 'manual',
+            'triggered_by' => $admin->id,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer '.$admin->createToken('t')->plainTextToken,
+            'Accept' => 'application/json',
+            'Accept-Language' => 'ko',
+        ];
+
+        $all = $this->withHeaders($headers)->getJson("/api/admin/schedules/{$schedule->id}/history");
+        $all->assertStatus(200);
+        $byStatus = collect($all->json('data.data'))->keyBy('status');
+        $this->assertSame('already_running', $byStatus['rejected']['reject_reason'] ?? null);
+        $this->assertSame(__('schedule.result.rejected', [], 'ko'), $byStatus['rejected']['status_label'] ?? null);
+        $this->assertSame(__('schedule.reject_reason.already_running', [], 'ko'), $byStatus['rejected']['reject_reason_label'] ?? null);
+        $this->assertSame($admin->name, $byStatus['rejected']['triggered_by']['name'] ?? null);
+        $this->assertNull($byStatus['success']['reject_reason']);
+        $this->assertNull($byStatus['success']['reject_reason_label']);
+
+        $filtered = $this->withHeaders($headers)->getJson("/api/admin/schedules/{$schedule->id}/history?status=rejected");
+        $filtered->assertStatus(200);
+        $this->assertSame(['rejected'], array_column($filtered->json('data.data'), 'status'));
+
+        $this->withHeaders($headers)->getJson('/api/admin/schedules?last_result=rejected')->assertStatus(422);
+    }
+
+    /**
      * 스케줄 조회 권한만 가진 관리자를 만듭니다.
      *
      * @return User 관리자

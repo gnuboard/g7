@@ -17,6 +17,11 @@ class ChannelReadinessServiceTest extends TestCase
 
     private ChannelReadinessService $service;
 
+    /**
+     * 설정 저장소 목을 만들어 시험 대상 서비스에 주입한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -24,14 +29,28 @@ class ChannelReadinessServiceTest extends TestCase
         $this->service = new ChannelReadinessService($this->configRepo);
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
      * SMTP 설정 완료 시 mail 채널 ready
+     *
+     * @scenario case=mail_smtp
+     *
+     * @effects channel_readiness_mail_smtp_ready_when_host_and_sender_configured
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_smtp_ready_when_configured(): void
     {
@@ -52,6 +71,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * SMTP host 미설정 시 not ready
+     *
+     * @scenario case=mail_smtp
+     *
+     * @effects channel_readiness_mail_smtp_not_ready_without_host
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_smtp_not_ready_when_host_empty(): void
     {
@@ -71,6 +96,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * from_address 기본값(noreply@example.com) 시 not ready
+     *
+     * @scenario case=mail_from_address
+     *
+     * @effects channel_readiness_mail_not_ready_with_default_from_address
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_not_ready_when_from_address_is_default(): void
     {
@@ -90,6 +121,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * Mailgun 설정 미완료 시 not ready
+     *
+     * @scenario case=mail_mailgun
+     *
+     * @effects channel_readiness_mail_mailgun_not_ready_without_domain
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_mailgun_not_ready_when_domain_empty(): void
     {
@@ -109,6 +146,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * SES 설정 미완료 시 not ready
+     *
+     * @scenario case=mail_ses
+     *
+     * @effects channel_readiness_mail_ses_not_ready_without_key
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_ses_not_ready_when_key_empty(): void
     {
@@ -128,6 +171,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * log mailer는 항상 ready
+     *
+     * @scenario case=mail_log
+     *
+     * @effects channel_readiness_mail_log_mailer_always_ready
+     *
+     * @return void 반환값 없음
      */
     public function test_mail_log_mailer_always_ready(): void
     {
@@ -144,6 +193,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * database 채널 — notifications 테이블 존재 시 ready
+     *
+     * @scenario case=database
+     *
+     * @effects channel_readiness_database_ready_when_notifications_table_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_database_ready_when_table_exists(): void
     {
@@ -157,6 +212,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * 알 수 없는 채널은 기본 ready
+     *
+     * @scenario case=unknown_channel
+     *
+     * @effects channel_readiness_unknown_channel_defaults_to_ready
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_channel_defaults_to_ready(): void
     {
@@ -166,6 +227,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * isReady() 편의 메서드
+     *
+     * @scenario case=is_ready_shortcut
+     *
+     * @effects channel_readiness_is_ready_returns_check_result_as_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_is_ready_returns_boolean(): void
     {
@@ -183,6 +250,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * checkAll() 일괄 체크
+     *
+     * @scenario case=check_all
+     *
+     * @effects channel_readiness_check_all_returns_result_per_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_check_all_returns_all_channels(): void
     {
@@ -208,6 +281,12 @@ class ChannelReadinessServiceTest extends TestCase
 
     /**
      * 프로퍼티 캐시 — 동일 채널 반복 호출 시 1회만 체크
+     *
+     * @scenario case=instance_cache
+     *
+     * @effects channel_readiness_result_cached_within_instance
+     *
+     * @return void 반환값 없음
      */
     public function test_result_is_cached_within_instance(): void
     {

@@ -1,8 +1,11 @@
-<!-- 한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로
+<!-- e2e:allow 브라우저 실측(2026-11-11) — 이력 창에서 거절 행 2건(잠금 저장소 장애, 실행 중)이 1280px 과 390px 두 폭에서 회색 「거절됨」 표시(47x20)와 사유 문구 한 단락으로 그려지고 가로 넘침 0, 같은 창의 성공 행 8건은 종전대로임을 화면에서 확인. 이력 API 응답의 status_label 과 reject_reason_label 이 화면 글자와 같다.
+  한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로
   갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.
   실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.
   출력 상자는 즉시 실행 창·큐 작업 상세 창과 같은 상자다(줄 접기, 상자 안 세로 스크롤). 대상은 표시 명칭(작업명)으로 보이고
-  식별자는 작은 글씨로 덧붙인다. 이력을 받는 동안에는 진행 표시를 둔다(예전에는 빈 칸이었다). -->
+  식별자는 작은 글씨로 덧붙인다. 이력을 받는 동안에는 진행 표시를 둔다(예전에는 빈 칸이었다).
+  큐로 보낸 「즉시 실행」이 워커에서 거절되면(이미 실행 중, 잠금 저장소 오류 등) 「거절됨」 표시와 사유 한 줄이 실린다 —
+  요청은 접수로 끝났으므로 누른 사람이 거절을 알 수 있는 곳이 여기뿐이다. -->
 <partial description="스케줄 실행 이력 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_history_modal">
   <modal data-type="composite" data-ref="schedule_history_modal" title="$t:admin.schedules.modals.history_title" size="lg">
     <!-- 이력은 목록 응답에 없어 창 안에서 따로 받는다. 쪽 번호를 전역에서 읽으므로, 아래 쪽 이동이 그 값을 바꾸고 이 데이터소스를 다시 불러 다음 쪽을 가져온다.
@@ -30,6 +33,8 @@
             <badge data-type="composite" data-if="{{item.status === 'success'}}" color="green" size="md" text="$t:admin.schedules.result.success"/>
             <badge data-type="composite" data-if="{{item.status === 'failed'}}" color="red" size="md" text="$t:admin.schedules.result.failed"/>
             <badge data-type="composite" data-if="{{item.status === 'running'}}" color="yellow" size="md" text="$t:admin.schedules.result.running"/>
+            <!-- 거절됨: 큐로 보낸 「즉시 실행」을 워커가 시작하지 않고 돌려보낸 기록. 문구는 서버가 보는 사람의 언어로 실어 준다. -->
+            <badge data-type="composite" data-ref="history_rejected_{{$idx}}" data-if="{{item.status === 'rejected'}}" color="gray" size="md" text="{{item.status_label}}"/>
             <badge data-type="composite" data-if="{{item.trigger_type === 'manual'}}" color="blue" size="md" text="$t:admin.schedules.trigger_type.manual"/>
             <badge data-type="composite" data-if="{{item.trigger_type === 'scheduled'}}" color="gray" size="md" text="$t:admin.schedules.trigger_type.scheduled"/>
           </div>
@@ -40,6 +45,7 @@
           <span data-if="{{item.memory_usage_formatted}}">$t:admin.schedules.history.memory|memory={{item.memory_usage_formatted}}</span>
           <span data-if="{{item.triggered_by?.name}}">$t:admin.schedules.history.triggered_by|user={{item.triggered_by?.name}}</span>
         </div>
+        <p data-ref="history_reject_reason_{{$idx}}" data-if="{{item.status === 'rejected' &amp;&amp; item.reject_reason_label}}" class="mt-2 text-label break-words">{{item.reject_reason_label}}</p>
         <div data-if="{{item.output}}" class="mt-2">
           <pre class="max-h-40 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg">{{item.output}}</pre>
         </div>

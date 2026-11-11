@@ -81,6 +81,33 @@ describe('실행 이력 창', () => {
     expect(raw).not.toContain('triggered_by_name');
     expect(raw).toContain('item.triggered_by?.name');
   });
+
+  /**
+   * 큐로 보낸 「즉시 실행」이 워커에서 거절되면 요청은 이미 접수로 끝나 있다 — 이력 창의 「거절됨」 표시와 사유 한 줄이
+   * 누른 사람이 거절을 아는 유일한 자리다. 문구는 서버가 보는 사람의 언어로 실어 준 값을 그대로 쓴다.
+   *
+   * @scenario surface=admin_schedule_history_modal
+   * @effects schedule_history_modal_shows_rejected_run_with_reason
+   */
+  it('거절된 회차는 거절됨 표시와 사유를 보인다', () => {
+    const badge = collect(modal, (n) => n.name === 'Badge' && n.if === "{{item.status === 'rejected'}}");
+    expect(badge.length).toBe(1);
+    expect(badge[0].props.text).toBe('{{item.status_label}}');
+
+    const reason = collect(modal, (n) => typeof n.if === 'string' && n.if.includes('item.reject_reason_label'));
+    expect(reason.length).toBe(1);
+    expect(reason[0].if).toContain("item.status === 'rejected'");
+    expect(JSON.stringify(reason[0])).toContain('{{item.reject_reason_label}}');
+
+    // 성공·실패·실행 중 표시는 거절 회차에 함께 뜨지 않는다(상태별로 하나씩만 맞는다)
+    const statusBadges = collect(modal, (n) => n.name === 'Badge' && /item\.status === '/.test(String(n.if ?? '')));
+    expect(statusBadges.map((n) => n.if).sort()).toEqual([
+      "{{item.status === 'failed'}}",
+      "{{item.status === 'rejected'}}",
+      "{{item.status === 'running'}}",
+      "{{item.status === 'success'}}",
+    ]);
+  });
 });
 
 describe('실행 이력 열기 동작', () => {

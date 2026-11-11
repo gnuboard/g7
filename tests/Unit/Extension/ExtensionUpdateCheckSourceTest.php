@@ -71,9 +71,11 @@ class ExtensionUpdateCheckSourceTest extends TestCase
     protected function tearDown(): void
     {
         File::deleteDirectory($this->bundledDir);
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

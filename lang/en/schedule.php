@@ -103,6 +103,14 @@ return [
         'failed' => 'Failed',
         'running' => 'Running',
         'never' => 'Never Run',
+        'rejected' => 'Rejected',
+    ],
+
+    // Reject reasons (why a queued manual run was not started — the "Rejected" row in the run history)
+    'reject_reason' => [
+        'already_running' => 'Not run because the previous run has not finished yet (overlap prevention).',
+        'run_lock_unavailable' => 'Not run because the run lock store (cache) is unavailable.',
+        'owner_inactive' => 'Not run because the extension that owns this schedule is inactive.',
     ],
 
     // Trigger types

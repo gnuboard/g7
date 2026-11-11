@@ -757,7 +757,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_form.g7.html
 │           ├── _modal_delete.g7.html
 │           ├── _modal_duplicate.g7.html
-│           ├── _modal_history.g7.html
+│           ├── _modal_history.g7.html (실행 이력 창 — 회차별 상태·출력. 큐로 보낸 「즉시 실행」의 거절은 `status === 'rejected'` 표시와 서버가 실어 준 `status_label`·`reject_reason_label` 로 보인다)
 │           ├── _modal_run.g7.html
 │           ├── _modal_bulk_status.g7.html (일괄 활성·비활성 확인)
 │           ├── _modal_security.g7.html (보안 정책 — 읽기 전용, 서버 관리자 덮어쓰기 파일 상태 포함)

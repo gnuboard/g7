@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ScheduleRejectReason;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,6 +41,7 @@ class ScheduleHistory extends Model
         'ended_at',
         'duration',
         'status',
+        'reject_reason',
         'exit_code',
         'memory_usage',
         'output',
@@ -57,6 +59,7 @@ class ScheduleHistory extends Model
     {
         return [
             'status' => ScheduleResultStatus::class,
+            'reject_reason' => ScheduleRejectReason::class,
             'trigger_type' => ScheduleTriggerType::class,
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
@@ -180,6 +183,16 @@ class ScheduleHistory extends Model
     public function isRunning(): bool
     {
         return $this->status === ScheduleResultStatus::Running;
+    }
+
+    /**
+     * 시작하지 않고 거절된 기록인지 확인합니다.
+     *
+     * @return bool
+     */
+    public function isRejected(): bool
+    {
+        return $this->status === ScheduleResultStatus::Rejected;
     }
 
     /**

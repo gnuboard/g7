@@ -33,6 +33,11 @@ class ModuleSettingsServiceTest extends TestCase
 
     private string $testSettingsDir;
 
+    /**
+     * 컨테이너의 매니저와 레이아웃 서비스로 시험 대상 서비스를 만들고 설정 폴더 경로를 잡는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +62,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 모듈 조회 시 기본값 반환
+     *
+     * @scenario operation=get
+     *
+     * @effects module_settings_get_returns_null_for_unknown_module
+     *
+     * @return void 반환값 없음
      */
     public function test_get_returns_default_when_module_not_found(): void
     {
@@ -67,6 +78,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 모듈에 기본값 지정 시 해당 기본값 반환
+     *
+     * @scenario operation=get
+     *
+     * @effects module_settings_get_returns_given_default_for_unknown_module
+     *
+     * @return void 반환값 없음
      */
     public function test_get_returns_custom_default_when_module_not_found(): void
     {
@@ -78,6 +95,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 모듈 전체 설정 조회 성공
+     *
+     * @scenario operation=get
+     *
+     * @effects module_settings_get_returns_all_settings_without_key
+     *
+     * @return void 반환값 없음
      */
     public function test_get_returns_all_settings_when_key_is_null(): void
     {
@@ -113,6 +136,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 특정 키의 설정값 조회 성공
+     *
+     * @scenario operation=get
+     *
+     * @effects module_settings_get_returns_value_for_key
+     *
+     * @return void 반환값 없음
      */
     public function test_get_returns_specific_key_value(): void
     {
@@ -143,6 +172,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 키 조회 시 기본값 반환
+     *
+     * @scenario operation=get
+     *
+     * @effects module_settings_get_returns_default_for_missing_key
+     *
+     * @return void 반환값 없음
      */
     public function test_get_returns_default_for_missing_key(): void
     {
@@ -170,6 +205,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 중첩된 키 값 조회 (dot notation)
+     *
+     * @scenario operation=get
+     *
+     * @effects module_settings_get_resolves_dot_notation_key
+     *
+     * @return void 반환값 없음
      */
     public function test_get_returns_nested_key_value(): void
     {
@@ -208,6 +249,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 모듈 저장 시 false 반환
+     *
+     * @scenario operation=save
+     *
+     * @effects module_settings_save_fails_for_unknown_module
+     *
+     * @return void 반환값 없음
      */
     public function test_save_returns_false_when_module_not_found(): void
     {
@@ -218,6 +265,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 모듈 설정 저장 성공
+     *
+     * @scenario operation=save
+     *
+     * @effects module_settings_save_succeeds_for_new_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_save_stores_settings_successfully(): void
     {
@@ -254,6 +307,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 기존 설정과 병합되는지 확인
+     *
+     * @scenario operation=save
+     *
+     * @effects module_settings_save_succeeds_over_existing_settings_file
+     *
+     * @return void 반환값 없음
      */
     public function test_save_merges_with_existing_settings(): void
     {
@@ -301,6 +360,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 민감한 필드가 암호화되어 저장되는지 확인
+     *
+     * @scenario operation=save
+     *
+     * @effects module_settings_save_succeeds_with_sensitive_field_schema
+     *
+     * @return void 반환값 없음
      */
     public function test_save_encrypts_sensitive_fields(): void
     {
@@ -349,6 +414,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * 민감한 필드가 복호화되어 조회되는지 확인
+     *
+     * @scenario operation=get
+     *
+     * @effects module_settings_get_decrypts_sensitive_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_get_decrypts_sensitive_fields(): void
     {
@@ -406,6 +477,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * frontend_schema가 없으면 빈 배열 반환
+     *
+     * @scenario operation=frontend_exposure
+     *
+     * @effects module_settings_frontend_exposure_omits_module_without_frontend_schema
+     *
+     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_returns_empty_when_no_frontend_schema(): void
     {
@@ -448,6 +525,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * frontend_schema.expose: true인 카테고리만 포함
+     *
+     * @scenario operation=frontend_exposure
+     *
+     * @effects module_settings_frontend_exposure_filters_by_category_expose
+     *
+     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_filters_by_category_expose(): void
     {
@@ -523,6 +606,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * frontend_schema.fields.expose: true인 필드만 포함
+     *
+     * @scenario operation=frontend_exposure
+     *
+     * @effects module_settings_frontend_exposure_filters_by_field_expose
+     *
+     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_filters_by_field_expose(): void
     {
@@ -598,6 +687,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * fields 정의가 없으면 카테고리 전체 포함
+     *
+     * @scenario operation=frontend_exposure
+     *
+     * @effects module_settings_frontend_exposure_includes_whole_category_without_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_includes_all_fields_when_no_fields_defined(): void
     {
@@ -669,6 +764,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * hasSettings가 false인 모듈은 제외
+     *
+     * @scenario operation=frontend_exposure
+     *
+     * @effects module_settings_frontend_exposure_skips_modules_without_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_skips_modules_without_settings(): void
     {
@@ -698,6 +799,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * reset() 메서드가 설정 파일을 삭제하는지 확인
+     *
+     * @scenario operation=reset
+     *
+     * @effects module_settings_reset_succeeds_when_settings_file_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_reset_deletes_settings_file(): void
     {
@@ -729,6 +836,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * clearCache() 메서드가 캐시를 초기화하는지 확인
+     *
+     * @scenario operation=clear_cache
+     *
+     * @effects module_settings_clear_cache_runs_without_error
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_cache_clears_settings_cache(): void
     {
@@ -764,6 +877,12 @@ class ModuleSettingsServiceTest extends TestCase
 
     /**
      * deleteSettingsDirectory() 메서드가 디렉토리를 삭제하는지 확인
+     *
+     * @scenario operation=delete_directory
+     *
+     * @effects module_settings_delete_settings_directory_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_settings_directory_removes_directory(): void
     {
@@ -793,9 +912,17 @@ class ModuleSettingsServiceTest extends TestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

@@ -70,8 +70,11 @@ class CoreActivityLogListenerTest extends TestCase
         if ($container = Mockery::getContainer()) {
             $this->addToAssertionCount($container->mockery_getExpectationCount());
         }
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ═══════════════════════════════════════════

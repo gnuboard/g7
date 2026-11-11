@@ -42,6 +42,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     /** @var MockInterface&StorageInterface */
     private $storageMock;
 
+    /**
+     * 회원, 구매확정 주문옵션, 전시중 리뷰를 만들고 파일 저장소를 목으로 바꿉니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -94,16 +99,33 @@ class ReviewImageControllerTest extends ModuleTestCase
             ->give(fn () => $this->storageMock);
     }
 
+    /**
+     * Mockery 기대치를 검증하고 닫은 뒤 부모 정리를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ========================================
     // store() — 이미지 업로드
     // ========================================
 
+    /**
+     * 본인 리뷰에 이미지를 올리면 201 과 함께 이미지 행이 저장되는지 확인
+     *
+     * @scenario area=upload
+     *
+     * @effects review_image_upload_creates_row_with_201
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_user_can_upload_review_image(): void
     {
@@ -126,6 +148,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * image 필드 없이 올리면 422 로 거절되는지 확인
+     *
+     * @scenario area=upload
+     *
+     * @effects review_image_upload_requires_image_field
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_requires_image_field(): void
     {
@@ -140,6 +171,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * 이미지가 아닌 파일(PDF)을 올리면 422 로 거절되는지 확인
+     *
+     * @scenario area=upload
+     *
+     * @effects review_image_upload_rejects_non_image_file
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_rejects_non_image_file(): void
     {
@@ -157,6 +197,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * 기본 용량 한도(10MB)를 넘는 이미지를 올리면 422 로 거절되는지 확인
+     *
+     * @scenario area=upload
+     *
+     * @effects review_image_upload_rejects_oversized_file
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_rejects_oversized_file(): void
     {
@@ -174,6 +223,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * 다른 회원의 리뷰에 이미지를 올리면 403 으로 거절되는지 확인
+     *
+     * @scenario area=upload
+     *
+     * @effects review_image_upload_forbidden_on_other_member_review
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_forbidden_for_others_review(): void
     {
@@ -204,6 +262,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertForbidden();
     }
 
+    /**
+     * 이미 5장이 올라간 리뷰에 한 장을 더 올리면 422 로 거절되는지 확인
+     *
+     * @scenario area=upload
+     *
+     * @effects review_image_upload_rejected_over_max_count
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_returns_422_when_max_images_exceeded(): void
     {
@@ -225,6 +292,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 로그인하지 않고 이미지를 올리면 401 로 거절되는지 확인
+     *
+     * @scenario area=upload
+     *
+     * @effects review_image_upload_requires_login
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_requires_authentication(): void
     {
@@ -245,6 +321,15 @@ class ReviewImageControllerTest extends ModuleTestCase
     // destroy() — 이미지 삭제
     // ========================================
 
+    /**
+     * 본인 리뷰의 이미지를 지우면 200 과 함께 이미지 행이 소프트 삭제되는지 확인
+     *
+     * @scenario area=delete
+     *
+     * @effects review_image_delete_soft_deletes_own_image
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_user_can_delete_own_review_image(): void
     {
@@ -266,6 +351,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $this->assertSoftDeleted('ecommerce_product_review_images', ['id' => $image->id]);
     }
 
+    /**
+     * 다른 회원 리뷰의 이미지를 지우려 하면 403 으로 거절되는지 확인
+     *
+     * @scenario area=delete
+     *
+     * @effects review_image_delete_forbidden_on_other_member_review
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_forbidden_for_others_review_image(): void
     {
@@ -296,6 +390,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertForbidden();
     }
 
+    /**
+     * 내 리뷰 주소에 다른 리뷰의 이미지 ID 를 넣어 지우려 하면 404 인지 확인
+     *
+     * @scenario area=delete
+     *
+     * @effects review_image_delete_not_found_for_image_of_other_review
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_returns_404_when_image_belongs_to_different_review(): void
     {
@@ -325,6 +428,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertNotFound();
     }
 
+    /**
+     * 없는 이미지 ID 를 지우려 하면 404 인지 확인
+     *
+     * @scenario area=delete
+     *
+     * @effects review_image_delete_not_found_for_missing_image
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_returns_404_for_nonexistent_image(): void
     {
@@ -338,6 +450,15 @@ class ReviewImageControllerTest extends ModuleTestCase
         $response->assertNotFound();
     }
 
+    /**
+     * 로그인하지 않고 이미지를 지우려 하면 401 로 거절되는지 확인
+     *
+     * @scenario area=delete
+     *
+     * @effects review_image_delete_requires_login
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_requires_authentication(): void
     {
@@ -360,9 +481,13 @@ class ReviewImageControllerTest extends ModuleTestCase
     // ========================================
 
     /**
+     * 관리자가 숨긴 리뷰의 이미지는 해시 주소로 요청해도 404 로 차단되는지 확인
+     *
      * @scenario resource=review_image, parent_state=restricted
      *
      * @effects hidden_review_image_download_blocked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_blocks_hidden_review_image(): void
@@ -388,9 +513,13 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
+     * 전시중 리뷰의 이미지는 상태 게이트를 통과해 404 가 아닌 응답을 받는지 확인
+     *
      * @scenario resource=review_image, parent_state=public
      *
      * @effects visible_review_image_download_still_served
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_serves_visible_review_image(): void
@@ -454,6 +583,8 @@ class ReviewImageControllerTest extends ModuleTestCase
      * @scenario resource=review_image, parent_state=restricted
      *
      * @effects hidden_review_image_download_allowed_with_valid_signature
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_allows_hidden_review_image_with_valid_signature(): void
@@ -473,6 +604,8 @@ class ReviewImageControllerTest extends ModuleTestCase
      * @scenario resource=review_image, parent_state=restricted
      *
      * @effects hidden_review_image_download_blocked_with_tampered_signature
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_blocks_hidden_review_image_with_tampered_signature(): void
@@ -493,6 +626,8 @@ class ReviewImageControllerTest extends ModuleTestCase
      * @scenario resource=review_image, parent_state=restricted
      *
      * @effects hidden_review_image_download_blocked_with_expired_signature
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_blocks_hidden_review_image_with_expired_signature(): void

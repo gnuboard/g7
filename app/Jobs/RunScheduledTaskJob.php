@@ -5,10 +5,12 @@
 namespace App\Jobs;
 
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
+use App\Enums\ScheduleRejectReason;
 use App\Enums\ScheduleTriggerType;
 use App\Exceptions\ScheduleExecutionException;
 use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Extension\HookContextCapture;
+use App\Models\Schedule;
 use App\Services\Schedule\ScheduleConditionEvaluator;
 use App\Services\Schedule\ScheduleExecutor;
 use Illuminate\Bus\Queueable;
@@ -29,8 +31,9 @@ use Throwable;
  *
  * tries=1 — 같은 실행이 두 번 이력을 남기지 않게 재시도는 큐 화면에서 운영자가 명시적으로 한다.
  * 워커가 timeout·kill 로 죽으면 failed() 가 실행기의 running 이력을 실패로 마감한다.
- * 실행 전 거부(소유 확장 비활성, 앞선 실행 진행 중, 수동 실행의 잠금 저장소 오류)는 경고 로그만 남기고 정상 종료한다 —
- * 실행을 시작하지 않았으므로 이력·last_result·잠금·실패 훅을 건드리지 않는다.
+ * 실행 전 거부(소유 확장 비활성, 앞선 실행 진행 중, 수동 실행의 잠금 저장소 오류)는 경고 로그를 남기고 정상 종료한다 —
+ * 실행을 시작하지 않았으므로 last_result·잠금·실패 훅을 건드리지 않는다. 수동 실행의 거부는 실행 이력에
+ * 「거절됨」 행 한 줄(사유, 누른 관리자)을 남긴다 — 요청이 이미 접수(202)로 끝나 화면에 알릴 길이 이력뿐이다.
  */
 class RunScheduledTaskJob implements ShouldQueue
 {
@@ -145,6 +148,7 @@ class RunScheduledTaskJob implements ShouldQueue
                 'reason' => $e->reasonCode,
                 'error' => $e->getMessage(),
             ]);
+            $this->recordRejection($executor, $schedule, ScheduleRejectReason::tryFrom((string) $e->reasonCode));
         } catch (ScheduleRunLockUnavailableException $e) {
             // 수동 실행인데 잠금 저장소가 오류를 낸 거절이다 — 실행을 시작하지 않았으므로 잡 실패로 올리지 않는다.
             // 올리면 failed() 가 실패 이력·last_result 를 만들고, 저장소가 돌아온 뒤라면 앞선 실행이 쥔 잠금까지 푼다.
@@ -152,9 +156,35 @@ class RunScheduledTaskJob implements ShouldQueue
             // 저장소 원본 오류는 실행기가 error 로그로 이미 남겼다.
             Log::warning('스케줄 실행 잡 거부', [
                 'schedule_id' => $this->scheduleId,
-                'reason' => 'run_lock_unavailable',
+                'reason' => ScheduleRejectReason::RunLockUnavailable->value,
                 'error' => $e->getMessage(),
             ]);
+            $this->recordRejection($executor, $schedule, ScheduleRejectReason::RunLockUnavailable);
+        }
+    }
+
+    /**
+     * 수동 실행이 거절된 사실을 실행 이력에 남깁니다.
+     *
+     * 요청은 투입 시점에 이미 접수(202)로 끝났다 — 누른 관리자가 거절을 볼 수 있는 곳은 이력 창뿐이다.
+     * 예약 실행은 누른 사람이 없으므로 남기지 않는다(다음 회차가 다시 돈다). 이력을 남기다 난 오류는
+     * 삼킨다 — 잡 밖으로 나가면 failed() 의 실패 마감이 실패 이력을 만들고 앞선 실행의 잠금을 푼다.
+     *
+     * @param  ScheduleExecutor  $executor  실행기
+     * @param  Schedule  $schedule  스케줄
+     * @param  ScheduleRejectReason|null  $reason  거절 사유 (이력에 남기지 않는 사유면 null)
+     * @return void 반환값 없음
+     */
+    private function recordRejection(ScheduleExecutor $executor, Schedule $schedule, ?ScheduleRejectReason $reason): void
+    {
+        if ($reason === null || $this->trigger !== ScheduleTriggerType::Manual) {
+            return;
+        }
+
+        try {
+            $executor->recordRejected($schedule, $reason, $this->userId);
+        } catch (Throwable $e) {
+            Log::error('스케줄 실행 거절 이력 기록 실패', ['schedule_id' => $this->scheduleId, 'error' => $e->getMessage()]);
         }
     }
 

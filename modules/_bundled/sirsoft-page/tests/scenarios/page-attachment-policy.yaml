@@ -43,9 +43,16 @@ effects:
   - existing_plus_new_over_limit_is_blocked
   - zero_limit_is_unrestricted
   - storage_disk_independent_of_module_settings
+  # 실제 업로드 요청의 응답까지 확인 (라우트 결선과 422 매핑)
+  - disallowed_type_upload_rejected_over_http         # 허용 목록에 없는 형식은 422 이고 행이 생기지 않는다
+  - allowed_type_upload_passes_over_http              # 허용 목록의 형식은 201 로 저장된다
+  - oversize_upload_rejected_over_http                # 설정 상한을 넘는 용량은 422
+  - within_size_upload_passes_over_http               # 설정 상한 이내 용량은 201
+  - direct_upload_over_limit_returns_422_with_code    # 개수 상한 초과 업로드는 422 와 attachment_limit_exceeded 코드, 행 수는 그대로
 
 test_files:
   - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentPolicyTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentPolicyHttpTest.php
 
 rules_layer_coverage:
   - rule: formrequest-numeric-boundary-drift

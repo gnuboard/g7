@@ -28,6 +28,11 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     private PageService $pageServiceMock;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,16 +49,26 @@ class SearchPagesListenerTest extends ModuleTestCase
         $this->listener = new SearchPagesListener($this->pageServiceMock);
     }
 
+    /**
+     * 테스트가 바꾼 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
      * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (#103)
      *
      * @effects failed_flag_in_response, exception_stack_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_search_failure_surfaces_failed_payload_and_logs_exception(): void
     {
@@ -90,6 +105,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * getSubscribedHooks()가 3개 훅을 반환하는지 확인
+     *
+     * @scenario listener_case=hook_subscription
+     *
+     * @effects search_hooks_subscribed_for_results_response_and_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_three_hooks(): void
     {
@@ -103,6 +124,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 모든 훅이 type: filter를 포함하는지 확인
+     *
+     * @scenario listener_case=hook_subscription
+     *
+     * @effects search_hooks_declared_as_filters
+     *
+     * @return void 반환값 없음
      */
     public function test_all_hooks_have_filter_type(): void
     {
@@ -115,6 +142,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 각 훅에 method와 priority가 있는지 확인
+     *
+     * @scenario listener_case=hook_subscription
+     *
+     * @effects search_hooks_declare_method_and_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_hooks_have_required_fields(): void
     {
@@ -130,6 +163,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 검색어가 비어 있으면 결과를 그대로 반환하는지 확인
+     *
+     * @scenario listener_case=empty_keyword
+     *
+     * @effects empty_keyword_returns_results_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_returns_unchanged_results_when_keyword_empty(): void
     {
@@ -166,6 +205,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 관련 없는 탭(posts)일 때 total만 반환하고 items는 빈 배열인지 확인
+     *
+     * @scenario listener_case=unrelated_tab
+     *
+     * @effects unrelated_tab_returns_count_without_items
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_returns_count_only_for_unrelated_tab(): void
     {
@@ -186,6 +231,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 비활성 탭 배지도 잘린 건수를 정확한 것처럼 보고하지 않는지 확인 (#519)
+     *
+     * @scenario total_relation=at_least, consumer=tab_badge, surface=module_search
+     *
+     * @effects badge_count_carries_accuracy_when_truncated
+     *
+     * @return void 반환값 없음
      */
     public function test_count_only_badge_carries_accuracy_when_truncated(): void
     {
@@ -208,6 +259,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * all 탭에서 검색 결과를 반환하는지 확인
+     *
+     * @scenario listener_case=all_tab
+     *
+     * @effects all_tab_returns_limited_page_results
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_returns_results_for_all_tab(): void
     {
@@ -231,6 +288,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * pages 탭에서 전체 결과를 반환하는지 확인
+     *
+     * @scenario listener_case=pages_tab
+     *
+     * @effects pages_tab_returns_paged_results
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_returns_all_results_for_pages_tab(): void
     {
@@ -253,6 +316,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * sort=oldest 정렬이 asc로 변환되는지 확인
+     *
+     * @scenario listener_case=sort_oldest
+     *
+     * @effects oldest_sort_resolves_to_ascending
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_resolves_oldest_sort_to_asc(): void
     {
@@ -275,6 +344,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * sort=latest 정렬이 desc로 변환되는지 확인
+     *
+     * @scenario listener_case=sort_latest
+     *
+     * @effects latest_sort_resolves_to_descending
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_resolves_latest_sort_to_desc(): void
     {
@@ -297,6 +372,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 검색 결과 아이템에 하이라이트 필드가 포함되는지 확인
+     *
+     * @scenario listener_case=result_item_shape
+     *
+     * @effects result_item_carries_highlight_fields_and_public_url
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_formats_result_with_highlight(): void
     {
@@ -326,6 +407,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 키워드가 하이라이트 태그로 감싸지는지 확인
+     *
+     * @scenario listener_case=keyword_highlight
+     *
+     * @effects keyword_wrapped_in_mark_tag
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_highlights_keyword_in_title(): void
     {
@@ -352,6 +439,8 @@ class SearchPagesListenerTest extends ModuleTestCase
      * @scenario case=search_highlight_escape
      *
      * @effects highlighted_fields_escaped
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_escapes_markup_in_highlighted_title(): void
     {
@@ -380,6 +469,8 @@ class SearchPagesListenerTest extends ModuleTestCase
      * @scenario case=preview_entity_no_resurrect
      *
      * @effects preview_does_not_resurrect_entities
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_does_not_resurrect_entity_encoded_tags_in_preview(): void
     {
@@ -405,6 +496,12 @@ class SearchPagesListenerTest extends ModuleTestCase
      * PageService 예외 발생 시 다른 카테고리는 보존하고 pages 는 failed 로 표면화하는지 확인
      *
      * 종전에는 키 미설정으로 삼켜 화면이 "검색 결과 없음" 을 그렸다 (#103).
+     *
+     * @scenario category=pages, scope=all_tab, failure=single
+     *
+     * @effects failed_flag_in_response, other_category_results_preserved_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_search_pages_handles_service_exception_gracefully(): void
     {
@@ -430,6 +527,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * pages 데이터가 없으면 response를 그대로 반환하는지 확인
+     *
+     * @scenario listener_case=response_without_pages
+     *
+     * @effects response_unchanged_without_pages_results
+     *
+     * @return void 반환값 없음
      */
     public function test_build_pages_response_returns_unchanged_when_no_pages_data(): void
     {
@@ -444,6 +547,12 @@ class SearchPagesListenerTest extends ModuleTestCase
      *
      * 항목은 저장소가 이미 요청한 분량만 조회해 오므로 여기서 다시 자르지 않는다.
      * 종전에는 전량을 받아 PHP 에서 잘랐고, 그래서 매칭이 많을수록 메모리가 함께 커졌다.
+     *
+     * @scenario listener_case=response_all_tab
+     *
+     * @effects all_tab_response_carries_count_and_fetched_items
+     *
+     * @return void 반환값 없음
      */
     public function test_build_pages_response_returns_summary_for_all_tab(): void
     {
@@ -464,6 +573,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * pages 탭에서 페이지네이션 메타가 포함되는지 확인
+     *
+     * @scenario listener_case=response_pages_tab
+     *
+     * @effects pages_tab_response_carries_pagination_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_build_pages_response_returns_pagination_for_pages_tab(): void
     {
@@ -496,6 +611,12 @@ class SearchPagesListenerTest extends ModuleTestCase
      * 총 건수가 상한에 걸리면 마지막 페이지가 null 로 전달되는지 확인
      *
      * 계산할 수 없는 값을 1 이나 임의 숫자로 채우면 화면이 그것을 사실로 읽는다.
+     *
+     * @scenario total_relation=at_least, consumer=list_page, navigation=offset_page_number, surface=module_search
+     *
+     * @effects last_page_is_null_when_total_truncated, next_navigation_stays_open_when_total_truncated
+     *
+     * @return void 반환값 없음
      */
     public function test_build_pages_response_omits_last_page_when_total_is_bounded(): void
     {
@@ -527,6 +648,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * sort validation rule이 추가되는지 확인
+     *
+     * @scenario listener_case=validation_rules
+     *
+     * @effects sort_validation_rule_added
+     *
+     * @return void 반환값 없음
      */
     public function test_add_validation_rules_adds_sort_rule(): void
     {
@@ -539,6 +666,12 @@ class SearchPagesListenerTest extends ModuleTestCase
 
     /**
      * 기존 규칙이 유지되면서 sort가 추가되는지 확인
+     *
+     * @scenario listener_case=validation_rules
+     *
+     * @effects existing_validation_rules_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_add_validation_rules_preserves_existing_rules(): void
     {
@@ -558,7 +691,7 @@ class SearchPagesListenerTest extends ModuleTestCase
      * @param  string  $title  제목 (한국어)
      * @param  string  $slug  슬러그
      * @param  string  $contentKo  본문 (한국어)
-     * @return object
+     * @return object 제목, 슬러그, 본문을 가진 가짜 페이지 객체
      */
     private function makeFakePage(string $title, string $slug, string $contentKo): object
     {
@@ -572,6 +705,13 @@ class SearchPagesListenerTest extends ModuleTestCase
 
             public ?Carbon $published_at;
 
+            /**
+             * 가짜 페이지의 제목, 슬러그, 본문을 채웁니다.
+             *
+             * @param  string  $title  제목 (한국어)
+             * @param  string  $slug  슬러그
+             * @param  string  $contentKo  본문 (한국어)
+             */
             public function __construct(string $title, string $slug, string $contentKo)
             {
                 $this->slug = $slug;
@@ -582,6 +722,11 @@ class SearchPagesListenerTest extends ModuleTestCase
 
             private string $_title;
 
+            /**
+             * 현재 로케일의 제목을 돌려줍니다.
+             *
+             * @return string 생성자에서 받은 제목
+             */
             public function getLocalizedTitle(): string
             {
                 return $this->_title;

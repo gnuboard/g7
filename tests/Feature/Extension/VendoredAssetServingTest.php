@@ -78,9 +78,11 @@ class VendoredAssetServingTest extends TestCase
         File::deleteDirectory(base_path('plugins/'.self::FAKE_PLUGIN));
         CustomAssets::flushCache();
         AssetUrl::forceMode(null);
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

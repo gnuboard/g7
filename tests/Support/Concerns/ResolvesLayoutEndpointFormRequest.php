@@ -156,7 +156,8 @@ trait ResolvesLayoutEndpointFormRequest
      */
     private function endpointParts(string $endpoint): array
     {
-        $uri = trim(preg_replace('/\{\{.*?\}\}/', '{param}', parse_url($endpoint, PHP_URL_PATH) ?? ''), '/');
+        // 표현식을 먼저 자리표시자로 바꾼다 — 표현식 안의 `?.`·`??` 를 쿼리 문자열 시작으로 읽으면 경로가 잘린다
+        $uri = trim((string) parse_url((string) preg_replace('/\{\{.*?\}\}/', '{param}', $endpoint), PHP_URL_PATH), '/');
 
         return $uri === '' ? [] : explode('/', $uri);
     }

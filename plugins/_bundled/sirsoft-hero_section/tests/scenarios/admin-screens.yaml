@@ -40,6 +40,7 @@ axes:
     - form_save_double_click_sends_once
     - list_image_thumbnail_preset
     - list_modal_footer_fixed
+    - banner_list   # 화면이 내놓는 정렬 옵션과 서버 게이트 허용 집합의 대조(PHPUnit)
 
 effects:
   - modal_buttons_in_fixed_footer
@@ -65,9 +66,11 @@ effects:
   - bulk_selection_scoped_to_position   # 일괄 줄은 선택이 있을 때만 개수와 함께 보이고, 위치 탭·필터·정렬이 바뀌면 선택을 비운다
   - slider_settings_saved_per_position   # 슬라이더 설정은 그 위치 주소로 저장되고 성공·실패 양쪽에서 진행 깃발을 끈다
   - reorder_saves_only_changes   # 순서 창은 그 위치 전체를 받아 열고, 순서가 같으면 저장이 잠기며 실패 사유를 창 안에 남긴다
+  - sort_options_within_gate   # 레이아웃이 내놓는 정렬 옵션이 전부 서버 게이트의 허용 집합 안에 있다(벗어나면 그 옵션을 고를 때 422)
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/plugin_settings.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/admin-preview-locale.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Layouts/LayoutSortOptionGateParityTest.php

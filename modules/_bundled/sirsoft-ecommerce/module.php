@@ -3999,7 +3999,8 @@ class Module extends AbstractModule
                 'type' => 'artisan',
                 'label' => ['ko' => '임시 상품 이미지 삭제', 'en' => 'Prune temporary product images'],
                 // temp_key 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없다 (보존기간은 커맨드 옵션)
-                'description' => ['ko' => '상품에 연결되지 않은 임시 이미지를 지웁니다.', 'en' => 'Deletes temporary images not linked to any product.'],
+                // 같은 명령이 본문 미디어(끝내 저장하지 않은 것, 본문에서 빠진 것)도 같은 보존기간으로 지운다
+                'description' => ['ko' => '상품에 연결되지 않은 임시 이미지와, 저장하지 않았거나 본문에서 빠진 상품 설명·공통정보 본문 이미지를 지웁니다.', 'en' => 'Deletes temporary images not linked to any product, and product description and common info content images that were never saved or were removed from the content.'],
                 'command' => 'sirsoft-ecommerce:prune-temp-product-images',
                 'frequency' => 'daily',
                 'expression' => '0 0 * * *',

@@ -31,6 +31,9 @@ effects:
   - inline_adapter_used_when_plugin_not_registered_in_manager
   - empty_service_arrays_skip_contextual_binding_entirely
   - inicis_identity_provider_receives_correctly_prefixed_plugin_cache
+  # 공통 부모 프로바이더의 나머지 자동 바인딩
+  - repositories_array_binds_interface_to_implementation
+  - module_identifier_mirrors_to_extension_identifier_for_cache_binding
 
 test_files:
   - tests/Feature/Extension/PluginCacheBindingIsolationTest.php

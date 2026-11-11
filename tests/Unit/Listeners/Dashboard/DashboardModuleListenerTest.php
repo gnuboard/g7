@@ -16,6 +16,12 @@ class DashboardModuleListenerTest extends TestCase
 {
     /**
      * 리스너가 모듈 업데이트 시 통계를 브로드캐스트하는지 테스트합니다.
+     *
+     * @scenario trigger=module_change
+     *
+     * @effects dashboard_stats_broadcast
+     *
+     * @return void 반환값 없음
      */
     public function test_listener_broadcasts_stats_on_module_change(): void
     {
@@ -41,9 +47,17 @@ class DashboardModuleListenerTest extends TestCase
         });
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

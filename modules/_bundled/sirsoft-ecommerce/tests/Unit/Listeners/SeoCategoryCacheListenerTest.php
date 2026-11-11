@@ -21,6 +21,11 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 {
     protected SeoCategoryCacheListener $listener;
 
+    /**
+     * 사이트맵 색인기를 스파이로 바꾸고 사이트맵 생성 잡을 가짜로 돌린 뒤 리스너를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,10 +37,18 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
         $this->listener = new SeoCategoryCacheListener;
     }
 
+    /**
+     * Mockery 기대치를 검증하고 닫은 뒤 부모 정리를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ========================================
@@ -44,6 +57,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 리스너가 올바른 훅-메서드 매핑을 반환하는지 확인 (3개 훅 모두 onCategoryChange)
+     *
+     * @scenario listener=category, area=subscription
+     *
+     * @effects category_listener_subscribes_create_update_delete_hooks
+     *
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_mapping(): void
     {
@@ -74,6 +93,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 카테고리 변경 시 shop/category, shop/index, home, search/index 레이아웃 캐시가 무효화되는지 확인
+     *
+     * @scenario listener=category, area=invalidation
+     *
+     * @effects category_change_invalidates_shop_home_search_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_on_category_change_invalidates_shop_home_and_search_layouts(): void
     {
@@ -108,6 +133,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 카테고리가 객체인 경우 $category->id를 사용하는지 확인
+     *
+     * @scenario listener=category, area=invalidation
+     *
+     * @effects category_change_logs_id_from_object
+     *
+     * @return void 반환값 없음
      */
     public function test_on_category_change_handles_object_category(): void
     {
@@ -137,6 +168,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 카테고리가 스칼라 ID인 경우 그대로 사용하는지 확인
+     *
+     * @scenario listener=category, area=invalidation
+     *
+     * @effects category_change_logs_scalar_id
+     *
+     * @return void 반환값 없음
      */
     public function test_on_category_change_handles_scalar_category_id(): void
     {
@@ -165,6 +202,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 카테고리가 null인 경우에도 graceful하게 처리하는지 확인
+     *
+     * @scenario listener=category, area=invalidation
+     *
+     * @effects category_change_tolerates_null_category
+     *
+     * @return void 반환값 없음
      */
     public function test_on_category_change_handles_null_category_gracefully(): void
     {
@@ -190,6 +233,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 캐시 무효화 중 예외 발생 시 graceful하게 처리하는지 확인
+     *
+     * @scenario listener=category, area=failure
+     *
+     * @effects category_cache_failure_logged_without_throwing
+     *
+     * @return void 반환값 없음
      */
     public function test_on_category_change_handles_exceptions_gracefully(): void
     {
@@ -225,6 +274,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 사이트맵 색인 URL 이 기본 상점 주소를 따르는지 확인
+     *
+     * @scenario route_setting=default, surface=seo_sitemap_index, order_actor=guest
+     *
+     * @effects default_shop_urls_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_index_url_uses_default_shop_path(): void
     {
@@ -233,6 +288,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * 운영자가 상점 주소를 바꾸면 사이트맵 색인 URL 도 그 주소를 따르는지 확인
+     *
+     * @scenario route_setting=custom, surface=seo_sitemap_index, order_actor=guest
+     *
+     * @effects category_sitemap_index_url_follows_route_path
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_index_url_follows_custom_route_path(): void
     {
@@ -244,6 +305,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
      *
      * 종전에는 route_path 만 읽고 no_route 를 무시해 `/shop/category/outer` 를 색인했다 —
      * 실제 화면 주소는 `/category/outer` 이므로 사이트맵이 없는 주소를 검색엔진에 알린다.
+     *
+     * @scenario route_setting=no_route, surface=seo_sitemap_index, order_actor=guest
+     *
+     * @effects sitemap_urls_omit_segment_when_no_route
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_index_url_omits_route_segment_when_no_route(): void
     {
@@ -258,6 +325,7 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
      *
      * @param  array  $basicInfo  주입할 `basic_info` 설정
      * @param  string  $expectedUrl  기대하는 색인 URL
+     * @return void 반환값 없음
      */
     private function assertSitemapIndexUrl(array $basicInfo, string $expectedUrl): void
     {
@@ -295,6 +363,12 @@ class SeoCategoryCacheListenerTest extends ModuleTestCase
 
     /**
      * handle 메서드가 존재하는지 확인 (HookListenerInterface 준수)
+     *
+     * @scenario listener=category, area=subscription
+     *
+     * @effects category_listener_handle_is_callable
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_method_exists_for_interface_compliance(): void
     {

@@ -26,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductWishlistService;
 use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -166,7 +167,8 @@ class PublicApiUnexpectedFailureLogTest extends ModuleTestCase
     }
 
     /**
-     * 분류 이미지 내려받기가 예상하지 못한 예외를 만나면 종전 응답(400)을 내고 원인을 오류 로그로 남긴다.
+     * 분류 이미지 내려받기가 예상하지 못한 예외를 만나면 종전 응답(500)을 내고 원인을 오류 로그로 남긴다.
+     * 컨트롤러는 파일 정보 조회(`getFileInfo()`)로 행을 확인한 뒤 썸네일과 원본 응답으로 갈린다 — 그 조회를 고장낸다.
      *
      * @scenario controller=category_image, failure=unexpected_exception
      *
@@ -177,8 +179,8 @@ class PublicApiUnexpectedFailureLogTest extends ModuleTestCase
     public function test_category_image_download_logs_unexpected_failure(): void
     {
         $this->assertUnexpectedFailureLogged(
-            CategoryImageController::class, CategoryImageService::class, 'download',
-            'GET', '/category-image/abcdef123456', [], false, 400, 'exceptions.operation_failed',
+            CategoryImageController::class, CategoryImageService::class, 'getFileInfo',
+            'GET', '/category-image/abcdef123456', [], false, 500, 'exceptions.operation_failed',
             'category_image.download failed',
         );
     }
@@ -363,7 +365,12 @@ class PublicApiUnexpectedFailureLogTest extends ModuleTestCase
         $mock = Mockery::mock($service);
         $mock->shouldReceive($method)->andThrow(new RuntimeException($fault));
         // 목은 이 컨트롤러에만 넣는다 — 같은 서비스를 쓰는 미들웨어·요청 검증·다른 경로는 실제 객체 그대로다.
-        $this->app->bind($controller, fn () => new $controller($mock));
+        // 서비스 뒤에 다른 의존(예: 썸네일 헬퍼)을 더 받는 컨트롤러는 나머지를 컨테이너에서 실제 객체로 받는다.
+        $this->app->bind($controller, function ($app) use ($controller, $mock) {
+            $rest = array_slice((new ReflectionMethod($controller, '__construct'))->getParameters(), 1);
+
+            return new $controller($mock, ...array_map(fn ($p) => $app->make($p->getType()->getName()), $rest));
+        });
         Log::spy();
 
         $uri = str_replace('{product}', (string) $product->id, $uri);
@@ -393,7 +400,10 @@ class PublicApiUnexpectedFailureLogTest extends ModuleTestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

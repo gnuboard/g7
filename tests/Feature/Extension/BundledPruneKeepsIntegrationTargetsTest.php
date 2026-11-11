@@ -65,9 +65,11 @@ class BundledPruneKeepsIntegrationTargetsTest extends TestCase
         if (File::isDirectory($this->root)) {
             File::deleteDirectory($this->root);
         }
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

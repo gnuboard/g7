@@ -1541,7 +1541,7 @@ HTTP/1.1 201
 | schedule | path | string | 예 | — | 대상 schedule의 식별자 |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| status | query | string | 아니오 | `success`, `failed`, `running` | 상태 필터 (해당 상태의 항목만 조회) |
+| status | query | string | 아니오 | `success`, `failed`, `running`, `rejected` | 상태 필터 (해당 상태의 항목만 조회). `rejected` 는 큐로 보낸 수동 실행이 워커에서 시작되지 않은 회차 |
 | trigger_type | query | string | 아니오 | `scheduled`, `manual` | 실행 방식 필터: scheduled(예약 시각 자동 실행), manual(관리자의 즉시 실행) 중 해당 이력만 조회 |
 | started_from | query | date | 아니오 | — | 실행 시작일 범위의 시작일 (이 날짜 이후 시작된 이력만 조회 — 보는 사람의 시간대 하루로 해석) |
 | started_to | query | date | 아니오 | — | 실행 시작일 범위의 종료일 (이 날짜 이전 시작된 이력만 조회, started_from 이후여야 함) |
@@ -1573,8 +1573,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | ended_at | string\|null | `2026-07-08T12:14:49+09:00` | 실행 종료 일시 (사용자 타임존 포맷, 실행 중이면 null) |
 | duration | integer\|null | `0` | 실행 소요 시간 |
 | duration_formatted | string\|null | `45초` | `duration` 값의 표시용 포맷 문자열 (모델 접근자 파생, 없으면 null) |
-| status | string | `success` | 실행 결과 상태: success(성공), failed(실패), running(실행중) |
+| status | string | `success` | 실행 결과 상태: success(성공), failed(실패), running(실행중), rejected(거절됨 — 큐로 보낸 수동 실행이 워커에서 시작되지 않음) |
 | status_label | string\|null | `성공` | `status` 값의 사람이 읽는 라벨 (`schedule.result.*` 현지화) |
+| reject_reason | string\|null | `null` | 거절 사유: already_running(앞선 실행이 끝나지 않음), run_lock_unavailable(실행 잠금 저장소 장애), owner_inactive(소유 확장 비활성). 거절 행이 아니면 null |
+| reject_reason_label | string\|null | `null` | `reject_reason` 의 사람이 읽는 문구 (`schedule.reject_reason.*` 현지화, 거절 행이 아니면 null) |
 | exit_code | integer\|null | `0` | 실행 종료 코드 (0=성공, 그 외=실패) |
 | memory_usage_formatted | string\|null | `417.34 KB` | 실행 중 메모리 사용량의 표시용 포맷 문자열 |
 | output | string\|null | `Done.` | 실행 표준 출력 (없으면 null) |
@@ -1606,6 +1608,8 @@ HTTP/1.1 200
                 "duration_formatted": null,
                 "status": "success",
                 "status_label": "성공",
+                "reject_reason": null,
+                "reject_reason_label": null,
                 "exit_code": 0,
                 "memory_usage_formatted": "417.34 KB",
                 "trigger_type": "manual",
@@ -1677,6 +1681,8 @@ _단건 응답: `data` 객체의 필드._
 | duration_formatted | null | `null` | `duration` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | status | string | `success` | 상태 값 (도메인별 상태 집합 — 사람이 읽는 라벨은 status_label, UI 변형은 status_variant 참조) |
 | status_label | string | `성공` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
+| reject_reason | null | `null` | 거절 사유 (거절 행만 값이 있다 — 이 응답은 실제로 실행한 회차라 늘 null) |
+| reject_reason_label | null | `null` | `reject_reason` 의 사람이 읽는 문구 (거절 행이 아니면 null) |
 | exit_code | integer | `0` | 실행 종료 코드 (0=성공, 그 외=실패) |
 | memory_usage | integer | `427312` | 실행 중 최대 메모리 사용량 (바이트) |
 | memory_usage_formatted | string | `417.3 KB` | `memory_usage` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -1706,6 +1712,8 @@ HTTP/1.1 200
         "duration_formatted": null,
         "status": "success",
         "status_label": "성공",
+        "reject_reason": null,
+        "reject_reason_label": null,
         "exit_code": 0,
         "memory_usage": 427312,
         "memory_usage_formatted": "417.3 KB",

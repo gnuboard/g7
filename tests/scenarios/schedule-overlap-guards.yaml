@@ -15,9 +15,11 @@ description: |
   잠금은 실행이 실패해도 풀린다.
 
   큐로 보내는 스케줄은 요청 시점에 202 로 접수하고 잠금은 워커가 실행기를 부를 때 잡는다. 그때의 거절(실행 중, 잠금 저장소
-  오류)도 이력·last_result 를 남기지 않고 앞선 실행의 잠금을 풀지 않는다 — 실행 잡이 경고 로그만 남기고 끝난다. 이 경로의
-  시험은 실행 잡 시험 파일을 소유한 schedule-db-registry.yaml 의
-  `queued_manual_run_refused_by_lock_store_error_leaves_no_trace` 가 맡는다(RunScheduledTaskJobTest).
+  오류)도 last_result 를 바꾸지 않고 앞선 실행의 잠금을 풀지 않는다. 다만 요청이 이미 끝나 화면에 알릴 길이 없으므로 실행 잡이
+  경고 로그와 함께 실행 이력에 「거절됨」 행 한 줄(사유, 누른 관리자)을 남긴다 — 실패 이력이 아니라서 실패 알림은 나가지 않는다.
+  이 경로의 시험은 실행 잡 시험 파일을 소유한 schedule-db-registry.yaml 의
+  `queued_manual_run_refused_by_lock_store_error_records_rejected_row_only` 와
+  `queued_manual_run_refused_while_running_records_rejected_row_only` 가 맡는다(RunScheduledTaskJobTest).
 
 axis_notes:
   case: |

@@ -1,0 +1,45 @@
+feature: 리뷰 이미지 서비스 (업로드, 삭제, 해시 조회, 다운로드)
+
+description: |
+  ProductReviewImageService 는 리뷰 이미지를 StorageInterface 로 저장하고 행으로 메타를 남긴다.
+  업로드는 최대 장수 설정(review_settings.max_images)을 넘으면 거절하고, 첫 이미지를 대표 이미지로
+  지정하며 정렬 순서를 이어 붙인다. before_upload, filter_upload_file, after_upload 훅을 발행하고
+  필터가 돌려준 파일을 저장한다. 삭제는 저장 파일이 있을 때만 스토리지에서 지우고 행은 소프트 삭제한다.
+  다운로드는 모르는 해시이거나 스토리지가 응답을 주지 못하면 null 을 돌려준다.
+
+  최대 장수 0 정책과 filter_upload_file 발화의 효과 이름은 같은 시험 파일을 소유한
+  mp11-review-image-policy.yaml 이 선언한다(max_images_zero_blocks_first_upload,
+  review_image_filter_upload_file_hook_applied).
+
+axes:
+  case:
+    - upload                   # 장수 여유가 있는 업로드
+    - upload_over_limit        # 이미 최대 장수만큼 있음
+    - upload_limit_zero        # 최대 장수 설정 0
+    - upload_first_image       # 리뷰의 첫 이미지
+    - upload_next_image        # 기존 이미지가 있는 리뷰
+    - upload_hooks             # 업로드 훅 발행
+    - delete                   # 저장 파일이 있는 이미지 삭제
+    - delete_file_missing      # 저장 파일이 없는 이미지 삭제
+    - find_by_hash
+    - find_unknown_hash
+    - download_unknown_hash
+    - download_file_missing
+
+effects:
+  - review_image_upload_creates_record_with_file_meta       # 리뷰 ID, 원본 파일명, MIME, 해시, 업로더 기록
+  - review_image_upload_rejected_over_max_images            # 최대 장수 초과 업로드는 RuntimeException
+  - review_image_first_upload_becomes_thumbnail             # 첫 이미지가 대표 이미지, 정렬 순서 1
+  - review_image_upload_takes_next_sort_order               # 다음 정렬 순서를 받고 대표 이미지는 아님
+  - review_image_upload_fires_before_filter_after_hooks     # before_upload, filter_upload_file, after_upload 발행
+  - review_image_delete_removes_file_and_soft_deletes_row   # 저장 파일 삭제와 행 소프트 삭제
+  - review_image_delete_skips_storage_when_file_missing     # 파일이 없으면 스토리지 삭제를 부르지 않음
+  - review_image_found_by_hash                              # 해시로 이미지 조회
+  - review_image_find_returns_null_for_unknown_hash         # 모르는 해시는 null
+  - review_image_download_returns_null_for_unknown_hash     # 모르는 해시의 다운로드는 null
+  - review_image_download_returns_null_when_file_missing    # 스토리지 응답이 없으면 null
+
+# E2E axis 없음: 스토리지와 설정을 모의한 서비스 단위 판정이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewImageServiceTest.php

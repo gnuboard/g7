@@ -1,0 +1,23 @@
+feature: 카테고리 삭제 서비스 (이미지 정리, 하위 카테고리와 연결 상품 가드)
+
+description: |
+  카테고리 삭제는 행만 지우면 이미지 물리 파일이 디스크에 남으므로, 파일 삭제를 포함하는
+  CategoryImageService 경로로 이미지를 먼저 정리한 뒤 저장소 delete 를 부른다.
+  하위 카테고리가 있거나 연결된 상품이 있으면 삭제하지 않고 예외를 던진다.
+  쓰기 경로는 상품 수와 자식 수 집계를 읽지 않으므로 withCounts=false 로 조회한다.
+
+axes:
+  case:
+    - delete_with_images       # 하위 카테고리와 상품이 없는 카테고리 삭제
+    - blocked_by_children      # 하위 카테고리가 있음
+    - blocked_by_products      # 연결된 상품이 있음
+
+effects:
+  - category_delete_removes_images_through_image_service   # 이미지 서비스로 파일까지 지우고 category_id 결과 반환
+  - category_delete_blocked_when_children_exist            # 하위 카테고리가 있으면 예외
+  - category_delete_blocked_when_products_linked           # 연결 상품이 있으면 예외
+
+# E2E axis 없음: 저장소를 모의한 서비스 단위 판정이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CategoryServiceTest.php

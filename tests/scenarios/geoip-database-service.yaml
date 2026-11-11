@@ -1,0 +1,31 @@
+feature: GeoIP 데이터베이스 갱신과 상태 조회 서비스
+
+description: |
+  `GeoIpDatabaseService` 는 MaxMind GeoLite2 데이터베이스 파일을 내려받아 갱신하고 그 상태를 답한다.
+  라이선스 키가 없으면 내려받기를 시도하지 않고 missing_license_key 로 끝낸다. 최근에 갱신한 파일이 있으면
+  강제가 아닌 갱신은 건너뛴다(skipped). 내려받기 응답이 401 이면 unauthorized, 500 이면 download_failed 다.
+  화면에 보이는 내려받기 주소와 키는 앞 4자만 남기고 가린다. 상태 조회는 파일 유무, 크기, 갱신 시각을 답한다.
+  갱신 결과에 따른 안내 문구 키는 `geoip-update-message-keys.yaml` 이 맡는다.
+
+axes:
+  case: [license_key, display_masking, update_skip, update_http_failure, database_status]
+
+effects:
+  # 라이선스 키
+  - geoip_update_without_license_key_reports_missing_license_key
+  - geoip_license_key_configured_reflects_config
+  # 화면 표시용 가리기
+  - geoip_display_download_url_masks_license_key
+  - geoip_mask_key_keeps_first_four_chars
+  # 갱신
+  - geoip_update_skipped_when_recent_without_force
+  - geoip_update_reports_unauthorized_on_401
+  - geoip_update_reports_download_failed_on_500
+  # 상태 조회
+  - geoip_database_status_reports_missing_file
+  - geoip_database_status_reports_file_metadata
+
+# E2E axis 없음: 판정은 서버측 서비스 단위이고 화면 변경이 없다.
+
+test_files:
+  - tests/Unit/Services/GeoIp/GeoIpDatabaseServiceTest.php

@@ -71,8 +71,11 @@ class ExtensionBundleServiceTest extends TestCase
             }
         }
 
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

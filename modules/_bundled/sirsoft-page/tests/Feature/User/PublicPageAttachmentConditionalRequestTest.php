@@ -41,8 +41,11 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'attach-cond-%')->forceDelete();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

@@ -103,7 +103,8 @@ class WebCronTokenStoreTest extends TestCase
         $token = $store->rotate();
 
         $this->assertTrue($store->matches($token));
-        $this->assertFalse($store->matches(substr($token, 0, -1).'0'));
+        // 끝 글자가 이미 `0` 이면 같은 토큰이 되므로 다른 글자로 바꾼다
+        $this->assertFalse($store->matches(substr($token, 0, -1).(str_ends_with($token, '0') ? '1' : '0')));
         $this->assertFalse($store->matches(substr($token, 0, -1)));
         $this->assertFalse($store->matches(''));
         $this->assertFalse($store->matches(null));

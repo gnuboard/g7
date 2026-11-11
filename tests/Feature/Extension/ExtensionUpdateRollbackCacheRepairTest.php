@@ -46,9 +46,11 @@ class ExtensionUpdateRollbackCacheRepairTest extends TestCase
     protected function tearDown(): void
     {
         File::delete($this->cachePath);
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

@@ -23,6 +23,8 @@ class AlimtalkTemplateServiceTest extends PluginTestCase
 
     /**
      * kapi 자격증명이 준비된 서비스 인스턴스를 생성한다.
+     *
+     * @return AlimtalkTemplateService 모의 설정을 주입한 서비스
      */
     private function service(): AlimtalkTemplateService
     {
@@ -35,6 +37,12 @@ class AlimtalkTemplateServiceTest extends PluginTestCase
 
     /**
      * 카테고리 전체 조회는 data 배열을 그대로 반환한다.
+     *
+     * @scenario case=reference_categories_success
+     *
+     * @effects reference_categories_return_data_array
+     *
+     * @return void 반환값 없음
      */
     public function test_카테고리는_data_배열을_반환한다(): void
     {
@@ -60,7 +68,13 @@ class AlimtalkTemplateServiceTest extends PluginTestCase
     }
 
     /**
-     * 카테고리 조회가 실패 코드로 응답하면 message 원문·resultCode 를 보존한 예외를 던진다.
+     * 카테고리 조회가 실패 코드로 응답하면 message 원문과 resultCode 를 보존한 예외를 던진다.
+     *
+     * @scenario case=reference_categories_failure_code
+     *
+     * @effects reference_categories_failure_keeps_message_and_result_code
+     *
+     * @return void 반환값 없음
      */
     public function test_카테고리_실패코드시_message와_결과코드를_예외에_보존한다(): void
     {
@@ -79,6 +93,12 @@ class AlimtalkTemplateServiceTest extends PluginTestCase
 
     /**
      * 발신프로필은 data.success 배열만 반환한다 (success/fail 껍데기 미노출).
+     *
+     * @scenario case=reference_profiles_success
+     *
+     * @effects reference_profiles_return_success_array_only
+     *
+     * @return void 반환값 없음
      */
     public function test_발신프로필은_data_success_배열만_반환한다(): void
     {
@@ -107,7 +127,13 @@ class AlimtalkTemplateServiceTest extends PluginTestCase
     }
 
     /**
-     * 발신프로필 조회가 실패 코드로 응답하면 예외를 던진다.
+     * 발신프로필 조회가 실패 코드로 응답하면 message 원문과 resultCode 를 담은 예외를 던진다.
+     *
+     * @scenario case=reference_profiles_failure_code
+     *
+     * @effects reference_profiles_failure_keeps_message_and_result_code
+     *
+     * @return void 반환값 없음
      */
     public function test_발신프로필_실패코드시_예외(): void
     {
@@ -124,9 +150,17 @@ class AlimtalkTemplateServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * 모의 객체 기대를 검증하고 닫는다. 검증이 실패해도 부모 정리는 반드시 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

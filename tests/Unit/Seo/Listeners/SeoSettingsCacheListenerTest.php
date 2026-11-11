@@ -44,8 +44,11 @@ class SeoSettingsCacheListenerTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ─── 훅 구독 등록 ──────────────────────────────────────

@@ -11,9 +11,16 @@ description: |
 axes:
   # 이 파일의 테스트는 모두 봇 방문 진입점 render(Request) 로 들어간다.
   # 편집기 미리보기가 쓰는 renderFromResolved() 직접 호출은 SeoRendererRenderFromResolvedTest 몫이다.
-  entry: [render_request]
+  # render_from_resolved 는 그 직접 호출 진입점이다(이미 해석된 컨텍스트를 받는다).
+  entry: [render_request, render_from_resolved]
 
 effects:
+  # renderFromResolved() 추출 계약 (SeoRendererRenderFromResolvedTest)
+  - renderer_render_from_resolved_builds_html_from_resolved_context
+  - renderer_render_from_resolved_returns_null_when_seo_disabled
+  - renderer_render_from_resolved_returns_null_without_seo_config
+  - renderer_render_from_resolved_default_locale_falls_back_to_app_locale
+  - renderer_render_delegates_to_render_from_resolved
   - renderer_render_product_detail_returns_complete_html
   - renderer_marks_degraded_render   # 해석기의 일시 장애 데이터 소스 id 를 요청 속성 seo_render_degraded 로
   - renderer_render_returns_null_when_seo_disabled
@@ -97,3 +104,4 @@ effects:
 
 test_files:
   - tests/Unit/Seo/SeoRendererTest.php
+  - tests/Unit/Seo/SeoRendererRenderFromResolvedTest.php

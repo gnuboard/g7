@@ -63,7 +63,10 @@ effects:
   - queued_run_rechecks_state_before_running
   - queued_manual_run_logs_the_admin_who_pressed_it
   - queued_run_does_not_inherit_or_leave_worker_context
-  - queued_manual_run_refused_by_lock_store_error_leaves_no_trace   # 큐로 보낸 수동 실행 × 잠금 저장소 오류 — 이력 0건, last_result 불변, 앞선 실행의 잠금 유지, run_failed 미발화
+  - queued_manual_run_refused_by_lock_store_error_records_rejected_row_only   # 큐로 보낸 수동 실행 × 잠금 저장소 오류 — 「거절됨」 이력 1건(사유 run_lock_unavailable, 누른 관리자), last_result 불변, 앞선 실행의 잠금 유지, run_failed 미발화
+  - queued_manual_run_refused_while_running_records_rejected_row_only         # 큐로 보낸 수동 실행 × 앞선 실행 진행 중 — 「거절됨」 이력 1건(사유 already_running, 「실패만 기록」 행에도), 같은 상황의 예약 실행은 이력 0건
+  - queued_rejection_record_failure_does_not_fail_the_job                     # 거절 이력을 남기다 오류가 나도 잡은 실패로 올라가지 않는다(실패 마감 미호출)
+  - rejected_history_row_is_not_counted_as_a_run                              # 거절 행은 최근 실행 목록, 마지막 실행 소요 시간, 실행 중 이력 조회, last_result 값 목록에서 빠진다
   # 실행
   - history_all_records_every_run
   - row_state_updated_without_model_events

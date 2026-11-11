@@ -50,6 +50,7 @@ effects:
   - scheduler_incremental_when_table_populated
   - incremental_append_on_publish
   - incremental_remove_on_unpublish
+  - incremental_remove_on_delete          # 리소스 삭제 훅이 그 리소스의 색인 행을 지운다
   - incremental_skips_rebalance
   # ── 다국어 (P1) ──
   - hreflang_bounded

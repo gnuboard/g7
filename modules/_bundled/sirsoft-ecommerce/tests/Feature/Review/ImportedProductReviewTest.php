@@ -10,6 +10,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
@@ -61,8 +62,11 @@ class ImportedProductReviewTest extends ModuleTestCase
             HookManager::removeAction($hook, $callback);
         }
 
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
@@ -96,7 +100,6 @@ class ImportedProductReviewTest extends ModuleTestCase
      *
      * @param  string  $hook  훅 이름
      * @param  int  $calls  호출 횟수 (참조)
-     *
      * @return void 반환값 없음
      */
     private function spyAction(string $hook, int &$calls): void
@@ -390,7 +393,7 @@ class ImportedProductReviewTest extends ModuleTestCase
      */
     public function test_unknown_product_is_rejected(): void
     {
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $this->expectException(ModelNotFoundException::class);
 
         $this->service()->createImported(999999999, [
             'rating' => 5,

@@ -67,8 +67,11 @@ class PublicPageControllerTest extends FeatureTestCase
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'test-%')->forceDelete();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ─── 슬러그 조회 ──────────────────────────────────

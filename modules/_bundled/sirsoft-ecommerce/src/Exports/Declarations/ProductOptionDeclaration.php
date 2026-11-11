@@ -43,6 +43,8 @@ final class ProductOptionDeclaration implements ModelDeclaration
             'mileage_type' => ['type' => 'string', 'personal' => false],
             'is_default' => ['type' => 'boolean', 'personal' => false],
             'is_active' => ['type' => 'boolean', 'personal' => false],
+            // 옵션별 과세 종류 — 비어 있으면 상품 값을 따른다(Enum 은 모델의 활동 로그 선언에서 받는다)
+            'tax_status' => ['type' => 'enum', 'personal' => false],
         ];
     }
 

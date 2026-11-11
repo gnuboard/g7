@@ -2,8 +2,11 @@
 
 namespace Tests\Feature\Schedule;
 
+use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
+use App\Enums\ScheduleRejectReason;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
+use App\Exceptions\ScheduleExecutionException;
 use App\Extension\HookContextCapture;
 use App\Extension\HookManager;
 use App\Jobs\RunScheduledTaskJob;
@@ -36,7 +39,7 @@ use RuntimeException;
 use Tests\TestCase;
 
 /**
- * 큐 실행 잡 — payload 계약(K5), 실행 직전 재확인, 워커 사망 시 이력 마감, 잠금 저장소 오류 거절, 상주 워커에서의 실행자 문맥
+ * 큐 실행 잡 — payload 계약(K5), 실행 직전 재확인, 워커 사망 시 이력 마감, 수동 실행 거절의 「거절됨」 이력, 상주 워커에서의 실행자 문맥
  */
 class RunScheduledTaskJobTest extends TestCase
 {
@@ -126,19 +129,20 @@ class RunScheduledTaskJobTest extends TestCase
     }
 
     /**
-     * 큐로 보낸 「지금 실행」을 워커가 집는 순간 실행 잠금 저장소가 오류를 내면, 실행하지 않고 흔적 없이 끝난다.
+     * 큐로 보낸 「지금 실행」을 워커가 집는 순간 실행 잠금 저장소가 오류를 내면, 실행하지 않고 「거절됨」 이력 한 줄만 남긴다.
      *
      * 실행기는 이 경우를 거절(`ScheduleRunLockUnavailableException`)로 알린다. 잡이 이를 실패로 올리면 `failed()` 의
      * 실패 마감이 실패 이력과 `last_result` 실패를 만들고, 앞선 실행이 쥔 잠금을 강제로 풀고, 실패 훅을 발화한다.
      * 실패 처리까지 그대로 타도록 sync 큐로 돌린다(예외가 잡 밖으로 나가면 sync 큐도 `failed()` 를 부른다).
+     * 요청은 이미 202 로 끝났으므로 누른 사람이 볼 수 있는 곳은 이력뿐이다 — 거절 행에 사유와 누른 사람이 실린다.
      *
      * @scenario dispatch_mode=queue, trigger=manual, overlap=minutes, outcome=rejected
      *
-     * @effects queued_manual_run_refused_by_lock_store_error_leaves_no_trace
+     * @effects queued_manual_run_refused_by_lock_store_error_records_rejected_row_only
      *
      * @return void 반환값 없음
      */
-    public function test_queued_manual_run_refused_by_lock_store_error_leaves_no_trace(): void
+    public function test_queued_manual_run_refused_by_lock_store_error_records_rejected_row_only(): void
     {
         config([
             'schedule_security.shell.enabled' => true,
@@ -216,7 +220,13 @@ class RunScheduledTaskJobTest extends TestCase
 
             $after = $schedule->fresh();
 
-            $this->assertSame(0, ScheduleHistory::where('schedule_id', $schedule->id)->count(), '거절된 실행이 이력을 남겼다');
+            $rows = ScheduleHistory::where('schedule_id', $schedule->id)->get();
+            $this->assertCount(1, $rows, '거절된 실행은 「거절됨」 이력 한 줄만 남긴다');
+            $this->assertSame(ScheduleResultStatus::Rejected, $rows[0]->status);
+            $this->assertSame(ScheduleRejectReason::RunLockUnavailable, $rows[0]->reject_reason);
+            $this->assertSame(ScheduleTriggerType::Manual, $rows[0]->trigger_type);
+            $this->assertSame($admin->id, $rows[0]->triggered_by);
+            $this->assertNull($rows[0]->error_output, '저장소 원본 오류 문구가 이력에 실렸다');
             $this->assertSame($before->last_result, $after->last_result, '거절된 실행이 last_result 를 바꿨다');
             $this->assertEquals($before->last_run_at, $after->last_run_at, '거절된 실행이 마지막 실행 시각을 바꿨다');
             $this->assertTrue(
@@ -229,6 +239,137 @@ class RunScheduledTaskJobTest extends TestCase
             config(['cache.default' => $default]);
             Cache::forgetDriver('queued_broken_run_lock');
         }
+    }
+
+    /**
+     * 큐로 보낸 「지금 실행」을 워커가 집었을 때 앞선 실행이 잠금을 쥐고 있으면, 실행하지 않고 「거절됨」 이력 한 줄만 남긴다.
+     *
+     * 「실패만 기록」 스케줄에도 남긴다(거절은 성공이 아니다). 행 상태·앞선 실행의 잠금·실패 훅은 그대로다.
+     * 같은 상황의 예약 실행은 조용히 건너뛰고 이력을 남기지 않는다(누른 사람이 없다).
+     *
+     * @scenario dispatch_mode=queue, trigger=manual, overlap=minutes, outcome=rejected
+     *
+     * @effects queued_manual_run_refused_while_running_records_rejected_row_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_queued_manual_run_refused_while_running_records_rejected_row_only(): void
+    {
+        config([
+            'schedule_security.shell.enabled' => true,
+            'schedule_security.shell.allowed_binaries' => ['i161-task'],
+        ]);
+        Process::fake();
+
+        $admin = User::factory()->create();
+        $schedule = Schedule::factory()->create([
+            'type' => 'shell',
+            'command' => 'i161-task',
+            'dispatch_mode' => 'queue',
+            'history_mode' => 'failures_only',
+            'without_overlapping' => 60,
+            'timeout' => 60,
+        ]);
+        $lockName = ScheduleExecutor::LOCK_PREFIX.$schedule->id;
+
+        $failedHookCalls = 0;
+        HookManager::addAction('core.schedule.run_failed', function () use (&$failedHookCalls) {
+            $failedHookCalls++;
+        });
+
+        $held = Cache::lock($lockName, 3600, 'other-runner');
+        $this->assertTrue($held->get());
+
+        try {
+            $before = $schedule->fresh();
+
+            // 예약 실행은 건너뛸 뿐 이력을 남기지 않는다
+            app(BusDispatcher::class)->dispatchSync(new RunScheduledTaskJob($schedule->id, ScheduleTriggerType::Scheduled));
+            $this->assertSame(0, ScheduleHistory::where('schedule_id', $schedule->id)->count(), '건너뛴 예약 실행이 이력을 남겼다');
+
+            app(BusDispatcher::class)->dispatchSync(new RunScheduledTaskJob($schedule->id, ScheduleTriggerType::Manual, $admin->id));
+
+            $after = $schedule->fresh();
+            $rows = ScheduleHistory::where('schedule_id', $schedule->id)->get();
+
+            $this->assertCount(1, $rows, '거절된 실행은 「거절됨」 이력 한 줄만 남긴다');
+            $this->assertSame(ScheduleResultStatus::Rejected, $rows[0]->status);
+            $this->assertSame(ScheduleRejectReason::AlreadyRunning, $rows[0]->reject_reason);
+            $this->assertSame($admin->id, $rows[0]->triggered_by);
+            $this->assertNotNull($rows[0]->ended_at, '거절 행이 실행 중처럼 열려 있다');
+            $this->assertSame($before->last_result, $after->last_result, '거절된 실행이 last_result 를 바꿨다');
+            $this->assertEquals($before->last_run_at, $after->last_run_at, '거절된 실행이 마지막 실행 시각을 바꿨다');
+            $this->assertEquals($before->next_run_at, $after->next_run_at, '거절된 실행이 다음 실행 시각을 바꿨다');
+            $this->assertTrue(
+                Cache::restoreLock($lockName, 'other-runner')->isOwnedByCurrentProcess(),
+                '거절된 실행이 앞선 실행의 잠금을 풀었다'
+            );
+            $this->assertSame(0, $failedHookCalls, '거절된 실행이 실패 훅(core.schedule.run_failed)을 발화했다');
+            Process::assertNothingRan();
+        } finally {
+            $held->forceRelease();
+        }
+    }
+
+    /**
+     * 거절 이력을 남기다 실패해도 잡은 실패로 올라가지 않는다(올라가면 실패 마감이 실패 이력을 만들고 앞선 실행의 잠금을 푼다).
+     *
+     * @scenario dispatch_mode=queue, trigger=manual, outcome=rejected
+     *
+     * @effects queued_rejection_record_failure_does_not_fail_the_job
+     *
+     * @return void 반환값 없음
+     */
+    public function test_queued_rejection_record_failure_does_not_fail_the_job(): void
+    {
+        $schedule = Schedule::factory()->create(['dispatch_mode' => 'queue']);
+
+        $executor = Mockery::mock(ScheduleExecutor::class);
+        $executor->shouldReceive('execute')->once()->andThrow(ScheduleExecutionException::alreadyRunning());
+        $executor->shouldReceive('recordRejected')->once()->andThrow(new RuntimeException('history table down'));
+        $executor->shouldNotReceive('markAbandoned');
+        $this->app->instance(ScheduleExecutor::class, $executor);
+
+        app(BusDispatcher::class)->dispatchSync(new RunScheduledTaskJob($schedule->id, ScheduleTriggerType::Manual, null));
+
+        $this->assertSame(0, ScheduleHistory::where('schedule_id', $schedule->id)->count());
+    }
+
+    /**
+     * 거절 행은 실행으로 세지 않는다 — 최근 실행 목록과 마지막 실행 소요 시간에서 빠지고, 실행 중 이력으로도 잡히지 않는다.
+     *
+     * @scenario trigger=manual, outcome=rejected
+     *
+     * @effects rejected_history_row_is_not_counted_as_a_run
+     *
+     * @return void 반환값 없음
+     */
+    public function test_rejected_history_row_is_not_counted_as_a_run(): void
+    {
+        $schedule = Schedule::factory()->create(['last_result' => 'success']);
+        $ran = ScheduleHistory::create([
+            'schedule_id' => $schedule->id,
+            'started_at' => now()->subMinutes(5),
+            'ended_at' => now()->subMinutes(4),
+            'duration' => 42,
+            'status' => ScheduleResultStatus::Success,
+            'trigger_type' => ScheduleTriggerType::Scheduled,
+        ]);
+
+        $rejected = app(ScheduleExecutor::class)->recordRejected($schedule, ScheduleRejectReason::AlreadyRunning, null);
+
+        $this->assertTrue($rejected->fresh()->isRejected());
+        $this->assertSame($ran->id, $schedule->fresh()->last_history?->id, '거절 행이 마지막 실행 이력이 됐다');
+        $this->assertNotNull($schedule->fresh()->last_duration, '거절 행이 마지막 실행 소요 시간을 비웠다');
+        $this->assertSame(ScheduleResultStatus::Success, $schedule->fresh()->last_result);
+
+        $histories = app(ScheduleHistoryRepositoryInterface::class);
+        $this->assertNull($histories->findLatestRunning($schedule->id));
+        $recentIds = $histories->getRecentRuns(1000)->pluck('id')->all();
+        $this->assertContains($ran->id, $recentIds);
+        $this->assertNotContains($rejected->id, $recentIds, '거절 행이 최근 실행 목록에 실렸다');
+
+        $this->assertNotContains('rejected', ScheduleResultStatus::lastResultValues());
     }
 
     /**

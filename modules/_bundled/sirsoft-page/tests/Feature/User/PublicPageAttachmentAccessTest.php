@@ -37,8 +37,11 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'attach-access-%')->forceDelete();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

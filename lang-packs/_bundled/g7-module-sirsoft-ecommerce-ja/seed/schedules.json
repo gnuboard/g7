@@ -9,7 +9,7 @@
   },
   "prune-temp-product-images": {
     "label": "一時商品画像の削除",
-    "description": "商品に紐付いていない一時画像を削除します。"
+    "description": "商品に紐付いていない一時画像と、保存されなかった、または本文から外された商品説明・共通情報の本文画像を削除します。"
   },
   "prune-temp-orders": {
     "label": "期限切れ一時注文の削除",

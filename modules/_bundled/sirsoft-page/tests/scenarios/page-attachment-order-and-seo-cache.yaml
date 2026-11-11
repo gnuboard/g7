@@ -79,6 +79,9 @@ effects:
   - page_change_invalidates_page_show_layout_cache
   - page_change_invalidates_home_and_search_and_sitemap_cache
   - page_restore_invalidates_page_detail_seo_cache
+  - page_seo_listener_subscribes_page_lifecycle_hooks    # 생성, 수정, 삭제, 복원, 발행 훅을 우선순위 20 으로 구독한다
+  - page_change_without_page_or_slug_does_not_throw      # 페이지가 없거나 슬러그가 없어도 예외 없이 끝난다
+  - page_seo_listener_handle_is_callable                 # 인터페이스 필수 메서드 handle 이 있고 불러도 오류가 없다
   - page_restore_creates_new_version_and_preserves_history
   - page_version_changed_fields_render_localized_labels
   - attachment_size_or_ext_rejection_shows_error_toast

@@ -35,6 +35,11 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
      */
     private string|false $originalSpawnFlag = false;
 
+    /**
+     * spawn 플래그를 비우고 from < to 범위에 드는 더미 스텝 파일을 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,6 +57,11 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->writeNoopStep('0.9.1', 'standalone_noop');
     }
 
+    /**
+     * 만든 스텝 파일을 지우고 Mockery 를 닫은 뒤 spawn 플래그를 진입 전 상태로 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ($this->createdPaths as $path) {
@@ -61,20 +71,31 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         }
         $this->createdPaths = [];
 
-        Mockery::close();
+        try {
+            Mockery::close();
+        } finally {
+            if ($this->originalSpawnFlag === false) {
+                putenv('G7_UPDATE_IN_PROGRESS');
+                unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
+            } else {
+                putenv('G7_UPDATE_IN_PROGRESS='.$this->originalSpawnFlag);
+                $_ENV['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
+                $_SERVER['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
+            }
 
-        if ($this->originalSpawnFlag === false) {
-            putenv('G7_UPDATE_IN_PROGRESS');
-            unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
-        } else {
-            putenv('G7_UPDATE_IN_PROGRESS='.$this->originalSpawnFlag);
-            $_ENV['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
-            $_SERVER['G7_UPDATE_IN_PROGRESS'] = $this->originalSpawnFlag;
+            parent::tearDown();
         }
-
-        parent::tearDown();
     }
 
+    /**
+     * 옵션 없이 단독 실행하면 마이그레이션, 재동기화, 스텝, 버전 갱신(목표 버전), 캐시 정리, 번들 업데이트 수집이 모두 한 번씩 호출된다.
+     *
+     * @scenario invocation_origin=standalone_operator, spawn_env_flag=absent
+     *
+     * @effects resume_command_without_skip_options_invokes_all_five_pre_and_post_steps_safely, ExecuteUpgradeStepsCommand_invokes_runMigrations_by_default, ExecuteUpgradeStepsCommand_invokes_reloadCoreConfigAndResync_by_default, ExecuteUpgradeStepsCommand_invokes_updateVersionInEnv_with_to_version_by_default, ExecuteUpgradeStepsCommand_invokes_clearAllCaches_by_default, ExecuteUpgradeStepsCommand_invokes_runBundledExtensionUpdatePrompt_by_default
+     *
+     * @return void 반환값 없음
+     */
     public function test_standalone_invocation_runs_all_five_pre_and_post_steps(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -93,6 +114,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * --skip-migrations 를 주면 마이그레이션만 건너뛰고 나머지 단계는 실행된다.
+     *
+     * @scenario invocation_origin=standalone_operator, skip_migrations=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_skips_runMigrations_when_skip_migrations_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_skip_migrations_option_bypasses_migrations(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -111,6 +141,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * --skip-resync 를 주면 재동기화만 건너뛰고 나머지 단계는 실행된다.
+     *
+     * @scenario invocation_origin=standalone_operator, skip_resync=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_skips_reloadCoreConfigAndResync_when_skip_resync_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_skip_resync_option_bypasses_resync(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -129,6 +168,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * --skip-version-env 를 주면 .env 버전 갱신만 건너뛰고 나머지 단계는 실행된다.
+     *
+     * @scenario invocation_origin=standalone_operator, skip_version_env=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_skips_updateVersionInEnv_when_skip_version_env_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_skip_version_env_option_bypasses_version_env_update(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -147,6 +195,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * --skip-cache-clear 를 주면 캐시 정리만 건너뛰고 나머지 단계는 실행된다.
+     *
+     * @scenario invocation_origin=standalone_operator, skip_cache_clear=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_skips_clearAllCaches_when_skip_cache_clear_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_skip_cache_clear_option_bypasses_cache_clear(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -172,6 +229,8 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
      * 파일을 전부 교체해도 워커는 옛 코드로 잡을 계속 처리하며 그 사실이 오류로 드러나지 않는다.
      *
      * @effects core_update_step11_signals_queue_restart
+     *
+     * @return void 반환값 없음
      */
     public function test_standalone_post_step_signals_queue_restart(): void
     {
@@ -195,6 +254,8 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
      * 캐시 정리를 건너뛰는 경로(spawn 자식)에서는 신호도 보내지 않는다 — 부모가 보낸다.
      *
      * @effects core_update_step11_signals_queue_restart
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_cache_clear_also_skips_queue_restart_signal(): void
     {
@@ -214,6 +275,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $this->runCommand(['--skip-cache-clear' => true]));
     }
 
+    /**
+     * --skip-bundled-updates 를 주면 번들 확장과 언어팩 업데이트 수집을 호출하지 않는다.
+     *
+     * @scenario invocation_origin=standalone_operator, skip_bundled_updates=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_skips_bundled_updates_when_skip_bundled_updates_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_skip_bundled_updates_option_bypasses_bundled_prompt(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -231,6 +301,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * --skip-* 다섯 개를 모두 주면 사전, 사후 단계 없이 스텝 실행만 호출된다.
+     *
+     * @scenario invocation_origin=parent_spawn_with_skip_options, skip_migrations=present, skip_resync=present, skip_version_env=present, skip_cache_clear=present, skip_bundled_updates=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_always_invokes_runUpgradeSteps_regardless_of_skip_options
+     *
+     * @return void 반환값 없음
+     */
     public function test_all_skip_options_bypass_all_pre_and_post_steps(): void
     {
         [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
@@ -260,6 +339,8 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
      * 구버전 부모에서 올라오는 업데이트(7.0.9→7.0.10)를 덮는 유일한 자리이기 때문이다.
      *
      * @effects ExecuteUpgradeStepsCommand_sweeps_empty_staging_directories_left_by_parent
+     *
+     * @return void 반환값 없음
      */
     public function test_스텝_완료_후_빈_격리_디렉토리를_청소한다(): void
     {
@@ -289,6 +370,8 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
      * (7.0.9→7.0.10 서버 실측: `public/build/ext` 누락).
      *
      * @effects execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
+     *
+     * @return void 반환값 없음
      */
     public function test_config_캐시로_부팅한_자식은_쓰기권한_목록을_디스크_config_에서_읽는다(): void
     {
@@ -341,6 +424,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         }
     }
 
+    /**
+     * spawn 플래그(G7_UPDATE_IN_PROGRESS=1)만 있으면 --skip-* 옵션이 없어도 사전, 사후 단계를 모두 건너뛴다.
+     *
+     * @scenario invocation_origin=parent_spawn_env_only, spawn_env_flag=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_skips_runMigrations_when_spawn_env_flag_present_without_skip_options, ExecuteUpgradeStepsCommand_skips_reloadCoreConfigAndResync_when_spawn_env_flag_present_without_skip_options, ExecuteUpgradeStepsCommand_skips_updateVersionInEnv_when_spawn_env_flag_present_without_skip_options, ExecuteUpgradeStepsCommand_skips_clearAllCaches_when_spawn_env_flag_present_without_skip_options, ExecuteUpgradeStepsCommand_skips_bundled_updates_when_spawn_env_flag_present_without_skip_options
+     *
+     * @return void 반환값 없음
+     */
     public function test_spawn_child_env_bypasses_all_pre_and_post_steps_without_skip_options(): void
     {
         // 구버전 부모(beta.5) 가 신버전 자식(beta.6+) 을 spawn 할 때 `--skip-*` 옵션을 모르므로
@@ -372,6 +464,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         }
     }
 
+    /**
+     * spawn 플래그가 있으면 --force 를 함께 줘도 사전, 사후 단계를 건너뛴다.
+     *
+     * @scenario invocation_origin=parent_spawn_env_only, spawn_env_flag=present, force_flag=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_env_guard_dominates_over_force_flag_for_post_steps
+     *
+     * @return void 반환값 없음
+     */
     public function test_spawn_child_env_skips_even_when_force_is_set(): void
     {
         // env=1 + --force 동시 적용 시에도 사후 단계 모두 스킵. force 는 자식이 실행하는 step
@@ -402,6 +503,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         }
     }
 
+    /**
+     * spawn 플래그가 없는 단독 실행은 다섯 단계를 모두 실행한다.
+     *
+     * @scenario invocation_origin=standalone_operator, spawn_env_flag=absent
+     *
+     * @effects ExecuteUpgradeStepsCommand_standalone_invocation_without_env_runs_all_five_steps_intact
+     *
+     * @return void 반환값 없음
+     */
     public function test_standalone_invocation_without_env_still_runs_all_steps(): void
     {
         // env 미설정 (운영자 수동 호출) 시 기존 단독 실행 계약 보존 — 5단계 모두 실행.
@@ -432,6 +542,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         }
     }
 
+    /**
+     * --steps-only 를 주면 권한 정상화와 사전, 사후 단계 없이 스텝 실행만 호출된다.
+     *
+     * @scenario invocation_origin=standalone_operator, steps_only=present
+     *
+     * @effects ExecuteUpgradeStepsCommand_steps_only_runs_only_upgrade_steps
+     *
+     * @return void 반환값 없음
+     */
     public function test_steps_only_option_runs_only_upgrade_steps(): void
     {
         // --steps-only: 업그레이드 스텝만 실행. 권한 정상화·마이그레이션·resync·
@@ -451,6 +570,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    /**
+     * spawn 플래그가 없어도 --steps-only 가 단독 실행의 다섯 단계 자동 수행보다 우선한다.
+     *
+     * @scenario invocation_origin=standalone_operator, steps_only=present, spawn_env_flag=absent
+     *
+     * @effects ExecuteUpgradeStepsCommand_steps_only_overrides_standalone_default_steps
+     *
+     * @return void 반환값 없음
+     */
     public function test_steps_only_skips_aux_steps_even_without_env_signal(): void
     {
         // env 미설정(운영자 단독 호출) + --steps-only → 단독 실행 시 자동 수행되던
@@ -478,6 +606,15 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         }
     }
 
+    /**
+     * 부모 커맨드 소스가 자식 명령 배열에 --skip-* 다섯 개를 모두 더한다.
+     *
+     * @scenario invocation_origin=parent_spawn_with_skip_options
+     *
+     * @effects CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_migrations_to_command_array, CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_resync_to_command_array, CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_version_env_to_command_array, CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_cache_clear_to_command_array, CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_bundled_updates_to_command_array
+     *
+     * @return void 반환값 없음
+     */
     public function test_spawn_passes_all_five_skip_options_to_child(): void
     {
         // 부모 CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식 command 배열에
@@ -495,7 +632,7 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
     /**
      * CoreUpdateService + 3개 Manager + LanguagePackService 를 컨테이너에 mock 으로 swap.
      *
-     * @return array{0: MockInterface, 1: MockInterface, 2: MockInterface, 3: MockInterface, 4: MockInterface}
+     * @return array{0: MockInterface, 1: MockInterface, 2: MockInterface, 3: MockInterface, 4: MockInterface} 서비스, 모듈, 플러그인, 템플릿 매니저, 언어팩 서비스 대역
      */
     private function bindMocks(): array
     {
@@ -535,6 +672,7 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
      * 공통 옵션을 적용해 `core:execute-upgrade-steps` 를 호출.
      *
      * @param  array<string, mixed>  $extra  --skip-* 등 추가 옵션
+     * @return int 커맨드 종료 코드
      */
     private function runCommand(array $extra): int
     {
@@ -554,6 +692,10 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
     /**
      * 본 테스트가 from < to 범위 안에 들도록 더미 upgrade step 파일을 작성.
      * 핸들러 자체는 아무것도 하지 않는다 — 사전/사후 단계 호출만 검증.
+     *
+     * @param  string  $version  스텝 버전
+     * @param  string  $suffix  클래스 이름에 붙일 구분 접미
+     * @return void 반환값 없음
      */
     private function writeNoopStep(string $version, string $suffix): void
     {

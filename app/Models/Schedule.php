@@ -319,11 +319,13 @@ class Schedule extends Model
     /**
      * 마지막 실행 이력을 반환합니다.
      *
+     * 거절 행은 실행이 아니라서 건너뛴다 — 마지막 실행의 소요 시간이 거절 한 번에 비지 않게 한다.
+     *
      * @return ScheduleHistory|null 마지막 실행 이력
      */
     public function getLastHistoryAttribute(): ?ScheduleHistory
     {
-        return $this->histories()->first();
+        return $this->histories()->where('status', '!=', ScheduleResultStatus::Rejected)->first();
     }
 
     /**
