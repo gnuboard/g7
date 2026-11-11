@@ -296,3 +296,20 @@
     @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
   }
 }
+
+/* 페이지 전환 로딩 막대(`PageTransitionIndicator`)의 띠 움직임. 종전에는 컴포넌트가 `<style>` 요소로 실었는데,
+   엄격한 스타일 정책(`style-src 'self'`)에서 그 요소가 막혀 띠가 멈췄다. 컴포넌트의 `animate-[loading_…]`·
+   `animation: loading …` 이 이 이름에 의존하므로 `@layer` 밖 최상위에 둔다(이름을 바꾸면 띠가 멈춘다). */
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  50% {
+    transform: translateX(300%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}

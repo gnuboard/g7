@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-11-11
+
+### Fixed
+
+- 엄격한 스타일 보안 정책(CSP `style-src 'self'; style-src-attr 'none'`)을 건 사이트에서 주소 검색 창(페이지 안에 펼치기·전체 화면·레이어)이 테두리·배치·크기 없이 뜨던 문제를 고쳤습니다. 화면에 직접 써 넣던 스타일을 플러그인 CSS 파일로 옮겼습니다.
+
 ## [1.2.0] - 2026-11-10
 
 ### Added

@@ -113,15 +113,15 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
 
         <!-- 데이터베이스 설정 (Read DB) -->
         <div class="requirement-card">
-            <div class="requirement-card-header" style="cursor: pointer;">
-                <label for="use-read-db" style="cursor: pointer; display: flex; align-items: center; gap: var(--spacing-sm); flex: 1;">
-                    <h3 class="requirement-card-title" style="margin: 0;"><?= htmlspecialchars(lang('use_read_db')) ?></h3>
+            <div class="requirement-card-header u-pointer">
+                <label for="use-read-db" class="u-pointer u-flex-middle u-gap-sm u-flex-1">
+                    <h3 class="requirement-card-title u-m-0"><?= htmlspecialchars(lang('use_read_db')) ?></h3>
                 </label>
                 <input type="checkbox" name="use_read_db" id="use-read-db" value="1"
                        <?= ! empty($formData['use_read_db']) ? 'checked' : '' ?>
                        class="toggle-switch">
             </div>
-            <div id="read-db-section" class="requirement-card-body <?= empty($formData['use_read_db']) ? 'hidden' : '' ?>" style="transition: all 0.3s ease-out;">
+            <div id="read-db-section" class="requirement-card-body <?= empty($formData['use_read_db']) ? 'hidden' : '' ?> u-transition">
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label"><?= htmlspecialchars(lang('db_host')) ?> *</label>
@@ -309,7 +309,7 @@ foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
                 </div>
 
                 <!-- 커스텀 경로 입력 시 퍼미션/소유자 체크 버튼 -->
-                <div id="core-pending-check-wrapper" class="test-db-wrapper" style="display:none;">
+                <div id="core-pending-check-wrapper" class="test-db-wrapper hidden">
                     <button type="button" data-action="checkCorePendingPath" class="btn btn-success">
                         <?= htmlspecialchars(lang('check_core_pending_path')) ?>
                     </button>
@@ -320,22 +320,22 @@ foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
 
         <!-- PHP CLI / Composer 설정 -->
         <div class="requirement-card" id="php-cli-card">
-            <div class="requirement-card-header" style="cursor: pointer;">
-                <label for="show-php-cli-settings" style="cursor: pointer; display: flex; align-items: center; gap: var(--spacing-sm); flex: 1;">
-                    <h3 class="requirement-card-title" style="margin: 0;" id="php-cli-title"><?= htmlspecialchars(lang('php_cli_settings')) ?></h3>
+            <div class="requirement-card-header u-pointer">
+                <label for="show-php-cli-settings" class="u-pointer u-flex-middle u-gap-sm u-flex-1">
+                    <h3 class="requirement-card-title u-m-0" id="php-cli-title"><?= htmlspecialchars(lang('php_cli_settings')) ?></h3>
                 </label>
                 <input type="checkbox" id="show-php-cli-settings" value="1"
                        <?= (! empty($formData['php_binary']) && $formData['php_binary'] !== 'php') || ! empty($formData['composer_binary']) ? 'checked' : '' ?>
                        class="toggle-switch">
             </div>
-            <div id="php-cli-section" class="requirement-card-body <?= (empty($formData['php_binary']) || $formData['php_binary'] === 'php') && empty($formData['composer_binary']) ? 'hidden' : '' ?>" style="transition: all 0.3s ease-out;">
-                <p class="form-help" style="margin-bottom: var(--spacing-md);" id="php-cli-help-text">
+            <div id="php-cli-section" class="requirement-card-body <?= (empty($formData['php_binary']) || $formData['php_binary'] === 'php') && empty($formData['composer_binary']) ? 'hidden' : '' ?> u-transition">
+                <p class="form-help u-mb-md" id="php-cli-help-text">
                     <?= htmlspecialchars(lang('php_cli_settings_help')) ?>
                 </p>
 
                 <!-- 검증 상태 요약 -->
-                <div id="cli-status-summary" class="alert alert-info" style="display: none; margin-bottom: var(--spacing-md);">
-                    <div style="display: flex; gap: var(--spacing-lg); flex-wrap: wrap;">
+                <div id="cli-status-summary" class="alert alert-info u-mb-md hidden">
+                    <div class="u-flex u-gap-lg u-flex-wrap">
                         <span>PHP CLI: <strong id="cli-php-status"><?= htmlspecialchars(lang('cli_status_not_verified')) ?></strong></span>
                         <span>Composer: <strong id="cli-composer-status"><?= htmlspecialchars(lang('cli_status_not_verified')) ?></strong></span>
                     </div>
@@ -345,12 +345,12 @@ foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
                     <!-- PHP CLI 경로 -->
                     <div class="form-group">
                         <label class="form-label"><?= htmlspecialchars(lang('php_binary_path')) ?></label>
-                        <div style="display: flex; gap: var(--spacing-sm);">
+                        <div class="u-flex u-gap-sm">
                             <input type="text" name="php_binary" id="php_binary"
                                    value="<?= htmlspecialchars($formData['php_binary'] ?? 'php') ?>"
-                                   class="form-input" style="flex: 1;"
+                                   class="form-input u-flex-1"
                                    placeholder="php">
-                            <button type="button" data-action="testPhpBinary" class="btn btn-success" style="white-space: nowrap;">
+                            <button type="button" data-action="testPhpBinary" class="btn btn-success u-nowrap">
                                 <?= htmlspecialchars(lang('verify_version')) ?>
                             </button>
                         </div>
@@ -363,12 +363,12 @@ foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
                     <!-- Composer 경로 -->
                     <div class="form-group">
                         <label class="form-label"><?= htmlspecialchars(lang('composer_binary_path')) ?></label>
-                        <div style="display: flex; gap: var(--spacing-sm);">
+                        <div class="u-flex u-gap-sm">
                             <input type="text" name="composer_binary" id="composer_binary"
                                    value="<?= htmlspecialchars($formData['composer_binary'] ?? '') ?>"
-                                   class="form-input" style="flex: 1;"
+                                   class="form-input u-flex-1"
                                    placeholder="composer">
-                            <button type="button" data-action="testComposer" class="btn btn-success" style="white-space: nowrap;">
+                            <button type="button" data-action="testComposer" class="btn btn-success u-nowrap">
                                 <?= htmlspecialchars(lang('verify_version')) ?>
                             </button>
                         </div>
@@ -380,7 +380,7 @@ foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
                 </div>
 
                 <!-- Composer 미설치 시 설치 안내 -->
-                <div id="composer-install-guide" class="alert alert-warning" style="display: none; margin-top: var(--spacing-md);">
+                <div id="composer-install-guide" class="alert alert-warning u-mt-md hidden">
                     <div class="alert-header">
                         <div class="alert-icon"><?= getSvgIcon('warning') ?></div>
                         <h3 class="alert-title"><?= htmlspecialchars(lang('composer_install_guide_title')) ?></h3>
@@ -497,7 +497,7 @@ $currentVendorMode = $formData['vendor_mode'] ?? 'auto';
                         <?php } ?>
                     </label>
                 </div>
-                <p class="form-help" style="margin-top: var(--spacing-md);">
+                <p class="form-help u-mt-md">
                     <?= lang('vendor_mode_change_later_html') ?>
                 </p>
             </div>

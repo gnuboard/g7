@@ -12,6 +12,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../TranslationContext';
 import { useLayoutEditor } from '../LayoutEditorContext';
+import { applyToolbarStyle, removeToolbarStyle } from '../utils/editorRuntimeStyles';
 
 /**
  * hover 전이를 인라인 style 로 표현하는 툴바 버튼.
@@ -408,6 +409,12 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
   const { t } = useTranslation();
   const { state, dispatch } = useLayoutEditor();
 
+  // 스피너 keyframe·압착 차단 규칙 — <style> 요소 대신 런타임 시트로 붙인다(엄격한 스타일 정책 호환).
+  useEffect(() => {
+    applyToolbarStyle();
+    return () => removeToolbarStyle();
+  }, []);
+
   // EditorCanvasOverlay 가 window.__g7LayoutEditorHistory 로 노출하는 undo/redo
   // 핸들러를 polling 으로 가져온다 — 단일 캔버스 셋업에서만 사용.
   // canUndo/canRedo 가 변경되면 useEffect 가 다시 읽도록 history 객체 리렌더 트리거.
@@ -535,17 +542,10 @@ export function EditorToolbar(props: EditorToolbarProps = {}): React.ReactElemen
         boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
       }}
     >
-      {/* 저장 스피너 회전 keyframe — 인라인 style 로는 @keyframes 표현 불가.
-          + 툴바 압착 차단: 툴바는 flex row 라 기본값(flex-shrink:1)이면 창이 좁을 때
-          모든 항목의 폭이 깎이고 라벨이 글자 단위로 줄바꿈된다("요 소 추 가").
-          직접 자식 **전체**에 적용해야 한다 — 버튼마다 인라인 style 로 붙이면
-          자체 style 을 가진 하위 컴포넌트(TemplateSwitcher/LocaleSwitcher)와 이후 추가될
-          항목이 빠져 같은 결함이 재발한다. 셸 최소 너비(EDITOR_MIN_WIDTH) 안에서 각 항목은
-          자연 폭을 유지하고, 넘치는 만큼은 셸 가로 스크롤이 흡수한다. */}
-      <style>
-        {'@keyframes g7le-spin { to { transform: rotate(360deg); } }' +
-          '.g7le-toolbar > * { flex-shrink: 0; white-space: nowrap; }'}
-      </style>
+      {/* 저장 스피너 회전 keyframe 과 툴바 압착 차단 규칙은 인라인 style 로 표현할 수 없어
+          editorRuntimeStyles 의 TOOLBAR_STYLE_CSS 로 붙인다(위 useEffect — <style> 요소 없음).
+          셸 최소 너비(EDITOR_MIN_WIDTH) 안에서 각 항목은 자연 폭을 유지하고, 넘치는 만큼은
+          셸 가로 스크롤이 흡수한다. */}
       <button
         type="button"
         className="g7le-toolbar__route-tree-toggle"

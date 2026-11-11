@@ -404,6 +404,7 @@ class SaveSettingsRequest extends FormRequest
      *
      * 앞뒤 공백 제거·소문자화·빈 항목 제거·중복 제거(순서 유지). 형식 판정은 규칙
      * ({@see CspSourceHost})이 맡는다 — 여기서는 같은 호스트가 대소문자만 달라 두 번 저장되지 않게 한다.
+     * 스크립트 호스트와 스타일 호스트(7.1.6) 두 키를 같은 방식으로 다룬다.
      *
      * @return void 입력을 제자리에서 고친다
      */
@@ -411,32 +412,44 @@ class SaveSettingsRequest extends FormRequest
     {
         $security = $this->input('security');
 
-        if (! is_array($security) || ! is_array($security['csp_extra_script_hosts'] ?? null)) {
+        if (! is_array($security)) {
             return;
         }
 
-        $hosts = [];
+        $changed = false;
 
-        foreach ($security['csp_extra_script_hosts'] as $host) {
-            if ($host === null) {
+        foreach (['csp_extra_script_hosts', 'csp_extra_style_hosts'] as $key) {
+            if (! is_array($security[$key] ?? null)) {
                 continue;
             }
 
-            if (is_string($host)) {
-                $host = strtolower(trim($host));
+            $hosts = [];
 
-                if ($host === '') {
+            foreach ($security[$key] as $host) {
+                if ($host === null) {
                     continue;
+                }
+
+                if (is_string($host)) {
+                    $host = strtolower(trim($host));
+
+                    if ($host === '') {
+                        continue;
+                    }
+                }
+
+                if (! in_array($host, $hosts, true)) {
+                    $hosts[] = $host;
                 }
             }
 
-            if (! in_array($host, $hosts, true)) {
-                $hosts[] = $host;
-            }
+            $security[$key] = $hosts;
+            $changed = true;
         }
 
-        $security['csp_extra_script_hosts'] = $hosts;
-        $this->merge(['security' => $security]);
+        if ($changed) {
+            $this->merge(['security' => $security]);
+        }
     }
 
     /**
@@ -716,6 +729,12 @@ class SaveSettingsRequest extends FormRequest
             'security.csp_mode' => ['nullable', 'string', Rule::in(CspPolicyBuilder::MODES)],
             'security.csp_extra_script_hosts' => ['nullable', 'array', 'max:'.self::CSP_HOST_LIST_MAX],
             'security.csp_extra_script_hosts.*' => [new CspSourceHost],
+            // 스타일 정책 (7.1.6). 미전송(옛 화면)은 기본값(끔·basic·빈 목록) 유지.
+            // `.env G7_CSP_STYLE_MODE` 탈출구도 저장값을 바꾸지 않고 적용 시점에만 우선한다.
+            'security.csp_style_mode' => ['nullable', 'string', Rule::in(CspPolicyBuilder::MODES)],
+            'security.csp_style_level' => ['nullable', 'string', Rule::in(CspPolicyBuilder::LEVELS)],
+            'security.csp_extra_style_hosts' => ['nullable', 'array', 'max:'.self::CSP_HOST_LIST_MAX],
+            'security.csp_extra_style_hosts.*' => [new CspSourceHost],
 
             // 캐시 설정 (advanced 탭)
             'advanced.cache_enabled' => $this->getTabRules($tab, 'advanced', 'boolean'),
@@ -1601,6 +1620,10 @@ class SaveSettingsRequest extends FormRequest
             'security.csp_mode.in' => __('validation.settings.csp_mode_in'),
             'security.csp_extra_script_hosts.array' => __('validation.settings.csp_extra_script_hosts_array'),
             'security.csp_extra_script_hosts.max' => __('validation.settings.csp_extra_script_hosts_max', ['max' => self::CSP_HOST_LIST_MAX]),
+            'security.csp_style_mode.in' => __('validation.settings.csp_style_mode_in'),
+            'security.csp_style_level.in' => __('validation.settings.csp_style_level_in'),
+            'security.csp_extra_style_hosts.array' => __('validation.settings.csp_extra_style_hosts_array'),
+            'security.csp_extra_style_hosts.max' => __('validation.settings.csp_extra_style_hosts_max', ['max' => self::CSP_HOST_LIST_MAX]),
 
             // 캐시 설정
             'advanced.cache_enabled.required' => __('validation.settings.cache_enabled_required'),
@@ -1834,6 +1857,7 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_rules.*' => __('validation.attributes.ip_restriction_rules'),
             'security.admin_allowed_ips.*' => __('validation.attributes.admin_allowed_ips'),
             'security.csp_extra_script_hosts.*' => __('validation.attributes.csp_extra_script_hosts'),
+            'security.csp_extra_style_hosts.*' => __('validation.attributes.csp_extra_style_hosts'),
             'security.ip_restriction_rules.*.ips.*' => __('validation.attributes.ip_restriction_rule_ips'),
             '_tab' => __('validation.attributes.settings_tab'),
             // notifications
@@ -1930,6 +1954,9 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_rules' => __('validation.attributes.ip_restriction_rules'),
             'security.csp_mode' => __('validation.attributes.csp_mode'),
             'security.csp_extra_script_hosts' => __('validation.attributes.csp_extra_script_hosts'),
+            'security.csp_style_mode' => __('validation.attributes.csp_style_mode'),
+            'security.csp_style_level' => __('validation.attributes.csp_style_level'),
+            'security.csp_extra_style_hosts' => __('validation.attributes.csp_extra_style_hosts'),
             'security.ip_restriction_rules.*.pattern' => __('validation.attributes.ip_restriction_rule_pattern'),
             'security.ip_restriction_rules.*.ips' => __('validation.attributes.ip_restriction_rule_ips'),
             'security.ip_restriction_rules.*.memo' => __('validation.attributes.ip_restriction_rule_memo'),

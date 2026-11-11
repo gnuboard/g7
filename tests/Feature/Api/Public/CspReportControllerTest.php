@@ -120,6 +120,53 @@ class CspReportControllerTest extends TestCase
     }
 
     /**
+     * 스타일 정책 위반 보고(`style-src-elem`·`style-src-attr`)도 같은 모양으로 기록된다 — 수신 쪽은 지시어를 가리지 않는다.
+     *
+     * @scenario case=format_report_uri
+     *
+     * @effects csp_style_report_logged
+     *
+     * @return void 반환값 없음
+     */
+    public function test_스타일_위반_보고도_기록된다(): void
+    {
+        $captured = $this->captureLog();
+
+        $this->report(json_encode(['csp-report' => [
+            'document-uri' => 'https://site.test/admin/settings?tab=security',
+            'blocked-uri' => 'inline',
+            'effective-directive' => 'style-src-elem',
+            'violated-directive' => 'style-src-elem',
+            'disposition' => 'report',
+            'source-file' => 'https://site.test/build/core/template-engine.min.js?v=1',
+            'line-number' => 3,
+        ]]))->assertNoContent();
+
+        $this->report(json_encode([
+            ['type' => 'csp-violation', 'body' => [
+                'documentURL' => 'https://site.test/board/free/1?page=2',
+                'blockedURL' => 'inline',
+                'effectiveDirective' => 'style-src-attr',
+                'disposition' => 'enforce',
+                'sample' => 'color: red',
+            ]],
+        ]), 'application/reports+json')->assertNoContent();
+
+        $this->assertCount(2, $captured);
+
+        $this->assertSame('style-src-elem', $captured[0]['effective_directive']);
+        $this->assertSame('inline', $captured[0]['blocked_uri']);
+        $this->assertSame('report', $captured[0]['disposition']);
+        $this->assertSame('https://site.test/admin/settings', $captured[0]['document_uri']);
+        $this->assertSame('https://site.test/build/core/template-engine.min.js', $captured[0]['source_file']);
+
+        $this->assertSame('style-src-attr', $captured[1]['effective_directive']);
+        $this->assertSame('enforce', $captured[1]['disposition']);
+        $this->assertSame('https://site.test/board/free/1', $captured[1]['document_uri']);
+        $this->assertSame('color: red', $captured[1]['sample']);
+    }
+
+    /**
      * 잘못된 본문은 204 로 끊고 기록하지 않는다.
      *
      * @scenario case=format_malformed

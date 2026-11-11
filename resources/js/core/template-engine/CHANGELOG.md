@@ -5,6 +5,32 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.91.0] - 2026-11-11
+
+### Added
+
+- `G7Core.style.setRules(key, css, opts?)` · `remove(key)` · `has(key)` — 런타임 CSS 규칙 헬퍼(`resources/js/core/style/RuntimeStyleSheet.ts`). 기존 `G7Core.style`(`mergeClasses`·`conditionalClass`·`joinClasses`)에 더했다. `<style>` 요소를 만들지 않고 생성형 스타일시트(`new CSSStyleSheet()` + `replaceSync`)를 `document.adoptedStyleSheets` 에 더한다(배열을 덮어쓰지 않고 이어 붙이며, 제거는 자기 시트만 거른다). 같은 key 는 교체. 반환 핸들은 `{key, mode: 'adopted' | 'element', remove()}`. adopted 모드에서도 `<head>` 에 표식 요소 `<meta id="{key}" data-g7-runtime-style="adopted">` 를 붙였다가 제거 때 뗀다(`opts.markerAttrs` 로 속성 추가, `style` 이름은 무시). 기능이 없는 환경(구형 브라우저·jsdom)은 `<style id="{key}" data-g7-runtime-style="element">` 로 폴백한다. 레지스트리는 `window.__g7RuntimeStyles`(Map)라 편집기·DevTools 번들에 모듈이 복제돼도 한 곳을 공유한다. 모듈 내부용으로 `getCssText(key)`·`getSheet(key)` 도 있다(전역에는 노출하지 않음).
+- `G7Core.inlineStyle` — 본문 서식 지연 장치(`resources/js/core/contentStyle/InlineStyleDeferral.ts`). `ATTR`(`'data-g7-style'`) · `defer(html)` → `{html, token}`(정화 전에 태그 안의 `style=` 을 1회용 이름 `data-g7-style-{token}` 으로 바꿈) · `installHook(purifyInstance, config, token)`(전용 DOMPurify 인스턴스의 `beforeSanitizeAttributes`·`afterSanitizeAttributes` 훅이 그 이름만 `data-g7-style` 로 올림) · `sanitize(purifyInstance, html, config)`(이름 바꾸기 → 훅 → 정화 → 훅 해제를 한 번에) · `apply(root)` → 적용한 요소 수(`[data-g7-style]` 마다 `el.style.cssText` 에 대입하고 속성 제거, 루트 자신 포함). 원문에 이미 적혀 있던 `data-g7-style` 은 버리고, 정화 설정이 `style` 을 금지하면(`FORBID_ATTR` 에 포함, 또는 `ALLOWED_ATTR` 이 있는데 `ALLOWED_ATTR`·`ADD_ATTR` 어디에도 없음) 올리지 않고 버린다.
+- `G7Core.contentPolicy.sanitize(purify, html, { …, G7_DEFER_STYLE: true })` — 플래그가 있으면 출력의 `style` 속성을 `data-g7-style` 로 옮긴다(호출자가 DOM 에 붙인 뒤 `G7Core.inlineStyle.apply(root)`). 후보 태그(`video` 등)는 허용 속성 목록에 `style` 이 없으면 서식을 버린다(종전 결과와 같음). 플래그가 없으면 출력은 종전과 같다 — `apply` 를 구현하지 않은 옛·외부 템플릿에서 서식이 통째로 사라지지 않게 하기 위해서다. 플래그는 `G7_KEEP_FORBID_TAGS` 처럼 걸러 DOMPurify 에 넘기지 않는다.
+
+### Changed
+
+- 전환 덮개(`transition_overlay`)의 타겟 지정 규칙과 스켈레톤·스피너 덮개의 타겟 규칙을 `<style>` 요소 대신 `RuntimeStyleSheet` 로 붙인다(키 `g7-transition-overlay`·`g7-skeleton-overlay-style`). `<head>` 에는 같은 id 의 표식 요소가 남으므로 「같은 id 요소가 있으면 덮개가 떠 있다」는 계약은 그대로지만, 태그는 `<style>` 이 아니라 `<meta>` 다(TemplateApp).
+- 기본 스피너(커스텀 `spinner.component` 미지정)를 `innerHTML` 의 `style` 속성 문자열 대신 요소 + 코어 정적 CSS 클래스(`g7-spinner-overlay`·`g7-spinner`)로 그린다. 색을 바꾸는 CSS 변수 `--g7-overlay-bg`·`--g7-spinner-color` 는 그대로다. `@keyframes g7-spin` 은 런타임 주입에서 코어 정적 CSS(`public/assets/core/css/g7-core.css`)로 옮겼다 — 이 이름에 기대는 템플릿 로딩 컴포넌트는 그대로 동작한다(TemplateApp).
+- 본문의 외부 영상 상자(`renderEmbeds()` 가 만드는 `.g7-embed`)가 `style` 속성 대신 `data-aspect` 속성(목록에 있는 비율만)과 코어 정적 CSS 로 비율·배치를 정한다. 목록 밖 비율은 기본(16:9)이다(ContentPolicyRuntime).
+
+### Fixed
+
+- 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'` 또는 `style-src-elem 'self'`)을 건 사이트에서 코어 런타임이 만든 스타일이 적용되지 않던 문제. 고친 자리:
+  - 전환 덮개·스켈레톤·스피너 덮개 — `<head>` 에 붙인 `<style>` 이 막혀 덮개가 보이지 않고 앞 화면이 비쳤다(TemplateApp, 위 Changed).
+  - 엔진 오류 화면 — `innerHTML` 의 `style` 속성이 막혀 제목·버튼이 무스타일로 그려졌다. `g7-error*` 클래스 + 코어 정적 CSS 로 바꿨다. 다크 모드는 `prefers-color-scheme` 미디어 쿼리(ErrorDisplay).
+  - 레이아웃 로드 실패·컴포넌트 없음·컴포넌트 오류 안내 — 같은 원인. `g7-layout-error__*`·`g7-layout-placeholder__*`·`g7-layout-component-error__*` 클래스로 바꿨다(LayoutLoader).
+  - 시스템 배너 — 배너 항목을 `style` 속성 문자열로 그려 배경·글자색이 사라졌다. 요소를 만들고 고정 모양은 `g7-system-banner` 클래스, 배너별 배경·글자색은 `el.style` 대입으로 준다. 메시지는 종전대로 HTML 문자열을 받는다(SystemBannerManager).
+  - 레이아웃 편집기 — 툴바 규칙(저장 스피너 `@keyframes g7le-spin`·압착 차단), 공통 레이아웃 슬롯 표시 규칙(번역 문구는 CSS 변수 `--g7le-slot-label`), 빈 표 셀 최소 크기 규칙, 권한 가드된 편집기 CSS 자산(키 `g7le-asset:{href}`, 표식 요소에 `data-g7le-asset`), 미리보기 미디어 격리의 컨테이너 지정 규칙을 `<style>` 요소 대신 `RuntimeStyleSheet` 로 붙인다. 생성형 시트는 `ownerNode` 가 없어 미디어 격리의 속성 옵트아웃이 걸리지 않으므로 시트 객체 비교로 격리 대상에서 뺀다. 생성형 시트의 `replaceSync` 는 `@import` 를 무시하므로 편집기 CSS 에 `@import` 가 있으면 경고를 남긴다(EditorToolbar·PreviewCanvas·TableInplaceOverlay·useEditorTemplateAssets·usePreviewMediaIsolation·editorRuntimeStyles).
+  - DevTools 패널 — 패널 CSS 를 `<style>` 요소 대신 `RuntimeStyleSheet`(키 `g7-devtools-styles`)로 붙인다(devtools/ui/styles).
+
+배경: 엄격한 스타일 정책에서 막히는 것은 세 가지다 — `<style>` 요소, HTML 문자열(서버 HTML·`innerHTML`·`dangerouslySetInnerHTML`)의 `style="…"` 속성, `setAttribute('style', …)`. Chrome 156 실측에서 `document.adoptedStyleSheets`, 기존 `<link>` 시트의 `insertRule`, `el.style.x = …`·`el.style.cssText = …`·`el.style.setProperty()`, React `style` prop 은 위반 0건이었다. 같은 실측에서 엄격 정책 아래 HTML 문자열을 `DOMParser`·`<template>` 로 **파싱만 해도** 그 안의 `style` 속성이 위반으로 보고됐다 — 그래서 본문 서식 지연은 정화 뒤에 속성을 옮기는 방식이 아니라 정화(=파싱) **전에** 속성 이름을 바꾸는 방식이다. 발생 시점: 각 기능이 처음 들어온 때부터다(타겟 지정 덮개 engine-v1.23.0, 스켈레톤 engine-v1.24.0, 스피너 engine-v1.29.0). 스타일 정책을 걸지 않은 사이트에서는 드러나지 않았다. 한계: `adoptedStyleSheets` 가 없는 브라우저는 `<style>` 폴백이라, 그 브라우저에서 정책을 강제하면 덮개가 표시되지 않는다. 서버 짝: 셸·오류·점검 화면의 `<style>` 블록을 코어 정적 CSS 2종(`g7-core.css`·`g7-standalone.css`)으로 옮겼고, 스타일 정책 설정(`security.csp_style_mode`·`csp_style_level`)이 생겼다. 회귀 잠금: `style/__tests__/RuntimeStyleSheet.test.ts`, `contentStyle/__tests__/InlineStyleDeferral.test.ts`, `__tests__/TemplateApp.overlayNoInlineStyle.test.ts`, `__tests__/coreCss.contract.test.ts`(런타임이 쓰는 클래스·keyframes 가 코어 정적 CSS 에 있는지), `template-engine/__tests__/coreRuntime.noInlineStyle.test.ts`, `contentPolicy/__tests__/ContentPolicyRuntime.noInlineStyle.test.ts`, `template-engine/layout-editor/__tests__/noInlineStyleElement.test.tsx`, `devtools/__tests__/injectDevToolsStyles.test.ts`.
+
 ## [engine-v1.90.1] - 2026-11-09
 
 ### Fixed

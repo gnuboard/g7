@@ -79,6 +79,7 @@ vi.mock('../template-engine/ComponentRegistry', () => {
 
 import { TemplateApp } from '../TemplateApp';
 import { DataSourceManager } from '../template-engine/DataSourceManager';
+import { remove as removeRuntimeStyleRules } from '../style/RuntimeStyleSheet';
 
 /** 게시판 환경설정 구조 축약: 설정 본체(blocking, initLocal, refetchOnMount) + 탭별 progressive 목록 */
 const RAW_SOURCES = [
@@ -106,7 +107,7 @@ describe('updateQueryParams 겹침 — 덮개와 결과 적용은 마지막 호�
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="app"><div id="right_content_area"><div id="tab_content"><input name="attachment.days" /></div></div></div>';
-    document.head.querySelectorAll('#g7-skeleton-overlay-style').forEach((n) => n.remove());
+    removeRuntimeStyleRules('g7-skeleton-overlay-style');
     window.history.replaceState(null, '', '/admin/boards/settings?tab=basic_defaults');
     (window as any).G7Core = { t: () => '' };
 

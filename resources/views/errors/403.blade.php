@@ -13,7 +13,7 @@
 
 @if ($ipRestricted && filled($clientIp ?? null))
     @section('extra')
-        <p class="error-message" style="font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.875rem;">
+        <p class="error-message error-message--mono">
             {{ __('errors.ip_restricted.client_ip', ['ip' => $clientIp]) }}
         </p>
     @endsection

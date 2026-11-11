@@ -19,6 +19,7 @@ import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
 import { LinkButton } from '../../support/LinkButton';
 import { solidChipColors } from '../../support/accessibleColor';
+import { sanitizeDeferred } from '../../support/inlineStyleDeferral';
 import { mergeQueryIntoHref, useLocationSearch } from '../../support/navigationLink';
 
 /**
@@ -227,10 +228,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
    * mark 태그만 허용하여 XSS를 방지합니다.
    */
   const sanitizeHighlight = (html: string): string => {
-    return DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: ['mark'],
-      ALLOWED_ATTR: [],
-    }) as unknown as string;
+    const config = { ALLOWED_TAGS: ['mark'], ALLOWED_ATTR: [] };
+
+    // 결과에는 style 속성이 남지 않지만(ALLOWED_ATTR 비움), 원문에 style 속성이 있으면 정화기가 문자열을 파싱하는 것만으로
+    // 엄격한 스타일 정책 위반이 보고된다. 코어 본문 서식 지연 장치가 있으면 그 장치로 정화해 파싱 전에 style 을 걷는다(서식은
+    // 설정이 금지하므로 버려져 입힐 것이 없다). 장치가 없으면(옛 코어) 종전 그대로다 (공개 #163).
+    return sanitizeDeferred(html, config) ?? (DOMPurify.sanitize(html, config) as unknown as string);
   };
 
   const nameHighlighted = product.name_highlighted;

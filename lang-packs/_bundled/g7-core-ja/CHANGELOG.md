@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.5] - 2026-11-11
+
+### Added
+
+- 코어 7.1.6 환경설정 > 보안 「콘텐츠 보안 정책」의 스타일 정책 저장 검증 문구(`validation.settings.csp_style_mode_in`·`csp_style_level_in`·`csp_extra_style_hosts_array`·`csp_extra_style_hosts_max`)와 항목명(`validation.attributes.csp_style_mode` 「スタイルポリシーのモード」·`csp_style_level` 「スタイルポリシーの強度」·`csp_extra_style_hosts` 「追加スタイル許可ホスト」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 이 문구가 키 그대로 보입니다.
+
 ## [1.1.4] - 2026-11-10
 
 ### Added

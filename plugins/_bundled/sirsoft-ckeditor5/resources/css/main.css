@@ -1,0 +1,429 @@
+/**
+ * sirsoft-ckeditor5 화면 스타일 — 본문(.ck-content) 보정, 다국어 탭, 편집기 다크 모드, 편집기 높이, 미디어 미리보기
+ *
+ * 종전에는 핸들러(`index.ts`·`initEditor.ts`)가 이 규칙들을 `<style>` 요소로 실었다. 엄격한 스타일 정책
+ * (`style-src 'self'; style-src-attr 'none'`)에서 `<style>` 요소와 HTML 문자열의 `style` 속성이 막히므로
+ * 이 파일(빌드 산출물 `dist/css/plugin.css`, `plugin.json` 의 `assets.css`)로 옮겼다.
+ *
+ * 우선순위 규칙 — 고칠 때 반드시 지킨다:
+ * - 이 파일은 부팅 때 실리고, 동봉 CKEditor CSS(`dist/vendor/ckeditor5/…/ckeditor5.css`)는 편집기·본문이 뜰 때
+ *   뒤늦게 실린다. 종전 `<style>` 은 동봉 CSS 뒤에 붙어 같은 우선순위의 규칙을 순서로 이겼지만, 이제는 순서로
+ *   진다. 그래서 다크가 아닌 보정 규칙에는 `:root ` 접두를 붙여 우선순위를 한 단계 올린다.
+ * - 다크 규칙은 `html.dark` 로 스코프한다. 종전에는 다크 모드일 때만 `<style>` 을 넣고 빼는 관측자가 있었는데,
+ *   스코프로 바꾸면서 관측자가 필요 없어졌다. CKEditor 변수는 동봉 CSS 가 `:root` 에 선언하므로 `html.dark`
+ *   (요소 + 클래스)여야 이긴다 — `.dark` 만 쓰면 동봉 CSS 에 진다.
+ * - 「읽기 화면 전용」 규칙은 `:where(:not(.ck-editor__editable))` 로 편집 영역을 뺀다. `:where()` 는 우선순위를
+ *   올리지 않으므로 동봉 CSS 와의 승패가 종전과 같다.
+ * - 본문의 사용자 서식(`style` 속성)을 고르는 `[style*="float"]` 선택자는 그대로 쓴다 — 서식을 `el.style.cssText`
+ *   로 입혀도 `style` 속성으로 비치므로 매칭된다.
+ */
+
+/* ==========================================================================
+ * 1. 본문·편집 영역 공통 보정 (라이트)
+ * ========================================================================== */
+
+/* 표 너비 인라인 스타일 무력화 - 컨테이너에 맞게 100% (prose 와의 충돌 방지) */
+:root .ck-content figure.table { width: 100%; }
+:root .ck-content figure.table table { width: 100%; }
+/* 표 tr 배경색 초기화 */
+:root .ck-content table tr { background-color: unset; }
+/* 표 col 절대 px 너비 무력화 - 컨테이너에 맞게 비율로 */
+:root .ck-content table col { width: auto !important; }
+
+/* 표 정렬 보정: CKEditor5 기본 CSS 의 margin-left:auto 를 float 으로 덮어씀 */
+:root .ck-content figure.table[style*="float:left"],
+:root .ck-content figure.table[style*="float: left"] {
+    margin-left: 0 !important;
+    margin-right: 1em !important;
+}
+:root .ck-content figure.table[style*="float:right"],
+:root .ck-content figure.table[style*="float: right"] {
+    margin-left: 1em !important;
+    margin-right: 0 !important;
+}
+
+/* 이미지 캡션 - 라이트 모드 */
+:root .ck-content .image > figcaption {
+    background-color: #f3f4f6;
+    color: #374151;
+    font-size: 0.875em;
+    padding: 4px 8px;
+    text-align: center;
+}
+
+/* 목록 마커 및 들여쓰기 복원 (Tailwind preflight reset 대응) */
+:root .ck.ck-editor__editable ul,
+:root .ck-content ul {
+    list-style-type: disc;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ol,
+:root .ck-content ol {
+    list-style-type: decimal;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ul ul,
+:root .ck-content ul ul {
+    list-style-type: circle;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ul ul ul,
+:root .ck-content ul ul ul {
+    list-style-type: square;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ol ol,
+:root .ck-content ol ol {
+    list-style-type: lower-alpha;
+    padding-left: 2em;
+}
+:root .ck.ck-editor__editable ol ol ol,
+:root .ck-content ol ol ol {
+    list-style-type: lower-roman;
+    padding-left: 2em;
+}
+
+/* ==========================================================================
+ * 2. 읽기 화면(방문자가 보는 본문) 전용 보정 — 편집 영역에는 걸지 않는다
+ * ========================================================================== */
+
+/* figure.table 전체 너비 - prose 와의 충돌 방지 */
+:root .ck-content:where(:not(.ck-editor__editable)) figure.table { display: table; margin: 1em 0; }
+
+/* 이미지 인라인/정렬 - Tailwind preflight img:block 대응 */
+:root .ck-content:where(:not(.ck-editor__editable)) img { display: inline; margin: 0; max-width: 100%; }
+:root .ck-content:where(:not(.ck-editor__editable)) p:has(img) { line-height: 0; }
+:root .ck-content:where(:not(.ck-editor__editable)) p:has(img[style*="float"]) { overflow: hidden; }
+
+/* 이미지 캡션 - 다크 모드 (동봉 CSS 미지원) */
+html.dark .ck-content:where(:not(.ck-editor__editable)) .image > figcaption { color: hsl(0, 0%, 80%); background-color: hsl(0, 0%, 15%); }
+
+/* 표 - 다크 모드 (동봉 CSS 미지원) */
+html.dark .ck-content:where(:not(.ck-editor__editable)) figure.table table { border-color: hsl(0, 0%, 35%); }
+html.dark .ck-content:where(:not(.ck-editor__editable)) figure.table table tr { background-color: unset; }
+html.dark .ck-content:where(:not(.ck-editor__editable)) figure.table table td,
+html.dark .ck-content:where(:not(.ck-editor__editable)) figure.table table th { border-color: hsl(0, 0%, 30%); color: hsl(0, 0%, 90%); background-color: unset; }
+html.dark .ck-content:where(:not(.ck-editor__editable)) figure.table table th { background-color: hsl(215, 20%, 25%); }
+
+/* ==========================================================================
+ * 3. 다국어 탭
+ * ========================================================================== */
+
+/* 다국어 탭 컨테이너 */
+.ckeditor5-locale-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+/* 다국어 탭 버튼 - HtmlEditor 언어탭 스타일 */
+.ckeditor5-locale-tabs button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+/* 비활성 - 기본언어 (blue) — 글자는 hover 바탕(#dbeafe)에서도 4.5 이상인 단계 */
+.ckeditor5-locale-tabs button.is-default {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+.ckeditor5-locale-tabs button.is-default:hover {
+    background: #dbeafe;
+}
+/* 비활성 - 비기본언어 (gray) */
+.ckeditor5-locale-tabs button:not(.is-default) {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+.ckeditor5-locale-tabs button:not(.is-default):hover {
+    background: #e5e7eb;
+}
+/* 활성 - 기본언어 — 흰 글자가 4.5 이상인 바탕(종전 #3b82f6 은 3.68) */
+.ckeditor5-locale-tabs button.is-active.is-default {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transform: scale(1.05);
+}
+/* 활성 - 비기본언어 */
+.ckeditor5-locale-tabs button.is-active:not(.is-default) {
+    background: #6b7280;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transform: scale(1.05);
+}
+.ckeditor5-locale-tabs button .ck5-lang-icon {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+/* 필수 표시 — 비활성(연한 바탕)은 진한 빨강, 활성(진한 바탕)은 탭 글자색(흰색)을 따른다 */
+.ckeditor5-locale-tabs button .ck5-required {
+    color: #b91c1c;
+}
+.ckeditor5-locale-tabs button.is-active .ck5-required {
+    color: currentColor;
+}
+/* 입력 완료 표시(아이콘 3:1) — 회색 hover 바탕(#e5e7eb)에서도 3 이상 */
+.ckeditor5-locale-tabs button .ck5-check {
+    color: #15803d;
+}
+/* 다크 모드 - 비활성 기본언어 */
+html.dark .ckeditor5-locale-tabs button.is-default {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+}
+html.dark .ckeditor5-locale-tabs button.is-default:hover {
+    background: rgba(59, 130, 246, 0.25);
+}
+/* 다크 모드 - 비활성 비기본언어 */
+html.dark .ckeditor5-locale-tabs button:not(.is-default) {
+    background: #374151;
+    color: #d1d5db;
+}
+html.dark .ckeditor5-locale-tabs button:not(.is-default):hover {
+    background: #4b5563;
+}
+/* 다크 모드 - 활성 기본언어 */
+html.dark .ckeditor5-locale-tabs button.is-active.is-default {
+    background: #2563eb;
+    color: #ffffff;
+}
+/* 다크 모드 - 활성 비기본언어 */
+html.dark .ckeditor5-locale-tabs button.is-active:not(.is-default) {
+    background: #4b5563;
+    color: #ffffff;
+}
+html.dark .ckeditor5-locale-tabs button .ck5-check {
+    color: #4ade80;
+}
+html.dark .ckeditor5-locale-tabs button .ck5-required {
+    color: #fca5a5;
+}
+html.dark .ckeditor5-locale-tabs button.is-active .ck5-required {
+    color: currentColor;
+}
+
+/* ==========================================================================
+ * 4. 편집기 다크 모드 — CKEditor 변수와 UI 색 덮어쓰기
+ * ========================================================================== */
+
+/* CSS 변수 — 동봉 CSS 의 :root 선언을 이기도록 html.dark */
+html.dark {
+    --ck-color-base-foreground: #1f2937;
+    --ck-color-base-background: #1f2937;
+    --ck-color-base-border: #374151;
+    --ck-color-text: #f3f4f6;
+    --ck-color-toolbar-background: #111827;
+    --ck-color-toolbar-border: #374151;
+    --ck-color-button-default-background: transparent;
+    --ck-color-button-default-hover-background: #374151;
+    --ck-color-button-default-active-background: #4b5563;
+    --ck-color-button-on-background: #374151;
+    --ck-color-button-on-hover-background: #4b5563;
+    --ck-color-focus-border: #3b82f6;
+    --ck-color-input-background: #1f2937;
+    --ck-color-input-text: #f3f4f6;
+    --ck-color-input-border: #374151;
+    --ck-color-panel-background: #1f2937;
+    --ck-color-panel-border: #374151;
+    --ck-color-list-button-hover-background: #374151;
+    --ck-color-list-button-on-background: #3b82f6;
+    --ck-color-list-button-on-color: #f3f4f6;
+    --ck-color-list-button-on-hover-background: #4b5563;
+    --ck-color-labeled-field-label-background: #1f2937;
+    --ck-color-link-default: #60a5fa;
+    --ck-color-link-selected-background: rgba(96, 165, 250, 0.1);
+    --ck-color-table-focused-cell-background: rgba(59, 130, 246, 0.1);
+}
+/* 에디터 본문 */
+html.dark .ck.ck-editor__editable_inline {
+    background-color: #1f2937 !important;
+    color: #f3f4f6 !important;
+    border-color: #374151 !important;
+}
+/* 메인 툴바 */
+html.dark .ck.ck-toolbar {
+    background-color: #111827 !important;
+    border-color: #374151 !important;
+}
+/* 모든 버튼 텍스트 */
+html.dark .ck.ck-button,
+html.dark .ck.ck-button .ck-button__label {
+    color: #f3f4f6 !important;
+}
+/* 모든 SVG 아이콘 (툴바, 드롭다운 화살표 포함) */
+html.dark .ck.ck-icon,
+html.dark .ck .ck-icon,
+html.dark .ck.ck-button .ck-icon,
+html.dark .ck.ck-dropdown__arrow {
+    color: #f3f4f6 !important;
+}
+html.dark .ck.ck-button:hover,
+html.dark .ck.ck-button.ck-on {
+    background-color: #374151 !important;
+}
+/* 툴팁 (호버 시 버튼 설명) */
+html.dark .ck.ck-tooltip .ck-tooltip__text {
+    background-color: #1f2937 !important;
+    color: #f3f4f6 !important;
+}
+/* 드롭다운 패널 / 리스트 / balloon 팝업 공통 */
+html.dark .ck.ck-dropdown__panel,
+html.dark .ck.ck-list,
+html.dark .ck.ck-balloon-panel {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+/* 리스트 아이템 */
+html.dark .ck.ck-list__item .ck-button,
+html.dark .ck.ck-list__item .ck-button .ck-button__label {
+    color: #f3f4f6 !important;
+}
+html.dark .ck.ck-list__item .ck-button:hover {
+    background-color: #374151 !important;
+}
+html.dark .ck.ck-list__item .ck-button.ck-disabled .ck-button__label {
+    color: #6b7280 !important;
+}
+/* 링크 팝업 / form */
+html.dark .ck.ck-link-form,
+html.dark .ck.ck-link-actions {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+html.dark .ck.ck-input-text {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+    border-color: #374151 !important;
+}
+html.dark .ck.ck-labeled-field-view__label {
+    background-color: #1f2937 !important;
+    color: #9ca3af !important;
+}
+/* 테이블 속성/셀 속성 폼 */
+html.dark .ck.ck-table-form,
+html.dark .ck.ck-table-cell-properties-form,
+html.dark .ck.ck-table-properties-form {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+html.dark .ck.ck-table-form .ck-label,
+html.dark .ck.ck-table-cell-properties-form .ck-label,
+html.dark .ck.ck-table-properties-form .ck-label {
+    color: #d1d5db !important;
+}
+/* 색상 선택 패널 */
+html.dark .ck.ck-color-table,
+html.dark .ck.ck-color-grid {
+    background-color: #1f2937 !important;
+}
+html.dark .ck.ck-color-table .ck-color-table__remove-color,
+html.dark .ck.ck-color-table .ck-color-table__remove-color .ck-button__label {
+    color: #f3f4f6 !important;
+}
+/* 헤딩/폰트 드롭다운 라벨 */
+html.dark .ck.ck-heading_paragraph,
+html.dark .ck.ck-heading_heading1,
+html.dark .ck.ck-heading_heading2,
+html.dark .ck.ck-heading_heading3 {
+    color: #f3f4f6 !important;
+}
+/* 이미지 선택 시 balloon toolbar (floating) */
+html.dark .ck.ck-toolbar_floating {
+    background-color: #111827 !important;
+    border-color: #374151 !important;
+}
+/* 이미지 정렬 툴바 아이콘 */
+html.dark .ck.ck-toolbar .ck-button .ck-icon {
+    color: #f3f4f6 !important;
+}
+/* 이미지 리사이즈 드롭다운 버튼 라벨 (25%, 50% 등) */
+html.dark .ck.ck-dropdown .ck-button__label {
+    color: #f3f4f6 !important;
+}
+/* 이미지 리사이즈 드롭다운 내 선택 리스트 */
+html.dark .ck.ck-resize-image-form,
+html.dark .ck.ck-image-resize-form {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #f3f4f6 !important;
+}
+html.dark .ck.ck-resize-image-form .ck-label,
+html.dark .ck.ck-image-resize-form .ck-label {
+    color: #d1d5db !important;
+}
+html.dark .ck.ck-resize-image-form .ck-input-text,
+html.dark .ck.ck-image-resize-form .ck-input-text {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+    border-color: #374151 !important;
+}
+
+/*
+ * 편집 영역 안 본문 — 읽기 화면의 다크 규칙(2절)을 덮지 않도록 편집 영역(.ck-editor__editable)으로 좁힌다.
+ * 종전에는 편집기를 한 번 띄우면 이 규칙들이 읽기 화면에도 남았다.
+ */
+/* 이미지 캡션 */
+html.dark .ck-content.ck-editor__editable .image > figcaption {
+    background-color: #374151 !important;
+    color: #d1d5db !important;
+}
+/* 이미지 리사이즈 핸들 */
+html.dark .ck-content.ck-editor__editable .image.ck-widget_selected .ck-widget__resizer__handle {
+    background-color: #3b82f6 !important;
+    border-color: #1d4ed8 !important;
+}
+/* 표 안 에디터 내용 (다크 배경) */
+html.dark .ck-content.ck-editor__editable table tr {
+    background-color: unset;
+}
+html.dark .ck-content.ck-editor__editable table td,
+html.dark .ck-content.ck-editor__editable table th {
+    border-color: #4b5563;
+    color: #f3f4f6 !important;
+}
+/* 목록 마커 색상 - 다크모드 */
+html.dark .ck.ck-editor__editable ul,
+html.dark .ck.ck-editor__editable ol {
+    color: #f3f4f6;
+}
+html.dark .ck.ck-editor__editable li::marker {
+    color: #d1d5db;
+}
+
+/* ==========================================================================
+ * 5. 편집기 최소 높이 — 값은 핸들러가 컨테이너에 CSS 변수로 싣는다
+ * ========================================================================== */
+
+/*
+ * 편집 영역의 인라인 스타일은 포커스 때 CKEditor 가 다시 쓰므로 규칙으로 강제한다.
+ * 핸들러는 컨테이너에 `data-ckeditor5-min-height` 속성과 `--ckeditor5-min-height` 변수만 단다.
+ */
+[data-ckeditor5-min-height] .ck-editor__editable {
+    min-height: var(--ckeditor5-min-height) !important;
+}
+
+/* ==========================================================================
+ * 6. 「미디어 넣기」 편집 화면 미리보기 — 16:9 상자에 플레이어를 채운다
+ * ========================================================================== */
+
+:root .g7-ck-embed-preview {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+}
+:root .g7-ck-embed-preview__frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}

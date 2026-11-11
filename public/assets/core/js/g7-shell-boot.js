@@ -31,6 +31,10 @@
 
     // 셸 JS 가 도착했다는 표식 — 셸 JS 자체를 못 받은 경우의 CSS 지연 안내문(#g7-shell-stall)을 끈다.
     document.documentElement.className += ' g7-shell-ok';
+    // 숨김 규칙은 정적 CSS(g7-core.css)에 있다. 그 파일을 못 받았더라도 안내문이 정상 화면 아래에
+    // 상시 노출되지 않게 DOM 속성으로도 숨긴다(스타일 정책과 무관하게 동작, #163).
+    var stallNotice = document.getElementById('g7-shell-stall');
+    if (stallNotice) stallNotice.hidden = true;
 
     function readData(id) {
         var el = document.getElementById(id);
@@ -255,6 +259,8 @@
          * 같은 문구로 안내하면 사용자가 자기 회선을 탓하며 영원히 새로고침하게 된다.
          *
          * 새로고침 버튼은 인라인 onclick 없이 삽입 직후 리스너로 묶는다(#158).
+         * 모양은 클래스(`g7-boot-fallback*`, g7-core.css)로 준다 — 문자열 안 style 속성은 엄격한
+         * 스타일 정책에서 막혀 무스타일 화면이 된다(#163).
          *
          * @param reason 'network'(다운로드 실패) | 'blocked'(HTTPS 페이지가 http 자산 요청 →
          *               브라우저 차단, 사이트 설정 문제) | 'incompatible'(브라우저가 실행 못 함)
@@ -281,23 +287,20 @@
             // 'blocked' 도 같다 — 설정을 고치기 전에는 몇 번을 눌러도 동일하게 차단된다.
             var button = (incompatible || blocked)
                 ? ''
-                : '<button type="button" data-g7-bootstrap-reload="1" ' +
-                  'style="border:0;border-radius:6px;background:#2563eb;color:#fff;font-size:14px;font-weight:500;' +
-                  'padding:10px 20px;cursor:pointer;">' +
+                : '<button type="button" data-g7-bootstrap-reload="1" class="g7-boot-fallback__button">' +
                   escapeHtml(i18n.reload) +
                   '</button>';
 
             app.innerHTML =
                 '<div data-g7-bootstrap-fallback="' +
                 (incompatible ? 'incompatible' : (blocked ? 'blocked' : 'network')) + '" ' +
-                'style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:24px;' +
-                'font-family:system-ui,-apple-system,\'Segoe UI\',sans-serif;">' +
-                '<div style="text-align:center;max-width:420px;">' +
-                '<div style="font-size:40px;line-height:1;margin-bottom:16px;">&#9888;&#65039;</div>' +
-                '<h1 style="font-size:18px;font-weight:600;margin:0 0 8px;color:#111827;">' +
+                'class="g7-boot-fallback">' +
+                '<div class="g7-boot-fallback__inner">' +
+                '<div class="g7-boot-fallback__icon">&#9888;&#65039;</div>' +
+                '<h1 class="g7-boot-fallback__title">' +
                 escapeHtml(title) +
                 '</h1>' +
-                '<p style="font-size:14px;line-height:1.6;margin:0 0 20px;color:#6b7280;">' +
+                '<p class="g7-boot-fallback__message">' +
                 escapeHtml(message) +
                 '</p>' +
                 button +

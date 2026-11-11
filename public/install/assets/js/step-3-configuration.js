@@ -88,7 +88,7 @@ window.CliValidator = {
         const composerStatus = document.getElementById('cli-composer-status');
         if (!summary || !phpStatus || !composerStatus) return;
 
-        summary.style.display = '';
+        installerShow(summary);
 
         phpStatus.textContent = this.phpVerified
             ? installerLang('cli_status_verified')
@@ -120,7 +120,7 @@ document.addEventListener('change', function (e) {
         // bundled 모드 전환 시 Composer 설치 안내 숨김
         if (e.target.value === 'bundled') {
             const guide = document.getElementById('composer-install-guide');
-            if (guide) guide.style.display = 'none';
+            installerHide(guide);
         }
     }
 });
@@ -154,7 +154,7 @@ document.getElementById('composer_binary')?.addEventListener('input', function()
     if (composerResult) { composerResult.classList.add('hidden'); composerResult.innerHTML = ''; }
     // Composer 설치 안내 숨기기
     const guide = document.getElementById('composer-install-guide');
-    if (guide) guide.style.display = 'none';
+    installerHide(guide);
 });
 
 /**
@@ -165,7 +165,7 @@ async function initCliDetection() {
     const composerStatus = document.getElementById('cli-composer-status');
     const summary = document.getElementById('cli-status-summary');
 
-    if (summary) summary.style.display = '';
+    installerShow(summary);
     if (phpStatus) { phpStatus.textContent = installerLang('cli_status_checking'); phpStatus.style.color = ''; }
     if (composerStatus) { composerStatus.textContent = installerLang('cli_status_checking'); composerStatus.style.color = ''; }
 
@@ -312,7 +312,7 @@ async function testComposer() {
             window.CliValidator.setComposerVerified(true);
             // 설치 안내 숨기기
             const guide = document.getElementById('composer-install-guide');
-            if (guide) guide.style.display = 'none';
+            installerHide(guide);
         } else {
             resultDiv.className = 'test-result test-error';
             resultDiv.innerHTML = data.message;
@@ -336,7 +336,7 @@ function showComposerInstallGuide() {
     // 번들 모드에서는 Composer 가 불필요 → 안내 생략
     if (window.CliValidator && !window.CliValidator.isComposerRequired()) {
         const g = document.getElementById('composer-install-guide');
-        if (g) g.style.display = 'none';
+        installerHide(g);
         return;
     }
 
@@ -356,37 +356,37 @@ function showComposerInstallGuide() {
     html += '<button type="button" class="btn-copy" data-action="copyCliCommand">' + installerLang('copy_command') + '</button>';
     html += '</div>';
 
-    html += '<p class="fix-guide-label" style="margin-top: var(--spacing-sm);">' + installerLang('composer_install_guide_local') + '</p>';
+    html += '<p class="fix-guide-label u-mt-sm">' + installerLang('composer_install_guide_local') + '</p>';
     html += '<div class="code-box">';
     html += '<pre class="fix-command">curl -sS https://getcomposer.org/installer | php</pre>';
     html += '<button type="button" class="btn-copy" data-action="copyCliCommand">' + installerLang('copy_command') + '</button>';
     html += '</div>';
 
     // 호스팅 환경 안내 (항상 표시 — 표준 방법 실패 시 대안)
-    html += '<p class="fix-guide-label" style="margin-top: var(--spacing-md);">' + installerLang('composer_install_guide_hosting') + '</p>';
+    html += '<p class="fix-guide-label u-mt-md">' + installerLang('composer_install_guide_hosting') + '</p>';
 
     html += '<div class="code-box">';
     html += '<pre class="fix-command">curl -o composer-setup.php https://getcomposer.org/installer</pre>';
     html += '<button type="button" class="btn-copy" data-action="copyCliCommand">' + installerLang('copy_command') + '</button>';
     html += '</div>';
 
-    html += '<div class="code-box" style="margin-top: var(--spacing-xs);">';
+    html += '<div class="code-box u-mt-xs">';
     html += '<pre class="fix-command">' + escapeHtml(phpPath) + ' -d allow_url_fopen=On composer-setup.php</pre>';
     html += '<button type="button" class="btn-copy" data-action="copyCliCommand">' + installerLang('copy_command') + '</button>';
     html += '</div>';
 
-    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);">' + installerLang('composer_install_guide_pwd_hint') + '</p>';
+    html += '<p class="fix-guide-hint u-mt-sm">' + installerLang('composer_install_guide_pwd_hint') + '</p>';
     html += '<div class="code-box">';
     html += '<pre class="fix-command">pwd</pre>';
     html += '<button type="button" class="btn-copy" data-action="copyCliCommand">' + installerLang('copy_command') + '</button>';
     html += '</div>';
 
-    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);">' + installerLang('composer_install_guide_phar_hint') + '</p>';
+    html += '<p class="fix-guide-hint u-mt-sm">' + installerLang('composer_install_guide_phar_hint') + '</p>';
 
-    html += '<p class="fix-guide-hint" style="margin-top: var(--spacing-sm);">' + installerLang('composer_install_guide_link') + '</p>';
+    html += '<p class="fix-guide-hint u-mt-sm">' + installerLang('composer_install_guide_link') + '</p>';
 
     commandsDiv.innerHTML = html;
-    guide.style.display = '';
+    installerShow(guide);
 }
 
 /**
@@ -406,9 +406,9 @@ function showDetectResult(data) {
     if (!resultDiv) return;
 
     if (data.success && data.binaries && data.binaries.length > 0) {
-        let html = '<strong>' + installerLang('detected_php_binaries') + '</strong><ul style="margin: var(--spacing-xs) 0; padding-left: var(--spacing-lg);">';
+        let html = '<strong>' + installerLang('detected_php_binaries') + '</strong><ul class="u-list-compact">';
         data.binaries.forEach(function(bin) {
-            html += '<li><a href="#" data-action="selectPhpBinary" data-arg="' + installerEscapeAttr(bin.path) + '" style="cursor: pointer;">'
+            html += '<li><a href="#" data-action="selectPhpBinary" data-arg="' + installerEscapeAttr(bin.path) + '" class="u-pointer">'
                 + bin.path + '</a> — PHP ' + bin.version + '</li>';
         });
         html += '</ul>';
@@ -482,7 +482,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // 코어 업데이트 _pending 경로 입력 시 체크 버튼 표시
 document.querySelector('input[name="core_update_pending_path"]')?.addEventListener('input', function() {
     const wrapper = document.getElementById('core-pending-check-wrapper');
-    wrapper.style.display = this.value.trim() ? 'block' : 'none';
+    if (this.value.trim()) {
+        installerShow(wrapper, 'block');
+    } else {
+        installerHide(wrapper);
+    }
 });
 
 // 코어 _pending 경로 퍼미션/소유자 체크

@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { createLogger } from '../../../utils/Logger';
+import { getSheet, remove as removeRules, setRules } from '../../../style/RuntimeStyleSheet';
 import {
   createRewriteState,
   restoreAll,
@@ -34,6 +35,9 @@ import {
 } from '../utils/previewMediaIsolation/constants';
 
 const logger = createLogger('usePreviewMediaIsolation');
+
+/** 컨테이너 지정 규칙 묶음 키(표식 요소의 id) */
+export const MEDIA_ISOLATION_STYLE_KEY = 'g7le-media-isolation-style';
 
 /** 계측값 — `window.__g7lePreviewMediaIsolation` 로도 노출한다 */
 export interface PreviewMediaIsolationStats {
@@ -104,7 +108,10 @@ function collectSheets(): any[] {
   const sheets: any[] = Array.from(document.styleSheets ?? []);
   const adopted = (document as any).adoptedStyleSheets;
   if (Array.isArray(adopted)) sheets.push(...adopted);
-  return sheets;
+  // 컨테이너 지정 시트는 격리 대상이 아니다. 생성형(adopted) 시트는 `ownerNode` 가 없어
+  // 속성 옵트아웃(MEDIA_ISOLATION_OPT_OUT_ATTR)이 걸리지 않으므로 시트 객체로 걸러 낸다.
+  const own = getSheet(MEDIA_ISOLATION_STYLE_KEY);
+  return own ? sheets.filter((sheet) => sheet !== own) : sheets;
 }
 
 /**
@@ -128,11 +135,14 @@ export function usePreviewMediaIsolation(): { rescan: () => void } {
     let loggedCrossOrigin = false;
 
     // 1. 프레임을 이름 있는 컨테이너로 지정 — 격리가 켜진 동안에만 존재한다
-    const containerStyle = document.createElement('style');
-    containerStyle.setAttribute(MEDIA_ISOLATION_STYLE_ATTR, '');
-    containerStyle.setAttribute(MEDIA_ISOLATION_OPT_OUT_ATTR, '');
-    containerStyle.textContent = `.${PREVIEW_FRAME_CLASS}{container:${PREVIEW_CONTAINER_NAME} / inline-size}`;
-    document.head.appendChild(containerStyle);
+    //    <style> 요소를 만들지 않는다(엄격한 스타일 정책 호환). 표식 요소(adopted: meta, 폴백: style)에
+    //    기존 속성 두 개를 그대로 단다 — 폴백 모드에서는 속성 옵트아웃이, adopted 모드에서는 collectSheets 의
+    //    시트 객체 비교가 이 시트를 격리 대상에서 뺀다.
+    setRules(
+      MEDIA_ISOLATION_STYLE_KEY,
+      `.${PREVIEW_FRAME_CLASS}{container:${PREVIEW_CONTAINER_NAME} / inline-size}`,
+      { markerAttrs: { [MEDIA_ISOLATION_STYLE_ATTR]: '', [MEDIA_ISOLATION_OPT_OUT_ATTR]: '' } },
+    );
 
     const run = (): void => {
       const started = typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -208,7 +218,7 @@ export function usePreviewMediaIsolation(): { rescan: () => void } {
       bodyObserver?.disconnect();
       document.head.querySelectorAll('link[rel="stylesheet"]').forEach((node) => node.removeEventListener('load', run));
       restoreAll(state);
-      containerStyle.remove();
+      removeRules(MEDIA_ISOLATION_STYLE_KEY);
       if (activeRescan === run) activeRescan = null;
       rescanRef.current = () => {};
       delete (window as any).__g7lePreviewMediaIsolation;

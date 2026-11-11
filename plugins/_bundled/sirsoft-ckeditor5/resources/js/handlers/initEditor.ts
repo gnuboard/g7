@@ -26,10 +26,19 @@ import {
     renderTextareaFallback,
 } from './textareaFallback';
 
-/** CKEditor5 다크 모드 CSS 엘리먼트 ID */
-const CKEDITOR5_DARK_CSS_ID = 'ckeditor5-dark-override';
-/** CKEditor5 다국어 탭 기본 CSS 엘리먼트 ID */
-const CKEDITOR5_TAB_CSS_ID = 'ckeditor5-tab-style';
+/**
+ * 편집기 최소 높이를 거는 컨테이너 속성·CSS 변수 — 규칙은 `resources/css/main.css` 에 있다.
+ *
+ * 다국어 탭·다크 모드·본문 보정·미리보기 규칙도 모두 그 파일(빌드 산출물 `dist/css/plugin.css`)에 있다. 여기서
+ * `<style>` 요소나 `style="…"` 문자열을 만들지 않는다 — 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)
+ * 에서 둘 다 막힌다. 실행 중에 정해지는 값은 `el.style.x = …`·`el.style.setProperty()` 로 싣는다.
+ */
+export const MIN_HEIGHT_ATTR = 'data-ckeditor5-min-height';
+export const MIN_HEIGHT_VAR = '--ckeditor5-min-height';
+
+/** 미디어 미리보기 상자·플레이어 클래스 — 규칙은 `resources/css/main.css` */
+export const EMBED_PREVIEW_CLASS = 'g7-ck-embed-preview';
+export const EMBED_PREVIEW_FRAME_CLASS = 'g7-ck-embed-preview__frame';
 
 /** CKEditor 전역 객체 타입 (CDN UMD 빌드 — window.CKEDITOR) */
 interface CKEditorGlobal {
@@ -316,426 +325,6 @@ function t(key: string, fallback: string): string {
 }
 
 /**
- * 다국어 탭 버튼 기본 스타일(라이트/다크 공통 베이스)을 주입합니다.
- * 이미 주입된 경우 중복 삽입하지 않습니다.
- */
-function loadTabCss(): void {
-    if (document.getElementById(CKEDITOR5_TAB_CSS_ID)) {
-        return;
-    }
-    const style = document.createElement('style');
-    style.id = CKEDITOR5_TAB_CSS_ID;
-    style.textContent = `
-        /* 다국어 탭 컨테이너 */
-        .ckeditor5-locale-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-            align-items: center;
-        }
-        /* 다국어 탭 버튼 - HtmlEditor 언어탭 스타일 */
-        .ckeditor5-locale-tabs button {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 9999px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: 600;
-            line-height: 1;
-            transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
-        }
-        /* 비활성 - 기본언어 (blue) — 글자는 hover 바탕(#dbeafe)에서도 4.5 이상인 단계 */
-        .ckeditor5-locale-tabs button.is-default {
-            background: #eff6ff;
-            color: #1d4ed8;
-        }
-        .ckeditor5-locale-tabs button.is-default:hover {
-            background: #dbeafe;
-        }
-        /* 비활성 - 비기본언어 (gray) */
-        .ckeditor5-locale-tabs button:not(.is-default) {
-            background: #f3f4f6;
-            color: #4b5563;
-        }
-        .ckeditor5-locale-tabs button:not(.is-default):hover {
-            background: #e5e7eb;
-        }
-        /* 활성 - 기본언어 — 흰 글자가 4.5 이상인 바탕(종전 #3b82f6 은 3.68) */
-        .ckeditor5-locale-tabs button.is-active.is-default {
-            background: #2563eb;
-            color: #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transform: scale(1.05);
-        }
-        /* 활성 - 비기본언어 */
-        .ckeditor5-locale-tabs button.is-active:not(.is-default) {
-            background: #6b7280;
-            color: #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transform: scale(1.05);
-        }
-        .ckeditor5-locale-tabs button .ck5-lang-icon {
-            font-size: 0.75rem;
-            line-height: 1;
-        }
-        /* 필수 표시 — 비활성(연한 바탕)은 진한 빨강, 활성(진한 바탕)은 탭 글자색(흰색)을 따른다 */
-        .ckeditor5-locale-tabs button .ck5-required {
-            color: #b91c1c;
-        }
-        .ckeditor5-locale-tabs button.is-active .ck5-required {
-            color: currentColor;
-        }
-        /* 입력 완료 표시(아이콘 3:1) — 회색 hover 바탕(#e5e7eb)에서도 3 이상 */
-        .ckeditor5-locale-tabs button .ck5-check {
-            color: #15803d;
-        }
-        /* 다크 모드 - 비활성 기본언어 */
-        html.dark .ckeditor5-locale-tabs button.is-default {
-            background: rgba(59, 130, 246, 0.15);
-            color: #93c5fd;
-        }
-        html.dark .ckeditor5-locale-tabs button.is-default:hover {
-            background: rgba(59, 130, 246, 0.25);
-        }
-        /* 다크 모드 - 비활성 비기본언어 */
-        html.dark .ckeditor5-locale-tabs button:not(.is-default) {
-            background: #374151;
-            color: #d1d5db;
-        }
-        html.dark .ckeditor5-locale-tabs button:not(.is-default):hover {
-            background: #4b5563;
-        }
-        /* 다크 모드 - 활성 기본언어 */
-        html.dark .ckeditor5-locale-tabs button.is-active.is-default {
-            background: #2563eb;
-            color: #ffffff;
-        }
-        /* 다크 모드 - 활성 비기본언어 */
-        html.dark .ckeditor5-locale-tabs button.is-active:not(.is-default) {
-            background: #4b5563;
-            color: #ffffff;
-        }
-        html.dark .ckeditor5-locale-tabs button .ck5-check {
-            color: #4ade80;
-        }
-        html.dark .ckeditor5-locale-tabs button .ck5-required {
-            color: #fca5a5;
-        }
-        html.dark .ckeditor5-locale-tabs button.is-active .ck5-required {
-            color: currentColor;
-        }
-        /* 표 너비 인라인 스타일 무력화 - 컨테이너에 맞게 100% */
-        .ck-content figure.table { width: 100%; }
-        .ck-content figure.table table { width: 100%; }
-        /* 표 tr 배경색 초기화 */
-        .ck-content table tr { background-color: unset; }
-        /* 표 col 절대 px 너비 무력화 - 컨테이너에 맞게 비율로 */
-        .ck-content table col { width: auto !important; }
-        /* 표 정렬 보정: CKEditor5 기본 CSS의 margin-left:auto를 float으로 덮어씀 */
-        .ck-content figure.table[style*="float:left"],
-        .ck-content figure.table[style*="float: left"] {
-            margin-left: 0 !important;
-            margin-right: 1em !important;
-        }
-        .ck-content figure.table[style*="float:right"],
-        .ck-content figure.table[style*="float: right"] {
-            margin-left: 1em !important;
-            margin-right: 0 !important;
-        }
-        /* 이미지 캡션 - 라이트 모드 */
-        .ck-content .image > figcaption {
-            background-color: #f3f4f6;
-            color: #374151;
-            font-size: 0.875em;
-            padding: 4px 8px;
-            text-align: center;
-        }
-        /* 에디터 편집 영역 - 목록 마커 복원 (Tailwind preflight reset 대응) */
-        .ck.ck-editor__editable ul,
-        .ck-content ul {
-            list-style-type: disc;
-            padding-left: 2em;
-        }
-        .ck.ck-editor__editable ol,
-        .ck-content ol {
-            list-style-type: decimal;
-            padding-left: 2em;
-        }
-        .ck.ck-editor__editable ul ul,
-        .ck-content ul ul {
-            list-style-type: circle;
-            padding-left: 2em;
-        }
-        .ck.ck-editor__editable ul ul ul,
-        .ck-content ul ul ul {
-            list-style-type: square;
-            padding-left: 2em;
-        }
-        .ck.ck-editor__editable ol ol,
-        .ck-content ol ol {
-            list-style-type: lower-alpha;
-            padding-left: 2em;
-        }
-        .ck.ck-editor__editable ol ol ol,
-        .ck-content ol ol ol {
-            list-style-type: lower-roman;
-            padding-left: 2em;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-/**
- * 현재 다크 모드 여부를 반환합니다.
- */
-function isDarkMode(): boolean {
-    return document.documentElement.classList.contains('dark');
-}
-
-/**
- * CKEditor5 다크 모드 CSS 변수를 동적으로 주입하거나 제거합니다.
- * document.documentElement의 'dark' 클래스를 기준으로 판단합니다.
- */
-function applyDarkModeOverride(): void {
-    const existing = document.getElementById(CKEDITOR5_DARK_CSS_ID);
-
-    if (!isDarkMode()) {
-        // 라이트 모드: 다크 오버라이드 제거
-        if (existing) {
-            existing.remove();
-        }
-        return;
-    }
-
-    if (existing) {
-        return;
-    }
-
-    const style = document.createElement('style');
-    style.id = CKEDITOR5_DARK_CSS_ID;
-    style.textContent = `
-        /* CKEditor5 다크 모드 오버라이드 - CSS 변수 전역 적용 */
-        :root {
-            --ck-color-base-foreground: #1f2937;
-            --ck-color-base-background: #1f2937;
-            --ck-color-base-border: #374151;
-            --ck-color-text: #f3f4f6;
-            --ck-color-toolbar-background: #111827;
-            --ck-color-toolbar-border: #374151;
-            --ck-color-button-default-background: transparent;
-            --ck-color-button-default-hover-background: #374151;
-            --ck-color-button-default-active-background: #4b5563;
-            --ck-color-button-on-background: #374151;
-            --ck-color-button-on-hover-background: #4b5563;
-            --ck-color-focus-border: #3b82f6;
-            --ck-color-input-background: #1f2937;
-            --ck-color-input-text: #f3f4f6;
-            --ck-color-input-border: #374151;
-            --ck-color-panel-background: #1f2937;
-            --ck-color-panel-border: #374151;
-            --ck-color-list-button-hover-background: #374151;
-            --ck-color-list-button-on-background: #3b82f6;
-            --ck-color-list-button-on-color: #f3f4f6;
-            --ck-color-list-button-on-hover-background: #4b5563;
-            --ck-color-labeled-field-label-background: #1f2937;
-            --ck-color-link-default: #60a5fa;
-            --ck-color-link-selected-background: rgba(96, 165, 250, 0.1);
-            --ck-color-table-focused-cell-background: rgba(59, 130, 246, 0.1);
-        }
-        /* 에디터 본문 */
-        .ck.ck-editor__editable_inline {
-            background-color: #1f2937 !important;
-            color: #f3f4f6 !important;
-            border-color: #374151 !important;
-        }
-        /* 메인 툴바 */
-        .ck.ck-toolbar {
-            background-color: #111827 !important;
-            border-color: #374151 !important;
-        }
-        /* 모든 버튼 텍스트 */
-        .ck.ck-button,
-        .ck.ck-button .ck-button__label {
-            color: #f3f4f6 !important;
-        }
-        /* 모든 SVG 아이콘 (툴바, 드롭다운 화살표 포함) */
-        .ck.ck-icon,
-        .ck .ck-icon,
-        .ck.ck-button .ck-icon,
-        .ck.ck-dropdown__arrow {
-            color: #f3f4f6 !important;
-        }
-        .ck.ck-button:hover,
-        .ck.ck-button.ck-on {
-            background-color: #374151 !important;
-        }
-        /* 툴팁 (호버 시 버튼 설명) */
-        .ck.ck-tooltip .ck-tooltip__text {
-            background-color: #1f2937 !important;
-            color: #f3f4f6 !important;
-        }
-        /* 드롭다운 패널 / 리스트 / balloon 팝업 공통 */
-        .ck.ck-dropdown__panel,
-        .ck.ck-list,
-        .ck.ck-balloon-panel {
-            background-color: #1f2937 !important;
-            border-color: #374151 !important;
-        }
-        /* 리스트 아이템 */
-        .ck.ck-list__item .ck-button,
-        .ck.ck-list__item .ck-button .ck-button__label {
-            color: #f3f4f6 !important;
-        }
-        .ck.ck-list__item .ck-button:hover {
-            background-color: #374151 !important;
-        }
-        .ck.ck-list__item .ck-button.ck-disabled .ck-button__label {
-            color: #6b7280 !important;
-        }
-        /* 링크 팝업 / form */
-        .ck.ck-link-form,
-        .ck.ck-link-actions {
-            background-color: #1f2937 !important;
-            border-color: #374151 !important;
-        }
-        .ck.ck-input-text {
-            background-color: #111827 !important;
-            color: #f3f4f6 !important;
-            border-color: #374151 !important;
-        }
-        .ck.ck-labeled-field-view__label {
-            background-color: #1f2937 !important;
-            color: #9ca3af !important;
-        }
-        /* 테이블 속성/셀 속성 폼 */
-        .ck.ck-table-form,
-        .ck.ck-table-cell-properties-form,
-        .ck.ck-table-properties-form {
-            background-color: #1f2937 !important;
-            border-color: #374151 !important;
-        }
-        .ck.ck-table-form .ck-label,
-        .ck.ck-table-cell-properties-form .ck-label,
-        .ck.ck-table-properties-form .ck-label {
-            color: #d1d5db !important;
-        }
-        /* 색상 선택 패널 */
-        .ck.ck-color-table,
-        .ck.ck-color-grid {
-            background-color: #1f2937 !important;
-        }
-        .ck.ck-color-table .ck-color-table__remove-color,
-        .ck.ck-color-table .ck-color-table__remove-color .ck-button__label {
-            color: #f3f4f6 !important;
-        }
-        /* 헤딩/폰트 드롭다운 라벨 */
-        .ck.ck-heading_paragraph,
-        .ck.ck-heading_heading1,
-        .ck.ck-heading_heading2,
-        .ck.ck-heading_heading3 {
-            color: #f3f4f6 !important;
-        }
-        /* 이미지 캡션 */
-        .ck-content .image > figcaption {
-            background-color: #374151 !important;
-            color: #d1d5db !important;
-        }
-        /* 이미지 리사이즈 핸들 */
-        .ck-content .image.ck-widget_selected .ck-widget__resizer__handle {
-            background-color: #3b82f6 !important;
-            border-color: #1d4ed8 !important;
-        }
-        /* 이미지 정렬 툴바 아이콘 */
-        .ck.ck-toolbar .ck-button .ck-icon {
-            color: #f3f4f6 !important;
-        }
-        /* 이미지 선택 시 balloon toolbar (floating) */
-        .ck.ck-toolbar_floating {
-            background-color: #111827 !important;
-            border-color: #374151 !important;
-        }
-        /* 이미지 리사이즈 드롭다운 버튼 라벨 (25%, 50% 등) */
-        .ck.ck-dropdown .ck-button__label {
-            color: #f3f4f6 !important;
-        }
-        /* 이미지 리사이즈 드롭다운 내 선택 리스트 */
-        .ck.ck-resize-image-form,
-        .ck.ck-image-resize-form {
-            background-color: #1f2937 !important;
-            border-color: #374151 !important;
-            color: #f3f4f6 !important;
-        }
-        .ck.ck-resize-image-form .ck-label,
-        .ck.ck-image-resize-form .ck-label {
-            color: #d1d5db !important;
-        }
-        .ck.ck-resize-image-form .ck-input-text,
-        .ck.ck-image-resize-form .ck-input-text {
-            background-color: #111827 !important;
-            color: #f3f4f6 !important;
-            border-color: #374151 !important;
-        }
-        /* 표 안 에디터 내용 (다크 배경) */
-        .ck-content table tr {
-            background-color: unset;
-        }
-        .ck-content table td,
-        .ck-content table th {
-            border-color: #4b5563;
-            color: #f3f4f6 !important;
-        }
-        /* 표 col 절대 px 너비 무력화 */
-        .ck-content table col {
-            width: auto !important;
-        }
-        /* 목록 마커 색상 - 다크모드 */
-        .ck.ck-editor__editable ul,
-        .ck.ck-editor__editable ol {
-            color: #f3f4f6;
-        }
-        .ck.ck-editor__editable li::marker {
-            color: #d1d5db;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-/** 다크 모드 MutationObserver 인스턴스 (cleanup용) */
-let darkModeObserver: MutationObserver | null = null;
-
-/**
- * <html> 클래스 변경을 감지하여 다크 모드 전환 시 즉시 반영합니다.
- * 최초 1회만 등록합니다.
- */
-function watchDarkMode(): void {
-    if (darkModeObserver) {
-        return;
-    }
-
-    darkModeObserver = new MutationObserver(() => {
-        applyDarkModeOverride();
-    });
-
-    darkModeObserver.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class'],
-    });
-}
-
-/**
- * 다크 모드 MutationObserver를 해제합니다.
- */
-export function disconnectDarkModeObserver(): void {
-    if (darkModeObserver) {
-        darkModeObserver.disconnect();
-        darkModeObserver = null;
-    }
-}
-
-/**
  * 지원 locale 목록을 반환합니다.
  * localStorage의 g7_locale 값과 서버 설정을 활용합니다.
  */
@@ -859,8 +448,10 @@ export function mediaEmbedProviders(providers: any[]): Array<{ name: string; url
             const id = match?.groups?.id ?? '';
             const src = String(provider.player_url ?? '').replace('{id}', encodeURIComponent(id)).replace(/"/g, '&quot;');
 
-            return '<div style="position:relative;padding-bottom:56.25%;height:0;">'
-                + `<iframe src="${src}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`;
+            // 미리보기는 편집 화면에만 그려진다(저장 내용에는 `<oembed url>` 하나). 모양은 클래스로 건다 —
+            // CKEditor 는 편집 화면에 그릴 때 `on*`·`srcdoc`·`javascript:` 만 걸러 내고 class 는 그대로 둔다.
+            return `<div class="${EMBED_PREVIEW_CLASS}">`
+                + `<iframe src="${src}" class="${EMBED_PREVIEW_FRAME_CLASS}" allowfullscreen></iframe></div>`;
         },
     })).filter((p) => p.url.length > 0);
 }
@@ -1143,17 +734,13 @@ async function createEditorInstance(
 
     routeWarningsToToast(editor);
 
-    // 높이 설정: 인라인 스타일은 포커스 시 CKEditor 내부에서 초기화될 수 있으므로
-    // containerId 기반 CSS 규칙으로 강제 적용 (remount 시 동일 ID로 덮어씀)
-    const heightStyleId = `ckeditor5-height-style-${options.containerId}`;
-    const existingHeightStyle = document.getElementById(heightStyleId);
-    if (existingHeightStyle) {
-        existingHeightStyle.textContent = `#${options.containerId} .ck-editor__editable { min-height: ${options.height}px !important; }`;
-    } else {
-        const heightStyle = document.createElement('style');
-        heightStyle.id = heightStyleId;
-        heightStyle.textContent = `#${options.containerId} .ck-editor__editable { min-height: ${options.height}px !important; }`;
-        document.head.appendChild(heightStyle);
+    // 높이 설정: 편집 영역의 인라인 스타일은 포커스 시 CKEditor 내부에서 초기화될 수 있으므로 CSS 규칙으로 강제한다.
+    // 규칙(`[data-ckeditor5-min-height] .ck-editor__editable`)은 플러그인 CSS 파일에 있고, 여기서는 컨테이너에
+    // 속성과 값(CSS 변수)만 단다 — remount 시 같은 컨테이너에 덮어쓴다.
+    const heightHost = document.getElementById(options.containerId);
+    if (heightHost) {
+        heightHost.setAttribute(MIN_HEIGHT_ATTR, '');
+        heightHost.style.setProperty(MIN_HEIGHT_VAR, `${options.height}px`);
     }
 
     if (options.readOnly) {
@@ -1485,11 +1072,8 @@ export async function initEditorHandler(
         return;
     }
 
-    // CKEditor CSS 동적 로드 및 다크 모드 오버라이드 적용
+    // CKEditor CSS 동적 로드 — 다국어 탭·다크 모드 규칙은 플러그인 CSS 파일(`html.dark` 스코프)이 맡는다
     loadCkeditorCss();
-    loadTabCss();
-    applyDarkModeOverride();
-    watchDarkMode();
 
     // 번역 파일 로드 (에디터 생성 전 완료되어야 함)
     await loadCkeditorTranslations(getCurrentLocale());

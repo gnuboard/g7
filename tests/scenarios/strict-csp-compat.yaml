@@ -49,6 +49,10 @@ effects:
   - installer_has_no_inline_executable
   - installer_delegation_calls_only_mapped_actions
   - installer_boot_restores_globals
+  # 설치 화면의 인라인 스타일 0 (#163 — 같은 모집단·같은 테스트 파일이라 여기서 소유한다)
+  - installer_has_no_inline_style            # <style> 요소·마크업 style 속성·setAttribute('style') 0
+  - installer_standalone_pages_link_css      # 안내 후 이동·403 화면은 스타일 파일을 <link> 로 싣는다
+  - installer_hidden_areas_shown_by_helper   # 초기 숨김은 hidden 클래스, 보이기는 전부 installerShow
 
 test_files:
   - tests/Feature/View/ShellNoInlineScriptTest.php
@@ -64,3 +68,8 @@ notes: |
   CSP 정책 축과 실패 축은 표면마다 의미가 달라 해당 없는 조합을 exclusions 에 사유와 함께 둔다.
   셸 표면은 webserver_strict(가장 엄격, 허용 호스트·worker-src 없음)에서 렌더·위반 0 을 단언하면
   report_only/enforce 는 그보다 느슨하다. 플러그인 브리지와 CSP 설정 모드는 각 소유 매니페스트가 덮는다.
+
+  스타일 정책(#163 — style-src-elem / style-src + style-src-attr 'none')에서 코어 화면이 인라인 스타일 없이
+  그려지는지는 tests/scenarios/strict-style-csp-compat.yaml 이 소유한다(이 매니페스트의 surface×csp×failure 축과
+  맞지 않아 case 축으로 따로 둔다). strict-csp.spec.ts 는 두 매니페스트가 함께 소유한다 — (A)(B)(C) 는 여기,
+  스타일 2강도 (S) 는 그쪽이다. 설치 화면만 같은 테스트 파일이 스크립트·스타일을 함께 보므로 installer_* effects 로 여기 둔다.

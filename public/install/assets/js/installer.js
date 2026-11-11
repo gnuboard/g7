@@ -273,7 +273,7 @@
         let hasWindowsReadOnly = false;
         if (!allDirsPassed) {
             // 계층적 디렉토리 에러 메시지 생성
-            let dirErrorHtml = `${lang('error_directory_permissions')}<ul style="margin-top: 0.5rem;">`;
+            let dirErrorHtml = `${lang('error_directory_permissions')}<ul class="u-mt-sm">`;
 
             Object.entries(data.directories.results)
                 .filter(([, info]) => !info.passed)
@@ -546,7 +546,7 @@
                 false
             );
             if (vendorHint) {
-                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${vendorHint}</p>`;
+                html += `<p class="fix-guide-hint u-mt-075">${vendorHint}</p>`;
             }
         }
 
@@ -636,13 +636,13 @@
                 html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
+                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown -R ${webUser}:${webUser} ${mismatchPaths}`)}</pre>`;
                 html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_777')}</p>`;
+                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_777')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod -R 777 ${mismatchPaths}`)}</pre>`;
                 html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
@@ -651,7 +651,7 @@
                 const hintText = lang('ownership_mismatch_hint')
                     .replace(':owner', escapeHtml(owner))
                     .replace(':web_user', escapeHtml(webUser));
-                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${hintText}</p>`;
+                html += `<p class="fix-guide-hint u-mt-075">${hintText}</p>`;
                 html += '</div>';
             }
 
@@ -812,13 +812,13 @@
                 html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
+                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown ${fileWebUser}:${fileWebUser} ${mismatchFilePaths}`)}</pre>`;
                 html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
-                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_666')}</p>`;
+                html += `<p class="fix-guide-label u-mt-md">${lang('ownership_mismatch_option_666')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod 666 ${mismatchFilePaths}`)}</pre>`;
                 html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
@@ -827,7 +827,7 @@
                 const fileHintText = lang('ownership_mismatch_hint')
                     .replace(':owner', escapeHtml(fileOwner))
                     .replace(':web_user', escapeHtml(fileWebUser));
-                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${fileHintText}</p>`;
+                html += `<p class="fix-guide-hint u-mt-075">${fileHintText}</p>`;
                 html += '</div>';
             }
 
@@ -4452,7 +4452,7 @@
         // 경고 메시지 숨기기
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            warningAlert.style.display = 'none';
+            installerHide(warningAlert);
         }
 
         // 진행률 100% 설정 (wrapper는 숨기기 전에)
@@ -4548,7 +4548,7 @@
         // 경고 메시지 숨기기
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            warningAlert.style.display = 'none';
+            installerHide(warningAlert);
         }
 
         // 토글 아이콘 보이기 및 카드 헤더 활성화
@@ -4699,7 +4699,7 @@
         // 경고 메시지 다시 표시
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            warningAlert.style.display = 'block';
+            installerShow(warningAlert, 'block');
         }
 
         // 모든 결과 섹션 숨기기
@@ -4900,10 +4900,10 @@
         const modeCard = document.getElementById('installation-mode-card');
         const warning = document.getElementById('install-warning');
         const progressCard = document.getElementById('installation-progress-card');
-        if (startSection) startSection.style.display = '';
+        installerShow(startSection);
         if (modeCard) modeCard.style.display = '';
-        if (warning) warning.style.display = 'none';
-        if (progressCard) progressCard.style.display = 'none';
+        installerHide(warning);
+        installerHide(progressCard);
 
         // 모드 선택 라디오 활성화 (사전 체크 취소 후 재시도 가능하도록)
         document.querySelectorAll('input[name="installation_mode"]').forEach(input => {
@@ -4917,7 +4917,7 @@
      */
     function hideInstallationStartSection() {
         const startSection = document.getElementById('installation-start-section');
-        if (startSection) startSection.style.display = 'none';
+        installerHide(startSection);
 
         // 모드 선택 라디오 비활성화 (진행 중 변경 방지)
         document.querySelectorAll('input[name="installation_mode"]').forEach(input => {
@@ -4931,8 +4931,8 @@
     function showInstallationProgressSection() {
         const warning = document.getElementById('install-warning');
         const progressCard = document.getElementById('installation-progress-card');
-        if (warning) warning.style.display = '';
-        if (progressCard) progressCard.style.display = '';
+        installerShow(warning);
+        installerShow(progressCard);
     }
 
     /**
@@ -4969,7 +4969,7 @@
         // 경고 메시지 숨기기
         const warningAlert = document.getElementById('install-warning');
         if (warningAlert) {
-            warningAlert.style.display = 'none';
+            installerHide(warningAlert);
         }
 
         // 중단 섹션 표시
@@ -5274,7 +5274,7 @@
                 </svg>
                 ${lang('abort_installation')}
             `;
-            abortBtn.style.display = 'flex';
+            installerShow(abortBtn, 'flex');
         }
     }
 
@@ -5284,7 +5284,7 @@
     function hideAbortButton() {
         const abortBtn = document.getElementById('abort-installation-btn');
         if (abortBtn) {
-            abortBtn.style.display = 'none';
+            installerHide(abortBtn);
         }
     }
 
@@ -5615,21 +5615,25 @@
      * @return {string} SVG HTML 문자열
      */
     function getIconSvg(type, size = '20px', className = '') {
+        // 크기는 px 값만 쓴다 — 문자열 style 속성은 `style-src-attr 'none'` 에 막히므로 width/height 속성으로 낸다
+        const px = parseInt(size, 10) || 20;
+        // 종전 style 속성은 어떤 CSS 규칙보다 우선했다(그룹 안 16px 규칙 포함) — 같은 크기가 나오도록 크기 클래스를 붙인다
+        const sizeClass = px === 24 ? 'icon-px-24' : 'icon-px-20';
         const svgs = {
             completed: `
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" class="${sizeClass} ${className}">
                     <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
                     <path d="M6 10l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             `,
             failed: `
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" class="${sizeClass} ${className}">
                     <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
                     <path d="M7 7l6 6M13 7l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
             `,
             warning: `
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" class="${sizeClass} ${className}">
                     <path d="M10 2L2 17h16L10 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
                     <path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
@@ -5920,8 +5924,8 @@
         const relCommandEl = document.getElementById('file-setup-command-relative');
         if (relCommands && relCommands.length > 0 && relHint && relBox && relCommandEl) {
             relCommandEl.textContent = relCommands.join(' && ');
-            relHint.style.display = '';
-            relBox.style.display = '';
+            installerShow(relHint);
+            installerShow(relBox);
         }
 
         // 섹션 표시

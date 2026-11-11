@@ -1,0 +1,122 @@
+/**
+ * sirsoft-daum_postcode 화면 스타일 — 주소 검색 창(펼치기 영역·전체 화면 창·레이어)
+ *
+ * 검색 창은 엔진이 그리는 레이아웃 밖에서 핸들러(`openPostcode.ts`)가 만든 DOM 이라 템플릿 Tailwind 클래스가
+ * 생성된다는 보장이 없다. 그래서 이 플러그인이 규칙을 직접 싣는다. 종전에는 핸들러가 `<style>` 요소와
+ * `style` 속성 문자열로 실었는데, 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 둘 다
+ * 막히므로 이 파일(빌드 산출물 `dist/css/plugin.css`)로 옮겼다.
+ *
+ * - 다크 모드: 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
+ *   검색 창 본문은 카카오 iframe 이 그리므로 밝은 바탕 그대로다.
+ * - 레이어 크기는 설정값(`--dp-width`·`--dp-height`, 핸들러가 `style.setProperty` 로 싣는다)과 화면 크기 중
+ *   작은 쪽이다. 화면 여백 32px·96px 는 핸들러의 `LAYER_VIEWPORT_GUTTER_X`·`LAYER_VIEWPORT_GUTTER_Y` 와 같아야
+ *   한다(테스트가 묶는다).
+ */
+
+/* 펼치기 영역 */
+.g7-postcode-inline {
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+/* 머리줄(제목 + 닫기) — 펼치기 영역·전체 화면 창 공용 */
+.g7-postcode-inline__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px 6px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.g7-postcode-inline__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #4b5563;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.g7-postcode-inline__close:hover {
+    background: #e5e7eb;
+}
+
+.g7-postcode-inline__close:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+/* 검색 창을 끼워 넣는 자리 */
+.g7-postcode-inline__frame {
+    position: relative;
+    width: 100%;
+    background: #ffffff;
+}
+
+/* 전체 화면 창 안에서는 머리줄 아래 남는 높이를 모두 채운다 */
+.g7-postcode-inline__frame--fill {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+}
+
+/* 전체 화면 창(모바일) */
+.g7-postcode-inline-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+}
+
+/* 레이어(PC) — 크기는 설정값과 화면 크기 중 작은 쪽. dvh 를 아는 브라우저는 뒤 선언을 쓰고 아니면 vh 가 남는다 */
+#daum-postcode-layer {
+    width: min(var(--dp-width, 500px), calc(100vw - 32px));
+    height: min(var(--dp-height, 600px), calc(100vh - 96px));
+    height: min(var(--dp-height, 600px), calc(100dvh - 96px));
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* 다크 모드 */
+.dark .g7-postcode-inline {
+    border-color: #4b5563;
+    background: #1f2937;
+}
+
+.dark .g7-postcode-inline-fullscreen {
+    background-color: #111827;
+}
+
+.dark .g7-postcode-inline__bar {
+    border-bottom-color: #374151;
+    background: #111827;
+    color: #e5e7eb;
+}
+
+.dark .g7-postcode-inline__close {
+    color: #d1d5db;
+}
+
+.dark .g7-postcode-inline__close:hover {
+    background: #374151;
+}
