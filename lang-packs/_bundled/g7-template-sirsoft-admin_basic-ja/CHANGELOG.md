@@ -15,6 +15,11 @@
 
 - 관리자 비밀번호 찾기 성공 안내(`auth.forgot_password.success`)를 관리자 기본 템플릿 1.1.6 의 새 문구에 맞췄습니다.
 
+### Changed
+
+- 스타일 정책 강제 경고(`admin.settings.security.csp.style.known_issues_basic`·`known_issues_strict`)의 글쓰기 편집기 항목을 관리자 기본 템플릿 1.1.6 의 원문에 맞춰 고쳤습니다 — 편집 화면 서식은 이제 보이므로 빼고, 색상 선택기가 접힌다는 안내(「投稿エディター (CKEditor) のカラーピッカー …」)로 바꿨습니다.
+- 「자동으로 포함되는 스타일 호스트」 안내(`admin.settings.security.csp.style.auto_hosts`·`auto_hosts_empty`)를 원문에 맞춰 「有効なテンプレート・拡張機能の宣言」으로 고쳤습니다 — 확장이 선언한 스타일 호스트도 자동으로 들어갑니다.
+
 ## [1.1.4] - 2026-11-10
 
 ### Added

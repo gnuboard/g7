@@ -18,6 +18,7 @@ use App\Support\ExtensionIntegrations;
 use App\Support\PublicAssetDisk;
 use App\Support\SearchScopes;
 use App\Support\StateContracts;
+use App\Support\TrustedStyleHosts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -1099,6 +1100,30 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getTrustedScriptHosts(): array
     {
         $hosts = $this->loadManifest()['trusted_script_hosts'] ?? [];
+
+        if (! is_array($hosts)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
+            fn ($host) => $host !== ''
+        ));
+    }
+
+    /**
+     * 신뢰하는 외부 스타일시트 호스트 목록을 반환합니다.
+     *
+     * module.json 의 `trusted_style_hosts` 배열에서 읽습니다. 이 모듈이 싣는 외부 스크립트(결제사 결제창 등)가
+     * 자기 호스트에서 불러오는 CSS 파일의 호스트를 선언합니다. 코어는 켜진 확장의 선언을 모아
+     * ({@see TrustedStyleHosts}) 스타일 정책(`style-src`)의 허용 호스트에 더합니다. 확장이 직접 쓰는
+     * CSS 는 선언하지 않고 동봉해 같은 사이트에서 싣습니다.
+     *
+     * @return array<int, string> 신뢰 호스트명 목록 (예: ['stdpay.example.com'])
+     */
+    public function getTrustedStyleHosts(): array
+    {
+        $hosts = $this->loadManifest()['trusted_style_hosts'] ?? [];
 
         if (! is_array($hosts)) {
             return [];

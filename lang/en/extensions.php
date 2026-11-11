@@ -214,7 +214,7 @@ return [
 
         // Bundled extension bulk update prompt of core:update / core:execute-bundled-updates
         'bundled_update' => [
-            'lock_unavailable_aborted' => 'The bulk update was aborted because the operation lock store (cache) is unavailable — skipped the remaining :count item(s). Check the cache status and run it again.',
+            'lock_unavailable_aborted' => 'The bulk update was aborted because the operation lock store (cache) is unavailable — skipped the rest (remaining: :count). Check the cache status and run it again.',
             'up_to_date' => 'Active extensions match the latest bundle.',
             'detected' => 'Extensions with a newer version in the bundle were detected:',
             'detected_items' => [

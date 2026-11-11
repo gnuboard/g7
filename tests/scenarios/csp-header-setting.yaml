@@ -41,6 +41,7 @@ axes:
     - style_level_basic               # 강도 기본 — style-src-elem
     - style_level_strict              # 강도 엄격 — style-src + style-src-attr 'none'
     - style_source_template_externals # 활성 템플릿 externals 의 외부 스타일시트 호스트 자동 합산
+    - style_source_extension_declared # 켜진 모듈·플러그인의 trusted_style_hosts 선언 + 필터 훅 자동 합산
     - style_mode_override             # .env G7_CSP_STYLE_MODE 탈출구(스크립트 탈출구와 독립)
     - style_header_combination        # 스크립트 모드 × 스타일 모드 → 나가는 헤더 조합
     - style_settings_screen           # 환경설정 > 보안 카드의 스타일 정책 블록(관리자 템플릿 레이아웃)
@@ -65,6 +66,8 @@ effects:
   # 스타일 정책 (#163) — 정책 문자열·헤더
   - csp_style_directives_follow_level        # 강도별 지시어가 정확히 일치한다
   - csp_style_hosts_merged_deduped_sorted    # 'self' + 자동 + 추가 호스트를 합쳐 중복 제거·정렬한다
+  - csp_style_extension_declared_hosts_included   # 켜진 확장이 선언한 스타일 호스트가 스타일 정책에 들어가고 script-src 에는 섞이지 않는다
+  - csp_style_inactive_extension_hosts_excluded   # 꺼진 확장의 스타일 선언은 빠진다
   - csp_style_invalid_hosts_dropped          # 형식이 어긋난 호스트는 정책에 넣지 않는다
   - csp_style_level_fallback_basic           # 잘못된 강도 값은 basic
   - csp_style_mode_override_independent      # G7_CSP_STYLE_MODE 가 저장값보다 우선하고 G7_CSP_MODE 와 독립이다

@@ -170,6 +170,7 @@
 | 비활성 설치 모듈이 있는 상태에서 정리를 강행 | `hasPotentiallyMissingSources()` 로 감지해 중단 | 비활성 모듈의 콘텐츠는 훅을 등록하지 않으므로 판정에서 빠진다 (fail-open 방지) |
 | 핸들러에서 `<style>` 요소·HTML 문자열의 `style="…"`·`setAttribute('style', …)` 로 스타일 싣기 | 고정 규칙은 `resources/css/main.css`(→ `dist/css/plugin.css`), 실행 중 값은 `el.style.x = …`·`el.style.setProperty()` | 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 앞의 셋이 막혀 편집기가 다크 모드·높이·탭 모양을 잃는다. 뒤의 둘은 막히지 않는다 |
 | 동봉 자산 버전을 올리면서 일부 기재만 갱신 | 디렉토리명·레이아웃 조각의 `scripts.src`·의존성 핀·소스 상수·테스트 단언을 한 버전으로 | 하나만 어긋나도 그 자산이 404 가 되는데 빌드와 테스트는 통과한다 |
+| 편집 화면 서식 플러그인(`resources/js/handlers/editingViewStyle.ts`)을 조건부로 싣거나, 같은 효과를 내려고 저장용 변환기·프로토타입·동봉 라이브러리 파일을 고치기 | 편집기를 만들 때 항상 `extraPlugins` 로 싣고, 편집 화면 변환기(`editor.editing.view.domConverter`) 인스턴스의 `setDomElementAttribute` 만 덮어써 `style` 을 `el.style.cssText` 로 입힌다. 동봉 판을 올릴 때 그 메서드의 이름·인자·안전 판정(`shouldRenderAttribute`)이 그대로인지 확인한다 | 엄격한 스타일 정책(`style-src-attr 'none'`)에서는 `setAttribute('style')` 가 막혀 편집 화면에 정렬·색·표·이미지 크기가 보이지 않는다. 저장용 경로를 건드리면 저장되는 HTML 이 달라진다. 색상 선택기(shadow DOM `<style>`)·끌어 놓기 미리보기는 고치지 않는 범위다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -178,7 +179,7 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 21개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 37개 | `vitest.config.ts` |
+| Vitest | 38개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 25개 | `tests/scenarios` |
 

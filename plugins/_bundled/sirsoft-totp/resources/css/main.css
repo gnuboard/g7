@@ -17,3 +17,15 @@
 .dark .totp-tone-warning {
     color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
 }
+
+/*
+ * 등록 화면의 QR 코드 — 칸 폭에 맞추되 220px 를 넘지 않고 가운데에 둔다.
+ * SVG 문자열에 style 속성으로 싣지 않는다(스타일 보안 정책이 HTML 문자열의 style 속성을 막는다).
+ */
+.totp-qr-svg {
+    width: 100%;
+    max-width: 220px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}

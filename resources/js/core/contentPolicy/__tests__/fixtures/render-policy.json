@@ -50,7 +50,8 @@
         ],
         "attributes": {
             "figure": [
-                "class"
+                "class",
+                "style"
             ],
             "figcaption": [
                 "class"

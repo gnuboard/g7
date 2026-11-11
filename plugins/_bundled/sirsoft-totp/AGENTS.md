@@ -215,6 +215,7 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | provider 설정을 `config()` 로 읽기 | `PluginSettingsService::get('sirsoft-totp')` 로 매 요청 직접 조회 | 코어 `PluginSettingsService::save()` 는 인메모리 캐시만 비우므로 `config()` 로 읽으면 변경된 설정이 다음 요청에 반영되지 않는다 |
 | `dispatcher.registerHandler` 를 변수로 떼어 수신자 없이 호출 | `register.call(dispatcher, …)` 로 수신자를 붙인다 | `registerHandler` 는 내부에서 `this.customHandlers` 를 쓴다. 수신자 없이 부르면 예외가 나고, 그 예외가 부팅 함수를 끊어 QR 관측자까지 설치되지 않았다 |
 | `window.__SirsoftTotp` 를 지우거나 `initPlugin` 이름을 바꾸기 | 전역 `{ identifier, initPlugin }` 을 그대로 둔다 | 로케일 전환 뒤 코어는 `__` 로 시작하는 전역에서 `initPlugin()` 을 찾아 부른다. 없으면 언어를 바꾼 뒤 「전체 복사」가 동작하지 않는다 |
+| QR SVG 문자열(`resources/js/qr.ts`)에 `style="…"` 로 크기·배치 싣기 | 클래스 `totp-qr-svg` 만 달고 규칙은 `resources/css/main.css` 에 둔다 | 엄격한 스타일 보안 정책(`style-src-attr 'none'`)은 HTML 문자열의 `style` 속성을 막는다 — QR 이 220px 로 줄지 않고 가운데에 오지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

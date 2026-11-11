@@ -231,7 +231,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 `status`·답변은 입력에 키가 있을 때만 덮어쓰고, 지운 후기는 되살리지 않음). HTML 본문은 상품 설명과 같은
 `Services\Concerns\PurifiesHtml` 의 기본 허용 목록(`baseline`)으로 정화합니다 — 상품 설명은 여기에 코어 「본문 콘텐츠」
 후보 요소 전부(그림 캡션·업로드 동영상·오디오·외부 영상)와 운영자 추가 태그를 더한 `content` 프로필로 정화하며, 후보
-스위치·외부 영상 서비스 켜고 끄기는 표시에서만 따릅니다(끈 동안 저장해도 원문이 남아 다시 켜면 돌아옴, #887). 후기를 읽는 코드에서 `$review->user`·`orderOption` 을
+스위치·외부 영상 서비스 켜고 끄기는 표시에서만 따릅니다(끈 동안 저장해도 원문이 남아 다시 켜면 돌아옴, #887). `content` 프로필은 편집기가 싣는 서식 속성(문단·제목·목록·표·셀·이미지의 `style`, 병합 셀의 `colspan`·`rowspan`)과 그 CSS 속성 목록(`PURIFIER_CONTENT_ALLOWED`·`PURIFIER_CONTENT_CSS`)을 더 받습니다 — 허용 목록을 고치면 정의 판(`PURIFIER_CONTENT_SCHEMA`)을 올려 옛 정의 캐시를 버리고, `position`·`background-image` 처럼 화면을 덮거나 밖으로 요청을 내는 속성은 넣지 않습니다. 후기(`baseline`)에는 이 목록을 쓰지 않습니다. 후기를 읽는 코드에서 `$review->user`·`orderOption` 을
 null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview::displayAuthorName()`, 응답은
 `author_name`·`is_imported` 를 씁니다. 주문 옵션 파기 연쇄(`purgeForOrderOptions`)·옵션 필터·별점 분포 조인은
 `order_option_id` 로 묶으므로 이 후기를 자연히 건너뛰거나(옵션 필터) 그대로 셉니다(별점·상품 목록 집계).
@@ -405,9 +405,9 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 747개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 298개 | `vitest.config.ts` |
+| Vitest | 299개 | `vitest.config.ts` |
 | Playwright | 81개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 446개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 447개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

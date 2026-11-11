@@ -33,6 +33,7 @@ const SOURCES: Record<string, string> = {
     'index.ts': read('resources/js/index.ts'),
     'initEditor.ts': read('resources/js/handlers/initEditor.ts'),
     'destroyEditor.ts': read('resources/js/handlers/destroyEditor.ts'),
+    'editingViewStyle.ts': read('resources/js/handlers/editingViewStyle.ts'),
 };
 
 /** 주석을 걷어 낸 소스 — 주석 속 설명 문구(`<style>` 등)를 코드로 오인하지 않게 */

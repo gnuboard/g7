@@ -53,6 +53,38 @@ class BridgeNoInlineScriptTest extends PluginTestCase
     }
 
     /**
+     * 프레임 모양(여백 0·투명 배경)은 인라인 스타일이 아니라 같은 출처 CSS 파일로 건다.
+     *
+     * 사이트가 스타일 보안 정책(`style-src 'self'; style-src-attr 'none'`)을 걸면 `<body style="…">` 가 막혀
+     * 프레임에 기본 여백(8px)이 생긴다. `<head>` 의 `<link>` 는 렌더를 막으므로 투명 배경이 깜빡이지 않는다.
+     *
+     * @scenario page=kcp_frame
+     *
+     * @effects kcp_frame_styles_from_stylesheet_without_inline_style
+     *
+     * @return void 반환값 없음
+     */
+    public function test_프레임_페이지는_인라인_스타일_없이_css_파일로_꾸민다(): void
+    {
+        foreach (KcpFrameRequest::ALLOWED_SDK_URLS as $sdk) {
+            $html = (string) $this->get(self::FRAME.'?sdk='.urlencode($sdk))->assertOk()->getContent();
+
+            $this->assertSame(0, preg_match('/<style\b/i', $html), '<style> 요소가 남아 있다');
+            $this->assertSame(0, preg_match('/<[a-z][^>]*\sstyle\s*=/i', $html), 'style 속성이 남아 있다');
+            $this->assertSame(1, preg_match_all('#<link rel="stylesheet" href="[^"]*assets/bridge/kcp-frame\.css[^"]*">#', $html));
+
+            $headEnd = strpos($html, '</head>');
+            $linkAt = strpos($html, 'assets/bridge/kcp-frame.css');
+            $this->assertNotFalse($headEnd);
+            $this->assertNotFalse($linkAt);
+            $this->assertLessThan($headEnd, $linkAt, 'CSS 는 <head> 에서 실려야 무스타일로 깜빡이지 않는다');
+        }
+
+        $css = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-frame.css');
+        $this->assertMatchesRegularExpression('/body\s*\{[^}]*margin:\s*0;[^}]*padding:\s*0;[^}]*background:\s*transparent;/', $css);
+    }
+
+    /**
      * 허용 목록 밖 SDK 주소는 400 — 페이지를 그리지 않는다.
      *
      * @scenario page=kcp_frame

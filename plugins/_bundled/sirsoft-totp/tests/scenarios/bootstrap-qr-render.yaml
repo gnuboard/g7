@@ -5,20 +5,27 @@ description: |
   변수로 떼어내 불러 수신자(`this`)를 잃었고, 그 TypeError 가 `start()` 를 통째로 멈춰 QR 관측자가 설치되지 않았다.
   `qr.test.ts`(반환 문자열)와 레이아웃 시험(`data-totp-qr` 표기)은 둘 다 초록이어도 이 연결 구간을 재지 않는다.
   이 매니페스트는 번들 진입점이 실행돼 관측자를 걸고 QR 을 채우는 구간을 jsdom 에서 잰다.
+  QR 마크업은 style 속성 없이 클래스(totp-qr-svg)로 크기를 건다 — 스타일 보안 정책(style-src-attr none)이 HTML 문자열의
+  style 속성을 막아, 정책을 건 사이트에서 QR 이 220px 로 줄지 않고 칸을 꽉 채웠다.
 
 axes:
-  case: [no_dispatcher, late_node, attribute_filled_later, handler_registration_throws]
+  case: [no_dispatcher, late_node, attribute_filled_later, handler_registration_throws, qr_markup]
 
 axis_notes:
   case: >-
     no_dispatcher = 디스패처 없이 적재, late_node = 적재 뒤 붙은 노드, attribute_filled_later = 빈 속성이 나중에 채워짐
-    (등록 시작 시 실제 순서), handler_registration_throws = 수신자를 잃은 등록이 터지는 사고 재현.
+    (등록 시작 시 실제 순서), handler_registration_throws = 수신자를 잃은 등록이 터지는 사고 재현,
+    qr_markup = 그려지는 SVG 문자열과 플러그인 CSS 의 계약.
 
 effects:
   - qr_renders_without_dispatcher                 # 디스패처가 없어도 이미 있는 QR 자리를 채운다
   - qr_observer_fills_late_nodes                  # 나중에 붙은 QR 자리도 관측자가 채운다
   - qr_renders_when_attribute_is_filled_later     # 빈 값에서 채워진 속성도 그린다
   - qr_survives_handler_registration_failure      # 핸들러 등록이 터져도 QR 은 그려진다
+  - qr_svg_markup_contract                        # SVG 루트·흑백 고정·여백·라벨 이스케이프·결정성
+  - qr_svg_has_no_style_attribute                 # SVG 문자열에 style 속성이 없고 클래스로 건다
+  - qr_size_rule_in_css_file                      # 크기 규칙은 플러그인 CSS 파일에 있다
 
 test_files:
   - plugins/_bundled/sirsoft-totp/resources/js/__tests__/bootstrap.test.ts
+  - plugins/_bundled/sirsoft-totp/resources/js/__tests__/qr.test.ts

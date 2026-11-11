@@ -95,6 +95,33 @@ class ContentHtmlPolicyTest extends TestCase
     }
 
     /**
+     * 그림 묶음(figure)의 `style` 은 남긴다 — 편집기에서 줄인 이미지 크기(`width:50%`)가 저장·표시·봇 화면에서 유지된다.
+     *
+     * 종전 규칙은 figure 에 `class` 만 받아, 줄인 이미지가 글 보기에서 100% 로 나왔다(스타일 정책과 무관). 이벤트 속성과
+     * 규칙 밖 속성은 지금처럼 지운다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=figure_size_style
+     *
+     * @effects figure_size_style_kept
+     */
+    public function test_figure_keeps_size_style(): void
+    {
+        $policy = ContentHtmlPolicy::fromSettings([]);
+        $this->assertSame(['class', 'style'], $policy->toFrontendArray()['attributes']['figure']);
+
+        $html = '<figure class="image image_resized" style="width:50%;" onclick="x()" contenteditable="true"><img src="/a.png" alt="a"></figure>';
+
+        foreach (['store', 'bot'] as $stage) {
+            $out = $policy->finalize($html, $stage);
+            $this->assertStringContainsString('<figure class="image image_resized" style="width:50%;">', $out, $stage);
+            $this->assertStringNotContainsString('onclick', $out, $stage);
+            $this->assertStringNotContainsString('contenteditable', $out, $stage);
+        }
+    }
+
+    /**
      * 「그림 캡션」 끔 — 표시에서만 캡션(figcaption)을 내용째 지우고 그림은 남긴다. 편집기 금지 목록(forbid_tags)에는 넣지 않아
      * 저장 원문이 그대로이고(다시 켜면 복원), 저장 마무리(`store`)도 캡션을 건드리지 않는다. 봇 화면(`bot`)은 사람 화면과 같이 지운다 (#887).
      *

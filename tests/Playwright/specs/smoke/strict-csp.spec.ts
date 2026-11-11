@@ -19,6 +19,7 @@
  *   (C) 셸 JS 자체 미도착 → 20초 뒤 CSS 지연 안내문(#g7-shell-stall) 표시
  *   (S) 스타일 정책 2강도(기본·엄격) × 화면(진입 3종 · 로그인 후 환경설정 · 링크 클릭 화면 이동 · 레이아웃 API 500 오류 화면)
  *       — 위반 0, 지연 안내 `display: none`, 오류 화면 제목 `24px`
+ *       + 글쓰기 편집기(CKEditor 5)의 가운데 정렬이 편집 화면에 보인다(계산된 text-align center, 저장 형식 불변)
  *
  * 소유 매니페스트: tests/scenarios/strict-csp-compat.yaml (A·B·C), tests/scenarios/strict-style-csp-compat.yaml (S).
  * 조합·효과는 테스트별 마킹에 적는다.
@@ -60,10 +61,11 @@ function withStylePolicy(styleDirectives: string): string {
  * 라이브러리 교체·설정으로 위반이 사라지면 이 목록에서 빼고 (S) 화면 목록으로 옮긴다.
  */
 const EXTERNAL_LIBRARY_SCREENS: ReadonlyArray<{ name: string; reason: string }> = [
-  // 아래 사유는 2026-11-10 Chrome 156 실측값이다(환경설정에서 강도별로 강제한 뒤 화면을 열어 측정).
+  // 아래 사유는 Chrome 156 실측값이다(환경설정에서 강도별로 강제한 뒤 화면을 열어 측정. CKEditor 는 2026-11-11, 나머지는 2026-11-10).
   {
-    name: '게시판 글 수정 (CKEditor 5 편집기)',
-    reason: '엄격에서만 깨진다 — CKEditor 5 가 본문 서식(글자색·정렬·배경색·글자 크기)을 style 속성으로 달아 편집 중에 보이지 않는다(style-src-attr 86~94건). 기본 강도와 새 글 쓰기는 위반 0건, 저장 데이터는 유지된다',
+    // 편집 화면의 서식(정렬·색·표·이미지 크기)은 고쳐서 아래 실제 테스트가 잠근다 — 남은 것은 색상 선택기뿐이다
+    name: '편집기 색상 선택기 (CKEditor 5 — 글자색·배경색·표 색의 「색상 선택기」)',
+    reason: '두 강도 모두 깨진다 — 임의 색을 끌어 고르는 판이 자기 안에 넣는 <style> 요소 2개가 막혀 접힌다(180×100 → 172×30, style-src-elem 2건). 정해진 색 타일과 16진수 입력으로는 색을 고를 수 있다. 엄격에서는 저장용 HTML 을 만들 때 나는 style 속성 위반이 편집 중 계속 보고돼(글자 10자에 약 400건, 화면에는 영향 없음) 위반 0건 단언을 걸 수 없다',
   },
   {
     name: '레이아웃 코드 편집기 (Monaco Editor)',
@@ -106,7 +108,13 @@ async function injectCsp(page: Page, policy: string): Promise<void> {
 
   await page.addInitScript(() => {
     (window as any).__cspv = [];
+    // 편집기 편집 영역 안(문서에 붙은 요소)에서 난 위반 수 — 편집 화면 서식이 막혔는지 가르는 값
+    (window as any).__cspEditable = 0;
     document.addEventListener('securitypolicyviolation', (e) => {
+      const target = e.target as Element | null;
+      if (target && target.nodeType === 1 && target.isConnected && target.closest('.ck-editor__editable')) {
+        (window as any).__cspEditable += 1;
+      }
       (window as any).__cspv.push({
         d: e.effectiveDirective,
         b: e.blockedURI,
@@ -328,6 +336,45 @@ test.describe('엄격한 스타일 CSP 호환 (#163)', () => {
       expect(await title.evaluate((el) => getComputedStyle(el).fontSize)).toBe('24px');
 
       expect(await violations(page)).toEqual([]);
+    });
+
+    // @scenario case=style_csp_basic_enforced
+    // @effects editor_formatting_visible_under_style_csp
+    // @scenario case=style_csp_strict_enforced
+    // @effects editor_formatting_visible_under_style_csp
+    test(`(S) [스타일 ${level.label}] 글쓰기 편집기(CKEditor 5)에서 가운데 정렬이 편집 화면에 보인다`, async ({ page, request }) => {
+      // 종전에는 엄격에서 편집 화면 문단의 style 속성이 막혀 정렬을 눌러도 왼쪽 그대로였다(저장값만 맞았다).
+      // 편집기 플러그인이 편집 화면의 style 을 CSSOM 으로 입힌다 — 저장되는 HTML 형식은 그대로여야 한다.
+      const token = await adminToken(request, 'sirsoft-page.pages.read', 'sirsoft-page.pages.create');
+      await authenticatePage(page, token);
+      await injectCsp(page, policy);
+
+      const response = await page.goto('/admin/pages/create');
+      expect(response?.headers()['content-security-policy']).toBe(policy);
+      await waitForShell(page);
+
+      const editable = page.locator('.ck-editor__editable:visible').first();
+      await expect(editable, 'CKEditor 편집기가 뜨지 않았다(편집기 플러그인·페이지 모듈이 켜져 있어야 한다)').toBeVisible({ timeout: 30_000 });
+
+      await editable.click();
+      await page.keyboard.type('CSP alignment probe');
+
+      // 텍스트 정렬 드롭다운 → 가운데. 아이콘 단추라 이름은 로케일을 따른다(ko·en)
+      const toolbar = page.locator('.ck-editor:has(.ck-editor__editable:visible) .ck-toolbar').first();
+      await toolbar.locator('.ck-dropdown__button[data-cke-tooltip-text*="정렬"], .ck-dropdown__button[data-cke-tooltip-text*="alignment" i]').first().click();
+      await page.locator('.ck-dropdown__panel-visible .ck-button[data-cke-tooltip-text*="가운데"], .ck-dropdown__panel-visible .ck-button[data-cke-tooltip-text*="center" i]').first().click();
+
+      const paragraph = editable.locator('p').first();
+      await expect.poll(() => paragraph.evaluate((el) => getComputedStyle(el).textAlign), { timeout: 10_000 }).toBe('center');
+      // 속성 문자열만 있고 선언이 0개면 정책에 막힌 것이다
+      expect(await paragraph.evaluate((el) => (el as HTMLElement).style.length)).toBeGreaterThan(0);
+
+      // 저장되는 HTML 은 CKEditor 원래 형식 그대로다(공백 없는 선언)
+      const data = await editable.evaluate((el) => (el as any).ckeditorInstance.getData());
+      expect(data).toBe('<p style="text-align:center;">CSP alignment probe</p>');
+
+      // 편집 화면(문서에 붙은 편집 영역 안 요소)에서 난 위반은 없어야 한다 — 저장용 HTML 생성 때 나는 위반은 재지 않는다
+      expect(await page.evaluate(() => (window as any).__cspEditable ?? 0)).toBe(0);
     });
 
     for (const external of EXTERNAL_LIBRARY_SCREENS) {

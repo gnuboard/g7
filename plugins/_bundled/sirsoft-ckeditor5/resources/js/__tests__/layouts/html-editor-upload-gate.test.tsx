@@ -101,7 +101,8 @@ describe('편집기 이미지 업로드 단추 — 관리자에게만 (#883)', (
         installCore(null);
         const config = await mountAndGetConfig(true);
         expect(config.toolbar.items).not.toContain('uploadImage');
-        expect(config.extraPlugins).toBeUndefined();
+        // 업로드 플러그인은 없다 — 편집 화면 스타일 플러그인(항상 붙음)만 남는다
+        expect(config.extraPlugins.map((plugin: { name: string }) => plugin.name)).toEqual(['EditingViewCssomStyle']);
     });
 
     /**
@@ -112,7 +113,8 @@ describe('편집기 이미지 업로드 단추 — 관리자에게만 (#883)', (
         installCore({ uuid: 'm', is_admin: false }, { _global: { currentUser: { uuid: 'm', is_admin: false } } });
         const config = await mountAndGetConfig(true);
         expect(config.toolbar.items).not.toContain('uploadImage');
-        expect(config.extraPlugins).toBeUndefined();
+        // 업로드 플러그인은 없다 — 편집 화면 스타일 플러그인(항상 붙음)만 남는다
+        expect(config.extraPlugins.map((plugin: { name: string }) => plugin.name)).toEqual(['EditingViewCssomStyle']);
     });
 
     /**
@@ -123,7 +125,8 @@ describe('편집기 이미지 업로드 단추 — 관리자에게만 (#883)', (
         installCore({ uuid: 'a', is_admin: true });
         const config = await mountAndGetConfig(true);
         expect(config.toolbar.items).toContain('uploadImage');
-        expect(config.extraPlugins).toHaveLength(1);
+        // 업로드 어댑터 + 편집 화면 스타일 플러그인(항상 붙음)
+        expect(config.extraPlugins).toHaveLength(2);
     });
 
     /**

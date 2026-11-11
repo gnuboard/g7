@@ -1,0 +1,45 @@
+feature: 이커머스 환경설정 저장 요청의 통화 추가 검증
+
+description: |
+  통화 목록은 규칙 배열만으로 잡을 수 없는 두 가지를 추가로 검증한다 — 통화 코드 중복(대소문자 무시)과
+  통화명이 적어도 한 언어로 채워졌는지(빈 값·공백만은 채워지지 않은 것). 통화 목록이 없거나 비면 추가 검증을
+  건너뛴다. 오류 문구는 모듈 사전에서 번역한다.
+
+axes:
+  case:
+    - duplicate_currency_codes_fail_validation
+    - duplicate_currency_codes_case_insensitive
+    - unique_currency_codes_pass_validation
+    - empty_currency_name_array_fails_validation
+    - missing_currency_name_fails_validation
+    - all_empty_locale_names_fail_validation
+    - whitespace_only_locale_names_fail_validation
+    - single_locale_name_passes_validation
+    - partial_locale_names_pass_validation
+    - mixed_valid_invalid_currencies
+    - empty_currencies_array_skips_custom_validation
+    - missing_currencies_skips_custom_validation
+    - error_messages_are_localized
+    - duplicate_code_error_message_is_localized
+
+cross_product: |
+  코드 중복과 통화명 채움은 서로 독립인 검사라 곱하지 않고 케이스 목록으로 적는다. 섞인 목록 한 건으로 두 검사가 함께 도는 것을 잰다.
+
+effects:
+  - duplicate_currency_codes_fail_validation
+  - duplicate_currency_codes_case_insensitive
+  - unique_currency_codes_pass_validation
+  - empty_currency_name_array_fails_validation
+  - missing_currency_name_fails_validation
+  - all_empty_locale_names_fail_validation
+  - whitespace_only_locale_names_fail_validation
+  - single_locale_name_passes_validation
+  - partial_locale_names_pass_validation
+  - mixed_valid_invalid_currencies
+  - empty_currencies_array_skips_custom_validation
+  - missing_currencies_skips_custom_validation
+  - error_messages_are_localized
+  - duplicate_code_error_message_is_localized
+
+test_files:
+  - tests/Unit/Requests/Ecommerce/StoreEcommerceSettingsRequestCustomValidationTest.php

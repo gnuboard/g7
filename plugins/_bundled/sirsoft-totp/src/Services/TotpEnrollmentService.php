@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Totp\Services;
 
 use App\Extension\HookManager;
 use App\Models\User;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -101,7 +102,15 @@ class TotpEnrollmentService
             return null;
         }
 
-        $step = Totp::verify((string) $credential->secret, $code);
+        try {
+            $secret = (string) $credential->secret;
+        } catch (DecryptException) {
+            // 미확정 행의 시크릿이 지금 키로 풀리지 않는다(사이트 암호화 키가 바뀐 뒤 남은 행) — 맞출 수 있는 코드가
+            // 없으므로 코드 불일치로 답한다. 등록을 다시 시작하면 새 시크릿이 발급된다.
+            return null;
+        }
+
+        $step = Totp::verify($secret, $code);
 
         if ($step === null) {
             return null;

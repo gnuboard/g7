@@ -34,6 +34,7 @@
 - 환경설정 > 보안에 「비밀번호 찾기·재설정 분당 허용 횟수」 와 「회원가입 분당 허용 횟수」 를 추가했습니다(각 기본 10, 1~1000). 같은 IP 에서 1분 동안 받을 요청 수이며, 사내망처럼 여러 사람이 한 IP 를 쓰는 곳은 값을 올리면 됩니다. 비밀번호 찾기와 재설정·토큰 확인은 같은 값을 쓰되 따로 셉니다.
 - 환경설정 > 드라이버를 저장하면 `/storage` 직접 주소의 보호 헤더가 실제로 붙는지 스스로 확인하고, 붙지 않았을 때 「웹서버 보호 규칙이 적용되지 않았습니다」 경고와 설치 문서 링크를 보여 줍니다(공개 자산 디스크가 로컬 공개 디스크일 때). 저장은 그대로 됩니다. 사이트 주소가 다른 주소로 넘어가거나 점검 파일을 찾지 못해 확인할 수 없을 때는 경고를 띄우지 않습니다.
 - 확장 개발자용: 저장 파일명 확장자를 파일 내용에서 정하는 `App\Support\Files\StoredFileExtension::resolve()`, 허용 MIME 목록에서 이름 확장자 목록을 만드는 `AllowedExtensions::fromMimeTypes()`, 공개 디스크로 내보낼 확장자 판정(`PublicAssetDisk::exportsExtension()`·`resolveForExtension()`·`storageForExtension()`·`allowsDirectUrl()`), 연결 대상 호스트·주소 검증 규칙(`App\Rules\ConnectionHost`·`ConnectionEndpointUrl`), 링크로컬·메타데이터 주소 판정(`OutboundUrlValidator::isMetadataHost()`·`isMetadataUrl()`·`isNumericDisguisedHost()`·`isRefusedConnectionUrl()`), 본인인증 메일 대상 해시(`MailIdentityProvider::targetHash()`)와 재요청 대기 시간(`IdentityVerificationService::cooldownRemaining()`)을 추가했습니다. 환경설정 조회 응답의 `_meta.public_disk_hardening` 에 `/storage` 보호 헤더 점검 결과가 실립니다. `AbstractModule`·`AbstractPlugin` 의 `resolvePublicAssetDisk()` 는 두 번째 인자로 저장할 파일의 확장자를 받습니다(주지 않으면 종전과 같습니다). 문서: `docs/extension/storage-driver.md` 「저장 파일명 확장자」·「공개 디스크로 내보낼 확장자」 허용 MIME 목록의 모든 형식에서 이름 확장자를 알 수 있는지 판정하는 `AllowedExtensions::coversEveryMimeType()` 도 더했습니다.
+- 모듈·플러그인이 manifest `trusted_style_hosts`(+ 사유 `trusted_style_hosts_reason`)로 외부 CSS 호스트를 선언하면, 켜져 있는 동안 스타일 정책에 자동으로 허용됩니다. 결제창처럼 외부 스크립트가 스스로 싣는 CSS 를 위한 것입니다 — 종전에는 운영자가 「추가 스타일 허용 호스트」에 직접 넣지 않으면 스타일 정책을 강제한 사이트에서 결제창이 화면을 덮지 못했습니다. 실행 중에 더하려면 필터 훅 `core.csp.trusted_style_hosts` 를 씁니다. 확장 개발 안내: `docs/extension/module-assets.md`.
 
 ### Changed
 
@@ -56,6 +57,9 @@
 
 - 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)을 건 사이트에서 정상 화면 아래에 「화면을 불러오지 못했습니다」 안내가 늘 보이고, 오류 화면·시스템 배너·페이지 이동 표시·로딩 스피너가 스타일 없이 그려지던 문제를 고쳤습니다. 관리자·사용자 화면, 오류·점검 화면, 설치 화면, 레이아웃 편집기가 인라인 스타일 없이 그려지고, 본문 서식은 그대로 보입니다. (#163 @glitter-gim 님께서 제보해주셨습니다.)
 - 레이아웃 편집기에 이름이 255자를 넘는 파일을 올리면 서버 오류(500)가 나고 저장된 파일만 남던 문제를 고쳤습니다. 표시용 원본 이름을 255자로 줄여 기록합니다.
+- 요청 한도 초과(429)·세션 만료(419)·허용하지 않는 요청 방식(405) 같은 일부 오류 화면이 스타일 보안 정책을 건 사이트에서 무스타일로 나오던 문제를 고쳤습니다. 전용 화면이 없던 오류도 다른 오류 화면과 같은 모양으로 나오며, 안내 문구는 「요청을 처리할 수 없습니다」(4xx)·「서버 오류가 발생했습니다」(5xx)입니다.
+- 편집기에서 줄인 이미지 크기가 글 보기와 검색 로봇용 화면에서 적용되지 않고 원래 크기로 나오던 문제(7.1.5 부터)를 고쳤습니다. 그림 묶음의 크기 지정을 본문 표시 규칙이 받도록 했습니다.
+- PHP 확장이 없을 때와 일괄 업데이트가 중단됐을 때 나오는 영어 안내 문구에서 `(s)` 표기를 없앴습니다.
 
 ## [7.1.5] - 2026-11-10
 

@@ -141,6 +141,7 @@
 | `core.content_media.before_delete` | action | 2 |  |
 | `core.content_media.before_upload` | action | 2 |  |
 | `core.content_media.filter_upload_file` | filter | 2 |  |
+| `core.csp.trusted_style_hosts` | filter | 1 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
 | `core.custom_translation.index_validation_rules` | filter | 2 |  |
