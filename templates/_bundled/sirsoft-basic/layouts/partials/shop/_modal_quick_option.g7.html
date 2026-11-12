@@ -1,0 +1,188 @@
+<!-- 상품 카드(목록·검색·가로 상품 줄)의 담기 단추가 여는 옵션 선택 창. 상세로 들어가지 않고 옵션·추가옵션·수량을 골라 담는다.
+     카드는 여러 화면에 나오므로 창은 사용자 화면 상속원에 한 번만 선언한다.
+     창 상태는 창 고유 전역 이름 공간 `_global.quickOptionModal` 에 둔다 — modals 섹션 창은 계속 마운트돼 있어
+     화면 상태에 쓰면 다시 열 때 앞 상품의 줄이 남는다(7.1.1). 여는 핸들러(`sirsoft-basic.openQuickOption`)가
+     이 키를 null 로 비우고 상품 상세(`detail`)를 받아 채운 뒤 연다. 옵션 선택·줄 쌓기·수량·추가옵션은 상세 구매 카드와
+     같은 핸들러를 쓰되, 쓰는 곳만 `stateTarget="global" statePath="quickOptionModal"` 로 바꾼다. -->
+<partial description="상품 카드의 옵션 선택 창 — 옵션·추가옵션·수량을 골라 장바구니에 담는다" editor_label="$t:user.modal_label.shop.quick_option_modal">
+  <modal data-type="composite" data-ref="quick_option_modal" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" title="$t:shop.quick_option.title" size="md">
+    <!-- 상품 이름·가격 -->
+    <div class="mb-4">
+      <p class="font-medium text-gray-900 dark:text-white break-words">{{_global.quickOptionModal?.product?.name_localized ?? _global.quickOptionModal?.detail?.name_localized ?? ''}}</p>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{_global.quickOptionModal?.detail?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _global.quickOptionModal?.detail?.selling_price_formatted ?? ''}}</p>
+    </div>
+    <!-- === 배송 불가 사전 경고 (선택 배송국가로 배송 불가 — 담기도 잠근다) === -->
+    <div data-if="{{_global.quickOptionModal?.detail?.is_shippable_to_selected_country === false}}" class="flex items-start gap-2 px-3 py-2.5 mb-4 rounded-lg border bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800">
+      <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400 mt-0.5 shrink-0"/>
+      <span class="text-sm font-medium text-red-700 dark:text-red-300">$t:shop.shippability.not_shippable</span>
+    </div>
+    <!-- === 옵션 선택 안내 (고를 조합이 둘 이상인데 아직 줄이 없을 때) === -->
+    <div data-if="{{(_global.quickOptionModal?.detail?.options?.length ?? 0) > 1 &amp;&amp; (_global.quickOptionModal?.selectedOptionItems ?? []).length === 0}}" class="pb-3 text-green-700 dark:text-green-400 text-sm font-medium">$t:shop.product.select_options_guide</div>
+    <!-- === 옵션 선택 (고를 조합이 둘 이상인 상품만). 품절 조합은 선택지에 표시하고 고를 수 없게 한다 === -->
+    <div data-ref="quick-option-select" data-if="{{_global.quickOptionModal?.detail?.sales_status === 'on_sale' &amp;&amp; _global.quickOptionModal?.detail?.has_options &amp;&amp; _global.quickOptionModal?.detail?.option_groups?.length > 0 &amp;&amp; (_global.quickOptionModal?.detail?.options?.length ?? 0) > 1}}" class="mb-4 space-y-3">
+      <!-- 옵션 그룹별 Select -->
+      <div data-each="group, groupIndex in {{_global.quickOptionModal?.detail?.option_groups ?? []}}">
+        <div class="mb-3">
+          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1 break-words">{{group.name_localized}}</label>
+          <select name="quick_option_{{groupIndex}}" aria-label="{{group.name_localized}}" data-testid="quick-option-group-{{groupIndex}}" class="w-full" value="{{_global.quickOptionModal?.currentSelection?.[group.name_localized] ?? ''}}" placeholder="{{groupIndex === 0 || _global.quickOptionModal?.currentSelection?.[_global.quickOptionModal?.detail?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}" disabled="{{groupIndex > 0 &amp;&amp; !_global.quickOptionModal?.currentSelection?.[_global.quickOptionModal?.detail?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{[{ value: '', label: groupIndex === 0 || _global.quickOptionModal?.currentSelection?.[_global.quickOptionModal?.detail?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...(group.values_localized ?? []).map(v => { const combos = (_global.quickOptionModal?.detail?.options ?? []).filter(o => o.option_values_localized?.[group.name_localized] === v &amp;&amp; (_global.quickOptionModal?.detail?.option_groups ?? []).slice(0, groupIndex).every(ug => !_global.quickOptionModal?.currentSelection?.[ug.name_localized] || o.option_values_localized?.[ug.name_localized] === _global.quickOptionModal?.currentSelection?.[ug.name_localized])); const soldOut = combos.length > 0 &amp;&amp; combos.every(o => o.is_sold_out || (o.stock_quantity ?? 0) &lt;= 0 || !o.is_active); return { value: v, label: soldOut ? v + ' ' + $t('shop.product.sold_out_suffix') : v, disabled: soldOut }; })] ?? []}}">
+            <on type="change">
+              <!-- 옵션을 한 칸 고를 때마다 «다 골랐는지» 를 판정해, 마지막 칸이 채워지는 순간 한 줄을 추가한다.
+                   방금 고른 값을 핸들러에 따로 넘기는 이유는 위 `set-state` 가 아직 반영되기 전이기 때문이다 -->
+              <sequence>
+                <!-- 현재 선택 상태 업데이트 -->
+                <set-state target="global" quickOptionModal.currentSelection="{{Object.assign({}, _global.quickOptionModal?.currentSelection ?? {}, { [group.name_localized]: $event.target.value })}}"/>
+                <!-- 마지막 옵션 선택 시 자동으로 selectedOptionItems에 추가 (newGroupName/newValue로 sequence 상태 동기화 우회) -->
+                <action handler="sirsoft-basic.addSelectedItemIfComplete" productId="{{_global.quickOptionModal?.detail?.id}}" optionGroups="{{_global.quickOptionModal?.detail?.option_groups}}" options="{{_global.quickOptionModal?.detail?.options}}" currentSelection="{{_global.quickOptionModal?.currentSelection ?? {}}}" selectedOptionItems="{{_global.quickOptionModal?.selectedOptionItems ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" additionalOptionGroups="{{_global.quickOptionModal?.detail?.additional_options ?? []}}" newGroupName="{{group.name_localized}}" newValue="{{$event.target.value}}" stateTarget="global" statePath="quickOptionModal"/>
+              </sequence>
+            </on>
+          </select>
+        </div>
+      </div>
+    </div>
+    <!-- === 수량 제한 안내 (판매중일 때만) === -->
+    <div data-if="{{_global.quickOptionModal?.detail?.sales_status === 'on_sale' &amp;&amp; (_global.quickOptionModal?.detail?.min_purchase_qty > 1 || _global.quickOptionModal?.detail?.max_purchase_qty > 0)}}" class="px-1 mb-2 space-y-0.5">
+      <span data-if="{{_global.quickOptionModal?.detail?.min_purchase_qty > 1}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.min_purchase_qty_notice|qty={{_global.quickOptionModal?.detail?.min_purchase_qty}}</span>
+      <span data-if="{{_global.quickOptionModal?.detail?.max_purchase_qty > 0}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:shop.max_purchase_qty_notice|count={{_global.quickOptionModal?.detail?.max_purchase_qty}}|qty={{_global.quickOptionModal?.detail?.max_purchase_qty}}</span>
+    </div>
+    <!-- === 선택한 상품 — 조합을 고를 때마다 한 줄씩 쌓인다. 옵션이 하나뿐인 상품은 여는 쪽이 고정 줄 하나를 미리 넣는다 === -->
+    <div data-if="{{(_global.quickOptionModal?.selectedOptionItems ?? []).length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
+      <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">$t:shop.selected_products</h4>
+      <!-- 선택된 상품 목록 (space-y-4 는 부모, iteration 은 자식 — 분리해야 형제 간 간격 적용됨) -->
+      <div class="space-y-4">
+        <div data-each="item, itemIndex in {{_global.quickOptionModal?.selectedOptionItems ?? []}}" class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+          <!-- 상품 옵션명 + 삭제 버튼 -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-sm font-medium text-gray-900 dark:text-white">{{item.options ? Object.values(item.options).join(' / ') : ''}}</span>
+              <!-- 옵션마다 과세 종류가 다를 때, 고른 옵션의 과세 종류(옵션 지정 ?? 상품 기본값)가 면세·영세면 표시한다. 모두 같으면 가격 옆에 보이므로 여기엔 붙이지 않는다 (#612) -->
+              <span data-if="{{['tax_free', 'zero_rated'].includes(((_global.quickOptionModal?.detail?.options ?? []).find(o => o.id === item.optionId)?.tax_status ?? _global.quickOptionModal?.detail?.tax_status)) &amp;&amp; !(_global.quickOptionModal?.detail?.options ?? []).every(o => (o.tax_status ?? _global.quickOptionModal?.detail?.tax_status) === (_global.quickOptionModal?.detail?.options?.[0]?.tax_status ?? _global.quickOptionModal?.detail?.tax_status))}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{((_global.quickOptionModal?.detail?.options ?? []).find(o => o.id === item.optionId)?.tax_status ?? _global.quickOptionModal?.detail?.tax_status) === 'zero_rated' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}">{{(_global.quickOptionModal?.detail?.options ?? []).find(o => o.id === item.optionId)?.tax_status_label ?? _global.quickOptionModal?.detail?.tax_status_label}}</span>
+            </div>
+            <button type="button" data-if="{{!item.fixed}}" aria-label="$t:common.delete" class="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+              <on type="click">
+                <!-- 쌓아 둔 줄 하나를 뺀다. 총액도 함께 다시 계산되므로 핸들러가 맡는다 -->
+                <action handler="sirsoft-basic.removeSelectedItem" itemIndex="{{itemIndex}}" selectedOptionItems="{{_global.quickOptionModal?.selectedOptionItems}}" stateTarget="global" statePath="quickOptionModal"/>
+              </on>
+              <icon name="x" size="sm"/>
+            </button>
+          </div>
+          <!-- === 블럭별 추가옵션 그룹 선택 (D2/D10: 옵션 블럭 내부) === -->
+          <div data-if="{{_global.quickOptionModal?.detail?.additional_options?.length > 0}}" data-each="addGroup, addGroupIndex in {{_global.quickOptionModal?.detail?.additional_options ?? []}}" class="mb-3 space-y-2">
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                <span>{{addGroup.name}}</span>
+                <span data-if="{{addGroup.is_required}}" class="text-red-600 dark:text-red-300 ml-0.5">*</span>
+              </label>
+              <select name="quick_add_option_{{itemIndex}}_{{addGroup.id}}" aria-label="{{addGroup.name}}" data-testid="quick-add-option-{{itemIndex}}-{{addGroup.id}}" class="w-full" value="{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+                <on type="change">
+                  <!-- 추가옵션은 상품 전체가 아니라 **그 줄에** 붙는다 — 같은 상품을 두 줄 담아도 각각 다른
+                       추가옵션을 고를 수 있어야 하므로 `itemIndex` 를 함께 넘긴다 -->
+                  <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{$event.target.value}}" selectedOptionItems="{{_global.quickOptionModal?.selectedOptionItems}}" additionalOptionGroups="{{_global.quickOptionModal?.detail?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" stateTarget="global" statePath="quickOptionModal"/>
+                </on>
+              </select>
+              <!-- 담기를 눌렀는데 이 줄의 필수 추가옵션이 비어 있으면 어느 칸인지 알려 준다 — 안내 토스트만으로는 줄을 알 수 없다 -->
+              <p data-if="{{!!_global.quickOptionModal?.attempted &amp;&amp; addGroup.is_required &amp;&amp; !item.additionalOptionSelections?.[addGroup.id]}}" role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">$t:shop.additional_option_required</p>
+              <!-- 직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출(입력 필수). 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용 -->
+              <div data-if="{{(addGroup.values ?? []).find(v => v.id === item.additionalOptionSelections?.[addGroup.id])?.allow_custom_text === true}}" class="mt-2">
+                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:shop.additional_option_custom_text_label</label>
+                <input aria-label="$t:common.row_cell|row={{addGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}" type="text" name="quick_add_option_text_{{itemIndex}}_{{addGroup.id}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{item.additionalOptionCustomTexts?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" :maxLength="255">
+                  <on type="input">
+                    <!-- 같은 핸들러에 고른 값은 그대로 두고 문구만 실어 보낸다 — 글자를 고칠 때 선택이 풀리지 않게 -->
+                    <action handler="sirsoft-basic.setBlockAdditionalOption" itemIndex="{{itemIndex}}" additionalOptionId="{{addGroup.id}}" valueId="{{item.additionalOptionSelections?.[addGroup.id]}}" customText="{{$event.target.value}}" selectedOptionItems="{{_global.quickOptionModal?.selectedOptionItems}}" additionalOptionGroups="{{_global.quickOptionModal?.detail?.additional_options ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" stateTarget="global" statePath="quickOptionModal"/>
+                  </on>
+                </input>
+                <p data-if="{{!!_global.quickOptionModal?.attempted &amp;&amp; addGroup.is_required &amp;&amp; (item.additionalOptionCustomTexts?.[addGroup.id] ?? '').trim() === ''}}" role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">$t:shop.additional_option_custom_text_required</p>
+              </div>
+            </div>
+          </div>
+          <!-- 추가옵션 추가금 합계 표기 (선택된 추가금이 있을 때) -->
+          <div data-if="{{(item.additionalOptionsTotal ?? 0) > 0}}" data-testid="quick-additional-options-amount" class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <span>$t:shop.additional_options_amount</span>
+            <!-- 추가금은 기본통화 기준으로 저장되므로 표시통화 환산값(핸들러가 서버 맵에서 계산)을 우선 사용한다. 없으면 기본통화 표기로 폴백 -->
+            <span>{{(() => { const code = _global.preferredCurrency ?? _global.defaultCurrency; const cur = (_global.availableCurrencies ?? []).find(x => x.code === code) ?? (_global.availableCurrencies ?? []).find(x => x.is_default); const converted = item.additionalOptionsMultiCurrencyTotal?.[code]?.value; const amount = converted ?? (item.additionalOptionsTotal ?? 0); const dp = cur?.decimal_places ?? 0; const n = amount.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); const s = cur?.symbol ?? '₩'; return '+' + ((cur?.code === 'KRW' || s === '₩' || s === '원') ? ($t('sirsoft-ecommerce.currency.krw_prefix') + n + $t('sirsoft-ecommerce.currency.krw_suffix')) : (s + n)); })()}}</span>
+          </div>
+          <!-- 수량 조절 + 가격 -->
+          <div class="flex items-center justify-between">
+            <quantity-selector data-type="composite" value="{{item.quantity}}" min="{{item.fixed ? (_global.quickOptionModal?.detail?.min_purchase_qty ?? 1) : 1}}" max="{{_global.quickOptionModal?.detail?.max_purchase_qty > 0 ? Math.min(item.stock, _global.quickOptionModal.detail.max_purchase_qty) : item.stock}}" size="sm">
+              <on event="onChange">
+                <!-- 줄 단위 수량. 상한은 재고와 1인 구매 한도 중 작은 쪽이라 컴포넌트 `max` 가 그것을 계산한다 -->
+                <action handler="sirsoft-basic.updateSelectedItemQuantity" itemIndex="{{itemIndex}}" newQuantity="{{$args[0]}}" selectedOptionItems="{{_global.quickOptionModal?.selectedOptionItems}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" stateTarget="global" statePath="quickOptionModal"/>
+              </on>
+            </quantity-selector>
+            <span class="text-sm font-bold text-gray-900 dark:text-white">{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.totalPriceFormatted}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- === 합계 + 단추 === -->
+    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.total_amount ({{(_global.quickOptionModal?.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0)}}$t:shop.count_unit)</span>
+        <span data-testid="quick-option-total" class="text-xl font-bold text-gray-900 dark:text-white">{{(_global.quickOptionModal?.selectedOptionItems ?? []).length === 0 ? '-' : (_global.quickOptionModal?.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? (_global.quickOptionModal?.selectedOptionItems ?? [])[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? (_global.quickOptionModal?.selectedOptionItems ?? [])[0]?.totalPriceFormatted ?? '')}}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <!-- 상세 보기 — 창을 닫고 그 상품 상세로 간다 -->
+        <a href="{{_global.shopBase}}/products/{{_global.quickOptionModal?.product?.product_code ?? _global.quickOptionModal?.product?.id}}" data-testid="quick-option-view-detail" class="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <sequence>
+              <close-modal/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 창에서 상품 상세로 가는 이동 — 카드가 어느 화면에 있었는지 창은 알지 못해 이어 갈 목록 조건이 없다 -->
+              <navigate path="{{_global.shopBase}}/products/{{_global.quickOptionModal?.product?.product_code ?? _global.quickOptionModal?.product?.id}}"/>
+            </sequence>
+          </on>
+          $t:shop.quick_option.view_detail
+        </a>
+        <!-- 담기 — 쌓은 줄을 한 번에 보낸다. 줄 수량의 합이 구매 한도 밖이면 잠근다(구매 카드와 같은 판정) -->
+        <button type="button" data-testid="quick-add-to-cart" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!!_global.quickOptionModal?.adding || _global.quickOptionModal?.detail?.is_shippable_to_selected_country === false || (_global.quickOptionModal?.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (_global.quickOptionModal?.detail?.min_purchase_qty ?? 1) || (_global.quickOptionModal?.detail?.max_purchase_qty > 0 &amp;&amp; (_global.quickOptionModal?.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > _global.quickOptionModal?.detail?.max_purchase_qty)}}">
+          <on type="click">
+            <conditions>
+              <!-- 배송 불가 차단 (서버도 422 로 다시 검증한다) -->
+              <when if="{{_global.quickOptionModal?.detail?.is_shippable_to_selected_country === false}}">
+                <toast type="warning" message="$t:shop.shippability.not_shippable"/>
+              </when>
+              <when if="{{(_global.quickOptionModal?.selectedOptionItems ?? []).length === 0}}">
+                <toast type="warning" message="$t:shop.product.please_select_options"/>
+              </when>
+              <!-- 필수 추가옵션 미선택 차단 — 「눌러 봤음」 을 남겨 해당 줄의 칸에 사유를 보인다 -->
+              <when if="{{(_global.quickOptionModal?.selectedOptionItems ?? []).some(item => (_global.quickOptionModal?.detail?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id]))}}">
+                <sequence>
+                  <set-state target="global" :quickOptionModal.attempted="true"/>
+                  <toast type="warning" message="$t:shop.additional_option_required"/>
+                </sequence>
+              </when>
+              <!-- 직접 입력을 받는 선택지를 골랐는데 글자를 넣지 않은 줄 차단 -->
+              <when if="{{(_global.quickOptionModal?.selectedOptionItems ?? []).some(item => (_global.quickOptionModal?.detail?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; }))}}">
+                <sequence>
+                  <set-state target="global" :quickOptionModal.attempted="true"/>
+                  <toast type="warning" message="$t:shop.additional_option_custom_text_required"/>
+                </sequence>
+              </when>
+              <else>
+                <sequence>
+                  <set-state target="global" :quickOptionModal.adding="true"/>
+                  <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart" method="POST" body="{{({ product_id: _global.quickOptionModal?.detail?.id, items: (_global.quickOptionModal?.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) })}}">
+                    <success>
+                      <set-state target="global" cartCount="{{response.data.cart_count}}"/>
+                      <set-state target="global" :quickOptionModal.adding="false"/>
+                      <close-modal/>
+                      <toast type="success" message="$t:shop.cart_added"/>
+                    </success>
+                    <fail>
+                      <set-state target="global" :quickOptionModal.adding="false"/>
+                      <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
+                    </fail>
+                    <field name="headers">
+                      <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+                    </field>
+                  </api-call>
+                </sequence>
+              </else>
+            </conditions>
+          </on>
+          <icon data-if="{{!_global.quickOptionModal?.adding}}" name="shopping-cart" size="lg"/>
+          <icon data-if="{{!!_global.quickOptionModal?.adding}}" name="spinner" size="lg" class="animate-spin"/>
+          <span>$t:shop.add_to_cart</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

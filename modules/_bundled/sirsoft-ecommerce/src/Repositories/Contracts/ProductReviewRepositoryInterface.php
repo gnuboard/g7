@@ -40,6 +40,16 @@ interface ProductReviewRepositoryInterface
     public function findByProduct(int $productId, array $filters = [], int $perPage = 10): LengthAwarePaginator;
 
     /**
+     * 전체 공개 후기 목록 조회 (리뷰 모아보기, 페이지네이션)
+     *
+     * 노출 상태 후기 중 전시 중이고 삭제되지 않은 상품의 것만 돌려준다.
+     *
+     * @param  array  $filters  필터 조건 (sort, photo_only, rating, per_page)
+     * @return LengthAwarePaginator 페이지네이션된 후기 목록
+     */
+    public function paginatePublicFeed(array $filters = []): LengthAwarePaginator;
+
+    /**
      * 상품별 별점 통계 조회
      *
      * @param  int  $productId  상품 ID

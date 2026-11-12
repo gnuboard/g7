@@ -22,6 +22,17 @@
         </navigate>
       </on>
     </select>
+    <!-- 품절 제외 — 상품 탭에서만. 결과 집합이 바뀌므로 페이지·커서를 비운다 -->
+    <label data-if="{{query?.type === 'products' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+      <checkbox id="search_exclude_sold_out" name="exclude_sold_out" checked="{{query?.exclude_sold_out === '1'}}" :autoBinding="false" class="w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded">
+        <on type="change">
+          <navigate path="/search" :mergeQuery="true">
+            <query exclude_sold_out="{{$event.target.checked ? '1' : ''}}" page="" cursor=""/>
+          </navigate>
+        </on>
+      </checkbox>
+      <span>$t:shop.exclude_sold_out</span>
+    </label>
     <select data-if="{{query?.type === 'products' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" name="sortBy" aria-label="$t:common.sort_order" class="w-32" value="{{query?.sort ?? 'relevance'}}">
       <options>
         <option value="relevance">$t:search.sort.relevance</option>

@@ -1,0 +1,39 @@
+{
+    "comment": "관련 상품(「이 상품은 어떠세요?」) 가로 줄 — 상품 상세에서 같은 분류의 상품을 보여 준다.\n     인기·신상품·최근 본 줄과 같은 짜임이고, 관련 상품이 없으면 통째로 그리지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "이 상품은 어떠세요 섹션"
+    },
+    "type": "composite",
+    "name": "ProductRail",
+    "if": "{{relatedProducts.data && relatedProducts.data.length > 0}}",
+    "props": {
+        "className": "mb-12",
+        "title": "$t:shop.related_products",
+        "icon": "thumbs-up",
+        "iconClassName": "text-xl text-blue-600 dark:text-blue-400",
+        "prevLabel": "$t:common.prev",
+        "nextLabel": "$t:common.next",
+        "roleDescription": "$t:shop.product_rail.roledescription"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "{{relatedProducts.data ?? []}}",
+                "item_var": "product"
+            },
+            "children": [
+                {
+                    "type": "composite",
+                    "name": "ProductCard",
+                    "props": {
+                        "product": "{{product}}",
+                        "shopBase": "{{_global.shopBase ?? '/shop'}}"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -3,6 +3,10 @@
 namespace App\Support;
 
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\PaginationState;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\File;
@@ -149,10 +153,23 @@ class ConfigCacheHelper
     {
         $app = Container::getInstance();
         $facadeApp = Facade::getFacadeApplication();
+        // 일회용 앱의 DatabaseServiceProvider 가 부팅하며 Eloquent 의 정적 연결 해석기·이벤트 디스패처를 자기 것으로
+        // 바꾼다. 되돌리지 않으면 그 뒤 모델 조회가 (아래에서 닫은) 일회용 앱의 DB 관리자로 다시 연결해 연결이 쌓이고
+        // (번들 일괄 업데이트 실측: 확장마다 +4, 18개에 최대 66개), 모델 이벤트도 실행 중인 앱의 리스너에 닿지 않는다.
+        $modelResolver = Model::getConnectionResolver();
+        $modelDispatcher = Model::getEventDispatcher();
 
         try {
             $callback();
         } finally {
+            // 일회용 앱이 부팅하며 연 DB 연결을 닫는다 — 그대로 두면 프로세스가 끝날 때까지 남는다.
+            // 캐시를 한 번 구울 때마다 연결이 하나씩 쌓여(실측: 10번 구워 +10), 확장 여러 개를 한 프로세스에서
+            // 차례로 업데이트하면 DB 의 동시 연결 한도를 넘겼다.
+            $disposable = Container::getInstance();
+            if ($disposable !== $app && $disposable instanceof Container) {
+                self::closeDatabaseConnections($disposable);
+            }
+
             Container::setInstance($app);
 
             // 일회용 앱이 남긴 파사드 해석 결과를 버리고 원래 앱으로 되돌린다.
@@ -161,6 +178,62 @@ class ConfigCacheHelper
             if ($facadeApp !== null) {
                 Facade::setFacadeApplication($facadeApp);
             }
+
+            self::restoreFrameworkStatics($app, $modelResolver, $modelDispatcher);
+        }
+    }
+
+    /**
+     * 일회용 앱의 부팅이 바꿔 놓은 프레임워크 정적 상태를 실행 중인 앱의 것으로 되돌립니다.
+     *
+     * Eloquent 연결 해석기·이벤트 디스패처는 콜백 전에 잡아 둔 값으로, 페이지네이터 해석기(현재 주소·쪽 번호·검색어)는
+     * 실행 중인 앱 기준으로 다시 묶는다 — 일회용 앱의 PaginationServiceProvider 가 자기 요청으로 묶어 둔다.
+     *
+     * @param  Container|null  $app  실행 중인 앱
+     * @param  ConnectionResolverInterface|null  $modelResolver  콜백 전 Eloquent 연결 해석기
+     * @param  Dispatcher|null  $modelDispatcher  콜백 전 Eloquent 이벤트 디스패처
+     * @return void 반환값 없음
+     */
+    private static function restoreFrameworkStatics(?Container $app, ?ConnectionResolverInterface $modelResolver, ?Dispatcher $modelDispatcher): void
+    {
+        if ($modelResolver !== null) {
+            Model::setConnectionResolver($modelResolver);
+        }
+        if ($modelDispatcher !== null) {
+            Model::setEventDispatcher($modelDispatcher);
+        } else {
+            Model::unsetEventDispatcher();
+        }
+        if ($app instanceof Container && $app->bound('request')) {
+            PaginationState::resolveUsing($app);
+        }
+    }
+
+    /**
+     * 컨테이너(일회용 앱)가 연 DB 연결을 모두 닫습니다.
+     *
+     * 트랜잭션이 열려 있는 연결은 건드리지 않습니다. 실패해도 예외를 던지지 않습니다 — 닫지 못한 연결은
+     * 프로세스가 끝날 때 닫힙니다.
+     *
+     * @param  Container  $container  연결을 닫을 컨테이너
+     * @return void 반환값 없음
+     */
+    private static function closeDatabaseConnections(Container $container): void
+    {
+        try {
+            if (! $container->bound('db') || ! $container->resolved('db')) {
+                return;
+            }
+
+            $manager = $container->make('db');
+            foreach ($manager->getConnections() as $name => $connection) {
+                if (is_callable([$connection, 'transactionLevel']) && $connection->transactionLevel() > 0) {
+                    continue;
+                }
+                $manager->disconnect($name);
+            }
+        } catch (\Throwable) {
+            // 닫기 실패는 캐시 굽기 결과에 영향을 주지 않는다
         }
     }
 

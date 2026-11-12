@@ -65,7 +65,11 @@
       "mail_order_number_placeholder": "第2024-ソウル江南-12345号",
       "telecom_number": "付加通信事業者番号",
       "telecom_number_placeholder": "付加通信事業者番号",
-      "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。"
+      "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。",
+      "hosting_provider": "ホスティングサービス提供者",
+      "hosting_provider_placeholder": "例: ホスティング会社名",
+      "show_business_footer": "ユーザー画面の下部に事業者情報を表示",
+      "show_business_footer_hint": "オンにすると、商号・代表者・事業所住所・電話・メール・事業者登録番号・通信販売業申告番号・ホスティングサービス提供者のうち値がある項目をユーザー画面の下部に表示します。オフにすると、これらの値をユーザー画面に送信しません。"
     },
     "public_asset_storage": {
       "title": "公開アセットストレージ",
@@ -616,7 +620,11 @@
     "max_images_hint": "レビュー1件あたりの添付可能な画像数（0=画像不可）",
     "images_unit": "枚",
     "max_image_size_mb_label": "画像最大容量",
-    "max_image_size_mb_hint": "アップロード可能な画像ファイルの最大容量"
+    "max_image_size_mb_hint": "アップロード可能な画像ファイルの最大容量",
+    "author_name_masking_label": "投稿者名のマスク",
+    "author_name_masking_middle": "中央をマスク（山*郎）",
+    "author_name_masking_none": "マスクしない",
+    "author_name_masking_hint": "商品詳細のレビュータブとレビュー一覧に表示される投稿者名に適用されます。管理画面と投稿者本人の画面には実名が表示されます。"
   },
   "product_display": {
     "title": "関連商品",

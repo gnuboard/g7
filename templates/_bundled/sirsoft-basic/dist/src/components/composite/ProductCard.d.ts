@@ -42,7 +42,23 @@ interface ProductCardProps {
         rating_avg?: number;
         /** 전시중 리뷰 수 */
         review_count?: number;
+        /** 로그인 회원의 찜 여부 — 값을 모르는 응답(옛 이커머스·비회원 캐시)에는 없다 */
+        is_wishlisted?: boolean;
+        /** 옵션 상품 여부 */
+        has_options?: boolean;
+        /** 구매할 수 있는 옵션 수 (0 이면 담을 수 없다) */
+        options_count?: number;
+        /** 추가옵션 유무 */
+        has_additional_options?: boolean;
+        /** 최소 구매 수량 */
+        min_purchase_qty?: number;
     };
+    /**
+     * 카드 위 장바구니·찜 단추 표시 여부 (기본 true).
+     *
+     * 같은 자리에 제 단추를 둔 화면(마이페이지 찜 목록의 찜 해제 단추)은 false 로 끈다.
+     */
+    showActions?: boolean;
     /** 클릭 시 호출되는 콜백 */
     onClick?: (productId: number) => void;
     /** 쇼핑몰 base 경로 (예: '/shop', '/store', '/') */

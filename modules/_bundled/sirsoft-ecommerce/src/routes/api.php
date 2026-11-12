@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ContentMediaController as PublicContentMediaController;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ContentMediaController as AdminContentMediaController;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController;
@@ -15,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CashReceiptController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController as AdminClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimReasonController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ContentMediaController as AdminContentMediaController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
@@ -39,6 +38,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryController as Publ
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryImageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CheckoutController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ClaimImageDownloadController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ContentMediaController as PublicContentMediaController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\EcommerceSettingsController as PublicEcommerceSettingsController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController as PublicOrderController;
@@ -47,6 +47,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductImageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductInquiryController as PublicProductInquiryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductReviewController as PublicProductReviewController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\PublicCouponController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ReviewFeedController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\WishlistController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Shop\PaymentConfigController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\CashReceiptController as UserCashReceiptController;
@@ -142,9 +143,16 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
     // POST /api/modules/sirsoft-ecommerce/products/{product}/inquiries
     Route::post('/{product}/inquiries', [PublicProductInquiryController::class, 'store'])
         ->where('product', '[0-9A-Za-z_-]+')
-        ->middleware('auth:sanctum')
+        ->middleware(['auth:sanctum', 'throttle:sirsoft-ecommerce.inquiry-write'])
         ->name('products.inquiries.store');
 });
+
+// 전체 공개 후기 목록 (리뷰 모아보기)
+// GET /api/modules/sirsoft-ecommerce/reviews - 전시 중인 모든 상품의 노출 후기
+// (products 그룹 밖 — 상품 와일드카드 `products/{product}` 에 먹히지 않게)
+Route::get('reviews', [ReviewFeedController::class, 'index'])
+    ->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-products.read'])
+    ->name('reviews.index');
 
 // 상품 이미지 서빙 API
 // GET /api/modules/sirsoft-ecommerce/product-image/{hash} - 상품 이미지 다운로드
@@ -491,12 +499,14 @@ Route::get('payments/client-config/{provider}', [PaymentConfigController::class,
 // DELETE /api/modules/sirsoft-ecommerce/wishlist/{id} - 찜 삭제
 Route::prefix('wishlist')->middleware('auth:sanctum')->group(function () {
     Route::post('/toggle', [WishlistController::class, 'toggle'])
+        ->middleware('throttle:sirsoft-ecommerce.wishlist-write')
         ->name('wishlist.toggle');
 
     Route::get('/', [WishlistController::class, 'index'])
         ->name('wishlist.index');
 
     Route::delete('/{id}', [WishlistController::class, 'destroy'])
+        ->middleware('throttle:sirsoft-ecommerce.wishlist-write')
         ->name('wishlist.destroy');
 });
 
@@ -516,9 +526,16 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
         Route::get('/downloadable', [UserCouponController::class, 'downloadable'])
             ->name('user.coupons.downloadable');
 
+        // 쿠폰 받기(단건·일괄)는 같은 요청 제한을 나눠 쓴다 — 회원당 분당 한도
         Route::post('/{couponId}/download', [UserCouponController::class, 'download'])
             ->where('couponId', '[0-9]+')
+            ->middleware('throttle:sirsoft-ecommerce.coupon-download')
             ->name('user.coupons.download');
+
+        // POST /api/modules/sirsoft-ecommerce/user/coupons/bulk-download - 쿠폰 일괄 받기
+        Route::post('/bulk-download', [UserCouponController::class, 'bulkDownload'])
+            ->middleware('throttle:sirsoft-ecommerce.coupon-download')
+            ->name('user.coupons.bulk-download');
     });
 
     // 마일리지 API
@@ -680,7 +697,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
             ->name('user.reviews.can-write');
 
         Route::post('/', [UserProductReviewController::class, 'store'])
-            ->middleware('permission:user,sirsoft-ecommerce.user-reviews.write')
+            ->middleware(['throttle:sirsoft-ecommerce.review-write', 'permission:user,sirsoft-ecommerce.user-reviews.write'])
             ->name('user.reviews.store');
 
         Route::delete('/{review}', [UserProductReviewController::class, 'destroy'])

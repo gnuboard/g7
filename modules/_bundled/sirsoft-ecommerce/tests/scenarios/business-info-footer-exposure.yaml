@@ -1,0 +1,29 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 저장 규칙 경로는 표시 여부 축과 무관해 경로별로 잠근다.
+
+feature: 사업자 정보 공개 + 켜고 끄기 (사용자 화면 푸터용)
+
+description: |
+  환경설정 기본 정보의 법정 사업자 항목(상호·대표자·사업장 주소·전화·전자우편·사업자등록번호·통신판매업 신고번호·호스팅 서비스 제공자)을
+  공개 설정으로 내보내 사용자 화면 푸터가 쓴다. 팩스·개인정보 책임자·부가통신 사업자번호는 내보내지 않는다.
+  「사업자 정보 표시」(기본 켬)를 끄면 코어 공개 설정 필터 훅과 모듈 공개 설정 조회 두 경로 모두에서 사업자 칸을 뺀다.
+
+axes:
+  path: [module_frontend_settings, core_filter_hook, core_collect, settings_save]
+  show_business_footer: ["on", "off"]
+
+effects:
+  - legal_business_fields_exposed
+  - private_business_fields_not_exposed
+  - footer_switch_defaults_on
+  - business_fields_stripped_when_hidden
+  - route_fields_kept_when_hidden
+  - core_filter_strips_business_fields
+  - core_filter_ignores_other_extensions
+  - core_filter_listener_registered
+  - core_filter_keeps_business_fields_when_shown
+  - settings_save_accepts_new_fields
+  - core_collect_exposes_legal_fields_only
+  - core_collect_strips_business_fields_when_hidden
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Settings/BusinessInfoExposureTest.php

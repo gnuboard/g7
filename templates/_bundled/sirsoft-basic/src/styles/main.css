@@ -75,6 +75,12 @@
  */
 @source inline("text-[2rem] text-[2.5rem] text-[4rem] text-[10px]");
 
+/*
+ * 분류 칩 줄(ChipRows)의 칩 클래스 — 칩이 두 줄로도 넘칠 때 ChipRows 가 거는 변수를 읽어 여백·글자를 줄인다.
+ * 변수가 없으면 원래 크기(px-3 · text-sm 과 같은 값)다. 칩 하나가 줄 전체를 차지하지 않게 폭 상한(16rem)을 둔다.
+ */
+@source inline("px-[var(--g7-chip-px,0.75rem)] text-[length:var(--g7-chip-fs,0.875rem)] max-w-[16rem]");
+
 /**
  * 기본 sans-serif 폰트
  * 동봉본은 Variable 1종이라 패밀리명이 `Pretendard Variable` 이다. 구 static 배포본을
@@ -311,5 +317,38 @@
 
   100% {
     transform: translateX(-100%);
+  }
+}
+
+/* 좁은 화면 하단 구매바(`MobileBuyBar`)·바텀시트(`BottomSheet`).
+   바가 있는 동안 본문 끝(푸터 마지막 줄)이 바에 가리지 않게 본문 아래 여백을 바 높이만큼 더하고, 화면 아래 가운데에
+   뜨는 알림은 바 위로 올린다. 시트가 열려 있는 동안에는 본문 스크롤을 잠그고 바를 숨긴다(시트 바닥의 단추가 대신한다).
+   두 컴포넌트가 `body` 에 남기는 표시(`g7-has-mobile-buybar`·`g7-bottom-sheet-open`)에 의존한다 — 이름을 바꾸면 함께 바꾼다. */
+@media (max-width: 767.98px) {
+  body.g7-has-mobile-buybar {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  body.g7-has-mobile-buybar [data-toast-position='bottom-center'] {
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  body.g7-bottom-sheet-open {
+    overflow: hidden;
+  }
+
+  body.g7-bottom-sheet-open [data-mobile-buy-bar] {
+    display: none;
+  }
+}
+
+/* 바텀시트가 아래에서 올라오는 움직임 — 컴포넌트의 `animate-[g7-sheet-up_…]` 이 이 이름에 의존한다. */
+@keyframes g7-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
   }
 }

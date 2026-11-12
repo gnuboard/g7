@@ -21,7 +21,10 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import React from 'react';
 import { fireEvent, waitFor } from '@testing-library/react';
 
-import purchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../../../__tests__/helpers/inlineNamedActions';
+import purchaseCardRaw from '../../../layouts/partials/shop/detail/_purchase_card.json';
+const purchaseCard = inlineNamedActions(purchaseCardRaw);
 import {
     addSelectedItemIfCompleteHandler,
     updateSelectedItemQuantityHandler,
@@ -76,7 +79,9 @@ function findNode(x: any, pred: (n: Node) => boolean): Node | null {
 const optionSection = findNode(purchaseCard, (n) => n.id === 'option-select')!;
 
 /** 실물 「선택한 상품」 줄 목록(줄 삭제·추가옵션·수량 조절) — 구매 카드에서 `selectedOptionItems.length > 0` 일 때 서는 블록 */
-const selectedItemsSection = (purchaseCard as any).children.find((n: Node) =>
+const selectedItemsSection = (purchaseCard as any).children
+    .flatMap((n: Node) => [n, ...(((n as any).children ?? []) as Node[])])
+    .find((n: Node) =>
     n.name === 'Div' && String(n.if ?? '').includes('_local.selectedOptionItems.length > 0'))!;
 
 /** 담긴 줄을 화면 문맥으로 읽는 탐침 — 실물 줄 목록과 같은 `_local.selectedOptionItems` 를 읽는다 */

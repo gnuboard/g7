@@ -48,6 +48,10 @@
       "kind": "data",
       "components": [
         "ProductCard",
+        "ProductRail",
+        "ChipRows",
+        "MobileBuyBar",
+        "BottomSheet",
         "ImageGallery",
         "Pagination",
         "SearchBar",
@@ -550,10 +554,16 @@
         "name": "ProductCard",
         "props": {
           "product": {
-            "id": "sample",
+            "id": 0,
+            "product_code": "sample",
             "name": "$t:layout_editor.palette.product_card.default_name",
-            "price": 10000,
-            "image": "https://via.placeholder.com/240"
+            "name_localized": "$t:layout_editor.palette.product_card.default_name",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+            "selling_price": 10000,
+            "selling_price_formatted": "10,000",
+            "sales_status": "on_sale",
+            "rating_avg": 0,
+            "review_count": 0
           }
         }
       }
@@ -802,6 +812,77 @@
                 ]
               }
             ]
+          }
+        ]
+      }
+    },
+    "ProductRail": {
+      "label": "$t:layout_editor.palette.product_rail.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ProductRail",
+        "props": {
+          "title": "$t:layout_editor.palette.product_rail.default_title",
+          "icon": "flame",
+          "prevLabel": "$t:common.prev",
+          "nextLabel": "$t:common.next"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "text": "$t:layout_editor.palette.product_rail.default_body"
+          }
+        ]
+      }
+    },
+    "ChipRows": {
+      "label": "$t:layout_editor.palette.chip_rows.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "ChipRows",
+        "props": {
+          "ariaLabel": "$t:shop.category.chips_label"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "text": "$t:layout_editor.palette.chip_rows.default_body"
+          }
+        ]
+      }
+    },
+    "MobileBuyBar": {
+      "label": "$t:layout_editor.palette.mobile_buy_bar.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "MobileBuyBar",
+        "props": {
+          "variant": "cart",
+          "priceText": "$t:layout_editor.palette.mobile_buy_bar.default_price",
+          "primaryLabel": "$t:layout_editor.palette.mobile_buy_bar.default_primary"
+        }
+      }
+    },
+    "BottomSheet": {
+      "label": "$t:layout_editor.palette.bottom_sheet.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "BottomSheet",
+        "props": {
+          "open": true,
+          "title": "$t:layout_editor.palette.bottom_sheet.default_title"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "text": "$t:layout_editor.palette.bottom_sheet.default_body"
           }
         ]
       }

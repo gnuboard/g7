@@ -78,9 +78,10 @@ class StoreProductRequest extends FormRequest
             // 브랜드
             'brand_id' => ['nullable', 'integer', Rule::exists(Brand::class, 'id')],
 
-            // 가격 (기본통화 기준 — 소수 통화는 소수 입력 허용)
-            'list_price' => ['required', 'numeric', $priceRule, 'min:0.01'],
-            'selling_price' => ['required', 'numeric', $priceRule, 'min:0.01', 'lte:list_price'],
+            // 가격 (기본통화 기준 — 소수 통화는 소수 입력 허용). 0원 상품(증정·무료 체험)을 허용한다 —
+            // 0원 주문은 무료 결제수단으로 곧바로 결제완료가 된다
+            'list_price' => ['required', 'numeric', $priceRule, 'min:0'],
+            'selling_price' => ['required', 'numeric', $priceRule, 'min:0', 'lte:list_price'],
 
             // 재고
             'stock_quantity' => ['required', 'integer', 'min:0'],

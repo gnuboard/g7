@@ -12,7 +12,6 @@
  *
  * 의존: config.php · functions.php · installer-runtime.php · installer-state.php · installer-ownership.php.
  */
-
 if (! function_exists('installer_finalize_rebuild_config_cache')) {
     /**
      * 확정한 .env 로 설정 캐시를 다시 굽는다 (`php artisan config:cache`).
@@ -32,6 +31,57 @@ if (! function_exists('installer_finalize_rebuild_config_cache')) {
         }
 
         return $code === 0;
+    }
+}
+
+if (! function_exists('tryDeleteInstallerRuntime')) {
+    /**
+     * runtime.php 삭제를 한 번 시도한다.
+     *
+     * @return bool 지웠거나 이미 없으면 true
+     */
+    function tryDeleteInstallerRuntime(): bool
+    {
+        return deleteInstallerRuntime();
+    }
+}
+
+if (! function_exists('neutralizeInstallerRuntime')) {
+    /**
+     * runtime.php 의 내용을 빈 배열로 덮어 비밀값(DB 계정·APP_KEY)을 없앤다.
+     *
+     * 파일을 지우지 못할 때의 차선책이다 — 파일은 남지만 담긴 것이 없어 앱 부팅에 영향을 주지 않는다.
+     *
+     * @return bool 덮어쓰면 true
+     */
+    function neutralizeInstallerRuntime(): bool
+    {
+        return @file_put_contents(INSTALLER_RUNTIME_PATH, "<?php\n\nreturn [];\n", LOCK_EX) !== false;
+    }
+}
+
+if (! function_exists('cleanupInstallerRuntime')) {
+    /**
+     * 설치가 끝난 뒤 runtime.php 를 정리한다 — 지우고, 안 되면 한 번 더 시도하고, 그래도 안 되면 내용을 비운다.
+     *
+     * 지우지 못한 채 남으면 그 파일이 `.env` 대신 쓰여, 서버를 옮기며 `.env` 를 고쳐도 반영되지 않는다.
+     *
+     * @return string 'deleted'(지움) · 'neutralized'(못 지워 내용을 비움) · 'failed'(지우지도 비우지도 못함)
+     */
+    function cleanupInstallerRuntime(): string
+    {
+        if (tryDeleteInstallerRuntime()) {
+            return 'deleted';
+        }
+
+        // 바이러스 검사·색인 등이 잠깐 쥐고 있는 경우가 있어 한 번 더 시도한다
+        usleep(200000);
+        clearstatcache(true, INSTALLER_RUNTIME_PATH);
+        if (tryDeleteInstallerRuntime()) {
+            return 'deleted';
+        }
+
+        return neutralizeInstallerRuntime() ? 'neutralized' : 'failed';
     }
 }
 
@@ -101,16 +151,24 @@ if (! function_exists('installer_finalize_env')) {
                 $currentEuser,
             ));
 
-            // runtime.php 삭제 — Provider 가 다음 부팅부터 no-op
-            if (! deleteInstallerRuntime()) {
+            // runtime.php 정리 — 지우고, 안 되면 한 번 더, 그래도 안 되면 내용을 비운다.
+            // 남은 채로 두면 그 파일이 `.env` 대신 쓰여 서버를 옮기며 `.env` 를 고쳐도 반영되지 않는다.
+            $runtimeCleanup = cleanupInstallerRuntime();
+            if ($runtimeCleanup === 'deleted') {
+                $log('[finalize-env] runtime.php 삭제 완료');
+            } elseif ($runtimeCleanup === 'neutralized') {
                 $log(sprintf(
-                    '[finalize-env] deleteInstallerRuntime FAILED: path=%s, last_error=%s. '
-                    .'runtime.php 잔존 — InstallerRuntimeServiceProvider 폴백 동작 유지되나 평문 자격증명 보안 우려.',
+                    '[finalize-env] runtime.php 를 지우지 못해 내용을 비움: path=%s, last_error=%s. 파일을 직접 지워 주세요.',
                     INSTALLER_RUNTIME_PATH,
                     (error_get_last()['message'] ?? 'unknown'),
                 ));
             } else {
-                $log('[finalize-env] runtime.php 삭제 완료');
+                $log(sprintf(
+                    '[finalize-env] runtime.php 를 지우지도 비우지도 못함: path=%s, last_error=%s. '
+                    .'평문 DB 계정·APP_KEY 가 남아 있습니다 — 파일을 직접 지워 주세요.',
+                    INSTALLER_RUNTIME_PATH,
+                    (error_get_last()['message'] ?? 'unknown'),
+                ));
             }
 
             // 설정 캐시 다시 굽기 — config_cache 작업은 .env 확정 전에 돌아 installer_completed=false 같은
@@ -159,7 +217,14 @@ if (! function_exists('installer_finalize_env')) {
             }
             installer_reclaim_reset_throttle();
 
-            return ['success' => true, 'already' => false, 'messages' => $messages];
+            return [
+                'success' => true,
+                'already' => false,
+                'messages' => $messages,
+                // runtime.php 정리 결과 — 'deleted' 가 아니면 파일이 남아 있다
+                'runtime_cleanup' => $runtimeCleanup,
+                'runtime_cleanup_failed' => $runtimeCleanup !== 'deleted',
+            ];
         } catch (Throwable $e) {
             // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
             $log('[finalize-env] unexpected exception: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());

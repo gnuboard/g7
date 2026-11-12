@@ -6,6 +6,10 @@
 
 ## [1.2.4] - 2026-11-10
 
+### Added
+
+- 이커머스 1.3.5 의 새 문구 일본어 번역을 추가했습니다 — 쿠폰 일괄 받기 결과(`messages.coupon.bulk_download_*`·`operation_failed`), 가입 적립금(`enums` 거래 유형 「가입 적립」, 활동 기록), 마일리지 사용 최소 상품 합계 거절 문구(`exceptions`), 공개 상품 목록·후기 모아보기·쿠폰 일괄 받기·설정 저장의 검증 속성 이름(`validation`), 관리자 환경설정의 사업자 정보 표시·호스팅 서비스 제공자·작성자 이름 가림·마일리지 정책 3종(`admin/settings`·`admin/mileage_settings`).
+
 ### Changed
 
 - 카테고리 이미지 업로드 형식 안내(`validation.category_images.file.mimes`)에서 받지 않는 형식(svg)을 뺐습니다(이커머스 1.3.5).

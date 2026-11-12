@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
@@ -27,6 +28,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
  */
 class UserCouponService
 {
+    /** 한 번에 받을 수 있는 쿠폰 수 상한 (쿠폰 일괄 받기) */
+    public const BULK_DOWNLOAD_MAX = 50;
+
     /**
      * 회원 쿠폰 서비스를 생성합니다.
      *
@@ -365,6 +369,71 @@ class UserCouponService
 
             return $couponIssue;
         });
+    }
+
+    /**
+     * 쿠폰을 한 번에 여러 장 받습니다. (쿠폰 일괄 받기)
+     *
+     * 쿠폰마다 단건 받기(`downloadCoupon`)를 그대로 거친다 — 쿠폰별 트랜잭션·잠금·발급 검사·훅이
+     * 같다. 한 장이 실패해도 나머지를 막지 않는다. 이미 한 장 이상 받은 쿠폰은 회원당 한도가 남아
+     * 있어도 더 받지 않는다(화면의 「받음」 표시가 받은 수 > 0 기준이다).
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  array<int, int>|null  $couponIds  받을 쿠폰 ID 목록 (null 이면 받을 수 있는 쿠폰 전체, 최대 50장)
+     * @return array{results: array<int, array{coupon_id: int, status: string, reason_code: string|null}>, issued_count: int, skipped_count: int} 쿠폰별 결과와 합계
+     */
+    public function bulkDownloadCoupons(int $userId, ?array $couponIds = null): array
+    {
+        $takeAll = $couponIds === null;
+        if ($takeAll) {
+            $couponIds = $this->couponRepository->getDownloadableCoupons()->pluck('id')->all();
+        }
+
+        $couponIds = array_values(array_unique(array_map('intval', $couponIds)));
+
+        // 「이미 받은 수」는 쿠폰 수와 무관하게 한 번에 센다
+        $issuedCounts = $this->couponIssueRepository->getUserIssuedCountsForCoupons($userId, $couponIds);
+
+        if ($takeAll && count($couponIds) > self::BULK_DOWNLOAD_MAX) {
+            // 한 번에 다루는 장수는 아직 받지 않은 쿠폰부터 채운다 — 최신순으로 먼저 자르면 최신 쿠폰을 이미 받은
+            // 회원은 그 뒤의 쿠폰을 몇 번을 불러도 받지 못한다
+            $pending = array_filter($couponIds, static fn (int $id): bool => ($issuedCounts[$id] ?? 0) === 0);
+            $received = array_diff($couponIds, $pending);
+            $couponIds = array_slice(array_merge($pending, $received), 0, self::BULK_DOWNLOAD_MAX);
+        }
+
+        $results = [];
+        $issued = 0;
+
+        foreach ($couponIds as $couponId) {
+            if (($issuedCounts[$couponId] ?? 0) > 0) {
+                $results[] = ['coupon_id' => $couponId, 'status' => 'skipped', 'reason_code' => 'already_downloaded'];
+
+                continue;
+            }
+
+            try {
+                $this->downloadCoupon($userId, $couponId);
+                $results[] = ['coupon_id' => $couponId, 'status' => 'issued', 'reason_code' => null];
+                $issued++;
+            } catch (CouponNotIssuableException $e) {
+                $results[] = ['coupon_id' => $couponId, 'status' => 'skipped', 'reason_code' => $e->getReason()];
+            } catch (\Throwable $e) {
+                Log::error('쿠폰 일괄 받기 중 한 장 실패', [
+                    'coupon_id' => $couponId,
+                    'user_id' => $userId,
+                    'exception' => $e::class,
+                    'error' => $e->getMessage(),
+                ]);
+                $results[] = ['coupon_id' => $couponId, 'status' => 'skipped', 'reason_code' => 'operation_failed'];
+            }
+        }
+
+        return [
+            'results' => $results,
+            'issued_count' => $issued,
+            'skipped_count' => count($results) - $issued,
+        ];
     }
 
     /**

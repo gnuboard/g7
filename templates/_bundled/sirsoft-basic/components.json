@@ -603,6 +603,11 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          },
+          "shopReviewsHref": {
+            "type": "string",
+            "required": false,
+            "description": "검색 로봇용 화면의 「리뷰」 링크 주소 (화면은 shopBase 로 만든다)"
           }
         }
       },
@@ -634,6 +639,11 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          },
+          "businessInfo": {
+            "type": "object",
+            "required": false,
+            "description": "쇼핑몰 사업자 정보(법정 표시 항목) — 값이 있는 항목만 그린다. 쇼핑몰 공개 설정 basic_info 를 그대로 넘긴다"
           }
         }
       },
@@ -659,13 +669,30 @@
           "product": {
             "type": "object",
             "required": true,
-            "description": "상품 데이터"
+            "description": "상품 데이터 (상품 목록 응답의 한 항목)"
           },
-          "showDiscount": {
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "카드를 눌렀을 때 부를 함수 — 주면 상세로 가는 링크 대신 단추로 그린다"
+          },
+          "shopBase": {
+            "type": "string",
+            "required": false,
+            "default": "/shop",
+            "description": "쇼핑몰 기본 경로"
+          },
+          "preserveListQuery": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "상세로 갈 때 지금 목록의 쪽·정렬·검색 조건을 이어 갈지"
+          },
+          "showActions": {
             "type": "boolean",
             "required": false,
             "default": true,
-            "description": "할인율 표시 여부"
+            "description": "카드 위 장바구니 담기·찜 단추 표시 여부"
           },
           "className": {
             "type": "string",
@@ -1812,6 +1839,202 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "ProductRail",
+        "type": "composite",
+        "description": "가로 상품 줄 컨테이너 — 자식 카드를 한 줄로 늘어놓고 손가락 넘김·이전/다음 단추로 넘긴다",
+        "path": "src/components/composite/ProductRail.tsx",
+        "autoBinding": false,
+        "props": {
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "줄 제목"
+          },
+          "icon": {
+            "type": "string",
+            "required": false,
+            "description": "제목 앞 아이콘 이름"
+          },
+          "iconClassName": {
+            "type": "string",
+            "required": false,
+            "description": "아이콘 클래스 (색)"
+          },
+          "prevLabel": {
+            "type": "string",
+            "required": false,
+            "default": "Previous",
+            "description": "이전 단추 이름"
+          },
+          "nextLabel": {
+            "type": "string",
+            "required": false,
+            "default": "Next",
+            "description": "다음 단추 이름"
+          },
+          "roleDescription": {
+            "type": "string",
+            "required": false,
+            "description": "스크린리더가 읽는 영역 종류"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "ChipRows",
+        "type": "composite",
+        "description": "분류 칩 줄 컨테이너 — 자식 칩이 한 줄에 다 들어가면 한 줄, 넘치면 두 줄로 나눠 가로로 넘긴다",
+        "path": "src/components/composite/ChipRows.tsx",
+        "autoBinding": false,
+        "props": {
+          "ariaLabel": {
+            "type": "string",
+            "required": false,
+            "description": "칩 줄의 이름 (스크린리더가 읽는다)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "MobileBuyBar",
+        "type": "composite",
+        "description": "좁은 화면 하단 구매바 — 가격과 찜·장바구니·바로구매(상품) 또는 주문하기(장바구니)를 화면 아래에 고정한다",
+        "path": "src/components/composite/MobileBuyBar.tsx",
+        "autoBinding": false,
+        "props": {
+          "variant": {
+            "type": "string",
+            "required": false,
+            "default": "product",
+            "description": "바 종류 — 'product'(상품 상세) · 'cart'(장바구니)"
+          },
+          "priceText": {
+            "type": "string",
+            "required": false,
+            "description": "보여 줄 금액 (형식을 갖춘 글자)"
+          },
+          "captionText": {
+            "type": "string",
+            "required": false,
+            "description": "금액 아래 보조 글자"
+          },
+          "wished": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "찜 여부 (상품 바)"
+          },
+          "showWish": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "찜 단추 표시 여부 (상품 바)"
+          },
+          "cartDisabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "장바구니 단추 잠금 (상품 바)"
+          },
+          "buyDisabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "바로구매 단추 잠금 (상품 바)"
+          },
+          "primaryLabel": {
+            "type": "string",
+            "required": false,
+            "description": "주 단추 글자 (장바구니 바)"
+          },
+          "primaryDisabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "주 단추 잠금 (장바구니 바)"
+          },
+          "busy": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "진행 중 — 모든 단추를 잠근다"
+          },
+          "soldOutLabel": {
+            "type": "string",
+            "required": false,
+            "description": "판매 중이 아닐 때의 상태 글자 — 주면 구매 단추 대신 이 글자를 보인다"
+          },
+          "onWish": {
+            "type": "function",
+            "required": false,
+            "description": "찜 단추를 눌렀을 때"
+          },
+          "onCart": {
+            "type": "function",
+            "required": false,
+            "description": "장바구니 단추를 눌렀을 때"
+          },
+          "onBuy": {
+            "type": "function",
+            "required": false,
+            "description": "바로구매 단추를 눌렀을 때"
+          },
+          "onPrimary": {
+            "type": "function",
+            "required": false,
+            "description": "주 단추를 눌렀을 때 (장바구니 바)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "BottomSheet",
+        "type": "composite",
+        "description": "좁은 화면 바텀시트 — 화면 레이아웃 안에 두는 대화 상자 컨테이너(안쪽 내용이 그 화면의 상태를 그대로 쓴다)",
+        "path": "src/components/composite/BottomSheet.tsx",
+        "autoBinding": false,
+        "props": {
+          "open": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "열림 여부"
+          },
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "시트 제목"
+          },
+          "closeLabel": {
+            "type": "string",
+            "required": false,
+            "description": "닫기 단추 이름"
+          },
+          "onClose": {
+            "type": "function",
+            "required": false,
+            "description": "닫으려 할 때 (배경 누름·Esc·닫기 단추)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스 (시트 본체)"
           }
         }
       }

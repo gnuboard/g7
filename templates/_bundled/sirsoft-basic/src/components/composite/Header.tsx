@@ -112,6 +112,10 @@ interface HeaderProps {
    * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
    */
   shopProductsHref?: string;
+  /**
+   * 봇 화면(seo-config header_nav)의 「리뷰」 링크 주소(예: "/shop/reviews") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다)
+   */
+  shopReviewsHref?: string;
   /** 추가 CSS 클래스 */
   className?: string;
   /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
@@ -277,6 +281,12 @@ const Header: React.FC<HeaderProps> = ({
            currentPath.startsWith(`${base}/cart`) ||
            currentPath.startsWith(`${base}/checkout`) ||
            currentPath.startsWith(`${base}/category`);
+  };
+
+  // 리뷰 모아보기 화면인지
+  const isReviewsActive = (): boolean => {
+    const base = shopBase === '/' ? '' : shopBase;
+    return currentPath.startsWith(`${base}/reviews`);
   };
 
   // 네비게이션 버튼 스타일
@@ -691,6 +701,12 @@ const Header: React.FC<HeaderProps> = ({
               <LinkButton href={`${shopBase === '/' ? '' : shopBase}/products`} onNavigate={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop" aria-current={isShopActive() ? 'page' : undefined}>
                 <Span>🛒</Span>
                 {t('nav.shop')}
+              </LinkButton>
+            )}
+            {/* 리뷰 모아보기 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다 */}
+            {shopEnabled && (
+              <LinkButton href={`${shopBase === '/' ? '' : shopBase}/reviews`} onNavigate={() => navigate(`${shopBase === '/' ? '' : shopBase}/reviews`)} className={`flex items-center gap-1 ${getNavButtonClass(isReviewsActive())}`} data-testid="nav-reviews" aria-current={isReviewsActive() ? 'page' : undefined}>
+                {t('nav.reviews')}
               </LinkButton>
             )}
 

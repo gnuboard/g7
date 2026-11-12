@@ -840,7 +840,9 @@ return [
         [
             'slug' => 'admin-analytics',
             'name' => ['ko' => '방문자 통계', 'en' => 'Analytics'],
-            'url' => '/admin/analytics',
+            // 부모는 경로를 두지 않는다 — 하위 메뉴가 있는 다른 부모(게시판 관리·이커머스)와 같은 펼침 전용 표시로
+            // 맞춘다. 개요 화면은 첫 하위 메뉴(admin-analytics-overview)가 연다.
+            'url' => null,
             'icon' => 'fas fa-chart-line',
             'parent_id' => null,
             'order' => 2,

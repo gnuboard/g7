@@ -5,6 +5,8 @@
  * 1. 렌더링: 추가옵션 그룹별 선택지 표시(추가금 라벨) — 최소 레이아웃 실제 렌더
  * 2. 구조: 실제 partial(_purchase_card / _cart_item / _modal_cart_option_change /
  *    표시 4화면)이 추가옵션 바인딩·핸들러·필수 가드를 포함하는지 검증
+ *
+ * @scenario-manifest tests/scenarios/shop-additional-options.yaml
  */
 
 import React from 'react';
@@ -12,7 +14,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createLayoutTest, screen } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
-import purchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../../../__tests__/helpers/inlineNamedActions';
+import purchaseCardRaw from '../../../layouts/partials/shop/detail/_purchase_card.json';
+const purchaseCard = inlineNamedActions(purchaseCardRaw);
 import cartItem from '../../../layouts/partials/shop/_cart_item.json';
 import modalOptionChange from '../../../layouts/partials/shop/_modal_cart_option_change.json';
 import checkoutItems from '../../../layouts/partials/shop/_checkout_items.json';
@@ -88,6 +93,8 @@ describe('추가옵션 표시 렌더링', () => {
     ],
   };
 
+  // @scenario case=c01
+  // @effects additional_options_bound_across_purchase_flow
   it('선택된 추가옵션 그룹명·선택지명·추가금을 표시한다', async () => {
     const testUtils = createLayoutTest(layout as any);
     testUtils.mockApi('cart', {
@@ -112,6 +119,8 @@ describe('추가옵션 표시 렌더링', () => {
     testUtils.cleanup();
   });
 
+  // @scenario case=c02
+  // @effects additional_options_bound_across_purchase_flow
   it('추가금 0인 선택지는 추가금 표기를 생략한다', async () => {
     const testUtils = createLayoutTest(layout as any);
     testUtils.mockApi('cart', {
@@ -146,42 +155,58 @@ describe('추가옵션 표시 렌더링', () => {
 describe('_purchase_card.json 구조 — 블럭별 추가옵션', () => {
   const str = JSON.stringify(purchaseCard);
 
+  // @scenario case=c03
+  // @effects additional_options_bound_across_purchase_flow
   it('블럭 내부 추가옵션 그룹 iteration이 product.data.additional_options를 사용한다', () => {
     expect(str).toContain('product.data?.additional_options');
     expect(str).toContain('"item_var":"addGroup"');
   });
 
+  // @scenario case=c04
+  // @effects additional_options_bound_across_purchase_flow
   it('블럭별 추가옵션 변경 핸들러 setBlockAdditionalOption을 호출한다', () => {
     expect(str).toContain('sirsoft-basic.setBlockAdditionalOption');
   });
 
+  // @scenario case=c05
+  // @effects additional_options_bound_across_purchase_flow
   it('addSelectedItemIfComplete에 additionalOptionGroups를 전달한다', () => {
     expect(str).toContain('"additionalOptionGroups"');
   });
 
+  // @scenario case=c06
+  // @effects additional_options_bound_across_purchase_flow
   it('담기/구매 body에 additional_option_selections를 포함한다', () => {
     expect(str).toContain('additional_option_selections');
     expect(str).toContain('additional_option_id');
     expect(str).toContain('value_id');
   });
 
+  // @scenario case=c07
+  // @effects additional_options_bound_across_purchase_flow
   it('담기/구매 body가 메인 옵션을 product_option_id(옵션 ID)로 전달한다 (값 기반 option_values 미사용)', () => {
     // 메인 옵션 식별은 옵션 ID 기반이어야 하며, 로케일 값 조합(option_values) 을 실어보내지 않는다
     expect(str).toContain('product_option_id: item.optionId');
     expect(str).not.toContain('option_values');
   });
 
+  // @scenario case=c08
+  // @effects additional_options_bound_across_purchase_flow
   it('필수 추가옵션 미선택 차단 가드(additional_option_required)가 있다', () => {
     expect(str).toContain('shop.additional_option_required');
     expect(str).toContain('is_required');
   });
 
+  // @scenario case=c09
+  // @effects additional_options_bound_across_purchase_flow
   it('레거시 카드레벨 자유텍스트 추가옵션 입력을 제거했다', () => {
     // 구 스텁: additional_option_{{addOption.id}} 텍스트 input
     expect(str).not.toContain('additional_option_{{addOption.id}}');
     expect(str).not.toContain('_local.additionalOptions?.[addOption.id]');
   });
 
+  // @scenario case=c10
+  // @effects additional_options_bound_across_purchase_flow
   it('선택된 옵션 블록은 space-y-4 부모 + iteration 자식으로 분리한다 (붙어 보이는 회귀 방지)', () => {
     // G7 엔진은 iteration 노드를 N번 복제하므로, space-y-* 가 iteration 과 같은 노드에 있으면
     // 각 아이템이 자기 wrapper 를 소유해 형제 간 간격이 0 이 된다. 따라서:
@@ -222,11 +247,15 @@ describe('_purchase_card.json 구조 — 블럭별 추가옵션', () => {
 describe('_cart_item.json 구조 — 추가옵션 표시 + 모달 시드', () => {
   const str = JSON.stringify(cartItem);
 
+  // @scenario case=c11
+  // @effects additional_options_bound_across_purchase_flow
   it('item.additional_options를 옵션 라인 아래 표시한다', () => {
     expect(str).toContain('item.additional_options');
     expect(str).toContain('addOpt.group_name');
   });
 
+  // @scenario case=c12
+  // @effects additional_options_bound_across_purchase_flow
   it('옵션변경 모달 열기 시 additionalSelections를 현재 선택으로 시드한다', () => {
     expect(str).toContain('additionalSelections');
     expect(str).toContain('a.additional_option_id');
@@ -237,23 +266,33 @@ describe('_cart_item.json 구조 — 추가옵션 표시 + 모달 시드', () =>
 describe('_modal_cart_option_change.json 구조 — 추가옵션 재선택', () => {
   const str = JSON.stringify(modalOptionChange);
 
+  // @scenario case=c13
+  // @effects additional_options_bound_across_purchase_flow
   it('optionProduct.additional_options 기반 그룹 재선택 UI가 있다', () => {
     expect(str).toContain('optionProduct?.additional_options');
     expect(str).toContain('additionalSelections');
   });
 
+  // @scenario case=c14
+  // @effects additional_options_bound_across_purchase_flow
   it('PATCH body에 additional_option_selections를 포함한다', () => {
     expect(str).toContain('additional_option_selections');
   });
 });
 
 describe('표시 전용 화면 — 스냅샷 기반 추가옵션 별행', () => {
+  // @scenario case=c15
+  // @effects additional_options_bound_across_purchase_flow
   it('체크아웃 항목에 additional_options 표시가 있다', () => {
     expect(JSON.stringify(checkoutItems)).toContain('item.additional_options');
   });
+  // @scenario case=c16
+  // @effects additional_options_bound_across_purchase_flow
   it('주문완료 항목에 additional_options 표시가 있다', () => {
     expect(JSON.stringify(orderComplete)).toContain('item.additional_options');
   });
+  // @scenario case=c17
+  // @effects additional_options_bound_across_purchase_flow
   it('마이페이지 주문상세 항목에 additional_options 표시가 있다', () => {
     expect(JSON.stringify(mypageItems)).toContain('item.additional_options');
   });

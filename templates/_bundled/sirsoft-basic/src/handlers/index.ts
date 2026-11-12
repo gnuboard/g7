@@ -6,11 +6,13 @@
  */
 
 // 상품 옵션 관련 핸들러
+import { quickAddToCartHandler, openQuickOptionHandler, toggleWishlistQuickHandler } from './productQuickActions';
 import {
   addSelectedItemIfCompleteHandler,
   updateSelectedItemQuantityHandler,
   removeSelectedItemHandler,
   updateNoOptionQuantityHandler,
+  setNoOptionAdditionalOptionHandler,
   setBlockAdditionalOptionHandler,
 } from './productOptions';
 
@@ -96,7 +98,13 @@ export const handlers = {
   'sirsoft-basic.updateSelectedItemQuantity': updateSelectedItemQuantityHandler,
   'sirsoft-basic.removeSelectedItem': removeSelectedItemHandler,
   'sirsoft-basic.updateNoOptionQuantity': updateNoOptionQuantityHandler,
+  'sirsoft-basic.setNoOptionAdditionalOption': setNoOptionAdditionalOptionHandler,
   'sirsoft-basic.setBlockAdditionalOption': setBlockAdditionalOptionHandler,
+
+  // 상품 카드의 곧바로 담기·옵션 선택 창·찜
+  'sirsoft-basic.quickAddToCart': quickAddToCartHandler,
+  'sirsoft-basic.openQuickOption': openQuickOptionHandler,
+  'sirsoft-basic.toggleWishlistQuick': toggleWishlistQuickHandler,
 
   // 다중 통화
   'sirsoft-basic.getDisplayPrice': getDisplayPriceHandler,
@@ -169,7 +177,11 @@ export {
   updateSelectedItemQuantityHandler,
   removeSelectedItemHandler,
   updateNoOptionQuantityHandler,
+  setNoOptionAdditionalOptionHandler,
   setBlockAdditionalOptionHandler,
+  quickAddToCartHandler,
+  openQuickOptionHandler,
+  toggleWishlistQuickHandler,
   getDisplayPriceHandler,
   formatCurrencyHandler,
   getCurrencySymbol,

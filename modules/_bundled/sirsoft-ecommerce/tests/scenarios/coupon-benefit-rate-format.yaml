@@ -1,0 +1,20 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 표면마다 값 축의 의미가 달라(다듬기 함수는 경계값, 문구는 정률·정액) 표면별 경로를 잠근다.
+
+feature: 쿠폰 혜택 문구의 할인율 표기
+
+description: |
+  쿠폰 할인값 칸이 소수 둘째 자리 형변환이라 정률 쿠폰 문구가 「10.00% 할인」으로 나왔다.
+  서버가 만드는 혜택 문구(benefit_formatted, 통화별 문구)에서 소수 끝 0 과 점을 떼어 「10% 할인」으로 맞춘다.
+
+axes:
+  surface: [decimal_trim, benefit_formatted, multi_currency_benefit]
+  value: [boundary, rate, fixed]
+
+effects:
+  - trailing_zero_and_dot_removed
+  - rate_benefit_has_no_trailing_zero
+  - multi_currency_rate_benefit_has_no_trailing_zero
+  - fixed_benefit_unchanged
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/CouponBenefitFormattedTest.php

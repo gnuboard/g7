@@ -61,6 +61,8 @@
                       <field name="loading" :value="false"/>
                       <field name="loadingMore" :value="false"/>
                       <field name="downloadingCouponId" :value="null"/>
+                      <field name="scope" value="product"/>
+                      <field name="downloadingAll" :value="false"/>
                     </field>
                   </set-state>
                   <open-modal target="coupon_download_modal"/>
@@ -73,6 +75,35 @@
             </conditions>
           </on>
           +{{(productDownloadableCoupons.data?.data ?? []).length - 3}}
+        </button>
+        <!-- 모두 받기 — 이 상품에 쓸 수 있는 쿠폰 중 받지 않은 것을 한 번에. 비회원은 다른 칩과 같이 로그인 안내로 -->
+        <button data-if="{{(productDownloadableCoupons.data?.data ?? []).some(c => !c.is_downloaded)}}" type="button" data-ref="product_coupon_download_all" class="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!!_local.couponDownloadingAll}}">
+          <on type="click">
+            <conditions>
+              <when if="{{_global.currentUser?.uuid}}">
+                <sequence>
+                  <set-state target="local" :couponDownloadingAll="true"/>
+                  <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/bulk-download" auth_mode="required" method="POST" body="{{({ coupon_ids: (productDownloadableCoupons.data?.data ?? []).filter(c => !c.is_downloaded &amp;&amp; c.coupon_id != null).map(c => c.coupon_id) })}}">
+                    <success>
+                      <set-state target="local" :couponDownloadingAll="false"/>
+                      <refetch-data-source dataSourceId="productDownloadableCoupons"/>
+                      <toast type="success" message="{{response.message}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :couponDownloadingAll="false"/>
+                      <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.download_failed'}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </when>
+              <!-- 비회원: 로그인 필요 안내 -->
+              <else>
+                <open-modal target="login_required_modal"/>
+              </else>
+            </conditions>
+          </on>
+          <icon name="download" size="xs"/>
+          <span class="whitespace-nowrap">$t:shop.coupon_download.download_all</span>
         </button>
       </div>
     </div>

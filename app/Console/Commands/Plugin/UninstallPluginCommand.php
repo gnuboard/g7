@@ -90,7 +90,7 @@ class UninstallPluginCommand extends Command
                 if (! $this->unifiedConfirm(__('plugins.commands.uninstall.confirm_question'), false)) {
                     $this->info(__('plugins.commands.uninstall.aborted'));
 
-                    return Command::SUCCESS;
+                    return $this->confirmAbortExitCode();
                 }
             }
 

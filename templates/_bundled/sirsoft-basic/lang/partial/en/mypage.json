@@ -194,7 +194,8 @@
             "shipped": "Shipped",
             "delivered": "Delivered",
             "cancelled": "Cancelled"
-        }
+        },
+        "track_shipping": "Track shipment"
     },
     "order_detail": {
         "back": "Order History",

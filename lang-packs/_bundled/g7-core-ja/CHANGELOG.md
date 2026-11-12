@@ -11,6 +11,7 @@
 - 코어 7.1.6 환경설정 > 보안 「콘텐츠 보안 정책」의 스타일 정책 저장 검증 문구(`validation.settings.csp_style_mode_in`·`csp_style_level_in`·`csp_extra_style_hosts_array`·`csp_extra_style_hosts_max`)와 항목명(`validation.attributes.csp_style_mode` 「スタイルポリシーのモード」·`csp_style_level` 「スタイルポリシーの強度」·`csp_extra_style_hosts` 「追加スタイル許可ホスト」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 이 문구가 키 그대로 보입니다.
 - 코어 7.1.6 의 새 문구 일본어 번역을 추가했습니다 — 본인인증 메일 재요청 대기 안내(`identity.errors.challenge_cooldown`), 연결 대상 주소 거부 안내(`settings.connection_target_blocked`, `validation.settings.host_format_invalid`·`host_blocked`·`endpoint_path_not_allowed`), 레이아웃 첨부 형식 안내(`templates.layout_attachments.validation.file_extensions`), 환경설정 새 항목의 검증 문구·항목 이름(`validation.settings.layout_attachment_extensions_required`·`public_asset_extensions_required`·`rate_limit_per_minute_range`, `validation.attributes.layout_attachment_extensions`·`public_asset_extensions`·`password_reset_rate_limit_per_minute`·`register_rate_limit_per_minute`).
 - 코어 7.1.6 의 공용 오류 화면 문구(`errors.4xx` 「リクエストを処理できません」·`errors.5xx` 「サーバーエラーが発生しました」 — 요청 한도 초과·세션 만료처럼 전용 화면이 없는 오류)의 일본어 번역을 추가했습니다.
+- 코어 7.1.6 의 새 문구 일본어 번역을 추가했습니다 — 확인 질문을 하는 명령을 터미널 없이 `--yes` 없이 실행했을 때의 안내(`common.console.confirm_requires_yes`), `core:update` 가 새 버전 적용 뒤 마무리 단계에서 실패했을 때의 안내와 단계 이름(`settings.core_update.console.post_commit_*`), 복원할 백업이 없을 때의 안내(`restore_skipped_no_backup`).
 
 ### Changed
 

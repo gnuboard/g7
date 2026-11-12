@@ -81,6 +81,48 @@
             }
         },
         {
+            "comment": "품절 제외 — 상품 탭에서만. 결과 집합이 바뀌므로 페이지·커서를 비운다",
+            "type": "basic",
+            "name": "Label",
+            "if": "{{query?.type === 'products' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
+            "props": {
+                "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Checkbox",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/search",
+                                "mergeQuery": true,
+                                "query": {
+                                    "exclude_sold_out": "{{$event.target.checked ? '1' : ''}}",
+                                    "page": "",
+                                    "cursor": ""
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "id": "search_exclude_sold_out",
+                        "name": "exclude_sold_out",
+                        "checked": "{{query?.exclude_sold_out === '1'}}",
+                        "autoBinding": false,
+                        "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:shop.exclude_sold_out"
+                }
+            ]
+        },
+        {
             "type": "basic",
             "name": "Select",
             "if": "{{query?.type === 'products' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",

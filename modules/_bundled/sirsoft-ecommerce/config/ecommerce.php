@@ -35,6 +35,14 @@ return [
         'checkout' => 30,
         // 비회원 주문 변경 (취소·환불 예상·배송지·구매확정·현금영수증 발급)
         'guest_order_write' => 20,
+        // 쿠폰 받기 (단건·일괄이 같은 한도를 나눠 쓴다)
+        'coupon_download' => 20,
+        // 찜 추가·해제
+        'wishlist_write' => 60,
+        // 상품 문의 작성
+        'inquiry_write' => 5,
+        // 상품 후기 작성
+        'review_write' => 5,
     ],
 
     // 결제 설정

@@ -11879,5 +11879,29 @@
       "propKey": "searchHistoryScope"
     },
     "label": "$t:editor.control.hdr_search_history_scope.label"
+  },
+  "prTitle": {
+    "widget": "i18n-text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "title"
+    },
+    "label": "$t:editor.control.pr_title.label"
+  },
+  "prIcon": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "icon"
+    },
+    "label": "$t:editor.control.pr_icon.label"
+  },
+  "pcShowActions": {
+    "label": "$t:editor.control.pc_show_actions.label",
+    "widget": "toggle",
+    "apply": {
+      "type": "propValue",
+      "propKey": "showActions"
+    }
   }
 }

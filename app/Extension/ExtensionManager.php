@@ -11,6 +11,7 @@ use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
 use App\Support\AtomicBootstrapCache;
+use App\Support\CacheSelfHeal;
 use App\Support\ConfigCacheHelper;
 use App\Support\PhpExtensionProbe;
 use Closure;
@@ -429,12 +430,18 @@ PHP;
      * 찾게 한다(Composer ClassLoader 는 classmap 값을 isset 으로 보므로 null 이면 PSR-4 로 넘어간다).
      * 지문이 없는 옛 파일(7.1.2 이하가 만든 것)은 판정하지 않는다 — 코어 업데이트가 다시 만든다.
      *
+     * 캐시 파일이 **아예 없으면**(서버 이전·배포 도구가 비움) 등록된 것이 없어 낡았는지 판정할 수 없다. 그대로 두면
+     * 확장별 폴백이 PSR-4 만 등록해 확장의 composer 의존성과 헬퍼 파일이 빠진 채 500 이 난다 — 이때도 다시 만든다 (7.1.6).
+     *
      * @return bool 다시 만들었으면 true
      */
     public function healStaleAutoload(): bool
     {
         $state = self::$registeredAutoloadState;
-        if ($state === null || $state['fingerprint'] === [] || ExtensionFingerprint::matches($state['fingerprint'])) {
+        if ($state === null) {
+            return $this->healMissingAutoload();
+        }
+        if ($state['fingerprint'] === [] || ExtensionFingerprint::matches($state['fingerprint'])) {
             return false;
         }
 
@@ -451,6 +458,41 @@ PHP;
         if ($removed !== [] && class_exists(ClassLoader::class, false)) {
             self::coreClassLoader()?->addClassMap(array_fill_keys($removed, null));
         }
+
+        return true;
+    }
+
+    /**
+     * 확장 오토로드 캐시 파일이 없으면 다시 만들어 현재 프로세스에 반영합니다.
+     *
+     * 다시 만들었는데도 파일이 없을 수 있다(설치된 확장이 0건으로 조회돼 기존 캐시를 보존하는 갈래). 그때 매 요청이
+     * 같은 일을 되풀이하지 않도록 표식 파일로 잠시 쉰다. root 프로세스는 만들지 않는다 — root 가 만든 캐시 파일은
+     * 웹 서버 사용자가 고쳐 쓰지 못한다.
+     *
+     * @return bool 다시 만들었으면 true
+     */
+    protected function healMissingAutoload(): bool
+    {
+        if (file_exists($this->autoloadFilePath)) {
+            return false;
+        }
+
+        if (! CacheSelfHeal::claim('autoload-extensions', CacheSelfHeal::EXTENSION_BACKOFF_SECONDS)) {
+            return false;
+        }
+
+        Log::warning('확장 오토로드 캐시 파일이 없어 다시 만듭니다');
+
+        $this->generateAutoloadFile();
+
+        if (! file_exists($this->autoloadFilePath)) {
+            // 만들지 못했다(확장 0건 보존 갈래 등) — 표식이 남아 잠시 뒤에 다시 시도한다
+            return false;
+        }
+
+        $this->reregisterRuntimeAutoload();
+        ExtensionFingerprint::forget();
+        CacheSelfHeal::clear('autoload-extensions');
 
         return true;
     }

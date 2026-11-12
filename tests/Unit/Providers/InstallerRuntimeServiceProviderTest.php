@@ -559,6 +559,159 @@ return [
     }
 
     /**
+     * 설치가 끝난 사이트에 runtime 파일이 남아 있어도 `.env` 에 적힌 값이 이긴다.
+     *
+     * 서버를 옮기며 `.env` 의 DB 정보를 고쳤는데 남은 runtime 파일이 옛 값으로 덮어 반영되지 않던 문제.
+     *
+     * @scenario case=residual_env_wins
+     *
+     * @effects residual_runtime_does_not_override_env
+     *
+     * @return void 반환값 없음
+     */
+    public function test_completed_install_keeps_env_values_over_residual_runtime(): void
+    {
+        $this->withProductionEnv();
+        file_put_contents($this->envPath, implode("\n", [
+            'INSTALLER_COMPLETED=true',
+            'APP_KEY=base64:env-key',
+            'DB_WRITE_HOST=new-db-host',
+            'DB_WRITE_PORT=3307',
+            'DB_WRITE_DATABASE=new_db',
+            'DB_WRITE_USERNAME=new_user',
+            'DB_WRITE_PASSWORD=',
+            'DB_PREFIX=g7_',
+        ]));
+        Config::set('database.connections.mysql.write.host', ['new-db-host']);
+        Config::set('database.connections.mysql.write.database', 'new_db');
+        Config::set('database.connections.mysql.write.username', 'new_user');
+        Config::set('database.connections.mysql.write.password', '');
+        Config::set('database.connections.mysql.prefix', 'g7_');
+        Config::set('app.key', 'base64:env-key');
+        $this->writeRuntime([
+            'db' => ['write' => ['host' => 'old-db-host', 'port' => '3306', 'database' => 'old_db', 'username' => 'old_user', 'password' => 'old_pass'], 'prefix' => 'old_'],
+            'app' => ['key' => 'base64:runtime-key'],
+        ]);
+
+        (new InstallerRuntimeServiceProvider($this->app))->register();
+
+        $this->assertSame(['new-db-host'], Config::get('database.connections.mysql.write.host'));
+        $this->assertSame('new_db', Config::get('database.connections.mysql.write.database'));
+        $this->assertSame('new_user', Config::get('database.connections.mysql.write.username'));
+        // `.env` 에 계정이 적혀 있으면 빈 비밀번호도 `.env` 의 뜻이다 — runtime 의 옛 비밀번호로 채우지 않는다
+        $this->assertSame('', Config::get('database.connections.mysql.write.password'));
+        $this->assertSame('g7_', Config::get('database.connections.mysql.prefix'));
+        // 앱 키만은 runtime 의 것 — 지금까지 암호화에 쓰인 키라, 다른 키로 바꾸면 암호화된 설정을 읽지 못한다
+        $this->assertSame('base64:runtime-key', Config::get('app.key'));
+    }
+
+    /**
+     * `.env` 의 DB 계정이 예시 파일 기본값(root)으로 남아 있으면 runtime 의 계정이 이긴다.
+     *
+     * 설치 마무리가 `.env` 를 채우지 못하고 끝난 사이트의 표식이다. 이때 `.env` 를 믿으면 DB 에 붙지 못한다.
+     *
+     * @scenario case=residual_env_example_account
+     *
+     * @effects residual_runtime_wins_over_example_account
+     *
+     * @return void 반환값 없음
+     */
+    public function test_completed_install_prefers_runtime_when_env_account_is_example_default(): void
+    {
+        $this->withProductionEnv();
+        file_put_contents($this->envPath, implode('
+', [
+            'INSTALLER_COMPLETED=true',
+            'DB_WRITE_HOST=127.0.0.1',
+            'DB_WRITE_DATABASE=laravel',
+            'DB_WRITE_USERNAME=root',
+            'DB_WRITE_PASSWORD=',
+        ]));
+        Config::set('database.connections.mysql.write.host', ['127.0.0.1']);
+        Config::set('database.connections.mysql.write.username', 'root');
+        $this->writeRuntime([
+            'db' => ['write' => ['host' => 'runtime-host', 'port' => '3306', 'database' => 'runtime_db', 'username' => 'runtime_user', 'password' => 'runtime_pass'], 'prefix' => 'g7_'],
+        ]);
+
+        (new InstallerRuntimeServiceProvider($this->app))->register();
+
+        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.write.host'));
+        $this->assertSame('runtime_user', Config::get('database.connections.mysql.write.username'));
+        $this->assertSame('runtime_pass', Config::get('database.connections.mysql.write.password'));
+        $this->assertSame('g7_', Config::get('database.connections.mysql.prefix'));
+    }
+
+    /**
+     * 설치는 끝났는데 `.env` 의 칸이 비어 runtime 파일로만 돌던 사이트는 빈 칸만 runtime 값으로 채운다.
+     *
+     * @scenario case=residual_fills_blank
+     *
+     * @effects residual_runtime_fills_blank_env_keys
+     *
+     * @return void 반환값 없음
+     */
+    public function test_completed_install_fills_blank_env_keys_from_residual_runtime(): void
+    {
+        $this->withProductionEnv();
+        file_put_contents($this->envPath, implode("\n", [
+            'INSTALLER_COMPLETED=true',
+            'APP_KEY=',
+            'DB_WRITE_HOST=',
+            'DB_WRITE_DATABASE=',
+            'DB_WRITE_USERNAME=',
+            'DB_WRITE_PASSWORD=',
+            'DB_PREFIX=kept_',
+        ]));
+        Config::set('database.connections.mysql.prefix', 'kept_');
+        Config::set('app.key', '');
+        $this->writeRuntime([
+            'db' => ['write' => ['host' => 'runtime-host', 'port' => '3306', 'database' => 'runtime_db', 'username' => 'runtime_user', 'password' => 'runtime_pass'], 'prefix' => 'old_'],
+            'app' => ['key' => 'base64:runtime-key'],
+        ]);
+
+        (new InstallerRuntimeServiceProvider($this->app))->register();
+
+        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.write.host'));
+        $this->assertSame('runtime_db', Config::get('database.connections.mysql.write.database'));
+        $this->assertSame('runtime_user', Config::get('database.connections.mysql.write.username'));
+        $this->assertSame('runtime_pass', Config::get('database.connections.mysql.write.password'));
+        // 읽기 연결을 따로 적지 않았으면 쓰기 연결을 따라간다
+        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.read.host'));
+        $this->assertSame('runtime_user', Config::get('database.connections.mysql.read.username'));
+        // `.env` 에 값이 있는 칸은 그대로
+        $this->assertSame('kept_', Config::get('database.connections.mysql.prefix'));
+        $this->assertSame('base64:runtime-key', Config::get('app.key'));
+    }
+
+    /**
+     * 설치가 아직 끝나지 않았으면 지금처럼 runtime 값이 이긴다(설치 중에는 `.env` 가 아직 비어 있거나 예시 값이다).
+     *
+     * @scenario case=installing_runtime_wins
+     *
+     * @effects runtime_config_injected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_incomplete_install_still_prefers_runtime(): void
+    {
+        $this->withProductionEnv();
+        file_put_contents($this->envPath, implode("\n", [
+            'INSTALLER_COMPLETED=false',
+            'DB_WRITE_HOST=example-host',
+            'DB_WRITE_USERNAME=root',
+        ]));
+        Config::set('database.connections.mysql.write.host', ['example-host']);
+        $this->writeRuntime([
+            'db' => ['write' => ['host' => 'runtime-host', 'port' => '3306', 'database' => 'runtime_db', 'username' => 'runtime_user', 'password' => 'runtime_pass'], 'prefix' => ''],
+        ]);
+
+        (new InstallerRuntimeServiceProvider($this->app))->register();
+
+        $this->assertSame(['runtime-host'], Config::get('database.connections.mysql.write.host'));
+        $this->assertSame('runtime_user', Config::get('database.connections.mysql.write.username'));
+    }
+
+    /**
      * 격리된 앱 루트에 인스톨러 runtime 파일을 씁니다.
      *
      * @param  array<string, mixed>  $data  runtime 배열

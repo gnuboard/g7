@@ -12,12 +12,17 @@
  * 실제 표현식으로 검증한다(레이아웃 JSON 정본과 동일 문자열 사용 — 회귀 가드).
  *
  * @vitest-environment jsdom
+ *
+ * @scenario-manifest tests/scenarios/shop-soldout-computed.yaml
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DataBindingEngine } from '@/core/template-engine/DataBindingEngine';
 import showLayout from '../../../layouts/shop/show.json';
-import purchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../../../__tests__/helpers/inlineNamedActions';
+import purchaseCardRaw from '../../../layouts/partials/shop/detail/_purchase_card.json';
+const purchaseCard = inlineNamedActions(purchaseCardRaw);
 
 // 레이아웃 정본에서 표현식을 직접 추출 — 정본이 바뀌면 테스트도 따라가 회귀를 잡는다.
 const COMPUTED_EXPR: string = (showLayout as any).computed.optionChoices.replace(/^\{\{|\}\}$/g, '');
@@ -68,6 +73,8 @@ describe('상품상세 옵션 품절 표시 — computed 인라인 방식', () =
     } as any) as any[];
   }
 
+  // @scenario case=c01
+  // @effects sold_out_option_choices_disabled
   it('show.json computed: 단일 그룹 — 재고0 옵션 값이 disabled + "(품절)" 라벨', () => {
     const choices = evalComputed([colorGroup], [
       opt({ 색상: '빨강' }, false),
@@ -85,6 +92,8 @@ describe('상품상세 옵션 품절 표시 — computed 인라인 방식', () =
     expect(red.label).toBe('빨강'); // 정상 값은 접미 없음
   });
 
+  // @scenario case=c02
+  // @effects sold_out_option_choices_disabled
   it('show.json computed: 다중 그룹 보수적 판정 — 일부만 품절이면 선택 가능, 전부 품절이면 비활성', () => {
     // 빨강-S(품절) 빨강-L(정상) 파랑-S(품절) 파랑-L(품절)
     const options = [
@@ -99,6 +108,8 @@ describe('상품상세 옵션 품절 표시 — computed 인라인 방식', () =
     expect(colorChoices.find((c: any) => c.value === '파랑').disabled).toBe(true); // 파랑 전부 품절
   });
 
+  // @scenario case=c03
+  // @effects sold_out_option_choices_disabled
   it('show.json computed: 하위 그룹 — 상위 선택(빨강) 호환 조합 기준 S 품절/L 정상', () => {
     const options = [
       opt({ 색상: '빨강', 사이즈: 'S' }, true),
@@ -112,6 +123,8 @@ describe('상품상세 옵션 품절 표시 — computed 인라인 방식', () =
     expect(sizeChoices.find((c: any) => c.value === 'L').disabled).toBe(false);
   });
 
+  // @scenario case=c04
+  // @effects sold_out_option_choices_disabled
   it('_purchase_card.json select options: $computed.optionChoices 를 참조해 품절 결과를 펼친다', () => {
     // computed 결과를 미리 만들어 $computed 로 주입
     const optionChoices = evalComputed([colorGroup], [
@@ -131,6 +144,8 @@ describe('상품상세 옵션 품절 표시 — computed 인라인 방식', () =
     expect(result.find((c) => c.value === '빨강')?.disabled).toBe(false);
   });
 
+  // @scenario case=c05
+  // @effects sold_out_option_choices_disabled
   it('_purchase_card.json select options: computed 부재 시 평문 폴백(품절 표시 없이 깨지지 않음)', () => {
     const result = engine.evaluateExpression(OPTIONS_EXPR, {
       group: colorGroup,

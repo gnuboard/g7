@@ -478,7 +478,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `ExchangeModeEnum` | `string` | 2 | `standard`, `advance` |
 | `ExchangeStatusEnum` | `string` | 14 | `requested`, `payment_pending`, `paid`, `approved`, `on_hold`, `rejected`, `collection_ready`, `collecting`, `외 6개` |
 | `MileageEarnTriggerEnum` | `string` | 2 | `delivered`, `confirmed` |
-| `MileageTransactionTypeEnum` | `string` | 9 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel`, `외 1개` |
+| `MileageTransactionTypeEnum` | `string` | 10 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel`, `외 2개` |
 | `OrderDateTypeEnum` | `string` | 5 | `ordered_at`, `paid_at`, `confirmed_at`, `delivered_at`, `cancelled_at` |
 | `OrderOptionSourceTypeEnum` | `string` | 3 | `order`, `exchange`, `split` |
 | `OrderStatusEnum` | `string` | 14 | `pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `외 6개` |

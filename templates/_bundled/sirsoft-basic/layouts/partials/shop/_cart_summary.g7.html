@@ -129,45 +129,7 @@
          가지 않고 로그인을 거치는데, 임시 주문은 cart_key 로 남아 있어 돌아와도 그 주문서가 이어진다 -->
     <button type="button" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" data-ref="cart_order_button" disabled="{{(_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true) || cartItems.data?.abilities?.can_order !== true}}">
       <on type="click">
-        <set-state target="local" :isOrdering="true"/>
-        <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="POST">
-          <success>
-            <!-- 로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨 -->
-            <conditions>
-              <when if="{{_global.currentUser?.uuid}}">
-                <navigate path="{{_global.shopBase}}/checkout"/>
-              </when>
-              <else>
-                <navigate path="/login">
-                  <query redirect="{{_global.shopBase}}/checkout"/>
-                </navigate>
-              </else>
-            </conditions>
-          </success>
-          <fail>
-            <!-- 구매불가 상품 에러 처리 -->
-            <sequence if="{{error.errors?.code === 'cart_unavailable'}}">
-              <set-state target="local" :isOrdering="false"/>
-              <set-state target="local">
-                <field name="unavailableModal">
-                  <field name="visible" :value="true"/>
-                  <field name="items" value="{{error.errors?.unavailable_items ?? []}}"/>
-                  <field name="hasStockIssue" value="{{error.errors?.has_stock_issue ?? false}}"/>
-                </field>
-              </set-state>
-              <open-modal target="cart_unavailable_modal"/>
-            </sequence>
-            <!-- 기타 에러 처리 -->
-            <sequence if="{{error.errors?.code !== 'cart_unavailable'}}">
-              <set-state target="local" :isOrdering="false"/>
-              <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
-            </sequence>
-          </fail>
-          <body item_ids="{{_local.selectedItems}}"/>
-          <field name="headers">
-            <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
-          </field>
-        </api-call>
+        <action-ref name="cartCheckout"/>
       </on>
       <div class="flex items-center justify-center gap-2">
         <icon data-if="{{_local.isOrdering}}" name="spinner" :spin="true" size="md"/>

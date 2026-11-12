@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 80개 (루트: `src/components`).
+컴포넌트 84개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 38개 |
-| `composite` | 37개 |
+| `composite` | 41개 |
 | `layout` | 5개 |
 <!-- @generated:components END -->
 
@@ -181,7 +181,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
 | `Header` | 사이트 헤더 (로고, 네비게이션, 검색, 사용자 메뉴) | siteName, boardEnabled, shopEnabled, searchEnabled |
-| `Footer` | 사이트 푸터 (저작권, 링크, 소셜) | siteName, boardEnabled, pageEnabled |
+| `Footer` | 사이트 푸터 (저작권, 링크, 소셜, 사업자 정보) — `businessInfo` 의 값 있는 항목만 「라벨: 값」 줄로, 모두 비거나 `null` 이면 블록째 숨김 | siteName, boardEnabled, pageEnabled, businessInfo |
 | `MobileNav` | 모바일 네비게이션 드로어 — 번들 레이아웃은 쓰지 않는다(모바일 서랍은 `_user_base` 레이아웃 노드). 상점 링크가 `/shop` 고정이고 모듈 활성 props 가 없다 | - |
 
 - **모듈 활성 props(1.3.0)**: `Header` 의 `boardEnabled`(인기글·게시판 탭)·`shopEnabled`(쇼핑 탭·장바구니·회원 메뉴의 주문내역·위시리스트·비회원 주문조회)·`searchEnabled`(검색칸), `Footer` 의 `boardEnabled`(커뮤니티 묶음)·`pageEnabled`(정보·정책 묶음)는 `false` 일 때 그 항목을 그리지 않는다. 기본값은 모두 `true` 다 — `_user_base` 는 `{{_global.activeModules?.includes('sirsoft-board') ?? true}}` 식으로 넘기고(검색칸은 게시판·쇼핑몰·페이지 중 하나라도), 새 바인딩이 없는 옛 레이아웃(keep 업데이트)에서는 지금처럼 보인다. `Footer` 에 `linkGroups` 를 직접 넘기면 플래그와 무관하게 그대로 그린다. 측정용 표식: 장바구니 `data-testid="header-cart"`, 검색칸 `data-testid="header-search"`, 탭 `nav-home`·`nav-popular`·`nav-shop`. 회귀 테스트: `__tests__/components/HeaderFooterModuleFlags.test.tsx`.
@@ -193,7 +193,11 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `ProductCard` | 상품 카드 (이미지, 제목, 가격) — `onClick` 이 없으면 카드 전체가 상세 주소 링크(`preserveListQuery` 면 현재 쿼리도 href 에) | product, showDiscount |
+| `ProductCard` | 상품 카드 (이미지, 제목, 가격) — `onClick` 이 없으면 카드 전체가 상세 주소 링크(`preserveListQuery` 면 현재 쿼리도 href 에). 링크 밖 형제로 장바구니·찜 단추(`showActions`, 기본 켬 — 찜은 `is_wishlisted` 가 참/거짓일 때만, 담기는 판매 중이고 옵션이 있을 때만) | product, onClick, shopBase, preserveListQuery, showActions |
+| `ProductRail` | 가로 상품 줄 컨테이너 — 레이아웃이 넘긴 자식 카드를 감싸 손가락 넘김·이전/다음 단추(카드 한 장씩, 끝에서 잠김)를 맡는다. 한 화면 2·3·4장 | title, icon, iconClassName, prevLabel, nextLabel, roleDescription |
+| `ChipRows` | 분류 칩 줄 — 자식 칩을 그대로 두고 폭을 재어 많으면 두 줄 가로 스크롤, 두 줄로도 넘치면 칩 여백·글자를 조금씩 줄인다 | ariaLabel |
+| `MobileBuyBar` | 좁은 화면(768 미만) 하단 고정 구매바 — 상품 상세(`variant="product"`: 찜·장바구니·바로구매)와 장바구니(`variant="cart"`: 주문하기) | variant, priceText, wished, showWish, cartDisabled, buyDisabled, primaryLabel, primaryDisabled |
+| `BottomSheet` | 좁은 화면 아래에서 올라오는 시트 — 레이아웃이 넘긴 자식(구매 옵션)을 그대로 그린다. 배경·Esc·닫기로 닫힘, 초점 가둠, 본문 스크롤 잠금 | open, title |
 | `ProductImageViewer` | 상품 이미지 뷰어 (메인 + 썸네일 + 라이트박스) | images |
 | `QuantitySelector` | 수량 선택기 (+/- 버튼). 범위 밖 직접 입력은 min~max 로 고쳐 올리고, 칸에는 늘 고친 값을 보인다(고친 값이 지금 값과 같아도) | value, min, max |
 
@@ -315,6 +319,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | Composite | `MobileNav` | 모바일 드로어 네비게이션 |
 | Composite | `ProductImageViewer` | 상품 이미지 뷰어 |
 | Composite | `QuantitySelector` | 수량 선택기 |
+| Composite | `ProductRail` | 가로 상품 줄 |
+| Composite | `ChipRows` | 분류 칩 두 줄 |
+| Composite | `MobileBuyBar` | 좁은 화면 하단 구매바 |
+| Composite | `BottomSheet` | 좁은 화면 바텀시트 |
 | Composite | `SocialLoginButtons` | 소셜 로그인 |
 | Composite | `Avatar`, `AvatarUploader` | 아바타 관련 |
 | Composite | `VisitorCounter` | 방문자 카운터(홈 하단) |

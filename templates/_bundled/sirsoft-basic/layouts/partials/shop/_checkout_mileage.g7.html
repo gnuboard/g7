@@ -21,6 +21,8 @@
     </div>
     <!-- 마일리지 입력 영역 -->
     <div>
+      <!-- 상품 합계가 운영자가 정한 기준에 못 미치면 마일리지를 쓸 수 없다 — 그 기준을 알려 준다 -->
+      <div data-ref="mileage_min_product_total_notice" data-if="{{(checkoutData.data.mileage?.usage_policy?.min_product_total_for_use ?? 0) > 0 &amp;&amp; (checkoutData.data.calculation?.summary?.subtotal ?? 0) < (checkoutData.data.mileage?.usage_policy?.min_product_total_for_use ?? 0)}}" class="text-xs text-amber-700 dark:text-amber-400 mb-2">$t:shop.checkout.mileage_min_product_total|amount={{(checkoutData.data.mileage?.usage_policy?.min_product_total_for_use ?? 0).toLocaleString()}}</div>
       <!-- 최대 사용 가능 안내 -->
       <div data-if="{{(checkoutData.data.mileage?.max_usable ?? 0) > 0}}" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:shop.checkout.mileage_max_usable|amount={{(checkoutData.data.mileage?.max_usable ?? 0).toLocaleString()}}</div>
       <!-- 입력 필드 + 전액사용 + 적용 버튼 -->

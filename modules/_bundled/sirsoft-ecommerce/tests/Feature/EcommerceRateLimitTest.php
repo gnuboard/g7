@@ -238,7 +238,15 @@ class EcommerceRateLimitTest extends ModuleTestCase
         $defaults = require base_path('modules/_bundled/sirsoft-ecommerce/config/ecommerce.php');
 
         $this->assertSame(
-            ['cart_write' => 120, 'checkout' => 30, 'guest_order_write' => 20],
+            [
+                'cart_write' => 120,
+                'checkout' => 30,
+                'guest_order_write' => 20,
+                'coupon_download' => 20,
+                'wishlist_write' => 60,
+                'inquiry_write' => 5,
+                'review_write' => 5,
+            ],
             $defaults['rate_limits']
         );
     }

@@ -166,6 +166,20 @@
             <input type="text" name="basic_info.telecom_number" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.telecom_number_placeholder" class="{{_local.errors?.['basic_info.telecom_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['basic_info.telecom_number']}}" class="form-error">{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}</span>
           </div>
+          <div data-ref="field_hosting_provider" class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider</label>
+            <input type="text" name="basic_info.hosting_provider" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider_placeholder" class="{{_local.errors?.['basic_info.hosting_provider'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.hosting_provider']}}" class="form-error">{{_local.errors?.['basic_info.hosting_provider']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_show_business_footer" class="form-group">
+            <div class="flex-between">
+              <div>
+                <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer</label>
+                <p class="form-hint">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer_hint</p>
+              </div>
+              <toggle data-type="composite" name="basic_info.show_business_footer" value="{{_local.form?.basic_info?.show_business_footer ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+            </div>
+          </div>
         </div>
       </div>
     </div>
