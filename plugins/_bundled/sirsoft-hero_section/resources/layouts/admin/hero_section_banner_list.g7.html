@@ -278,6 +278,7 @@
         <responsive on="desktop" class="hs:grid hs:grid-cols-3 hs:gap-4 hs:mb-6"/>
         <!-- 대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.
           지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.
+          배너가 없어도 대상 설정이 남은 대상은 그 뒤에 건수 0으로 이어 보여(지워진 대상 포함) 들어가 되돌릴 수 있게 하고, 대상 설정이 있는 행에는 표식을 붙인다.
           「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다 -->
         <section data-ref="target_list_card" data-if="{{_computed.showTargetList}}" aria-labelledby="hero_target_list_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
           <responsive on="desktop" class="hs:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"/>
@@ -306,6 +307,7 @@
                 <span data-if="{{item.exists}}" class="hs:font-medium hs:text-gray-900 hs:dark:text-white hs:break-all">{{item.label}}</span>
                 <span data-if="{{!item.exists}}" class="hs:font-medium hs:text-amber-700 hs:dark:text-amber-300 hs:break-all">$t:sirsoft-hero_section.admin.target.missing_label|key={{item.key}}</span>
                 <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums">$t:sirsoft-hero_section.admin.target_list.counts|total={{item.total}}|active={{item.active}}</span>
+                <span data-if="{{item.has_settings === true}}" class="hs:self-start hs:inline-flex hs:items-center hs:rounded hs:bg-blue-50 hs:dark:bg-blue-900/40 hs:px-1.5 hs:py-0.5 hs:text-xs hs:text-blue-700 hs:dark:text-blue-200">$t:sirsoft-hero_section.admin.target_list.settings_badge</span>
               </div>
               <div class="hs:flex hs:flex-wrap hs:items-center hs:gap-2">
                 <a data-if="{{!!item.site_url}}" href="{{item.site_url}}" target="_blank" rel="noopener noreferrer" class="hs:inline-flex hs:items-center hs:gap-1 hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline">
@@ -674,14 +676,15 @@
           <div class="hs:flex hs:flex-wrap hs:gap-2">
             <button type="button" data-ref="target_settings_save" data-if="{{_computed.canWrite}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5" disabled="{{_local.targetSaving || !_computed.targetDirty || _computed.targetData?.target?.exists === false || ['max_height_pc', 'max_height_mobile'].some(f =&gt; _computed.targetDraft[f] != null &amp;&amp; (!Number.isInteger(_computed.targetDraft[f]) || _computed.targetDraft[f] &lt; _computed.maxHeightLimits.min || _computed.targetDraft[f] &gt; _computed.maxHeightLimits.max))}}">
               <on type="click">
-                <!-- 이 대상만 저장 — 켠 항목만 overrides 로 보낸다. 진행 깃발은 성공·실패 양쪽에서 푼다. 성공하면 다시 받아 작업본을 비운다 -->
+                <!-- 이 대상만 저장 — 켠 항목만 overrides 로 보낸다. 진행 깃발은 성공·실패 양쪽에서 푼다. 성공하면 응답(GET 과 같은 모양)을 그대로
+                  대상 설정 데이터로 넣고 작업본을 비운다 — 다시 받기에 기대면 그 요청이 실패했을 때 카드가 저장 전 모습으로 남는다 -->
                 <sequence>
                   <set-state target="local" :targetSaving="true"/>
                   <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/position-settings/{{_computed.currentPosition}}/targets/{{encodeURIComponent(_computed.currentTarget)}}" method="PUT">
                     <success>
+                      <update-data-source dataSourceId="target_settings" data="{{response}}"/>
                       <set-state target="local" :targetSaving="false" :targetForm="null"/>
                       <toast type="success" message="{{response.message}}"/>
-                      <refetch-data-source dataSourceId="target_settings"/>
                     </success>
                     <fail>
                       <set-state target="local" :targetSaving="false"/>
@@ -696,14 +699,14 @@
             </button>
             <button type="button" data-ref="target_settings_reset" data-if="{{_computed.canWrite}}" class="hs-btn hs-btn-secondary" disabled="{{_local.targetSaving || !_computed.targetData || Object.keys(_computed.targetData.overrides ?? {}).length === 0}}">
               <on type="click">
-                <!-- 위치 기본값으로 되돌리기 — 이 대상의 재정의만 지운다(DELETE). 배너·위치 기본값·다른 대상은 그대로 -->
+                <!-- 위치 기본값으로 되돌리기 — 이 대상의 재정의만 지운다(DELETE). 배너·위치 기본값·다른 대상은 그대로. 카드는 저장과 같이 응답으로 바로 바꾼다 -->
                 <sequence>
                   <set-state target="local" :targetSaving="true"/>
                   <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/position-settings/{{_computed.currentPosition}}/targets/{{encodeURIComponent(_computed.currentTarget)}}" method="DELETE">
                     <success>
+                      <update-data-source dataSourceId="target_settings" data="{{response}}"/>
                       <set-state target="local" :targetSaving="false" :targetForm="null"/>
                       <toast type="success" message="{{response.message}}"/>
-                      <refetch-data-source dataSourceId="target_settings"/>
                     </success>
                     <fail>
                       <set-state target="local" :targetSaving="false"/>

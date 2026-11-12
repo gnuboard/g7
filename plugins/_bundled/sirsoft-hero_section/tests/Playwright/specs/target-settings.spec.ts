@@ -192,12 +192,23 @@ test.describe('대상별 슬라이더 설정', () => {
     await page.locator('#hero_target_max_height_pc').blur();
     await page.locator('#hero_target_autoplay').uncheck();
 
+    // 저장 뒤 카드는 PUT 응답으로 바뀐다 — 대상 설정 다시 받기(GET)를 막아도 저장 전 모습으로 남지 않는다
+    const settingsGet = `**${targetUrl(A.id)}`;
+    let blockedGets = 0;
+    await page.route(settingsGet, (route) => (route.request().method() === 'GET' ? (blockedGets++, route.abort()) : route.continue()));
     const saved = page.waitForResponse((r) => r.url().includes(`/targets/${A.id}`) && r.request().method() === 'PUT');
     await card.getByRole('button', { name: '이 대상 설정 저장' }).click();
     const response = await saved;
     expect(response.status(), await response.text()).toBe(200);
     expect(JSON.parse(response.request().postData() ?? '{}').overrides).toEqual(want);
     touched.add(A.id);
+    for (const key of ['effect', 'width', 'pagination', 'max_height_pc', 'autoplay']) {
+      await expect(page.locator(`#hero_target_source_${key}`)).toHaveText('이 대상');
+    }
+    await expect(card.getByRole('button', { name: '이 대상 설정 저장' })).toBeDisabled();
+    await expect(card.getByRole('button', { name: '위치 기본값으로 되돌리기' })).toBeEnabled();
+    expect(blockedGets).toBe(0);
+    await page.unroute(settingsGet);
 
     // 새로고침해도 켠 항목·값·출처가 남는다
     await page.reload();
@@ -279,7 +290,9 @@ test.describe('대상별 슬라이더 설정', () => {
     await site.setViewportSize(VIEWPORTS.desktop);
     expect(await openBoard(site, A.slug)).toEqual(expected({ ...base, pagination, max_height_mobile: null }));
 
-    // 전체 되돌리기 — DELETE 후 상세·공개 응답·화면 모두 위치 기본값
+    // 전체 되돌리기 — DELETE 후 상세·공개 응답·화면 모두 위치 기본값. 카드는 DELETE 응답으로 바뀐다(다시 받기 GET 을 막아도)
+    const settingsGet = `**${targetUrl(A.id)}`;
+    await page.route(settingsGet, (route) => (route.request().method() === 'GET' ? route.abort() : route.continue()));
     const reset = page.waitForResponse((r) => r.url().includes(`/targets/${A.id}`) && r.request().method() === 'DELETE');
     await card.getByRole('button', { name: '위치 기본값으로 되돌리기' }).click();
     expect((await reset).status()).toBe(200);
@@ -287,12 +300,79 @@ test.describe('대상별 슬라이더 설정', () => {
       await expect(page.locator(`#hero_target_source_${key}`)).toHaveText('위치 기본값');
     }
     await expect(card.getByRole('button', { name: '위치 기본값으로 되돌리기' })).toBeDisabled();
+    await page.unroute(settingsGet);
     const after = await detail(request, managerToken, A.id);
     expect(after.overrides).toEqual({});
     expect(after.settings).toEqual(base);
     expect(await publicSettings(request, A.slug)).toEqual(base);
     expect(await openBoard(site, A.slug)).toEqual(expected(base));
     await guest.close();
+  });
+
+  // @scenario surface=target_settings_orphan_listed
+  test('배너가 없는 대상도 대상 설정이 남으면 대상 목록에 「대상 설정 있음」으로 보이고, 들어가 되돌리면 목록에서 빠진다', async ({ page, request, managerToken }) => {
+    const put = await request.put(targetUrl(B.id), { headers: auth(managerToken), data: { overrides: { autoplay: false } } });
+    expect(put.status(), await put.text()).toBe(200);
+    touched.add(B.id);
+
+    // 대상 목록 API — 배너 없는 B 가 건수 0·설정 있음으로 온다(배너 있는 대상 뒤라 몇 쪽인지 먼저 찾는다)
+    const findRow = async () => {
+      for (let pageNo = 1; pageNo <= 50; pageNo++) {
+        const res = await request.get(`${API}/admin/positions/${POSITION}/placements?page=${pageNo}`, { headers: auth(managerToken) });
+        expect(res.status()).toBe(200);
+        const body = (await res.json()).data;
+        const row = body.data.find((item: { key: string }) => item.key === B.id);
+        if (row) return { row, pageNo };
+        if (pageNo >= body.pagination.last_page) return null;
+      }
+
+      return null;
+    };
+    const found = await findRow();
+    expect(found, '설정만 남은 대상이 대상 목록에 없다').not.toBeNull();
+    expect(found!.row).toMatchObject({ key: B.id, exists: true, total: 0, active: 0, has_settings: true });
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}?position=${POSITION}${found!.pageNo > 1 ? `&tpage=${found!.pageNo}` : ''}`);
+    const list = page.locator('section[aria-labelledby="hero_target_list_heading"]');
+    await expect(list).toBeVisible({ timeout: 60_000 });
+    const row = list.getByRole('listitem').filter({ hasText: found!.row.label });
+    await expect(row).toHaveCount(1, { timeout: 30_000 });
+    await expect(row).toContainText('대상 설정 있음');
+    await expect(row).toContainText('전체 0개');
+
+    await row.getByRole('link', { name: '관리' }).click();
+    const card = page.locator('section[aria-labelledby="hero_target_settings_heading"]');
+    await expect(card).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#hero_target_source_autoplay')).toHaveText('이 대상');
+    const reset = page.waitForResponse((r) => r.url().includes(`/targets/${B.id}`) && r.request().method() === 'DELETE');
+    await card.getByRole('button', { name: '위치 기본값으로 되돌리기' }).click();
+    expect((await reset).status()).toBe(200);
+    await expect(page.locator('#hero_target_source_autoplay')).toHaveText('위치 기본값');
+    expect((await detail(request, managerToken, B.id)).overrides).toEqual({});
+    expect(await findRow()).toBeNull();
+  });
+});
+
+test.describe('프로모션형 추천값', () => {
+  // @scenario surface=promo_layout_form
+  // @effects promo_preset_fills_draft_only
+  test('빈 바탕의 새 배너에 추천값을 넣으면 연회색 바탕·바탕 밝기 「밝음」이 작업본에 들어가고, 저장하지 않으면 아무것도 남지 않는다', async ({ page, managerToken }) => {
+    await hidePopups(page);
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await authenticatePage(page, managerToken);
+    const writes: string[] = [];
+    page.on('request', (r) => { if (r.url().includes(`${API}/admin/`) && r.method() !== 'GET') writes.push(`${r.method()} ${r.url()}`); });
+    await page.goto(`${ADMIN_LIST}/create?position=home_hero`);
+    const preset = page.getByRole('button', { name: '프로모션형 추천값 적용' });
+    await expect(preset).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole('radio', { name: '어두움 (메뉴 글자 흰색)' })).toBeChecked();
+    await preset.click();
+    await expect(page.getByRole('radio', { name: '밝음 (메뉴 글자 검은색)' })).toBeChecked();
+    await expect(page.locator('#hero_background_color')).toHaveValue('#f4f5f8');
+    await expect(page.getByRole('radio', { name: '프로모션형' })).toBeChecked();
+    // 작업본만 바꾼다 — 저장·설정 쓰기 요청이 없다
+    expect(writes).toEqual([]);
   });
 });
 

@@ -859,7 +859,7 @@
                         },
                         "children": [
                             {
-                                "comment": "대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.\n          지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.\n          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다",
+                                "comment": "대상 목록 — 동적 위치에서 대상을 고르기 전. 배너가 있는 대상을 최근 수정 순으로, 전체·노출 중 건수와 관리 진입·사이트 주소를 보인다.\n          지워진 대상도 배너가 남았으면 「없는 대상」으로 남아 관리로 들어간다(사이트에 나가지 않으므로 노출 중은 0). 위치 전체 배너 수와 대상 수는 머리에 따로 적는다.\n          배너가 없어도 대상 설정이 남은 대상은 그 뒤에 건수 0으로 이어 보여(지워진 대상 포함) 들어가 되돌릴 수 있게 하고, 대상 설정이 있는 행에는 표식을 붙인다.\n          「관리」 주소는 저장 키를 인코딩해 싣고(외부 확장 키에 `&`·`=` 가 있어도 갈라지지 않게) 지금 쪽을 이고 간다",
                                 "id": "target_list_card",
                                 "type": "basic",
                                 "name": "Section",
@@ -1029,6 +1029,15 @@
                                                                     "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.target_list.counts|total={{item.total}}|active={{item.active}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{item.has_settings === true}}",
+                                                                "props": {
+                                                                    "className": "hs:self-start hs:inline-flex hs:items-center hs:rounded hs:bg-blue-50 hs:dark:bg-blue-900/40 hs:px-1.5 hs:py-0.5 hs:text-xs hs:text-blue-700 hs:dark:text-blue-200"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.target_list.settings_badge"
                                                             }
                                                         ]
                                                     },
@@ -2686,7 +2695,7 @@
                                                 "if": "{{_computed.canWrite}}",
                                                 "actions": [
                                                     {
-                                                        "comment": "이 대상만 저장 — 켠 항목만 overrides 로 보낸다. 진행 깃발은 성공·실패 양쪽에서 푼다. 성공하면 다시 받아 작업본을 비운다",
+                                                        "comment": "이 대상만 저장 — 켠 항목만 overrides 로 보낸다. 진행 깃발은 성공·실패 양쪽에서 푼다. 성공하면 응답(GET 과 같은 모양)을 그대로\n                  대상 설정 데이터로 넣고 작업본을 비운다 — 다시 받기에 기대면 그 요청이 실패했을 때 카드가 저장 전 모습으로 남는다",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -2709,6 +2718,13 @@
                                                                 },
                                                                 "onSuccess": [
                                                                     {
+                                                                        "handler": "updateDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "target_settings",
+                                                                            "data": "{{response}}"
+                                                                        }
+                                                                    },
+                                                                    {
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
@@ -2721,12 +2737,6 @@
                                                                         "params": {
                                                                             "type": "success",
                                                                             "message": "{{response.message}}"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "refetchDataSource",
-                                                                        "params": {
-                                                                            "dataSourceId": "target_settings"
                                                                         }
                                                                     }
                                                                 ],
@@ -2779,7 +2789,7 @@
                                                 "if": "{{_computed.canWrite}}",
                                                 "actions": [
                                                     {
-                                                        "comment": "위치 기본값으로 되돌리기 — 이 대상의 재정의만 지운다(DELETE). 배너·위치 기본값·다른 대상은 그대로",
+                                                        "comment": "위치 기본값으로 되돌리기 — 이 대상의 재정의만 지운다(DELETE). 배너·위치 기본값·다른 대상은 그대로. 카드는 저장과 같이 응답으로 바로 바꾼다",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -2799,6 +2809,13 @@
                                                                 },
                                                                 "onSuccess": [
                                                                     {
+                                                                        "handler": "updateDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "target_settings",
+                                                                            "data": "{{response}}"
+                                                                        }
+                                                                    },
+                                                                    {
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
@@ -2811,12 +2828,6 @@
                                                                         "params": {
                                                                             "type": "success",
                                                                             "message": "{{response.message}}"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "refetchDataSource",
-                                                                        "params": {
-                                                                            "dataSourceId": "target_settings"
                                                                         }
                                                                     }
                                                                 ],

@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Admin;
 
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
+use Plugins\Sirsoft\HeroSection\Models\TargetSetting;
 use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 use Plugins\Sirsoft\HeroSection\Tests\Concerns\RegistersTestPosition;
 use Plugins\Sirsoft\HeroSection\Tests\Fixtures\FakeTargetResolver;
@@ -52,10 +53,10 @@ class PositionPlacementsTest extends PluginTestCase
 
         $this->assertSame('fake_hero', $data['position']);
         $this->assertSame([
-            ['key' => '2', 'label' => '베타', 'exists' => true, 'site_url' => '/fake/beta', 'total' => 2, 'active' => 0],
-            ['key' => '1', 'label' => '알파', 'exists' => true, 'site_url' => '/fake/alpha', 'total' => 3, 'active' => 2],
+            ['key' => '2', 'label' => '베타', 'exists' => true, 'site_url' => '/fake/beta', 'total' => 2, 'active' => 0, 'has_settings' => false],
+            ['key' => '1', 'label' => '알파', 'exists' => true, 'site_url' => '/fake/alpha', 'total' => 3, 'active' => 2, 'has_settings' => false],
             // 지워진 대상의 배너는 상태로는 노출 중이어도 사이트에 나가지 않는다(공개 API 0건) — 「지금 노출」은 0이다
-            ['key' => '9', 'label' => null, 'exists' => false, 'site_url' => null, 'total' => 1, 'active' => 0],
+            ['key' => '9', 'label' => null, 'exists' => false, 'site_url' => null, 'total' => 1, 'active' => 0, 'has_settings' => false],
         ], $data['data']);
         $this->assertSame(['banners' => 6, 'targets' => 3], $data['summary']);
         $this->assertSame(['current_page' => 1, 'last_page' => 1, 'total' => 3, 'per_page' => 20], $data['pagination']);
@@ -89,6 +90,35 @@ class PositionPlacementsTest extends PluginTestCase
         $this->assertLessThanOrEqual(3, $queries, '대상별 건수를 대상마다 묻지 않는다');
         $this->assertSame(['current_page' => 1, 'last_page' => 2, 'total' => 25, 'per_page' => 20], $first['pagination']);
         $this->assertSame(['21', '22', '23', '24', '25'], array_column(app(PositionSettingService::class)->placements('fake_hero', 9)['data'], 'key'));
+    }
+
+    /**
+     * 배너가 없어도 대상 설정이 남은 대상은 목록에 남는다 — 배너를 모두 지웠거나 대상이 지워져도 「관리」로 들어가 되돌릴 수 있게.
+     * 배너가 있는 대상(최근 수정 순) 뒤에 설정만 남은 대상(설정 최근 수정 순)을 잇고, 행마다 대상 설정이 있는지 알린다.
+     * 머리의 배너 수·대상 수는 배너 기준 그대로다.
+     *
+     * @scenario surface=target_settings_orphan_listed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_lists_targets_with_only_target_settings(): void
+    {
+        Banner::factory()->forPosition('fake_hero', '1')->create();
+        TargetSetting::query()->create(['position' => 'fake_hero', 'target_key' => '1', 'overrides' => ['autoplay' => false]]);
+        TargetSetting::query()->create(['position' => 'fake_hero', 'target_key' => '9', 'overrides' => ['effect' => 'fade']])->forceFill(['updated_at' => now()->subDays(2)])->save();
+        TargetSetting::query()->create(['position' => 'fake_hero', 'target_key' => '2', 'overrides' => ['pagination' => 'none']])->forceFill(['updated_at' => now()->subDay()])->save();
+        TargetSetting::query()->create(['position' => 'other_hero', 'target_key' => '3', 'overrides' => ['autoplay' => false]]);
+
+        $data = $this->actingAs($this->fullAdmin())->getJson($this->api('/admin/positions/fake_hero/placements'))->assertOk()->json('data');
+
+        $this->assertSame([
+            ['key' => '1', 'label' => '알파', 'exists' => true, 'site_url' => '/fake/alpha', 'total' => 1, 'active' => 1, 'has_settings' => true],
+            ['key' => '2', 'label' => '베타', 'exists' => true, 'site_url' => '/fake/beta', 'total' => 0, 'active' => 0, 'has_settings' => true],
+            // 지워진 대상이어도 설정이 남았으면 「없는 대상」으로 보여 되돌릴 수 있게 한다
+            ['key' => '9', 'label' => null, 'exists' => false, 'site_url' => null, 'total' => 0, 'active' => 0, 'has_settings' => true],
+        ], $data['data']);
+        $this->assertSame(['banners' => 1, 'targets' => 1], $data['summary']);
+        $this->assertSame(3, $data['pagination']['total']);
     }
 
     /**

@@ -113,15 +113,16 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | position | string | `board_hero` | 위치 키 |
-| data[] | array | `[{"key":"4","label":"이벤트","exists":true,"site_url":"/board/event","total":2,"active":1}]` | 배너가 있는 대상 — 최근 수정한 대상이 앞 |
+| data[] | array | `[{"key":"4","label":"이벤트","exists":true,"site_url":"/board/event","total":2,"active":1,"has_settings":true}]` | 배너가 있는 대상(최근 수정한 대상이 앞), 그 뒤에 배너 없이 대상 설정만 남은 대상(설정을 최근 고친 대상이 앞, 건수 0) |
 | data[].key | string | `4` | 저장 키(배너 `target_key`) — 관리 화면 주소의 `target` |
 | data[].label | string\|null | `이벤트` | 대상 이름(현재 언어). 지워진 대상이면 null |
 | data[].exists | boolean | `true` | 대상이 있는지 — false 면 「없는 대상」(배너는 남아 관리로 들어갈 수 있다) |
 | data[].site_url | string\|null | `/board/event` | 대상의 실제 화면 주소, 없는 대상이면 null |
 | data[].total | integer | `2` | 그 대상의 전체 배너 수 |
 | data[].active | integer | `1` | 지금 노출 중인 배너 수 — 공개 노출과 같은 상태 판정(비활성·예약·종료 제외). 없는 대상(`exists: false`)은 사이트에 나가지 않으므로 0 |
+| data[].has_settings | boolean | `true` | 그 대상만의 슬라이더 설정(대상 재정의)이 있는지 |
 | summary.banners | integer | `3` | 이 위치의 배너 수(대상 있는 배너) |
-| summary.targets | integer | `2` | 배너를 둔 대상 수 |
+| summary.targets | integer | `2` | 배너를 둔 대상 수(설정만 남은 대상은 세지 않는다 — 그 대상까지 센 행 수는 `pagination.total`) |
 | pagination | object | `{"current_page":1,"last_page":1,"total":2,"per_page":20}` | 대상 목록 쪽 정보 |
 
 **응답 예시**
@@ -133,11 +134,12 @@ Authorization: Bearer {YOUR_TOKEN}
     "data": {
         "position": "board_hero",
         "data": [
-            {"key": "4", "label": "이벤트", "exists": true, "site_url": "/board/event", "total": 2, "active": 1},
-            {"key": "2", "label": "자유게시판", "exists": true, "site_url": "/board/free", "total": 1, "active": 1}
+            {"key": "4", "label": "이벤트", "exists": true, "site_url": "/board/event", "total": 2, "active": 1, "has_settings": true},
+            {"key": "2", "label": "자유게시판", "exists": true, "site_url": "/board/free", "total": 1, "active": 1, "has_settings": false},
+            {"key": "7", "label": null, "exists": false, "site_url": null, "total": 0, "active": 0, "has_settings": true}
         ],
         "summary": {"banners": 3, "targets": 2},
-        "pagination": {"current_page": 1, "last_page": 1, "total": 2, "per_page": 20}
+        "pagination": {"current_page": 1, "last_page": 1, "total": 3, "per_page": 20}
     }
 }
 ```
@@ -154,4 +156,4 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **설명**
 
-동적 위치의 관리자 「대상 목록」 — 배너가 있는 대상을 이름·사이트 주소·전체·노출 중 건수와 함께 낸다. 대상별 건수는 묶음 조회 두 번(전체·노출 중), 이름은 해석기 `labels()` 한 번, 사이트 주소는 해석기가 `TargetSiteUrlsInterface::siteUrls()` 를 구현하면 한 번(아니면 그 쪽 안의 키만 `siteUrl()` 로 하나씩)이다. 게시판·상품·카테고리와 다른 확장이 더한 동적 위치가 같은 길을 쓴다. 관리 화면이 위치 탭마다 부르므로 정적·등록되지 않은 위치는 오류가 아니라 `data: null` 이다.
+동적 위치의 관리자 「대상 목록」 — 배너가 있는 대상을 이름·사이트 주소·전체·노출 중 건수·대상 설정 여부와 함께 낸다. 배너를 모두 지웠거나 대상이 지워져도 대상 설정이 남았으면 그 뒤에 건수 0으로 이어 내므로, 「관리」로 들어가 위치 기본값으로 되돌릴 수 있다. 대상별 건수는 묶음 조회 두 번(전체·노출 중), 대상 설정 키는 한 번, 이름은 해석기 `labels()` 한 번, 사이트 주소는 해석기가 `TargetSiteUrlsInterface::siteUrls()` 를 구현하면 한 번(아니면 그 쪽 안의 키만 `siteUrl()` 로 하나씩)이다. 게시판·상품·카테고리와 다른 확장이 더한 동적 위치가 같은 길을 쓴다. 관리 화면이 위치 탭마다 부르므로 정적·등록되지 않은 위치는 오류가 아니라 `data: null` 이다.

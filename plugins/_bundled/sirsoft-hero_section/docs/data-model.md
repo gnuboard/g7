@@ -33,7 +33,7 @@
 <!-- @intent START -->
 `hero_section_banners`·`hero_section_banner_images`·`hero_section_position_settings`·`hero_section_target_settings` 를 소유한다.
 
-`hero_section_target_settings` 는 (`position`, `target_key`) 가 고유한 대상별 재정의 행이다. `overrides` JSON 에는 운영자가 명시한 슬라이더 항목만 담는다 — 키가 없으면 위치 기본값을 상속하고, `false`·`null` 은 명시값(자동 재생 끔·최대 높이 제한 없음)이다. 해석 순서는 `PositionSetting::DEFAULTS` → 위치 행 → 대상 재정의. 모든 항목을 상속으로 돌리면 행을 지운다. 대상(게시판·카테고리 등)이 지워져도 행을 남겨 관리 화면에서 「없는 대상」으로 보이고 되돌릴 수 있다(배너와 같은 계약). 기존 설치는 이 테이블이 비어 있어 모든 대상이 위치 기본값을 그대로 따른다 — 백필 없음.
+`hero_section_target_settings` 는 (`position`, `target_key`) 가 고유한 대상별 재정의 행이다. `overrides` JSON 에는 운영자가 명시한 슬라이더 항목만 담는다 — 키가 없으면 위치 기본값을 상속하고, `false`·`null` 은 명시값(자동 재생 끔·최대 높이 제한 없음)이다. 해석 순서는 `PositionSetting::DEFAULTS` → 위치 행 → 대상 재정의. 모든 항목을 상속으로 돌리면 행을 지운다. 대상(게시판·카테고리 등)이 지워져도 행을 남겨 관리 화면에서 「없는 대상」으로 보이고 되돌릴 수 있다(배너와 같은 계약). 배너가 하나도 없어도 행이 있으면 관리자 대상 목록에 남는다(`TargetSettingRepositoryInterface::targetKeys()`). 기존 설치는 이 테이블이 비어 있어 모든 대상이 위치 기본값을 그대로 따른다 — 백필 없음.
 
 배너 `presentation` JSON 의 구성 키(`layout`·`background_color`·`text_width_pc`·`text_width_mobile`·`media_animation`)는 컬럼이 아니라 JSON 키라 마이그레이션이 없다. 없는 키는 `Banner::DEFAULT_PRESENTATION`(배경형·폭 상속·그림 효과 없음)으로 읽고, 읽기만으로 저장값을 다시 쓰지 않는다. 다국어 문구는 `text` 컬럼에 `{ko:…, en:…}` JSON 으로 저장한다. 플러그인 삭제(데이터 삭제 선택) 때만 지운다.
 <!-- @intent END -->

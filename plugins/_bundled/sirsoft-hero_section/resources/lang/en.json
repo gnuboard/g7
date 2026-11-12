@@ -107,7 +107,7 @@
             "count": "{{count}} banners"
         },
         "target_list": {
-            "title": "{{target}} items with banners",
+            "title": "{{target}} items with banners or own settings",
             "summary": "Banners in this position: {{banners}} · Targets with banners: {{targets}}",
             "loading": "Loading the target list",
             "empty": "No {{target}} has banners yet. Find and choose a {{target}} above to add the first banner.",
@@ -120,7 +120,8 @@
             "back": "Back to target list",
             "detail_title": "Banners for {{target}}",
             "new_hint": "To add banners to a {{target}} that has none yet, find and choose it in the picker above.",
-            "load_failed": "Could not load the target list."
+            "load_failed": "Could not load the target list.",
+            "settings_badge": "Own settings"
         },
         "status": {
             "all": "All",
@@ -496,7 +497,7 @@
                 "background_color_none": "None",
                 "background_color_clear": "Clear background color",
                 "preset": "Apply promotion presets",
-                "preset_hint": "Text at middle-left on desktop at 40% width, artwork above text on mobile, sequential entrance, artwork from the right, default white text turned dark — you can change everything afterwards, and slider settings are not changed."
+                "preset_hint": "Text at middle-left on desktop at 40% width, artwork above text on mobile, sequential entrance, artwork from the right, default white text turned dark, and an empty background filled with light gray and set to a \"Light\" banner background — you can change everything afterwards, and slider settings are not changed."
             },
             "applied": {
                 "values": "Applied settings: {{effect}} · {{width}} · {{pagination}} · max height desktop {{pc}} / mobile {{mobile}}",

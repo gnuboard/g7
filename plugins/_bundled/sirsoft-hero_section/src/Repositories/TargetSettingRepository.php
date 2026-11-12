@@ -75,4 +75,17 @@ class TargetSettingRepository implements TargetSettingRepositoryInterface
             return $before;
         });
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  string  $position  위치 키
+     * @return array<int, string> 대상 키
+     */
+    public function targetKeys(string $position): array
+    {
+        // audit:allow query-unbounded-get reason: 키 한 열만 — 재정의 행은 운영자가 대상마다 저장한 만큼이고 배너가 있는 대상 목록과 같은 규모다
+        return TargetSetting::query()->where('position', $position)->orderByDesc('updated_at')->orderBy('target_key')
+            ->pluck('target_key')->map(fn ($key) => (string) $key)->all();
+    }
 }

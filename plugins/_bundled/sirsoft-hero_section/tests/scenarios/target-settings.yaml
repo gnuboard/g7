@@ -4,7 +4,7 @@ description: |
   게시판·카테고리처럼 대상이 있는 위치는 위치 설정이 그 위치의 기본값이고, 대상(게시판·카테고리 등)마다 슬라이더 항목
   (자동 재생·간격·효과·표시 폭·메뉴 겹치기·페이징·기기별 최대 높이)을 따로 정할 수 있다. 해석 순서는 기본값 → 위치 → 대상
   재정의이고, 재정의에 키가 없으면 상속, false·null 은 명시값이다. 항목 하나를 상속으로 되돌리거나 대상 재정의 전체를
-  지울 수 있고, 저장·초기화는 그 대상의 공개 캐시만 비운다. 정적 위치·미등록 위치는 대상 설정이 없다(404).
+  지울 수 있고, 저장·초기화는 그 대상의 공개 캐시만 비운다. 배너 없이 설정만 남은 대상도 관리자 대상 목록에 남는다. 정적 위치·미등록 위치는 대상 설정이 없다(404).
 
 axes:
   surface:
@@ -16,6 +16,8 @@ axes:
     - target_settings_permission
     - target_settings_activity_log
     - target_settings_admin_card
+    # 배너 없이 대상 설정만 남은 대상(지워진 대상 포함)도 대상 목록에 남아 되돌릴 수 있다
+    - target_settings_orphan_listed
 
 effects:
   - public_output_follows_target_override
@@ -24,5 +26,6 @@ effects:
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/TargetSettingControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionPlacementsTest.php
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/target-settings.spec.ts

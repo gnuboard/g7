@@ -170,6 +170,13 @@ describe('히어로섹션 목록 화면', () => {
     expect(json(row)).toContain('admin.target_list.counts|total={{item.total}}|active={{item.active}}');
     expect(json(row)).toContain('admin.target.missing_label|key={{item.key}}');
     expect(json(row)).toContain('"href":"{{item.site_url}}"');
+    // 배너 없이 대상 설정만 남은 대상도 목록에 오므로(건수 0) 대상 설정이 있는 행에 표식을 단다
+    const badge = collect(row, (n) => n.text === '$t:sirsoft-hero_section.admin.target_list.settings_badge')[0];
+    expect(badge?.if).toBe('{{item.has_settings === true}}');
+    for (const lang of [ko, en] as any[]) {
+      expect(lang.admin.target_list.settings_badge).toBeTruthy();
+      expect(lang.admin.target_list.title).toContain('{{target}}');
+    }
     expect(json(findById(list, 'target_list_summary'))).toContain('summary|banners={{_computed.placementList?.summary?.banners ?? 0}}|targets={{_computed.placementList?.summary?.targets ?? 0}}');
     expect(findById(list, 'target_list_next')!.props.href).toContain('tpage=');
 
@@ -538,6 +545,20 @@ describe('히어로섹션 목록 화면', () => {
     const reset = actionsOf(findById(list, 'target_settings_reset')!, 'apiCall')[0];
     expect(reset.method ?? reset.params?.method).toBe('DELETE');
     expect(json(findById(list, 'target_settings_reset'))).toContain('target_settings');
+    // 성공하면 응답으로 카드를 바로 바꾼다 — 다시 받기에 기대면 그 요청이 실패했을 때 카드가 저장 전 모습으로 남는다.
+    // 응답을 먼저 넣고 작업본을 비워야 비운 순간 앞 응답(저장 전 재정의)이 비치지 않는다
+    for (const call of [put, reset]) {
+      const success = (call.onSuccess ?? []) as any[];
+      const update = success.findIndex((a) => a.handler === 'updateDataSource');
+      expect(success[update]?.params).toEqual({ dataSourceId: 'target_settings', data: '{{response}}' });
+      expect(update).toBeLessThan(success.findIndex((a) => a.handler === 'setState'));
+      expect(success.some((a) => a.handler === 'refetchDataSource')).toBe(false);
+    }
+    const saved = { data: { position: 'board_hero', target: { key: '4', exists: true }, overrides: { autoplay: false }, position_settings: { autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: null, max_height_mobile: null } } };
+    const after = evaluateComputed(list as any, { position_settings: positionSettings(), query: { position: 'board_hero', target: '4' }, target_settings: saved, _local: { targetForm: null } });
+    expect(after.targetOverridden).toEqual(['autoplay']);
+    expect(after.targetEffective.autoplay).toBe(false);
+    expect(after.targetDirty).toBe(false);
     for (const lang of [ko, en] as any[]) {
       for (const key of ['title', 'scope', 'loading', 'missing', 'own_label', 'source_target', 'source_position', 'no_limit', 'save', 'reset']) expect(lang.admin.target_settings[key], key).toBeTruthy();
       for (const key of keys) expect(lang.admin.target_settings.items[key], key).toBeTruthy();

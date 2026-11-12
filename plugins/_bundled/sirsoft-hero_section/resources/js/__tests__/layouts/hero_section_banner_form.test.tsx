@@ -324,6 +324,12 @@ describe('배너 등록·수정 화면', () => {
       .map((key) => evaluateBinding(params[`form.${key}`], { _local: { form: current } }));
     expect(colorsFor({ title_color: '#ffffff', description_color: '#E5E7EB', eyebrow_color: '#FFFFFF' })).toEqual(['#111827', '#4B5563', '#4B5563']);
     expect(colorsFor({ title_color: '#B91C1C', description_color: '#1F2937', eyebrow_color: '#0EA5E9' })).toEqual(['#B91C1C', '#1F2937', '#0EA5E9']);
+    // 메뉴 겹치기의 흰 메뉴 글자가 연회색 띠에 묻히지 않게 — 빈 바탕을 연회색으로 채울 때 기본 밝기(어두움)만 밝음으로, 고른 바탕색·밝기는 그대로
+    const toneFor = (presentation: Record<string, unknown>) => evaluateBinding(params['form.presentation'], { _local: { form: { presentation } } }).tone;
+    expect(toneFor({})).toBe('light');
+    expect(toneFor({ tone: 'dark', background_color: null })).toBe('light');
+    expect(toneFor({ tone: 'dark', background_color: '#1F2937' })).toBe('dark');
+    expect(toneFor({ tone: 'light', background_color: '#1F2937' })).toBe('light');
     for (const id of ['hero_text_width_pc', 'hero_text_width_mobile']) {
       const input = collect(form, (n) => n.props?.id === id)[0];
       expect(json(actionsOf(input, 'setState'))).toContain("$event.target.value === '' ? null : Number($event.target.value)");

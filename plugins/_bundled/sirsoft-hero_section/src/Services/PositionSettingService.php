@@ -422,14 +422,16 @@ class PositionSettingService
     }
 
     /**
-     * 동적 위치에서 배너가 있는 대상 목록을 반환합니다(관리자 대상 목록 화면) — 대상마다 이름·사이트 주소·전체·노출 중 건수.
+     * 동적 위치에서 배너나 대상 설정이 있는 대상 목록을 반환합니다(관리자 대상 목록 화면) — 대상마다 이름·사이트 주소·전체·노출 중 건수·대상 설정 여부.
      *
-     * 건수는 저장소 묶음 조회 두 번, 이름은 해석기 `labels()` 한 번, 사이트 주소는 해석기가 {@see TargetSiteUrlsInterface} 를 주면 한 번
+     * 건수는 저장소 묶음 조회 두 번, 대상 설정 키는 한 번, 이름은 해석기 `labels()` 한 번, 사이트 주소는 해석기가 {@see TargetSiteUrlsInterface} 를 주면 한 번
      * (아니면 그 쪽 안의 키만 하나씩)이다. 지워진 대상도 배너가 남았으면 `exists: false` 로 남겨 관리로 들어갈 수 있게 하고, 노출 중은 0이다.
+     * 배너가 없어도 대상 설정이 남은 대상은 배너가 있는 대상 뒤에 건수 0으로 잇는다 — 배너를 모두 지웠거나 대상이 지워져도 들어가 되돌릴 수 있게.
+     * 머리의 배너 수·대상 수(`summary`)는 배너 기준이다.
      *
      * @param  string  $position  위치 키
      * @param  int  $page  쪽 번호(1부터)
-     * @return array{position: string, data: array<int, array{key: string, label: string|null, exists: bool, site_url: string|null, total: int, active: int}>, summary: array{banners: int, targets: int}, pagination: array{current_page: int, last_page: int, total: int, per_page: int}}|null 대상 목록 (동적 위치가 아니면 null)
+     * @return array{position: string, data: array<int, array{key: string, label: string|null, exists: bool, site_url: string|null, total: int, active: int, has_settings: bool}>, summary: array{banners: int, targets: int}, pagination: array{current_page: int, last_page: int, total: int, per_page: int}}|null 대상 목록 (동적 위치가 아니면 null)
      */
     public function placements(string $position, int $page = 1): ?array
     {
@@ -439,6 +441,11 @@ class PositionSettingService
         }
 
         $summaries = $this->banners->targetSummaries($position, now());
+        $bannerTargets = count($summaries);
+        $settingKeys = array_flip($this->targetSettings()->targetKeys($position));
+        foreach (array_keys($settingKeys) as $key) {
+            $summaries[(string) $key] ??= ['total' => 0, 'active' => 0];
+        }
         $total = count($summaries);
         $lastPage = max(1, (int) ceil($total / self::PLACEMENTS_PER_PAGE));
         $page = min(max(1, $page), $lastPage);
@@ -469,13 +476,14 @@ class PositionSettingService
                 'total' => $counts['total'],
                 // 지워진 대상의 배너는 사이트에 나가지 않는다(공개 조회가 대상을 풀지 못한다) — 상태가 노출 중이어도 0
                 'active' => $exists ? $counts['active'] : 0,
+                'has_settings' => isset($settingKeys[$key]),
             ];
         }
 
         return [
             'position' => $position,
             'data' => $data,
-            'summary' => ['banners' => array_sum(array_column($summaries, 'total')), 'targets' => $total],
+            'summary' => ['banners' => array_sum(array_column($summaries, 'total')), 'targets' => $bannerTargets],
             'pagination' => ['current_page' => $page, 'last_page' => $lastPage, 'total' => $total, 'per_page' => self::PLACEMENTS_PER_PAGE],
         ];
     }

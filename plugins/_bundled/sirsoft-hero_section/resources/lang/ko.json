@@ -107,7 +107,7 @@
             "count": "배너 {{count}}개"
         },
         "target_list": {
-            "title": "배너가 있는 {{target}}",
+            "title": "배너·대상 설정이 있는 {{target}}",
             "summary": "이 위치의 배너 {{banners}}개 · 배너를 둔 대상 {{targets}}곳",
             "loading": "대상 목록을 불러오는 중입니다",
             "empty": "아직 배너를 둔 {{target}}이(가) 없습니다. 위에서 {{target}}을(를) 찾아 고르면 첫 배너를 등록할 수 있습니다.",
@@ -120,7 +120,8 @@
             "back": "대상 목록으로",
             "detail_title": "{{target}} 배너",
             "new_hint": "배너가 없는 {{target}}은(는) 위 고르기 칸에서 찾아 고르면 첫 배너를 등록할 수 있습니다.",
-            "load_failed": "대상 목록을 받지 못했습니다."
+            "load_failed": "대상 목록을 받지 못했습니다.",
+            "settings_badge": "대상 설정 있음"
         },
         "status": {
             "all": "전체",
@@ -496,7 +497,7 @@
                 "background_color_none": "없음",
                 "background_color_clear": "바탕색 지우기",
                 "preset": "프로모션형 추천값 적용",
-                "preset_hint": "문구 PC 왼쪽 가운데·폭 40%, 휴대폰 그림 위·문구 아래, 순차 등장, 그림 오른쪽에서, 기본 흰색 글자는 짙은 색으로 — 적용한 뒤에도 바꿀 수 있고 슬라이더 설정은 바꾸지 않습니다."
+                "preset_hint": "문구 PC 왼쪽 가운데·폭 40%, 휴대폰 그림 위·문구 아래, 순차 등장, 그림 오른쪽에서, 기본 흰색 글자는 짙은 색으로, 바탕색이 비어 있으면 연회색 바탕에 바탕 밝기 「밝음」으로 — 적용한 뒤에도 바꿀 수 있고 슬라이더 설정은 바꾸지 않습니다."
             },
             "applied": {
                 "values": "적용 설정: {{effect}} · {{width}} · {{pagination}} · 최대 높이 PC {{pc}} / 휴대폰 {{mobile}}",

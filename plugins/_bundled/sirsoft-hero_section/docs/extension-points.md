@@ -72,7 +72,7 @@ public function register(array $positions): array
 
 대상 해석기(`TargetResolverInterface`)는 다섯 가지를 한다 — `resolve($value)`: 화면이 아는 값(slug·코드·id)을 저장 키로(내장 해석기는 slug·상품 코드를 먼저, 없을 때만 숫자 id — 화면 주소가 가리키는 대상과 어긋나지 않게 같은 순서를 권한다), `exists($key)`: 저장 때 대상이 있는지, `labels($keys)`: 관리자 목록의 대상 이름(여러 개를 한 번에), `search($keyword, $limit)`: 관리자 대상 고르기 후보(`key`·`label`·`hint`), `siteUrl($key)`: 「사이트에서 보기」 주소. 저장 키는 문자열이면 된다 — `&`·`=`·`%` 같은 기호가 있어도 관리자 화면이 주소에 실을 때 인코딩한다. 해석기는 컨테이너로 만들어지므로 생성자 주입을 쓴다. 대상 고르기 목록은 히어로 조회 권한으로 대신 받아 준다(`GET /admin/positions/{position}/targets`) — 대상 모듈의 관리 권한이 없는 히어로 관리자도 고를 수 있다.
 
-선택 계약 `Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface`(`siteUrls(array $keys): array`)를 함께 구현하면 관리자 「대상 목록」(배너가 있는 대상을 이름·사이트 주소·전체·노출 중 건수와 함께 보이는 첫 화면)이 한 쪽(20개)의 사이트 주소를 한 번에 묻는다. 구현하지 않으면 그 쪽 안의 키만 `siteUrl()` 로 하나씩 묻는다. 대상 목록·대상별 관리·「대상 목록으로」 흐름은 내장 동적 위치와 다른 확장이 더한 동적 위치가 같다.
+선택 계약 `Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface`(`siteUrls(array $keys): array`)를 함께 구현하면 관리자 「대상 목록」(배너가 있는 대상과 배너 없이 대상 설정만 남은 대상을 이름·사이트 주소·전체·노출 중 건수와 함께 보이는 첫 화면)이 한 쪽(20개)의 사이트 주소를 한 번에 묻는다. 구현하지 않으면 그 쪽 안의 키만 `siteUrl()` 로 하나씩 묻는다. 대상 목록·대상별 관리·「대상 목록으로」 흐름은 내장 동적 위치와 다른 확장이 더한 동적 위치가 같다.
 
 - 어긋난 정의(키 형식 위반·이미 있는 키·이름 없음·대상 정의 불완전·해석기 계약 위반·`route_param` 형식 위반)는 그 정의만 버리고 경고 로그를 남긴다. 화면은 깨지지 않는다. 같은 키는 먼저 온 쪽이 이긴다 — 내장 키를 가로챌 수 없다.
 - 슬라이더 설정(자동 넘김·효과·표시 폭 등)은 위치 단위다 — 동적 위치의 모든 대상에 함께 적용된다.

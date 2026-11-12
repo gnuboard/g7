@@ -37,4 +37,12 @@ interface TargetSettingRepositoryInterface
      * @return array<string, mixed>|null 지우기 전 overrides (행이 없었으면 null)
      */
     public function delete(string $position, string $targetKey): ?array;
+
+    /**
+     * 위치에서 재정의 행이 있는 대상 키를 최근 수정 순으로 반환합니다.
+     *
+     * @param  string  $position  위치 키
+     * @return array<int, string> 대상 키
+     */
+    public function targetKeys(string $position): array;
 }
