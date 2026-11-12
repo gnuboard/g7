@@ -66,7 +66,9 @@ _단건 응답: `data` 객체의 필드 (`PopupImageResource`). 팝업 상세의
 | hash | string | `{hash}` | 공개 주소용 64자 영숫자 해시 |
 | device | string | `pc` | 이미지 기기(`pc`, `mobile`) |
 | url | string | `/api/plugins/sirsoft-popup/images/{hash}` | 공개 이미지 주소(사이트 상대 경로, 사이트 마운트 접두사 포함 — 하위 폴더 설치(`/g7/`)면 `/g7/api/plugins/…`). 저장 전에도 미리보기에 쓸 수 있습니다 |
-| download_url | string | `/api/plugins/sirsoft-popup/images/{hash}` | `url` 과 같은 값. 관리자 파일 업로더 컴포넌트가 기대하는 첨부 모양을 맞추려고 함께 싣습니다 |
+| download_url | string | `/api/plugins/sirsoft-popup/images/{hash}` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같은 값(#878). 관리자 파일 업로더 컴포넌트가 기대하는 첨부 모양을 맞추려고 함께 싣습니다 |
+| preview_url | string | `/api/plugins/sirsoft-popup/images/{hash}` | 썸네일 기준 공개 API 주소(`url` 과 같음) — 업로더·목록 미리보기가 `?size=` 를 붙여 받습니다 |
+| direct_url | string\|null | `null` | 행 disk 의 직접 주소(공개 자산 디스크 행만, 사이트 마운트 접두사 없는 절대 주소). 아니면 null |
 | original_filename | string | `banner.png` | 업로드 때의 원본 파일명(최대 255자) |
 | mime_type | string | `image/png` | 이미지 MIME |
 | size | integer | `245760` | 저장된 파일 크기(바이트). GIF 를 뺀 형식은 서버가 크기를 줄여 저장할 수 있어 원본보다 작을 수 있습니다 |

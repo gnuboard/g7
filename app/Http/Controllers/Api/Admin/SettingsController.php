@@ -32,14 +32,17 @@ use App\Services\SettingsService;
 use App\Services\TrustedProxyProbe;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
+use App\Support\FileServing\FileDelegation;
 use App\Support\SearchScopes;
 use App\Support\ThumbnailDiskOptions;
 use App\Support\TrustedProxyDiagnostic;
 use App\Thumbnails\ImageProcessorResolver;
 use App\Thumbnails\ThumbnailPresetSettings;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * 관리자용 시스템 설정 컨트롤러
@@ -98,6 +101,8 @@ class SettingsController extends AdminBaseController
      *   없으면 기본값. 화면은 이 값을 칸의 placeholder 로 보인다 (#869)
      * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
      * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
+     * - `file_delegation`: 웹서버 파일 위임 요약 `{mode, base_path, accel_prefix, accel_mapping, nginx_alias_path}` — 지금 적용 중인 값이다(저장값이
+     *   아니라 `.env` 잠금까지 반영한 config). 드라이버 탭이 웹서버 설정 안내를 실제 경로로 채운다 (#878)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -127,6 +132,7 @@ class SettingsController extends AdminBaseController
             'thumbnail_server_defaults' => array_map('intval', (array) config('core.thumbnail_server_defaults', [])),
             'search_scopes' => $this->searchHistoryService->settingsMeta(),
             'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
+            'file_delegation' => FileDelegation::describe(),
         ];
     }
 
@@ -340,6 +346,33 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 웹서버 파일 위임이 실제로 동작하는지 확인할 작은 파일을 내보냅니다 (2단계 프로브, #878).
+     *
+     * 코어 파일 헬퍼(`fileResponse()`)를 그대로 지나므로 **저장된(적용 중인) 위임 설정**으로 나간다 — 위임이 켜져 있으면
+     * 앱은 본문 대신 `X-Sendfile`/`X-Accel-Redirect` 헤더만 세우고, 웹서버가 그 헤더를 소비해 파일을 보내야 본문이 도착한다.
+     * 화면은 받은 본문의 `data.probe` 값으로 판정한다 — 본문이 비었거나(웹서버가 헤더를 무시) 404(nginx internal 위치 없음)면
+     * 미구성이다. 서버가 자기 자신에게 요청을 보내는 판정은 아웃바운드 정책·공유 호스팅 제약 때문에 쓰지 않는다.
+     *
+     * 판정이 매번 새 응답이어야 하므로 `Cache-Control: no-store` 로 덮는다. 입력을 받지 않는 읽기 전용 조회다.
+     *
+     * @return BinaryFileResponse|Response 프로브 파일 응답 또는 304 응답
+     */
+    public function fileDelegationProbe(): BinaryFileResponse|Response
+    {
+        $response = $this->fileResponse(
+            resource_path('probes/file-delegation-probe.json'),
+            'application/json',
+            0,
+            immutable: false,
+            skipCompression: true
+        );
+
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     /**

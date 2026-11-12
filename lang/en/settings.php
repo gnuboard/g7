@@ -94,6 +94,11 @@ return [
             'public' => 'Public disk',
             's3' => 'Amazon S3',
         ],
+        'file_delegation' => [
+            'none' => 'Disabled (PHP sends files)',
+            'x-sendfile' => 'X-Sendfile (Apache mod_xsendfile)',
+            'x-accel-redirect' => 'X-Accel-Redirect (nginx)',
+        ],
         'cache' => [
             'file' => 'File',
             'redis' => 'Redis',
@@ -134,6 +139,20 @@ return [
     'driver_test_partial' => 'Some driver connection tests failed.',
     'driver_test_error' => 'An error occurred while testing driver connections.',
     'unknown_driver' => 'Unknown driver.',
+
+    // Web server file delegation check (driver test step 1, #878) — DriverConnectionTester::testFileDelegation()
+    'driver_test' => [
+        'file_delegation' => [
+            'none' => 'Web server file delegation is off. PHP sends the files.',
+            'apache_ready' => 'mod_xsendfile is loaded in Apache. Check XSendFilePath, then save and finish with "Check actual delivery".',
+            'apache_missing' => 'mod_xsendfile is not loaded in Apache. If you turn this on now, files will be sent with an empty body.',
+            'apache_unknown' => 'The Apache module list cannot be read (e.g. PHP-FPM). Save, then verify with "Check actual delivery".',
+            'nginx_hint' => 'This looks like nginx. Make sure the internal location shown below is added, then save and finish with "Check actual delivery".',
+            'server_mismatch_nginx' => 'This server looks like nginx. Choose X-Accel-Redirect for nginx.',
+            'server_mismatch_apache' => 'This server looks like Apache. Choose X-Sendfile (mod_xsendfile) for Apache.',
+            'server_unknown' => 'The web server type cannot be determined. Save, then verify with "Check actual delivery".',
+        ],
+    ],
 
     // Outbound proxy connection test messages
     'outbound_proxy_test_success' => 'Connected through the proxy. External services will see this IP address.',

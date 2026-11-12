@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Popup\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Extension\Storage\RowDiskStorage;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
@@ -27,6 +28,9 @@ use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
  * 업로드는 언제나 임시 묶음(temp_key)에 들어가고, 팝업에는 등록·수정을 저장할 때만 붙는다 — 저장하지 않고
  * 나가면 사이트 화면은 그대로다. 파일은 플러그인 스토리지(카테고리 `images`)에 두고, 행보다 파일을 먼저 지운다 —
  * 행만 지우고 파일 삭제가 실패하면 아무도 찾지 못하는 고아 파일이 남기 때문이다.
+ *
+ * 주입 스토리지는 「지금 업로드가 갈 디스크」다(공개 자산 디스크 설정 반영, #878). 이미 올린 파일의 존재 확인·서빙·
+ * 썸네일 원본·복제 원본 읽기·삭제는 **행에 기록된 disk** 로 한다(`storageFor()`).
  */
 class PopupImageService
 {
@@ -51,7 +55,7 @@ class PopupImageService
      * PopupImageService 생성자
      *
      * @param  PopupImageRepositoryInterface  $images  이미지 Repository
-     * @param  StorageInterface  $storage  플러그인 스토리지 드라이버
+     * @param  StorageInterface  $storage  플러그인 스토리지 드라이버 (카테고리 `images` 의 업로드 디스크)
      */
     public function __construct(
         private PopupImageRepositoryInterface $images,
@@ -110,7 +114,7 @@ class PopupImageService
                 'created_by' => $actorId,
             ]));
         } catch (\Throwable $e) {
-            $cleaned = $tracked && $this->deletePath($path, ['hash' => $hash]);
+            $cleaned = $tracked && $this->deletePath($path, ['hash' => $hash], $disk);
             if ($cleaned) {
                 $pending->forget($hash);
             }
@@ -257,6 +261,9 @@ class PopupImageService
     /**
      * 이미지 파일을 새 해시로 복제해 다른 팝업에 붙입니다(복사) — 원본을 지워도 복사본이 깨지지 않게 파일까지 따로 둔다.
      *
+     * 원본은 원본 행의 disk 에서 읽고, 복제본은 지금 업로드 디스크(주입 스토리지)에 쓴다 — 공개 자산 디스크를 켠 뒤 복사하면
+     * 복제본은 새 디스크 행이 된다(#878).
+     *
      * 호출한 쪽 트랜잭션 안에서 부른다. 파일을 읽거나 쓰지 못하면 예외를 던져 그 팝업 복사를 되돌리게 하고,
      * 이미 쓴 파일은 호출한 쪽이 `discardFile()` 로 지운다(행은 트랜잭션과 함께 되돌려진다).
      *
@@ -269,7 +276,11 @@ class PopupImageService
      */
     public function duplicate(PopupImage $source, int $popupId, ?int $actorId): PopupImage
     {
-        $contents = $this->storage->get(self::CATEGORY, $source->path);
+        try {
+            $contents = $this->storageFor($source)->get(self::CATEGORY, $source->path);
+        } catch (\Throwable) {
+            $contents = null;
+        }
         if ($contents === null || $contents === false) {
             throw PopupImageCopyException::sourceMissing($source->id);
         }
@@ -302,7 +313,7 @@ class PopupImageService
                 'created_by' => $actorId,
             ]);
         } catch (\Throwable $e) {
-            if ($tracked && $this->deletePath($path, ['source_image_id' => $source->id])) {
+            if ($tracked && $this->deletePath($path, ['source_image_id' => $source->id], $disk)) {
                 $pending->forget($hash);
             }
 
@@ -356,7 +367,7 @@ class PopupImageService
     public function originalExists(PopupImage $image): bool
     {
         try {
-            return $this->storage->exists(self::CATEGORY, (string) $image->path);
+            return $this->storageFor($image)->exists(self::CATEGORY, (string) $image->path);
         } catch (\Throwable) {
             return false;
         }
@@ -375,7 +386,7 @@ class PopupImageService
     public function thumbnailSource(PopupImage $image): ?ThumbnailSource
     {
         return ThumbnailSource::fromStorage(
-            $this->storage,
+            $this->storageFor($image),
             self::CATEGORY,
             (string) $image->path,
             (string) $image->mime,
@@ -398,7 +409,7 @@ class PopupImageService
      */
     public function publicServing(PopupImage $image): ?array
     {
-        $response = $this->storage->response(self::CATEGORY, $image->path, $image->original_name, [
+        $response = $this->storageFor($image)->response(self::CATEGORY, $image->path, $image->original_name, [
             'Content-Type' => $image->mime,
         ]);
 
@@ -451,7 +462,8 @@ class PopupImageService
 
                     continue;
                 }
-                $disk = $this->storage->withDisk($row['disk']);
+                // 대장의 disk 는 고아일 수 있다(그 디스크를 주던 확장 비활성화) — 날 withDisk 는 이후 읽기·삭제가 예외를 던진다
+                $disk = RowDiskStorage::resolve($this->storage, is_string($row['disk'] ?? null) ? $row['disk'] : null);
                 if (! $disk->exists(self::CATEGORY, $row['path']) || $disk->delete(self::CATEGORY, $row['path'])) {
                     $pending->forget($row['hash']);
                     $result['deleted']++;
@@ -478,17 +490,38 @@ class PopupImageService
     /**
      * 이 플러그인 이미지 폴더를 통째로 비웁니다(플러그인을 데이터까지 삭제할 때만).
      *
-     * @return bool 비웠으면 true
+     * 행이 기록한 모든 disk 와 지금 업로드 디스크의 `images` 폴더를 각각 비운다 — 공개 자산 디스크를 켰다 끈 사이트는
+     * 파일이 두 디스크 이상에 흩어져 있다(#878). 같은 디스크로 해석되는 값(고아 disk 는 주입 디스크로 폴백)은 한 번만
+     * 비운다. 한 디스크가 실패해도 나머지는 계속 비우고 false 를 돌려준다.
+     *
+     * @return bool 모두 비웠으면 true
      */
     public function purgeAll(): bool
     {
+        $storages = [$this->storage->getDisk() => $this->storage];
         try {
-            return $this->storage->deleteAll(self::CATEGORY);
+            foreach ($this->images->distinctDisks() as $disk) {
+                $storage = RowDiskStorage::resolve($this->storage, $disk);
+                $storages[$storage->getDisk()] ??= $storage;
+            }
         } catch (\Throwable $e) {
-            Log::error('팝업 이미지 폴더 정리 실패', ['error' => $e->getMessage()]);
-
-            return false;
+            Log::error('팝업 이미지 디스크 목록 조회 실패', ['error' => $e->getMessage()]);
         }
+
+        $ok = true;
+        foreach ($storages as $disk => $storage) {
+            try {
+                if (! $storage->deleteAll(self::CATEGORY)) {
+                    $ok = false;
+                    Log::error('팝업 이미지 폴더 정리 실패', ['disk' => $disk]);
+                }
+            } catch (\Throwable $e) {
+                $ok = false;
+                Log::error('팝업 이미지 폴더 정리 실패', ['disk' => $disk, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $ok;
     }
 
     /**
@@ -499,29 +532,47 @@ class PopupImageService
      */
     private function deleteFile(PopupImage $image): bool
     {
-        return $this->deletePath($image->path, ['image_id' => $image->id]);
+        return $this->deletePath($image->path, ['image_id' => $image->id], $image->disk !== null ? (string) $image->disk : null);
     }
 
     /**
      * 경로로 파일을 지웁니다 — 이미 없는 파일은 지운 것으로 봅니다.
      *
+     * 디스크는 행(또는 업로드·복제 실패 정리 때 그 파일을 쓴 디스크)의 것이다 — 비거나 고아면 주입 디스크(#878).
+     *
      * @param  string  $path  카테고리 안 파일 경로
      * @param  array<string, mixed>  $context  실패 로그에 남길 값
+     * @param  string|null  $disk  파일이 있는 disk (null 이면 주입 디스크)
      * @return bool 파일이 없거나 지웠으면 true
      */
-    private function deletePath(string $path, array $context): bool
+    private function deletePath(string $path, array $context, ?string $disk = null): bool
     {
         try {
-            if (! $this->storage->exists(self::CATEGORY, $path)) {
+            $storage = RowDiskStorage::resolve($this->storage, $disk);
+            if (! $storage->exists(self::CATEGORY, $path)) {
                 return true;
             }
 
-            return $this->storage->delete(self::CATEGORY, $path);
+            return $storage->delete(self::CATEGORY, $path);
         } catch (\Throwable $e) {
             Log::error('팝업 이미지 파일 삭제 실패 — 행 또는 정리 대장을 유지합니다', $context + ['exception' => $e::class]);
 
             return false;
         }
+    }
+
+    /**
+     * 행에 기록된 disk 의 스토리지를 반환합니다 (#878).
+     *
+     * 빈 disk·주입 디스크와 같은 disk·설정에서 사라진 disk(고아)는 주입 스토리지로 물러난다 — 고아 disk 로 드라이버를 만들면
+     * 이후 읽기·응답·삭제가 예외를 던져 무인증 공개 서빙이 500 이 된다(404 가 정상 저하). 판정은 코어 도우미가 소유한다.
+     *
+     * @param  PopupImage  $image  이미지 행
+     * @return StorageInterface 그 행이 저장된 디스크의 스토리지
+     */
+    private function storageFor(PopupImage $image): StorageInterface
+    {
+        return RowDiskStorage::resolve($this->storage, $image->disk !== null ? (string) $image->disk : null);
     }
 
     /**

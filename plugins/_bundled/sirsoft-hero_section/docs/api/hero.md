@@ -57,7 +57,8 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | banners[].description_align | string | `left` | 설명 정렬 |
 | banners[].link_url | string\|null | `/shop` | 이동할 주소(사이트 경로 또는 http(s), 없으면 null) |
 | banners[].link_new_window | boolean | `false` | 새 창 열기 |
-| banners[].images.pc | object | `{"url":"/api/plugins/sirsoft-hero_section/images/FCm6p4tn…` | PC 이미지 `url`·`width`·`height`. `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/…`, 영상 `videos.*.url` 도 같다) |
+| banners[].images.pc | object | `{"url":"/api/plugins/sirsoft-hero_section/images/FCm6p4tn…` | PC 이미지 `url`·`direct_url`·`width`·`height`. `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/…`, 영상 `videos.*.url` 도 같다) |
+| banners[].images.pc.direct_url | string\|null | `null` | 원본 직접 주소(#878) — 공개 자산 디스크(public·CDN)에 올린 행만 채워지고 접두사 없는 절대 주소다. 슬라이더는 `<img src>`·srcset 의 원본 후보에만 쓰고 축소 후보는 `url?size=` 다. 영상 `videos.*.direct_url` 도 같고, 있으면 그 주소로 재생한다 |
 | banners[].images.mobile | object | `{"url":"/api/plugins/sirsoft-hero_section/images/KrjUXDR7…` | 모바일 이미지(없으면 null — PC 를 쓴다) |
 
 **응답 예시**
@@ -117,7 +118,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 
 **설명**
 
-사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width, header_overlay, pagination}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,width,height}, mobile|null}, media_type, youtube_id|null, videos{pc{url,mime}, mobile|null}|null}]}`. `youtube_id` 는 `media_type` 이 `youtube` 일 때만, `videos` 는 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
+사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width, header_overlay, pagination}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,direct_url,width,height}, mobile|null}, media_type, youtube_id|null, videos{pc{url,direct_url,mime}, mobile|null}|null}]}`. `youtube_id` 는 `media_type` 이 `youtube` 일 때만, `videos` 는 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
 
 
 ## 이미지 표시

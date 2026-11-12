@@ -9,9 +9,11 @@ use App\Extension\Support\LifecycleWarnings;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\GzipEncodeResponse;
+use App\Http\Responses\DelegatedFileResponse;
 use App\Http\Responses\FileServingMeta;
 use App\Http\Responses\NotModifiedResponse;
 use App\Models\User;
+use App\Support\FileServing\FileDelegation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -326,12 +328,18 @@ abstract class BaseApiController extends Controller
      *                                생성기(`AssetUrl::{module,plugin,template}Asset()`)의 `$version` 은
      *                                기본이 `null` 이고 코어 호출부 다수가 버전을 넘기지 않아, **버전 없는
      *                                URL 이 immutable 로 나가고 있었다** — 확장을 업데이트해도 방문자
-     *                                브라우저가 옛 파일을 계속 썼다 (11차 G3 라운드).
+     *                                브라우저가 옛 파일을 계속 썼다.
      *                                명시 `true`/`false` 는 그대로 존중한다(공개 스토리지는 `false` 고정).
      * @param  bool  $skipCompression  이 응답을 압축 미들웨어에서 제외할지 — 형제 `streamedFileResponse()`
      *                                 와 같은 인자. 종전에는 이 헬퍼에만 없어 공개 스토리지 컨트롤러가
      *                                 요청 속성을 **직접** 세웠다. 선언 수단이 통로마다 갈리면 한쪽만
-     *                                 바뀌므로 두 헬퍼가 같은 인자를 갖는다 (15차 G3 라운드)
+     *                                 바뀌므로 두 헬퍼가 같은 인자를 갖는다
+     *
+     * 웹서버 위임(7.2.0): 응답은 `DelegatedFileResponse` 다. 환경설정 > 드라이버 「웹서버 파일 위임」
+     * (`core.file_serving.delegation`)이 켜져 있으면 본문 대신 `X-Sendfile`/`X-Accel-Redirect` 헤더를 세워
+     * 웹서버가 파일을 보내고 Range 도 웹서버가 처리한다. ETag·304·Cache-Control·nosniff·Content-Disposition 은
+     * 위임 여부와 무관하게 이 헬퍼가 정한 그대로다. 요청 헤더 `X-Sendfile-Type` 은 보지 않는다
+     * (docs/backend/file-serving-delegation.md).
      * @return BinaryFileResponse|Response 파일 응답 또는 304 응답
      */
     protected function fileResponse(string $filePath, string $mimeType, int $maxAge = 31536000, ?bool $immutable = null, bool $skipCompression = false): BinaryFileResponse|Response
@@ -369,7 +377,7 @@ abstract class BaseApiController extends Controller
         // `File must be readable` 로 던져 무인증 표면이 500 + 스택 로그가 된다 — 링크가 되는
         // 서버의 정적 서빙은 같은 파일에 403 을 준다. 공개 스토리지 통로는 서비스가 먼저
         // 판정해 같은 코드로 돌려주지만(`PublicStorageService::isReadable()`), 나머지 세
-        // 통로(template·module·plugin 자산)는 이 자리가 유일한 방어선이다 (15차 G3 라운드).
+        // 통로(template·module·plugin 자산)는 이 자리가 유일한 방어선이다.
         if (! is_readable($filePath)) {
             abort(403);
         }
@@ -380,7 +388,7 @@ abstract class BaseApiController extends Controller
         // 조건부 요청 처리 — If-None-Match 가 있으면 그것이 우선이고(RFC 9110 §13.1.2),
         // 없을 때만 If-Modified-Since 를 본다. 종전에는 `Last-Modified` 를 내보내면서
         // 그 조건부 요청은 무시해, ETag 를 보내지 않는 프록시가 매번 전문을 받아 갔다 —
-        // 링크가 되는 서버의 정적 서빙에는 없던 성질이다 (3차 G3 라운드 L1).
+        // 링크가 되는 서버의 정적 서빙에는 없던 성질이다.
         // 환경별 캐싱 정책 — 200 과 304 가 **같은** 정책을 실어야 한다. 프레임워크 기본
         // 304 는 `private, must-revalidate` 라, 200 이 `public` 인 자산이 재검증 한 번으로
         // 비공유로 격하된다(공유 캐시·CDN 이 항목을 버리거나 재사용하지 않는다). 정적
@@ -405,11 +413,18 @@ abstract class BaseApiController extends Controller
             }
         }
 
-        $response = response()->file($filePath, [
+        // 웹서버 위임이 켜져 있으면 본문은 웹서버가 보낸다 — 앱 gzip 이 파일을 읽어 본문을 바꿔 치우면
+        // 웹서버가 원본 바이트에 `Content-Encoding: gzip` 을 붙여 보내므로 압축 제외를 선언한다(미들웨어 가드와 이중).
+        if (FileDelegation::active()) {
+            request()->attributes->set(GzipEncodeResponse::SKIP_ATTRIBUTE, true);
+        }
+
+        // `response()->file()` 과 같은 인자(public·자동 Last-Modified)로 만들되, 위임 판정을 앱이 하는 응답이다.
+        $response = new DelegatedFileResponse($filePath, 200, [
             'Content-Type' => $mimeType,
             'Expires' => gmdate('D, d M Y H:i:s', time() + $maxAge).' GMT',
             'ETag' => $etag,
-        ]);
+        ], true, null, false, true);
 
         // Cache-Control 헤더를 수동으로 설정 (기본 헤더 덮어쓰기)
         $response->headers->set('Cache-Control', $cacheControl);
@@ -420,9 +435,9 @@ abstract class BaseApiController extends Controller
         // 무확장자 자산 URL 모드에서는 URL 의 마지막 세그먼트가 `{identifier}` 또는
         // `public-storage` 라, 이름 선언이 없으면 내려받기가 그 이름으로 저장된다. 같은
         // 파일이 자산 URL 모드에 따라 다른 이름을 갖고, 링크가 되는 서버의 정적 서빙과도
-        // 어긋난다 — 이름은 서버가 정하므로 두 모드가 갈릴 이유가 없다. 6차에 공개
-        // 스토리지 통로에만 들어가 있었고 형제 셋(template·module·plugin)은 빠져 있었다
-        // (7차 G3 라운드 C2). 호출부로 내리면 다시 통로마다 갈리므로 여기서 붙인다.
+        // 어긋난다 — 이름은 서버가 정하므로 두 모드가 갈릴 이유가 없다. 나중에 공개
+        // 스토리지 통로에만 들어가 있었고 형제 셋(template·module·plugin)은 빠져 있었다.
+        // 호출부로 내리면 다시 통로마다 갈리므로 여기서 붙인다.
         //
         // `inline` 으로 둔다 — 이 통로는 이미지·CSS 를 화면에 그리는 자리이고 정적 서빙도
         // 첨부를 강제하지 않는다. `attachment` 로 바꾸면 그 화면들이 전부 다운로드가 된다.
@@ -506,7 +521,7 @@ abstract class BaseApiController extends Controller
      * 브라우저가 선언 유형을 무시하고 내용으로 판정하면 이미지로 올린 것이 문서로 실행된다.
      * 링크가 되는 서버의 정적 서빙 설정은 이 헤더를 붙이므로, 이 통로만 빠지면 링크 유무로
      * 위험이 갈린다. 200 과 304 가 같은 자리를 지난다 — 304 는 200 이 실었을 헤더를 함께
-     * 싣는다(RFC 9110 §15.4.5). 호출부로 내리면 열 통로 중 하나가 반드시 빠진다 (15차 G3 라운드).
+     * 싣는다(RFC 9110 §15.4.5). 호출부로 내리면 열 통로 중 하나가 반드시 빠진다.
      *
      * @param  Response|BinaryFileResponse|StreamedResponse  $response  파일 서빙 응답 (200 또는 304)
      * @return void 반환값 없음
@@ -527,7 +542,7 @@ abstract class BaseApiController extends Controller
      * 판정을 호출부가 각자 하지 않고 여기 한 곳에 두는 이유: 종전에는 두 파일 응답 헬퍼의
      * 기본값이 무조건 `true` 였고, 「`?v=` 가 붙으니 괜찮다」는 **가정**이 독블록에만 있었다.
      * 실제로는 확장 자산 생성기의 `$version` 이 기본 `null` 이고 코어 호출부 다수가 버전을
-     * 넘기지 않아 가정이 성립하지 않았다 (11차 G3 라운드).
+     * 넘기지 않아 가정이 성립하지 않았다.
      *
      * 파생 근거는 **요청자가 통제하는 값**이다 — `?v=` 는 서버가 발급한 버전이 아니라
      * URL 에 실려 온 문자열이라, 누구든 아무 값이나 붙여 보낼 수 있다. 그것으로 얻는 것은
@@ -538,7 +553,7 @@ abstract class BaseApiController extends Controller
      * `immutable: false` 고정이다 — 그 통로는 같은 경로의 내용이 교체되는 사용자 업로드물이라
      * 「버전이 붙었으니 불변」이라는 추정 자체가 성립하지 않는다. 같은 성질의 통로(첨부·
      * 확장 이미지 서빙)도 명시 `false` 를 넘긴다. 이 파생은 서버가 버전을 발급하는 자산
-     * URL(확장 번들·템플릿 자산)에만 의미가 있다 (14차 G3 라운드).
+     * URL(확장 번들·템플릿 자산)에만 의미가 있다.
      *
      * @return bool `?v=` 가 비어 있지 않게 실려 있으면 true
      */
@@ -615,7 +630,7 @@ abstract class BaseApiController extends Controller
      * 본문이 있는 응답에만 붙는다 — 304 는 본문이 없어 압축 미들웨어가 아예 건너뛴다.
      * 그래서 종전에는 같은 URL·같은 요청이 200 에서는 `"abc-gzip"`, 304 에서는 `"abc"` 를
      * 내보냈고, 공유 캐시가 gzip 본문을 identity 검증자로 갱신했다 — 200 에서 표현을 갈라
-     * 놓은 이유가 그 자리에서 사라진다 (7차 G3 라운드 C5).
+     * 놓은 이유가 그 자리에서 사라진다.
      *
      * 어느 표현인지는 **클라이언트가 알려 준다**. 이 자리는 이미 매치가 성립한 뒤이므로,
      * 매치된 후보가 접미사를 달고 있었다면 그 클라이언트가 가진 것이 압축본이다. 압축
@@ -696,14 +711,14 @@ abstract class BaseApiController extends Controller
         // 문자열로 판정해 같은 URL 의 두 응답이 다른 축을 광고했다. 형제 `fileResponse()`
         // 가 `$mimeType` 인자를 근거로 쓰듯 여기서도 같은 값을 받고, 200 에도 그 값을 세워
         // 두 응답이 같은 근거에서 나오게 한다. 어느 쪽에도 없으면 추정하지 않는다 —
-        // 추정은 곧 사본이고, 그 사본이 갈리는 순간 이 비대칭이 되돌아온다 (14차 G3 라운드).
+        // 추정은 곧 사본이고, 그 사본이 갈리는 순간 이 비대칭이 되돌아온다.
         //
         // 빈 문자열·공백만의 인자는 「모름」과 같다. `??=` 는 `null` 만 폴백해, 행 `mime_type` 이
         // 빈 문자열인 첨부(구형 업로드·외부 이관)에서 여기가 예외를 던져 무인증 표면이 500
-        // 이었다 (15차 G3 라운드).
+        // 이었다.
         //
         // 어느 쪽도 비어 있으면 `application/octet-stream` 이다 — 정적 서빙이 **확장자 표에
-        // 없는 파일**에 주는 유형과 같다(제품 결정, 16차 G3 라운드). 종전에는 이 자리가
+        // 없는 파일**에 주는 유형과 같다(제품 결정). 종전에는 이 자리가
         // `LogicException` 을 던졌는데, 그 예외는 개발자에게 「인자를 넘겨라」를 말하는 것이지
         // 방문자에게는 무인증 표면의 500 일 뿐이고, 행 `mime_type` 이 비어 있는 첨부는 코드
         // 결함이 아니라 데이터 상태다. 알 수 없으면 내려받기 — 내용을 **스니핑하지 않는다**는
@@ -785,7 +800,7 @@ abstract class BaseApiController extends Controller
             //
             // 형제 두 지점(`fileResponse()`·`notModifiedResponse()`)은 둘 다
             // `negotiatedEtag()` 를 거치고 그 사유를 독블록에 적어 두었는데 이 경로만
-            // 빠져 있었다 (10차 G3 라운드 B10-1).
+            // 빠져 있었다.
             $notModifiedResponse = new NotModifiedResponse('', 304);
             $notModifiedResponse->headers->set(
                 'ETag',
@@ -826,7 +841,7 @@ abstract class BaseApiController extends Controller
      *
      * 열한 통로(코어 첨부·레이아웃 첨부·사이트맵·게시판 3·페이지 2·에디터 이미지·이커머스 4)가
      * 전부 「서비스 메타 → `streamedFileResponse()`」 형태인데, 그 사이의 두 가지가 통로마다
-     * 사본이었다 (16차 G3 라운드 E-6·E-7):
+     * 사본이었다:
      *
      *  - **키 검증** — `array_key_exists` 가드가 두 곳에만 있었고 나머지는 없었다. 서비스가
      *    키를 빠뜨리면 가드 없는 통로는 배열 접근 경고가 `ErrorException` 으로 올라 무인증
@@ -888,8 +903,8 @@ abstract class BaseApiController extends Controller
      *
      * 파일이 아니라 문자열이라 두 파일 응답 헬퍼를 지날 수 없는 통로의 자리다. 그래도 파일
      * 서빙 응답 계약 중 **유형 선언과 `nosniff`** 는 같아야 한다 — 편집기 미리보기 CSS 통로가
-     * `response($css)->header('Content-Type', …)` 로 직접 만들어 그 헤더가 빠져 있었다
-     * (16차 G3 라운드 E-8). 캐싱 헤더는 붙이지 않는다 — 이 통로의 캐시 키(mtime·확장 캐시
+     * `response($css)->header('Content-Type', …)` 로 직접 만들어 그 헤더가 빠져 있었다.
+     * 캐싱 헤더는 붙이지 않는다 — 이 통로의 캐시 키(mtime·확장 캐시
      * 버전)는 컨트롤러가 소유하고, 응답은 매 요청 재생성 가능한 값이다.
      *
      * @param  string  $content  응답 본문
@@ -992,7 +1007,7 @@ abstract class BaseApiController extends Controller
         // `ETag` 도 200 과 같은 축이다 — 형제 `fileResponse()` 와 같은 사유로, 클라이언트가
         // 보유한 표현의 검증자를 그대로 돌려준다. JSON 은 압축 대상이라 200 에는 `-gzip`
         // 접미사가 붙는데 304 는 압축 미들웨어가 건너뛰므로(본문이 없다), 그대로 두면 같은
-        // 요청이 두 값을 광고한다 (7차 G3 라운드 C5).
+        // 요청이 두 값을 광고한다.
         $clientEtag = request()->header('If-None-Match');
         $responseEtag = $clientEtag !== null && $clientEtag !== ''
             ? $this->negotiatedEtag($clientEtag, $etag)

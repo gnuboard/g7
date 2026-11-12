@@ -182,10 +182,12 @@ class ProductExportType extends AbstractExportType
             $fields = array_merge($fields, $this->declaredFields(ProductOption::class, 'option', static fn (object $row) => $row, $groups['option'], [self::UNIT_OPTION]));
         }
 
-        // 파일은 사이트 밖(스프레드시트)에서 열리므로 상대 경로(`/api/...`)는 사이트 주소를 붙여 절대 주소로 낸다
+        // 파일은 사이트 밖(스프레드시트)에서 열리므로 상대 경로(`/api/...`)는 사이트 주소를 붙여 절대 주소로 낸다.
+        // 내보내기 소비자는 파일 자체가 필요하므로 썸네일용 서빙 주소(getThumbnailUrl)가 아니라 원본 주소
+        // (download_url — 공개 자산 디스크면 CDN 직접 주소)를 낸다
         $fields[] = $this->computed('product.thumbnail_url', ExportFieldType::STRING, false,
             static function (object $row) use ($productOf) {
-                $url = $productOf($row)?->getThumbnailUrl();
+                $url = $productOf($row)?->getThumbnailDownloadUrl();
 
                 return is_string($url) && str_starts_with($url, '/') && ! str_starts_with($url, '//') ? rtrim(SiteUrl::base(), '/').$url : $url;
             }, 'thumbnail');

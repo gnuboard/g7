@@ -6,6 +6,8 @@ import type { OverlayBox, Overlays, PublicOverlayBox } from '../../lib/overlays'
 /** 관리자 폼의 이미지 한 장 (업로드 응답 모양) */
 interface FormImage {
   url?: string;
+  /** 원본 직접 주소 (공개 자산 디스크 행만) — 사용자 화면과 같은 주소로 미리 그린다 (#878) */
+  direct_url?: string | null;
   width?: number | null;
   height?: number | null;
 }
@@ -228,8 +230,8 @@ export const PopupPreview: React.FC<PopupPreviewProps> = ({ device = 'pc', setti
       return SAMPLES;
     }
     const isHtml = form.content_type === 'html';
-    const pc = form.images?.pc?.url ? { url: form.images.pc.url, width: form.images.pc.width ?? null, height: form.images.pc.height ?? null } : null;
-    const mobile = form.images?.mobile?.url ? { url: form.images.mobile.url, width: form.images.mobile.width ?? null, height: form.images.mobile.height ?? null } : null;
+    const pc = form.images?.pc?.url ? { url: form.images.pc.url, direct_url: form.images.pc.direct_url ?? null, width: form.images.pc.width ?? null, height: form.images.pc.height ?? null } : null;
+    const mobile = form.images?.mobile?.url ? { url: form.images.mobile.url, direct_url: form.images.mobile.direct_url ?? null, width: form.images.mobile.width ?? null, height: form.images.mobile.height ?? null } : null;
 
     return [{
       id: 0,

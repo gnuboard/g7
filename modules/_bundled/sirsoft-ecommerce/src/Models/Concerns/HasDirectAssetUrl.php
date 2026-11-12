@@ -23,6 +23,18 @@ use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
  * 이후에도 그 파일에 접근할 수 있습니다.** 직접 URL 은 저장소의 파일을 직접 가리키므로
  * 응답에서 감추는 것으로는 회수되지 않습니다. 노출 상태를 접근 차단 수단으로 써야 하는
  * 운용이라면 그 카테고리에 공개 자산 디스크를 적용하지 않아야 합니다.
+ *
+ * 두 주소 — 이 trait 은 용도가 다른 두 가상 attribute 를 냅니다.
+ *
+ * - `download_url`: 원본 한 장. 행 disk 가 직접 URL 을 낼 수 있으면 그 주소(CDN),
+ *   아니면 API 서빙 경로. 확대 창·다운로드·내보내기처럼 파일 자체가 필요한 자리용.
+ * - `preview_url`: 썸네일 기준. 항상 API 서빙 경로. 썸네일 파이프(`thumbPreset`·
+ *   `?size=`)는 같은 출처 `/api/` 주소에만 걸리므로, 직접 URL 을 넘기면 썸네일 없이
+ *   원본이 그대로 나간다. API 경로에 `?size=` 를 붙이면 서버가 썸네일을 만들고
+ *   공개 썸네일 디스크가 있으면 그 주소로 302 한다 — 목록·미리보기·og·주문 스냅샷용.
+ *
+ * 직접 URL 은 행에 기록된 disk 의 `url()` 만 봅니다. 운영자가 공개 자산 디스크
+ * 설정을 끈 뒤에도 그 디스크에 남은 행은 계속 직접 URL 을 냅니다(파일도 계속 열림).
  */
 trait HasDirectAssetUrl
 {
@@ -34,6 +46,19 @@ trait HasDirectAssetUrl
     public function getDownloadUrlAttribute(): string
     {
         return $this->resolveDirectUrl() ?? $this->apiDownloadUrl();
+    }
+
+    /**
+     * `preview_url` 가상 attribute — 항상 API 서빙 URL(썸네일 기준).
+     *
+     * 직접 URL 은 썸네일 파이프의 대상이 아니므로 목록·미리보기 화면은 이 주소에
+     * `thumbPreset`/`?size=` 를 건다. 직접 URL 이 없는 행은 `download_url` 과 같다.
+     *
+     * @return string API 서빙 URL
+     */
+    public function getPreviewUrlAttribute(): string
+    {
+        return $this->apiDownloadUrl();
     }
 
     /**

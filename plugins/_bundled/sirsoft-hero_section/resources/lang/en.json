@@ -26,7 +26,7 @@
     },
     "settings": {
         "title": "Hero Section Settings",
-        "description": "Set the banner image upload limit and the banner cache time on user screens.",
+        "description": "Sets the banner image upload limit, the banner cache time on user screens, and the public asset disk for banner files.",
         "fields": {
             "max_upload_mb": {
                 "label": "Maximum image size (MB)",
@@ -41,6 +41,12 @@
             "public_cache_minutes": {
                 "label": "Banner cache time on user screens (minutes)",
                 "hint": "Set 0 to disable caching (0–60). Saving, deleting or reordering banners is reflected immediately, and the cache also expires at scheduled start and end times."
+            },
+            "public_asset_disk": {
+                "label": "Public Asset Disk",
+                "hint": "Select to store banner images and videos on a different disk. Leave empty to follow the core public asset disk setting. A change applies to newly uploaded files; files already uploaded keep being served from the disk they were uploaded to. The public disk serves files without PHP only when storage:link exists on the server.",
+                "follow_core": "Follow core setting",
+                "unavailable": "The saved disk ({disk}) is no longer available, so banner files are being streamed. Select another disk and save to change it."
             }
         }
     },

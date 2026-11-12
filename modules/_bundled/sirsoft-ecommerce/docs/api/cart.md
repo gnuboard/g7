@@ -257,7 +257,7 @@ _단건 응답: `data` 객체의 필드._
 | additional_options_total | integer | `0` | 추가옵션 단위 추가금 합계 (수량 미곱셈, 기본 통화 기준) |
 | created_at | string | `2026-07-14 10:00:00` | 담은 일시 (사용자 타임존 포맷) |
 | updated_at | string | `2026-07-14 10:00:00` | 최종 수정 일시 (사용자 타임존 포맷) |
-| product | object\|null | `{"id":201,"name":"티셔츠", …}` | 상품 요약 (`id`, `name`, `product_code`, `thumbnail_url`, `sales_status`, `display_status`) |
+| product | object\|null | `{"id":201,"name":"티셔츠", …}` | 상품 요약 (`id`, `name`, `product_code`, `thumbnail_url`(대표 이미지 썸네일 기준 — 항상 API 서빙 경로), `sales_status`, `display_status`) |
 | product_option | object\|null | `{"id":1086,"selling_price":19000, …}` | 옵션 요약 (`id`, `option_code`, `option_name`, `option_name_localized`, `option_values`, `option_values_localized`, `list_price`, `list_price_formatted`, `multi_currency_list_price`, `selling_price`, `selling_price_formatted`, `multi_currency_selling_price`, `discount_rate`, `stock_quantity`, `is_active`) |
 | available | boolean | `true` | 현재 구매 가능 여부 (`Product::isPurchasable()` 이고 담은 옵션이 판매 중(`is_active`)일 때 `true`) |
 | unavailable_reason | string\|null | `sold_out` | 구매 불가 사유 (판매상태 `suspended`/`sold_out`/`coming_soon` 또는 전시상태 `hidden`. 상품은 판매 중이지만 담은 옵션이 판매 중지면 `suspended`. 구매 가능 시 `null`) |

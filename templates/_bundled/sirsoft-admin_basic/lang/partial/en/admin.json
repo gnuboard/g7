@@ -2507,6 +2507,23 @@
         "disk": "Disk",
         "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used."
       },
+      "file_delegation": {
+        "title": "Web Server File Delegation",
+        "desc": "Let the web server send files stored on this server — template, module and plugin assets, public storage files, extension icons, hero section banner videos and local media in post bodies — instead of PHP reading and sending them. Range requests (video seeking, resumed downloads) are handled by the web server too. Web server configuration is required. Files on remote disks (S3) and attachment downloads are not covered.",
+        "mode": "Delegation method",
+        "accel_prefix": "Internal location prefix",
+        "accel_prefix_desc": "The nginx internal location path. It must start and end with /; use a name that is hard to guess from outside. The app builds the mapping (X-Accel-Mapping) from this prefix and the install location.",
+        "apache_guide": "Install and enable mod_xsendfile in Apache (e.g. a2enmod xsendfile), add the two lines below to the site configuration, then reload Apache.",
+        "nginx_guide": "Add the location below to the server block of the nginx site configuration, then reload nginx. Without internal, the whole install folder is exposed.",
+        "saved_differs": "The value on screen is not applied yet. \"Check actual delivery\" tests the applied settings, so save first.",
+        "test_hint": "\"Check configuration\" only looks at the web server type and modules of this server and does not block saving. After saving, use \"Check actual delivery\" to confirm the web server sends files.",
+        "test_button": "Check configuration",
+        "test_mapping": "Mapping the app will send (X-Accel-Mapping): {{mapping}}",
+        "probe_button": "Check actual delivery",
+        "probe_ok": "The web server sent the file. Delegation is working.",
+        "probe_failed": "The file body was not received. Check the web server configuration or set the delegation method back to \"Disabled\".",
+        "recover_hint": "If screen assets or images stop loading after turning this on, save the delegation method as \"Disabled\". If you cannot reach the admin screen, change file_delegation to none in storage/app/settings/drivers.json on the server."
+      },
       "cache": {
         "title": "Cache",
         "desc": "Configure application cache driver settings.",

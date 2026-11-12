@@ -252,7 +252,7 @@
                                 "type": "basic",
                                 "name": "Img",
                                 "props": {
-                                    "src": "{{category?.data?.images?.[0]?.download_url ?? ''}}",
+                                    "src": "{{category?.data?.images?.[0]?.preview_url ?? category?.data?.images?.[0]?.download_url ?? ''}}",
                                     "thumbPreset": "lg",
                                     "loading": "eager",
                                     "alt": "{{category?.data?.images?.[0]?.alt_text ?? category?.data?.name_localized ?? ''}}",

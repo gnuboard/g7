@@ -167,8 +167,8 @@ _단건 응답: `data` 객체의 필드._
 | pagination | object | `{"pagination_result_cap":10000,"pagination_max_page":1000}` | 목록 한계값 카테고리 — 총 건수를 정확히 세는 상한과 직접 요청할 수 있는 최대 페이지 번호 |
 | system | object | `{"execution_mode":"auto","cron_mode":"auto","cron_allowed…` | 실행 방식·예약 작업 카테고리 — 커맨드 실행 모드와 웹 크론 설정. 호출 번호(토큰)는 이 응답에 실리지 않는다 |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
-| available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 열두 필드로 구성 |
+| available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분), `file_delegation` 은 웹서버 파일 위임 방식 선택지 (none/x-sendfile/x-accel-redirect, #878) |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
@@ -181,6 +181,7 @@ _단건 응답: `data` 객체의 필드._
 | _meta.thumbnail_disk_options | object | `{"public":[{"id":"thumbnails","label":{"ko":"서버 비공개 저장소 (기본)",…}},{"id":"public",…}],"gated":[{"id":"thumbnails",…},{"id":"s3",…}]}` | 업로드 탭 썸네일 「저장 위치」 선택지 (#869). `public` 은 `thumbnails` 와 공개 자산 디스크 카탈로그(`available_drivers.public_asset` 에서 `none` 제외), `gated` 는 `thumbnails` 와 `s3`(이 서버에서 S3 어댑터를 쓸 수 있을 때만). `label` 은 `available_drivers` 와 같은 로케일 맵. 저장 검증(`upload.thumbnail_disk_public`/`_gated`)이 같은 목록을 쓴다 |
 | _meta.thumbnail_server_defaults | object | `{"generate_per_minute":120,"lock_wait_seconds":10,"max_source_pixels":16000000,"pregenerate_batch":20,"pregenerate_time_budget":15,"purge_time_budget":10}` | 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓰는 값 — `.env` 의 `G7_THUMBNAIL_*` 가 있으면 그 값, 없으면 기본값 (`config('core.thumbnail_server_defaults')`). 화면은 칸의 placeholder 로 보인다 (#869) |
 | _meta.search_scopes | array | `[{"scope":"core.site","owner":"core","owner_label":"코어","label":"통합 검색","default_max_count":10,"default_retention_days":0}]` | 개인정보 탭 「최근 검색어」 카드의 범위 메타(7.1.5) — 코어 `core.site` + 활성 모듈·플러그인이 manifest `search_scopes` 로 선언한 범위, 선언 순서. `owner` 는 `core`·`module:{id}`·`plugin:{id}`, `label`·`owner_label` 은 요청 언어 글자, `default_*` 는 선언값(없으면 10개·0=기한 없음) |
+| _meta.file_delegation | object | `{"mode":"none","base_path":"/var/www/g7","accel_prefix":"/_g7_sendfile/","accel_mapping":"/var/www/g7/=/_g7_sendfile/","nginx_alias_path":"/var/www/g7"}` | 드라이버 탭 「웹서버 파일 위임」 카드가 읽는 메타 (#878). `mode`: **지금 적용 중인** 위임 방식(저장값이 아니라 `.env` 잠금까지 반영한 `core.file_serving.delegation`) · `base_path`: 설치 위치 실경로(심볼릭 링크를 푼 값 — Apache `XSendFilePath`·nginx `alias` 안내에 쓴다) · `accel_prefix`: nginx internal 위치 접두사 · `accel_mapping`: 앱이 만드는 `X-Accel-Mapping` 값(`<실경로>/=<접두사>`) · `nginx_alias_path`: nginx `alias` 안내에 쓰는 실경로(구분자를 `/` 로 바꾼 값 — Windows 경로도 nginx 문법대로 적히게). 상세: [file-serving-delegation.md](../file-serving-delegation.md) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -475,6 +476,8 @@ HTTP/1.1 200
 | drivers.log_level | body | string | 아니오 | — | 로그 레벨 (debug/info/warning/error 등) |
 | drivers.log_days | body | integer | 아니오 | min 1, max 365 | 로그 파일 보관 일수 |
 | drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
+| drivers.file_delegation | body | string | 아니오 | max 50, `available_drivers.file_delegation` 의 id (none/x-sendfile/x-accel-redirect) | 웹서버 파일 위임 방식 (기본 none, #878). 로컬 파일 응답의 본문을 웹서버가 보내게 한다. 카탈로그에 없는 값은 422(`validation.settings.file_delegation_invalid`). `.env` 의 `G7_FILE_DELEGATION` 과 짝이며, `.env` 우선 모드에서 그 값이 있으면 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
+| drivers.file_delegation_accel_prefix | body | string | `drivers.file_delegation` 이 `x-accel-redirect` 면 예 | max 255, `/` 로 시작하고 끝나며 세그먼트는 영숫자와 `._-` (점만으로 된 세그먼트 불가) | nginx internal 위치 접두사 (기본 `/_g7_sendfile/`). 앞뒤 공백을 떼고 끝 `/` 를 붙여 저장한다. 누락은 `validation.settings.file_delegation_accel_prefix_required`, 형식 오류는 `validation.settings.file_delegation_accel_prefix_format` 로 422. `.env` 의 `G7_FILE_DELEGATION_ACCEL_PREFIX` 와 짝 |
 | identity.default_provider | body | string | 아니오 | max 100 | 본인인증 기본 프로바이더 (목적별로 지정되지 않은 경우 사용). 예: `g7:core.mail` |
 | identity.purpose_providers | body | array | 아니오 | — | 본인인증 목적(Purpose)별 프로바이더 매핑. 미지정 목적은 기본 프로바이더를 사용 |
 | identity.challenge_ttl_minutes | body | integer | 아니오 | min 1, max 1440 | 발급된 인증 코드/링크(challenge)의 유효시간 (분) |
@@ -701,6 +704,8 @@ Content-Type: application/json
     "drivers.log_level": "예시값",
     "drivers.log_days": 1,
     "drivers.public_asset_disk": "예시값",
+    "drivers.file_delegation": "none",
+    "drivers.file_delegation_accel_prefix": "/_g7_sendfile/",
     "identity.default_provider": "예시값",
     "identity.purpose_providers": [
         "예시값"
@@ -1851,6 +1856,71 @@ HTTP/1.1 200
 715파일·40MB 복사와 확장 번들 재병합이 요청 안에서 동기로 수행됩니다. 서버는 실행 시간을 게시 락 TTL(300초)만큼 확보하고 클라이언트가 끊어도 게시를 끝내지만, FPM·nginx 타임아웃이 그보다 짧으면 응답이 먼저 끊길 수 있습니다 — 그 경우에도 게시는 계속되므로 상태 조회로 결과를 확인합니다.
 
 
+### GET /api/admin/settings/file-delegation-probe
+<!-- @generated:start:api.admin.settings.file-delegation-probe -->
+- **라우트명**: `api.admin.settings.file-delegation-probe`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@fileDelegationProbe`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/file-delegation-probe HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 고정 JSON 파일(`resources/probes/file-delegation-probe.json`)의 `data` 객체._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| probe | string | `g7-file-delegation` | 화면이 본문 수신을 판정하는 고정 값. 이 값이 오지 않으면 미구성이다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+Content-Type: application/json
+Cache-Control: no-store, private
+```
+
+```json
+{
+    "success": true,
+    "message": "file-delegation-probe",
+    "data": {
+        "probe": "g7-file-delegation"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+| 404 | Not Found | 위임이 nginx(X-Accel-Redirect)인데 웹서버에 internal location 이 없는 경우 — 웹서버가 낸다 |
+
+<!-- @generated:end -->
+
+**설명**
+
+웹서버 파일 위임(#878)이 실제로 동작하는지 확인하는 2단계 검사입니다. 코어 파일 헬퍼(`fileResponse()`)로 작은 JSON 파일을 내보내므로 **저장된(적용 중인) 위임 설정**으로 나갑니다 — 위임이 켜져 있으면 앱은 본문 대신 `X-Sendfile`/`X-Accel-Redirect` 헤더만 세우고, 웹서버가 그 헤더를 소비해 파일을 보내야 본문이 도착합니다.
+
+- 본문이 비어 있다(헤더에 `X-Sendfile`·`X-Accel-Redirect` 가 그대로 보인다) → 웹서버가 위임 헤더를 모른다(Apache `mod_xsendfile` 미설치·`XSendFile Off`).
+- 404 → nginx internal location 이 없거나 경로가 다르다.
+- 본문의 `data.probe` 가 `g7-file-delegation` → 위임이 동작한다(위임이 꺼져 있어도 이 값이 오며, 그때는 PHP 가 보낸 것이다).
+
+응답은 매번 새로 받아야 하므로 `Cache-Control: no-store` 입니다. 서버가 자기 자신에게 요청을 보내 판정하는 방식은 아웃바운드 정책·공유 호스팅 제약 때문에 쓰지 않고, 관리자 브라우저가 직접 받습니다. 설정 방법: [file-serving-delegation.md](../file-serving-delegation.md).
+
 ### GET /api/admin/settings/trusted-proxy
 <!-- @generated:start:api.admin.settings.trusted-proxy -->
 - **라우트명**: `api.admin.settings.trusted-proxy`
@@ -2457,6 +2527,8 @@ HTTP/1.1 200
 | websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버(백엔드 발송용) 호스트 주소 — 미입력 시 클라이언트 값으로 폴백 |
 | websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 — 미입력 시 클라이언트 값으로 폴백 |
 | websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https) — 미입력 시 클라이언트 값으로 폴백 |
+| file_delegation | body | string | 아니오 | none/x-sendfile/x-accel-redirect | 웹서버 파일 위임 방식 — 실리면 `results.file_delegation` 정적 판정을 낸다(#878) |
+| file_delegation_accel_prefix | body | string | 아니오 | max 255, 저장 규칙과 같은 형식 | nginx internal 위치 접두사 — 비우면 적용 중인 값 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_driver_connection_validation_rules`).
 
@@ -2465,6 +2537,8 @@ HTTP/1.1 200
 > S3 테스트는 Flysystem 어댑터(`league/flysystem-aws-s3-v3`) 존재를 선검사하며, `s3_endpoint`/`s3_use_path_style` 이 실제 아웃바운드 대상에 반영됩니다.
 
 > 사용 불능 드라이버(어댑터 클래스·PHP 확장 부재)는 저장/테스트 모두 422 (`validation.settings.driver_unusable`) 로 거부됩니다.
+
+> 웹서버 파일 위임(`file_delegation`) 판정은 연결 시험이 아니라 **정적 판정**입니다(#878). 확정할 수 있는 실패만 `success=false` 로 냅니다 — Apache 인데 `mod_xsendfile` 이 로드되어 있지 않다(`apache_get_modules()` 로 읽을 수 있을 때), 고른 방식과 웹서버 종류(`SERVER_SOFTWARE`)가 어긋난다. 그 밖(PHP-FPM 처럼 모듈 목록을 못 읽는 경우, nginx 인데 internal location 유무를 모르는 경우)은 `success=true` 와 「저장한 뒤 실제 전송 확인」 안내를 냅니다. 실제 전송은 [GET /api/admin/settings/file-delegation-probe](#get-apiadminsettingsfile-delegation-probe) 로 확인합니다.
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_driver_connection_validation_rules`).
 
@@ -2512,11 +2586,12 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| results | object | `{"redis":{"success":true,"message":"Redis 서버에 성공적으로 연결되었습니다.","latency":"3ms"}}` | 드라이버별 테스트 결과 맵. 키는 실제 테스트가 수행된 드라이버(`s3`/`redis`/`memcached`/`websocket`)만 포함 — 요청 설정에서 해당 드라이버를 쓰지 않으면 키 자체가 없음 |
+| results | object | `{"redis":{"success":true,"message":"Redis 서버에 성공적으로 연결되었습니다.","latency":"3ms"}}` | 드라이버별 테스트 결과 맵. 키는 실제 테스트가 수행된 드라이버(`s3`/`redis`/`memcached`/`websocket`/`file_delegation`)만 포함 — 요청 설정에서 해당 드라이버를 쓰지 않으면 키 자체가 없음 |
 | results.{driver}.success | boolean | `true` | 해당 드라이버 연결 성공 여부 |
 | results.{driver}.message | string | `Redis 서버에 성공적으로 연결되었습니다.` | 결과 메시지 (성공/실패 사유 — 설정 누락·확장 미설치·인증 실패 등) |
 | results.{driver}.latency | string | `3ms` | 성공 시에만 포함. 연결 왕복 소요 시간 |
 | results.{driver}.error | string | `Connection refused` | 실패 시에만 포함. 원본 예외 메시지 |
+| results.file_delegation.details | object | `{"mode":"x-accel-redirect","server":"nginx","module":null,"base_path":"/var/www/g7","accel_prefix":"/_g7_sendfile/","accel_mapping":"/var/www/g7/=/_g7_sendfile/"}` | `file_delegation` 을 보냈을 때만. `server` 는 apache/nginx/unknown, `module` 은 mod_xsendfile 로드 여부(모듈 목록을 못 읽으면 null) |
 | all_passed | boolean | `true` | 수행된 모든 드라이버 테스트가 성공했는지 여부. `false` 여도 HTTP 200 으로 응답하며 message 가 `일부 드라이버 연결 테스트가 실패했습니다.` 로 바뀜 |
 
 **응답 예시**

@@ -10,7 +10,9 @@ use Plugins\Sirsoft\Ckeditor5\Services\ImageThumbnailSourceProvider;
  *
  *  - `core.thumbnail.filter_url_patterns`: 화면·SEO 가 `?size=` 를 붙여도 되는 서빙 경로에 본문 이미지
  *    주소를 더한다. 등록하지 않으면 본문 이미지 규격(기본 lg)·srcset 이 이 주소를 건너뛰어 원본이 나간다.
- *    공개 자산 디스크(CDN) 직접 주소로 박힌 본문 이미지는 이 경로가 아니므로 그대로 원본이다.
+ *    공개 자산 디스크(CDN) 직접 주소로 박힌 본문 이미지는 이 경로가 아니다 — 그 이미지는 업로드 때
+ *    `ImageUploadService::responsiveUrls()` 가 내린 API 주소(`?size=`) 후보를 편집기가 본문 `srcset` 으로
+ *    저장해 썸네일을 받는다(원본 `src` 는 직접 주소). 이 기능 이전에 저장된 본문은 원본 그대로다.
  *  - `core.thumbnail.filter_source_providers`: 캐시 관리(공개 위치 집계·비우기)와 「기존 이미지 썸네일
  *    만들기」가 본문 이미지 원본을 알게 한다.
  *

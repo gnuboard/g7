@@ -475,3 +475,44 @@ describe('유튜브 주소·동의 판정', () => {
     expect(marketingAllowed(null)).toBe(false);
   });
 });
+
+/**
+ * 공개 자산 디스크 영상(#878) — `direct_url` 이 있으면 `<video src>` 와 대표 이미지(poster)를 직접 주소로 둔다. 범위 요청(탐색·이어받기)을
+ * PHP 가 아니라 웹서버·CDN 이 받는다. (매니페스트 public-asset-disk.yaml)
+ */
+describe('HeroSlider 공개 자산 디스크 영상', () => {
+  beforeEach(() => {
+    (window as any).G7Core = { t: (key: string) => key };
+    mockMedia();
+    Object.defineProperty(HTMLMediaElement.prototype, 'play', { configurable: true, value: vi.fn(() => Promise.resolve()) });
+    Object.defineProperty(HTMLMediaElement.prototype, 'pause', { configurable: true, value: vi.fn() });
+  });
+
+  afterEach(() => {
+    cleanup();
+    delete (window as any).G7Core;
+  });
+
+  // @scenario surface=video_src
+  // @effects hero_video_src_uses_direct_url
+  it('영상·대표 이미지에 direct_url 이 있으면 그 주소로 재생하고 그린다', () => {
+    const cdnBanner = banner(1, {
+      images: { pc: { url: '/img/pc-1.jpg', direct_url: 'https://cdn.example.com/pc-1.jpg', width: 1920, height: 640 }, mobile: null },
+      media_type: 'video',
+      videos: { pc: { url: '/vid/pc-1.mp4', direct_url: 'https://cdn.example.com/pc-1.mp4', mime: 'video/mp4' }, mobile: null },
+    });
+    const { container } = render(<HeroSlider banners={[cdnBanner]} settings={{}} />);
+    const video = container.querySelector('video.hs-slider__video');
+
+    expect(video?.getAttribute('src')).toBe('https://cdn.example.com/pc-1.mp4');
+    expect(video?.getAttribute('poster')).toBe('https://cdn.example.com/pc-1.jpg');
+  });
+
+  // @scenario surface=video_src
+  // @effects hero_video_src_uses_direct_url
+  it('direct_url 이 없으면 종전처럼 공개 API 주소로 재생한다', () => {
+    const { container } = render(<HeroSlider banners={[videoBanner(1)]} settings={{}} />);
+
+    expect(container.querySelector('video.hs-slider__video')?.getAttribute('src')).toBe('/vid/pc-1.mp4');
+  });
+});

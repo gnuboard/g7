@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { PopupImage } from './types';
 import { overlayStyle, type PublicOverlayBox } from './overlays';
 import { sitePath } from '../apiUrl';
-import { responsiveSrcset } from './thumbnail';
+import { mediaSrc, responsiveSrcset } from './thumbnail';
 
 /** 이미지 프레임 props */
 export interface ImageFrameProps {
@@ -47,9 +47,11 @@ export const ImageFrame: React.FC<ImageFrameProps> = ({ image, alt, eager = fals
   const measured = natural && natural.src === image.url ? natural : null;
   const size = known ?? measured;
   const ratio = size ? size.w / size.h : null;
-  const src = sitePath(image.url);
+  // 썸네일 후보의 기준은 공개 API 주소(같은 출처), 원본 한 장(src·srcset 원본 후보)은 직접 주소가 있으면 그것 (#878)
+  const api = sitePath(image.url);
+  const src = sitePath(mediaSrc(image) ?? image.url);
   // 원본 가로를 알 때만 — 모르면 받은 뒤 naturalWidth 로 비율을 재는데, 가로 기술자 후보가 그 값을 바꾸지 않게 원본 하나만 쓴다
-  const srcSet = sizes && known ? responsiveSrcset(src, known.w) : undefined;
+  const srcSet = sizes && known ? responsiveSrcset(api, known.w, src) : undefined;
 
   useEffect(() => {
     if (ratio) onRatio?.(ratio);

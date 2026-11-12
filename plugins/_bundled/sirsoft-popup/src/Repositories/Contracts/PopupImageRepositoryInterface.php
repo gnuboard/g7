@@ -107,4 +107,11 @@ interface PopupImageRepositoryInterface
      * @return Collection<int, PopupImage> 이미지 목록
      */
     public function chunkAttachedImages(array $mimeTypes, int $afterId, int $limit): Collection;
+
+    /**
+     * 행에 기록된 disk 이름을 중복 없이 반환합니다 — 「데이터까지 삭제」 때 모든 디스크의 폴더를 비우는 데 쓴다.
+     *
+     * @return array<int, string> disk 이름 (빈 값 제외)
+     */
+    public function distinctDisks(): array;
 }

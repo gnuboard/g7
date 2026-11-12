@@ -69,5 +69,49 @@ class ImageUrlBasePrefixTest extends PluginTestCase
         $public = PublicPopupPresenter::present($popup, 'ko');
         $this->assertSame('/g7'.$api.'pc', $public['image']['pc']['url']);
         $this->assertSame('/g7'.$api.'m', $public['image']['mobile']['url']);
+        // 행 disk 가 없으면(옛 행·직접 URL 불가) 직접 주소는 null 이고 원본 주소는 API 그대로다 (#878)
+        $this->assertNull($resource['direct_url']);
+        $this->assertSame($resource['url'], $resource['download_url']);
+        $this->assertSame($resource['url'], $resource['preview_url']);
+        $this->assertNull($public['image']['pc']['direct_url']);
+    }
+
+    /**
+     * 공개 자산 디스크(직접 URL) 행의 직접 주소에는 사이트 마운트 접두사가 붙지 않는다 — 드라이버가 만든 절대 주소다.
+     * 썸네일 기준 주소(`url`)는 그대로 접두사를 갖는다 (#878).
+     *
+     * @scenario surface=download_url
+     *
+     * @effects popup_direct_url_follows_row_disk
+     *
+     * @return void 반환값 없음
+     */
+    public function test_direct_url_is_absolute_and_not_prefixed(): void
+    {
+        config(['filesystems.disks.fake_cdn' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]]);
+        PopupImage::flushStorageCache();
+        AssetUrl::forceBasePrefix('/g7');
+
+        $image = $this->image('cdn1');
+        $image->forceFill(['disk' => 'fake_cdn', 'path' => '2026/11/cdn1.jpg']);
+        $resource = (new PopupImageResource($image))->toArray(Request::create('/g7/api/x'));
+
+        $this->assertSame('https://cdn.test/assets/sirsoft-popup/images/2026/11/cdn1.jpg', $resource['direct_url']);
+        $this->assertSame($resource['direct_url'], $resource['download_url']);
+        $this->assertSame('/g7/api/plugins/sirsoft-popup/images/cdn1', $resource['url']);
+        $this->assertSame($resource['url'], $resource['preview_url']);
+
+        $popup = (new Popup)->forceFill(['id' => 4, 'content_type' => ContentType::Image->value, 'page_scope' => 'all', 'device' => 'all', 'is_active' => true, 'display_period' => 'always']);
+        $popup->setRelation('pcImage', $image);
+        $popup->setRelation('mobileImage', null);
+        $public = PublicPopupPresenter::present($popup, 'ko');
+        $this->assertSame('https://cdn.test/assets/sirsoft-popup/images/2026/11/cdn1.jpg', $public['image']['pc']['direct_url']);
+        $this->assertSame('/g7/api/plugins/sirsoft-popup/images/cdn1', $public['image']['pc']['url']);
+
+        PopupImage::flushStorageCache();
     }
 }

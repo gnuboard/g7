@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\StreamingStorageInterface;
 use App\Enums\ContentMediaKind;
 use App\Helpers\InlineMediaPolicy;
+use App\Http\Responses\DelegatedFileResponse;
 use App\Thumbnails\DTO\ThumbnailSource;
 use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Http\Request;
@@ -18,7 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * 게이트(글 읽기 권한·비밀·삭제·블라인드·서명)는 호출하는 확장이 먼저 건다. 이 클래스는 응답만 만든다.
  *
- * - 로컬 디스크(`localPath()`): `BinaryFileResponse` — Range·If-Range·206·416 을 Symfony 가 처리한다.
+ * - 로컬 디스크(`localPath()`): `BinaryFileResponse`(`DelegatedFileResponse`) — Range·If-Range·206·416 을 Symfony 가 처리한다.
+ *   웹서버 파일 위임(환경설정 > 드라이버, #878)이 켜져 있으면 본문과 Range 는 웹서버가 처리한다.
  * - 원격 디스크(`StreamingStorageInterface`): 단일 구간 Range 를 직접 처리하는 `StreamedResponse`(206·416·`Accept-Ranges`).
  *   여러 구간 요청과 `If-Range` 가 붙은 요청은 200 전량으로 응답한다(RFC 9110 이 허용하는 보수적 처리).
  * - 제3자 드라이버(스트림 계약 미구현): 기존 `response()` 200.
@@ -70,7 +72,9 @@ final class ContentMediaResponder
         if ($storage instanceof StreamingStorageInterface) {
             $local = $storage->localPath($category, $path);
             if ($local !== null) {
-                $response = new BinaryFileResponse($local, 200, ['Content-Type' => $mime], true, null, false, true);
+                // 웹서버 파일 위임(#878)이 켜져 있으면 본문·Range 를 웹서버가 맡는다. 게이트(권한·발행·전시)는
+                // 호출자가 이 함수를 부르기 전에 통과시켰다 — 위임 위치는 nginx `internal;` 이라 바깥에서 직접 열 수 없다.
+                $response = new DelegatedFileResponse($local, 200, ['Content-Type' => $mime], true, null, false, true);
                 $response->prepare($request);
             } else {
                 $response = self::remoteResponse($storage, $category, $path, $mime, $request);

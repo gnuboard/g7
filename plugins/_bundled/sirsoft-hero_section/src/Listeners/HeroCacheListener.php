@@ -11,7 +11,8 @@ use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
  * 사용자 화면 공개 캐시 비우기 — 배너·이미지·위치 설정이 바뀌면 그 위치의 모든 언어 캐시를 무효로 한다.
  *
  * 저장 직후 사용자 화면에 바로 반영돼야 하므로 모두 `sync` 로 돈다(큐로 미루면 그사이 옛 배너가 보인다).
- * 플러그인 설정(캐시 시간) 변경·비활성화 때는 Plugin 이 전체를 비운다.
+ * 플러그인 설정(캐시 시간·공개 자산 디스크) 변경·비활성화 때는 전체를 비운다. 코어 환경설정의 드라이버 탭(공개 자산
+ * 디스크)을 저장해도 비운다 — 캐시에 담긴 배너의 `direct_url` 이 옛 디스크 기준으로 묵지 않게(#878).
  */
 class HeroCacheListener implements HookListenerInterface
 {
@@ -34,6 +35,7 @@ class HeroCacheListener implements HookListenerInterface
             'sirsoft-hero_section.position_setting.after_update' => ['method' => 'onPositionSetting'] + $sync,
             'core.plugin_settings.after_save' => ['method' => 'onPluginSettingsSaved'] + $sync,
             'core.plugin_settings.after_reset' => ['method' => 'onPluginSettingsSaved'] + $sync,
+            'core.settings.after_save' => ['method' => 'onCoreSettingsSaved'] + $sync,
         ];
     }
 
@@ -149,6 +151,21 @@ class HeroCacheListener implements HookListenerInterface
     public function onPluginSettingsSaved(...$args): void
     {
         if (($args[0] ?? null) === 'sirsoft-hero_section') {
+            $this->hero->invalidate();
+        }
+    }
+
+    /**
+     * 코어 환경설정의 드라이버 탭이 저장되면 전체 캐시를 비웁니다 — 공개 자산 디스크가 바뀌면 새 업로드의 주소 모양이
+     * 달라진다. 탭 이름을 알 수 없는 호출(인자 모양 변경)도 비운다(비우는 쪽이 안전).
+     *
+     * @param  mixed  ...$args  코어 훅 인자 (string $tab, array $settings, mixed $result)
+     * @return void 반환값 없음
+     */
+    public function onCoreSettingsSaved(...$args): void
+    {
+        $tab = $args[0] ?? null;
+        if (! is_string($tab) || $tab === 'drivers') {
             $this->hero->invalidate();
         }
     }

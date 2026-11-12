@@ -847,6 +847,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
         // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
         Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
+        // 웹서버 파일 위임 실제 전송 확인 (#878) — 저장된 위임 설정으로 작은 JSON 파일을 내보내고, 화면이 본문 수신 여부로 판정한다.
+        // `{key}` 와일드카드보다 먼저.
+        Route::get('file-delegation-probe', [AdminSettingsController::class, 'fileDelegationProbe'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.file-delegation-probe');
         // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
         Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
         Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');

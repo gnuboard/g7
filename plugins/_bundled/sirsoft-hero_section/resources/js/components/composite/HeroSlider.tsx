@@ -5,7 +5,7 @@ import type { Swiper as SwiperInstance, SwiperOptions } from 'swiper';
 // Swiper CSS 는 확장 CSS 에 넣지 않고 동봉 자산으로 따로 싣는다 — support/swiperStyles 참조
 import { useSwiperStyles } from '../../support/swiperStyles';
 import { sitePath } from '../../apiUrl';
-import { responsiveSrcset, sliderImageSizes, type SliderBox } from '../../support/thumbnail';
+import { mediaSrc, responsiveSrcset, sliderImageSizes, type SliderBox } from '../../support/thumbnail';
 import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useHeroScreen, useMarketingConsent, type HeroVideo } from '../../support/media';
 import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
@@ -14,8 +14,11 @@ export type { HeroTextPresentation, TextSpot } from '../../support/text';
 
 /** 공개 API(`GET /api/plugins/sirsoft-hero_section/hero`)의 이미지 한 장 */
 export interface HeroImage {
-  /** 공개 이미지 주소 */
+  /** 공개 이미지 주소 (공개 API — 썸네일 `?size=`·같은 출처 자리의 기준) */
   url: string;
+
+  /** 원본 직접 주소 (공개 자산 디스크 행만, 아니면 null) — 원본 한 장(`src`·srcset 원본 후보)에만 쓴다 (#878) */
+  direct_url?: string | null;
 
   /** 가로 픽셀 */
   width?: number | null;
@@ -323,9 +326,16 @@ function linkProps(banner: HeroBanner): { href: string; target?: string; rel?: s
  * @returns 주소를 고친 배너 (고칠 것이 없으면 같은 객체)
  */
 function withSiteMedia(banner: HeroBanner): HeroBanner {
-  const fix = <T extends { url?: string } | null | undefined>(media: T): T => (media && typeof media.url === 'string' && sitePath(media.url) !== media.url
-    ? { ...media, url: sitePath(media.url) }
-    : media);
+  // 직접 주소(`direct_url`)도 같은 규칙으로 고친다 — 드라이버가 낸 절대 주소는 `sitePath` 가 그대로 둔다
+  const fix = <T extends { url?: string; direct_url?: string | null } | null | undefined>(media: T): T => {
+    if (!media) {
+      return media;
+    }
+    const url = typeof media.url === 'string' ? sitePath(media.url) : media.url;
+    const direct = typeof media.direct_url === 'string' && media.direct_url !== '' ? sitePath(media.direct_url) : media.direct_url;
+
+    return url !== media.url || direct !== media.direct_url ? { ...media, url, direct_url: direct } : media;
+  };
   const images = banner.images ? { pc: fix(banner.images.pc), mobile: fix(banner.images.mobile) } : banner.images;
   const videos = banner.videos ? { pc: fix(banner.videos.pc), mobile: fix(banner.videos.mobile) } : banner.videos;
   const same = images?.pc === banner.images?.pc && images?.mobile === banner.images?.mobile
@@ -960,7 +970,9 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const main = mobileScreen ? (mobile ?? pc) : pc;
   const media = mediaOf(banner);
   // PC·모바일 이미지는 기기별로 따로 올린 각자의 원본이라 srcset 도 고른 이미지의 가로로 만든다(코어 썸네일 `?size=`, 대상이 아니면 없음)
-  const mainSrcSet = main ? responsiveSrcset(main.url, main.width) : undefined;
+  // 축소 후보는 공개 API 주소(`?size=`), 마지막 원본 후보와 src 는 원본 직접 주소(있으면 — 공개 자산 디스크, #878)
+  const mainSrc = main ? mediaSrc(main) : undefined;
+  const mainSrcSet = main ? responsiveSrcset(main.url, main.width, mainSrc) : undefined;
   // srcset 이 있으면 상자를 잰 뒤에만 주소를 붙인다 — 재기 전 sizes(100vw)로 큰 후보를 받기 시작했다가 잰 값으로 다시 받지 않게
   const measuring = !!mainSrcSet && boxPending;
   const image = main ? (
@@ -972,7 +984,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
         // 기기가 바뀔 때)은 이 순서대로 붙인다. WebKit 은 srcset 이 sizes 보다 먼저 붙으면 기본 100vw 로 원본을 한 번 더 받는다
         sizes={mainSrcSet && !measuring ? sliderImageSizes(box, main) : undefined}
         srcSet={measuring ? undefined : mainSrcSet}
-        src={measuring ? undefined : main.url}
+        src={measuring ? undefined : mainSrc}
         alt={imageAlt}
         width={main.width ?? undefined}
         height={main.height ?? undefined}
@@ -1068,7 +1080,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
         <HeroVideoMedia
           sources={banner.videos ?? {}}
           forceDevice={forceDevice}
-          posters={forceDevice ? { pc: main?.url, mobile: main?.url } : { pc: pc?.url, mobile: mobile?.url }}
+          posters={forceDevice ? { pc: mediaSrc(main), mobile: mediaSrc(main) } : { pc: mediaSrc(pc), mobile: mediaSrc(mobile) }}
           playing={playing}
           active={active}
           loop={loop}

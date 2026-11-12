@@ -82,3 +82,5 @@
 <!-- @intent START -->
 쿼리는 Repository 안에서만 한다. 상태 조건은 `applyStatusFilter`·`applyStatusSort` 한 곳, 노출 후보·다음 상태 전환 시각(캐시 만료 상한)도 Repository 가 SQL 로 구한다.
 <!-- @intent END -->
+
+> **`disk` 컬럼 (#878)** — 팝업 이미지를 올린 스토리지 디스크다. 업로드 때 공개 자산 디스크 설정(플러그인 `public_asset_disk` > 코어 전역)이 정한 디스크가 기록되고, 이후 서빙·썸네일 원본·삭제·전체 정리는 이 값을 따른다(설정을 바꿔도 옛 행은 그대로). 이 디스크가 직접 URL 을 내면(public·CDN) 응답의 `direct_url` 이 채워진다. 설정에서 사라진 디스크(고아)는 기본 디스크로 물러나 404 가 된다.

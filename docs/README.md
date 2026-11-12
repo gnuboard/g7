@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 46개 | 정상 |
+| [백엔드](backend/) | 47개 | 정상 |
 | [프론트엔드](frontend/) | 50개 | 정상 |
 | [확장 시스템](extension/) | 41개 | 정상 |
 | 공통 | 22개 | 정상 |
@@ -130,7 +130,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (46개)
+### 백엔드 (47개)
 
 | 문서 | 제목 |
 |------|------|
@@ -153,6 +153,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [enum.md](backend/enum.md) | Enum 사용 규칙 |
 | [exceptions.md](backend/exceptions.md) | Custom Exception 다국어 처리 |
 | [execution-mode.md](backend/execution-mode.md) | 실행 모드 (Execution Mode) — 웹 요청 안의 커맨드 실행 |
+| [file-serving-delegation.md](backend/file-serving-delegation.md) | 웹서버 파일 위임 (X-Sendfile / X-Accel-Redirect) |
 | [geoip.md](backend/geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) |
 | [identity-messages.md](backend/identity-messages.md) | 본인인증 알림 (Identity Notifications) |
 | [identity-policies.md](backend/identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) |

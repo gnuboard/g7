@@ -168,6 +168,8 @@
         "drivers": {
             "storage_driver": "local",
             "public_asset_disk": "none",
+            "file_delegation": "none",
+            "file_delegation_accel_prefix": "/_g7_sendfile/",
             "s3_bucket": "",
             "s3_region": "ap-northeast-2",
             "s3_access_key": "",
@@ -475,6 +477,8 @@
             "fields": {
                 "storage_driver": { "type": "string", "sensitive": false },
                 "public_asset_disk": { "type": "string", "sensitive": false },
+                "file_delegation": { "type": "string", "sensitive": false },
+                "file_delegation_accel_prefix": { "type": "string", "sensitive": false },
                 "s3_bucket": { "type": "string", "sensitive": false },
                 "s3_region": { "type": "string", "sensitive": false },
                 "s3_access_key": { "type": "string", "sensitive": true },

@@ -8,6 +8,7 @@
 
 ### Added
 
+- 환경설정 > 드라이버 「웹서버 파일 위임」의 선택지 이름(`settings.drivers.file_delegation.*`), 설정 점검 결과 문구(`settings.driver_test.file_delegation.*`), 저장 검증 문구와 항목 이름(`validation.settings.file_delegation_*`·`validation.attributes.file_delegation*`)의 일본어 번역을 추가했습니다 (#878).
 - 스케줄 실행 이력의 「거절됨」 상태와 거절 사유 3종(`schedule.result.rejected`, `schedule.reject_reason.*`)의 일본어 번역을 추가했습니다.
 - 관리자 화면 코어 업데이트가 긴 단계를 여러 요청으로 나눠 이어 갈 때와 요청 시간 제한으로 끊겨 되돌릴 때의 진행 기록 문구(`settings.core_update.web.*` 19개, 끊김 사유 문구는 결과 안내와 분리)의 일본어 번역을 추가했습니다.
 - 템플릿 설정 화면 「저장 중」 문구를 일본어로 추가했습니다.

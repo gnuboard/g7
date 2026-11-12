@@ -885,6 +885,728 @@
             ]
         },
         {
+            "comment": "웹서버 파일 위임 (#878) — 로컬 파일 응답(확장 자산·번들, 공개 스토리지, 확장 아이콘, 본문의 로컬 미디어)을 PHP 대신\n         웹서버(Apache mod_xsendfile · nginx X-Accel-Redirect)가 보내게 한다. 기본은 「사용 안 함」이고 웹서버 설정이 함께 필요하다.\n         안내 문구의 경로·매핑은 `_meta.file_delegation`(지금 적용 중인 값 — 설치 위치 실경로)으로 채운다.\n         「설정 점검」(1단계)은 화면 값으로 웹서버 종류·모듈만 보고 판정하며 저장 버튼을 잠그지 않는다 — PHP 가 웹서버 구성을\n         확정할 수 없어서다. 「실제 전송 확인」(2단계)은 **저장된** 설정으로 작은 JSON 파일을 받아 본문이 오는지 본다.",
+            "id": "card_file_delegation_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.drivers.file_delegation.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.drivers.file_delegation.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_file_delegation",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.file_delegation.mode"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.file_delegation'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "w-full"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "drivers.file_delegation",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.file_delegation'] === true}}",
+                                                "className": "w-full",
+                                                "error": "{{_local.errors?.['drivers.file_delegation']?.[0] ?? ''}}",
+                                                "options": "{{(_local.form?.available_drivers?.file_delegation ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['drivers.file_delegation']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['drivers.file_delegation']?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "id": "unavailable_driver_notice_file_delegation",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.form?.drivers?.file_delegation && !(_local.form?.available_drivers?.file_delegation ?? []).some(d => d.id === _local.form?.drivers?.file_delegation)}}",
+                                            "props": {
+                                                "className": "text-warning-soft mt-2",
+                                                "data-testid": "driver-unavailable-file_delegation"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.common.unavailable_saved_value_prefix"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-mono"
+                                                    },
+                                                    "text": "{{_local.form?.drivers?.file_delegation ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.common.unavailable_saved_value_suffix"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_file_delegation_accel_prefix",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.drivers?.file_delegation === 'x-accel-redirect'}}",
+                            "props": {
+                                "className": "py-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.file_delegation.accel_prefix"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "if": "{{_computed.envLocked?.['drivers.file_delegation_accel_prefix'] === true}}",
+                                            "props": {
+                                                "text": "$t:admin.settings.env_locked_badge",
+                                                "variant": "secondary",
+                                                "size": "sm",
+                                                "className": "ml-2"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "w-full"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "{{_local.errors?.['drivers.file_delegation_accel_prefix'] ? 'input-error w-64 font-mono' : 'w-64 font-mono'}}"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "type": "text",
+                                                "name": "drivers.file_delegation_accel_prefix",
+                                                "placeholder": "/_g7_sendfile/",
+                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['drivers.file_delegation_accel_prefix'] === true}}",
+                                                "className": "{{_local.errors?.['drivers.file_delegation_accel_prefix'] ? 'input-error font-mono' : 'font-mono'}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['drivers.file_delegation_accel_prefix']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['drivers.file_delegation_accel_prefix']?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-hint mt-1"
+                                            },
+                                            "text": "$t:admin.settings.drivers.file_delegation.accel_prefix_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "Apache 안내 — XSendFilePath 는 설치 위치 실경로(심볼릭 링크를 푼 값)다. 앱이 X-Sendfile 에 싣는 경로도 실경로라 둘이 같아야 한다.",
+                            "id": "file_delegation_apache_guide",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.drivers?.file_delegation === 'x-sendfile'}}",
+                            "props": {
+                                "className": "alert-info flex-start"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-info",
+                                        "className": "text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-info-soft"
+                                            },
+                                            "text": "$t:admin.settings.drivers.file_delegation.apache_guide"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "font-mono text-xs mt-2 break-all"
+                                            },
+                                            "text": "XSendFile On"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "data-testid": "file-delegation-apache-path",
+                                                "className": "font-mono text-xs break-all"
+                                            },
+                                            "text": "{{'XSendFilePath ' + (_local.form?._meta?.file_delegation?.base_path ?? '')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "nginx 안내 — 앱이 X-Accel-Mapping 을 스스로 만들므로 fastcgi_param 은 필요 없다. internal 이 빠지면 설치 위치 전체가 바깥에 열린다.",
+                            "id": "file_delegation_nginx_guide",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.drivers?.file_delegation === 'x-accel-redirect'}}",
+                            "props": {
+                                "className": "alert-info flex-start"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-info",
+                                        "className": "text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-info-soft"
+                                            },
+                                            "text": "$t:admin.settings.drivers.file_delegation.nginx_guide"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "data-testid": "file-delegation-nginx-location",
+                                                "className": "font-mono text-xs mt-2 break-all"
+                                            },
+                                            "text": "{{'location ' + (_local.form?.drivers?.file_delegation_accel_prefix || _local.form?._meta?.file_delegation?.accel_prefix || '/_g7_sendfile/') + ' {'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "font-mono text-xs pl-4"
+                                            },
+                                            "text": "internal;"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "data-testid": "file-delegation-nginx-alias",
+                                                "className": "font-mono text-xs pl-4 break-all"
+                                            },
+                                            "text": "{{'alias ' + (_local.form?._meta?.file_delegation?.nginx_alias_path ?? _local.form?._meta?.file_delegation?.base_path ?? '') + '/;'}}"
+                                        },
+                                        {
+                                            "comment": "nginx 는 내부 이동 때 앱 응답의 X-Content-Type-Options·Content-Security-Policy 를 넘기지 않는다 — 내부 위치에서 다시 붙여야 유형 추측 차단과 공개 스토리지·본문 미디어의 CSP 가 유지된다.",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "data-testid": "file-delegation-nginx-nosniff",
+                                                "className": "font-mono text-xs pl-4 break-all"
+                                            },
+                                            "text": "add_header X-Content-Type-Options \"nosniff\" always;"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "data-testid": "file-delegation-nginx-csp",
+                                                "className": "font-mono text-xs pl-4 break-all"
+                                            },
+                                            "text": "add_header Content-Security-Policy $upstream_http_content_security_policy always;"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "font-mono text-xs"
+                                            },
+                                            "text": "}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "점검·확인 구역 — 화면 값이나 적용 중인 값 중 하나라도 위임이면 보인다(끄는 중에도 확인할 수 있게).",
+                            "id": "file_delegation_check_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.form?.drivers?.file_delegation ?? 'none') !== 'none' || (_local.form?._meta?.file_delegation?.mode ?? 'none') !== 'none'}}",
+                            "props": {
+                                "className": "py-3 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "$t:admin.settings.drivers.file_delegation.test_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4 flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "1단계 정적 판정. 직전 결과를 먼저 지운다(S3 시험과 같은 형태). 결과 문구가 판정 사유라 그대로 보인다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "testingDriver": "file_delegation"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "driverTestResults.file_delegation": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/settings/test-driver",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "file_delegation": "{{_local.form.drivers?.file_delegation ?? 'none'}}",
+                                                                    "file_delegation_accel_prefix": "{{_local.form.drivers?.file_delegation_accel_prefix ?? ''}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "driverTestResults.file_delegation": "{{result.data.results.file_delegation}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "{{result.data.results.file_delegation.success ? 'success' : 'error'}}",
+                                                                        "message": "{{result.data.results.file_delegation.message}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "testingDriver": null
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "driverTestResults.file_delegation": {
+                                                                            "success": false,
+                                                                            "message": "{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:admin.settings.drivers.test_failed'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "testingDriver": null
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "data-testid": "file-delegation-test-button",
+                                                "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'file_delegation')}}",
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{_local.testingDriver !== 'file_delegation'}}",
+                                                    "props": {
+                                                        "name": "stethoscope",
+                                                        "className": "text-base"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{_local.testingDriver === 'file_delegation'}}",
+                                                    "props": {
+                                                        "name": "spinner",
+                                                        "className": "spinner-sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{_local.testingDriver === 'file_delegation' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.file_delegation.test_button'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "2단계 실제 전송 확인. 저장된(적용 중인) 위임 설정으로 작은 JSON 파일을 받는다. 웹서버가 위임 헤더를 소비하지 않으면\n                     본문이 비어 result 가 null 이 되고, nginx internal 위치가 없으면 404 로 fail 갈래에 온다 — 둘 다 실패다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "testingDriver": "file_delegation_probe"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "fileDelegationProbe": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/settings/file-delegation-probe",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "GET"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "fileDelegationProbe": {
+                                                                            "success": "{{result?.data?.probe === 'g7-file-delegation'}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "{{result?.data?.probe === 'g7-file-delegation' ? 'success' : 'error'}}",
+                                                                        "message": "{{result?.data?.probe === 'g7-file-delegation' ? '$t:admin.settings.drivers.file_delegation.probe_ok' : '$t:admin.settings.drivers.file_delegation.probe_failed'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "testingDriver": null
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "fileDelegationProbe": {
+                                                                            "success": false
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "$t:admin.settings.drivers.file_delegation.probe_failed"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "testingDriver": null
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "data-testid": "file-delegation-probe-button",
+                                                "disabled": "{{_local.testingDriver === 'file_delegation_probe'}}",
+                                                "className": "px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{_local.testingDriver !== 'file_delegation_probe'}}",
+                                                    "props": {
+                                                        "name": "paper-plane",
+                                                        "className": "text-base"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{_local.testingDriver === 'file_delegation_probe'}}",
+                                                    "props": {
+                                                        "name": "spinner",
+                                                        "className": "spinner-sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{_local.testingDriver === 'file_delegation_probe' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.file_delegation.probe_button'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "file_delegation_test_result",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.driverTestResults?.file_delegation}}",
+                                    "props": {
+                                        "className": "{{_local.driverTestResults.file_delegation.success ? 'flex-start gap-2 text-green-700 dark:text-green-400' : 'flex-start gap-2 text-red-600 dark:text-red-400'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{_local.driverTestResults.file_delegation.success ? 'check-circle' : 'circle-xmark'}}",
+                                                "className": "text-xl flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium"
+                                            },
+                                            "text": "{{_local.driverTestResults.file_delegation.message ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_local.driverTestResults?.file_delegation?.details?.mode === 'x-accel-redirect' && !!_local.driverTestResults?.file_delegation?.details?.accel_mapping}}",
+                                    "props": {
+                                        "data-testid": "file-delegation-test-mapping",
+                                        "className": "font-mono text-xs break-all"
+                                    },
+                                    "text": "$t:admin.settings.drivers.file_delegation.test_mapping|mapping={{_local.driverTestResults?.file_delegation?.details?.accel_mapping ?? ''}}"
+                                },
+                                {
+                                    "id": "file_delegation_probe_result",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.fileDelegationProbe}}",
+                                    "props": {
+                                        "className": "{{_local.fileDelegationProbe.success ? 'flex-start gap-2 text-green-700 dark:text-green-400' : 'flex-start gap-2 text-red-600 dark:text-red-400'}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{_local.fileDelegationProbe.success ? 'check-circle' : 'circle-xmark'}}",
+                                                "className": "text-xl flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium"
+                                            },
+                                            "text": "{{_local.fileDelegationProbe.success ? '$t:admin.settings.drivers.file_delegation.probe_ok' : '$t:admin.settings.drivers.file_delegation.probe_failed'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "file_delegation_saved_differs",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_local.form?.drivers?.file_delegation ?? 'none') !== (_local.form?._meta?.file_delegation?.mode ?? 'none')}}",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:admin.settings.drivers.file_delegation.saved_differs"
+                                },
+                                {
+                                    "id": "file_delegation_recover_hint",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "alert-warning flex-start"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "text": "$t:admin.settings.drivers.file_delegation.recover_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "id": "card_cache_settings",
             "type": "basic",
             "name": "Div",

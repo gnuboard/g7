@@ -263,31 +263,55 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 대표 이미지 서빙 URL 을 반환합니다.
+     * 대표 이미지의 썸네일용 서빙 URL 을 반환합니다 — 목록·og·주문 스냅샷용.
      *
      * 대표 이미지(`is_thumbnail=true`) 가 없으면 첫 번째 이미지로 폴백.
+     *
+     * 항상 API 서빙 경로(`preview_url`)를 낸다. 공개 자산 디스크(CDN)에 올라간 이미지라도
+     * 직접 URL 은 썸네일 파이프(`thumbPreset`·`?size=`)의 대상이 아니라서, 직접 URL 을
+     * 내면 목록·og 가 원본 한 장을 그대로 받는다. 원본 파일 자체가 필요한 자리(내보내기)는
+     * {@see getThumbnailDownloadUrl()} 을 쓴다.
      *
      * `images` 가 이미 eager load 된 경우(목록 화면)는 로드된 컬렉션에서 고른다. 관계 빌더를
      * 다시 태우면 행마다 쿼리가 1~2회 더 나가 eager load 가 무의미해진다. 로드된 컬렉션은
      * 관계 정의의 `sort_order` 정렬을 그대로 가지므로 선택 결과는 재쿼리와 동일하다.
      *
-     * @return string|null 대표 이미지 download_url 또는 이미지가 없으면 null
+     * @return string|null 대표 이미지 preview_url(API), 이미지가 없으면 설명 첫 이미지 캐시, 둘 다 없으면 null
      */
     public function getThumbnailUrl(): ?string
     {
-        if ($this->relationLoaded('images')) {
-            $thumbnailImage = $this->images->firstWhere('is_thumbnail', true)
-                ?? $this->images->first();
+        // 상품 이미지가 없으면 설명 첫 내부 이미지 캐시로 폴백 (공개 이슈 #22 동종).
+        // 추가 쿼리 없음 — 이미 로드된 속성 읽기만 (쿼리 수 잠금 테스트 준수)
+        return $this->pickThumbnailImage()?->preview_url ?? ($this->content_thumbnail_url ?: null);
+    }
 
-            // 상품 이미지가 없으면 설명 첫 내부 이미지 캐시로 폴백 (공개 이슈 #22 동종).
-            // 추가 쿼리 없음 — 이미 로드된 속성 읽기만 (쿼리 수 잠금 테스트 준수)
-            return $thumbnailImage?->download_url ?? ($this->content_thumbnail_url ?: null);
+    /**
+     * 대표 이미지의 원본 URL 을 반환합니다 — 내보내기처럼 파일 자체가 필요한 자리용.
+     *
+     * `download_url` 을 낸다(행 disk 가 직접 URL 을 낼 수 있으면 CDN 주소, 아니면 API 서빙 경로).
+     * 대표 이미지 선택 규칙·설명 첫 이미지 폴백은 {@see getThumbnailUrl()} 과 같다.
+     *
+     * @return string|null 대표 이미지 download_url, 이미지가 없으면 설명 첫 이미지 캐시, 둘 다 없으면 null
+     */
+    public function getThumbnailDownloadUrl(): ?string
+    {
+        return $this->pickThumbnailImage()?->download_url ?? ($this->content_thumbnail_url ?: null);
+    }
+
+    /**
+     * 대표 이미지(없으면 첫 이미지)를 고릅니다.
+     *
+     * @return ProductImage|null 대표 이미지 모델 또는 이미지가 없으면 null
+     */
+    protected function pickThumbnailImage(): ?ProductImage
+    {
+        if ($this->relationLoaded('images')) {
+            return $this->images->firstWhere('is_thumbnail', true)
+                ?? $this->images->first();
         }
 
-        $thumbnailImage = $this->images()->where('is_thumbnail', true)->first()
+        return $this->images()->where('is_thumbnail', true)->first()
             ?? $this->images()->first();
-
-        return $thumbnailImage?->download_url ?? ($this->content_thumbnail_url ?: null);
     }
 
     /**

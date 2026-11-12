@@ -48,6 +48,8 @@ effects:
   - my_media_change_not_dropped
   - long_text_not_lost
   - preview_without_frame_uses_device_width   # 구좌 틀이 없거나 그 위치에 확장점이 없으면 기기 폭 전체에 그린다
+  - preview_contrast_hint_estimates_without_changing_colors   # 사진 평균색 + 문구 배경으로 어림한 대비가 낮으면 추정값·권장 조치만 알리고 글자색은 바꾸지 않는다(#878 손댄 파일 매핑 부채 정리)
+  - preview_overflow_hint_reports_text_scroll   # 지금 기기에서 문구 영역에 스크롤이 생기면(넘김 단추 자리 포함) 줄이기를 권한다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/PreviewFrameResolverTest.php

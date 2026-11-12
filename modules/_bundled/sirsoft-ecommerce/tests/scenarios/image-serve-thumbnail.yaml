@@ -29,6 +29,9 @@ description: |
     14. 제공자 목록·경로 분류는 서비스를 만들지 않고(세고 읽을 때 처음 해석), `chunk` 는 id 커서로 빠짐·겹침 없이 이어 읽는다.
     15. 카테고리 공유 카드의 og:image 는 끝에 `size=og` 가 붙는다.
     16. 카테고리 이미지 서빙의 예상 밖 오류는 500 이다.
+    17. 공개 자산 디스크(CDN) 행의 직접 URL(`download_url`)은 썸네일 대상이 아니고(`isThumbnailable` 거짓), 함께 내리는
+        `preview_url`(API 서빙 주소)은 대상이다 — 화면·og 는 `preview_url` 에 규격을 건다(#878).
+    18. CDN 카테고리 행의 공유 카드 og:image 도 API 주소 + `size=og` 이고 직접 주소(CDN 호스트)가 나가지 않는다(#878).
 
 axes:
   surface: [product_image, category_image, review_image, claim_image, registration]
@@ -72,6 +75,7 @@ effects:
   - ecommerce_claim_operator_receives_thumbnail
   - ecommerce_source_provider_chunk_cursor_advances
   - ecommerce_source_providers_resolve_dependencies_lazily
+  - ecommerce_direct_url_row_thumbnails_through_preview_url   # 불변식 17·18 (#878)
   # 브라우저 E2E (Playwright)
   - screen_img_requests_thumbnail_only
 

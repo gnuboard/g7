@@ -92,6 +92,7 @@ php artisan plugin:update sirsoft-hero_section --force
 | `max_upload_mb` | 이미지 최대 용량(MB) | `5` |
 | `max_video_upload_mb` | 영상 최대 용량(MB) | `30` |
 | `public_cache_minutes` | 사용자 화면 배너 캐시 시간(분) | `10` |
+| `public_asset_disk` | 공개 자산 디스크 | - |
 
 개발자용 상세(타입·검증·저장 위치)는 [설정 스키마](docs/settings.md#설정-스키마) 를 보세요.
 <!-- @generated:settings-summary END -->

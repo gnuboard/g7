@@ -1113,7 +1113,8 @@ _단건 응답: `data` 객체의 필드 (업로드된 리뷰 이미지 리소스
 | review_id | integer | `1` | 이미지가 속한 리뷰 ID |
 | hash | string | `9f3a1c7b20de` | URL 용 고유 해시 (12자, 생성 시 자동 부여) |
 | original_filename | string | `example.jpg` | 업로드된 원본 파일명 |
-| download_url | string | `/api/modules/sirsoft-ecommerce/review-image/9f3a1c7b20de` | 해시 기반 이미지 서빙 URL (`review-image/{hash}`) |
+| download_url | string | `/api/modules/sirsoft-ecommerce/review-image/9f3a1c7b20de` | 원본 URL — 공개 자산 디스크 행이면 직접 주소(CDN), 아니면 해시 기반 API 서빙 경로(`review-image/{hash}`) |
+| preview_url | string | `/api/modules/sirsoft-ecommerce/review-image/9f3a1c7b20de` | 썸네일 기준 URL — 항상 API 서빙 경로(`download_url` 은 공개 자산 디스크면 직접 주소). 숨김 리뷰의 관리자 응답에서는 둘 다 같은 한시 서명 주소다 |
 | mime_type | string | `image/jpeg` | MIME 타입 (예: image/jpeg, image/webp) |
 | file_size | integer | `204800` | 파일 크기 (바이트) |
 | width | integer\|null | `1200` | 이미지 너비 (px, 이미지가 아니거나 판별 실패 시 null) |
@@ -1140,6 +1141,7 @@ HTTP/1.1 201
         "hash": "9f3a1c7b20de",
         "original_filename": "example.jpg",
         "download_url": "/api/modules/sirsoft-ecommerce/review-image/9f3a1c7b20de",
+        "preview_url": "/api/modules/sirsoft-ecommerce/review-image/9f3a1c7b20de",
         "mime_type": "image/jpeg",
         "file_size": 204800,
         "width": 1200,

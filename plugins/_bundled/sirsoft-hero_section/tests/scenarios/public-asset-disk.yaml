@@ -1,0 +1,67 @@
+feature: 배너 파일의 공개 자산 디스크 — 직접 주소(원본)와 API 주소(썸네일), 행 disk 추종 (#878)
+
+description: |
+  배너 이미지·영상은 공개 API `/api/plugins/sirsoft-hero_section/images/{hash}` 로만 나갔다 — 확장자 없는 PHP 응답이라 CDN 이
+  캐시하지 않고(DYNAMIC), 영상은 PHP 프로세스가 전송을 끝낼 때까지 붙잡혔다. 이 플러그인이 공개 자산 디스크(플러그인 설정
+  `public_asset_disk` > 코어 `drivers.public_asset_disk`)를 따르게 했다. 업로드 서비스에 주입되는 스토리지는 카테고리 `images` 의
+  디스크(`getStorageDiskFor('images')`)이고, 이미 올린 파일의 읽기·서빙·썸네일 원본·삭제·전체 정리는 **행에 기록된 disk** 를 따른다
+  (코어 `RowDiskStorage::resolve()` — 고아 disk 는 주입 디스크로 폴백해 404).
+
+  응답 주소(제품 결정): 공개 프레젠터는 `url`(API, 썸네일 기준) + `direct_url`(행 disk 의 직접 주소, 아니면 null). 관리자 리소스는
+  `url`·`preview_url`(API) + `direct_url` + `download_url`(= direct ?? API). 사용자 슬라이더는 `<img src>`·srcset 의 **마지막 원본
+  후보**·영상 `src`·대표 이미지(poster)만 직접 주소로 쓰고, 축소 후보(`?size=`)와 미리보기 색 추출(캔버스, 같은 출처)은 API 주소다.
+  직접 주소는 설정이 아니라 행 disk 로 정한다 — 공개 자산 디스크를 꺼도 그 디스크에 남은 행은 계속 직접 주소를 낸다(제품 결정).
+
+  변종 축(디스크 설정 none·public·fake_cdn·고아 × 플러그인 재정의 × 옛 행·새 행·혼재)은 surface 마다 시험 안에서 고정한다 — 단일 surface 축은
+  기존 히어로·팝업 매니페스트와 같은 표기다.
+
+  회귀 불변식:
+    1. 기본(plugins) 디스크 행은 `direct_url` null, `download_url` = `url` = 공개 API 주소(종전과 같다).
+    2. 직접 URL 디스크 행은 그 디스크의 절대 주소를 내고, 사이트 마운트 접두사를 붙이지 않는다(`url` 은 접두사를 갖는다).
+    3. 고아 disk·빈 disk/path·`core.storage.filter_url` 차단이면 `direct_url` null, 서빙·삭제는 예외 없이 주입 디스크로 폴백.
+    4. 행 disk 에 없는 파일을 주입 디스크의 같은 경로로 몰래 서빙하지 않는다. 삭제는 행 disk 파일만 지운다.
+    5. 「데이터까지 삭제」의 폴더 비우기는 행이 기록한 모든 disk + 주입 disk 를 각각 비우고, 한 디스크가 실패해도 나머지를 비운다.
+    6. 설정 응답에 카탈로그가 붙고, 카탈로그 밖 값은 422, `settings` 카테고리 해석은 설정을 조회하지 않는다(재귀 없음).
+    7. 슬라이더 srcset 은 축소 후보가 API 이고 원본 후보만 직접 주소다. 코어 출력 꼬리가 정확할 때만 바꾼다.
+    8. 직접 URL 디스크(로컬 드라이버) 행도 공개 API 로 200·Range 206 을 계속 받는다(옛 캐시 주소·썸네일 호환).
+
+axes:
+  surface: [direct_url, download_url, serve, delete, thumbnail_source, purge_all, settings_catalog, settings_validation, recursion, slider_src, slider_srcset_original, video_src]
+
+effects:
+  - hero_direct_url_follows_row_disk
+  - hero_direct_url_null_for_streaming_disk
+  - hero_upload_records_public_asset_disk
+  - hero_serve_and_delete_follow_row_disk
+  - hero_orphan_disk_falls_back_to_streaming
+  - hero_purge_all_covers_every_row_disk
+  - hero_settings_catalog_attached
+  - hero_invalid_disk_rejected_with_422
+  - hero_settings_load_recursion_free
+  - hero_slider_src_uses_direct_url
+  - hero_slider_srcset_original_candidate_is_direct_url
+  - hero_video_src_uses_direct_url
+  - hero_preview_sampling_stays_same_origin
+  - hero_video_delegated_to_web_server
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Models/BannerImageDirectUrlTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Models/MediaUrlBasePrefixTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/BannerImageServiceRowDiskTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/BannerImagePurgeAllTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Support/PublicBannerPresenterDirectUrlTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/PluginSettingsCatalogAttachTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/PluginSettingsPublicAssetDiskValidationTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/StorageDiskRecursionTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Public/HeroControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Public/PublicBannerImageTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerMediaTest.php
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderThumbnail.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderMedia.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroPreviewHints.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/pluginSettingsPublicAssetDisk.test.tsx
+
+notes: |
+  e2e 의 filesystems 에는 url 을 가진 디스크가 없어 Playwright 신규 spec 은 두지 않았다(후속) — 기존 hero-image-single-fetch·site-media-prefix·media-banner 회귀만 돈다.
+  썸네일 302(공개 썸네일 디스크)는 image-thumbnail.yaml 의 hero_image_public_thumbnail_disk_redirects 가 소유한다.
+  웹서버 위임(X-Sendfile)의 응답 계약 전체는 코어 FileDelegationResponseTest 가 소유하고, 여기서는 히어로 영상 통로가 그 계약을 타는지만 본다.

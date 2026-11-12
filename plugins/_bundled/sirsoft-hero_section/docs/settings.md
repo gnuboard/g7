@@ -10,6 +10,7 @@
 | `max_upload_mb` | `integer` | `5` | 이미지 최대 용량(MB) |
 | `max_video_upload_mb` | `integer` | `30` | 영상 최대 용량(MB) |
 | `public_cache_minutes` | `integer` | `10` | 사용자 화면 배너 캐시 시간(분) |
+| `public_asset_disk` | `string` | - | 공개 자산 디스크 |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
@@ -18,6 +19,8 @@
 `slot_widths`(위치 → `content`·`full`)는 환경설정 화면에 없는 **표시 폭 힌트**다. 원본은 위치 설정이고, 플러그인 설정을 저장할 때마다 저장 직전 필터(`core.plugin_settings.filter_save_data`)가 위치 설정 값으로 다시 채운다(표시 폭이 바뀐 위치 설정 저장·설정 초기화·활성화·업데이트 때 다시 저장). 사용자 화면은 첫 로드 때 받는 플러그인 설정(`frontend_schema` 로 이 값만 노출)으로 배너를 받기 전 스켈레톤 폭을 고른다. 그래서 표시 폭이 바뀐 위치 설정 저장에는 코어 활동 로그 「플러그인 설정 변경」도 한 건 남는다. `slot_overlays`(위치 → boolean)도 같은 방식의 **메뉴 겹침 힌트**다 — 위치 설정의 메뉴 겹치기가 켜져 있고 표시 폭이 화면 전체일 때만 true 이며, 사용자 화면은 배너를 받기 전에도 스켈레톤을 메뉴 밑으로 넣어 배너가 와도 화면이 위아래로 밀리지 않게 한다. 표시 폭이나 메뉴 겹치기가 바뀐 위치 설정 저장에서 다시 저장한다.
 
 실제로 받을 수 있는 업로드 크기는 `max_upload_mb` 와 서버 PHP `upload_max_filesize`·`post_max_size` 중 가장 작은 값이다. `public_cache_minutes` 는 사용자 화면 공개 응답 캐시 시간이며, 예약 시작·종료 시각을 넘기지 않도록 그보다 먼저 만료되고 배너가 바뀌면 바로 지워진다. 0 이면 캐시를 쓰지 않는다.
+
+`public_asset_disk`(#878)는 배너 이미지·영상(카테고리 `images`)을 둘 공개 자산 디스크다. 비우면 코어 환경설정 > 드라이버 > 공개 자산 디스크를 따르고, 카탈로그(설정 응답의 `available_public_asset_disks`, 코어 카탈로그 + 확장이 등록한 디스크) 밖 값은 422 다. 바꾸면 **새로 올리는 파일부터** 그 디스크에 저장되고 행 `disk` 에 기록된다 — 이미 올린 파일은 행 disk 에서 그대로 서빙·삭제된다. 공개 디스크(public·CDN)에 올린 행은 응답에 `direct_url` 이 실리고 사이트 슬라이더가 원본을 그 주소로 받는다(PHP 를 거치지 않는다). 공개 디스크(public)는 서버에 `php artisan storage:link` 가 있어야 직접 주소가 웹서버로 나간다(없으면 코어 대체 라우트가 PHP 로 내보낸다). 설정을 다시 비워도 그 디스크에 올린 파일은 계속 직접 주소로 열린다 — 공개 위치에 있는 파일이므로 배너를 지워야 주소가 닫힌다. 저장했던 디스크를 등록하던 확장이 꺼지면 설정 화면이 「코어 설정 따름」이 아닌 실제 동작(스트리밍)으로 바꿔 보이고 옛 이름을 안내한다.
 <!-- @intent END -->
 
 ## 권한

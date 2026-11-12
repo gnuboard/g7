@@ -112,7 +112,7 @@
                                             "type": "basic",
                                             "name": "Img",
                                             "props": {
-                                                "src": "{{$parent._local.form.images?.[0]?.download_url}}",
+                                                "src": "{{$parent._local.form.images?.[0]?.preview_url ?? $parent._local.form.images?.[0]?.download_url}}",
                                                 "thumbPreset": "sm",
                                                 "loading": "lazy",
                                                 "decoding": "async",

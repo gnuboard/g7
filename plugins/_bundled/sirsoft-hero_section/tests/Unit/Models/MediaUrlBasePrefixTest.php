@@ -77,5 +77,57 @@ class MediaUrlBasePrefixTest extends PluginTestCase
         $this->assertSame('/g7'.$api.'pc', $public['images']['pc']['url']);
         $this->assertSame('/g7'.$api.'m', $public['images']['mobile']['url']);
         $this->assertSame('/g7'.$api.'v', $public['videos']['pc']['url']);
+        // 행 disk 가 없으면(옛 행·직접 URL 불가) 직접 주소는 null 이고 원본 주소는 API 그대로다 (#878)
+        $this->assertNull($resource['direct_url']);
+        $this->assertSame($resource['url'], $resource['download_url']);
+        $this->assertSame($resource['url'], $resource['preview_url']);
+        $this->assertNull($public['images']['pc']['direct_url']);
+        $this->assertNull($public['videos']['pc']['direct_url']);
+    }
+
+    /**
+     * 공개 자산 디스크(직접 URL) 행의 직접 주소에는 사이트 마운트 접두사가 붙지 않는다 — 드라이버가 만든 절대 주소다.
+     * 썸네일 기준 주소(`url`)는 그대로 접두사를 갖는다 (#878).
+     *
+     * @scenario surface=direct_url
+     *
+     * @effects hero_direct_url_follows_row_disk
+     *
+     * @return void 반환값 없음
+     */
+    public function test_direct_url_is_absolute_and_not_prefixed(): void
+    {
+        config(['filesystems.disks.fake_cdn' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]]);
+        BannerImage::flushStorageCache();
+        AssetUrl::forceBasePrefix('/g7');
+
+        $media = $this->media('cdn1');
+        $media->forceFill(['disk' => 'fake_cdn', 'path' => '2026/11/cdn1.jpg']);
+        $resource = (new BannerImageResource($media))->toArray(Request::create('/g7/api/x'));
+
+        $this->assertSame('https://cdn.test/assets/sirsoft-hero_section/images/2026/11/cdn1.jpg', $resource['direct_url']);
+        $this->assertSame($resource['direct_url'], $resource['download_url']);
+        $this->assertSame('/g7/api/plugins/sirsoft-hero_section/images/cdn1', $resource['url']);
+        $this->assertSame($resource['url'], $resource['preview_url']);
+
+        $video = $this->media('cdnv', 'video');
+        $video->forceFill(['disk' => 'fake_cdn', 'path' => '2026/11/cdnv.mp4']);
+        $banner = new Banner;
+        $banner->forceFill(['id' => 8, 'media_type' => BannerMediaType::Video->value, 'title' => ['ko' => '제목'], 'is_active' => true, 'display_period' => 'always']);
+        $banner->setRelation('pcImage', $media);
+        $banner->setRelation('mobileImage', null);
+        $banner->setRelation('pcVideo', $video);
+        $banner->setRelation('mobileVideo', null);
+        $public = PublicBannerPresenter::present($banner, 'ko');
+
+        $this->assertSame('https://cdn.test/assets/sirsoft-hero_section/images/2026/11/cdn1.jpg', $public['images']['pc']['direct_url']);
+        $this->assertSame('https://cdn.test/assets/sirsoft-hero_section/images/2026/11/cdnv.mp4', $public['videos']['pc']['direct_url']);
+        $this->assertSame('/g7/api/plugins/sirsoft-hero_section/images/cdn1', $public['images']['pc']['url']);
+
+        BannerImage::flushStorageCache();
     }
 }

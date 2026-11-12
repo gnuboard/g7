@@ -628,7 +628,7 @@
                                             "type": "basic",
                                             "name": "Img",
                                             "props": {
-                                                "src": "{{row.download_url}}",
+                                                "src": "{{row.preview_url ?? row.download_url}}",
                                                 "thumbPreset": "sm",
                                                 "decoding": "async",
                                                 "alt": "{{row.original_name ?? ''}}",

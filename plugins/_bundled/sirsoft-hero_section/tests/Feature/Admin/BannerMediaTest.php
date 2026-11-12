@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Admin;
 
+use App\Extension\Storage\PluginStorageDriver;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -190,7 +191,8 @@ class BannerMediaTest extends PluginTestCase
 
         $public = $this->getJson($this->api('/hero?position=home_hero'))->json('data.banners.0');
         $this->assertSame('video', $public['media_type']);
-        $this->assertSame(['url', 'mime'], array_keys($public['videos']['pc']));
+        // 공개 영상 정보는 주소·직접 주소(#878, 공개 자산 디스크가 아니면 null)·MIME 만 싣는다 — 저장 경로 등 내부 값은 없다
+        $this->assertSame(['url', 'direct_url', 'mime'], array_keys($public['videos']['pc']));
         $this->assertSame('video/mp4', $public['videos']['pc']['mime']);
         $this->assertNotNull($public['videos']['mobile']);
     }
@@ -320,6 +322,54 @@ class BannerMediaTest extends PluginTestCase
         $this->assertSame('nosniff', $again->headers->get('X-Content-Type-Options'));
 
         $this->get($data['url'], ['Range' => 'bytes=0-9'])->assertStatus(206);
+    }
+
+    /**
+     * 업로드 응답은 주소 필드 넷을 싣는다 — 기본 디스크면 직접 주소는 null 이고 원본 주소는 공개 API 다 (#878).
+     *
+     * @scenario surface=download_url
+     *
+     * @effects hero_direct_url_null_for_streaming_disk
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_response_carries_address_fields(): void
+    {
+        $data = $this->uploadVideo('pc', (string) Str::uuid())->assertCreated()->json('data');
+
+        $this->assertArrayHasKey('direct_url', $data);
+        $this->assertNull($data['direct_url']);
+        $this->assertSame($data['url'], $data['download_url']);
+        $this->assertSame($data['url'], $data['preview_url']);
+    }
+
+    /**
+     * 직접 URL 디스크(로컬 드라이버) 행의 영상도 공개 API 주소로 범위 요청(206)을 받는다 — 행 disk 의 절대 경로로 파일 응답 (#878).
+     *
+     * @scenario surface=serve
+     *
+     * @effects hero_serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cdn_disk_video_api_keeps_range_support(): void
+    {
+        config(['filesystems.disks.fake_cdn' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]]);
+        $bytes = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom".str_repeat("\x00", 2000);
+        $path = '2026/11/'.Str::random(16).'.mp4';
+        $driver = new PluginStorageDriver('sirsoft-hero_section', 'fake_cdn');
+        $driver->put('images', $path, $bytes);
+        $video = BannerImage::factory()->create(['temp_key' => (string) Str::uuid(), 'kind' => 'video', 'disk' => 'fake_cdn', 'path' => $path, 'mime' => 'video/mp4', 'size' => strlen($bytes), 'width' => null, 'height' => null]);
+
+        $partial = $this->get($video->publicUrl(), ['Range' => 'bytes=0-99']);
+
+        $partial->assertStatus(206);
+        $this->assertSame('bytes 0-99/'.strlen($bytes), $partial->headers->get('Content-Range'));
+        $driver->delete('images', $path);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\FileServing\FileDelegation;
 use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
 use App\Support\TrustedProxySetting;
@@ -53,6 +54,7 @@ class SettingsServiceProvider extends ServiceProvider
         // 드라이버 계열은 부팅 때만 적용한다 — 큐 워커 도중에는 바꾸지 않고 저장 시 queue:restart 가 맡는다
         $this->applyDriverConfig($configRepository);
         $this->applyPublicAssetDiskConfig($configRepository);
+        $this->applyFileDelegationConfig($configRepository);
 
         // 코어 설정을 g7_settings.core prefix로 저장
         $this->loadCoreSettingsToConfig($configRepository);
@@ -238,7 +240,7 @@ class SettingsServiceProvider extends ServiceProvider
             // 후행 슬래시·앞뒤 공백은 여기서 걷어낸다 — 관리자 저장 경로(SaveSettingsRequest)는
             // 이미 정규화하지만 인스톨러는 그 경로를 우회해 원값을 저장한다(task-runner). 저장된
             // 값이 모두 이 한 지점을 지나 app.url 이 되므로, 정규화를 여기 두면 저장 경로와
-            // 무관하게 app.url 이 후행 슬래시 없는 형태로 고정된다 (17차 G3 라운드 B-8).
+            // 무관하게 app.url 이 후행 슬래시 없는 형태로 고정된다.
             Config::set('app.url', rtrim(trim($generalSettings['site_url']), '/'));
         }
 
@@ -528,6 +530,57 @@ class SettingsServiceProvider extends ServiceProvider
         $disk = (string) ($driverSettings['public_asset_disk'] ?? '');
 
         Config::set('core.storage.public_asset_disk', $disk === 'none' ? '' : $disk);
+    }
+
+    /**
+     * 웹서버 파일 위임 설정을 적용합니다 (#878).
+     *
+     * 공개 자산 디스크(`applyPublicAssetDiskConfig`)와 같은 꼴이다 — testing 환경에서는 dev 공유 drivers.json 값이
+     * 테스트로 흘러들지 않도록 주입을 건너뛰고, 실제 주입·정규화는 `injectFileDelegationConfig()` 가 맡는다
+     * (가드와 분리해 두어야 정규화 규칙을 테스트에서 단언할 수 있다).
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function applyFileDelegationConfig(JsonConfigRepository $configRepository): void
+    {
+        // env() 직접 호출은 config:cache 환경에서 null 로 고정되어 가드가 무력해진다.
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        $this->injectFileDelegationConfig($configRepository);
+    }
+
+    /**
+     * drivers.file_delegation·drivers.file_delegation_accel_prefix 저장값을 core.file_serving 으로 주입합니다.
+     *
+     * - 모드: 빈 값·모르는 값은 'none' 으로 정규화한다(위임 안 함 — 현 동작).
+     * - 접두사: 빈 값이면 주입하지 않아 config/core.php 의 값(`.env` 또는 기본값)이 남는다. 끝 `/` 를 보정한다.
+     * - `.env` 우선 모드에서 `.env` 가 소유한 키(G7_FILE_DELEGATION·G7_FILE_DELEGATION_ACCEL_PREFIX)는 걸러져
+     *   주입되지 않는다(EnvPriority::MAP).
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function injectFileDelegationConfig(JsonConfigRepository $configRepository): void
+    {
+        $driverSettings = EnvPriority::filterLocked('drivers', $configRepository->getCategory('drivers'));
+
+        if (array_key_exists('file_delegation', $driverSettings)) {
+            $mode = strtolower(trim((string) $driverSettings['file_delegation']));
+
+            Config::set(
+                'core.file_serving.delegation',
+                in_array($mode, FileDelegation::modes(), true) ? $mode : FileDelegation::MODE_NONE
+            );
+        }
+
+        $prefix = FileDelegation::normalizeAccelPrefix((string) ($driverSettings['file_delegation_accel_prefix'] ?? ''));
+
+        if ($prefix !== '') {
+            Config::set('core.file_serving.accel_prefix', $prefix);
+        }
     }
 
     /**

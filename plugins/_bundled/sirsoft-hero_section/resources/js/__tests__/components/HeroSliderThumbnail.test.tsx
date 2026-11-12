@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { HeroSlider, type HeroBanner } from '../../components/composite/HeroSlider';
 import { contentSrcset, contentSrcsetWithin, isThumbnailableUrl, thumbnailSrcset, withThumbnailSize } from '@core/support/thumbnailUrl';
-import { responsiveSrcset } from '../../support/thumbnail';
+import { mediaSrc, responsiveSrcset } from '../../support/thumbnail';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
@@ -272,5 +272,69 @@ describe('HeroSlider 이미지 썸네일 srcset', () => {
     const { container } = render(<HeroSlider banners={[banner()]} settings={{ width: 'content' }} />);
     expect(container.querySelector('img.hs-slider__image')?.getAttribute('src')).toBe(PC);
     expect(container.querySelector('img.hs-slider__image')?.getAttribute('sizes')).toBe('100vw');
+  });
+});
+
+/**
+ * 공개 자산 디스크(#878) — 응답의 `direct_url`(원본 직접 주소)은 원본 한 장(`src`)과 srcset 의 **마지막 원본 후보**에만 쓴다.
+ * 축소 후보는 공개 API 주소 `?size=`(서버가 공개 썸네일 디스크로 302) 그대로다. (매니페스트 public-asset-disk.yaml)
+ */
+describe('HeroSlider 공개 자산 디스크 직접 주소', () => {
+  const CDN = 'https://cdn.example.com/a.jpg';
+
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    installThumbnailCore();
+  });
+
+  afterEach(() => {
+    cleanup();
+    delete (window as any).G7Config;
+    delete (window as any).G7Core;
+  });
+
+  // @scenario surface=slider_src
+  // @effects hero_slider_src_uses_direct_url
+  // @effects hero_slider_srcset_original_candidate_is_direct_url
+  it('direct_url 이 있으면 src 는 직접 주소, srcset 은 축소 후보만 API 이고 원본 후보는 직접 주소다', () => {
+    const { container } = render(<HeroSlider banners={[banner({ images: { pc: { url: PC, direct_url: CDN, width: 1920, height: 640 }, mobile: null } })]} settings={{}} />);
+    const img = container.querySelector('img.hs-slider__image');
+
+    expect(img?.getAttribute('src')).toBe(CDN);
+    expect(img?.getAttribute('srcset')).toBe(`${PC}?size=md 640w, ${PC}?size=lg 1280w, ${CDN} 1920w`);
+  });
+
+  // @scenario surface=slider_src
+  // @effects hero_slider_src_uses_direct_url
+  it('direct_url 이 null 이면 종전과 같다 — src·원본 후보 모두 API 주소', () => {
+    const { container } = render(<HeroSlider banners={[banner({ images: { pc: { url: PC, direct_url: null, width: 1920, height: 640 }, mobile: null } })]} settings={{}} />);
+    const img = container.querySelector('img.hs-slider__image');
+
+    expect(img?.getAttribute('src')).toBe(PC);
+    expect(img?.getAttribute('srcset')).toBe(`${PC}?size=md 640w, ${PC}?size=lg 1280w, ${PC} 1920w`);
+  });
+
+  // @scenario surface=slider_srcset_original
+  // @effects hero_slider_srcset_original_candidate_is_direct_url
+  it('responsiveSrcset 은 원본 후보 꼬리가 정확할 때만 바꾸고, 후보가 없거나 대상 주소가 아니면 손대지 않는다', () => {
+    expect(responsiveSrcset(PC, 600, CDN)).toBeUndefined();
+    expect(responsiveSrcset(CDN, 1920)).toBeUndefined();
+    expect(responsiveSrcset(PC, 1920, PC)).toBe(`${PC}?size=md 640w, ${PC}?size=lg 1280w, ${PC} 1920w`);
+    expect(responsiveSrcset(PC, 1920.7, CDN)).toBe(`${PC}?size=md 640w, ${PC}?size=lg 1280w, ${CDN} 1920w`);
+    expect(responsiveSrcset(PC, 1920, 'https://cdn.example.com/a b.jpg')).toBe(`${PC}?size=md 640w, ${PC}?size=lg 1280w, https://cdn.example.com/a%20b.jpg 1920w`);
+  });
+
+  // @scenario surface=slider_src
+  // @effects hero_slider_src_uses_direct_url
+  it('mediaSrc 는 비지 않은 direct_url 을 우선하고, 없으면 url 이다', () => {
+    expect(mediaSrc({ url: PC, direct_url: CDN })).toBe(CDN);
+    expect(mediaSrc({ url: PC, direct_url: '' })).toBe(PC);
+    expect(mediaSrc({ url: PC, direct_url: null })).toBe(PC);
+    expect(mediaSrc(null)).toBeUndefined();
   });
 });

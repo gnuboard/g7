@@ -227,6 +227,7 @@ class CategoryController extends AdminBaseController
                         'size' => $image->file_size,
                         'size_formatted' => $this->formatFileSize($image->file_size),
                         'download_url' => $image->download_url,
+                        'preview_url' => $image->preview_url,
                         'order' => $image->sort_order ?? 1,
                         'is_image' => str_starts_with($image->mime_type, 'image/'),
                     ],
@@ -360,7 +361,7 @@ class CategoryController extends AdminBaseController
 
             // 캐시 계약(검증자 비교·환경별 Cache-Control·304 의 200 헤더 동반)과 메타 키 검증은
             // 코어 단일 지점(`streamedFileResponseFromMeta()`)이 소유한다 — 종전의 컨트롤러별 사본을
-            // 접었다 (14차 → 16차 G3 라운드 E-7). `immutable` 은 `false` 고정(이 URL 에는 `?v=` 가 없다),
+            // 접었다. `immutable` 은 `false` 고정(이 URL 에는 `?v=` 가 없다),
             // 압축은 선언으로 제외한다(사용자 업로드물 — 형제 `PublicStorageController` 와 같은 선언).
             // 만료 기간은 서비스 메타(`max_age`)가 정한다.
             return $this->streamedFileResponseFromMeta(

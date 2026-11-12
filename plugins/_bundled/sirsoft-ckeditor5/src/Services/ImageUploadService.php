@@ -4,8 +4,11 @@ namespace Plugins\Sirsoft\Ckeditor5\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Support\AssetUrl;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailUrl;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -65,7 +68,7 @@ class ImageUploadService
         // 읽어 **축소 전 크기**를 돌려준다. `getimagesize()` 는 파일을 직접 읽으므로
         // width/height 만 축소본을 가리키고 크기만 어긋난다 — 한 행의 두 값이 서로 다른
         // 파일을 가리키는 상태다. 형제 넷(코어 2 · 게시판 · 페이지)은 같은 사유로 이미 이
-        // 처리를 갖는다 (12차 G3 라운드 D3 — 11차가 형제 절반에만 적용했다).
+        // 처리를 갖는다.
         clearstatcache(true, $file->getRealPath());
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
@@ -82,5 +85,71 @@ class ImageUploadService
         HookManager::doAction('sirsoft-ckeditor5.image.after_upload', $record);
 
         return $record;
+    }
+
+    /**
+     * 본문에 저장할 반응형 주소 묶음을 만듭니다 — CKEditor 업로드 어댑터의 `urls` 응답.
+     *
+     * 공개 자산 디스크(CDN)에 올라간 이미지는 본문 `<img src>` 에 직접 URL 이 박혀 썸네일 파이프를
+     * 지나지 않는다. 그래서 업로드 때 숫자 규격 후보를 API 서빙 주소 + `?size=`(서버가 썸네일을 만들고
+     * 공개 썸네일 디스크면 302) 로 함께 내려, 편집기가 `srcset`·`sizes` 로 본문에 저장하게 한다.
+     * 원본(`default`)과 마지막 후보(원본 가로)는 직접 URL 이다 — 큰 화면이 서빙 경로를 거치지 않고 CDN 원본을 받는다.
+     * 축소 후보는 사이트 절대 주소다 — 본문이 알림 메일처럼 사이트 밖에서 읽혀도 열린다.
+     *
+     * 빈 배열을 돌려주는 경우(응답에 `urls` 를 싣지 않음):
+     * - 직접 URL 이 없는 행(`download_url === preview_url`) — 본문 렌더가 API 주소에 srcset 을 붙인다
+     * - 썸네일 기능이 꺼짐(`core.thumbnail.enabled=false`)
+     * - 숫자 요청 대상 규격이 하나도 없음(또는 모두 원본 가로보다 큼)
+     *
+     * @param  Ckeditor5ImageUpload  $image  업로드 기록
+     * @param  int|null  $originalWidth  원본 가로(px). 모르면 null — 그때는 가로로 후보를 자르지 않는다
+     * @return array<string, string> `[가로 문자열 => ?size= API 절대 주소, ..., 원본 가로 => 원본 주소, 'default' => 원본 주소]` 또는 빈 배열
+     */
+    public function responsiveUrls(Ckeditor5ImageUpload $image, ?int $originalWidth): array
+    {
+        $downloadUrl = $image->download_url;
+        $previewUrl = $image->preview_url;
+
+        if ($downloadUrl === $previewUrl || ! (bool) config('core.thumbnail.enabled', true)) {
+            return [];
+        }
+
+        $rows = array_values(array_filter(
+            app(ThumbnailPresetRegistry::class)->forFrontend(),
+            fn (array $row) => ($row['numeric'] ?? false) === true
+                && is_int($row['width'] ?? null)
+                && $row['width'] > 0
+                && ($originalWidth === null || $row['width'] <= $originalWidth)
+        ));
+        usort($rows, fn (array $a, array $b) => $a['width'] <=> $b['width']);
+
+        $urls = [];
+
+        foreach ($rows as $row) {
+            $key = (string) $row['width'];
+
+            // 같은 가로의 규격이 여럿이면 앞 것 하나만 — srcset 은 가로 기술자가 겹치면 무효가 된다
+            if (isset($urls[$key])) {
+                continue;
+            }
+
+            // 사이트 절대 주소로 싣는다 — 이 값은 본문 HTML 에 그대로 저장돼 알림 메일처럼 사이트 밖에서도 읽힌다
+            $urls[$key] = AssetUrl::siteAbsolute(ThumbnailUrl::withSize($previewUrl, (string) $row['name']));
+        }
+
+        if ($urls === []) {
+            return [];
+        }
+
+        // 마지막 후보는 원본 가로의 직접 주소다 — 원본이 필요한 큰 화면이 서빙 경로가 아니라 CDN 원본을 받게 한다.
+        // 원본 가로와 같은 규격 후보가 있으면 원본으로 갈음한다(같은 가로 기술자가 겹치면 srcset 이 무효).
+        // 가로를 모르면 기술자를 붙일 수 없어 축소 후보만 싣는다.
+        if ($originalWidth !== null && $originalWidth > 0) {
+            $urls[(string) $originalWidth] = AssetUrl::siteAbsolute($downloadUrl);
+        }
+
+        $urls['default'] = AssetUrl::siteAbsolute($downloadUrl);
+
+        return $urls;
     }
 }

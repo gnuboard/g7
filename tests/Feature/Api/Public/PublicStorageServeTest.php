@@ -83,7 +83,7 @@ class PublicStorageServeTest extends TestCase
     /**
      * HEAD 와 부분 응답(206)의 계약을 이 라우트 자신이 잰다.
      *
-     * 이 축은 종전에 **형제 라우트**(플러그인 번들)에서만 측정됐다. 6차 라운드가 이
+     * 이 축은 종전에 **형제 라우트**(플러그인 번들)에서만 측정됐다. 이후 검토가 이
      * 라우트를 압축에서 명시적으로 빼면서 그 형제 검증은 더 이상 이 라우트를 대표하지
      * 않게 됐는데(압축 경로를 타지 않으므로 응답을 만드는 코드가 다르다), 그 사실이 같은
      * 라운드 안에서 재평가되지 않았다.
@@ -281,7 +281,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * 검증 실패가 **엉뚱한 외부 주소로 튕겨 보내지 않는다** (4차 G3).
+     * 검증 실패가 **엉뚱한 외부 주소로 튕겨 보내지 않는다**.
      *
      * Laravel 기본 동작은 `expectsJson()` 이 false 이면 이전 페이지로 리다이렉트하는데, 그
      * "이전 페이지" 의 출처는 요청의 `Referer` 헤더다 — 인증 없는 자산 주소 하나가 임의
@@ -314,7 +314,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * 304 가 200 과 **같은 캐싱 정책**과 검증자를 싣는다 (4차 G3).
+     * 304 가 200 과 **같은 캐싱 정책**과 검증자를 싣는다.
      *
      * 프레임워크 기본 304 는 `private, must-revalidate` 이고 `Last-Modified` 를 제거한다 —
      * 200 이 `public` 인 자산이 재검증 한 번으로 비공유로 격하되고(공유 캐시·CDN 이 항목을
@@ -382,7 +382,7 @@ class PublicStorageServeTest extends TestCase
         // **200 쪽을 먼저 잰다.** 종전에는 304 만 단언했는데, 그러면 「200 이 싣지 않는
         // 축을 304 에만 붙인다」는 반대 방향 비대칭이 초록으로 통과한다 — 규정이 금지한
         // 바로 그 형태다. 이 통로는 압축에서 제외되지만 `Vary` 부착은 압축 판정보다
-        // **앞**에 있으므로 200 도 싣는 것이 계약이다 (7차 G3 라운드 C6).
+        // **앞**에 있으므로 200 도 싣는 것이 계약이다.
         $this->assertStringContainsString(
             'Accept-Encoding',
             (string) $first->headers->get('Vary'),
@@ -467,7 +467,7 @@ class PublicStorageServeTest extends TestCase
      * ② 압축 미들웨어가 그 응답을 일반 응답으로 **치환하지 않았다** — 치환은 곧 전체 적재다.
      * 치환하지 않은 근거는 선언(`SKIP_ATTRIBUTE`)이어야 한다 — 클래스를 보고 건너뛰는 우연은
      * 미들웨어 판정이 바뀌는 순간 사라진다. 종전에는 이 효과를 미들웨어 단위 테스트가
-     * 대표한다고 선언만 돼 있었고 실제 공개 스토리지 통로로는 재지 않았다 (16차 G3 라운드 F9).
+     * 대표한다고 선언만 돼 있었고 실제 공개 스토리지 통로로는 재지 않았다.
      *
      * @scenario url_form=path_segment, target=regular_file, method=get_only
      *
@@ -557,8 +557,7 @@ class PublicStorageServeTest extends TestCase
             // 뜻하게 되면 파일 존재 여부가 샌다」이고, `..`·점 세그먼트·realpath 실패
             // 세 분기가 그 사유로 이미 404 를 고른다. 링크 분기만 403 이면 무인증
             // 프로버가 응답 코드로 「그 경로에 링크가 있다」를 알아낼 수 있고, 링크가
-            // 되는 서버의 정적 서빙은 같은 입력에 200 을 주므로 배치별로 세 갈래가 된다
-            // (7차 G3 라운드 C4).
+            // 되는 서버의 정적 서빙은 같은 입력에 200 을 주므로 배치별로 세 갈래가 된다.
             $this->get('/api/system/public-storage/g7-test-public-storage/leak.txt')
                 ->assertNotFound();
         } finally {
@@ -632,7 +631,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * ETag 는 RFC 9110 §8.8.3 의 문법(큰따옴표)을 따른다 (3차 G3 라운드 L2).
+     * ETag 는 RFC 9110 §8.8.3 의 문법(큰따옴표)을 따른다.
      *
      * 정적 서빙(Apache·nginx)은 항상 따옴표를 붙인다. 따옴표 없는 값은 규격상 유효한
      * entity-tag 가 아니라 중간 프록시·CDN 이 그 헤더를 버리거나 다시 쓸 수 있다.
@@ -652,7 +651,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * `If-Modified-Since` 만 보내는 클라이언트도 304 를 받는다 (3차 G3 라운드 L1).
+     * `If-Modified-Since` 만 보내는 클라이언트도 304 를 받는다.
      *
      * 종전에는 `Last-Modified` 를 내보내면서 그 조건부 요청은 무시해, ETag 를 보내지 않는
      * 프록시가 매번 전문을 받아 갔다 — 링크가 되는 서버의 정적 서빙에는 없던 성질이다.
@@ -676,7 +675,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * 확장자를 모르는 파일은 **내용을 보지 않고** 내려받기로 나간다 (3차 G3 라운드 M5).
+     * 확장자를 모르는 파일은 **내용을 보지 않고** 내려받기로 나간다.
      *
      * 내용을 스니핑하면 확장자 없는 업로드물이라도 HTML 형태이면 `text/html` 로 승격되어
      * 브라우저가 페이지로 열어 실행한다. 링크가 되는 서버의 정적 서빙은 미지 유형을
@@ -728,7 +727,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * `.xhtml` 은 nginx `mime.types` 와 같은 유형으로 나간다 (15차 G3 라운드).
+     * `.xhtml` 은 nginx `mime.types` 와 같은 유형으로 나간다.
      *
      * 표에 없어 octet-stream 으로 내려가면 링크가 되는 서버의 정적 서빙(`application/xhtml+xml`)
      * 과 갈린다. `.svgz` 는 표에 넣지 않는다 — 본문이 gzip 이라 `Content-Encoding: gzip` 을
@@ -751,7 +750,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * 200·304 모두 `X-Content-Type-Options: nosniff` 를 싣는다 (15차 G3 라운드).
+     * 200·304 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
      *
      * 업로드된 SVG·HTML 이 앱 오리진에서 실행되는 축이다 — 정적 서빙 설정은 그 헤더를 붙이므로
      * 이 통로만 빠지면 링크 유무로 위험이 갈린다. 헬퍼 단일 지점이 붙이고, 304 는 200 이
@@ -777,7 +776,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * 실재하지만 읽을 수 없는 파일은 정적 서빙과 같은 **403** 이다 (15차 G3 라운드).
+     * 실재하지만 읽을 수 없는 파일은 정적 서빙과 같은 **403** 이다.
      *
      * 종전에는 존재·realpath 판정을 통과한 뒤 `BinaryFileResponse` 가 `File must be readable`
      * 로 던져 **무인증 표면이 500 + 스택 로그**였다. 권한 판정은 서비스가 분리해 돌려주고
@@ -843,5 +842,71 @@ class PublicStorageServeTest extends TestCase
         $png->assertOk();
         $png->assertHeader('X-Content-Type-Options', 'nosniff');
         $this->assertStringStartsWith('inline', (string) $png->headers->get('Content-Disposition'), '래스터 이미지는 화면에 그려야 한다');
+    }
+
+    /**
+     * 웹서버 파일 위임(#878)을 켜도 활성 문서는 내려받기다 — 위임 헤더와 `attachment` 가 함께 나가고 본문은 웹서버 몫이다.
+     *
+     * 이 통로의 실행 가능한 문서 보정(`InlineMediaPolicy::harden`)은 응답 헤더라 위임과 무관하게 실려야 한다.
+     * 웹서버가 위임 응답의 헤더를 어떻게 전달하는지는 문서(docs/backend/file-serving-delegation.md)가 다룬다.
+     *
+     * @scenario case=public_storage_attachment
+     *
+     * @effects public_storage_delegation_keeps_attachment_disposition
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delegated_active_document_is_still_an_attachment(): void
+    {
+        config(['core.file_serving.delegation' => 'x-sendfile']);
+        file_put_contents($this->fixtureDir.'/page.html', '<script>alert(document.domain)</script>');
+
+        $response = $this->get('/api/system/public-storage/g7-test-public-storage/page.html');
+
+        $response->assertOk();
+        $this->assertSame(realpath($this->fixtureDir.'/page.html'), $response->headers->get('X-Sendfile'));
+        $this->assertStringStartsWith('attachment', (string) $response->headers->get('Content-Disposition'));
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertNull($response->headers->get('Content-Encoding'), '위임 응답은 앱 gzip 에서 빠진다');
+
+        ob_start();
+        $response->baseResponse->sendContent();
+        $this->assertSame('', (string) ob_get_clean(), '본문은 웹서버가 보낸다');
+    }
+
+    /**
+     * 웹서버 파일 위임을 켜도 심볼릭 링크 경유는 종전처럼 404 다 — 판정이 응답 생성보다 앞이다(링크 생성 불가 환경은 건너뜀).
+     *
+     * @scenario case=public_storage_symlink
+     *
+     * @effects public_storage_symlink_refusal_survives_delegation
+     *
+     * @return void 반환값 없음
+     */
+    public function test_symlink_refusal_survives_delegation(): void
+    {
+        config(['core.file_serving.delegation' => 'x-sendfile']);
+
+        $secret = storage_path('app/private/g7-test-delegation-secret.txt');
+        if (! is_dir(dirname($secret))) {
+            mkdir(dirname($secret), 0755, true);
+        }
+        file_put_contents($secret, 'secret');
+
+        $link = $this->fixtureDir.'/delegated-leak.txt';
+        if (! @symlink($secret, $link)) {
+            @unlink($secret);
+            $this->markTestSkipped('symlink 생성 불가 환경(Windows SeCreateSymbolicLink 권한 부재) — 링크 비추적 계약은 PublicStorageService 의 is_link 가드가 담당하며 POSIX 환경 실행에서 검증된다.');
+        }
+
+        try {
+            $response = $this->get('/api/system/public-storage/g7-test-public-storage/delegated-leak.txt');
+
+            $response->assertNotFound();
+            $this->assertNull($response->headers->get('X-Sendfile'), '위임 헤더로 비공개 파일 경로가 웹서버에 넘어가면 안 된다');
+        } finally {
+            @unlink($link);
+            @unlink($secret);
+        }
     }
 }

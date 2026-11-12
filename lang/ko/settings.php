@@ -94,6 +94,11 @@ return [
             'public' => 'Public 디스크',
             's3' => 'Amazon S3',
         ],
+        'file_delegation' => [
+            'none' => '사용 안 함 (PHP 가 전송)',
+            'x-sendfile' => 'X-Sendfile (Apache mod_xsendfile)',
+            'x-accel-redirect' => 'X-Accel-Redirect (nginx)',
+        ],
         'cache' => [
             'file' => '파일',
             'redis' => 'Redis',
@@ -134,6 +139,20 @@ return [
     'driver_test_partial' => '일부 드라이버 연결 테스트가 실패했습니다.',
     'driver_test_error' => '드라이버 연결 테스트 중 오류가 발생했습니다.',
     'unknown_driver' => '알 수 없는 드라이버입니다.',
+
+    // 웹서버 파일 위임 판정 (드라이버 시험 1단계, #878) — DriverConnectionTester::testFileDelegation()
+    'driver_test' => [
+        'file_delegation' => [
+            'none' => '웹서버 파일 위임을 쓰지 않습니다. 파일은 PHP 가 보냅니다.',
+            'apache_ready' => 'Apache 에 mod_xsendfile 이 로드되어 있습니다. XSendFilePath 를 확인하고, 저장한 뒤 「실제 전송 확인」으로 마무리하세요.',
+            'apache_missing' => 'Apache 에 mod_xsendfile 이 로드되어 있지 않습니다. 이대로 켜면 파일이 빈 본문으로 나갑니다.',
+            'apache_unknown' => 'Apache 모듈 목록을 읽을 수 없습니다(PHP-FPM 등). 저장한 뒤 「실제 전송 확인」으로 확인하세요.',
+            'nginx_hint' => 'nginx 로 보입니다. 안내한 internal location 을 추가했는지 확인하고, 저장한 뒤 「실제 전송 확인」으로 마무리하세요.',
+            'server_mismatch_nginx' => '이 서버는 nginx 로 보입니다. nginx 에서는 X-Accel-Redirect 를 고르세요.',
+            'server_mismatch_apache' => '이 서버는 Apache 로 보입니다. Apache 에서는 X-Sendfile(mod_xsendfile)을 고르세요.',
+            'server_unknown' => '웹서버 종류를 알 수 없습니다. 저장한 뒤 「실제 전송 확인」으로 확인하세요.',
+        ],
+    ],
 
     // 아웃바운드 프록시 연결 테스트 메시지
     'outbound_proxy_test_success' => '프록시 연결에 성공했습니다. 외부 서비스에는 이 IP 로 보입니다.',
