@@ -92,8 +92,9 @@
 디스크가 공개 URL 을 주는 환경에서는 본문에 디스크 직접 URL 이 박힙니다 — 그래서 본문에
 남는 URL 형태가 두 가지입니다. 해시 경로에 `?size={규격}`·`?w={숫자}` 가 붙으면
 `ImageServeController::serve` 가 원본 응답 바로 앞에서 코어 `ThumbnailResponder` 로 썸네일을 냅니다
-(공개 원본 — 공개 썸네일 디스크, 그 디스크가 공개 자산 디스크면 302). 디스크 직접 URL 로 박힌
-이미지는 이 경로를 지나지 않으므로 원본 그대로입니다.
+(공개 원본 — 공개 썸네일 디스크, 그 디스크가 공개 자산 디스크면 302). 디스크 직접 URL 로 박히는
+이미지는 이 경로를 지나지 않으므로, 업로드 응답이 반응형 후보 `urls`(숫자 키 = API 주소 + `?size=`)를 함께
+내리고 편집기가 본문 `srcset` 으로 저장합니다 — 그 전에 저장된 본문은 원본 그대로입니다.
 
 **미참조 이미지 정리**: `sirsoft-ckeditor5:prune-unused-images --scheduled`(일 1회, 설정
 `unusedImageCleanup` 이 켜져 있을 때만) → `ImageReferenceScanService` 가 코어 소스 4개(알림 템플릿·레이아웃 3종)
@@ -189,8 +190,8 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 24개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 38개 | `vitest.config.ts` |
+| PHPUnit | 25개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
+| Vitest | 39개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 26개 | `tests/scenarios` |
 

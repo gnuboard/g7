@@ -114,6 +114,7 @@ php artisan plugin:update sirsoft-popup --force
 | `dismiss_days` | 보지 않을 일수 | `7` |
 | `max_upload_mb` | 이미지 최대 용량(MB) | `5` |
 | `public_cache_minutes` | 사용자 화면 팝업 캐시 시간(분) | `10` |
+| `public_asset_disk` | 공개 자산 디스크 | - |
 
 개발자용 상세(타입·검증·저장 위치)는 [설정 스키마](docs/settings.md#설정-스키마) 를 보세요.
 <!-- @generated:settings-summary END -->

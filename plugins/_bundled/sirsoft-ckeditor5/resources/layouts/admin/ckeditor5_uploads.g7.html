@@ -175,7 +175,7 @@
         </prop>
         <column field="thumbnail" :sortable="false" header="$t:sirsoft-ckeditor5.admin.uploads.col.thumbnail" width="90px">
           <cell>
-            <img src="{{row.download_url}}" thumbPreset="sm" decoding="async" alt="{{row.original_name ?? ''}}" loading="lazy" class="ckeditor:w-16 ckeditor:h-16 ckeditor:object-cover ckeditor:rounded-lg ckeditor:border ckeditor:border-gray-200 ckeditor:dark:border-gray-700"/>
+            <img src="{{row.preview_url ?? row.download_url}}" thumbPreset="sm" decoding="async" alt="{{row.original_name ?? ''}}" loading="lazy" class="ckeditor:w-16 ckeditor:h-16 ckeditor:object-cover ckeditor:rounded-lg ckeditor:border ckeditor:border-gray-200 ckeditor:dark:border-gray-700"/>
           </cell>
         </column>
         <column field="original_name" header="$t:sirsoft-ckeditor5.admin.uploads.col.original_name" :sortable="true" width="260px">

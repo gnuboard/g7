@@ -93,6 +93,46 @@ class ContentMediaResponderTest extends TestCase
     }
 
     /**
+     * 로컬 디스크 + 웹서버 파일 위임(#878) — 본문·Range 는 웹서버 몫이라 앱은 200 과 위임 헤더만 낸다.
+     * 게이트 콘텐츠의 `Cache-Control: private` 와 재생 헤더는 그대로다. 위임을 끄면 종전처럼 206.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=content_media_local
+     *
+     * @effects content_media_local_branch_is_delegated
+     */
+    public function test_local_branch_delegates_to_the_web_server_when_enabled(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'cm');
+        file_put_contents($file, str_repeat('b', 500));
+        $storage = $this->createMock(StreamingStorageInterface::class);
+        $storage->method('localPath')->willReturn($file);
+        $spec = ['mime_type' => 'video/mp4', 'filename' => 'a.mp4', 'playable' => true, 'private' => true];
+
+        try {
+            config(['core.file_serving.delegation' => 'x-sendfile']);
+            $delegated = ContentMediaResponder::respond($storage, 'c', 'a.mp4', $spec, $this->request('bytes=0-9'));
+
+            $this->assertInstanceOf(BinaryFileResponse::class, $delegated);
+            $this->assertSame(200, $delegated->getStatusCode(), '구간 처리는 웹서버가 한다');
+            $this->assertFalse($delegated->headers->has('Content-Range'));
+            $this->assertSame(realpath($file), $delegated->headers->get('X-Sendfile'));
+            $this->assertStringContainsString('private', (string) $delegated->headers->get('Cache-Control'));
+            $this->assertStringStartsWith('inline', (string) $delegated->headers->get('Content-Disposition'));
+
+            config(['core.file_serving.delegation' => 'none']);
+            $direct = ContentMediaResponder::respond($storage, 'c', 'a.mp4', $spec, $this->request('bytes=0-9'));
+
+            $this->assertSame(206, $direct->getStatusCode());
+            $this->assertFalse($direct->headers->has('X-Sendfile'));
+        } finally {
+            config(['core.file_serving.delegation' => 'none']);
+            @unlink($file);
+        }
+    }
+
+    /**
      * `harden()` 은 바뀌지 않았다(동영상도 다운로드 강제), `hardenPlayable()` 은 재생 형식만 inline.
      *
      * @return void 반환값 없음

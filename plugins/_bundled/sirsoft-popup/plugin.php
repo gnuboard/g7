@@ -310,7 +310,50 @@ class Plugin extends AbstractPlugin
                     'en' => 'Set 0 to disable caching. Saving, deleting or reordering popups is reflected immediately, and the cache also expires at scheduled start and end times.',
                 ],
             ],
+            // 선택지가 코어 카탈로그 + 플러그인 훅 등록 디스크로 동적이라 enum 불가 — string.
+            // 존재하지 않는 디스크 값은 resolvePublicAssetDisk() 가 스트리밍으로 안전 폴백한다.
+            'public_asset_disk' => [
+                'type' => 'string', 'max' => 100, 'default' => '', 'required' => false,
+                'label' => ['ko' => '공개 자산 디스크', 'en' => 'Public Asset Disk'],
+                'hint' => [
+                    'ko' => '팝업 이미지만 다른 디스크에 두려면 선택합니다. 비우면 코어 공개 자산 디스크 설정을 따릅니다. 바꾸면 새로 올리는 이미지부터 적용되고, 이미 올린 이미지는 올린 디스크에서 그대로 제공됩니다. 공개 디스크(public)는 서버에 storage:link 가 있어야 PHP 를 거치지 않고 파일을 내보냅니다.',
+                    'en' => 'Select to store popup images on a different disk. Leave empty to follow the core public asset disk setting. A change applies to newly uploaded images; images already uploaded keep being served from the disk they were uploaded to. The public disk serves files without PHP only when storage:link exists on the server.',
+                ],
+            ],
         ];
+    }
+
+    /**
+     * 완전 공개 자산 스토리지 카테고리 목록 — 팝업 이미지(`images`)는 해시만 알면 받는 공개 파일이다.
+     *
+     * @var list<string>
+     */
+    private const PUBLIC_ASSET_CATEGORIES = ['images'];
+
+    /**
+     * 카테고리별 스토리지 디스크 이름 반환 (#878)
+     *
+     * 공개 자산 카테고리(`images`)만 공개 자산 디스크(플러그인 설정 public_asset_disk > 코어 전역
+     * core.storage.public_asset_disk)를 따르고, 나머지 카테고리는 기본 디스크를 유지합니다. 미설정·고아 디스크는
+     * 기본 디스크로 폴백해 기존 스트리밍 동작을 보존합니다. 이 값은 「지금 업로드가 갈 디스크」일 뿐이고, 이미 올린
+     * 파일의 읽기·삭제는 행에 기록된 disk 를 따른다(`PopupImageService::storageFor()`).
+     *
+     * 플러그인 설정 조회는 공개 자산 카테고리에서만 한다 — 'settings' 카테고리에서 조회하면 설정 로드와 재귀
+     * 고리가 생긴다(AbstractPlugin 주석 참조).
+     *
+     * @param  string  $category  카테고리
+     * @return string 디스크 이름
+     */
+    public function getStorageDiskFor(string $category): string
+    {
+        if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
+            return $this->getStorageDisk();
+        }
+
+        $override = plugin_setting('sirsoft-popup', 'public_asset_disk', '');
+
+        return $this->resolvePublicAssetDisk(is_string($override) ? $override : '')
+            ?? $this->getStorageDisk();
     }
 
     /**

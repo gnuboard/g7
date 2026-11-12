@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:82` |
-| `sirsoft-ckeditor5.image.before_upload` | action | 에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점) | `src/Services/ImageUploadService.php:41` |
+| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:85` |
+| `sirsoft-ckeditor5.image.before_upload` | action | 에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점) | `src/Services/ImageUploadService.php:44` |
 | `sirsoft-ckeditor5.image.filter_reference_sources` | filter | 에디터 이미지 참조 스캔 대상 테이블/컬럼 목록에 확장 콘텐츠를 추가 | 선언 (호출 위치 미확인) |
-| `sirsoft-ckeditor5.image.filter_upload_file` | filter | 업로드 파일 변형 지점 (압축·리사이즈 등) | `src/Services/ImageUploadService.php:46` |
+| `sirsoft-ckeditor5.image.filter_upload_file` | filter | 업로드 파일 변형 지점 (압축·리사이즈 등) | `src/Services/ImageUploadService.php:49` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -54,6 +54,13 @@
 
 서빙 라우트(`images/{hash}`)를 바꾸면 경로 패턴도 같이 바꿉니다. 어긋나도 오류는 나지 않고 원본만
 나갑니다.
+
+공개 자산 디스크(CDN)에 저장되는 본문 이미지는 `<img src>` 에 직접 주소가 박혀 이 패턴을 지나지 않습니다.
+그 이미지는 업로드 응답의 반응형 후보 `urls`(`default`·원본 가로 후보 = 직접 주소, 원본 가로 이하 숫자 규격 = 사이트 절대 API 서빙 주소
++ `?size=`)를 편집기가 본문 `<img srcset sizes width>` 로 저장해 썸네일을 받습니다(`ImageUploadService::responsiveUrls()`).
+직접 주소가 없는 이미지는 본문 렌더가 API 주소에 srcset 을 붙이므로 `urls` 를 싣지 않습니다. 이 동작 전에 저장된
+본문의 직접 주소 이미지는 원본 그대로입니다. 관리 목록 응답도 `download_url`(원본)과 `preview_url`(항상 API
+서빙 주소)을 함께 내고, 목록 그림 칸은 `preview_url` 에 규격을 겁니다.
 
 관계는 반대 방향으로 흐릅니다 — 다른 확장이 **이 플러그인의 훅을 구독**합니다. 게시판·페이지·
 이커머스가 `image.filter_reference_sources` 에 자기 콘텐츠 테이블을 등록하는 것이 그

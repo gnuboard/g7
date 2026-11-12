@@ -169,6 +169,8 @@ class ParameterDescriber
         'encryption' => '전송 암호화 방식 (tls/ssl)',
         'storage_driver' => '스토리지 드라이버 (local/s3)',
         'public_asset_disk' => '공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 등록 디스크)',
+        'file_delegation' => '웹서버 파일 위임 방식 (none/x-sendfile/x-accel-redirect)',
+        'file_delegation_accel_prefix' => 'nginx internal 위치 접두사 (x-accel-redirect 일 때 필수, 예: /_g7_sendfile/)',
         'cache_driver' => '캐시 드라이버 (file/redis/memcached)',
         'session_driver' => '세션 드라이버 (file/database/redis)',
         'queue_driver' => '큐 드라이버 (sync/database/redis)',

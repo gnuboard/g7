@@ -11,6 +11,8 @@ description: |
   - 상품 상세 리뷰 탭 80px 사진 칸: sm
   - 리뷰 확대 창의 큰 사진: 규격 없이 원본, 레이아웃 주석에 면제 사유(`thumb-exempt:`)
   - 상품 상세 메인 갤러리: ProductImageViewer 가 규격을 고르므로 레이아웃은 원 배열을 그대로 넘긴다
+  - 공개 자산 디스크(CDN) 행(#878): `download_url` 은 직접 주소라 규격이 붙지 않는다. 리뷰 탭 사진 칸·카테고리 배너(lg)는
+    `preview_url`(항상 API 서빙 주소)을 먼저 쓰고, 그 필드가 없는 예전 응답은 `download_url` 로 돌아간다. 확대 창은 원본
   - 반응 아이콘(글·댓글·마이페이지 반응 목록): object-contain 으로 모양을 보이는 자리라 자르기 규격(xs)을 붙이지 않고
     면제 사유를 남긴다(정사각이 아닌 아이콘의 양 끝이 잘린다)
   - 게시글 보기의 접힌 본문 미리보기(답글 목록 답글 본문, 답글 보기 위 원글 인용): 이미지·표 숨김을 `!hidden` 으로 쓴다.
@@ -21,7 +23,7 @@ description: |
   어느 규격을 주는가」 다.
 
 axes:
-  screen: [cart_item, board_card_list, product_detail_reviews, product_detail_gallery, reaction_icons, board_collapsed_preview]
+  screen: [cart_item, board_card_list, product_detail_reviews, product_detail_gallery, reaction_icons, board_collapsed_preview, shop_category_banner]
 
 effects:
   - layout_img_requests_thumbnail_size
@@ -30,6 +32,7 @@ effects:
   - main_gallery_receives_unsized_images
   - reaction_icon_keeps_original_shape
   - collapsed_preview_hides_images_over_unlayered_rules
+  - direct_url_row_requests_thumbnail_through_preview_url   # 공개 자산 디스크(CDN) 행은 preview_url(API)에 규격을 건다(#878)
 
 test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/thumbnail-preset-layouts.test.tsx

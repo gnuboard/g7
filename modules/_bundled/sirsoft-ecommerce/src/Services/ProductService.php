@@ -1771,6 +1771,7 @@ class ProductService
                 'url' => $img->url,
                 'original_filename' => $img->original_filename,
                 'download_url' => $img->download_url,
+                'preview_url' => $img->preview_url,
                 'file_size' => $img->file_size,
                 'size' => $img->file_size,
                 'size_formatted' => $this->formatFileSize($img->file_size),

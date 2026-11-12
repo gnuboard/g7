@@ -15,7 +15,12 @@
  * 조합 요약(마커 아님, 평문): screen=board_card_list
  * 조합 요약(마커 아님, 평문): screen=product_detail_reviews
  * 조합 요약(마커 아님, 평문): screen=reaction_icons
+ * 조합 요약(마커 아님, 평문): screen=shop_category_banner
  * 효과 요약(마커 아님, 평문): layout_img_requests_thumbnail_size, zoom_view_keeps_original, reaction_icon_keeps_original_shape
+ * 효과 요약(마커 아님, 평문): direct_url_row_requests_thumbnail_through_preview_url
+ *
+ * 공개 자산 디스크(CDN) 행(#878): `download_url` 은 직접 주소라 규격이 붙지 않는다. 리뷰 사진 칸·카테고리 배너는
+ * 서버가 함께 내리는 `preview_url`(API)에 규격을 걸고, 확대 창은 `download_url`(원본)을 그대로 쓴다.
  */
 
 import React from 'react';
@@ -32,6 +37,7 @@ import cardIndex from '../../layouts/partials/board/types/card/index.json';
 import tabReviews from '../../layouts/partials/shop/detail/_tab_reviews.json';
 import modalReviewImage from '../../layouts/partials/shop/detail/_modal_review_image.json';
 import shopShow from '../../layouts/shop/show.json';
+import shopCategory from '../../layouts/shop/category.json';
 import commentItem from '../../layouts/partials/board/show/_comment_item.json';
 import basicShow from '../../layouts/partials/board/types/basic/show.json';
 import myReactions from '../../layouts/partials/mypage/board/_my_reactions.json';
@@ -42,6 +48,7 @@ type Node = Record<string, any>;
 const URL_PATTERNS = [
   '/api/attachment/*',
   '/api/modules/sirsoft-ecommerce/product-image/*',
+  '/api/modules/sirsoft-ecommerce/category-image/*',
   '/api/modules/sirsoft-ecommerce/review-image/*',
   '/api/modules/sirsoft-board/boards/*/attachment/*/preview',
 ];
@@ -268,6 +275,70 @@ describe('상품 상세 (shop/show.json · 리뷰 탭 · 리뷰 확대 창)', ()
     utils.cleanup();
   });
 
+  // 공개 자산 디스크(CDN) 행 — download_url 은 직접 주소라 규격이 붙지 않으므로 preview_url(API)에 sm 을 건다(#878)
+  // @scenario screen=product_detail_reviews
+  // @effects direct_url_row_requests_thumbnail_through_preview_url
+  it('CDN 리뷰 사진 칸은 preview_url(API) 의 sm 규격 주소를 요청한다', async () => {
+    const utils = createLayoutTest(probe(reviewImages!, '{{reviews.data.reviews.data ?? []}}', 'review', 'reviews') as any, {
+      componentRegistry: registry as any,
+    });
+    utils.mockApi('reviews', {
+      response: {
+        data: {
+          reviews: {
+            data: [
+              {
+                id: 7,
+                image_count: 2,
+                images: [
+                  {
+                    download_url: 'https://cdn.test/assets/sirsoft-ecommerce/images/reviews/7/r1.jpg',
+                    preview_url: '/api/modules/sirsoft-ecommerce/review-image/r1',
+                  },
+                  {
+                    download_url: 'https://cdn.test/assets/sirsoft-ecommerce/images/reviews/7/r2.jpg',
+                    preview_url: '/api/modules/sirsoft-ecommerce/review-image/r2',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    });
+    await utils.render();
+
+    expect(renderedSrcs()).toEqual([
+      '/api/modules/sirsoft-ecommerce/review-image/r1?size=sm',
+      '/api/modules/sirsoft-ecommerce/review-image/r2?size=sm',
+    ]);
+    utils.cleanup();
+  });
+
+  // @scenario screen=product_detail_reviews
+  // @effects zoom_view_keeps_original, direct_url_row_requests_thumbnail_through_preview_url
+  it('CDN 리뷰 확대 창의 큰 사진은 원본 직접 주소(download_url)다', () => {
+    const [main] = findAll(modalReviewImage, imgReading('reviewForModal'));
+    const scope = {
+      _global: {
+        reviewImageIndex: 0,
+        reviewForModal: {
+          images: [
+            {
+              download_url: 'https://cdn.test/assets/sirsoft-ecommerce/images/reviews/7/r1.jpg',
+              preview_url: '/api/modules/sirsoft-ecommerce/review-image/r1',
+            },
+          ],
+        },
+      },
+    };
+    const expression = String(main.props.src).trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+    // eslint-disable-next-line no-new-func
+    const src = new Function('_global', `return (${expression});`)(scope._global);
+
+    expect(src).toBe('https://cdn.test/assets/sirsoft-ecommerce/images/reviews/7/r1.jpg');
+  });
+
   // @scenario screen=product_detail_reviews
   // @effects zoom_view_keeps_original
   it('리뷰 확대 창의 큰 사진은 규격 없이 원본을 그리고 면제 사유를 남긴다', () => {
@@ -285,6 +356,44 @@ describe('상품 상세 (shop/show.json · 리뷰 탭 · 리뷰 확대 창)', ()
     const viewer = findNode(shopShow, (n) => n.name === 'ProductImageViewer');
     expect(viewer).toBeDefined();
     expect(viewer!.props.images).toBe('{{product.data?.images ?? []}}');
+  });
+});
+
+describe('카테고리 배너 (shop/category.json)', () => {
+  const banner = findNode(shopCategory, imgReading('category?.data?.images'));
+
+  /**
+   * 카테고리 배너 렌더 레이아웃 — 배너 Img 하나를 카테고리 데이터소스로 그린다.
+   *
+   * @returns 레이아웃 JSON
+   */
+  const bannerProbe = () => ({
+    version: '1.0.0',
+    layout_name: 'thumbnail_preset_category_banner_test',
+    data_sources: [{ id: 'category', type: 'api', endpoint: '/api/test/category', method: 'GET', auto_fetch: true }],
+    components: [banner!],
+  });
+
+  // @scenario screen=shop_category_banner
+  // @effects layout_img_requests_thumbnail_size, direct_url_row_requests_thumbnail_through_preview_url
+  it.each([
+    [
+      'CDN 행',
+      {
+        download_url: 'https://cdn.test/assets/sirsoft-ecommerce/images/category/c.jpg',
+        preview_url: '/api/modules/sirsoft-ecommerce/category-image/c1',
+      },
+    ],
+    ['preview_url 이 없는 예전 응답', { download_url: '/api/modules/sirsoft-ecommerce/category-image/c1' }],
+  ])('%s 배너는 API 주소의 lg 규격을 요청한다', async (_label, image) => {
+    expect(banner).toBeDefined();
+    expect(banner!.props.thumbPreset).toBe('lg');
+    const utils = createLayoutTest(bannerProbe() as any, { componentRegistry: registry as any });
+    utils.mockApi('category', { response: { data: { name_localized: '가방', images: [image] } } });
+    await utils.render();
+
+    expect(renderedSrcs()).toEqual(['/api/modules/sirsoft-ecommerce/category-image/c1?size=lg']);
+    utils.cleanup();
   });
 });
 

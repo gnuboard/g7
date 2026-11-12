@@ -11,7 +11,7 @@ use Tests\TestCase;
  * `BaseApiController::fileResponse()` / `streamedFileResponse()` 두 지점이 소유한다. 그 계약은
  * **헬퍼를 지나는 통로에만** 성립한다 — 컨트롤러가 스토리지 스트림이나 `response()->file()`
  * 을 그대로 돌려주면 그 통로만 헤더가 빠지고, 오류도 로그도 없이 응답 헤더 차이로만 드러난다.
- * 15차 G3 라운드에서 sirsoft-page 첨부 **다운로드**가 그 형태였다(미리보기는 헬퍼를 지났다).
+ * 종전에 sirsoft-page 첨부 **다운로드**가 그 형태였다(미리보기는 헬퍼를 지났다).
  *
  * 모집단은 코어 + 번들 확장 전체의 컨트롤러다 — 한 확장 안에만 두면 그 밖의 동형 결함이
  * red 가 되지 않는다.
@@ -29,6 +29,8 @@ class FileServingHelperSourceContractTest extends TestCase
         '/response\(\)\s*->\s*(file|download|stream|streamDownload)\s*\(/',
         '/new\s+\\\\?(Symfony\\\\Component\\\\HttpFoundation\\\\)?BinaryFileResponse\s*\(/',
         '/new\s+\\\\?(Symfony\\\\Component\\\\HttpFoundation\\\\)?StreamedResponse\s*\(/',
+        // 웹서버 위임 응답(#878)도 헬퍼(`fileResponse()`)만 만든다 — 컨트롤러가 직접 만들면 ETag·304·nosniff·이름 선언을 건너뛴다.
+        '/new\s+\\\\?(App\\\\Http\\\\Responses\\\\)?DelegatedFileResponse\s*\(/',
     ];
 
     /**
@@ -37,7 +39,7 @@ class FileServingHelperSourceContractTest extends TestCase
      * 모집단을 반환 타입 문자열(`StreamedResponse|BinaryFileResponse`)에서만 도출하면, 반환 타입을
      * `Response` 로 넓힌(또는 생략한) 서빙 메서드가 모집단에서 빠져 **검사 자체를 받지 않는다** —
      * `AdminTemplateAssetController::serveEditorCss()` 가 그 형태였다(반환 타입 없음 · `response($css)`
-     * 직접 생성). 그래서 본문 신호도 함께 본다 (16차 G3 라운드 E-4·A7):
+     * 직접 생성). 그래서 본문 신호도 함께 본다:
      *
      *  - 스토리지 스트림·다운로드 생성 (`Storage::…->response(`·`->download(`)
      *  - 서비스가 스트림 응답을 돌려주는 관용 이름 (`->preview(`·`->serve(`·`->streamFile(`·`->getFileInfo(`·
@@ -46,9 +48,9 @@ class FileServingHelperSourceContractTest extends TestCase
      *    체이닝(`response($x…)->header('Content-Type'`)과 **헤더 배열 인자**
      *    (`response($x, 200, ['Content-Type' => …])`). 종전에는 앞의 형태만 봐서
      *    `AssetProbeController::probe()` 가 모집단 밖이었고, 회차 20 이 같은 축에서 고친
-     *    형태(빈 번들)도 애초에 탐지 대상이 아니었다 (22차 G3 라운드 B2)
+     *    형태(빈 번들)도 애초에 탐지 대상이 아니었다
      *  - 서비스가 내려주는 다운로드(`->download(`) — 종전 이름 목록에 없어, 반환 타입을
-     *    넓힌 다운로드 메서드가 본문 신호만으로는 잡히지 않았다 (22차 G3 라운드 B3)
+     *    넓힌 다운로드 메서드가 본문 신호만으로는 잡히지 않았다
      *
      * @var array<string>
      */
@@ -68,12 +70,11 @@ class FileServingHelperSourceContractTest extends TestCase
      * 파일 서빙 메서드 수의 하한 (회차 15 전수표 기준).
      *
      * 매직 넘버가 아니라 이름 있는 하한이다 — 모집단 도출이 깨져 메서드가 조용히 덜 잡히면
-     * 아래 검사가 공허하게 초록이 되므로, 그 바닥을 여기 한 곳에서 선언한다 (17차 G3 라운드 B-16).
+     * 아래 검사가 공허하게 초록이 되므로, 그 바닥을 여기 한 곳에서 선언한다.
      *
      * 값은 **실측**이다. 종전 10 은 그 시점 실측(22)의 절반도 되지 않아, 모집단이 절반 넘게
      * 비어도 초록이었다 — 하한이 실측을 따라가지 않으면 「바닥을 선언한다」는 목적 자체가
-     * 사라진다. 서빙 메서드를 정당하게 줄였다면 이 값을 함께 내리고 근거를 남긴다
-     * (22차 G3 라운드 B4).
+     * 사라진다. 서빙 메서드를 정당하게 줄였다면 이 값을 함께 내리고 근거를 남긴다.
      */
     // 28 → 44: develop-7.2.0 병합으로 방문자 통계 내보내기(코어 8)·이커머스 내보내기와 클레임 이미지·
     // SSO 로그인 페이지와 메타데이터 등 서빙 메서드가 모집단에 들어왔다(병합 결과 실측).
@@ -84,7 +85,9 @@ class FileServingHelperSourceContractTest extends TestCase
     // (`streamedFileResponseFromMeta`·`fileResponse`)를 지나도록 고친 뒤 모집단에 남는다(실측).
     // 47 → 48: #434 파비콘 공개 서빙(`FaviconController`)이 들어왔다 — issue869 → develop-7.2.0 리베이스 트리 실측
     // (파일별 집계에서 한쪽에만 있는 서빙 메서드는 이것 하나다).
-    private const MIN_FILE_SERVING_METHODS = 48;
+    // 48 → 49: #878 웹서버 파일 위임 2단계 프로브(`SettingsController::fileDelegationProbe()`)가 들어왔다 —
+    // 코어 헬퍼 `fileResponse()` 를 지난다.
+    private const MIN_FILE_SERVING_METHODS = 49;
 
     /**
      * 컨트롤러 소스 파일 전수 (코어 + 번들 확장).
@@ -102,7 +105,7 @@ class FileServingHelperSourceContractTest extends TestCase
             base_path('plugins/_bundled/*/src/Http/Controllers/*.php'),
             // 확장은 `src/Http/Controllers` 를 강제받지 않는다 — 결제 플러그인 4종은
             // `src/Controllers` 를 쓰고, 그 44개가 통째로 이 계약 밖이었다. 그 안에는
-            // 헬퍼를 지나지 않고 손조립한 응답이 실재했다 (23차 G3 라운드 B23-6).
+            // 헬퍼를 지나지 않고 손조립한 응답이 실재했다.
             // 모집단을 **디렉토리 이름 한 벌**로 고정하지 않는다 — 다음 확장이 또 다른
             // 이름을 쓰면 같은 사각이 다시 생긴다.
             base_path('modules/_bundled/*/src/Controllers/**/*.php'),
@@ -191,7 +194,7 @@ class FileServingHelperSourceContractTest extends TestCase
      * 모집단 도출과 위임 탈출구 판정이 **같은 신호 상수**를 본다 — 종전 탈출구는
      * `download|response|preview|stream` 네 이름만 부정 판정에 썼는데, 그것은 8개 신호 목록의
      * 부분집합이라 `getFileInfo`·`indexInfo`·`childInfo` 등으로 직접 서빙하면서 `return $this->x()`
-     * 로 위임하는 형태를 탈출구가 잘못 면제했다. 판정을 이 한 곳으로 접는다 (17차 G3 라운드 B-11).
+     * 로 위임하는 형태를 탈출구가 잘못 면제했다. 판정을 이 한 곳으로 접는다.
      *
      * @param  string  $body  메서드 본문
      * @return bool 서빙 신호를 지니면 true
@@ -286,7 +289,7 @@ class FileServingHelperSourceContractTest extends TestCase
      * 셋 다 생략해도 동작하는 축이라 오류로 드러나지 않는다: `immutable` 은 요청자가 붙인
      * `?v=` 로 파생돼 사용자 업로드물이 1년 불변이 되고, `mimeType` 은 스토리지 어댑터의
      * 추정(사본)에 기대며, 압축 제외는 응답 클래스를 보고 건너뛰는 우연이 된다. 에디터
-     * 이미지 통로가 `mimeType` 을 빠뜨린 채로 있었다 (16차 G3 라운드 E-2·E-3).
+     * 이미지 통로가 `mimeType` 을 빠뜨린 채로 있었다.
      *
      * 메타 헬퍼(`streamedFileResponseFromMeta()`)는 `mimeType` 을 메타에서 받으므로 나머지 둘을
      * 요구한다 — 그 둘은 기본값이 없어 생략하면 문법 오류지만, 위치 인자로 넘기는 형태
@@ -386,7 +389,7 @@ class FileServingHelperSourceContractTest extends TestCase
 
         // 회차 15 전수표: 공개 스토리지 · 확장 자산 3(+번들 4) · 템플릿 레이아웃 첨부 · 코어 첨부 ·
         // 사이트맵 · 게시판 3 · 페이지 2 · 에디터 이미지 · 이커머스 4 — 하한이다(MIN_FILE_SERVING_METHODS).
-        // 실측이 하한보다 높으면 그 여유만큼 모집단이 조용히 줄어도 통과한다 — 24차 R24-C M9
+        // 실측이 하한보다 높으면 그 여유만큼 모집단이 조용히 줄어도 통과한다
         // 실측: `src/Controllers` 4경로를 모집단에서 빼도 이 단언이 초록이었다. 하한은 실측을
         // 따라간다(줄면 red, 늘면 이 상수를 올린다).
         $this->assertSame(self::MIN_FILE_SERVING_METHODS, $servingMethods, "파일 서빙 메서드 수가 하한과 다르다 — 늘었으면 MIN_FILE_SERVING_METHODS 를 올리고, 줄었으면 모집단이 빠진 것이다 (실측 {$servingMethods})");
@@ -454,7 +457,7 @@ class FileServingHelperSourceContractTest extends TestCase
                 // 이 계약의 대상이 아니다. 다만 그 판정은 정규식이 아니라 **코드에 남긴 선언**으로
                 // 한다 — `text/html` 을 신호에서 빼는 방식은 「html 이라고 적으면 통과」라는
                 // 탈출구를 만들고, 그 탈출구는 업로드물을 그 유형으로 내보내는 최악의 형태를
-                // 그대로 면제한다 (22차 G3 라운드 B2).
+                // 그대로 면제한다.
                 if (preg_match('/\/\/\s*file-serving:allow\s+\S/', $body)) {
                     continue;
                 }

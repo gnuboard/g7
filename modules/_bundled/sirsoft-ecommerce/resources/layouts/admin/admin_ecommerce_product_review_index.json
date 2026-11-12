@@ -2473,7 +2473,7 @@
                                                                                                     "type": "basic",
                                                                                                     "name": "Img",
                                                                                                     "props": {
-                                                                                                        "src": "{{rowImages[0].download_url}}",
+                                                                                                        "src": "{{rowImages[0].preview_url ?? rowImages[0].download_url}}",
                                                                                                         "thumbPreset": "sm",
                                                                                                         "loading": "lazy",
                                                                                                         "decoding": "async",
@@ -2525,7 +2525,7 @@
                                                                                                     "type": "basic",
                                                                                                     "name": "Img",
                                                                                                     "props": {
-                                                                                                        "src": "{{rowImages[1].download_url}}",
+                                                                                                        "src": "{{rowImages[1].preview_url ?? rowImages[1].download_url}}",
                                                                                                         "thumbPreset": "sm",
                                                                                                         "loading": "lazy",
                                                                                                         "decoding": "async",
@@ -2577,7 +2577,7 @@
                                                                                                     "type": "basic",
                                                                                                     "name": "Img",
                                                                                                     "props": {
-                                                                                                        "src": "{{rowImages[2].download_url}}",
+                                                                                                        "src": "{{rowImages[2].preview_url ?? rowImages[2].download_url}}",
                                                                                                         "thumbPreset": "sm",
                                                                                                         "loading": "lazy",
                                                                                                         "decoding": "async",
@@ -2629,7 +2629,7 @@
                                                                                                     "type": "basic",
                                                                                                     "name": "Img",
                                                                                                     "props": {
-                                                                                                        "src": "{{rowImages[3].download_url}}",
+                                                                                                        "src": "{{rowImages[3].preview_url ?? rowImages[3].download_url}}",
                                                                                                         "thumbPreset": "sm",
                                                                                                         "loading": "lazy",
                                                                                                         "decoding": "async",
@@ -2681,7 +2681,7 @@
                                                                                                     "type": "basic",
                                                                                                     "name": "Img",
                                                                                                     "props": {
-                                                                                                        "src": "{{rowImages[3].download_url}}",
+                                                                                                        "src": "{{rowImages[3].preview_url ?? rowImages[3].download_url}}",
                                                                                                         "thumbPreset": "sm",
                                                                                                         "loading": "lazy",
                                                                                                         "decoding": "async",

@@ -34,7 +34,8 @@ class PublicCategoryDetailResource extends BaseApiResource
             // 카테고리 og:image 생산자 — 로드된 images 첫 건의 URL (재쿼리 금지,
             // 로드 여부는 Repository/Service 가 결정 — whenLoaded 단일 가드).
             // module.php seoOpenGraph 의 category.data.thumbnail_url 소비처가 읽는다.
-            'thumbnail_url' => $this->whenLoaded('images', fn () => $this->images->first()?->download_url, null),
+            // 썸네일 기준 API 주소(preview_url) — 직접 URL 이면 og 썸네일(`?size=og`)이 걸리지 않는다.
+            'thumbnail_url' => $this->whenLoaded('images', fn () => $this->images->first()?->preview_url, null),
             'images' => $this->whenLoaded('images', function () {
                 return $this->images->map(function ($image) {
                     return [
@@ -42,6 +43,7 @@ class PublicCategoryDetailResource extends BaseApiResource
                         'hash' => $image->hash,
                         'original_filename' => $image->original_filename,
                         'download_url' => $image->download_url,
+                        'preview_url' => $image->preview_url,
                         'alt_text' => $image->alt_text,
                     ];
                 });

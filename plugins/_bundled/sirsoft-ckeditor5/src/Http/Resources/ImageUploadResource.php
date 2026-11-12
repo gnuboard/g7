@@ -30,7 +30,9 @@ class ImageUploadResource extends BaseApiResource
             'uploaded_by' => $this->uploaded_by,
             'uploader_name' => $this->relationLoaded('uploader') ? $this->uploader?->name : null,
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
+            // 원본(공개 자산 디스크면 CDN 직접 주소) / 썸네일 기준(항상 API 서빙 주소)
             'download_url' => $this->download_url,
+            'preview_url' => $this->preview_url,
             'referenced' => (bool) ($this->referenced ?? true),
         ];
     }

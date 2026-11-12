@@ -60,7 +60,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | data[].uploaded_by | integer\|null | `1` | 업로드한 사용자 ID (탈퇴·미상이면 null) |
 | data[].uploader_name | string\|null | `관리자` | 업로더 표시명. 관계가 로드된 경우에만 채워진다 |
 | data[].created_at | string | `2026-08-14 19:20:11` | 업로드 일시 (요청자 시간대 기준 포맷) |
-| data[].download_url | string | `/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6` | 이미지 서빙 URL. 공개 자산 디스크가 직접 URL 을 지원하면 CDN 주소가 반환된다 |
+| data[].download_url | string | `/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6` | 원본 URL. 공개 자산 디스크가 직접 URL 을 지원하면 CDN 주소가 반환된다 |
+| data[].preview_url | string | `/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6` | 썸네일 기준 URL — 항상 API 서빙 경로. 목록 그림 칸이 이 주소에 sm 규격을 붙인다(직접 URL 은 썸네일 대상이 아니다) |
 | data[].referenced | boolean | `false` | **조회 시점 판정값**(저장 컬럼 아님). 등록된 참조 소스 본문에 hash 또는 저장 파일명이 등장하면 true. 판정 불가 행은 안전 방향인 true 로 본다 |
 | pagination.current_page | integer | `1` | 현재 페이지 |
 | pagination.last_page | integer | `1` | 마지막 페이지 |
@@ -90,6 +91,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
                 "uploader_name": "관리자",
                 "created_at": "2026-08-14 19:20:11",
                 "download_url": "/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6",
+                "preview_url": "/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6",
                 "referenced": false
             }
         ],

@@ -103,6 +103,9 @@ final class EnvPriority
         'drivers.websocket_server_port' => ['env' => ['REVERB_PORT'], 'config' => ['broadcasting.connections.reverb.options.port', 'reverb.apps.apps.0.options.port']],
         'drivers.websocket_server_scheme' => ['env' => ['REVERB_SCHEME'], 'config' => ['broadcasting.connections.reverb.options.scheme', 'reverb.apps.apps.0.options.scheme']],
         'drivers.websocket_verify_ssl' => ['env' => ['REVERB_VERIFY_SSL'], 'config' => ['broadcasting.connections.reverb.client_options.verify']],
+        // 웹서버 파일 위임(#878) — 배포 인프라(웹서버 모듈·nginx location)와 짝이라 `.env` 로도 정한다(신뢰 프록시와 같은 성격)
+        'drivers.file_delegation' => ['env' => ['G7_FILE_DELEGATION'], 'config' => ['core.file_serving.delegation']],
+        'drivers.file_delegation_accel_prefix' => ['env' => ['G7_FILE_DELEGATION_ACCEL_PREFIX'], 'config' => ['core.file_serving.accel_prefix']],
 
         // --- core_update ---
         'core_update.github_url' => ['env' => ['G7_UPDATE_GITHUB_URL'], 'config' => ['app.update.github_url']],

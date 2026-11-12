@@ -32,6 +32,7 @@
 
 - Laravel은 `public/index.php`를 진입점으로 사용
 - Apache 사용 시 `.htaccess` 파일이 URL 리라이팅 처리
+- 선택: 웹서버 파일 위임(Apache `mod_xsendfile` 또는 nginx `X-Accel-Redirect`)을 쓰면 서버의 파일을 PHP 대신 웹서버가 보낸다 — 기본은 사용 안 함 ([backend/file-serving-delegation.md](backend/file-serving-delegation.md))
 
 ### 1.3 PHP
 

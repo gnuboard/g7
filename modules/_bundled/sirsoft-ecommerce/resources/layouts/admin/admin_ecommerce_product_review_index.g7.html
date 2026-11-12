@@ -715,7 +715,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[0].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[0].preview_url ?? rowImages[0].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- 이미지 2 -->
                         <button data-if="{{(rowImages ?? []).length > 1}}" type="button" class="ecommerce:shrink-0 ecommerce:rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -732,7 +732,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[1].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[1].preview_url ?? rowImages[1].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- 이미지 3 -->
                         <button data-if="{{(rowImages ?? []).length > 2}}" type="button" class="ecommerce:shrink-0 ecommerce:rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -749,7 +749,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[2].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[2].preview_url ?? rowImages[2].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- 이미지 4 (4장 정확히일 때 일반 이미지) -->
                         <button data-if="{{(rowImages ?? []).length == 4}}" type="button" class="ecommerce:shrink-0 ecommerce:rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -766,7 +766,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
+                          <img src="{{rowImages[3].preview_url ?? rowImages[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:object-cover ecommerce:rounded-md ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-80"/>
                         </button>
                         <!-- +N 오버레이 (5장 이상일 때 4번째 자리) -->
                         <button type="button" data-if="{{(rowImages ?? []).length >= 5}}" class="ecommerce:relative ecommerce:w-20 ecommerce:h-20 ecommerce:shrink-0 ecommerce:cursor-pointer ecommerce:rounded-md ecommerce:overflow-hidden" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
@@ -783,7 +783,7 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                          <img src="{{rowImages[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
+                          <img src="{{rowImages[3].preview_url ?? rowImages[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
                           <span class="ecommerce:absolute ecommerce:inset-0 ecommerce:bg-black/50 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                             <span class="ecommerce:text-white ecommerce:font-semibold ecommerce:text-sm">+{{(rowImages ?? []).length - 3}}</span>
                           </span>

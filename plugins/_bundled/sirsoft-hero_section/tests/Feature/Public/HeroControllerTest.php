@@ -327,6 +327,27 @@ class HeroControllerTest extends PluginTestCase
     }
 
     /**
+     * 공개 응답의 이미지에는 직접 주소 키(`direct_url`)가 있다 — 기본 디스크 행은 null 이고 `url` 은 공개 API 주소다 (#878).
+     *
+     * @scenario surface=direct_url
+     *
+     * @effects hero_direct_url_null_for_streaming_disk
+     *
+     * @return void 반환값 없음
+     */
+    public function test_public_images_carry_direct_url_key(): void
+    {
+        Banner::factory()->withImages(mobile: true)->create();
+
+        $images = $this->hero()->json('data.banners.0.images');
+
+        $this->assertArrayHasKey('direct_url', $images['pc']);
+        $this->assertNull($images['pc']['direct_url']);
+        $this->assertArrayHasKey('direct_url', $images['mobile']);
+        $this->assertStringStartsWith('/api/plugins/sirsoft-hero_section/images/', $images['pc']['url']);
+    }
+
+    /**
      * 운영 정보(사용 여부·기간·순서·작성자·내부 판정값)는 싣지 않는다.
      *
      * @scenario surface=omits_internal_fields

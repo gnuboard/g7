@@ -2,6 +2,9 @@
 
 namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Public;
 
+use App\Extension\Storage\PluginStorageDriver;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
@@ -124,5 +127,74 @@ class PublicBannerImageTest extends PluginTestCase
     private function directives(?string $header): array
     {
         return array_values(array_filter(array_map('trim', explode(',', (string) $header))));
+    }
+
+    /**
+     * 공개 자산 디스크(직접 URL) 행도 공개 API 주소로 계속 받을 수 있다 — 썸네일·같은 출처 자리와 옛 캐시 주소 호환 (#878).
+     *
+     * @scenario surface=serve
+     *
+     * @effects hero_serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cdn_disk_row_still_served_by_api(): void
+    {
+        Config::set('filesystems.disks.fake_cdn', [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]);
+        $path = '2026/11/'.Str::random(16).'.jpg';
+        $fake = UploadedFile::fake()->image('cdn.jpg', 20, 20);
+        $jpeg = (string) file_get_contents($fake->getRealPath());
+        $driver = new PluginStorageDriver('sirsoft-hero_section', 'fake_cdn');
+        $driver->put('images', $path, $jpeg);
+        $image = BannerImage::factory()->create(['temp_key' => (string) Str::uuid(), 'disk' => 'fake_cdn', 'path' => $path, 'size' => strlen($jpeg)]);
+
+        $response = $this->get($this->api('/images/'.$image->hash));
+
+        $response->assertOk();
+        $this->assertSame('image/jpeg', $response->headers->get('Content-Type'));
+        $this->assertSame($jpeg, $response->streamedContent());
+        $driver->delete('images', $path);
+    }
+
+    /**
+     * 웹서버 위임(X-Sendfile)을 켜면 로컬 영상은 헤더만 PHP 가 내고 본문은 웹서버가 보낸다 — 1년 불변 캐시는 그대로 (#878, D5).
+     *
+     * @scenario surface=serve
+     *
+     * @effects hero_video_delegated_to_web_server
+     *
+     * @return void 반환값 없음
+     */
+    public function test_local_video_is_delegated_to_web_server_when_enabled(): void
+    {
+        $tmp = (string) tempnam(sys_get_temp_dir(), 'hsv');
+        file_put_contents($tmp, "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom".str_repeat("\x00", 2000));
+        $file = new UploadedFile($tmp, 'clip.mp4', 'video/mp4', null, true);
+        $data = $this->actingAs($this->fullAdmin())
+            ->post($this->api('/admin/banner-images'), ['file' => $file, 'device' => 'pc', 'kind' => 'video', 'temp_key' => (string) Str::uuid()], ['Accept' => 'application/json'])
+            ->assertCreated()->json('data');
+
+        $this->app->detectEnvironment(fn () => 'production');
+
+        Config::set('core.file_serving.delegation', 'none');
+        $off = $this->get($data['url'])->assertOk();
+        $this->assertNull($off->headers->get('X-Sendfile'));
+
+        Config::set('core.file_serving.delegation', 'x-sendfile');
+        try {
+            $on = $this->get($data['url'], ['Range' => 'bytes=0-9']);
+            $on->assertOk();
+            $this->assertNotEmpty($on->headers->get('X-Sendfile'));
+            $this->assertStringContainsString('immutable', (string) $on->headers->get('Cache-Control'));
+            ob_start();
+            $on->baseResponse->sendContent();
+            $this->assertSame('', ob_get_clean(), '위임하면 본문은 웹서버가 보낸다');
+        } finally {
+            Config::set('core.file_serving.delegation', 'none');
+        }
     }
 }

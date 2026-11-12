@@ -65,7 +65,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | meta_description | null | `null` | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약, 미설정 시 null) |
 | created_at | string | `2026-07-30 14:35:46` | 생성 일시 |
 | updated_at | string | `2026-07-30 14:35:46` | 최종 수정 일시 |
-| images | array | `[]` | 카테고리 이미지 배열 (images 관계 로드 시 — id/hash/download_url/alt_text 등) |
+| images | array | `[]` | 카테고리 이미지 배열 (images 관계 로드 시 — id/hash/download_url(원본)/preview_url(썸네일 기준, 항상 API)/alt_text 등) |
 | products_count | integer | `24` | products 개수 (집계) |
 | children_count | integer | `0` | children 개수 (집계) |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -238,7 +238,7 @@ _단건 응답: `data` 객체의 필드 (`CategoryResource`). 생성 직후 `fre
 | meta_description | string\|null | `null` | SEO 메타 설명 (미설정 시 null) |
 | created_at | string | `2026-07-08 01:44:49` | 생성 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
 | updated_at | string | `2026-07-08 01:44:49` | 최종 수정 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
-| images | array | `[]` | 카테고리 이미지 배열 (각 항목: id/hash/original_filename/mime_type/size/size_formatted/download_url/order/is_image/alt_text). `temp_key` 로 연결된 임시 이미지가 여기에 포함됨 |
+| images | array | `[]` | 카테고리 이미지 배열 (각 항목: id/hash/original_filename/mime_type/size/size_formatted/download_url(원본)/preview_url(썸네일 기준, 항상 API)/order/is_image/alt_text). `temp_key` 로 연결된 임시 이미지가 여기에 포함됨 |
 | products_count | integer | `0` | 연결된 상품 개수 (집계) |
 | children_count | integer | `0` | 하위 카테고리 개수 (집계) |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
@@ -367,7 +367,8 @@ _단건 응답: FileUploader 컴포넌트가 `response.data?.data` 형식을 기
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `102400` | 파일 크기 (바이트) |
 | size_formatted | string | `100 KB` | 사람이 읽기 쉬운 형식으로 변환한 파일 크기 |
-| download_url | string | `/api/modules/sirsoft-ecommerce/admin/categories/images/download/9f2c1b8e4a...` | 이미지 다운로드 URL |
+| download_url | string | `/api/modules/sirsoft-ecommerce/admin/categories/images/download/9f2c1b8e4a...` | 원본 URL — 공개 자산 디스크면 직접 주소(CDN), 아니면 API 서빙 경로 |
+| preview_url | string | `/api/modules/sirsoft-ecommerce/category-image/9f2c1b8e4a7d` | 썸네일 기준 URL — 항상 API 서빙 경로. 업로더 미리보기가 이 주소에 규격을 붙인다 |
 | order | integer | `1` | 이미지 표시 순서 (`sort_order`, 미설정 시 1) |
 | is_image | boolean | `true` | MIME 타입이 `image/` 로 시작하는지 여부 |
 
@@ -390,6 +391,7 @@ HTTP/1.1 201
             "size": 102400,
             "size_formatted": "100 KB",
             "download_url": "/api/modules/sirsoft-ecommerce/admin/categories/images/download/9f2c1b8e4a7d5c0361b2e8f4a9d7c015",
+            "preview_url": "/api/modules/sirsoft-ecommerce/category-image/9f2c1b8e4a7d",
             "order": 1,
             "is_image": true
         }
@@ -644,7 +646,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | updated_at | string | `2026-07-30 14:35:46` | 최종 수정 일시 |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
 | children | array | `[{"id":30,"name":{"ko":"남성","en":"Men"},"description":{"k…` | 하위 항목 배열 (계층 트리 — children 관계 파생) |
-| images | array | `[]` | 카테고리 이미지 배열 (images 관계 로드 시 — id/hash/download_url/alt_text 등) |
+| images | array | `[]` | 카테고리 이미지 배열 (images 관계 로드 시 — id/hash/download_url(원본)/preview_url(썸네일 기준, 항상 API)/alt_text 등) |
 | products_count | integer | `24` | products 개수 (집계) |
 | children_count | integer | `2` | children 개수 (집계) |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -781,7 +783,8 @@ _단건 응답: FileUploader 컴포넌트가 `response.data?.data` 형식을 기
 | mime_type | string | `image/png` | 파일 MIME 타입 |
 | size | integer | `102400` | 파일 크기 (바이트) |
 | size_formatted | string | `100 KB` | 사람이 읽기 쉬운 형식으로 변환한 파일 크기 |
-| download_url | string | `/api/modules/sirsoft-ecommerce/admin/categories/images/download/9f2c1b8e4a...` | 이미지 다운로드 URL |
+| download_url | string | `/api/modules/sirsoft-ecommerce/admin/categories/images/download/9f2c1b8e4a...` | 원본 URL — 공개 자산 디스크면 직접 주소(CDN), 아니면 API 서빙 경로 |
+| preview_url | string | `/api/modules/sirsoft-ecommerce/category-image/9f2c1b8e4a7d` | 썸네일 기준 URL — 항상 API 서빙 경로. 업로더 미리보기가 이 주소에 규격을 붙인다 |
 | order | integer | `1` | 이미지 표시 순서 (`sort_order`, 미설정 시 1) |
 | is_image | boolean | `true` | MIME 타입이 `image/` 로 시작하는지 여부 |
 
@@ -804,6 +807,7 @@ HTTP/1.1 201
             "size": 102400,
             "size_formatted": "100 KB",
             "download_url": "/api/modules/sirsoft-ecommerce/admin/categories/images/download/1c47e9a5b60d38f27ea4c9d015b7e8f3",
+            "preview_url": "/api/modules/sirsoft-ecommerce/category-image/9f2c1b8e4a7d",
             "order": 1,
             "is_image": true
         }
@@ -958,7 +962,7 @@ _단건 응답: `data` 객체의 필드 (`CategoryResource`). 수정 직후 `fre
 | meta_description | string\|null | `null` | SEO 메타 설명 (미설정 시 null) |
 | created_at | string | `2026-07-08 01:44:49` | 생성 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
 | updated_at | string | `2026-07-08 06:00:17` | 최종 수정 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
-| images | array | `[]` | 카테고리 이미지 배열 (각 항목: id/hash/original_filename/mime_type/size/size_formatted/download_url/order/is_image/alt_text) |
+| images | array | `[]` | 카테고리 이미지 배열 (각 항목: id/hash/original_filename/mime_type/size/size_formatted/download_url(원본)/preview_url(썸네일 기준, 항상 API)/order/is_image/alt_text) |
 | products_count | integer | `0` | 연결된 상품 개수 (집계) |
 | children_count | integer | `0` | 하위 카테고리 개수 (집계) |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
@@ -1370,6 +1374,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** slug로 단일 공개 카테고리와 직계 자식을 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@show`가 `CategoryService::getPublicCategoryBySlug()`를 호출해 활성 자식(`activeChildren`)과 이미지를 함께 로드합니다. 조회된 카테고리가 비활성(`is_active=false`)이면 없는 것으로 간주해 404를 반환하며, 응답에는 상위 경로를 나타내는 `breadcrumb` 배열과 `products_count` 집계(자신·자식 모두 전시 중 상품만)가 포함됩니다. 스토어프론트 카테고리 상세/목록 페이지 진입 시 사용합니다. 1.2.0 부터 `thumbnail_url` 필드(로드된 카테고리 이미지 첫 건의 URL, 없으면 `null`)가 추가되어 카테고리 페이지의 공유 미리보기 이미지(og:image)에 사용됩니다.
+**설명** slug로 단일 공개 카테고리와 직계 자식을 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@show`가 `CategoryService::getPublicCategoryBySlug()`를 호출해 활성 자식(`activeChildren`)과 이미지를 함께 로드합니다. 조회된 카테고리가 비활성(`is_active=false`)이면 없는 것으로 간주해 404를 반환하며, 응답에는 상위 경로를 나타내는 `breadcrumb` 배열과 `products_count` 집계(자신·자식 모두 전시 중 상품만)가 포함됩니다. 스토어프론트 카테고리 상세/목록 페이지 진입 시 사용합니다. 1.2.0 부터 `thumbnail_url` 필드(로드된 카테고리 이미지 첫 건의 URL, 없으면 `null`)가 추가되어 카테고리 페이지의 공유 미리보기 이미지(og:image)에 사용됩니다. 1.4.0 부터 이 값은 첫 이미지의 `preview_url`(항상 API 서빙 경로)이라 공개 자산 디스크(CDN) 이미지여도 공유 카드에 `?size=og` 썸네일이 붙고, 각 이미지 항목은 원본 `download_url`(직접 주소일 수 있음)과 썸네일 기준 `preview_url` 을 함께 냅니다.
 
 

@@ -424,6 +424,99 @@
                                                 ]
                                             }
                                         ]
+                                    },
+                                    {
+                                        "id": "field_public_asset_disk",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "hs:grid hs:grid-cols-3 hs:gap-4 hs:items-start"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "hs:grid hs:grid-cols-1 hs:gap-4 hs:items-start"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "hs:col-span-1"
+                                                        }
+                                                    }
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "hs-form-label",
+                                                            "htmlFor": "hero_section_public_asset_disk"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.public_asset_disk.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.public_asset_disk.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "hs:col-span-2"
+                                                        }
+                                                    }
+                                                },
+                                                "children": [
+                                                    {
+                                                        "comment": "선택지는 설정 응답에 서버가 붙인 공개 자산 디스크 카탈로그다(코어 설정 API 를 교차 조회하지 않는다 — 화면 권한과 표면이 갈리면 커스텀 역할에서 목록만 빈다). 빈 값은 코어 설정을 따른다",
+                                                        "type": "basic",
+                                                        "name": "Select",
+                                                        "props": {
+                                                            "id": "hero_section_public_asset_disk",
+                                                            "name": "public_asset_disk",
+                                                            "className": "hs-input hs-select hs:w-full",
+                                                            "options": "{{[{value: '', label: $t('sirsoft-hero_section.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.public_asset_disk}}",
+                                                        "props": {
+                                                            "className": "hs-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.public_asset_disk?.[0]}}"
+                                                    },
+                                                    {
+                                                        "comment": "쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다",
+                                                        "id": "public_asset_disk_unavailable",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!_local.form?.public_asset_disk_unavailable}}",
+                                                        "props": {
+                                                            "role": "status",
+                                                            "className": "hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -491,7 +584,8 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "hasChanges": false
+                                                            "hasChanges": false,
+                                                            "form.public_asset_disk_unavailable": "{{response.data?.public_asset_disk_unavailable ?? null}}"
                                                         }
                                                     },
                                                     {

@@ -17,7 +17,8 @@
         "dismiss_mode": "today",
         "dismiss_days": 7,
         "max_upload_mb": 5,
-        "public_cache_minutes": 10
+        "public_cache_minutes": 10,
+        "public_asset_disk": ""
     },
     "frontend_schema": {
         "pc_position": { "expose": false },
@@ -33,6 +34,7 @@
         "dismiss_mode": { "expose": false },
         "dismiss_days": { "expose": false },
         "max_upload_mb": { "expose": false },
-        "public_cache_minutes": { "expose": false }
+        "public_cache_minutes": { "expose": false },
+        "public_asset_disk": { "expose": false }
     }
 }

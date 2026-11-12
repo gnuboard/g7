@@ -53,6 +53,7 @@ _이 엔드포인트는 표준 envelope(`success`/`message`/`data`)를 사용하
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | url | string | `/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6` | 업로드된 이미지의 서빙 URL. 모델 접근자 `download_url` 이 생성한다. 기본(스트리밍)은 `/api/plugins/sirsoft-ckeditor5/images/{hash}` (hash = 12자리 hex) 형식이고, 공개 자산 디스크(플러그인 설정 `public_asset_disk` 또는 코어 전역 설정)가 URL 지원 디스크로 설정되어 있으면 그 디스크의 직접 URL(예: `https://cdn.example.com/sirsoft-ckeditor5/images/...`)이 반환된다. CKEditor 가 이 값을 그대로 `<img src>` 에 삽입한다. |
+| urls | object | `{"640":"https://example.com/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6?size=md","1500":"https://cdn.example.com/…","default":"https://cdn.example.com/…"}` | 반응형 후보 — **직접 URL(공개 자산 디스크)로 저장된 이미지에만** 싣는다. `default` 는 `url` 과 같은 직접 주소, 숫자 키(가로 px)는 원본 가로 이하인 숫자 요청 대상 썸네일 규격의 API 서빙 주소 + `?size=`(사이트 절대 주소 — 본문이 메일처럼 사이트 밖에서 읽혀도 열리게)이고, 마지막 숫자 키(원본 가로)는 직접 주소다(큰 화면이 CDN 원본을 받게. 원본 가로를 모르면 없다). 편집기가 본문 `<img srcset sizes width>` 로 저장한다. 직접 URL 이 없는 이미지·썸네일 기능 꺼짐·`core.storage.filter_url` 훅 차단·후보 없음이면 키가 없다 |
 
 실패 시에는 최상위 `error.message` 만 반환합니다 (아래 에러 응답 표 참조).
 
@@ -94,6 +95,22 @@ _이 엔드포인트는 표준 envelope(`success`/`message`/`data`)를 사용하
 ```json
 { "url": "https://example.com/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6" }
 ```
+
+**응답 예시** (공개 자산 디스크(CDN) 저장 — 반응형 후보 포함)
+
+```json
+{
+    "url": "https://cdn.example.com/sirsoft-ckeditor5/images/2026/11/12/9b1c….jpg",
+    "urls": {
+        "640": "https://example.com/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6?size=md",
+        "1280": "https://example.com/api/plugins/sirsoft-ckeditor5/images/a1b2c3d4e5f6?size=lg",
+        "1500": "https://cdn.example.com/sirsoft-ckeditor5/images/2026/11/12/9b1c….jpg",
+        "default": "https://cdn.example.com/sirsoft-ckeditor5/images/2026/11/12/9b1c….jpg"
+    }
+}
+```
+
+직접 주소는 썸네일(`?size=`) 대상이 아니라서, 후보가 없으면 CDN 에 올라간 본문 이미지는 화면 크기와 상관없이 원본이 나간다. 후보 값은 이 플러그인의 서빙 경로라 `?size=` 요청 때 썸네일을 만들고, 공개 썸네일 저장 위치가 공개 자산 디스크면 그 주소로 `302` 한다. 원본보다 넓은 규격은 후보에 넣지 않는다(업로드 직전 축소 뒤의 가로 기준). 이 동작 전에 저장된 본문의 직접 주소 이미지는 원본 그대로다.
 
 **오류 예시** (검증/권한/서버 오류 공통 — HTTP 422/403/500)
 

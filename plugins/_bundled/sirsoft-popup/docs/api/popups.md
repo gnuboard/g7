@@ -1417,7 +1417,7 @@ HTTP/1.1 200
 | page_scope | string | `all` | 노출 페이지: `all` 전체 · `routes` 지정 경로만(브라우저가 판정) |
 | routes | array | `["/shop"]` | 노출 경로 목록. 현재 경로가 같거나 그 하위 경로면 노출, `/` 는 첫 화면만 |
 | device | string | `all` | 노출 기기: `all` · `pc` · `mobile`(템플릿 반응형 기준 폭으로 브라우저가 판정) |
-| image | object\|null | `{"pc":{"url":"…","width":480,"height":520},"mobile":null}` | 이미지형의 기기별 이미지 `{url, width, height}`(없으면 null). `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/sirsoft-popup/images/{hash}`). 모바일 이미지가 없으면 화면은 PC 이미지를 씁니다. 직접 작성형은 null |
+| image | object\|null | `{"pc":{"url":"…","direct_url":null,"width":480,"height":520},"mobile":null}` | 이미지형의 기기별 이미지 `{url, direct_url, width, height}`(없으면 null). `direct_url` 은 공개 자산 디스크(public·CDN)에 올린 행의 원본 직접 주소(아니면 null, #878) — 레이어는 `<img src>`·srcset 원본 후보에만 쓰고 축소 후보는 `url?size=` 다. `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/sirsoft-popup/images/{hash}`). 모바일 이미지가 없으면 화면은 PC 이미지를 씁니다. 직접 작성형은 null |
 | image_alt | string | `예시 이미지 설명` | 요청 언어의 대체 텍스트(없으면 사이트 기본 언어). 둘 다 비었으면 빈 문자열이며 관리용 제목으로 채우지 않습니다. 직접 작성형은 빈 문자열 |
 | link_url | string\|null | `/shop` | 이미지 클릭 시 이동 주소(이미지형만, 없으면 null) |
 | link_new_window | boolean | `false` | 새 창에서 열기(이미지형만) |

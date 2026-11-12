@@ -141,7 +141,7 @@
               </set-state>
               <open-modal target="review_image_modal"/>
             </on>
-            <img src="{{review.images[0].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
+            <img src="{{review.images[0].preview_url ?? review.images[0].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
           </button>
           <!-- 이미지 2 -->
           <button type="button" data-if="{{(review.images ?? []).length > 1}}" aria-label="$t:shop.product.review_image_open|n=2" class="w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80">
@@ -159,7 +159,7 @@
               </set-state>
               <open-modal target="review_image_modal"/>
             </on>
-            <img src="{{review.images[1].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
+            <img src="{{review.images[1].preview_url ?? review.images[1].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
           </button>
           <!-- 이미지 3 -->
           <button type="button" data-if="{{(review.images ?? []).length > 2}}" aria-label="$t:shop.product.review_image_open|n=3" class="w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80">
@@ -177,7 +177,7 @@
               </set-state>
               <open-modal target="review_image_modal"/>
             </on>
-            <img src="{{review.images[2].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
+            <img src="{{review.images[2].preview_url ?? review.images[2].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
           </button>
           <!-- 이미지 4 (4장 정확히일 때 일반 이미지) -->
           <button type="button" data-if="{{(review.images ?? []).length == 4}}" aria-label="$t:shop.product.review_image_open|n=4" class="w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80">
@@ -195,7 +195,7 @@
               </set-state>
               <open-modal target="review_image_modal"/>
             </on>
-            <img src="{{review.images[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
+            <img src="{{review.images[3].preview_url ?? review.images[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
           </button>
           <!-- +N 오버레이 (5장 이상일 때 4번째 자리) -->
           <button type="button" data-if="{{(review.images ?? []).length >= 5}}" aria-label="$t:shop.product.review_image_open_more|n=4|count={{(review.images ?? []).length - 3}}" class="relative w-20 h-20 shrink-0 cursor-pointer rounded-lg overflow-hidden">
@@ -213,7 +213,7 @@
               </set-state>
               <open-modal target="review_image_modal"/>
             </on>
-            <img src="{{review.images[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
+            <img src="{{review.images[3].preview_url ?? review.images[3].download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"/>
             <span class="absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg" aria-hidden="true">
               <span class="text-white font-semibold text-sm">+{{(review.images ?? []).length - 3}}</span>
             </span>

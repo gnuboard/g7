@@ -174,4 +174,21 @@ class PopupImageRepository implements PopupImageRepositoryInterface
             ->whereNotNull('popup_id')
             ->whereIn('mime', $mimeTypes);
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return array<int, string> disk 이름
+     */
+    public function distinctDisks(): array
+    {
+        return PopupImage::query()
+            ->whereNotNull('disk')
+            ->where('disk', '!=', '')
+            ->distinct()
+            ->pluck('disk')
+            ->map(fn ($disk) => (string) $disk)
+            ->values()
+            ->all();
+    }
 }

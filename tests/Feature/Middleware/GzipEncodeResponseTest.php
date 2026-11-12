@@ -13,7 +13,7 @@ use Tests\TestCase;
  *
  * `public_storage_route_streams_large_files_without_buffering` 은 이 클래스가 대표하지 않는다 —
  * 그 효과는 공개 스토리지 **통로**를 실제로 지나야 재어지므로 `PublicStorageServeTest` 가
- * 소유한다 (16차 G3 라운드 F9). 여기서는 미들웨어 단위의 조건만 잰다.
+ * 소유한다. 여기서는 미들웨어 단위의 조건만 잰다.
  */
 class GzipEncodeResponseTest extends TestCase
 {
@@ -423,14 +423,14 @@ class GzipEncodeResponseTest extends TestCase
         $this->assertEquals('gzip', $response->headers->get('Content-Encoding'));
         // ETag 는 **표현**을 식별한다 — content-coding 이 다르면 다른 표현이므로 같은 값을
         // 쓸 수 없다(RFC 9110 §8.8.1). 종전에는 원본 값을 그대로 승계해 같은 URL 이
-        // Accept-Encoding 에 따라 다른 본문을 같은 ETag 로 내보냈다 (3차 G3 라운드 L3).
+        // Accept-Encoding 에 따라 다른 본문을 같은 ETag 로 내보냈다.
         $this->assertEquals('"test-etag-gzip"', $response->headers->get('ETag'));
         $this->assertStringContainsString('immutable', $response->headers->get('Cache-Control', ''));
         $this->assertStringContainsString('Accept-Encoding', $response->headers->get('Vary', ''));
     }
 
     /**
-     * HEAD 요청은 압축 경로에 들어가지 않는다 (3차 G3 라운드 M4).
+     * HEAD 요청은 압축 경로에 들어가지 않는다.
      *
      * `BinaryFileResponse` 는 `prepare()` 에서 본문 전송을 끄지만(maxlen=0), 압축 경로는
      * 그 응답을 **일반 Response 로 치환**하면서 파일을 통째로 읽어 본문에 싣는다. 치환된
@@ -464,7 +464,7 @@ class GzipEncodeResponseTest extends TestCase
     }
 
     /**
-     * 부분 응답(206)은 압축하지 않는다 (3차 G3 라운드 M4).
+     * 부분 응답(206)은 압축하지 않는다.
      *
      * 헤더를 승계하면 `Content-Range` 는 부분 범위를 가리키는데 본문은 **파일 전체**의
      * gzip 이 되어 둘이 정면으로 어긋난다. 미디어 시킹과 재개 다운로드가 이 경로를 쓴다.
@@ -544,7 +544,7 @@ class GzipEncodeResponseTest extends TestCase
     }
 
     /**
-     * 압축하지 않은 응답에도 `Vary: Accept-Encoding` 이 붙는다 (3차 G3 라운드 L3).
+     * 압축하지 않은 응답에도 `Vary: Accept-Encoding` 이 붙는다.
      *
      * 종전에는 실제로 압축한 응답에만 붙어, 같은 URL 이 상한 초과·소용량·미지원
      * 클라이언트에서는 Vary 없이 나갔다 — 공유 캐시가 인코딩 구분 없이 재사용한다.
@@ -677,8 +677,7 @@ class GzipEncodeResponseTest extends TestCase
      * 압축에서 제외해 **identity 206** 을 내보내므로, 압축본 길이로 오프셋을 계산한
      * 클라이언트가 다른 표현의 바이트를 이어붙인다. 정적 서빙은 이 상태를 만들지
      * 않는다 — nginx `gzip` 필터와 Apache `mod_deflate` 는 압축 시 이 헤더를 **제거**
-     * 한다. 즉 남겨 두면 같은 사이트가 압축 주체에 따라 다른 것을 광고한다
-     * (7차 G3 라운드 C1).
+     * 한다. 즉 남겨 두면 같은 사이트가 압축 주체에 따라 다른 것을 광고한다.
      *
      * @scenario encoding=gzip, range_advertised=bytes
      *
@@ -756,7 +755,7 @@ class GzipEncodeResponseTest extends TestCase
      * 오프셋을 광고하게 된다 — 재개 다운로드가 다른 표현의 바이트를 이어붙인다.
      *
      * 판정은 "두 경로가 같은 자리를 쓰는가" 이므로, 일반 응답에 그 헤더를 실어 두고
-     * 압축 뒤 사라지는지 잰다 (11차 G3 라운드 B11-11).
+     * 압축 뒤 사라지는지 잰다.
      *
      * @scenario encoding=gzip, range_advertised=bytes
      *
@@ -798,7 +797,7 @@ class GzipEncodeResponseTest extends TestCase
     }
 
     /**
-     * `Accept-Encoding` 은 RFC 9110 §12.5.3 의 가중치를 따라 읽는다 (15차 G3 라운드).
+     * `Accept-Encoding` 은 RFC 9110 §12.5.3 의 가중치를 따라 읽는다.
      *
      * 종전에는 `str_contains('gzip')` 이라 `gzip;q=0`(명시 거부)에도 압축본을 보냈다 —
      * 거부한 클라이언트가 gzip 바이트를 받는다. 반대로 `*` 는 「명시하지 않은 모든 코딩」이라
@@ -821,7 +820,7 @@ class GzipEncodeResponseTest extends TestCase
             'gzip;q=0.5, identity;q=1' => true,
             'GZIP' => true,
             'gzip;q=0.000' => false,
-            // 16차 G3 라운드 A8 — 경계·별칭·공백·와일드카드 거부
+            // 경계·별칭·공백·와일드카드 거부
             '*;q=0' => false,                 // 와일드카드 자체를 거부하면 gzip 도 거부다
             'gzip;q=0.001' => true,           // 0 초과는 수용
             'identity' => false,              // gzip 도 * 도 없으면 압축하지 않는다
@@ -831,7 +830,7 @@ class GzipEncodeResponseTest extends TestCase
             'gzip;q=1.000' => true,
             'gzip;q=2' => true,               // 규격 밖 값은 파라미터 무시 → 기본 가중치 1
             'gzip;q=.5' => true,              // 선행 0 없는 형태도 규격 밖 → 기본 가중치 1
-            // 17차 G3 라운드 B-13·B-14 — 별칭·중복 병합은 fail-closed(min): 어느 이름이든 q=0 이면 거부
+            // 별칭·중복 병합은 fail-closed(min): 어느 이름이든 q=0 이면 거부
             'gzip;q=1, x-gzip;q=0' => false,  // 같은 코딩의 한 이름이 명시 거부면 거부
             'gzip;q=0, x-gzip;q=1' => false,  // 종전 max() 는 이 명시 거부를 압축으로 뒤집었다
             'gzip;q=0, x-gzip;q=0' => false,
@@ -839,7 +838,7 @@ class GzipEncodeResponseTest extends TestCase
             'gzip;q=0, gzip' => false,        // 순서 무관
             'x-gzip;q=0, gzip;q=1' => false,  // 별칭이 먼저 거부해도 거부
             'gzip;q=0.5, x-gzip;q=1' => true, // 둘 다 양수면 압축(가장 낮은 값도 0 초과)
-            // 22차 G3 라운드 B5 — 와일드카드도 같은 규칙(min)이다. 종전에는 마지막 값이
+            // 와일드카드도 같은 규칙(min)이다. 종전에는 마지막 값이
             // 앞의 명시 거부를 덮어써, `*` 축만 fail-open 이었다.
             '*;q=0, *' => false,              // 와일드카드 중복도 fail-closed
             '*, *;q=0' => false,              // 순서 무관
@@ -847,7 +846,7 @@ class GzipEncodeResponseTest extends TestCase
             'gzip, *;q=0' => true,            // gzip 이 명시되면 와일드카드는 보지 않는다
             '*;q=0, gzip' => true,            // 순서 무관 — 구체성 우선(RFC 9110 §12.5.3)
             'identity;q=0, *' => true,        // identity 거부는 gzip 판정과 무관
-            // 23차 G3 라운드 B23-10 — **한 멤버 안**의 `q` 중복도 같은 규칙(min)이다.
+            // **한 멤버 안**의 `q` 중복도 같은 규칙(min)이다.
             // 종전에는 이 한 단계 아래만 last-write-wins 라, 바깥 두 축을 fail-closed 로
             // 접어 놓고 파라미터 하나로 명시 거부가 되살아났다.
             'gzip;q=0;q=1' => false,          // 명시 거부가 뒤 파라미터로 뒤집히지 않는다
@@ -880,7 +879,7 @@ class GzipEncodeResponseTest extends TestCase
      *
      * 사용자 업로드물 통로(코어 첨부·게시판·확장 이미지)는 이 표식으로 압축을 피한다. 종전에는
      * 그 통로가 압축을 피한 것이 스트림 응답 클래스를 미들웨어가 건너뛰는 우연이었고, 표식은
-     * 공개 스토리지 한 곳에만 있었다 (14차 G3 라운드).
+     * 공개 스토리지 한 곳에만 있었다.
      *
      * @scenario encoding=gzip
      *
@@ -911,6 +910,49 @@ class GzipEncodeResponseTest extends TestCase
         $compressed = $middleware->handle($plain, function () {
             return response(str_repeat('<p>uploaded html</p>', 200), 200)
                 ->header('Content-Type', 'text/html');
+        });
+
+        $this->assertSame('gzip', $compressed->headers->get('Content-Encoding'));
+    }
+
+    /**
+     * 웹서버에 전송을 위임한 파일 응답은 압축하지 않는다 — 헬퍼의 압축 제외 선언이 없어도 응답 모양으로 막는다 (#878).
+     *
+     * 압축 경로는 파일을 읽어 gzip 본문으로 치환한다. 위임 헤더가 남은 채로 치환하면 웹서버는 그 헤더를 소비해 **원본
+     * 바이트**를 보내면서 앱이 붙인 `Content-Encoding: gzip` 을 그대로 실어, 브라우저가 깨진 본문을 받는다.
+     *
+     * @scenario case=gzip_guard
+     *
+     * @effects delegated_response_is_never_gzip_encoded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_does_not_compress_a_delegated_file_response(): void
+    {
+        $path = $this->makeTempFile(str_repeat('.selector{color:red}', 200));
+        $middleware = new GzipEncodeResponse;
+
+        $request = Request::create('/api/plugins/bundle.css', 'GET');
+        $request->headers->set('Accept-Encoding', 'gzip');
+
+        $delegated = null;
+        $response = $middleware->handle($request, function () use ($path, &$delegated) {
+            $delegated = response()->file($path, ['Content-Type' => 'text/css']);
+            $delegated->headers->set('X-Sendfile', $path);
+
+            return $delegated;
+        });
+
+        $this->assertSame($delegated, $response, '위임 응답은 다른 응답으로 치환되면 안 된다');
+        $this->assertNull($response->headers->get('Content-Encoding'));
+        $this->assertStringContainsString('Accept-Encoding', (string) $response->headers->get('Vary'), 'Vary 는 유형이 정한다');
+
+        // 같은 응답에서 위임 헤더만 빼면 압축된다 — 이 케이스가 재는 것이 위임 축임을 확인한다.
+        $plain = Request::create('/api/plugins/bundle.css', 'GET');
+        $plain->headers->set('Accept-Encoding', 'gzip');
+
+        $compressed = $middleware->handle($plain, function () use ($path) {
+            return response()->file($path, ['Content-Type' => 'text/css']);
         });
 
         $this->assertSame('gzip', $compressed->headers->get('Content-Encoding'));

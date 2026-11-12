@@ -12,7 +12,7 @@ import { render, cleanup } from '@testing-library/react';
 import { PopupLayer } from '../../components/composite/PopupLayer';
 import { ImageFrame } from '../../lib/ImageFrame';
 import { resetClosedThisPage } from '../../lib/popupVisibility';
-import { popupImageSizes, responsiveSrcset } from '../../lib/thumbnail';
+import { mediaSrc, popupImageSizes, responsiveSrcset } from '../../lib/thumbnail';
 import type { PopupDisplaySettings, PublicPopup } from '../../lib/types';
 import { contentSrcset, contentSrcsetWithin, isThumbnailableUrl, thumbnailSrcset, withThumbnailSize } from '@core/support/thumbnailUrl';
 import { installCore, setViewportMobile } from './core';
@@ -239,5 +239,61 @@ describe('팝업 이미지 썸네일 srcset', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+/**
+ * 공개 자산 디스크(#878) — 응답의 `direct_url`(원본 직접 주소)은 원본 한 장(`src`)과 srcset 의 **마지막 원본 후보**에만 쓴다.
+ * 축소 후보는 공개 API 주소 `?size=` 그대로이고, 그린 크기 비교 키는 `url`(같은 출처)이다. (매니페스트 public-asset-disk.yaml)
+ */
+describe('팝업 이미지 공개 자산 디스크 직접 주소', () => {
+  const CDN = 'https://cdn.example.com/p.jpg';
+
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    installThumbnailCore();
+  });
+
+  afterEach(() => {
+    cleanup();
+    delete (window as any).G7Config;
+  });
+
+  // @scenario surface=image_frame
+  // @effects popup_image_frame_uses_direct_url
+  it('ImageFrame 은 direct_url 이 있으면 src 를 직접 주소로, srcset 원본 후보만 직접 주소로 바꾼다', () => {
+    const { container } = render(<ImageFrame image={{ url: PC, direct_url: CDN, width: 960, height: 1040 }} alt="" sizes="480px" />);
+    const img = container.querySelector('img');
+
+    expect(img?.getAttribute('src')).toBe(CDN);
+    expect(img?.getAttribute('srcset')).toBe(`${PC}?size=md 640w, ${CDN} 960w`);
+  });
+
+  // @scenario surface=image_frame
+  // @effects popup_image_frame_uses_direct_url
+  it('direct_url 이 없으면 종전과 같다 — src·원본 후보 모두 API 주소, 편집기 프레임(sizes 없음)은 srcset 없이 직접 주소 하나', () => {
+    const plain = render(<ImageFrame image={{ url: PC, direct_url: null, width: 960, height: 1040 }} alt="" sizes="480px" />);
+    expect(plain.container.querySelector('img')?.getAttribute('src')).toBe(PC);
+    expect(plain.container.querySelector('img')?.getAttribute('srcset')).toBe(`${PC}?size=md 640w, ${PC} 960w`);
+    cleanup();
+
+    const editor = render(<ImageFrame image={{ url: PC, direct_url: CDN, width: 960, height: 1040 }} alt="" eager />);
+    expect(editor.container.querySelector('img')?.getAttribute('src')).toBe(CDN);
+    expect(editor.container.querySelector('img')?.hasAttribute('srcset')).toBe(false);
+  });
+
+  // @scenario surface=image_frame
+  // @effects popup_image_frame_uses_direct_url
+  it('responsiveSrcset 은 원본 후보 꼬리가 정확할 때만 바꾸고, mediaSrc 는 비지 않은 direct_url 을 우선한다', () => {
+    expect(responsiveSrcset(PC, 480, CDN)).toBeUndefined();
+    expect(responsiveSrcset(PC, 960, PC)).toBe(`${PC}?size=md 640w, ${PC} 960w`);
+    expect(responsiveSrcset(PC, 960, CDN)).toBe(`${PC}?size=md 640w, ${CDN} 960w`);
+    expect(mediaSrc({ url: PC, direct_url: CDN })).toBe(CDN);
+    expect(mediaSrc({ url: PC, direct_url: '' })).toBe(PC);
   });
 });

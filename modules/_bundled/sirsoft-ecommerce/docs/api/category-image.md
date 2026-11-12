@@ -93,7 +93,7 @@ X-Content-Type-Options: nosniff
 
 **썸네일** `?size={규격}` 또는 `?w={숫자}` 를 붙이면 래스터 이미지(JPEG·PNG·WebP 등)는 환경설정 > 업로드 탭의 썸네일 규격으로 줄인 사본을 냅니다. 첫 요청에 만들어 저장해 두고 다음부터는 저장본을 냅니다. 카테고리 이미지는 인증 없이 보이는 완전 공개 원본이라 썸네일도 공개 이미지 썸네일 저장 위치에 두며, 그 위치가 공개 자산 디스크(CDN 등)면 `302` 로 썸네일 직접 주소를 알려 줍니다(`Cache-Control: public, max-age={레이아웃 캐시 TTL}`). 저장 위치가 비공개 디스크(`thumbnails`, 기본)면 `200` 으로 썸네일 바이너리를 스트리밍하고 검증자(`ETag`·`Last-Modified`)는 썸네일 파일 기준이라 `304` 도 같은 규칙입니다. 규격보다 작은 원본(확대 끔)·움직이는 GIF·WebP·APNG(「움직이는 이미지는 원본 사용」이 켜져 있을 때)·SVG·꺼진 기능에서는 원본을 그대로 내고 `X-G7-Thumbnail: bypass:{사유}` 로 이유를 밝힙니다. 파라미터가 없으면 응답은 이전과 같습니다(헤더도 붙지 않습니다). 원본을 덮어쓰거나 지우면 그 썸네일도 함께 지워집니다.
 
-화면과 SEO 는 이 경로(`/api/modules/sirsoft-ecommerce/category-image/*`)에만 규격을 붙입니다. 이미지 저장 디스크를 공개 자산 디스크로 고른 사이트의 직접 주소(CDN)는 이 엔드포인트를 지나지 않으므로 원본 그대로입니다.
+화면과 SEO 는 이 경로(`/api/modules/sirsoft-ecommerce/category-image/*`)에만 규격을 붙입니다. 이미지 저장 디스크를 공개 자산 디스크로 고른 사이트의 직접 주소(CDN)는 이 엔드포인트를 지나지 않습니다 — 그래서 이미지 응답은 원본 `download_url`(직접 주소일 수 있음)과 함께 썸네일 기준 `preview_url`(항상 이 엔드포인트 주소)을 내고, 대표 이미지 `thumbnail_url` 도 이 엔드포인트 주소입니다. 화면은 `preview_url` 에 규격을 걸어 썸네일(공개 썸네일 저장 위치가 공개 자산 디스크면 `302` 로 CDN)을 받고, 원본 한 장은 직접 주소에서 받습니다.
 
 ```http
 GET /api/modules/sirsoft-ecommerce/category-image/{hash}?size=sm HTTP/1.1

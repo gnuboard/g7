@@ -448,7 +448,7 @@
                                     "name": "Img",
                                     "if": "{{!!_local.form.images?.[0]?.download_url}}",
                                     "props": {
-                                        "src": "{{_local.form.images?.[0]?.download_url}}",
+                                        "src": "{{_local.form.images?.[0]?.preview_url ?? _local.form.images?.[0]?.download_url}}",
                                         "thumbPreset": "sm",
                                         "loading": "lazy",
                                         "decoding": "async",

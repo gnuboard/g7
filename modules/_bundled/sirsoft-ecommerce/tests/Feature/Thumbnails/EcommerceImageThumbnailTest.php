@@ -29,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
+use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Thumbnails\CategoryImageSourceProvider;
 use Modules\Sirsoft\Ecommerce\Thumbnails\ClaimImageSourceProvider;
@@ -354,6 +355,75 @@ class EcommerceImageThumbnailTest extends ModuleTestCase
 
         $this->assertStringContainsString('og:image" content="https://site.test'.$url.'?size=og"', $tags);
         $this->assertNotSame('bypass:unknown-preset', $this->get($url.'?size=og')->headers->get(ThumbnailResponder::HEADER));
+    }
+
+    /**
+     * 공개 자산 디스크(CDN) 카테고리 행의 공유 카드도 썸네일 기준 주소(`preview_url`, API)로 나가 `size=og` 가 붙는다.
+     * 직접 URL(`download_url`)을 그대로 넘기면 og 규격이 걸리지 않고 원본이 나간다(#878).
+     *
+     * @scenario surface=category_image, thumbnail_query=og_card
+     *
+     * @effects ecommerce_category_og_image_uses_og_preset, ecommerce_direct_url_row_thumbnails_through_preview_url
+     *
+     * @return void 반환값 없음
+     */
+    public function test_category_og_image_for_cdn_row_uses_api_preview_url(): void
+    {
+        $this->registerListener();
+        $this->useFakeCdnDisk();
+        config(['app.url' => 'https://site.test']);
+        $image = CategoryImage::create([
+            'temp_key' => 'thumb-test',
+            'original_filename' => 'thumb.jpg',
+            'stored_filename' => 'cdn.jpg',
+            'disk' => 'fake_cdn',
+            'path' => 'category/2026/11/12/cdn.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 10,
+            'collection' => 'main',
+            'sort_order' => 0,
+        ]);
+
+        $this->assertStringStartsWith('https://cdn.test/assets/', $image->download_url);
+        $this->assertSame(self::API.'category-image/'.$image->hash, $image->preview_url);
+
+        $og = app(ModuleManager::class)->getModule('sirsoft-ecommerce')->seoOgDefaults('category', [
+            'category' => ['data' => ['thumbnail_url' => $image->preview_url, 'name' => '가방']],
+        ]);
+
+        $tags = (new SeoMetaResolver(new ExpressionEvaluator))->renderOgHtml($og);
+
+        $this->assertStringContainsString('og:image" content="https://site.test'.$image->preview_url.'?size=og"', $tags);
+        $this->assertStringNotContainsString('cdn.test', $tags);
+    }
+
+    /**
+     * 공개 자산 디스크(CDN) 행: 직접 URL(`download_url`)은 썸네일 대상이 아니고(같은 출처 `/api/` 패턴 밖),
+     * 함께 내리는 `preview_url`(API)은 대상이다 — 화면이 `preview_url` 에 규격을 걸어야 썸네일을 받는다.
+     *
+     * @scenario surface=registration, thumbnail_query=registration
+     *
+     * @effects ecommerce_direct_url_row_thumbnails_through_preview_url
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cdn_row_preview_url_is_thumbnailable_while_direct_url_is_not(): void
+    {
+        $this->registerListener();
+        $this->useFakeCdnDisk();
+
+        $rows = [
+            'product-image' => new ProductImage(['hash' => 'aaaabbbbcccc', 'disk' => 'fake_cdn', 'path' => 'products/P1/a.jpg']),
+            'category-image' => new CategoryImage(['hash' => 'ccccddddeeee', 'disk' => 'fake_cdn', 'path' => 'category/c.jpg']),
+            'review-image' => new ProductReviewImage(['hash' => 'eeeeffff0000', 'disk' => 'fake_cdn', 'path' => 'reviews/1/r.jpg']),
+        ];
+
+        foreach ($rows as $segment => $row) {
+            $this->assertStringStartsWith('https://cdn.test/assets/', $row->download_url, $segment);
+            $this->assertFalse(ThumbnailUrl::isThumbnailable($row->download_url), $segment.' 직접 URL 이 썸네일 대상으로 잡혔다');
+            $this->assertSame(self::API.$segment.'/'.$row->hash, $row->preview_url, $segment);
+            $this->assertTrue(ThumbnailUrl::isThumbnailable($row->preview_url), $segment.' preview_url 이 썸네일 대상이 아니다');
+        }
     }
 
     // ------------------------------------------------------------------
@@ -999,6 +1069,22 @@ class EcommerceImageThumbnailTest extends ModuleTestCase
         } finally {
             $this->app['env'] = $previous;
         }
+    }
+
+    /**
+     * 직접 URL 을 내는 가짜 공개 자산 디스크(`fake_cdn`)를 등록한다.
+     *
+     * @return void 반환값 없음
+     */
+    private function useFakeCdnDisk(): void
+    {
+        config(['filesystems.disks.fake_cdn' => [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/fake_cdn'),
+            'url' => 'https://cdn.test/assets',
+        ]]);
+        AssetStorage::flush();
+        $this->beforeApplicationDestroyed(fn () => AssetStorage::flush());
     }
 
     /**

@@ -12,7 +12,7 @@ import { render, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview';
 import fs from 'node:fs';
 import path from 'node:path';
-import { contrastRatio, estimateContrast, OVERLAYS } from '../../support/editor';
+import { contrastRatio, estimateContrast, OVERLAYS, sampleImage } from '../../support/editor';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
@@ -55,6 +55,7 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=contrast_estimate_hint
+  // @effects preview_contrast_hint_estimates_without_changing_colors
   // 변종: case=estimate
   it('대비 추정은 사진 평균색 위에 문구 배경을 절반 세기로 겹친 색과 글자색의 WCAG 대비율이다', () => {
     expect(contrastRatio('#FFFFFF', [0, 0, 0])).toBeCloseTo(21, 1);
@@ -70,6 +71,7 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=contrast_estimate_hint
+  // @effects preview_contrast_hint_estimates_without_changing_colors
   // 변종: case=estimate
   it('추정에 쓰는 문구 배경 색·불투명도는 main.css 의 그라데이션 끝값과 같다', () => {
     const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
@@ -81,6 +83,7 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=contrast_estimate_hint
+  // @effects preview_contrast_hint_estimates_without_changing_colors
   // 변종: case=low
   it('대비가 낮으면 제목·설명의 추정값과 권장 조치를 안내하고 글자색은 바꾸지 않는다', async () => {
     const value = draft();
@@ -100,6 +103,7 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=contrast_estimate_hint
+  // @effects preview_contrast_hint_estimates_without_changing_colors
   // 변종: case=ok
   it('대비가 충분하거나 사진을 읽지 못하면 대비 안내를 띄우지 않는다', async () => {
     sample.rgb = [0, 0, 0];
@@ -116,6 +120,7 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=long_text_overflow_hint
+  // @effects preview_overflow_hint_reports_text_scroll
   it('지금 기기에서 문구 영역에 스크롤이 생기면 줄이기를 권하는 안내를 띄우고, 넘치지 않으면 띄우지 않는다', async () => {
     sample.rgb = null;
     const view = mount({ draft: draft() });
@@ -158,6 +163,7 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=long_text_overflow_hint
+  // @effects preview_overflow_hint_reports_text_scroll
   // 변종: case=with_controls
   it('혼자일 때는 들어가도 배너가 2장 이상이라 넘김 단추 자리를 비우면 넘치는 경우를 따로 알리고, 미리보기 모양은 그대로 둔다', async () => {
     sample.rgb = null;
@@ -183,5 +189,31 @@ describe('미리보기 안내', () => {
     expect(hint.textContent).toContain('admin.form.preview.text_overflow_controls');
     expect(hint.textContent).toContain('"device":"MOBILE"');
     expect(view.container.querySelector('iframe')!.contentDocument!.querySelector('.hs-slider')!.classList.contains('hs-slider--controlled')).toBe(false);
+  });
+});
+
+/**
+ * 공개 자산 디스크(#878) — 글자 대비 어림은 캔버스로 사진 픽셀을 읽으므로 같은 출처 주소(`url`, 공개 API)로 받는다.
+ * 직접 주소(`direct_url`, CDN)로 받으면 캔버스가 오염돼 픽셀을 읽지 못한다. (매니페스트 public-asset-disk.yaml)
+ */
+describe('미리보기 색 추출 주소', () => {
+  beforeEach(() => {
+    sample.rgb = [255, 255, 255];
+    (window as any).G7Core = { t: (key: string) => key };
+  });
+  afterEach(() => {
+    cleanup();
+    delete (window as any).G7Core;
+  });
+
+  // @scenario surface=slider_src
+  // @effects hero_preview_sampling_stays_same_origin
+  it('direct_url 이 있어도 색 추출은 공개 API 주소(url)로 한다', async () => {
+    (sampleImage as unknown as ReturnType<typeof vi.fn>).mockClear();
+    mount({ draft: draft({ images: { pc: { id: 1, url: '/api/plugins/sirsoft-hero_section/images/abc', direct_url: 'https://cdn.example.com/abc.jpg', width: 1920, height: 640 }, mobile: null } }) });
+
+    await waitFor(() => expect(sampleImage).toHaveBeenCalled());
+    expect(sampleImage).toHaveBeenCalledWith('/api/plugins/sirsoft-hero_section/images/abc');
+    expect(sampleImage).not.toHaveBeenCalledWith('https://cdn.example.com/abc.jpg');
   });
 });

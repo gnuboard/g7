@@ -1241,6 +1241,9 @@ return [
 
         // Public asset disk settings
         'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
+        'file_delegation_invalid' => 'Please select a valid web server file delegation method.',
+        'file_delegation_accel_prefix_required' => 'An internal location prefix is required when nginx (X-Accel-Redirect) is selected.',
+        'file_delegation_accel_prefix_format' => 'The internal location prefix must start and end with / (e.g. /_g7_sendfile/) and may only contain letters, digits, ., _ and -.',
 
         // Image processing engine, image thumbnails (#869)
         'image_driver_invalid' => 'Please select a valid image processing engine.',
@@ -1693,6 +1696,8 @@ return [
         'queue_job_log_enabled' => 'queue job records',
         'queue_record_retention_days' => 'queue job record retention',
         'public_asset_disk' => 'public asset disk',
+        'file_delegation' => 'web server file delegation',
+        'file_delegation_accel_prefix' => 'internal location prefix',
         // Image processing engine, image thumbnails (#869)
         'image_driver' => 'image processing engine',
         'thumbnail_enabled' => 'image thumbnails',

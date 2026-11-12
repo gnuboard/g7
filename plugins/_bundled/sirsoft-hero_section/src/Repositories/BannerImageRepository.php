@@ -197,4 +197,21 @@ class BannerImageRepository implements BannerImageRepositoryInterface
             ->where('kind', 'image')
             ->whereIn('mime', $mimeTypes);
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return array<int, string> disk 이름
+     */
+    public function distinctDisks(): array
+    {
+        return BannerImage::query()
+            ->whereNotNull('disk')
+            ->where('disk', '!=', '')
+            ->distinct()
+            ->pluck('disk')
+            ->map(fn ($disk) => (string) $disk)
+            ->values()
+            ->all();
+    }
 }

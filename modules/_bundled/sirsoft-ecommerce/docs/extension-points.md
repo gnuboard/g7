@@ -524,7 +524,7 @@
 | `sirsoft-ecommerce.search.brand.index_should_update` | filter | — | `src/Models/Brand.php:151` |
 | `sirsoft-ecommerce.search.category.index_should_update` | filter | — | `src/Models/Category.php:612` |
 | `sirsoft-ecommerce.search.coupon.index_should_update` | filter | — | `src/Models/Coupon.php:518` |
-| `sirsoft-ecommerce.search.product.index_should_update` | filter | — | `src/Models/Product.php:709` |
+| `sirsoft-ecommerce.search.product.index_should_update` | filter | — | `src/Models/Product.php:733` |
 | `sirsoft-ecommerce.search.product_common_info.index_should_update` | filter | — | `src/Models/ProductCommonInfo.php:179` |
 | `sirsoft-ecommerce.search_preset.list_validation_rules` | filter | — | `src/Http/Requests/Admin/SearchPresetListRequest.php:40` |
 | `sirsoft-ecommerce.sequence.after_generate` | action | — | `src/Services/SequenceService.php:61` 외 1곳 |
@@ -1200,6 +1200,31 @@ public function addXlsx(array $formats): array
 
 키 이름은 사용자 화면 템플릿의 저장 핸들러와 같아야 합니다 — 한쪽만 바꾸면 그 키는 동의 전에 지워집니다.
 <!-- @intent END -->
+
+### 이미지 주소 두 축 — `download_url` 과 `preview_url` (`core.thumbnail.filter_url_patterns`)
+
+`ThumbnailSourcesListener` 가 코어 썸네일 목록에 더하는 경로 패턴은 이 모듈의 **API 서빙 주소**
+(`/api/modules/sirsoft-ecommerce/{product,category,review,claim}-image/*`)뿐입니다. 공개 자산 디스크(CDN)에
+올라간 상품·카테고리·리뷰 이미지의 직접 주소는 이 패턴 밖이라 `thumbPreset`·`?size=` 가 붙지 않습니다 —
+직접 주소 접두를 패턴에 넣어도 서버가 주소에서 해시를 거꾸로 찾을 수 없어 효과가 없습니다.
+
+그래서 이미지 응답은 용도가 다른 두 주소를 함께 냅니다.
+
+| 필드 | 값 | 쓰는 자리 |
+|---|---|---|
+| `download_url` | 원본 한 장 — 행 disk 가 직접 주소를 낼 수 있으면 그 주소(CDN), 아니면 API 서빙 주소 | 확대 창·다운로드·내보내기 |
+| `preview_url` | 썸네일 기준 — 항상 API 서빙 주소 | 목록·미리보기 칸의 `thumbPreset`, 업로더 미리보기 |
+| `thumbnail_url` (대표 이미지 하나) | 항상 API 서빙 주소(대표 이미지의 `preview_url`) | 상품 목록·카드·검색·og:image·주문 스냅샷·장바구니·공개 카테고리 상세 |
+
+API 서빙 주소에 `?size=` 를 붙이면 서버가 썸네일을 만들고, 공개 썸네일 저장 위치가 공개 자산 디스크면
+그 주소로 `302` 합니다 — 상품·카테고리 썸네일은 CDN 에서 나갑니다. 리뷰 이미지 썸네일은 노출·서명 게이트가
+있어 원본이 공개 자산 디스크에 있어도 비공개 썸네일 디스크에서 `private` 캐시로 스트리밍합니다. 직접 주소가 없는 행(로컬 디스크·훅 차단)은 두
+주소가 같습니다. 숨김 리뷰의 관리자 응답(서명 모드)은 두 주소 모두 서명된 API 주소입니다.
+
+화면·확장이 이 응답을 쓸 때는 미리보기 자리에 `preview_url ?? download_url`(예전 응답 호환)을 쓰고,
+원본이 필요한 자리만 `download_url` 을 씁니다. 상품 내보내기의 「대표 이미지 URL」은 파일 자체가 필요한
+자리라 원본(`Product::getThumbnailDownloadUrl()`)을 냅니다. 이 전환 전에 저장된 주문 스냅샷의
+`thumbnail_url` 은 저장 당시 값(직접 주소일 수 있음) 그대로입니다.
 
 ### 회원 응답에 얹는 필드 — `core.user.filter_resource_data`
 

@@ -13,9 +13,46 @@
  *    원본을 그대로 보낸다(`bypass:animated`) — 표시 크기는 CSS 가 정해 모양은 같다.
  *
  * PC·모바일 이미지는 기기별로 따로 올린 각자의 원본이라 각자 이 함수를 부른다(각자의 가로로 후보가 정해진다).
+ *
+ * 공개 자산 디스크(#878): 응답의 `direct_url` 은 원본 한 장의 직접 주소(public·CDN)다. 축소 후보는 언제나 공개 API 주소
+ * (`url?size=`, 서버가 공개 썸네일 디스크로 302)로 만들고, **마지막 원본 후보만** 직접 주소로 바꾼다 — 고해상도 화면이 고르는
+ * 원본이 PHP 를 거치지 않게. 그린 크기 측정 등 같은 출처 비교 키는 계속 `url` 을 쓴다.
  */
 
 import { MOBILE_MAX_WIDTH } from './popupVisibility';
+
+/** `direct_url` 을 가질 수 있는 이미지 한 장 */
+export interface DirectMedia {
+  /** 공개 API 주소 (썸네일 기준) */
+  url?: string | null;
+
+  /** 원본 직접 주소 (공개 자산 디스크가 아니면 null) */
+  direct_url?: string | null;
+}
+
+/**
+ * 원본 한 장을 그릴 주소 — 직접 주소가 있으면 그것, 없으면 공개 API 주소.
+ *
+ * @param media 이미지
+ * @returns 주소 (둘 다 없으면 undefined)
+ */
+export function mediaSrc(media: DirectMedia | null | undefined): string | undefined {
+  if (typeof media?.direct_url === 'string' && media.direct_url !== '') {
+    return media.direct_url;
+  }
+
+  return typeof media?.url === 'string' && media.url !== '' ? media.url : undefined;
+}
+
+/**
+ * srcset 주소의 공백을 코어와 같은 방식으로 이스케이프합니다(코어 `srcsetUrl` 과 같은 규칙).
+ *
+ * @param url 주소
+ * @returns 이스케이프한 주소
+ */
+function srcsetUrl(url: string): string {
+  return url.replace(/ /g, '%20');
+}
 
 /** 코어 썸네일 API 의 원본 가로 상한 srcset 함수 (없으면 null) */
 function contentSrcsetWithinApi(): ((url: unknown, maxWidth: unknown, options: { includeOriginal: boolean }) => unknown) | null {
@@ -29,11 +66,15 @@ function contentSrcsetWithinApi(): ((url: unknown, maxWidth: unknown, options: {
 /**
  * 원본 주소와 가로로 가로 기술자(`w`) srcset 을 만듭니다.
  *
- * @param url 원본 주소 (사이트 마운트 접두사를 붙인 공개 주소)
+ * 원본 직접 주소(`original`)를 주면 코어 결과의 마지막 원본 후보(`{url} {가로}w`)만 그 주소로 바꾼다. 꼬리가 정확히 그
+ * 모양일 때만 바꾸고 그 밖은 손대지 않는다(코어 출력 형식이 바뀌면 원본 후보는 API 주소로 남는다 — 안전한 쪽).
+ *
+ * @param url 원본 주소 (사이트 마운트 접두사를 붙인 공개 API 주소 — 썸네일 기준)
  * @param width 원본 가로(px)
+ * @param original 원본 한 장의 직접 주소 (없거나 url 과 같으면 바꾸지 않는다)
  * @returns srcset (붙일 후보가 없거나 코어 함수가 없으면 undefined)
  */
-export function responsiveSrcset(url: string | null | undefined, width: number | null | undefined): string | undefined {
+export function responsiveSrcset(url: string | null | undefined, width: number | null | undefined, original?: string | null): string | undefined {
   if (typeof url !== 'string' || url === '' || typeof width !== 'number' || !Number.isFinite(width) || width <= 0) {
     return undefined;
   }
@@ -41,7 +82,18 @@ export function responsiveSrcset(url: string | null | undefined, width: number |
   const core = contentSrcsetWithinApi();
   const result = core ? core(url, width, { includeOriginal: true }) : null;
 
-  return typeof result === 'string' && result !== '' ? result : undefined;
+  if (typeof result !== 'string' || result === '') {
+    return undefined;
+  }
+
+  if (typeof original === 'string' && original !== '' && original !== url) {
+    const tail = `${srcsetUrl(url)} ${Math.floor(width)}w`;
+    if (result.endsWith(tail)) {
+      return `${result.slice(0, result.length - tail.length)}${srcsetUrl(original)} ${Math.floor(width)}w`;
+    }
+  }
+
+  return result;
 }
 
 /** 레이어 배치 — sizes 를 정하는 값 */

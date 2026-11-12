@@ -72,7 +72,7 @@
                         <open-modal target="modal_image_preview"/>
                       </sequence>
                     </on>
-                    <img src="{{image?.download_url}}" thumbPreset="md" loading="lazy" decoding="async" alt="{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}" class="ecommerce:w-full ecommerce:max-h-56 ecommerce:py-2 ecommerce:object-contain ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-75 ecommerce:hover:shadow-md ecommerce:transition-all ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"/>
+                    <img src="{{image?.preview_url ?? image?.download_url}}" thumbPreset="md" loading="lazy" decoding="async" alt="{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}" class="ecommerce:w-full ecommerce:max-h-56 ecommerce:py-2 ecommerce:object-contain ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:opacity-75 ecommerce:hover:shadow-md ecommerce:transition-all ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"/>
                   </button>
                 </div>
               </div>

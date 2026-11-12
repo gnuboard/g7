@@ -16,6 +16,15 @@ description: |
     - 권한 검사가 걸린 첨부(board/page/코어)는 배선 자체가 없음 — 직접 URL 이
       권한을 우회하므로 스트리밍 유지가 보안 전제.
 
+  두 주소(#878) — 직접 URL 은 썸네일 파이프(`thumbPreset`·`?size=`, 같은 출처 `/api/` 패턴)의 대상이 아니다.
+    - 이미지 리소스·업로드 응답은 원본 `download_url`(직접 ?? API)과 썸네일 기준 `preview_url`(항상 API)을 함께 낸다.
+      화면의 목록·미리보기 칸은 `preview_url ?? download_url` 에 규격을 걸고, 확대 창·다운로드는 `download_url`.
+    - 대표 이미지 하나만 내는 자리(`thumbnail_url` — 상품 목록·og·주문 스냅샷·장바구니·공개 카테고리 상세)는 API 주소.
+      내보내기 「대표 이미지 URL」은 파일 자체가 필요하므로 원본(`download_url`).
+    - 리뷰 숨김(서명 모드)은 두 주소 모두 서명 API 주소.
+    - 에디터 업로드는 직접 URL 행에만 응답 `urls`(`default`·원본 가로 후보 = 직접 주소, 원본 가로 이하 숫자 규격 = 사이트 절대 API + `?size=`)를 싣고,
+      편집기가 본문 `<img srcset>` 으로 저장한다. 직접 URL 이 없는 행·썸네일 꺼짐·훅 차단은 `urls` 없음.
+
 coverage_strategy: pairwise
 
 axes:
@@ -63,6 +72,10 @@ effects:
   - public_asset_disk_injection_is_skipped_in_testing_env
   # #869 매핑 부채: 카탈로그에 있는 디스크를 저장하면 drivers 카테고리에 그 값이 남는다(422 판정의 짝)
   - catalog_public_asset_disk_saved_to_drivers_category
+  # #878 두 주소: 직접 URL 행도 썸네일은 API 주소로
+  - preview_url_is_always_api_serving_url   # 리소스·업로드 응답의 preview_url 은 행 disk 와 무관하게 API 서빙 경로, 화면 미리보기 칸이 그 주소에 규격을 건다
+  - thumbnail_url_uses_api_preview   # 대표 이미지 thumbnail_url(목록·og·스냅샷·장바구니·카테고리 상세)은 API 주소, 내보내기는 원본
+  - editor_upload_returns_responsive_api_urls_for_direct_rows   # 에디터 업로드 응답 urls — 직접 URL 행에만, 원본 가로 이하 숫자 규격(사이트 절대 API ?size=) + 원본 가로 후보는 직접 주소
 
 test_files:
   - tests/Unit/Extension/Storage/CoreStorageDriverTest.php
@@ -85,6 +98,10 @@ test_files:
   - modules/_bundled/sirsoft-board/tests/Unit/Resources/PostResourceThumbnailUrlTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Repositories/BoardRepositoryPopularAvatarTest.php
   - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/Ckeditor5ImageUploadUrlTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Feature/Http/Controllers/ImageUploadResponsiveUrlsTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/uploadsThumbnailPreviewUrl.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/ImagePreviewUrlResourceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-product-review-index-thumbnail-preset.test.tsx
   - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/ImageServeServiceRowDiskTest.php
   - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/StorageDiskRecursionTest.php
   - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/PluginSettingsCatalogAttachTest.php

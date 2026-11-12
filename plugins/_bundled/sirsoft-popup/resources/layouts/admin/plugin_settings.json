@@ -832,6 +832,90 @@
                                                 ]
                                             }
                                         ]
+                                    },
+                                    {
+                                        "comment": "저장소 — 팝업 이미지를 둘 공개 자산 디스크(#878). 선택지는 설정 응답에 서버가 붙인 카탈로그다(코어 설정 API 를 교차 조회하지 않는다)",
+                                        "id": "storage_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "g7pp-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "g7pp-card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.settings.storage.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "g7pp-row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_public_asset_disk",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "g7pp-form-label",
+                                                                    "htmlFor": "popup_public_asset_disk"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_asset_disk.label"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "id": "popup_public_asset_disk",
+                                                                    "name": "public_asset_disk",
+                                                                    "className": "g7pp-input gpp:w-full",
+                                                                    "options": "{{[{value: '', label: $t('sirsoft-popup.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "g7pp-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_asset_disk.hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.public_asset_disk}}",
+                                                                "props": {
+                                                                    "className": "g7pp-form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.public_asset_disk?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "comment": "쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다",
+                                                                "id": "public_asset_disk_unavailable",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!_local.form?.public_asset_disk_unavailable}}",
+                                                                "props": {
+                                                                    "role": "status",
+                                                                    "className": "gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -1011,7 +1095,8 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "hasChanges": false
+                                                            "hasChanges": false,
+                                                            "form.public_asset_disk_unavailable": "{{response.data?.public_asset_disk_unavailable ?? null}}"
                                                         }
                                                     },
                                                     {

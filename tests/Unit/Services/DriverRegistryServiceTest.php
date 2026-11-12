@@ -51,6 +51,7 @@ class DriverRegistryServiceTest extends TestCase
      * search 는 폴백 가드 편입(A5b)으로 추가되었다 — 이 목록에서 빠지면 검색엔진 플러그인
      * 제거 시 죽은 `scout.driver` 가 그대로 남아 공개 검색이 500 이 된다.
      * image(이미지 처리 엔진, #869)도 같은 이유로 등재한다 — 플러그인 엔진이 빠지면 gd 로 되돌아가야 한다.
+     * file_delegation(웹서버 파일 위임, #878)은 드라이버 카드와 같은 선택 UX 라 등재한다 — 기본은 none.
      *
      * @scenario engine_source=core
      *
@@ -59,13 +60,13 @@ class DriverRegistryServiceTest extends TestCase
      * @return void 반환값 없음
      */
     #[Test]
-    public function it_returns_all_ten_categories(): void
+    public function it_returns_all_eleven_categories(): void
     {
         $categories = $this->service->getCategories();
 
-        $this->assertCount(10, $categories);
+        $this->assertCount(11, $categories);
         $this->assertEquals(
-            ['storage', 'public_asset', 'cache', 'session', 'queue', 'log', 'websocket', 'mail', 'search', 'image'],
+            ['storage', 'public_asset', 'file_delegation', 'cache', 'session', 'queue', 'log', 'websocket', 'mail', 'search', 'image'],
             $categories
         );
     }
@@ -218,7 +219,8 @@ class DriverRegistryServiceTest extends TestCase
         $this->assertArrayHasKey('mail', $all);
         $this->assertArrayHasKey('search', $all);
         $this->assertArrayHasKey('image', $all);
-        $this->assertCount(10, $all);
+        $this->assertArrayHasKey('file_delegation', $all);
+        $this->assertCount(11, $all);
     }
 
     /**

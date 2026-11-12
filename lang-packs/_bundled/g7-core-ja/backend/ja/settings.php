@@ -46,6 +46,11 @@ return [
             'public' => 'Public ディスク',
             's3' => 'Amazon S3',
         ],
+        'file_delegation' => [
+            'none' => '使用しない (PHP が送信)',
+            'x-sendfile' => 'X-Sendfile (Apache mod_xsendfile)',
+            'x-accel-redirect' => 'X-Accel-Redirect (nginx)',
+        ],
         'cache' => [
             'file' => 'ファイル',
             'redis' => 'Redis',
@@ -94,6 +99,18 @@ return [
     'driver_test_partial' => '一部のドライバ接続テストが失敗しました。',
     'driver_test_error' => 'ドライバ接続テスト中にエラーが発生しました。',
     'unknown_driver' => '不明なドライバです。',
+    'driver_test' => [
+        'file_delegation' => [
+            'none' => 'Webサーバーファイル委任を使用しません。ファイルは PHP が送信します。',
+            'apache_ready' => 'Apache に mod_xsendfile が読み込まれています。XSendFilePath を確認し、保存してから「実際の送信を確認」で仕上げてください。',
+            'apache_missing' => 'Apache に mod_xsendfile が読み込まれていません。このまま有効にするとファイルが空の本文で送信されます。',
+            'apache_unknown' => 'Apache のモジュール一覧を読み取れません（PHP-FPM など）。保存してから「実際の送信を確認」で確認してください。',
+            'nginx_hint' => 'nginx のようです。案内した internal location を追加したか確認し、保存してから「実際の送信を確認」で仕上げてください。',
+            'server_mismatch_nginx' => 'このサーバーは nginx のようです。nginx では X-Accel-Redirect を選択してください。',
+            'server_mismatch_apache' => 'このサーバーは Apache のようです。Apache では X-Sendfile（mod_xsendfile）を選択してください。',
+            'server_unknown' => 'Webサーバーの種類を判別できません。保存してから「実際の送信を確認」で確認してください。',
+        ],
+    ],
     'outbound_proxy_test_success' => 'プロキシ接続に成功しました。外部サービスにはこの IP アドレスとして見えます。',
     'outbound_proxy_test_failed' => 'プロキシ経由で接続できませんでした。アドレスとプロキシサーバーの状態を確認してください。',
     'outbound_proxy_test_invalid_url' => 'プロキシアドレスの形式が正しくありません。',

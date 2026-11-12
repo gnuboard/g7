@@ -18,7 +18,7 @@ use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
  * 히어로섹션 플러그인 서비스 프로바이더
  *
  * BasePluginServiceProvider 의 표준 자동 바인딩을 쓴다 — Repository 인터페이스, 플러그인 캐시(공개 노출 서비스),
- * 플러그인 스토리지(이미지 서비스). 전역 Cache/Storage 바인딩은 건드리지 않는다.
+ * 카테고리 스토리지(이미지 서비스, 공개 자산 디스크). 전역 Cache/Storage 바인딩은 건드리지 않는다.
  */
 class HeroSectionServiceProvider extends BasePluginServiceProvider
 {
@@ -49,12 +49,16 @@ class HeroSectionServiceProvider extends BasePluginServiceProvider
     ];
 
     /**
-     * 플러그인 스토리지를 주입받는 서비스
+     * 카테고리별 스토리지를 주입받는 서비스 (클래스 ⇒ 카테고리) — #878
      *
-     * @var array<int, class-string>
+     * 이미지 서비스는 `getStorageDiskFor('images')` 가 정한 디스크(공개 자산 디스크 설정 반영)를 주입받는다.
+     * 주입 스토리지는 「지금 업로드가 갈 디스크」이고 `put()`·`getDisk()` 행 기록이 그 디스크를 따른다. 이미 올린
+     * 파일의 읽기·서빙·삭제는 서비스가 행 disk 로 다시 고른다(`BannerImageService::storageFor()`).
+     *
+     * @var array<class-string, string>
      */
-    protected array $storageServices = [
-        BannerImageService::class,
+    protected array $storageCategoryServices = [
+        BannerImageService::class => 'images',
     ];
 
     /**

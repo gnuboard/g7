@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Enums\PermissionType;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
+use App\Extension\PluginManager;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -271,6 +272,25 @@ abstract class PluginTestCase extends TestCase
     {
         Storage::fake('local');
         Storage::fake('plugins');
+    }
+
+    /**
+     * 플러그인 설정 저장·스키마 조회가 개발 환경의 설치 상태와 무관하게 돌게 _bundled 플러그인 인스턴스를 등록합니다 (#878).
+     *
+     * 설정 저장은 `PluginManager::getPlugin()` 인스턴스가 있어야 하고 그 플러그인 디스크(`plugins`)에 설정 파일을 쓴다 —
+     * 인스턴스를 직접 등록하고 디스크를 가짜로 둔다(설치한 클론의 실제 설정 파일을 덮지 않게).
+     *
+     * @return void 반환값 없음
+     */
+    protected function registerPluginInstance(): void
+    {
+        Storage::fake('plugins');
+
+        $manager = app(PluginManager::class);
+        $prop = new \ReflectionProperty($manager, 'plugins');
+        $plugins = $prop->getValue($manager);
+        $plugins['sirsoft-popup'] = new Plugin;
+        $prop->setValue($manager, $plugins);
     }
 
     /**

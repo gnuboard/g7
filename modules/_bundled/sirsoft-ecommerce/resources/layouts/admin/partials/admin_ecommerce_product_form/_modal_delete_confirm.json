@@ -195,7 +195,7 @@
                                                     "type": "basic",
                                                     "name": "Img",
                                                     "props": {
-                                                        "src": "{{_local.form.images?.[0]?.download_url}}",
+                                                        "src": "{{_local.form.images?.[0]?.preview_url ?? _local.form.images?.[0]?.download_url}}",
                                                         "thumbPreset": "sm",
                                                         "loading": "lazy",
                                                         "decoding": "async",

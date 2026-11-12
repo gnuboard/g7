@@ -66,6 +66,8 @@ class SettingsParityTest extends PluginTestCase
         return match ($key) {
             'max_upload_mb' => UploadLimit::settingMb(),
             'public_cache_minutes' => app(PublicPopupService::class)->cacheMinutes(),
+            // Plugin::getStorageDiskFor('images') 와 같은 읽기식 — 문자열이 아니면(없음) 코어 설정 따름('') (#878)
+            'public_asset_disk' => is_string($value = plugin_setting('sirsoft-popup', 'public_asset_disk', '')) ? $value : '',
             default => DisplaySettings::current()[$key],
         };
     }

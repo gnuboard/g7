@@ -25,6 +25,7 @@ use App\Support\Content\EmbedProviderRegistry;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\Favicon\FaviconPolicy;
+use App\Support\FileServing\FileDelegation;
 use App\Support\IpAccessMatcher;
 use App\Support\PhpExtensionProbe;
 use App\Support\SearchScopes;
@@ -218,6 +219,30 @@ class SaveSettingsRequest extends FormRequest
         $this->normalizePrivacyIntegerFields();
         $this->normalizeSecurityIntegerFields();
         $this->normalizeConsentProvider();
+        $this->normalizeFileDelegationPrefix();
+    }
+
+    /**
+     * 웹서버 파일 위임 접두사(`drivers.file_delegation_accel_prefix`)를 다듬습니다 (#878).
+     *
+     * 앞뒤 공백을 떼고 끝에 `/` 가 없으면 붙인다 — 운영자가 `/_g7_sendfile` 처럼 적어도 매핑(`X-Accel-Mapping`)과
+     * nginx `location` 이 같은 모양이 되게 한다. 문자열이 아닌 값·빈 값은 검증 규칙이 판정한다.
+     *
+     * @return void 입력을 제자리에서 고친다
+     */
+    private function normalizeFileDelegationPrefix(): void
+    {
+        $prefix = $this->input('drivers.file_delegation_accel_prefix');
+
+        if (! is_string($prefix)) {
+            return;
+        }
+
+        $this->merge([
+            'drivers' => array_merge((array) $this->input('drivers', []), [
+                'file_delegation_accel_prefix' => FileDelegation::normalizeAccelPrefix($prefix),
+            ]),
+        ]);
     }
 
     /**
@@ -932,6 +957,10 @@ class SaveSettingsRequest extends FormRequest
             // 공개 자산 디스크 — 코어 3종(none/public/s3) + 플러그인 훅 등록 디스크.
             // 카탈로그가 동적(플러그인 훅)이라 정적 Rule::in 불가 → 레지스트리 조회 closure
             'drivers.public_asset_disk' => $this->getPublicAssetDiskRules(),
+            // 웹서버 파일 위임 (#878) — 코어 3종(none/x-sendfile/x-accel-redirect). nginx 는 internal 위치 접두사가 필요하다.
+            // 접두사는 prepareForValidation 에서 앞뒤 공백을 떼고 끝 `/` 를 붙인 뒤 형식을 본다.
+            'drivers.file_delegation' => ['nullable', 'string', 'max:50', $this->getFileDelegationRule()],
+            'drivers.file_delegation_accel_prefix' => ['nullable', 'string', 'max:255', 'required_if:drivers.file_delegation,'.FileDelegation::MODE_X_ACCEL_REDIRECT, 'regex:'.FileDelegation::ACCEL_PREFIX_PATTERN],
 
             // 본인인증(IDV) provider 기술 파라미터 — 정책 분기는 IdentityPolicy 로 흡수됨
             'identity.default_provider' => ['nullable', 'string', 'max:100'],
@@ -1218,6 +1247,26 @@ class SaveSettingsRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    /**
+     * 웹서버 파일 위임 방식이 카탈로그(none/x-sendfile/x-accel-redirect)에 있는지 검사하는 규칙을 반환합니다 (#878).
+     *
+     * 선택지의 단일 출처는 `DriverRegistryService` 다 — 화면 셀렉트가 그 목록을 그대로 그린다.
+     *
+     * @return \Closure 검증 클로저
+     */
+    private function getFileDelegationRule(): \Closure
+    {
+        return function ($attribute, $value, $fail) {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            if (! app(DriverRegistryService::class)->isDriverAvailable('file_delegation', (string) $value)) {
+                $fail(__('validation.settings.file_delegation_invalid'));
+            }
+        };
     }
 
     /**
@@ -2038,6 +2087,12 @@ class SaveSettingsRequest extends FormRequest
             'drivers.queue_record_retention_days.max' => __('validation.settings.queue_record_retention_days_max', ['max' => config('core.settings_limits.drivers_queue_record_retention_days_max', 90)]),
             'drivers.public_asset_disk.string' => __('validation.settings.public_asset_disk_invalid'),
             'drivers.public_asset_disk.max' => __('validation.settings.public_asset_disk_invalid'),
+            'drivers.file_delegation.string' => __('validation.settings.file_delegation_invalid'),
+            'drivers.file_delegation.max' => __('validation.settings.file_delegation_invalid'),
+            'drivers.file_delegation_accel_prefix.required_if' => __('validation.settings.file_delegation_accel_prefix_required'),
+            'drivers.file_delegation_accel_prefix.string' => __('validation.settings.file_delegation_accel_prefix_format'),
+            'drivers.file_delegation_accel_prefix.max' => __('validation.settings.file_delegation_accel_prefix_format'),
+            'drivers.file_delegation_accel_prefix.regex' => __('validation.settings.file_delegation_accel_prefix_format'),
 
             // 본인인증(IDV) 설정
             'identity.default_provider.string' => __('validation.settings.identity_default_provider_string'),
@@ -2348,6 +2403,8 @@ class SaveSettingsRequest extends FormRequest
             'drivers.queue_job_log_enabled' => __('validation.attributes.queue_job_log_enabled'),
             'drivers.queue_record_retention_days' => __('validation.attributes.queue_record_retention_days'),
             'drivers.public_asset_disk' => __('validation.attributes.public_asset_disk'),
+            'drivers.file_delegation' => __('validation.attributes.file_delegation'),
+            'drivers.file_delegation_accel_prefix' => __('validation.attributes.file_delegation_accel_prefix'),
         ];
 
         // 규칙을 더한 확장이 같은 자리에서 라벨도 더한다 (rules() 의 훅과 짝).

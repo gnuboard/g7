@@ -29,6 +29,9 @@ class DriverRegistryService
     private const CORE_DRIVER_IDS = [
         'storage' => ['local', 's3'],
         'public_asset' => ['none', 'public', 's3'],
+        // 웹서버 파일 위임(#878). PHP 는 웹서버 모듈 유무를 확정하지 못하므로 셋 다 늘 고를 수 있다 —
+        // 구성 여부는 드라이버 시험(DriverConnectionTester::testFileDelegation)의 힌트와 화면 안내로 맡긴다.
+        'file_delegation' => ['none', 'x-sendfile', 'x-accel-redirect'],
         'cache' => ['file', 'redis'],
         'session' => ['file', 'database', 'redis'],
         'queue' => ['sync', 'database', 'redis'],
@@ -61,6 +64,7 @@ class DriverRegistryService
     private const DEFAULT_DRIVERS = [
         'storage' => 'local',
         'public_asset' => 'none',
+        'file_delegation' => 'none',
         'cache' => 'file',
         'session' => 'database',
         'queue' => 'database',
@@ -79,6 +83,7 @@ class DriverRegistryService
     public const CONFIG_KEYS = [
         'storage' => 'filesystems.default',
         'public_asset' => 'core.storage.public_asset_disk',
+        'file_delegation' => 'core.file_serving.delegation',
         'cache' => 'cache.default',
         'session' => 'session.driver',
         'queue' => 'queue.default',
@@ -102,6 +107,7 @@ class DriverRegistryService
     private const SETTINGS_KEYS = [
         'storage' => ['category' => 'drivers', 'key' => 'storage_driver'],
         'public_asset' => ['category' => 'drivers', 'key' => 'public_asset_disk'],
+        'file_delegation' => ['category' => 'drivers', 'key' => 'file_delegation'],
         'cache' => ['category' => 'drivers', 'key' => 'cache_driver'],
         'session' => ['category' => 'drivers', 'key' => 'session_driver'],
         'queue' => ['category' => 'drivers', 'key' => 'queue_driver'],

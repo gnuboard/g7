@@ -59,7 +59,7 @@ describe('본문 이미지 썸네일 레이아웃', () => {
      * @effects ckeditor_uploads_list_uses_sm_preset
      */
     it('업로드 목록 이미지는 sm 규격이다', () => {
-        const images = collect(uploads, (n) => n.name === 'Img' && n.props?.src === '{{row.download_url}}');
+        const images = collect(uploads, (n) => n.name === 'Img' && n.props?.src === '{{row.preview_url ?? row.download_url}}');
 
         expect(images).toHaveLength(1);
         expect(images[0].props.thumbPreset).toBe('sm');

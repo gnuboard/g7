@@ -80,7 +80,7 @@ class GzipEncodeResponse
         // 압축 여부와 무관하게, **압축 대상 유형이면** `Vary: Accept-Encoding` 을 붙인다.
         // 종전에는 실제로 압축한 응답에만 붙어, 같은 URL 이 상한 초과·소용량·미지원
         // 클라이언트에서는 Vary 없이 나갔다 — 공유 캐시가 그 응답을 인코딩 구분 없이
-        // 재사용하면 gzip 을 못 읽는 클라이언트에게 압축본이 갈 수 있다 (3차 L3).
+        // 재사용하면 gzip 을 못 읽는 클라이언트에게 압축본이 갈 수 있다.
         if ($this->isCompressibleContentType($response)) {
             $this->ensureVaryAcceptEncoding($response);
         }
@@ -136,6 +136,13 @@ class GzipEncodeResponse
             return false;
         }
 
+        // 웹서버에 전송을 위임한 응답은 본문이 없다 — 여기서 파일을 읽어 gzip 본문으로 치환하면 웹서버는 위임
+        // 헤더를 소비해 **원본 바이트**를 보내면서 앱이 붙인 `Content-Encoding: gzip` 을 그대로 실어, 브라우저가
+        // 깨진 본문을 받는다. 헬퍼(`fileResponse()`)의 선언과 별개로 응답 모양으로도 막는다(2차 방어, #878).
+        if ($response->headers->has('X-Sendfile') || $response->headers->has('X-Accel-Redirect')) {
+            return false;
+        }
+
         // PHP zlib 확장 모듈이 활성화되어 있는지 확인
         if (! $this->isGzipAvailable()) {
             return false;
@@ -159,7 +166,7 @@ class GzipEncodeResponse
         // HEAD 는 본문이 없어야 한다. BinaryFileResponse 는 `prepare()` 에서 본문 전송을
         // 끄지만(maxlen=0), 아래 압축 경로는 그 응답을 **일반 Response 로 치환**하면서
         // 파일을 통째로 읽어 본문에 싣는다 — 치환된 응답은 prepare() 를 다시 거치지 않고
-        // `Response::send()` 에는 HEAD 가드가 없어 그대로 나간다 (3차 G3 라운드 M4).
+        // `Response::send()` 에는 HEAD 가드가 없어 그대로 나간다.
         if ($request->isMethod('HEAD')) {
             return false;
         }
@@ -237,7 +244,7 @@ class GzipEncodeResponse
         // RFC 9110 §12.5.3 — 코딩마다 가중치(`q`)가 붙고, `q=0` 은 **명시 거부**다. 종전의
         // `str_contains('gzip')` 은 `gzip;q=0` 에도 압축본을 보냈다 — 거부한 클라이언트가
         // gzip 바이트를 받는다. `*` 는 「따로 적지 않은 모든 코딩」이라 gzip 이 명시되지 않은
-        // 경우에만 그 가중치를 쓴다 (15차 G3 라운드).
+        // 경우에만 그 가중치를 쓴다.
         $acceptEncoding = (string) $request->header('Accept-Encoding', '');
 
         $gzipWeight = null;
@@ -254,13 +261,13 @@ class GzipEncodeResponse
             // qvalue 문법은 RFC 9110 §12.4.2 그대로다 — `0`~`0.999` 또는 `1`~`1.000`. 그 밖의
             // 형태(`q=2`·`q=.5`·`q=1.5`)는 유효한 가중치가 아니므로 파라미터를 무시하고 기본
             // 가중치 1 로 둔다 — 느슨한 정규식은 `q=2` 를 2.0 으로 읽어 「명시 거부인가」의
-            // 판정 근거를 규격 밖 값에 두게 된다 (16차 G3 라운드 A13).
+            // 판정 근거를 규격 밖 값에 두게 된다.
             // 한 멤버 안에 `q` 가 여러 번 오면 **가장 낮은 값**을 취한다 — 바깥 두 축과 같은
             // fail-closed 규율이다. 종전 대입은 마지막 것이 이겨 `gzip;q=0;q=1` 을 압축으로
             // 뒤집었다: 명시 거부가 뒤 파라미터로 되살아나는 방향이라, 축 간 비대칭을 없앤
             // 바로 아래 `min()` 들과 한 단계 아래에서 어긋나 있었다. Accept-Encoding 문법에는
             // accept-ext 가 없으므로 두 번째 `q` 는 규격 밖 입력이고, 규격 밖 입력에서 거부를
-            // 무시하는 쪽으로 넘어지지 않는다 (23차 G3 라운드 B23-10).
+            // 무시하는 쪽으로 넘어지지 않는다.
             $weight = null;
             foreach ($parts as $parameter) {
                 if (preg_match('/^q\s*=\s*(0(?:\.\d{1,3})?|1(?:\.0{1,3})?)$/i', $parameter, $matched)) {
@@ -273,13 +280,13 @@ class GzipEncodeResponse
             // 이름이 중복으로 오면 **가장 낮은 가중치**를 취한다 — 어느 이름이든 `q=0` 이면
             // 명시 거부이므로 fail-closed 로 거부한다. 종전 `max()` 는 `gzip;q=0, x-gzip` 을
             // 압축으로 뒤집어, gzip 을 거부한 클라이언트에게 gzip 바이트를 보냈고, 중복
-            // (`gzip, gzip;q=0`)에서도 거부를 무시했다 (17차 G3 라운드 B-13·B-14).
+            // (`gzip, gzip;q=0`)에서도 거부를 무시했다.
             if ($coding === 'gzip' || $coding === 'x-gzip') {
                 $gzipWeight = min($gzipWeight ?? $weight, $weight);
             } elseif ($coding === '*') {
                 // 와일드카드도 같은 규칙으로 접는다(fail-closed). 종전 대입은 마지막 값이
                 // 앞의 명시 거부를 덮어써 `*;q=0, *` 를 압축으로 뒤집었다 — gzip 축만
-                // `min()` 이고 이 축만 last-write-wins 인 비대칭이었다 (22차 G3 라운드 B5).
+                // `min()` 이고 이 축만 last-write-wins 인 비대칭이었다.
                 $wildcardWeight = min($wildcardWeight ?? $weight, $weight);
             }
         }
@@ -343,7 +350,7 @@ class GzipEncodeResponse
      * (일반 응답 경로에 그 헤더를 세우는 지점이 현재 없다) 비대칭 자체가 「이 축은
      * 파일 응답에만 해당한다」는 오판의 근거가 되고, 어느 한 경로가 그 헤더를 갖게 되는
      * 순간 그 사실이 조용히 결함이 된다. 표현 축 처리는 압축 여부가 정하는 것이지
-     * 응답 클래스가 정하는 것이 아니다 (11차 G3 라운드 B11-11).
+     * 응답 클래스가 정하는 것이 아니다.
      *
      * @param  Response  $response  압축을 마친 응답
      * @return void 반환값 없음
@@ -420,7 +427,7 @@ class GzipEncodeResponse
      * 쓰면 안 된다(RFC 9110 §8.8.1). 종전에는 원본(identity) ETag 를 그대로 승계해, 같은
      * URL 이 `Accept-Encoding` 에 따라 다른 본문을 **같은 ETag** 로 내보냈다. 재검증 쪽은
      * `BaseApiController::fileResponse()` 가 이 접미사를 벗겨 비교하므로 304 가 그대로
-     * 성립한다 — Apache `mod_deflate` 와 같은 규약이다 (3차 G3 라운드 L3).
+     * 성립한다 — Apache `mod_deflate` 와 같은 규약이다.
      *
      * @param  Response  $response  압축된 응답
      * @return void 반환값 없음

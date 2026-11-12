@@ -5,6 +5,9 @@ export interface HeroVideo {
   /** 공개 영상 주소 (범위 요청을 받는다) */
   url: string;
 
+  /** 영상 직접 주소 (공개 자산 디스크 행만, 아니면 null) — 있으면 이 주소로 재생해 범위 요청을 웹서버·CDN 이 받는다 (#878) */
+  direct_url?: string | null;
+
   /** MIME (video/mp4·video/webm) */
   mime?: string | null;
 }
@@ -217,6 +220,7 @@ export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDe
   const ref = useRef<HTMLVideoElement>(null);
   const { mobile } = useHeroScreen(forceDevice);
   const source = (mobile ? sources.mobile ?? sources.pc : sources.pc) ?? null;
+  const src = source ? (typeof source.direct_url === 'string' && source.direct_url !== '' ? source.direct_url : source.url) : undefined;
   // 대표 이미지는 지금·다음 장만 단다 — poster 는 lazy 그림과 달리 바로 받으므로 먼 장의 이미지까지 첫 화면에 받게 된다
   const poster = eager || active ? (mobile ? posters?.mobile ?? posters?.pc : posters?.pc) : undefined;
 
@@ -242,7 +246,7 @@ export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDe
         video.currentTime = 0;
       }
     }
-  }, [playing, active, source?.url]);
+  }, [playing, active, src]);
 
   if (!source) {
     return null;
@@ -251,9 +255,9 @@ export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDe
   return (
     <video
       ref={ref}
-      key={source.url}
+      key={src}
       className="hs-slider__video"
-      src={source.url}
+      src={src}
       poster={poster}
       muted
       playsInline

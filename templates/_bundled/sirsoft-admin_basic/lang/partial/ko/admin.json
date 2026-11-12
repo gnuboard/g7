@@ -2471,6 +2471,23 @@
         "disk": "디스크",
         "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다."
       },
+      "file_delegation": {
+        "title": "웹서버 파일 위임",
+        "desc": "템플릿·모듈·플러그인 자산, 공개 스토리지 파일, 확장 아이콘, 히어로섹션 배너 영상, 본문의 로컬 미디어처럼 서버에 있는 파일을 PHP 가 읽어 보내는 대신 웹서버가 직접 보내게 합니다. 영상 탐색·이어받기(범위 요청)도 웹서버가 처리합니다. 웹서버 설정이 함께 필요하며, 원격 디스크(S3) 파일과 첨부 다운로드는 대상이 아닙니다.",
+        "mode": "위임 방식",
+        "accel_prefix": "내부 위치 접두사",
+        "accel_prefix_desc": "nginx 의 internal location 경로입니다. / 로 시작하고 끝나야 하며, 바깥에서 짐작하기 어려운 이름을 쓰세요. 앱이 이 접두사와 설치 위치로 매핑(X-Accel-Mapping)을 만듭니다.",
+        "apache_guide": "Apache 에 mod_xsendfile 을 설치·활성화하고(예: a2enmod xsendfile) 사이트 설정에 아래 두 줄을 넣은 뒤 Apache 설정을 다시 읽히세요.",
+        "nginx_guide": "nginx 사이트 설정의 server 블록에 아래 location 을 넣고 설정을 다시 읽히세요. internal 이 빠지면 설치 폴더 전체가 바깥에 열립니다.",
+        "saved_differs": "화면의 값이 아직 적용되지 않았습니다. 「실제 전송 확인」은 적용 중인 설정으로 검사하므로 먼저 저장하세요.",
+        "test_hint": "「설정 점검」은 이 서버의 웹서버 종류와 모듈만 보고 판단하며 저장을 막지 않습니다. 저장한 뒤 「실제 전송 확인」으로 웹서버가 파일을 보내는지 확인하세요.",
+        "test_button": "설정 점검",
+        "test_mapping": "앱이 보낼 매핑(X-Accel-Mapping): {{mapping}}",
+        "probe_button": "실제 전송 확인",
+        "probe_ok": "웹서버가 파일을 보냈습니다. 위임이 동작합니다.",
+        "probe_failed": "파일 본문을 받지 못했습니다. 웹서버 설정을 확인하거나 위임 방식을 「사용 안 함」으로 되돌리세요.",
+        "recover_hint": "켠 뒤 화면 자산이나 이미지가 열리지 않으면 위임 방식을 「사용 안 함」으로 저장하세요. 관리 화면에 들어갈 수 없으면 서버의 storage/app/settings/drivers.json 에서 file_delegation 값을 none 으로 고치세요."
+      },
       "cache": {
         "title": "캐시",
         "desc": "애플리케이션 캐시 드라이버를 설정합니다.",

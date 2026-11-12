@@ -72,7 +72,7 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 23개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 27개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 28개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -112,6 +112,8 @@
 | `ini_get`·`glob` 처럼 호스팅이 막을 수 있는 함수를 바로 부르기 | `ExecutionEnvironment::hasFunction()` 으로 먼저 판정하고 대체 경로를 둔다(`UploadLimit::iniSettingBytes()`) | PHP 8 은 막힌 함수를 함수 표에서 지워 호출이 `Error` 다. `@` 는 가드가 아니다 |
 | 배너 이미지 주소에 `?size=` 를 손으로 붙이거나, 원본보다 큰 규격을 srcset 후보로 넣기 | 사용자 슬라이더는 `support/thumbnail.ts::responsiveSrcset()`(코어 `G7Core.thumbnail.contentSrcsetWithin(…, { includeOriginal: true })` — 원본보다 작은 후보 + 원본, PC·모바일 각자. 그 함수가 없으면 srcset 없음 — 후보를 직접 거르지 않는다), 관리 목록은 확장 규격 `thumb('sirsoft-hero_section.list')` 파이프(가로 240 가로만 맞춤, `ThumbnailRegistrationListener::addPreset` 이 `core.thumbnail.filter_presets` 로 등록 — 정사각 `sm` 은 3:1 배너 가운데만 남기고 `md` 는 96px 칸에 과하다) | 서버는 원본보다 큰 규격을 키우지 않고 원본을 보내는데 브라우저는 후보 폭을 믿고 고른다. 코어 판정(같은 출처 + 등록 경로)을 건너뛰면 외부 주소에 `size` 가 붙는다 |
 | 공개 이미지 썸네일 판정을 서비스 `publicServing()` 안에 넣거나 원본 존재 확인 뒤로 미루기 | 컨트롤러가 해시 조회(게이트) → `?size=` 면 원본 존재 확인 → `ThumbnailResponder::respond()` → 원본 응답 + `markBypass()` 순서로 부른다. 원본 응답은 무파라미터 주소와 같게(1년·`immutable`) 만들고, 썸네일을 요청했는데 원본을 낼 때의 캐시(`immutable` 해제, 유지 시간을 썸네일 응답과 같은 코어 `cache.layout_ttl` 로)는 `markBypass()` 가 맞춘다(컨트롤러에서 따로 줄이지 않는다) | 원본 304 판정이 컨트롤러에 있어 서비스가 썸네일을 돌려주면 원본 검증자로 다시 싸인다. 원본만 지워진 행이 남은 파생본으로 200 이 된다. 유지 시간을 1년으로 두면 규격을 바꿔도 그 `?size=` 주소가 브라우저·CDN 에 1년 동안 원본으로 남는다 |
+| 이미 올린 배너 파일을 주입 스토리지(`$this->storage`)로 읽거나 지우기, 행 `disk` 를 날 `withDisk()` 에 넘기기 | 읽기·서빙·썸네일 원본·삭제·전체 정리는 `BannerImageService::storageFor()`(코어 `RowDiskStorage::resolve()`)로 행 disk 를 고른다. 주입 스토리지는 「지금 업로드가 갈 디스크」(`getStorageDiskFor('images')`)일 뿐이다 | 공개 자산 디스크를 켰다 끄면 파일이 디스크마다 흩어진다 — 주입 디스크로 읽으면 옛 행이 404, 고아 disk 로 드라이버를 만들면 무인증 공개 서빙이 500 이다(#878, `RowStorageOrphanDiskParityTest` 가 모집단을 잠근다) |
+| 직접 주소(`direct_url`)를 썸네일 기준·캔버스 색 추출·같은 출처 비교에 쓰거나, srcset 축소 후보를 직접 주소로 만들기 | 원본 한 장(`<img src>`·srcset 의 원본 후보·영상 `src`·poster)만 `mediaSrc()`·`responsiveSrcset(url, w, direct)` 로 직접 주소를 쓰고, `?size=` 후보·`sampleImage()`·관리 목록은 `url`(공개 API) | 코어 썸네일 판정은 같은 출처 + 등록 경로만 대상이라 직접 주소에 `?size=` 를 붙이면 원본이 나가고, CDN 이미지는 캔버스를 오염시켜 픽셀을 못 읽는다(#878 제품 결정) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -119,10 +121,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 23개 | `plugins/_bundled/sirsoft-hero_section/tests` |
-| Vitest | 15개 | `vitest.config.ts` |
+| PHPUnit | 30개 | `plugins/_bundled/sirsoft-hero_section/tests` |
+| Vitest | 16개 | `vitest.config.ts` |
 | Playwright | 19개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 18개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

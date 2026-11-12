@@ -8,8 +8,11 @@ import type { Overlays, PublicOverlayBox } from './overlays';
 
 /** 이미지 한 장 */
 export interface PopupImage {
-  /** 공개 이미지 주소 */
+  /** 공개 이미지 주소 (공개 API — 썸네일 `?size=`·같은 출처 비교의 기준) */
   url: string;
+
+  /** 원본 직접 주소 (공개 자산 디스크 행만, 아니면 null) — 원본 한 장(`src`·srcset 원본 후보)에만 쓴다 (#878) */
+  direct_url?: string | null;
 
   /** 가로 픽셀 */
   width?: number | null;

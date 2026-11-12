@@ -379,6 +379,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | 파일 서빙 — 웹서버 위임 (환경설정 > 드라이버 > 웹서버 파일 위임)
+    |--------------------------------------------------------------------------
+    | 로컬 파일 응답(확장 자산·번들, 공개 스토리지, 확장 아이콘, 본문 미디어의 로컬 파일 등)을 PHP 가 읽어
+    | 보내는 대신 웹서버가 직접 보내게 합니다. 기본은 none(위임 안 함)이며 웹서버 설정이 함께 필요합니다.
+    |  - delegation: none | x-sendfile(Apache mod_xsendfile) | x-accel-redirect(nginx)
+    |  - accel_prefix: nginx internal 위치 접두사(`/` 로 시작하고 끝남). 앱이 설치 위치 실경로와 이 접두사로
+    |    X-Accel-Mapping 을 만듭니다.
+    | 관리자 환경설정(drivers.file_delegation · drivers.file_delegation_accel_prefix)에 저장한 값이
+    | SettingsServiceProvider 를 통해 이 값을 덮습니다. `.env` 우선 모드(G7_ENV_PRIORITY=true)에서 `.env` 에
+    | 값이 있으면 `.env` 가 이깁니다(EnvPriority, docs/backend/file-serving-delegation.md).
+    */
+    'file_serving' => [
+        'delegation' => env('G7_FILE_DELEGATION', 'none'),
+        'accel_prefix' => env('G7_FILE_DELEGATION_ACCEL_PREFIX', '/_g7_sendfile/'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | 이미지 처리 엔진 (환경설정 > 드라이버 > 이미지 처리)
     |--------------------------------------------------------------------------
     | 업로드 축소와 썸네일 생성이 쓰는 엔진입니다(gd·imagick·플러그인). 값은

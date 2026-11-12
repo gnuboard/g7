@@ -1219,6 +1219,9 @@ return [
 
         // 공개 자산 디스크 설정
         'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
+        'file_delegation_invalid' => '올바른 웹서버 파일 위임 방식을 선택해주세요.',
+        'file_delegation_accel_prefix_required' => 'nginx(X-Accel-Redirect)를 고르면 내부 위치 접두사를 입력해야 합니다.',
+        'file_delegation_accel_prefix_format' => '내부 위치 접두사는 /_g7_sendfile/ 처럼 / 로 시작하고 끝나야 하며 영문·숫자·. _ - 만 쓸 수 있습니다.',
 
         // 이미지 처리 엔진, 이미지 썸네일 (#869)
         'image_driver_invalid' => '올바른 이미지 처리 엔진을 선택해주세요.',
@@ -1686,6 +1689,8 @@ return [
         'queue_job_log_enabled' => '큐 처리 기록 사용',
         'queue_record_retention_days' => '큐 처리 기록 보관 기간',
         'public_asset_disk' => '공개 자산 디스크',
+        'file_delegation' => '웹서버 파일 위임',
+        'file_delegation_accel_prefix' => '내부 위치 접두사',
         // 이미지 처리 엔진, 이미지 썸네일 (#869)
         'image_driver' => '이미지 처리 엔진',
         'thumbnail_enabled' => '이미지 썸네일 사용',

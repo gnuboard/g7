@@ -8,9 +8,9 @@ use App\Services\Concerns\ResolvesRowStorage;
 use Tests\TestCase;
 
 /**
- * 행 `disk` 를 읽어 서빙·삭제하는 **여섯 지점이 같은 판정을 쓴다.**
+ * 행 `disk` 를 읽어 서빙·삭제하는 **여덟 지점이 같은 판정을 쓴다.**
  *
- * 왜 재는가 (12차 G3 라운드 B12-1 · B12-8):
+ * 왜 재는가:
  *   같은 판정이 번들 확장 넷(board·page·ecommerce·ckeditor5)에는 있고 **코어 두
  *   서비스에만 없었다.** 코어는 행 `disk` 를 존재 검증 없이 `withDisk()` 에 넘겼고,
  *   그 두 서비스가 소비하는 라우트는 무인증 공개 서빙이라 고아 disk 행 하나로
@@ -22,7 +22,7 @@ use Tests\TestCase;
  *
  * 무엇을 재는가:
  *   ① 코어 trait 의 **거동** — 네 입력(null · 빈 문자열 · 등록된 disk · 고아 disk)
- *   ② 그 판정을 쓰는 **여섯 지점의 모집단** — 하나라도 사본이 판정을 잃으면 red
+ *   ② 그 판정을 쓰는 **여덟 지점의 모집단** — 하나라도 사본이 판정을 잃으면 red
  *
  *   ②를 함께 재는 이유는 ①만으로는 trait 이 옳아도 소비처가 그것을 **안 쓰는** 방향이
  *   드러나지 않기 때문이다. 실제 결함이 그 방향이었다 — 판정은 저장소에 넉 벌 있었고
@@ -47,6 +47,10 @@ class RowStorageOrphanDiskParityTest extends TestCase
         'modules/_bundled/sirsoft-page/src/Services/PageAttachmentService.php',
         'modules/_bundled/sirsoft-ecommerce/src/Services/Concerns/ResolvesRowStorage.php',
         'plugins/_bundled/sirsoft-ckeditor5/src/Services/ImageServeService.php',
+        // #878 — 공개 자산 디스크를 따르게 되며 행 disk 로 읽고·지우게 된 두 플러그인.
+        // 사본을 또 두지 않고 코어 도우미 `RowDiskStorage::resolve()`(@since 7.1.5)를 부른다.
+        'plugins/_bundled/sirsoft-hero_section/src/Services/BannerImageService.php',
+        'plugins/_bundled/sirsoft-popup/src/Services/PopupImageService.php',
     ];
 
     /**
@@ -93,7 +97,7 @@ class RowStorageOrphanDiskParityTest extends TestCase
         $root = dirname(__DIR__, 3);
 
         $this->assertGreaterThanOrEqual(
-            6,
+            8,
             count(self::ROW_DISK_CONSUMERS),
             '모집단이 줄었다 — 지점을 지웠다면 그 파일이 정말 행 disk 를 안 읽는지 확인하고 목록을 고친다'
         );
@@ -114,7 +118,9 @@ class RowStorageOrphanDiskParityTest extends TestCase
                 '/config\(\s*"filesystems\.disks\.\{\$\w+\}"\s*\)\s*[!=]==\s*null/',
                 $source
             );
-            $delegatesJudgment = (bool) preg_match('/use\s+ResolvesRowStorage\s*;/', $source);
+            // 위임은 둘 중 하나다 — 코어 서비스의 trait(`use ResolvesRowStorage;`), 또는
+            // 확장이 부르는 코어 도우미(`RowDiskStorage::resolve(`). 둘 다 같은 판정을 소유한다.
+            $delegatesJudgment = (bool) preg_match('/use\s+ResolvesRowStorage\s*;|RowDiskStorage::resolve\(/', $source);
 
             $this->assertTrue(
                 $ownsJudgment || $delegatesJudgment,

@@ -46,7 +46,9 @@ _단건 응답: 올린 이미지(관리자 업로더 첨부 모양 + `url`·`dev
 | hash | string | `FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWI…` | 공개 주소에 쓰는 64자 해시(불변) |
 | device | string | `pc` | 기기 `pc`·`mobile` |
 | url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요). 사이트 마운트 접두사 포함 — 하위 폴더 설치(`/g7/`)면 `/g7/api/plugins/…` |
-| download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | `url` 과 같음 — 관리자 업로더가 미리보기로 읽는 자리 |
+| download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음(#878) |
+| preview_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 썸네일 기준 공개 API 주소(`url` 과 같음) — 관리자 업로더·목록 미리보기가 `?size=` 를 붙여 받는다 |
+| direct_url | string\|null | `null` | 행 disk 의 직접 주소(공개 자산 디스크 행만, 사이트 마운트 접두사 없는 절대 주소). 아니면 null |
 | original_filename | string | `pc.jpg` | 올린 파일의 원래 이름 |
 | mime_type | string | `image/jpeg` | 파일 형식 |
 | size | integer | `19891` | 바이트 크기 |
@@ -91,7 +93,7 @@ _단건 응답: 올린 이미지(관리자 업로더 첨부 모양 + `url`·`dev
 
 **설명**
 
-이미지·영상 업로드(multipart). 필드 `kind`(선택, `image` 기본·`video`), `file`(이미지: JPG·PNG·WEBP, 가로·세로 4000px 이하 / 영상: MP4·WEBM — 확장자와 파일 내용 둘 다로 판정), `device`(pc·mobile), `temp_key`(필수 — 등록·수정 화면이 들어올 때 만든 임시 묶음 키). 업로드는 언제나 임시 묶음에 들어가고 배너에는 등록(`POST /admin/banners`)·수정(`PUT /admin/banners/{banner}`)을 저장할 때만 붙는다 — 올리기만 해서는 사이트 화면이 바뀌지 않는다. 최대 용량 = min(플러그인 설정 `max_upload_mb`(영상은 `max_video_upload_mb`), PHP `upload_max_filesize`, `post_max_size`) — PHP 한도를 넘어 파일이 비어 들어오면 「서버 업로드 한도」 안내로 422. 같은 임시 묶음의 같은 기기·종류 파일은 교체된다(이전 파일 삭제 — PC 이미지와 PC 영상은 서로 바꾸지 않는다). 영상은 가로·세로를 재지 않고(`width`·`height` null) 응답 `kind: "video"`, `is_image: false` 다. 권장 크기(PC 1920×640, 모바일 750×1000)는 강제하지 않고 응답 width·height 로 화면이 안내한다. 응답 이미지는 관리자 업로더(`file-uploader`)의 첨부 모양(`id`·`hash`·`original_filename`·`mime_type`·`size`·`size_formatted`·`download_url`·`order`·`is_image`)에 `url`·`device`·`width`·`height` 를 더한 것이고, 배너 상세의 `images.pc`·`images.mobile`·목록의 `thumbnail` 도 같은 모양이다.
+이미지·영상 업로드(multipart). 필드 `kind`(선택, `image` 기본·`video`), `file`(이미지: JPG·PNG·WEBP, 가로·세로 4000px 이하 / 영상: MP4·WEBM — 확장자와 파일 내용 둘 다로 판정), `device`(pc·mobile), `temp_key`(필수 — 등록·수정 화면이 들어올 때 만든 임시 묶음 키). 업로드는 언제나 임시 묶음에 들어가고 배너에는 등록(`POST /admin/banners`)·수정(`PUT /admin/banners/{banner}`)을 저장할 때만 붙는다 — 올리기만 해서는 사이트 화면이 바뀌지 않는다. 최대 용량 = min(플러그인 설정 `max_upload_mb`(영상은 `max_video_upload_mb`), PHP `upload_max_filesize`, `post_max_size`) — PHP 한도를 넘어 파일이 비어 들어오면 「서버 업로드 한도」 안내로 422. 같은 임시 묶음의 같은 기기·종류 파일은 교체된다(이전 파일 삭제 — PC 이미지와 PC 영상은 서로 바꾸지 않는다). 영상은 가로·세로를 재지 않고(`width`·`height` null) 응답 `kind: "video"`, `is_image: false` 다. 권장 크기(PC 1920×640, 모바일 750×1000)는 강제하지 않고 응답 width·height 로 화면이 안내한다. 응답 이미지는 관리자 업로더(`file-uploader`)의 첨부 모양(`id`·`hash`·`original_filename`·`mime_type`·`size`·`size_formatted`·`download_url`·`order`·`is_image`)에 `url`·`preview_url`·`direct_url`·`device`·`width`·`height` 를 더한 것이고, 배너 상세의 `images.pc`·`images.mobile`·목록의 `thumbnail` 도 같은 모양이다.
 
 
 ### DELETE /api/plugins/sirsoft-hero_section/admin/banner-images/{image}
@@ -143,3 +145,7 @@ _본문 없음: `data` 는 `null` 이다. 아직 배너에 붙지 않은 임시 
 
 아직 배너에 붙지 않은 임시 이미지를 지운다(파일 포함). 배너에 붙은 이미지(PC·모바일)는 422 — 배너 수정 저장의 `pc_image_id`·`mobile_image_id` 로만 바꾸거나 뺀다. 관리자 화면은 이 주소를 부르지 않는다 — 등록·수정 모두 화면에서만 빼고, 저장이 남은 이미지 ID 만 붙인다(붙지 않은 임시 이미지는 매일 정리 명령이 지운다).
 
+
+### 공개 자산 디스크와 주소 필드 (#878)
+
+플러그인 설정 `public_asset_disk`(비우면 코어 공개 자산 디스크)가 public·CDN 디스크면 새로 올리는 파일이 그 디스크에 저장되고 행 `disk` 에 기록된다. `url`·`preview_url` 은 언제나 공개 API 주소(같은 출처 — 썸네일 `?size=`·관리 목록 미리보기·캔버스 색 추출의 기준)이고, `direct_url` 은 행 disk 가 직접 주소를 낼 때만 채워진다. `download_url` 은 `direct_url ?? url` 이다. 관리자 업로더는 `preview_url` 을 우선해 썸네일을 그리고, 교차 출처 `download_url` 은 인증 요청 없이 그대로 쓴다.

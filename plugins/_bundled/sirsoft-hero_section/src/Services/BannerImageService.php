@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\HeroSection\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Extension\Storage\RowDiskStorage;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
@@ -25,6 +26,10 @@ use Symfony\Component\Filesystem\Path;
  * 업로드는 언제나 임시 묶음(temp_key)에 들어가고, 배너에는 등록·수정을 저장할 때만 붙는다 — 저장하지 않고
  * 나가면 사이트 화면은 그대로다. 파일은 플러그인 스토리지(카테고리 `images`)에 두고, 행보다 파일을 먼저 지운다 —
  * 행만 지우고 파일 삭제가 실패하면 아무도 찾지 못하는 고아 파일이 남기 때문이다.
+ *
+ * 주입 스토리지는 「지금 업로드가 갈 디스크」다(공개 자산 디스크 설정 반영, #878). 이미 올린 파일의 존재 확인·서빙·
+ * 썸네일 원본·삭제는 **행에 기록된 disk** 로 한다(`storageFor()`) — 운영자가 디스크를 바꾼 뒤에도 옛 행은 실제로 저장된
+ * 디스크에서 읽고 지워야 하기 때문이다.
  */
 class BannerImageService
 {
@@ -56,7 +61,7 @@ class BannerImageService
      * BannerImageService 생성자
      *
      * @param  BannerImageRepositoryInterface  $images  이미지 Repository
-     * @param  StorageInterface  $storage  플러그인 스토리지 드라이버
+     * @param  StorageInterface  $storage  플러그인 스토리지 드라이버 (카테고리 `images` 의 업로드 디스크)
      */
     public function __construct(
         private BannerImageRepositoryInterface $images,
@@ -289,7 +294,7 @@ class BannerImageService
     public function originalExists(BannerImage $image): bool
     {
         try {
-            return $this->storage->exists(self::CATEGORY, (string) $image->path);
+            return $this->storageFor($image)->exists(self::CATEGORY, (string) $image->path);
         } catch (\Throwable) {
             return false;
         }
@@ -312,7 +317,7 @@ class BannerImageService
         }
 
         return ThumbnailSource::fromStorage(
-            $this->storage,
+            $this->storageFor($image),
             self::CATEGORY,
             (string) $image->path,
             (string) $image->mime,
@@ -348,7 +353,7 @@ class BannerImageService
             return ['file' => $local, 'mime_type' => $mime];
         }
 
-        $response = $this->storage->response(self::CATEGORY, $image->path, $image->original_name, ['Content-Type' => $mime]);
+        $response = $this->storageFor($image)->response(self::CATEGORY, $image->path, $image->original_name, ['Content-Type' => $mime]);
         if ($response === null) {
             Log::warning($video ? '히어로섹션 배너 영상 파일 없음' : '히어로섹션 배너 이미지 파일 없음', ['image_id' => $image->id, 'path' => $image->path]);
 
@@ -376,6 +381,7 @@ class BannerImageService
      * 로컬 디스크에 있는 파일의 절대 경로를 반환합니다 — 원격 디스크이거나 파일이 없으면 null.
      *
      * 경로는 업로드 때 서버가 만든 값(`Y/m/<무작위>.<확장자>`)이고 스토리지 드라이버의 기준 폴더 아래에만 붙인다.
+     * 기준 폴더는 행 disk 의 것이다(원격 디스크면 절대 경로가 아니거나 예외 → null → 스트림).
      * 로컬 디스크 판정은 기준 폴더가 절대 경로인지로 한다 — `/` 로 시작하는지만 보면 Windows(`C:\…`)에서 로컬 영상도
      * 스트림으로 떨어져 범위 요청(건너뛰기·iOS 재생)을 받지 못한다.
      *
@@ -385,7 +391,7 @@ class BannerImageService
     private function localPath(BannerImage $file): ?string
     {
         try {
-            $base = $this->storage->getBasePath(self::CATEGORY);
+            $base = $this->storageFor($file)->getBasePath(self::CATEGORY);
         } catch (\Throwable) {
             return null;
         }
@@ -426,17 +432,38 @@ class BannerImageService
     /**
      * 이 플러그인 이미지 폴더를 통째로 비웁니다(플러그인을 데이터까지 삭제할 때만).
      *
-     * @return bool 비웠으면 true
+     * 행이 기록한 모든 disk 와 지금 업로드 디스크의 `images` 폴더를 각각 비운다 — 공개 자산 디스크를 켰다 끈 사이트는
+     * 파일이 두 디스크 이상에 흩어져 있다(#878). 같은 디스크로 해석되는 값(고아 disk 는 주입 디스크로 폴백)은 한 번만
+     * 비운다. 한 디스크가 실패해도 나머지는 계속 비우고 false 를 돌려준다.
+     *
+     * @return bool 모두 비웠으면 true
      */
     public function purgeAll(): bool
     {
+        $storages = [$this->storage->getDisk() => $this->storage];
         try {
-            return $this->storage->deleteAll(self::CATEGORY);
+            foreach ($this->images->distinctDisks() as $disk) {
+                $storage = RowDiskStorage::resolve($this->storage, $disk);
+                $storages[$storage->getDisk()] ??= $storage;
+            }
         } catch (\Throwable $e) {
-            Log::warning('히어로섹션 이미지 폴더 정리 실패', ['error' => $e->getMessage()]);
-
-            return false;
+            Log::warning('히어로섹션 이미지 디스크 목록 조회 실패', ['error' => $e->getMessage()]);
         }
+
+        $ok = true;
+        foreach ($storages as $disk => $storage) {
+            try {
+                if (! $storage->deleteAll(self::CATEGORY)) {
+                    $ok = false;
+                    Log::warning('히어로섹션 이미지 폴더 정리 실패', ['disk' => $disk]);
+                }
+            } catch (\Throwable $e) {
+                $ok = false;
+                Log::warning('히어로섹션 이미지 폴더 정리 실패', ['disk' => $disk, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $ok;
     }
 
     /**
@@ -448,16 +475,31 @@ class BannerImageService
     private function deleteFile(BannerImage $image): bool
     {
         try {
-            if (! $this->storage->exists(self::CATEGORY, $image->path)) {
+            $storage = $this->storageFor($image);
+            if (! $storage->exists(self::CATEGORY, $image->path)) {
                 return true;
             }
 
-            return $this->storage->delete(self::CATEGORY, $image->path);
+            return $storage->delete(self::CATEGORY, $image->path);
         } catch (\Throwable $e) {
             Log::warning('히어로섹션 배너 이미지 파일 삭제 실패', ['image_id' => $image->id, 'error' => $e->getMessage()]);
 
             return false;
         }
+    }
+
+    /**
+     * 행에 기록된 disk 의 스토리지를 반환합니다 (#878).
+     *
+     * 빈 disk·주입 디스크와 같은 disk·설정에서 사라진 disk(고아)는 주입 스토리지로 물러난다 — 고아 disk 로 드라이버를 만들면
+     * 이후 읽기·응답·삭제가 예외를 던져 무인증 공개 서빙이 500 이 된다(404 가 정상 저하). 판정은 코어 도우미가 소유한다.
+     *
+     * @param  BannerImage  $image  파일 행
+     * @return StorageInterface 그 행이 저장된 디스크의 스토리지
+     */
+    private function storageFor(BannerImage $image): StorageInterface
+    {
+        return RowDiskStorage::resolve($this->storage, $image->disk !== null ? (string) $image->disk : null);
     }
 
     /**

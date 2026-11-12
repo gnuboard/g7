@@ -166,6 +166,20 @@
               </div>
             </div>
           </section>
+          <!-- 저장소 — 팝업 이미지를 둘 공개 자산 디스크(#878). 선택지는 설정 응답에 서버가 붙인 카탈로그다(코어 설정 API 를 교차 조회하지 않는다) -->
+          <section data-ref="storage_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.storage.title</h2>
+            <div class="g7pp-row-stack">
+              <div data-ref="field_public_asset_disk">
+                <label class="g7pp-form-label" htmlFor="popup_public_asset_disk">$t:sirsoft-popup.settings.fields.public_asset_disk.label</label>
+                <select id="popup_public_asset_disk" name="public_asset_disk" class="g7pp-input gpp:w-full" options="{{[{value: '', label: $t('sirsoft-popup.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}" disabled="{{_computed.isPluginReadOnly}}"/>
+                <p class="g7pp-form-hint">$t:sirsoft-popup.settings.fields.public_asset_disk.hint</p>
+                <p data-if="{{_local.errors?.public_asset_disk}}" class="g7pp-form-error">{{_local.errors?.public_asset_disk?.[0] ?? ''}}</p>
+                <!-- 쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다 -->
+                <p data-ref="public_asset_disk_unavailable" data-if="{{!!_local.form?.public_asset_disk_unavailable}}" role="status" class="gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300">$t:sirsoft-popup.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}</p>
+              </div>
+            </div>
+          </section>
         </div>
         <!-- 미리보기 — 표본 팝업 3장을 지금 입력한 표시 방식으로 그린다(저장 전 값) -->
         <section data-ref="preview_card" aria-labelledby="popup_settings_preview_heading" class="g7pp-admin-card gpp:self-start">
@@ -212,7 +226,7 @@
               <set-state target="local" :isSaving="true" :errors="null"/>
               <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
                 <success>
-                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <set-state target="local" :isSaving="false" :hasChanges="false" form.public_asset_disk_unavailable="{{response.data?.public_asset_disk_unavailable ?? null}}"/>
                   <toast type="success" message="$t:admin.plugins.settings.save_success"/>
                   <refetch-data-source dataSourceId="settings"/>
                 </success>

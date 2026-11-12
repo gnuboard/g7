@@ -27,9 +27,9 @@
 | `sirsoft-hero_section.banner.store_validation_rules` | filter | 등록 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/StoreBannerRequest.php:56` |
 | `sirsoft-hero_section.banner.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdateBannerRequest.php:66` |
 | `sirsoft-hero_section.banner_image.after_change` | action | 배너 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Banner $banner, string $device, string $change — replaced·removed) | `src/Services/BannerService.php:173` |
-| `sirsoft-hero_section.banner_image.after_delete` | action | 배너 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/BannerImageService.php:149` |
-| `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:129` |
-| `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:80` |
+| `sirsoft-hero_section.banner_image.after_delete` | action | 배너 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/BannerImageService.php:154` |
+| `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:134` |
+| `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:85` |
 | `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale) | `src/Services/PublicHeroService.php:69` |
 | `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:131` |
 <!-- @generated:hooks-published END -->
@@ -51,6 +51,7 @@
 | `core.plugins.after_activate` | action (미선언) | `SlotWidthHintListener` | `onPluginEvent` | 20 |
 | `core.plugins.after_update` | action (미선언) | `SlotWidthHintListener` | `onPluginEvent` | 20 |
 | `core.plugins.before_uninstall` | action (미선언) | `PluginLifecycleListener` | `beforeUninstall` | 10 |
+| `core.settings.after_save` | action (미선언) | `HeroCacheListener` | `onCoreSettingsSaved` | - |
 | `core.thumbnail.filter_presets` | filter | `ThumbnailRegistrationListener` | `addPreset` | 10 |
 | `core.thumbnail.filter_source_providers` | filter | `ThumbnailRegistrationListener` | `addSourceProvider` | 10 |
 | `core.thumbnail.filter_url_patterns` | filter | `ThumbnailRegistrationListener` | `addUrlPattern` | 10 |
@@ -85,7 +86,7 @@
 |---|---|---|---|---|
 | `ActivityLogDescriptionResolver` | 1개 | 명시 등록 | ✅ | `src/Listeners/ActivityLogDescriptionResolver.php` |
 | `BannerActivityLogListener` | 8개 | 명시 등록 | ✅ | `src/Listeners/BannerActivityLogListener.php` |
-| `HeroCacheListener` | 9개 | 명시 등록 | ✅ | `src/Listeners/HeroCacheListener.php` |
+| `HeroCacheListener` | 10개 | 명시 등록 | ✅ | `src/Listeners/HeroCacheListener.php` |
 | `PluginLifecycleListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PluginLifecycleListener.php` |
 | `SlotWidthHintListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/SlotWidthHintListener.php` |
 | `ThumbnailRegistrationListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/ThumbnailRegistrationListener.php` |
