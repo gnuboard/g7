@@ -78,11 +78,15 @@ test('휴대폰 프로모션형은 낮은 최대 높이에서도 그림 몫을 �
     });
   }
   await info.attach('media-share', { body: JSON.stringify(measured), contentType: 'application/json' });
-  // 240: 문구 칸 200 을 남기고 그림 40 · 320: 그림 120(3:1 그림 전체) · 160: 문구 칸 200 도 안 되므로 문구 우선
-  expect(measured[240].media).toBeGreaterThanOrEqual(39); expect(measured[240].img).toBeGreaterThan(30); expect(measured[240].text).toBeGreaterThanOrEqual(199);
-  expect(measured[320].media).toBeGreaterThanOrEqual(119); expect(measured[320].img).toBeGreaterThanOrEqual(110);
-  expect(measured[160].media).toBe(0); expect(measured[160].text).toBe(160);
-  for (const cap of [240, 320, 160]) expect(measured[cap].scrollable).toBe(true);
+  // 그림이 위인 배치 — 그림 칸은 띠의 40%(240 → 96 · 320 → 128 · 160 → 64), 문구 칸은 나머지 60%. 낮은 높이에서 넘치는 문구는 칸 안 스크롤
+  for (const cap of [240, 320, 160]) {
+    expect(Math.abs(measured[cap].media - cap * 0.4)).toBeLessThanOrEqual(1);
+    // 그림은 칸 안에 비율대로(3:1 시험 그림은 폭에 맞춰 칸보다 낮을 수 있다)
+    expect(measured[cap].img).toBeGreaterThan(30); expect(measured[cap].img).toBeLessThanOrEqual(measured[cap].media + 1);
+    // 문구 칸은 내용 높이만큼만 쓰고(넘치면 60% 에서 멈춤) 띠 밖으로 나가지 않는다
+    expect(measured[cap].text + measured[cap].media).toBeLessThanOrEqual(cap + 1);
+  }
+  expect(measured[160].scrollable).toBe(true);
 });
 
 // @scenario surface=promo_tablet_min_height
@@ -107,6 +111,77 @@ test('태블릿에서 프로모션형 띠는 최소 400px(최대 높이 이하)�
   expect(measured['promo-420'].buttonBottom).toBeLessThanOrEqual(measured['promo-420'].heroBottom);
   expect(measured['promo-300'].hero).toBe(300);
   expect(measured['background-420'].hero).toBe(256);
+});
+
+// @scenario surface=promo_mobile_proportional_scale
+// @effects promo_existing_media_and_height_options_work
+test('휴대폰 프로모션형은 지정한 높이·폭에 맞춰 글자·단추가 같은 비율로 줄고 그림은 가운데에 놓인다', async ({ page }, info) => {
+  test.setTimeout(600_000);
+  await hidePopups(page);
+  const text = { title: '소음은 줄이고\n음악은 더 선명하게', eyebrow: '신제품 출시', eyebrow_visible: true, description: '주변 소리를 걸러 주는 노이즈 캔슬링으로 출퇴근길에도 집중하세요.' };
+  let max: number | null = 430;
+  await page.route('**/api/plugins/sirsoft-hero_section/hero?*', route => route.fulfill({ json: { success: true, data: { position: 'board_hero', target: 'event', banners: [{ ...banner(), ...text }, { ...banner(), ...text, id: 990875 }], settings: { autoplay: false, interval_seconds: 5, effect: 'fade', width: 'full', pagination: 'pill', max_height_mobile: max }, abilities: { can_update: false } } } }));
+  const measured: Record<string, { hero: number; title: number; eyebrow: number; button: number; imgLeftGap: number; imgRightGap: number; buttonInside: boolean }> = {};
+  for (const [name, width, cap] of [['390-430', 390, 430], ['390-300', 390, 300], ['320-430', 320, 430], ['390-none', 390, null]] as const) {
+    max = cap;
+    await page.setViewportSize({ width, height: 844 });
+    await gotoUser(page, '/board/event');
+    const slide = page.locator('.hs-slider__slide--active');
+    await expect(slide.locator('.hs-promo__media img')).toBeAttached({ timeout: 150_000 });
+    await page.waitForTimeout(1200);
+    measured[name] = await slide.evaluate(el => {
+      const r = (q: string) => el.querySelector(q)!.getBoundingClientRect();
+      const fs = (q: string) => parseFloat(getComputedStyle(el.querySelector(q)!).fontSize);
+      const hero = el.closest('section')!.getBoundingClientRect(); const media = r('.hs-promo__media'); const img = r('.hs-promo__media img'); const btn = r('.hs-slider__button');
+      return { hero: Math.round(hero.height), title: fs('.hs-slider__title'), eyebrow: fs('.hs-slider__eyebrow'), button: Math.round(btn.height), imgLeftGap: Math.round(img.left - media.left), imgRightGap: Math.round(media.right - img.right), buttonInside: btn.bottom <= hero.bottom + 1 };
+    });
+  }
+  await info.attach('mobile-scale', { body: JSON.stringify(measured), contentType: 'application/json' });
+  // 기준(390×430)은 지금 크기 그대로 — 제목 22px·머리글 14px
+  expect(measured['390-430'].hero).toBe(430);
+  expect(measured['390-430'].title).toBeCloseTo(22, 0); expect(measured['390-430'].eyebrow).toBeCloseTo(14, 0);
+  // 높이 300 → 300/430 비율(제목 15.3px), 폭 320 → 320/390 비율(제목 18px)
+  expect(measured['390-300'].hero).toBe(300);
+  expect(measured['390-300'].title).toBeCloseTo(22 * 300 / 430, 0);
+  expect(measured['390-300'].button).toBeLessThan(measured['390-430'].button);
+  expect(measured['320-430'].title).toBeCloseTo(22 * 320 / 390, 0);
+  // 비우면 기존 비율 높이(3:4)이고 글자는 폭 기준(390 → 22px)
+  expect(measured['390-none'].title).toBeCloseTo(22, 0);
+  for (const m of Object.values(measured)) { expect(Math.abs(m.imgLeftGap - m.imgRightGap)).toBeLessThanOrEqual(2); expect(m.buttonInside).toBe(true); }
+});
+
+// @scenario surface=promo_mobile_controls_on_media
+// @effects promo_existing_media_and_height_options_work
+test('휴대폰 프로모션형(그림이 위)은 넘김 단추를 그림 칸 아래쪽에 두어 낮은 띠(300)에서도 문구 단추까지 보인다 — 페이징 모양마다', async ({ page }, info) => {
+  test.setTimeout(900_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await hidePopups(page);
+  const text = { title: '후기 남기고\n전용 케이스 받기', eyebrow: '구매 후기 이벤트', eyebrow_visible: true, description: '사진 후기를 남겨 주신 모든 분께 실리콘 보호 케이스를 드려요. 이달 말까지 진행합니다.' };
+  let pagination = 'pill';
+  await page.route('**/api/plugins/sirsoft-hero_section/hero?*', route => route.fulfill({ json: { success: true, data: { position: 'board_hero', target: 'event', banners: [{ ...banner(), ...text }, { ...banner(), ...text, id: 990875 }], settings: { autoplay: false, interval_seconds: 5, effect: 'fade', width: 'full', pagination, max_height_mobile: 300 }, abilities: { can_update: false } } } }));
+  const measured: Record<string, any> = {};
+  for (const kind of ['pill', 'dots', 'progress', 'fraction', 'tabs']) {
+    pagination = kind;
+    await gotoUser(page, '/board/event');
+    const section = page.locator('section.hs-slider[role="region"]');
+    await expect(section.locator('.hs-slider__slide--active .hs-promo__media img')).toBeAttached({ timeout: 150_000 });
+    await page.waitForTimeout(1200);
+    measured[kind] = await section.evaluate(el => {
+      const media = el.querySelector('.hs-slider__slide--active .hs-promo__media')!.getBoundingClientRect();
+      const scroll = el.querySelector('.hs-slider__slide--active .hs-slider__scroll')!.getBoundingClientRect();
+      const button = el.querySelector('.hs-slider__slide--active .hs-slider__button')!.getBoundingClientRect();
+      // 보이는 넘김 단추·페이징 — 크기가 있는 것만
+      const controls = [...el.querySelectorAll('.hs-slider__pill, .hs-slider__bullets, .hs-slider__fraction, .hs-slider__tabs, .hs-slider__control')].map(c => c.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0);
+      return { hero: Math.round(el.getBoundingClientRect().height), mediaTop: media.top, mediaBottom: media.bottom, controls: controls.map(r => ({ top: r.top, bottom: r.bottom })), buttonVisible: button.bottom <= scroll.bottom + 1 && button.top >= scroll.top - 1 };
+    });
+  }
+  await info.attach('controls-on-media', { body: JSON.stringify(measured), contentType: 'application/json' });
+  for (const [kind, m] of Object.entries(measured)) {
+    expect(m.hero, kind).toBe(300);
+    expect(m.controls.length, kind).toBeGreaterThan(0);
+    for (const c of m.controls) { expect(c.top, kind).toBeGreaterThanOrEqual(m.mediaTop - 1); expect(c.bottom, kind).toBeLessThanOrEqual(m.mediaBottom + 1); }
+    expect(m.buttonVisible, kind).toBe(true);
+  }
 });
 
 // @scenario surface=target_settings_late_response_isolated

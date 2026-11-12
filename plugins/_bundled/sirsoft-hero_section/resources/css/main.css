@@ -1105,14 +1105,38 @@
     max-height: 100%;
   }
   .hs-slider__slide--promo .hs-slider__textbox { width: calc(var(--hs-tw-mobile, var(--hs-tw, 100)) * 1%); }
-  .hs-promo__media,
-  [data-hs-side-pc="right"] .hs-promo__media { justify-content: center; }
+  /* 그림은 가운데 — PC 의 끝 정렬(.hs-slider__media.hs-promo__media)보다 구체적이어야 휴대폰에서 이긴다 */
+  .hs-slider__media.hs-promo__media,
+  [data-hs-side-pc="right"] .hs-slider__media.hs-promo__media { justify-content: center; }
   /* 그림 몫 — 문구가 길거나 높이가 낮아도 그림 칸이 0 이 되지 않게, 문구 칸 200px 를 먼저 두고 남는 높이에서 최대 120px(높이의 40% 이내)를
      그림에 남긴다. 문구 칸이 200px 도 안 되는 높이(160·200)는 문구 우선이고, 넘치는 문구는 문구 칸 안에서 스크롤한다 */
   .hs-promo__media,
   .hs-slider__media.hs-promo__media { min-height: clamp(0px, calc(100% - 200px), min(40%, 120px)); }
 
-  .hs-slider__slide--promo .hs-slider__eyebrow { font-size: 14px; }
-  .hs-slider__slide--promo .hs-slider__title { font-size: 22px; }
-  .hs-slider__slide--promo .hs-slider__description { font-size: 14px; }
+  /*
+   * 비율 축소 — 390×430 을 기준 화면으로 두고, 띠의 실제 높이(위치·대상의 휴대폰 최대 높이, 비우면 비율 높이)와 폭 중 더 작은 비율로
+   * 머리글·제목·설명·단추·줄 간격·문구 위 여백을 함께 줄인다(390×430 에서 머리글 14·제목 22·설명 14·단추 16px). 그림은 남는 높이를
+   * 받아 비율대로 커지고 줄어든다. 글자는 하한(제목 15·나머지 11px)에서 멈추고, 그래도 넘치면 문구 칸 안에서 스크롤한다.
+   * 기준은 띠(장)의 크기라 편집 미리보기(기기 폭 iframe)에서도 같다.
+   */
+  .hs-slider__slide--promo { container-type: size; }
+  .hs-slider__slide--promo .hs-slider__eyebrow { font-size: max(11px, min(100cqh * 14 / 430, 100cqw * 14 / 390)); }
+  .hs-slider__slide--promo .hs-slider__title { font-size: max(15px, min(100cqh * 22 / 430, 100cqw * 22 / 390)); }
+  .hs-slider__slide--promo .hs-slider__description { font-size: max(11px, min(100cqh * 14 / 430, 100cqw * 14 / 390)); }
+  .hs-slider__slide--promo .hs-slider__button { font-size: max(11px, min(100cqh * 16 / 430, 100cqw * 16 / 390)); padding: 0.625em 1.25em; }
+  .hs-slider__slide--promo .hs-slider__scroll { gap: max(4px, min(100cqh * 12 / 430, 100cqw * 12 / 390)); }
+  .hs-slider__slide--promo .hs-slider__text { padding-top: max(6px, min(100cqh * 20 / 430, 100cqw * 20 / 390)); }
+  /*
+   * 그림이 위인 배치(그림 위·문구 아래) — 그림 칸을 띠의 40% 로 고정하고, 넘김 단추(알약 번호·일시정지)를 문구 칸 아래 대신 그림 칸
+   * 아래쪽 안에 겹친다. 문구 칸은 아래 단추 자리(76px)를 돌려받아 남은 60% 를 쓰고 넘치면 칸 안에서 스크롤한다. 낮은 높이(300px)에서도
+   * 그림(120px)과 단추까지 함께 보이게 하려는 배치다. 문구가 위인 배치는 위의 그림 몫 규칙 그대로다.
+   */
+  [data-hs-stack-mobile="media"] .hs-slider__media.hs-promo__media { flex: 0 0 40%; min-height: 40%; max-height: 40%; }
+  .hs-slider--controlled .hs-slider__slide--promo[data-hs-stack-mobile="media"] .hs-slider__text { padding-bottom: max(8px, min(100cqh * 20 / 430, 100cqw * 20 / 390)); }
+  .hs-slider--promo:has(.hs-slider__slide--active[data-hs-stack-mobile="media"]) :is(.hs-slider__controls-layer, .hs-slider__controls) { bottom: auto; top: calc(40% - 44px); }
+  .hs-slider--promo:has(.hs-slider__slide--active[data-hs-stack-mobile="media"]) .hs-slider__pill-layer { bottom: auto; top: calc(40% - 42px); }
+  /* 점·번호·탭 막대도 같은 줄(일시정지 단추 세로 가운데)에 — 문구 칸 아래로 내려가면 돌려받은 자리의 문구와 겹친다 */
+  .hs-slider--promo:has(.hs-slider__slide--active[data-hs-stack-mobile="media"]) :is(.hs-slider__bullets, .hs-slider__fraction, .hs-slider__tabs-layer, .hs-slider__tabs:not(.hs-slider__tabs--boxed)) { bottom: auto; top: calc(40% - 38px); }
+  /* 메뉴 겹치기는 종전처럼 메뉴 높이만큼 더 내린다 */
+  .hs-slider--header-overlay .hs-slider__slide--promo .hs-slider__text { padding-top: calc(max(6px, min(100cqh * 20 / 430, 100cqw * 20 / 390)) + var(--g7-header-height, 0px)); }
 }

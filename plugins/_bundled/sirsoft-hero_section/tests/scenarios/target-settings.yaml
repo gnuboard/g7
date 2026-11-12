@@ -26,6 +26,10 @@ axes:
     - promo_mobile_media_share
     # 프로모션형이 있는 띠는 PC·태블릿 최소 400px(최대 높이 이하) — 태블릿 3:1 높이(256)에서 문구가 잘리지 않게
     - promo_tablet_min_height
+    # 휴대폰 프로모션형은 390×430 기준으로 지정한 높이·폭 중 작은 비율에 맞춰 글자·단추·여백이 줄고, 그림은 가운데에 놓인다
+    - promo_mobile_proportional_scale
+    # 휴대폰 프로모션형(그림이 위)은 그림 칸 40% 고정, 넘김 단추·페이징을 그림 칸 아래쪽에 두어 낮은 띠에서도 문구 단추까지 보인다
+    - promo_mobile_controls_on_media
 
 effects:
   - public_output_follows_target_override
