@@ -18,14 +18,24 @@ axes:
     - target_settings_admin_card
     # 배너 없이 대상 설정만 남은 대상(지워진 대상 포함)도 대상 목록에 남아 되돌릴 수 있다
     - target_settings_orphan_listed
+    - target_settings_late_response_isolated
+    - target_settings_failure_retry
+    - promo_video_poster_overlap
+    - promo_mobile_capped_text_scroll
 
 effects:
   - public_output_follows_target_override
   - target_cache_invalidated_only_for_that_target
   - inherited_items_follow_position_change
+  - target_draft_preserved_after_late_response
+  - target_settings_retry_restores_controls
+  - promo_existing_media_and_height_options_work
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/TargetSettingControllerTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionPlacementsTest.php
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/target-settings.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/promo-regressions.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/TargetSettingsCompletion.test.ts
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx

@@ -31,7 +31,7 @@
             "output": "dist/css/plugin.css",
             "namespace": "hs"
         },
-        "handlers": false
+        "handlers": true
     },
     "loading": {
         "strategy": "global",

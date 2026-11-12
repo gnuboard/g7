@@ -31,6 +31,27 @@ const positionSettings = (extra: any[] = []) => ({
 });
 
 describe('히어로섹션 목록 화면', () => {
+  // @scenario surface=target_settings_failure_retry
+  // @effects target_settings_retry_restores_controls
+  it('대상 설정 실패는 로딩과 구분하고 같은 대상만 다시 받을 수 있다', () => {
+    const c = evaluateComputed(list as any, { position_settings: positionSettings(), query: { position: 'board_hero', target: '4' }, _global: { heroTargetSettingsFailed: 'board_hero|4' } });
+    expect(c.targetSettingsFailed).toBe(true);
+    expect(evaluateBinding(findById(list, 'hero_preview')!.if, {}, c)).toBe(false);
+    expect(evaluateBinding(findById(list, 'target_settings_loading')!.if, {}, c)).toBe(false);
+    expect(actionsOf(findById(list, 'target_settings_retry'), 'refetchDataSource')[0]?.params.dataSourceId).toBe('target_settings');
+    const other = evaluateComputed(list as any, { position_settings: positionSettings(), query: { position: 'board_hero', target: '2' }, _global: { heroTargetSettingsFailed: 'board_hero|4' } });
+    expect(other.targetSettingsFailed).toBe(false);
+  });
+
+  // @scenario surface=target_settings_partial_inherit
+  // @effects inherited_items_follow_position_change
+  it('상속 중인 대상은 대상 상세의 옛 기본값보다 갱신된 위치 기본값을 따른다', () => {
+    const positions = positionSettings();
+    Object.assign(positions.data.positions[2], { settings: { effect: 'fade', autoplay: true, max_height_pc: 320 } });
+    const c = evaluateComputed(list as any, { position_settings: positions, query: { position: 'board_hero', target: '4' }, target_settings: { data: { position: 'board_hero', target: { key: '4' }, overrides: { autoplay: false, max_height_pc: null }, position_settings: { effect: 'slide', autoplay: true, max_height_pc: 400 } } } });
+    expect(c.targetEffective).toMatchObject({ effect: 'fade', autoplay: false, max_height_pc: null });
+    expect(c.previewSettings.effect).toBe('fade');
+  });
   // @scenario surface=list_position_tabs_are_links
   // @effects navigation_uses_links
   it('위치 탭은 위치 레지스트리를 도는 링크이고, 누르면 선택 묶음을 비운 뒤 그 주소로 간다 — 등록되지 않은 위치 탭은 표식을 단다', () => {
@@ -536,23 +557,15 @@ describe('히어로섹션 목록 화면', () => {
       expect(findById(list, `target_row_${key}`), key).toBeTruthy();
       const toggle = collect(list, (n) => n.props?.id === `hero_target_inherit_${key}`)[0];
       expect(json(actionsOf(toggle, 'setState'))).toContain(`e[0] !== '${key}'`);
+      expect(actionsOf(toggle, 'setState')[0].params.merge).toBe('shallow');
     }
     const save = findById(list, 'target_settings_save')!;
-    const put = actionsOf(save, 'apiCall')[0];
-    expect(json(put)).toContain('/targets/{{encodeURIComponent(_computed.currentTarget)}}');
-    expect(put.method ?? put.params?.method).toBe('PUT');
-    expect(json(put)).toContain('"overrides":"{{_computed.targetDraft}}"');
-    const reset = actionsOf(findById(list, 'target_settings_reset')!, 'apiCall')[0];
-    expect(reset.method ?? reset.params?.method).toBe('DELETE');
-    expect(json(findById(list, 'target_settings_reset'))).toContain('target_settings');
-    // 성공하면 응답으로 카드를 바로 바꾼다 — 다시 받기에 기대면 그 요청이 실패했을 때 카드가 저장 전 모습으로 남는다.
-    // 응답을 먼저 넣고 작업본을 비워야 비운 순간 앞 응답(저장 전 재정의)이 비치지 않는다
+    const put = actionsOf(save, 'sirsoft-hero_section.saveTargetSettings')[0];
+    const reset = actionsOf(findById(list, 'target_settings_reset')!, 'sirsoft-hero_section.saveTargetSettings')[0];
+    expect(put.params.method).toBe('PUT'); expect(reset.params.method).toBe('DELETE');
     for (const call of [put, reset]) {
-      const success = (call.onSuccess ?? []) as any[];
-      const update = success.findIndex((a) => a.handler === 'updateDataSource');
-      expect(success[update]?.params).toEqual({ dataSourceId: 'target_settings', data: '{{response}}' });
-      expect(update).toBeLessThan(success.findIndex((a) => a.handler === 'setState'));
-      expect(success.some((a) => a.handler === 'refetchDataSource')).toBe(false);
+      expect(call.params).toMatchObject({ position: '{{_computed.currentPosition}}', target: '{{_computed.currentTarget}}', overrides: '{{_computed.targetDraft}}' });
+      expect(actionsOf(call, 'apiCall')).toHaveLength(0);
     }
     const saved = { data: { position: 'board_hero', target: { key: '4', exists: true }, overrides: { autoplay: false }, position_settings: { autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: null, max_height_mobile: null } } };
     const after = evaluateComputed(list as any, { position_settings: positionSettings(), query: { position: 'board_hero', target: '4' }, target_settings: saved, _local: { targetForm: null } });

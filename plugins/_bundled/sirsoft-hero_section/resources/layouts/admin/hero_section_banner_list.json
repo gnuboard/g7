@@ -104,10 +104,23 @@
             "refetchOnMount": true,
             "if": "{{!!query.target}}",
             "errorHandling": {
-                "404": {
-                    "handler": "suppress"
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroTargetSettingsFailed": "{{(query.position || 'home_hero') + '|' + (query.target || '')}}"
+                    }
                 }
             },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroTargetSettingsFailed": null
+                    }
+                }
+            ],
             "fallback": {
                 "data": null
             },
@@ -187,7 +200,7 @@
         "previewDevice": "pc",
         "sliderForm": null,
         "targetForm": null,
-        "targetSaving": false,
+        "targetSaving": null,
         "sliderSaving": false,
         "targetSearchResults": []
     },
@@ -227,10 +240,12 @@
         "sitePath": "{{_computed.isDynamic ? (_computed.selectedTarget?.site_url ?? '') : (position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? '')}}",
         "currentSettings": "{{(_computed.positionDefs).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: null, max_height_mobile: null} }}",
         "targetFormKey": "{{_computed.currentPosition + '|' + _computed.currentTarget}}",
-        "targetData": "{{_computed.isDynamic && _computed.currentTarget && target_settings?.data?.position === _computed.currentPosition && String(target_settings?.data?.target?.key ?? '') === _computed.currentTarget ? target_settings.data : null}}",
+        "targetSettingsFailed": "{{_global?.heroTargetSettingsFailed === _computed.targetFormKey || target_settings === null || target_settings?.data === null}}",
+        "targetSaving": "{{!!_local.targetSaving}}",
+        "targetData": "{{!_computed.targetSettingsFailed && _computed.isDynamic && _computed.currentTarget && target_settings?.data?.position === _computed.currentPosition && String(target_settings?.data?.target?.key ?? '') === _computed.currentTarget ? target_settings.data : null}}",
         "targetDraft": "{{(_local.targetForm?.key === _computed.targetFormKey ? _local.targetForm.overrides : _computed.targetData?.overrides) ?? {} }}",
         "targetOverridden": "{{Object.keys(_computed.targetDraft ?? {})}}",
-        "targetBase": "{{_computed.targetData?.position_settings ?? _computed.currentSettings}}",
+        "targetBase": "{{_computed.currentDef?.settings ?? _computed.targetData?.position_settings ?? _computed.currentSettings}}",
         "targetEffective": "{{({..._computed.targetBase, ..._computed.targetDraft})}}",
         "targetDirty": "{{!!_computed.targetData && JSON.stringify(_computed.targetDraft ?? {}) !== JSON.stringify(_computed.targetData.overrides ?? {})}}",
         "previewSettings": "{{_computed.targetData ? ({...((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : null) ?? _computed.targetBase), ..._computed.targetDraft}) : (_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings)}}",
@@ -1265,6 +1280,7 @@
                                         "id": "hero_preview",
                                         "type": "composite",
                                         "name": "sirsoft-hero_section.HeroBannerPreview",
+                                        "if": "{{!_computed.isDynamic || !!_computed.targetData}}",
                                         "props": {
                                             "banners": "{{(preview?.data?.data ?? []).map(b => ({...b, title: b.title_localized, eyebrow: $localized(b.eyebrow) ?? '', description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}",
                                             "settings": "{{_computed.previewSettings}}",
@@ -1947,12 +1963,48 @@
                                         "id": "target_settings_loading",
                                         "type": "basic",
                                         "name": "P",
-                                        "if": "{{!_computed.targetData}}",
+                                        "if": "{{!_computed.targetData && !_computed.targetSettingsFailed}}",
                                         "props": {
                                             "role": "status",
                                             "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.target_settings.loading"
+                                    },
+                                    {
+                                        "id": "target_settings_failed",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_computed.targetSettingsFailed}}",
+                                        "props": {
+                                            "role": "alert",
+                                            "className": "hs-alert-warning"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "text": "$t:sirsoft-hero_section.admin.target_settings.load_failed"
+                                            },
+                                            {
+                                                "id": "target_settings_retry",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "target_settings"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "hs-btn hs-btn-secondary"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.retry"
+                                            }
+                                        ]
                                     },
                                     {
                                         "id": "target_settings_missing",
@@ -1983,6 +2035,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, autoplay: _computed.targetEffective.autoplay} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'autoplay'))})}}"
                                                         }
                                                     }
@@ -2018,6 +2071,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, autoplay: $event.target.checked}})}}"
                                                                 }
                                                             }
@@ -2027,7 +2081,7 @@
                                                             "id": "hero_target_autoplay",
                                                             "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
                                                             "checked": "{{_computed.targetEffective.autoplay === true}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('autoplay')}}"
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('autoplay')}}"
                                                         }
                                                     }
                                                 ]
@@ -2062,6 +2116,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, interval_seconds: _computed.targetEffective.interval_seconds} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'interval_seconds'))})}}"
                                                         }
                                                     }
@@ -2097,6 +2152,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, interval_seconds: Number($event.target.value)}})}}"
                                                                 }
                                                             }
@@ -2105,7 +2161,7 @@
                                                             "id": "hero_target_interval_seconds",
                                                             "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                             "value": "{{String(_computed.targetEffective.interval_seconds)}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('interval_seconds')}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('interval_seconds')}}",
                                                             "options": [
                                                                 {
                                                                     "value": "3",
@@ -2154,6 +2210,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, effect: _computed.targetEffective.effect} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'effect'))})}}"
                                                         }
                                                     }
@@ -2189,6 +2246,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, effect: $event.target.value}})}}"
                                                                 }
                                                             }
@@ -2197,7 +2255,7 @@
                                                             "id": "hero_target_effect",
                                                             "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                             "value": "{{String(_computed.targetEffective.effect)}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('effect')}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('effect')}}",
                                                             "options": [
                                                                 {
                                                                     "value": "slide",
@@ -2262,6 +2320,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, width: _computed.targetEffective.width} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'width'))})}}"
                                                         }
                                                     }
@@ -2297,6 +2356,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, width: $event.target.value}})}}"
                                                                 }
                                                             }
@@ -2305,7 +2365,7 @@
                                                             "id": "hero_target_width",
                                                             "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                             "value": "{{String(_computed.targetEffective.width)}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('width')}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('width')}}",
                                                             "options": [
                                                                 {
                                                                     "value": "content",
@@ -2350,6 +2410,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, header_overlay: _computed.targetEffective.header_overlay} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'header_overlay'))})}}"
                                                         }
                                                     }
@@ -2385,6 +2446,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, header_overlay: $event.target.checked}})}}"
                                                                 }
                                                             }
@@ -2394,7 +2456,7 @@
                                                             "id": "hero_target_header_overlay",
                                                             "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
                                                             "checked": "{{_computed.targetEffective.header_overlay === true}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('header_overlay')}}"
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('header_overlay')}}"
                                                         }
                                                     }
                                                 ]
@@ -2429,6 +2491,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, pagination: _computed.targetEffective.pagination} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'pagination'))})}}"
                                                         }
                                                     }
@@ -2464,6 +2527,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, pagination: $event.target.value}})}}"
                                                                 }
                                                             }
@@ -2472,7 +2536,7 @@
                                                             "id": "hero_target_pagination",
                                                             "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                             "value": "{{String(_computed.targetEffective.pagination)}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('pagination')}}",
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('pagination')}}",
                                                             "options": [
                                                                 {
                                                                     "value": "dots",
@@ -2529,6 +2593,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, max_height_pc: _computed.targetEffective.max_height_pc} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'max_height_pc'))})}}"
                                                         }
                                                     }
@@ -2565,6 +2630,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, max_height_pc: $event.target.value === '' ? null : Number($event.target.value)}})}}"
                                                                 }
                                                             }
@@ -2579,7 +2645,7 @@
                                                             "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                             "placeholder": "$t:sirsoft-hero_section.admin.target_settings.no_limit",
                                                             "value": "{{_computed.targetEffective.max_height_pc ?? ''}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('max_height_pc')}}"
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('max_height_pc')}}"
                                                         }
                                                     }
                                                 ]
@@ -2614,6 +2680,7 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
+                                                            "merge": "shallow",
                                                             "targetForm": "{{({key: _computed.targetFormKey, overrides: $event.target.checked ? {..._computed.targetDraft, max_height_mobile: _computed.targetEffective.max_height_mobile} : Object.fromEntries(Object.entries(_computed.targetDraft).filter(e => e[0] !== 'max_height_mobile'))})}}"
                                                         }
                                                     }
@@ -2650,6 +2717,7 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
+                                                                    "merge": "shallow",
                                                                     "targetForm": "{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, max_height_mobile: $event.target.value === '' ? null : Number($event.target.value)}})}}"
                                                                 }
                                                             }
@@ -2664,7 +2732,7 @@
                                                             "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                             "placeholder": "$t:sirsoft-hero_section.admin.target_settings.no_limit",
                                                             "value": "{{_computed.targetEffective.max_height_mobile ?? ''}}",
-                                                            "disabled": "{{!_computed.canWrite || !_computed.targetOverridden.includes('max_height_mobile')}}"
+                                                            "disabled": "{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('max_height_mobile')}}"
                                                         }
                                                     }
                                                 ]
@@ -2697,79 +2765,25 @@
                                                     {
                                                         "comment": "이 대상만 저장 — 켠 항목만 overrides 로 보낸다. 진행 깃발은 성공·실패 양쪽에서 푼다. 성공하면 응답(GET 과 같은 모양)을 그대로\n                  대상 설정 데이터로 넣고 작업본을 비운다 — 다시 받기에 기대면 그 요청이 실패했을 때 카드가 저장 전 모습으로 남는다",
                                                         "type": "click",
-                                                        "handler": "sequence",
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "targetSaving": true
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "apiCall",
-                                                                "target": "/api/plugins/sirsoft-hero_section/admin/position-settings/{{_computed.currentPosition}}/targets/{{encodeURIComponent(_computed.currentTarget)}}",
-                                                                "auth_required": true,
-                                                                "params": {
-                                                                    "method": "PUT",
-                                                                    "body": {
-                                                                        "overrides": "{{_computed.targetDraft}}"
-                                                                    }
-                                                                },
-                                                                "onSuccess": [
-                                                                    {
-                                                                        "handler": "updateDataSource",
-                                                                        "params": {
-                                                                            "dataSourceId": "target_settings",
-                                                                            "data": "{{response}}"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "targetSaving": false,
-                                                                            "targetForm": null
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "success",
-                                                                            "message": "{{response.message}}"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "onError": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "targetSaving": false
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message}}"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ]
+                                                        "handler": "sirsoft-hero_section.saveTargetSettings",
+                                                        "params": {
+                                                            "position": "{{_computed.currentPosition}}",
+                                                            "target": "{{_computed.currentTarget}}",
+                                                            "method": "PUT",
+                                                            "overrides": "{{_computed.targetDraft}}"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
                                                     "type": "button",
                                                     "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5",
-                                                    "disabled": "{{_local.targetSaving || !_computed.targetDirty || _computed.targetData?.target?.exists === false || ['max_height_pc', 'max_height_mobile'].some(f => _computed.targetDraft[f] != null && (!Number.isInteger(_computed.targetDraft[f]) || _computed.targetDraft[f] < _computed.maxHeightLimits.min || _computed.targetDraft[f] > _computed.maxHeightLimits.max))}}"
+                                                    "disabled": "{{_computed.targetSaving || !_computed.targetDirty || _computed.targetData?.target?.exists === false || ['max_height_pc', 'max_height_mobile'].some(f => _computed.targetDraft[f] != null && (!Number.isInteger(_computed.targetDraft[f]) || _computed.targetDraft[f] < _computed.maxHeightLimits.min || _computed.targetDraft[f] > _computed.maxHeightLimits.max))}}"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
-                                                        "if": "{{_local.targetSaving}}",
+                                                        "if": "{{_computed.targetSaving}}",
                                                         "props": {
                                                             "name": "spinner",
                                                             "className": "hs-spinner-sm"
@@ -2791,70 +2805,19 @@
                                                     {
                                                         "comment": "위치 기본값으로 되돌리기 — 이 대상의 재정의만 지운다(DELETE). 배너·위치 기본값·다른 대상은 그대로. 카드는 저장과 같이 응답으로 바로 바꾼다",
                                                         "type": "click",
-                                                        "handler": "sequence",
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "targetSaving": true
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "apiCall",
-                                                                "target": "/api/plugins/sirsoft-hero_section/admin/position-settings/{{_computed.currentPosition}}/targets/{{encodeURIComponent(_computed.currentTarget)}}",
-                                                                "auth_required": true,
-                                                                "params": {
-                                                                    "method": "DELETE"
-                                                                },
-                                                                "onSuccess": [
-                                                                    {
-                                                                        "handler": "updateDataSource",
-                                                                        "params": {
-                                                                            "dataSourceId": "target_settings",
-                                                                            "data": "{{response}}"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "targetSaving": false,
-                                                                            "targetForm": null
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "success",
-                                                                            "message": "{{response.message}}"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "onError": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "targetSaving": false
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "{{error.message}}"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ]
+                                                        "handler": "sirsoft-hero_section.saveTargetSettings",
+                                                        "params": {
+                                                            "position": "{{_computed.currentPosition}}",
+                                                            "target": "{{_computed.currentTarget}}",
+                                                            "method": "DELETE",
+                                                            "overrides": "{{_computed.targetDraft}}"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
                                                     "type": "button",
                                                     "className": "hs-btn hs-btn-secondary",
-                                                    "disabled": "{{_local.targetSaving || !_computed.targetData || Object.keys(_computed.targetData.overrides ?? {}).length === 0}}"
+                                                    "disabled": "{{_computed.targetSaving || !_computed.targetData || Object.keys(_computed.targetData.overrides ?? {}).length === 0}}"
                                                 },
                                                 "children": [
                                                     {

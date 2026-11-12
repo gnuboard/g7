@@ -23,6 +23,16 @@ const layout = form as any;
 const saveCall = () => actionsOf(findById(form, 'footer_save_button'), 'apiCall')[0];
 
 describe('배너 등록·수정 화면', () => {
+  // @scenario surface=target_settings_failure_retry
+  // @effects target_settings_retry_restores_controls
+  it('대상 설정을 받지 못한 수정 미리보기는 위치 기본값으로 추정하지 않고 재시도를 제공한다', () => {
+    const c = evaluateComputed(layout, { route: {}, banner: undefined, form_target_info: undefined, position_settings: {data: { positions: [{key: 'board_hero', dynamic: true, settings: {effect: 'slide'}}]}}, _local: {form: {position: 'board_hero', target_key: '4'}}, _global: {heroFormTargetSettingsFailed: true}, form_target_settings: null });
+    expect(c.formSettingsReady).toBe(false);
+    expect(c.formTargetSettingsFailed).toBe(true);
+    expect(evaluateBinding(findById(form, 'form_preview')!.if, {}, c)).toBe(false);
+    expect(actionsOf(findById(form, 'form_target_settings_retry'), 'refetchDataSource')[0]?.params.dataSourceId).toBe('form_target_settings');
+  });
+
   // @scenario surface=form_create_uses_query_position_and_temp_key
   // @effects banner_form_initializes_from_entry
   it('등록 진입은 폼을 기본값으로 되돌리고 위치를 쿼리에서, 임시 키를 새로 만든다', () => {

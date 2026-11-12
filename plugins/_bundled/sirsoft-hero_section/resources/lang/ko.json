@@ -526,7 +526,8 @@
                 "pagination": "페이징 모양",
                 "max_height_pc": "PC·태블릿 최대 높이(px)",
                 "max_height_mobile": "휴대폰 최대 높이(px)"
-            }
+            },
+            "load_failed": "이 대상의 설정을 받지 못했습니다. 입력한 내용은 그대로 있습니다. 다시 받기를 눌러 주세요."
         }
     }
 }

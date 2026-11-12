@@ -1040,13 +1040,21 @@
 
 .hs-promo__media .hs-slider__picture { display: contents; }
 
-.hs-promo__media .hs-slider__image,
-.hs-promo__media .hs-slider__video {
+.hs-promo__media .hs-slider__image {
   position: static;
   width: auto;
   height: auto;
   max-width: 100%;
   max-height: 100%;
+  object-fit: contain;
+}
+
+/* 영상은 대표 이미지 위의 같은 칸을 쓴다 — 두 flex 항목이면 대표 이미지가 문구 칸으로 밀린다. */
+.hs-promo__media .hs-slider__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
@@ -1071,12 +1079,12 @@
   [data-hs-stack-mobile="text"] .hs-promo__media { order: 1; }
 
   /* 휴대폰 — 문구 칸은 문구 높이만큼(띠를 흐름 안에 둔다), 그림은 남은 높이에 비율대로. 문구 폭은 휴대폰 문구 폭 */
-  .hs-promo__text { flex: 0 0 auto; }
+  .hs-promo__text { flex: 0 1 auto; min-height: 0; max-height: 100%; }
   .hs-slider__slide--promo .hs-slider__text {
     position: relative;
     top: auto;
     transform: none;
-    max-height: none;
+    max-height: 100%;
   }
   .hs-slider__slide--promo .hs-slider__textbox { width: calc(var(--hs-tw-mobile, var(--hs-tw, 100)) * 1%); }
   .hs-promo__media,

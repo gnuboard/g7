@@ -526,7 +526,8 @@
                 "pagination": "Pagination style",
                 "max_height_pc": "Desktop & tablet max height (px)",
                 "max_height_mobile": "Mobile max height (px)"
-            }
+            },
+            "load_failed": "Could not load settings for this target. Your changes are preserved. Please try again."
         }
     }
 }

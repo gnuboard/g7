@@ -126,13 +126,23 @@
             "if": "{{!!(_local.form?.target_key ?? banner?.data?.target_key ?? query.target)}}",
             "loading_strategy": "background",
             "errorHandling": {
-                "404": {
-                    "handler": "suppress"
-                },
-                "422": {
-                    "handler": "suppress"
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroFormTargetSettingsFailed": true
+                    }
                 }
             },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "heroFormTargetSettingsFailed": false
+                    }
+                }
+            ],
             "fallback": {
                 "data": null
             },
@@ -230,6 +240,8 @@
         "samePlacement": "{{_computed.listPosition === (query.position || 'home_hero') && (_computed.listTarget ?? '') === (query.target ?? '')}}",
         "formLayout": "{{_local.form?.presentation?.layout === 'promo' ? 'promo' : 'background'}}",
         "formTargetSettings": "{{_computed.formDynamic && _local.form?.target_key && form_target_settings?.data?.position === _local.form?.position && String(form_target_settings?.data?.target?.key ?? '') === String(_local.form?.target_key) ? form_target_settings.data : null}}",
+        "formTargetSettingsFailed": "{{_computed.formDynamic && !!_local.form?.target_key && (_global?.heroFormTargetSettingsFailed === true || form_target_settings === null || form_target_settings?.data === null)}}",
+        "formSettingsReady": "{{!!_computed.formDef && (!_computed.formDynamic || (!!_computed.formTargetSettings && !_computed.formTargetSettingsFailed))}}",
         "formSettings": "{{_computed.formTargetSettings?.settings ?? _computed.formDef?.settings ?? {} }}",
         "formSettingsFromTarget": "{{Object.keys(_computed.formTargetSettings?.overrides ?? {}).length > 0}}",
         "pcSizeMismatch": "{{_computed.formLayout === 'background' && !!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}",
@@ -259,6 +271,13 @@
                 "formTargetLabel": null,
                 "formTargetResults": [],
                 "previewLocale": ""
+            }
+        },
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "heroFormTargetSettingsFailed": false
             }
         },
         {
@@ -3601,10 +3620,57 @@
                                     },
                                     {
                                         "comment": "적용 설정 요약 — 이 배너가 나갈 자리(위치, 동적 위치면 그 대상)의 최종 슬라이더 설정. 배너 저장과 따로이며, 바꾸려면 목록의 슬라이더 설정에서",
+                                        "id": "form_target_settings_loading",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_computed.formDynamic && !!_local.form?.target_key && !_computed.formSettingsReady && !_computed.formTargetSettingsFailed}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.target_settings.loading"
+                                    },
+                                    {
+                                        "id": "form_target_settings_failed",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_computed.formTargetSettingsFailed}}",
+                                        "props": {
+                                            "role": "alert",
+                                            "className": "hs-alert-warning"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "text": "$t:sirsoft-hero_section.admin.target_settings.load_failed"
+                                            },
+                                            {
+                                                "id": "form_target_settings_retry",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "form_target_settings"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "hs-btn hs-btn-secondary"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.retry"
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "id": "applied_settings",
                                         "type": "basic",
                                         "name": "Div",
-                                        "if": "{{!!_computed.formDef}}",
+                                        "if": "{{_computed.formSettingsReady}}",
                                         "props": {
                                             "className": "hs:text-xs hs:text-gray-600 hs:dark:text-gray-300 hs:mb-2"
                                         },
@@ -3627,6 +3693,7 @@
                                         "id": "form_preview",
                                         "type": "composite",
                                         "name": "sirsoft-hero_section.HeroBannerPreview",
+                                        "if": "{{_computed.formSettingsReady}}",
                                         "actions": [
                                             {
                                                 "comment": "미리보기 안에서 바꾼 콘텐츠 언어를 언어 고르기와 맞춘다",

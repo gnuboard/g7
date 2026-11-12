@@ -4,9 +4,10 @@
  * 컴포넌트 `sirsoft-hero_section.HeroSlider`(사용자 템플릿 확장점에 끼우는 슬라이더)와
  * `sirsoft-hero_section.HeroBannerPreview`(관리자 미리보기)·편집 보조 컴포넌트(기간 안내·미리보기 언어·충돌 비교·문구 자리 고르기)를
  * 코어 레지스트리에 등록한다.
- * 커스텀 액션 핸들러는 없다 — 관리자 화면은 엔진 기본 액션으로 충분하다.
+ * 대상 설정 저장 완료 처리기는 응답 시점의 주소·입력을 확인해 늦은 응답을 격리한다.
  */
 import '../css/main.css';
+import { handlerMap } from './handlers';
 import { HeroSlider } from './components/composite/HeroSlider';
 import { HeroBannerPreview } from './components/composite/HeroBannerPreview';
 import { HeroPeriodHint } from './components/composite/HeroPeriodHint';
@@ -53,3 +54,19 @@ export function registerComponents(): boolean {
 }
 
 registerComponents();
+
+/** 대상 저장 완료 처리기를 엔진에 등록한다. */
+function registerHandlers(): boolean {
+  const dispatcher = (window as any).G7Core?.getActionDispatcher?.();
+  if (!dispatcher?.registerHandler) return false;
+  for (const [name, handler] of Object.entries(handlerMap)) dispatcher.registerHandler(`${PLUGIN_IDENTIFIER}.${name}`, handler, { category: 'plugin', source: PLUGIN_IDENTIFIER });
+  return true;
+}
+if (!registerHandlers()) {
+  let retries = 0;
+  const timer = setInterval(() => { if (registerHandlers() || ++retries >= 50) clearInterval(timer); }, 100);
+}
+
+/** 로케일 전환으로 디스패처가 교체되면 처리기만 다시 등록한다. */
+export function initPlugin(): void { registerHandlers(); }
+(window as unknown as Record<string, unknown>).__SirsoftHeroSection = { identifier: PLUGIN_IDENTIFIER, initPlugin };
