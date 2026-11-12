@@ -58,7 +58,8 @@ export async function saveTargetSettings(action: { params?: Mutation }): Promise
   const target = String(action.params.target);
   const method = action.params.method;
   const submitted = { ...(action.params.overrides ?? {}) };
-  const requestId = crypto.randomUUID();
+  // randomUUID 는 HTTPS·localhost 에만 있다 — HTTP 로 연 관리자에서도 요청마다 다른 값이면 충분하다
+  const requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   core.state.setLocal({ targetSaving: { key: `${position}|${target}`, id: requestId } }, { merge: 'shallow' });
   const endpoint = apiUrl(`/api/plugins/sirsoft-hero_section/admin/position-settings/${encodeURIComponent(position)}/targets/${encodeURIComponent(target)}`);
   const snapshot = { position, target, requestId, submitted };

@@ -22,6 +22,10 @@ axes:
     - target_settings_failure_retry
     - promo_video_poster_overlap
     - promo_mobile_capped_text_scroll
+    # 휴대폰 프로모션형은 문구 칸 200px 를 먼저 두고 남는 높이에서 그림에 최대 120px(높이의 40% 이내)를 보장한다
+    - promo_mobile_media_share
+    # 프로모션형이 있는 띠는 PC·태블릿 최소 400px(최대 높이 이하) — 태블릿 3:1 높이(256)에서 문구가 잘리지 않게
+    - promo_tablet_min_height
 
 effects:
   - public_output_follows_target_override

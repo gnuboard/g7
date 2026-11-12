@@ -113,6 +113,19 @@ describe('대상 설정 완료 응답 격리', () => {
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ params: { type: 'error', message: '서버 저장 오류' } }));
   });
   // @scenario surface=target_settings_late_response_isolated
+  it('HTTP 로 연 관리자(crypto.randomUUID 없음)에서도 저장 요청을 보내고 잠금을 푼다', async () => {
+    local.targetSaving = null;
+    const original = Object.getOwnPropertyDescriptor(globalThis.crypto, 'randomUUID');
+    Object.defineProperty(globalThis.crypto, 'randomUUID', { value: undefined, configurable: true });
+    try {
+      core.api = { put: vi.fn(async () => response) };
+      expect(await saveTargetSettings({ params: { position: 'board_hero', target: '4', method: 'PUT', overrides: submitted } })).toBe(true);
+      expect(core.api.put).toHaveBeenCalledOnce(); expect(local.targetSaving).toBeNull();
+    } finally {
+      if (original) Object.defineProperty(globalThis.crypto, 'randomUUID', original); else delete (globalThis.crypto as any).randomUUID;
+    }
+  });
+  // @scenario surface=target_settings_late_response_isolated
   it('진행 중 저장 단추를 다시 눌러도 요청을 중복 전송하지 않는다', async () => {
     core.api = { put: vi.fn() };
     expect(await saveTargetSettings({ params: { position: 'board_hero', target: '4', method: 'PUT', overrides: submitted } })).toBe(false);

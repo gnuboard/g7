@@ -3,7 +3,7 @@
  * @scenario-manifest tests/scenarios/target-settings.yaml
  * 공개 응답/저장 응답만 대체한다. 운영 배너·설정에 쓰지 않는다.
  */
-import { test, expect, authenticatePage, hidePopups, gotoUser, API, ADMIN_LIST, auth } from '../fixtures/hero-auth';
+import { test, expect, authenticatePage, hidePopups, gotoUser, API, ADMIN_LIST, auth, createBanner, uniqueTitle } from '../fixtures/hero-auth';
 import type { Page, APIRequestContext } from '@playwright/test';
 
 test.setTimeout(180_000);
@@ -52,6 +52,61 @@ test('R2 프로모션 모바일 높이160에서도 긴 문구를 스크롤해 �
   await scroll.focus(); await page.keyboard.press('End');
   await expect.poll(() => scroll.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
   const button = scroll.locator('.hs-slider__button'); await expect(button).toBeInViewport();
+});
+
+// @scenario surface=promo_mobile_media_share
+// @effects promo_existing_media_and_height_options_work
+test('휴대폰 프로모션형은 낮은 최대 높이에서도 그림 몫을 남기고 문구는 칸 안에서 스크롤한다', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const text = { title: '개발자 채용 설명회에 초대합니다', eyebrow: '이벤트', eyebrow_visible: true, description: '현직자가 직접 알려주는 기술 면접 준비법과 실무 이야기를 들어 보세요.' };
+  // 넘김 단추가 문구 칸 아래쪽을 차지하는 2장 — 이 조건에서 그림 칸이 0 이 되던 반례(240·320)와, 문구 칸 200 도 남지 않는 160(문구 우선)
+  const measured: Record<string, { media: number; img: number; text: number; scrollable: boolean }> = {};
+  let max: number | null = 240;
+  await hidePopups(page);
+  // 높이마다 같은 응답에서 max_height_mobile 만 바꾼다
+  await page.route('**/api/plugins/sirsoft-hero_section/hero?*', route => route.fulfill({ json: { success: true, data: { position: 'board_hero', target: 'event', banners: [{ ...banner(), ...text }, { ...banner(), ...text, id: 990875 }], settings: { autoplay: false, interval_seconds: 5, effect: 'none', width: 'full', pagination: 'dots', max_height_mobile: max }, abilities: { can_update: false } } } }));
+  for (const cap of [240, 320, 160]) {
+    max = cap;
+    await gotoUser(page, '/board/event');
+    const slide = page.locator('.hs-slider__slide--active');
+    await expect(slide.locator('.hs-promo__media img')).toBeAttached({ timeout: 60_000 });
+    await expect.poll(() => page.locator('section.hs-slider[role="region"]').evaluate(el => Math.round(el.getBoundingClientRect().height))).toBe(cap);
+    measured[cap] = await slide.evaluate(el => {
+      const h = (q: string) => Math.round((el.querySelector(q) as HTMLElement).getBoundingClientRect().height);
+      const sc = el.querySelector('.hs-slider__scroll') as HTMLElement;
+      return { media: h('.hs-promo__media'), img: h('.hs-promo__media img'), text: h('.hs-promo__text'), scrollable: sc.scrollHeight > sc.clientHeight && sc.getAttribute('tabindex') === '0' };
+    });
+  }
+  await info.attach('media-share', { body: JSON.stringify(measured), contentType: 'application/json' });
+  // 240: 문구 칸 200 을 남기고 그림 40 · 320: 그림 120(3:1 그림 전체) · 160: 문구 칸 200 도 안 되므로 문구 우선
+  expect(measured[240].media).toBeGreaterThanOrEqual(39); expect(measured[240].img).toBeGreaterThan(30); expect(measured[240].text).toBeGreaterThanOrEqual(199);
+  expect(measured[320].media).toBeGreaterThanOrEqual(119); expect(measured[320].img).toBeGreaterThanOrEqual(110);
+  expect(measured[160].media).toBe(0); expect(measured[160].text).toBe(160);
+  for (const cap of [240, 320, 160]) expect(measured[cap].scrollable).toBe(true);
+});
+
+// @scenario surface=promo_tablet_min_height
+// @effects promo_existing_media_and_height_options_work
+test('태블릿에서 프로모션형 띠는 최소 400px(최대 높이 이하)라 단추까지 띠 안에 들고, 배경형만 있으면 높이가 그대로다', async ({ page }, info) => {
+  test.setTimeout(480_000); // 같은 화면을 세 번 연다 — 개발 서버의 첫 로딩이 느린 날이 있다
+  await page.setViewportSize({ width: 768, height: 1000 });
+  await hidePopups(page);
+  const text = { title: '소음은 줄이고\n음악은 더 선명하게', eyebrow: '신제품 출시', eyebrow_visible: true, description: '주변 소리를 걸러 주는 노이즈 캔슬링으로 출퇴근길에도 내 음악에만 집중하세요.' };
+  let current: { layout: string; max: number | null } = { layout: 'promo', max: 420 };
+  await page.route('**/api/plugins/sirsoft-hero_section/hero?*', route => route.fulfill({ json: { success: true, data: { position: 'board_hero', target: 'event', banners: [{ ...banner(current.layout), ...text }, { ...banner(current.layout), ...text, id: 990875 }], settings: { autoplay: false, interval_seconds: 5, effect: 'fade', width: 'full', pagination: 'pill', max_height_pc: current.max }, abilities: { can_update: false } } } }));
+  const measured: Record<string, { hero: number; buttonBottom: number; heroBottom: number }> = {};
+  for (const [name, layout, max] of [['promo-420', 'promo', 420], ['promo-300', 'promo', 300], ['background-420', 'background', 420]] as const) {
+    current = { layout, max };
+    await gotoUser(page, '/board/event');
+    const section = page.locator('section.hs-slider[role="region"]');
+    await expect(section.locator('.hs-slider__slide--active .hs-slider__button')).toBeAttached({ timeout: 150_000 });
+    measured[name] = await section.evaluate(el => { const r = el.getBoundingClientRect(); const b = el.querySelector('.hs-slider__slide--active .hs-slider__button')!.getBoundingClientRect(); return { hero: Math.round(r.height), buttonBottom: Math.round(b.bottom), heroBottom: Math.round(r.bottom) }; });
+  }
+  await info.attach('tablet-heights', { body: JSON.stringify(measured), contentType: 'application/json' });
+  expect(measured['promo-420'].hero).toBe(400);
+  expect(measured['promo-420'].buttonBottom).toBeLessThanOrEqual(measured['promo-420'].heroBottom);
+  expect(measured['promo-300'].hero).toBe(300);
+  expect(measured['background-420'].hero).toBe(256);
 });
 
 // @scenario surface=target_settings_late_response_isolated
@@ -108,17 +163,89 @@ test('R4 목록 대상 설정500 뒤 재시도로 복구한다', async ({ page, 
 
 // @scenario surface=target_settings_failure_retry
 // @effects target_settings_retry_restores_controls
-test('R4 수정 폼 대상 설정500은 잘못된 미리보기를 숨기고 다시 받을 때 입력을 보존한다', async ({ page, managerToken }) => {
+test('R4 수정 폼 대상 설정500은 잘못된 미리보기를 숨기고, 실패 중 새로 입력한 문구를 다시 받은 뒤에도 남긴다', async ({ page, request, managerToken, created }) => {
+  // 운영 배너를 열지 않는다 — 비노출 시험 배너를 만들고(created 픽스처가 지운다) 저장하지 않은 입력만 확인한다
+  const id = await createBanner(request, managerToken, { position: 'board_hero', target_key: '4', is_active: false });
+  created.push(id);
   await authenticatePage(page, managerToken);
   let broken = true;
+  const writes: string[] = [];
+  page.on('request', r => { if (r.url().includes(`${API}/admin/banners`) && r.method() !== 'GET') writes.push(`${r.method()} ${r.url()}`); });
   await page.route(`**${API}/admin/position-settings/board_hero/targets/4`, route => broken ? route.fulfill({ status: 500, json: { success: false, message: '시험 오류' } }) : route.continue());
-  await page.goto(`${ADMIN_LIST}/1442/edit?position=board_hero&target=4`);
+  await page.goto(`${ADMIN_LIST}/${id}/edit`);
   await expect(page.getByText('이 대상의 설정을 받지 못했습니다.', { exact: false })).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('.hs-preview__viewport')).toHaveCount(0);
-  const before = await page.evaluate(() => (window as any).G7Core.state.getLocal().form.title);
+  const typed = uniqueTitle('실패 중 입력');
+  const title = page.locator('[name="title[ko]"]');
+  await title.fill(typed);
+  await expect.poll(() => page.evaluate(() => (window as any).G7Core.state.getLocal().form.title)).toMatchObject({ ko: typed });
   broken = false; await page.getByRole('button', { name: '다시 받기', exact: true }).click();
   await expect(page.locator('.hs-preview__viewport')).toBeVisible({ timeout: 30_000 });
-  expect(await page.evaluate(() => (window as any).G7Core.state.getLocal().form.title)).toEqual(before);
+  await expect(page.getByText('이 대상의 설정을 받지 못했습니다.', { exact: false })).toHaveCount(0);
+  await expect(title).toHaveValue(typed);
+  expect(await page.evaluate(() => (window as any).G7Core.state.getLocal().form.title)).toMatchObject({ ko: typed });
+  expect(await page.evaluate(() => (window as any).G7Core.state.getLocal().hasChanges)).toBe(true);
+  expect(writes).toEqual([]);
+});
+
+/** 대상 설정 GET 을 이 대상만 재정의(effect=fade)한 응답으로 바꾸고 받은 횟수를 센다 — 서버에 쓰지 않는다. */
+async function fadeTarget(page: Page, request: APIRequestContext, token: string, target: string) {
+  const endpoint = `${API}/admin/position-settings/board_hero/targets/${target}`;
+  const original = await (await request.get(endpoint, { headers: auth(token) })).json();
+  const seen = { count: 0 };
+  await page.route(`**${endpoint}`, route => {
+    if (route.request().method() !== 'GET') return route.abort();
+    seen.count++;
+    return route.fulfill({ json: { ...original, data: { ...original.data, overrides: { effect: 'fade' }, settings: { ...original.data.position_settings, effect: 'fade' } } } });
+  });
+  return seen;
+}
+
+// @scenario surface=target_settings_failure_retry
+// @effects target_settings_retry_restores_controls
+test('쿼리 없이 연 동적 위치 배너 수정 화면도 그 대상의 설정을 받아 적용 설정·미리보기를 그린다', async ({ page, request, managerToken, created }) => {
+  // 목록의 제목 링크·사이트의 수정 단추는 /banners/{id}/edit 로만 연다 — 쿼리의 대상에 기대지 않는다
+  const id = await createBanner(request, managerToken, { position: 'board_hero', target_key: '4', is_active: false });
+  created.push(id);
+  await authenticatePage(page, managerToken);
+  const seen = await fadeTarget(page, request, managerToken, '4');
+  await page.goto(`${ADMIN_LIST}/${id}/edit`);
+  await expect(page.locator('.hs-preview__viewport')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('적용 설정: 페이드', { exact: false })).toBeVisible();
+  await expect(page.getByText('이 대상만의 설정이 포함돼 있습니다.', { exact: false })).toBeVisible();
+  await expect(page.getByText('이 대상의 설정을 불러오는 중입니다.', { exact: true })).toHaveCount(0);
+  expect(seen.count).toBe(1);
+});
+
+// @scenario surface=target_settings_failure_retry
+// @effects target_settings_retry_restores_controls
+test('등록 화면에서 정적 위치를 동적 위치로 바꾸고 대상을 고르면 그 대상의 설정을 받는다', async ({ page, request, managerToken }) => {
+  await authenticatePage(page, managerToken);
+  const seen = await fadeTarget(page, request, managerToken, '4');
+  const writes: string[] = [];
+  page.on('request', r => { if (r.url().includes(`${API}/admin/`) && r.method() !== 'GET') writes.push(r.method()); });
+  await page.goto(`${ADMIN_LIST}/create?position=home_hero`);
+  // 그림이 없는 새 배너라 미리보기는 빈 안내로 그린다 — 미리보기 자리와 「적용 설정」 요약을 본다
+  const preview = page.locator('.hs-preview').first();
+  await expect(page.getByText('적용 설정:', { exact: false })).toBeVisible({ timeout: 60_000 });
+  await page.getByRole('radio', { name: /게시판 목록/ }).check();
+  // 대상을 고르기 전에도 위치 기본값으로 요약·미리보기를 그린다
+  await expect(page.getByText('위치 기본값입니다.', { exact: false })).toBeVisible();
+  await expect(preview).toBeAttached();
+  await page.locator('button').filter({ hasText: '게시판을(를) 고르세요' }).click();
+  await page.getByPlaceholder('게시판 이름으로 찾기').fill('자유');
+  const option = page.getByRole('option').first();
+  await expect(option).toBeVisible({ timeout: 30_000 });
+  const picked = await option.textContent();
+  await page.unroute(`**${API}/admin/position-settings/board_hero/targets/4`);
+  const pickedSeen = { count: 0 };
+  await page.route(`**${API}/admin/position-settings/board_hero/targets/*`, route => { pickedSeen.count++; return route.continue(); });
+  await option.click();
+  await expect.poll(() => pickedSeen.count, { timeout: 30_000 }).toBe(1);
+  await expect(page.getByText('적용 설정:', { exact: false })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('이 대상의 설정을 받지 못했습니다.', { exact: false })).toHaveCount(0);
+  await expect(preview).toBeAttached();
+  expect(picked).toBeTruthy(); expect(seen.count).toBe(0); expect(writes).toEqual([]);
 });
 
 // @scenario surface=target_settings_partial_inherit

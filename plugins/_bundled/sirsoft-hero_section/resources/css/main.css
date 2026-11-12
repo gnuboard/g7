@@ -130,6 +130,24 @@
   max-height: var(--hs-max-height-pc, var(--hs-max-height-full, 640px));
 }
 
+/*
+ * 프로모션형이 있는 띠 — PC·태블릿에서 문구 칸(제목 두 줄·설명·단추)과 그림 칸이 가로로 나뉘므로 3:1 비율로는 태블릿(768px 에서 256px)에서
+ * 문구가 잘린다. 400px 를 최소 높이로 두되 최대 높이가 그보다 낮으면 그 값을 넘지 않는다(min-height 는 max-height 를 이기므로 둘 중 작은 값).
+ * 넓은 화면은 비율 높이가 이미 400px 를 넘어 지금 높이 그대로다. 휴대폰(위아래 배치)은 기존 비율을 쓴다.
+ */
+.hs-slider--promo {
+  min-height: min(400px, var(--hs-max-height-pc, 400px));
+}
+
+.hs-slider--promo.hs-slider--full {
+  min-height: min(400px, var(--hs-max-height-pc, var(--hs-max-height-full, 640px)));
+}
+
+.hs-slider--promo.hs-slider--mobile,
+.hs-slider--promo.hs-slider--full.hs-slider--mobile {
+  min-height: 0;
+}
+
 .hs-slider--full.hs-slider--mobile {
   max-height: var(--hs-max-height-mobile, var(--hs-max-height-full, 640px));
 }
@@ -1078,7 +1096,7 @@
   [data-hs-stack-mobile="text"] .hs-promo__text { order: 0; }
   [data-hs-stack-mobile="text"] .hs-promo__media { order: 1; }
 
-  /* 휴대폰 — 문구 칸은 문구 높이만큼(띠를 흐름 안에 둔다), 그림은 남은 높이에 비율대로. 문구 폭은 휴대폰 문구 폭 */
+  /* 휴대폰 — 문구 칸은 문구 높이만큼(띠를 흐름 안에 둔다), 그림은 남은 높이에 비율대로(아래 그림 몫은 보장). 문구 폭은 휴대폰 문구 폭 */
   .hs-promo__text { flex: 0 1 auto; min-height: 0; max-height: 100%; }
   .hs-slider__slide--promo .hs-slider__text {
     position: relative;
@@ -1089,6 +1107,10 @@
   .hs-slider__slide--promo .hs-slider__textbox { width: calc(var(--hs-tw-mobile, var(--hs-tw, 100)) * 1%); }
   .hs-promo__media,
   [data-hs-side-pc="right"] .hs-promo__media { justify-content: center; }
+  /* 그림 몫 — 문구가 길거나 높이가 낮아도 그림 칸이 0 이 되지 않게, 문구 칸 200px 를 먼저 두고 남는 높이에서 최대 120px(높이의 40% 이내)를
+     그림에 남긴다. 문구 칸이 200px 도 안 되는 높이(160·200)는 문구 우선이고, 넘치는 문구는 문구 칸 안에서 스크롤한다 */
+  .hs-promo__media,
+  .hs-slider__media.hs-promo__media { min-height: clamp(0px, calc(100% - 200px), min(40%, 120px)); }
 
   .hs-slider__slide--promo .hs-slider__eyebrow { font-size: 14px; }
   .hs-slider__slide--promo .hs-slider__title { font-size: 22px; }

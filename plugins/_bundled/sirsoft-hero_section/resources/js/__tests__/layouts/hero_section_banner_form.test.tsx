@@ -33,6 +33,43 @@ describe('배너 등록·수정 화면', () => {
     expect(actionsOf(findById(form, 'form_target_settings_retry'), 'refetchDataSource')[0]?.params.dataSourceId).toBe('form_target_settings');
   });
 
+  // @scenario surface=target_settings_failure_retry
+  it('대상 설정은 데이터 소스 if 로 거르지 않고 init·대상 고르기에서 받는다 — if 는 _local·banner 를 못 봐 쿼리 없는 수정 진입에서 소스가 빠진다', () => {
+    const source = asArray<any>(layout.data_sources).find((s) => s.id === 'form_target_settings');
+    expect(source.if).toBeUndefined();
+    expect(source.auto_fetch).toBe(false);
+    // 주소는 받을 위치·대상(formTargetRef)만 읽는다 — init 때 수정 배너의 폼은 아직 _local 에 없고, 주소 식은 banner 를 보지 못한다
+    expect(source.endpoint).toContain('_local.formTargetRef?.position');
+    expect(source.endpoint).toContain('_local.formTargetRef?.target');
+    expect(source.endpoint).not.toMatch(/banner\?|_local\.form\?/);
+    // 엔진은 데이터 소스 if 를 route·query·_global 로만 평가한다 — 같은 화면의 어떤 소스도 _local·다른 소스로 조건을 걸지 않는다
+    for (const s of asArray<any>(layout.data_sources)) expect(String(s.if ?? '')).not.toMatch(/_local|_computed|banner\?|position_settings\?/);
+    const seq = asArray<any>(layout.init_actions).find((a) => a.handler === 'sequence' && json(a).includes('form_target_settings'));
+    const [ref, refetch] = seq.actions;
+    expect(refetch).toMatchObject({ handler: 'refetchDataSource', params: { dataSourceId: 'form_target_settings' } });
+    const edit = { route: { id: '7' }, banner: { data: { position: 'board_hero', target_key: '4' } }, query: {}, _local: { form: { position: 'home_hero', target_key: null } } };
+    // 수정은 배너 응답으로 — SPA 로 다른 배너에서 넘어와 남은 _local.form 을 쓰지 않는다
+    const refOf = (scope: any) => ({ position: evaluateBinding(ref.params['formTargetRef.position'], scope, {}), target: evaluateBinding(ref.params['formTargetRef.target'], scope, {}) });
+    expect(refOf(edit)).toEqual({ position: 'board_hero', target: '4' });
+    expect(evaluateBinding(refetch.if, edit, {})).toBe(true);
+    const create = { route: {}, banner: undefined, query: { position: 'board_hero', target: '2' }, _local: {} };
+    expect(refOf(create)).toEqual({ position: 'board_hero', target: '2' });
+    expect(evaluateBinding(refetch.if, { ...create, query: { position: 'home_hero' } }, {})).toBe(false);
+    const pick = findById(form, 'form_target_dropdown')!;
+    expect(json(actionsOf(pick, 'setState'))).toContain('formTargetRef');
+    expect(actionsOf(pick, 'refetchDataSource')[0]).toMatchObject({ if: '{{!!$args[0]}}', params: { dataSourceId: 'form_target_settings' } });
+  });
+
+  // @scenario surface=target_settings_failure_retry
+  it('동적 위치에서 대상을 고르기 전에는 위치 기본값으로 미리보기를 그린다 — 대상 설정을 받을 일이 없어 기다리지 않는다', () => {
+    const c = evaluateComputed(layout, { route: {}, banner: undefined, form_target_info: undefined, position_settings: {data: { positions: [{key: 'board_hero', dynamic: true, settings: {effect: 'fade'}}]}}, _local: {form: {position: 'board_hero', target_key: null}}, _global: {}, form_target_settings: undefined });
+    expect(c.formTargetSettingsFailed).toBe(false);
+    expect(c.formSettingsReady).toBe(true);
+    expect(c.formSettings.effect).toBe('fade');
+    expect(evaluateBinding(findById(form, 'form_preview')!.if, {}, c)).toBe(true);
+    expect(evaluateBinding(findById(form, 'applied_settings')!.if, {}, c)).toBe(true);
+  });
+
   // @scenario surface=form_create_uses_query_position_and_temp_key
   // @effects banner_form_initializes_from_entry
   it('등록 진입은 폼을 기본값으로 되돌리고 위치를 쿼리에서, 임시 키를 새로 만든다', () => {

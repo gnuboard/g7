@@ -447,12 +447,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const maxPc = heightOf(settings.max_height_pc);
   const maxMobile = heightOf(settings.max_height_mobile);
   const firstTone = toneOf(banners[0]);
+  // 프로모션형은 문구·그림을 가로로 나눠 배경형 비율(3:1)로는 태블릿에서 문구가 잘린다 — 한 장이라도 있으면 띠 전체에 최소 높이를 준다
+  const hasPromo = banners.some((b) => b.presentation?.layout === 'promo');
   useEffect(() => {
     // 응답이 온 때만 기억한다(공개 API 는 늘 표시 폭을 함께 준다) — 받기에 실패한 방문을 「0건」으로 기억하면 다음 방문에 스켈레톤 없이 배너가 끼어든다
     if (!loading && width !== undefined) {
-      writeMemory(slot, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone, ...(maxPc !== null ? { maxPc } : {}), ...(maxMobile !== null ? { maxMobile } : {}) });
+      writeMemory(slot, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone, ...(maxPc !== null ? { maxPc } : {}), ...(maxMobile !== null ? { maxMobile } : {}), ...(hasPromo ? { promo: true } : {}) });
     }
-  }, [loading, slot, count, width, overlaySetting, firstTone, maxPc, maxMobile]);
+  }, [loading, slot, count, width, overlaySetting, firstTone, maxPc, maxMobile, hasPromo]);
   const full = settings.width === 'full';
   const box = contentClass.trim();
   // 화면 전체 폭이면 문구·넘김 단추를 본문 상자에 맞춘다 — 넓은 화면에서 글이 화면 끝에 붙지 않고 본문과 같은 줄에 선다
@@ -663,7 +665,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     const wide = count > 0 ? full : skeletonFull;
     const skeleton = (
       <section
-        className={`hs-slider hs-slider--skeleton${wide ? ' hs-slider--full' : ''}${deviceClass}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
+        className={`hs-slider hs-slider--skeleton${wide ? ' hs-slider--full' : ''}${remembered?.promo ? ' hs-slider--promo' : ''}${deviceClass}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
         style={style}
         aria-hidden="true"
         data-position={position}
@@ -738,7 +740,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs-slider hs-slider--${effect}${full ? ' hs-slider--full' : ''} hs-slider--pagination-${pagination}${framed ? ' hs-slider--static' : ''}${deviceClass}${count > 1 ? ' hs-slider--controlled' : ''}${autoplaying ? ' hs-slider--autoplaying' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
+      className={`hs-slider hs-slider--${effect}${full ? ' hs-slider--full' : ''}${hasPromo ? ' hs-slider--promo' : ''} hs-slider--pagination-${pagination}${framed ? ' hs-slider--static' : ''}${deviceClass}${count > 1 ? ' hs-slider--controlled' : ''}${autoplaying ? ' hs-slider--autoplaying' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription={t('sirsoft-hero_section.slider.carousel_role', '캐러셀')}
@@ -952,6 +954,9 @@ interface SlotMemory {
 
   /** 직전 휴대폰 최대 높이(px) — 비웠으면 남기지 않는다 */
   maxMobile?: number | null;
+
+  /** 직전에 프로모션형 장이 있었는지 — PC·태블릿 최소 높이를 스켈레톤에도 준다 */
+  promo?: boolean;
 }
 
 /** 저장 키 접두 — 플러그인 식별자로 다른 확장과 섞이지 않게 */
@@ -988,7 +993,7 @@ function readMemory(slot?: string): SlotMemory | null {
   try {
     const value = JSON.parse(window.localStorage.getItem(MEMORY_KEY + slot) ?? 'null');
     return value && typeof value.banners === 'number'
-      ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark', maxPc: heightOf(value.maxPc), maxMobile: heightOf(value.maxMobile) }
+      ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark', maxPc: heightOf(value.maxPc), maxMobile: heightOf(value.maxMobile), promo: value.promo === true }
       : null;
   } catch {
     return null;

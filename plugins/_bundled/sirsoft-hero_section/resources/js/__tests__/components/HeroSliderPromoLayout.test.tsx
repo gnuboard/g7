@@ -163,4 +163,21 @@ describe('배너 구성·프로모션형', () => {
     expect(title.querySelector('b')).toBeNull();
     expect(container.querySelector('.hs-slider__description')?.textContent).toBe('첫 줄\n둘째 줄');
   });
+  // @scenario surface=promo_layout_render
+  it('프로모션형이 한 장이라도 있으면 슬라이더에 hs-slider--promo 를 달고(PC·태블릿 최소 높이), 다음 방문 스켈레톤도 같은 높이로 잡는다', () => {
+    const promo = banner(2, { presentation: { layout: 'promo' } });
+    const { container, unmount } = render(<HeroSlider banners={[banner(1), promo]} settings={{ autoplay: false, width: 'full' }} position="product_hero" target="11" />);
+    expect(container.querySelector('section.hs-slider')?.className).toContain('hs-slider--promo');
+    unmount();
+    // 배경형만 있으면 달지 않는다 — 기존 배너의 높이는 그대로
+    const plain = render(<HeroSlider banners={[banner(1)]} settings={{ autoplay: false, width: 'full' }} position="product_hero" target="12" />);
+    expect(plain.container.querySelector('section.hs-slider')?.className).not.toContain('hs-slider--promo');
+    plain.unmount();
+    // 같은 자리의 다음 방문 — 받는 동안의 스켈레톤도 프로모션형 높이(태블릿에서 256 → 400 으로 뛰지 않게)
+    const again = render(<HeroSlider banners={[]} loading position="product_hero" target="11" />);
+    expect(again.container.querySelector('section.hs-slider--skeleton')?.className).toContain('hs-slider--promo');
+    again.unmount();
+    const other = render(<HeroSlider banners={[]} loading position="product_hero" target="12" />);
+    expect(other.container.querySelector('section.hs-slider--skeleton')?.className ?? '').not.toContain('hs-slider--promo');
+  });
 });

@@ -53,8 +53,11 @@
     <fallback :data="null"/>
   </data-source>
   <!-- 고른 동적 위치 대상의 최종 슬라이더 설정(위치 기본값 + 대상 재정의) — 미리보기와 「적용 설정」 요약이 쓴다. 대상을 고르면 다시 받는다.
-    정적 위치·대상 없음은 받지 않고 위치 설정을 쓴다. 응답이 지금 위치·대상과 같을 때만 쓴다 -->
-  <data-source id="form_target_settings" label_key="$t:sirsoft-hero_section.editor.data_source.target_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings/{{_local.form?.position ?? banner?.data?.position ?? query.position ?? 'home_hero'}}/targets/{{encodeURIComponent(_local.form?.target_key ?? banner?.data?.target_key ?? query.target ?? '')}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{!!(_local.form?.target_key ?? banner?.data?.target_key ?? query.target)}}" loading_strategy="background">
+    정적 위치·대상 없음은 받지 않고 위치 설정을 쓴다. 응답이 지금 위치·대상과 같을 때만 쓴다.
+    자동으로 받지 않고 init·대상 고르기·다시 받기에서 받는다 — 데이터 소스 if 는 route·query·_global 만 보므로 _local.form·banner 로 조건을 걸면
+    쿼리 없이 들어온 수정 화면(목록 제목 링크·사이트의 수정 단추)에서 이 소스가 빠져 다시 받기로도 찾지 못한다. 주소는 받을 위치·대상(formTargetRef)만
+    읽는다 — init 때는 수정 배너의 폼(initLocal)이 아직 _local 에 없고, 다시 받기 주소 식은 다른 데이터 소스(banner)를 보지 못한다 -->
+  <data-source id="form_target_settings" label_key="$t:sirsoft-hero_section.editor.data_source.target_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings/{{_local.formTargetRef?.position ?? 'home_hero'}}/targets/{{encodeURIComponent(_local.formTargetRef?.target ?? '')}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="background">
     <error-handling>
       <default><set-state target="global" :heroFormTargetSettingsFailed="true"/></default>
     </error-handling>
@@ -152,7 +155,7 @@
   <computed name="formLayout">{{_local.form?.presentation?.layout === 'promo' ? 'promo' : 'background'}}</computed>
   <computed name="formTargetSettings">{{_computed.formDynamic &amp;&amp; _local.form?.target_key &amp;&amp; form_target_settings?.data?.position === _local.form?.position &amp;&amp; String(form_target_settings?.data?.target?.key ?? '') === String(_local.form?.target_key) ? form_target_settings.data : null}}</computed>
   <computed name="formTargetSettingsFailed">{{_computed.formDynamic &amp;&amp; !!_local.form?.target_key &amp;&amp; (_global?.heroFormTargetSettingsFailed === true || form_target_settings === null || form_target_settings?.data === null)}}</computed>
-  <computed name="formSettingsReady">{{!!_computed.formDef &amp;&amp; (!_computed.formDynamic || (!!_computed.formTargetSettings &amp;&amp; !_computed.formTargetSettingsFailed))}}</computed>
+  <computed name="formSettingsReady">{{!!_computed.formDef &amp;&amp; (!_computed.formDynamic || !_local.form?.target_key || (!!_computed.formTargetSettings &amp;&amp; !_computed.formTargetSettingsFailed))}}</computed>
   <computed name="formSettings">{{_computed.formTargetSettings?.settings ?? _computed.formDef?.settings ?? {} }}</computed>
   <computed name="formSettingsFromTarget">{{Object.keys(_computed.formTargetSettings?.overrides ?? {}).length &gt; 0}}</computed>
   <computed name="pcSizeMismatch">{{_computed.formLayout === 'background' &amp;&amp; !!_local.form?.images?.pc?.width &amp;&amp; (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}</computed>
@@ -221,6 +224,11 @@
         </field>
       </field>
     </set-state>
+    <!-- 받을 위치·대상을 수정 배너(등록이면 목록에서 보던 쿼리)로 정하고, 대상이 있으면 그 대상의 최종 설정을 받는다 -->
+    <sequence>
+      <set-state target="local" formTargetRef.position="{{(route.id ? banner?.data?.position : query.position) || 'home_hero'}}" formTargetRef.target="{{(route.id ? banner?.data?.target_key : query.target) || null}}"/>
+      <refetch-data-source if="{{!!(route.id ? banner?.data?.target_key : query.target)}}" dataSourceId="form_target_settings"/>
+    </sequence>
     <!-- 등록·수정 화면마다 새 임시 키 — 이미지가 이 키로 먼저 올라가고 저장 때 배너에 붙는다. 저장하지 않고 떠난 임시 이미지는 정리 명령이 지운다 -->
     <set-state target="global" tempKey="{{$uuid()}}"/>
   </init>
@@ -288,8 +296,8 @@
                   <on type="change" event="onChange">
                     <!-- 고른 대상을 폼에 담는다 — 이름은 후보에서 찾아 두어 고르기 칸 글자로 쓴다 -->
                     <sequence>
-                      <set-state target="local" form.target_key="{{$args[0] || null}}" formTargetLabel="{{(_local.formTargetResults ?? []).find(o =&gt; o.value === $args[0])?.label ?? null}}" :hasChanges="true"/>
-                      <refetch-data-source dataSourceId="form_target_settings"/>
+                      <set-state target="local" form.target_key="{{$args[0] || null}}" formTargetLabel="{{(_local.formTargetResults ?? []).find(o =&gt; o.value === $args[0])?.label ?? null}}" formTargetRef.position="{{_local.form?.position}}" formTargetRef.target="{{$args[0] || null}}" :hasChanges="true"/>
+                      <refetch-data-source if="{{!!$args[0]}}" dataSourceId="form_target_settings"/>
                     </sequence>
                   </on>
                 </searchable-dropdown>
@@ -890,7 +898,8 @@
               <set-state target="local" previewLocale="{{$args[0]}}"/>
             </on>
           </sirsoft-hero_section.hero-preview-language>
-          <!-- 적용 설정 요약 — 이 배너가 나갈 자리(위치, 동적 위치면 그 대상)의 최종 슬라이더 설정. 배너 저장과 따로이며, 바꾸려면 목록의 슬라이더 설정에서 -->
+          <!-- 적용 설정 요약 — 이 배너가 나갈 자리(위치, 동적 위치면 그 대상)의 최종 슬라이더 설정. 배너 저장과 따로이며, 바꾸려면 목록의 슬라이더 설정에서.
+            대상을 고른 동적 위치는 대상 설정이 와야 요약·미리보기를 그리고(받지 못하면 다시 받기), 대상을 고르기 전에는 받을 것이 없어 위치 기본값으로 그린다 -->
           <p data-ref="form_target_settings_loading" data-if="{{_computed.formDynamic &amp;&amp; !!_local.form?.target_key &amp;&amp; !_computed.formSettingsReady &amp;&amp; !_computed.formTargetSettingsFailed}}" role="status" class="hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.target_settings.loading</p>
           <div data-ref="form_target_settings_failed" data-if="{{_computed.formTargetSettingsFailed}}" role="alert" class="hs-alert-warning">
             <p>$t:sirsoft-hero_section.admin.target_settings.load_failed</p>
