@@ -4,8 +4,9 @@
   공개 API 가 함께 빠져 자리도 비어 있다. 언어를 바꾸면 화면이 새로 마운트되며 새 언어로 다시 받는다. -->
 <extension extension-point="home_hero" mode="append" priority="50">
   <sirsoft-hero_section.hero-slider data-type="composite" data-ref="heroSectionHome_slider" banners="{{heroSectionHome?.data?.banners ?? []}}" loading="{{heroSectionHome == null}}" skeletonWidth="{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.home_hero ?? ''}}" skeletonBanners="{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.home_hero}}" editable="{{heroSectionHome?.data?.abilities?.can_update === true}}" skeletonOverlay="{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.home_hero}}" skeletonMaxHeight="{{_global.plugins?.['sirsoft-hero_section']?.slot_max_heights?.home_hero ?? null}}" settings="{{heroSectionHome?.data?.settings}}" position="home_hero" contentClass="{{extensionPointProps?.contentClass ?? ''}}">
-    <!-- 템플릿이 확장점으로 넘긴 본문 상자 클래스 — 데스크톱은 따로 넘긴 값(없으면 기본 값). 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구·넘김 단추에 쓴다 -->
+    <!-- 템플릿이 확장점으로 넘긴 본문 상자 클래스 — 데스크톱·태블릿은 따로 넘긴 값(없으면 기본 값). 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구·넘김 단추에 쓴다 -->
     <responsive on="desktop" contentClass="{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}"/>
+    <responsive on="tablet" contentClass="{{extensionPointProps?.contentClassTablet ?? extensionPointProps?.contentClass ?? ''}}"/>
   </sirsoft-hero_section.hero-slider>
   <!-- 지금 노출 중인 배너 — 로그인하지 않아도 받는다. 로그인했으면 토큰을 실어 수정 권한(abilities.can_update)을 함께 받는다. 실패하면 빈 값으로 떨어져 슬라이더를 그리지 않는다 -->
   <data-source id="heroSectionHome" label_key="$t:sirsoft-hero_section.editor.data_source.heroSectionHome" type="api" endpoint="/api/plugins/sirsoft-hero_section/hero" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="background">

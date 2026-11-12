@@ -88,7 +88,9 @@ describe('히어로 확장점', () => {
     expect(container.props.className).toBe('py-6 px-4');
     expect(container.responsive.tablet.props.className).toBe('py-6 px-6');
     expect(container.responsive.desktop.props.className).toBe('py-6 px-8');
-    expect(top[0].props).toEqual({ contentClass: 'px-8 md:px-10', contentClassDesktop: 'max-w-7xl mx-auto px-16' });
+    // 폭마다 다른 값은 Tailwind 폭 접두(md:)가 아니라 기기별 속성으로 넘긴다 — 히어로 조각이 엔진 responsive 로 고른다
+    expect(top[0].props).toEqual({ contentClass: 'px-8', contentClassTablet: 'px-10', contentClassDesktop: 'max-w-7xl mx-auto px-16' });
+    expect(Object.values(top[0].props).join(' ')).not.toMatch(/(?:^|\s)(?:sm|md|lg|xl|2xl):/);
   });
 
   // @scenario surface=shop_layout_has_shop_hero_slot

@@ -486,7 +486,7 @@ API 를 부르지도, 갈 곳 없는 링크를 그리지도 않는다. 판정은
 
 | 확장점 | 레이아웃 | 넘기는 본문 상자 | 대상 |
 | --- | --- | --- | --- |
-| `home_hero` | `home` | `contentClass="px-8 md:px-10"` · `contentClassDesktop="max-w-7xl mx-auto px-16"` | — |
+| `home_hero` | `home` | `contentClass="px-8"` · `contentClassTablet="px-10"` · `contentClassDesktop="max-w-7xl mx-auto px-16"` | — |
 | `shop_hero` | `shop/index` | `contentClass="px-4"` · `contentClassDesktop="max-w-7xl mx-auto px-8"` | — |
 | `board_hero` | `board/index` | 쇼핑몰 메인과 같음 | 게시판마다 — 조각이 `route.slug` 를 읽는다 |
 | `product_hero` | `shop/show` | 쇼핑몰 메인과 같음 | 상품마다 — 조각이 `route.product_code` 를 읽는다 |
@@ -1262,7 +1262,7 @@ slots.content:
       └── _visitor_counter.g7.html (방문자 수 — 설정으로 켬)
 ```
 
-히어로 자리 `home_hero` 는 본문 폭 기준으로 `contentClass="px-8 md:px-10"`·`contentClassDesktop="max-w-7xl mx-auto px-16"` 를 넘깁니다. 홈 본문은 `_user_base` 본문 상자 여백 안에 컨테이너 여백(`px-4`·태블릿 `px-6`·데스크톱 `px-8`)을 한 번 더 두므로, 두 여백을 더한 값이어야 배너가 아래 카드 줄과 같은 폭이 됩니다. 컨테이너 여백을 바꾸면 이 값도 같이 바꿉니다. 쇼핑몰 메인(`shop/index`)의 `shop_hero` 는 안쪽 여백이 없어 본문 상자 값 그대로입니다.
+히어로 자리 `home_hero` 는 본문 폭 기준으로 `contentClass="px-8"`·`contentClassTablet="px-10"`·`contentClassDesktop="max-w-7xl mx-auto px-16"` 를 넘깁니다(폭마다 다른 값은 Tailwind 폭 접두가 아니라 기기별 속성으로 넘기고 히어로 조각이 엔진 `responsive` 로 고릅니다). 홈 본문은 `_user_base` 본문 상자 여백 안에 컨테이너 여백(`px-4`·태블릿 `px-6`·데스크톱 `px-8`)을 한 번 더 두므로, 두 여백을 더한 값이어야 배너가 아래 카드 줄과 같은 폭이 됩니다. 컨테이너 여백을 바꾸면 이 값도 같이 바꿉니다. 쇼핑몰 메인(`shop/index`)의 `shop_hero` 는 안쪽 여백이 없어 본문 상자 값 그대로입니다.
 
 ---
 

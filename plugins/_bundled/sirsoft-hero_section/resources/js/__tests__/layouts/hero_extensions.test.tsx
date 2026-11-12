@@ -102,11 +102,13 @@ describe('사용자 화면 주입 조각', () => {
 
   // @scenario surface=extension_passes_content_class
   // @effects extension_content_class_passed_to_slider
-  it('템플릿이 확장점으로 넘긴 본문 상자 클래스를 슬라이더에 넘기고, 데스크톱은 따로 넘긴 값을 쓴다(없으면 기본 값)', () => {
+  it('템플릿이 확장점으로 넘긴 본문 상자 클래스를 슬라이더에 넘기고, 데스크톱·태블릿은 따로 넘긴 값을 쓴다(없으면 기본 값)', () => {
     for (const { doc } of fragments) {
       const slider = doc.components[0];
       expect(slider.props.contentClass).toBe("{{extensionPointProps?.contentClass ?? ''}}");
       expect(slider.responsive.desktop.props.contentClass).toBe("{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}");
+      // 폭마다 다른 값은 Tailwind 폭 접두 대신 기기별 속성으로 받는다 — 태블릿 값이 없으면 기본 값
+      expect(slider.responsive.tablet.props.contentClass).toBe("{{extensionPointProps?.contentClassTablet ?? extensionPointProps?.contentClass ?? ''}}");
       // 표시 폭은 공개 API 설정(settings.width)으로 받는다
       expect(slider.props.settings).toMatch(/\?\.data\?\.settings}}$/);
     }

@@ -6,9 +6,14 @@
             "name": "sirsoft-hero_section.HeroSlider",
             "responsive": {
                 "desktop": {
-                    "comment": "템플릿이 확장점으로 넘긴 본문 상자 클래스 — 데스크톱은 따로 넘긴 값(없으면 기본 값). 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구·넘김 단추에 쓴다",
+                    "comment": "템플릿이 확장점으로 넘긴 본문 상자 클래스 — 데스크톱·태블릿은 따로 넘긴 값(없으면 기본 값). 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구·넘김 단추에 쓴다",
                     "props": {
                         "contentClass": "{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}"
+                    }
+                },
+                "tablet": {
+                    "props": {
+                        "contentClass": "{{extensionPointProps?.contentClassTablet ?? extensionPointProps?.contentClass ?? ''}}"
                     }
                 }
             },
