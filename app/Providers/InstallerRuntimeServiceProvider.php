@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Support\CoreVersionDiskReader;
+use App\Support\InstallerResidual;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -27,7 +28,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     /**
      * 인스톨러 런타임 파일 경로 (storage/installer/runtime.php).
      */
-    public const RUNTIME_PATH_RELATIVE = 'storage/installer/runtime.php';
+    public const RUNTIME_PATH_RELATIVE = InstallerResidual::RUNTIME_PATH_RELATIVE;
 
     /**
      * 인스톨러 런타임 설정과 beta.7 한시 보정을 등록 단계에서 적용합니다.
@@ -95,8 +96,82 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
             return;
         }
 
+        // 설치가 끝난 사이트에 남은 runtime 파일(지우지 못한 잔여)은 `.env` 를 이기지 않는다 — `.env` 의 빈 칸만 채운다.
+        // 종전에는 이 파일이 있으면 무조건 덮어써, 서버를 옮기며 `.env` 를 고쳐도 옛 DB 로 붙었다.
+        // 설치 중에는 `.env` 가 아직 예시 값이므로 지금처럼 runtime 이 이긴다.
+        if (InstallerResidual::isInstallCompleted(base_path())) {
+            $this->fillBlankEnvKeysFromRuntime($runtime);
+
+            return;
+        }
+
         $this->applyDatabaseConfig($runtime);
         $this->applyAppKey($runtime);
+    }
+
+    /**
+     * 설치 완료 사이트의 잔여 runtime — `.env` 에 비어 있는 칸만 runtime 값으로 채웁니다.
+     *
+     * `.env` 에 값이 적힌 DB 칸은 건드리지 않습니다. 비밀번호는 빈 값이 정상일 수 있어, 계정 이름이 `.env` 에
+     * 적혀 있으면 채우지 않습니다(그 계정의 비밀번호가 빈 것으로 본다).
+     *
+     * 두 가지는 runtime 이 그대로 이깁니다:
+     *   - APP_KEY — 지금까지 암호화에 쓰인 키는 runtime 의 것이다. 다른 키로 바꾸면 암호화된 설정·세션을 읽지 못한다.
+     *   - `.env` 의 DB 계정이 예시 파일 기본값(`root`)이고 runtime 의 계정은 그렇지 않을 때 — 설치 마무리가 `.env` 를
+     *     채우지 못하고 끝난 사이트의 표식이다(#371). 이때 `.env` 를 믿으면 업데이트 도중 DB 에 붙지 못한다.
+     * 둘 다 7.1.6 업그레이드 단계가 `.env` 로 옮기고 runtime 파일을 지우면 사라지는 상태다.
+     *
+     * @param  array<string, mixed>  $runtime  인스톨러 런타임 설정
+     * @return void 반환값 없음
+     */
+    protected function fillBlankEnvKeysFromRuntime(array $runtime): void
+    {
+        $env = InstallerResidual::parseEnvFile(base_path('.env'));
+        $fromRuntime = InstallerResidual::runtimeToEnvMap($runtime);
+        $blank = static fn (string $key): bool => trim((string) ($env[$key] ?? '')) === '';
+
+        $this->applyAppKey($runtime);
+
+        $envAccount = trim((string) ($env['DB_WRITE_USERNAME'] ?? ''));
+        $runtimeAccount = (string) ($fromRuntime['DB_WRITE_USERNAME'] ?? '');
+        if ($envAccount === 'root' && $runtimeAccount !== '' && $runtimeAccount !== 'root') {
+            $this->applyDatabaseConfig($runtime);
+
+            return;
+        }
+
+        // 쓰기 연결 — 채운 값은 읽기 연결이 따라갈 수 있게 기억한다
+        $filledWrite = [];
+        $fields = ['HOST' => 'host', 'PORT' => 'port', 'DATABASE' => 'database', 'USERNAME' => 'username', 'PASSWORD' => 'password'];
+        foreach ($fields as $suffix => $field) {
+            $key = 'DB_WRITE_'.$suffix;
+            if (! $blank($key) || ! array_key_exists($key, $fromRuntime)) {
+                continue;
+            }
+            // 주소가 `.env` 에 있으면 빈 포트는 기본 포트라는 뜻이고, 계정이 있으면 빈 비밀번호는 그 계정의 것이다
+            if (($suffix === 'PORT' && ! $blank('DB_WRITE_HOST')) || ($suffix === 'PASSWORD' && ! $blank('DB_WRITE_USERNAME'))) {
+                continue;
+            }
+            $filledWrite[$suffix] = $fromRuntime[$key];
+            Config::set('database.connections.mysql.write.'.$field, $suffix === 'HOST' ? [$fromRuntime[$key]] : $fromRuntime[$key]);
+        }
+
+        // 읽기 연결 — `.env` 에 없으면 runtime 의 읽기 값, 그것도 없으면 방금 채운 쓰기 값을 따른다
+        foreach ($fields as $suffix => $field) {
+            $key = 'DB_READ_'.$suffix;
+            if (! $blank($key)) {
+                continue;
+            }
+            $value = $fromRuntime[$key] ?? $filledWrite[$suffix] ?? null;
+            if ($value === null) {
+                continue;
+            }
+            Config::set('database.connections.mysql.read.'.$field, $suffix === 'HOST' ? [$value] : $value);
+        }
+
+        if ($blank('DB_PREFIX') && array_key_exists('DB_PREFIX', $fromRuntime)) {
+            Config::set('database.connections.mysql.prefix', $fromRuntime['DB_PREFIX']);
+        }
     }
 
     /**
@@ -365,38 +440,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      */
     private function parseEnvFile(string $envPath): array
     {
-        $content = @file_get_contents($envPath);
-        if ($content === false) {
-            return [];
-        }
-
-        $lines = preg_split('/\r\n|\r|\n/', $content);
-        if ($lines === false) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($lines as $line) {
-            $trimmed = ltrim($line);
-            if ($trimmed === '' || $trimmed[0] === '#' || $trimmed[0] === ';') {
-                continue;
-            }
-            $eqPos = strpos($trimmed, '=');
-            if ($eqPos === false || $eqPos === 0) {
-                continue;
-            }
-            $key = rtrim(substr($trimmed, 0, $eqPos));
-            if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key)) {
-                continue;
-            }
-            $value = substr($trimmed, $eqPos + 1);
-            // 줄 끝의 행간 공백 제거 (인용된 값은 인용부호 안의 내용 보존)
-            $value = rtrim($value, " \t");
-            $value = $this->unwrapEnvValue($value);
-            $result[$key] = $value;
-        }
-
-        return $result;
+        return InstallerResidual::parseEnvFile($envPath);
     }
 
     /**
@@ -407,16 +451,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      */
     private function unwrapEnvValue(string $value): string
     {
-        $length = strlen($value);
-        if ($length >= 2) {
-            $first = $value[0];
-            $last = $value[$length - 1];
-            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
-                return substr($value, 1, $length - 2);
-            }
-        }
-
-        return $value;
+        return InstallerResidual::unwrapEnvValue($value);
     }
 
     /**

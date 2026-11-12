@@ -5,7 +5,7 @@
  * 다중 통화를 지원하며, 할인율 뱃지를 표시합니다.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -16,11 +16,23 @@ import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { H3 } from '../basic/H3';
 import { Img } from '../basic/Img';
+import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
 import { LinkButton } from '../../support/LinkButton';
 import { solidChipColors } from '../../support/accessibleColor';
 import { sanitizeDeferred } from '../../support/inlineStyleDeferral';
 import { mergeQueryIntoHref, useLocationSearch } from '../../support/navigationLink';
+import { getWishlistOverride, subscribeWishlistOverrides } from '../../support/wishlistOverrides';
+import { quickAddToCartHandler, toggleWishlistQuickHandler } from '../../handlers/productQuickActions';
+
+const t = (key: string, params?: Record<string, string | number>): string =>
+  (window as any).G7Core?.t?.(key, params) ?? key;
+
+/**
+ * 레이아웃 편집기 미리보기 화면인가 — 엔진은 미리보기에서 `_global.__isPreview` 를 세운다.
+ * 미리보기에서 담기·찜을 누르면 실제 장바구니·찜 목록이 바뀌므로 단추를 그리기만 한다.
+ */
+const isLayoutPreview = (): boolean => !!(window as any).G7Core?.state?.get?.()?.__isPreview;
 
 /**
  * 선호 통화를 전역 상태에서 읽고, 변경을 구독하는 훅.
@@ -110,7 +122,23 @@ interface ProductCardProps {
     rating_avg?: number;
     /** 전시중 리뷰 수 */
     review_count?: number;
+    /** 로그인 회원의 찜 여부 — 값을 모르는 응답(옛 이커머스·비회원 캐시)에는 없다 */
+    is_wishlisted?: boolean;
+    /** 옵션 상품 여부 */
+    has_options?: boolean;
+    /** 구매할 수 있는 옵션 수 (0 이면 담을 수 없다) */
+    options_count?: number;
+    /** 추가옵션 유무 */
+    has_additional_options?: boolean;
+    /** 최소 구매 수량 */
+    min_purchase_qty?: number;
   };
+  /**
+   * 카드 위 장바구니·찜 단추 표시 여부 (기본 true).
+   *
+   * 같은 자리에 제 단추를 둔 화면(마이페이지 찜 목록의 찜 해제 단추)은 false 로 끈다.
+   */
+  showActions?: boolean;
   /** 클릭 시 호출되는 콜백 */
   onClick?: (productId: number) => void;
   /** 쇼핑몰 base 경로 (예: '/shop', '/store', '/') */
@@ -185,9 +213,106 @@ const getStarTypes = (avg: number): Array<'full' | 'half' | 'empty'> => {
   });
 };
 
+/** 카드 위 둥근 단추 공통 모양 — 이미지 위에 놓이므로 반투명 바탕으로 어느 사진 위에서도 보이게 한다 */
+const ACTION_BUTTON_CLASS =
+  'inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
+
+interface ProductCardActionsProps {
+  product: ProductCardProps['product'];
+  /** 상품 이름 (단추 이름에 넣는다) */
+  name: string;
+  /** 편집기·미리보기 — 그리기만 하고 동작하지 않는다 */
+  inert: boolean;
+}
+
+/**
+ * 카드 위 장바구니·찜 단추
+ *
+ * 카드 본체가 링크라 단추를 그 안에 넣을 수 없다(대화형 요소 중첩). 카드의 형제로 이미지 오른쪽 위에 겹쳐 놓는다.
+ * - 찜 단추는 찜 여부를 아는 응답에서만 그린다 — 모르는 채 누르면 이미 찜한 상품이 해제될 수 있다.
+ * - 담기 단추는 판매 중이고 구매할 수 있는 옵션이 있는 상품에만 그린다.
+ */
+const ProductCardActions: React.FC<ProductCardActionsProps> = ({ product, name, inert }) => {
+  const [cartBusy, setCartBusy] = useState(false);
+  const [wishBusy, setWishBusy] = useState(false);
+  const override = useSyncExternalStore(
+    subscribeWishlistOverrides,
+    () => getWishlistOverride(product.id),
+    () => undefined,
+  );
+
+  const wishKnown = typeof product.is_wishlisted === 'boolean';
+  const wished = override ?? product.is_wishlisted === true;
+  const canAdd = product.sales_status === 'on_sale' && product.options_count !== 0;
+
+  if (!wishKnown && !canAdd) return null;
+
+  const stop = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleCart = async (event: React.MouseEvent) => {
+    stop(event);
+    if (inert || cartBusy) return;
+    setCartBusy(true);
+    try {
+      await quickAddToCartHandler({ params: { product } });
+    } finally {
+      setCartBusy(false);
+    }
+  };
+
+  const handleWish = async (event: React.MouseEvent) => {
+    stop(event);
+    if (inert || wishBusy) return;
+    setWishBusy(true);
+    try {
+      await toggleWishlistQuickHandler({ params: { product } });
+    } finally {
+      setWishBusy(false);
+    }
+  };
+
+  return (
+    <Div data-card-actions="" className="absolute top-2 right-2 z-10 flex flex-col gap-2">
+      {wishKnown && (
+        <Button
+          type="button"
+          data-card-action="wishlist"
+          aria-label={t('shop.product_card.wishlist', { name })}
+          aria-pressed={wished}
+          disabled={wishBusy}
+          onClick={handleWish}
+          className={ACTION_BUTTON_CLASS}
+        >
+          {wishBusy ? (
+            <Icon name="spinner" className="animate-spin" />
+          ) : (
+            <Icon name="heart" iconStyle={wished ? 'solid' : 'regular'} className={wished ? 'text-red-500 dark:text-red-400' : ''} />
+          )}
+        </Button>
+      )}
+      {canAdd && (
+        <Button
+          type="button"
+          data-card-action="cart"
+          aria-label={t('shop.product_card.add_to_cart', { name })}
+          disabled={cartBusy}
+          onClick={handleCart}
+          className={ACTION_BUTTON_CLASS}
+        >
+          <Icon name={cartBusy ? 'spinner' : 'shopping-cart'} className={cartBusy ? 'animate-spin' : ''} />
+        </Button>
+      )}
+    </Div>
+  );
+};
+
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
+  showActions = true,
   shopBase = '/shop',
   preserveListQuery = false,
   className = '',
@@ -251,7 +376,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
-  const cardClassName = `block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`;
+  const inEditor = (editorAttrs !== undefined && editorAttrs !== null) || isLayoutPreview();
+  const actions = showActions ? <ProductCardActions product={product} name={displayName} inert={inEditor} /> : null;
+
+  const cardClassName = `block w-full h-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`;
 
   const content = (
     <>
@@ -379,24 +507,30 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   // 상세로 가는 카드는 링크 — 가운데 클릭·Ctrl+클릭으로 새 탭에 연다(#757). 목록 문맥을 승계하면 href 에도 같은 쿼리를 싣는다.
   // 레이아웃이 onClick 으로 따로 처리하는 카드는 주소를 알 수 없으므로 단추 그대로다.
+  // 겉 칸이 편집기 식별 속성과 id 를 받고, 카드 본체(링크·단추)와 장바구니·찜 단추가 그 안의 형제로 선다 —
+  // 단추를 링크 안에 넣으면 대화형 요소가 겹쳐 키보드·보조 기술이 둘을 가르지 못한다.
   if (onClick) {
     return (
-      <Button onClick={handleClick} className={cardClassName} id={id} {...editorAttrs}>
-        {content}
-      </Button>
+      <Div className="relative h-full" id={id} {...(editorAttrs as Record<string, unknown>)}>
+        <Button onClick={handleClick} className={cardClassName}>
+          {content}
+        </Button>
+        {actions}
+      </Div>
     );
   }
 
   return (
-    <LinkButton
-      href={preserveListQuery ? mergeQueryIntoHref(detailPath) : detailPath}
-      onNavigate={handleClick}
-      className={cardClassName}
-      id={id}
-      {...(editorAttrs as Record<string, unknown>)}
-    >
-      {content}
-    </LinkButton>
+    <Div className="relative h-full" id={id} {...(editorAttrs as Record<string, unknown>)}>
+      <LinkButton
+        href={preserveListQuery ? mergeQueryIntoHref(detailPath) : detailPath}
+        onNavigate={handleClick}
+        className={cardClassName}
+      >
+        {content}
+      </LinkButton>
+      {actions}
+    </Div>
   );
 };
 

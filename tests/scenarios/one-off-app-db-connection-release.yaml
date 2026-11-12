@@ -1,0 +1,23 @@
+feature: 캐시를 굽는 일회용 앱의 DB 연결 닫기
+
+description: |
+  `config:cache`·`route:cache` 는 새 Application 을 부팅해 설정·라우트를 다시 읽고, 그 부팅이 DB 에 연결한다.
+  그 연결을 닫지 않아 캐시를 한 번 구울 때마다 프로세스에 연결이 하나씩 남았다(로컬 실측: 한 프로세스에서
+  설정·라우트 캐시를 번갈아 10번 구워 연결 +10, 수정 뒤 +0). 코어 업데이트의 「함께 온 확장 일괄 업데이트」는
+  한 프로세스에서 확장마다 두 캐시를 다시 구우므로, 확장이 많으면 DB 의 동시 연결 한도를 넘겼다.
+
+  굽기가 끝나면 일회용 앱이 연 연결만 닫는다. 실행 중인 앱의 연결과 트랜잭션이 열린 연결은 건드리지 않는다.
+
+axes:
+  case: [one_off_app_connected, one_off_app_in_transaction, no_one_off_app, close_throws, one_off_app_rebinds_eloquent, one_off_app_rebinds_paginator]
+
+effects:
+  - one_off_app_connections_are_closed            # 일회용 앱의 연결을 닫고 컨테이너를 되돌림
+  - open_transaction_connection_is_left_alone     # 트랜잭션이 열린 연결은 그대로
+  - running_app_connections_are_never_closed      # 실행 중인 앱의 연결은 건드리지 않음
+  - close_failure_does_not_break_cache_rebuild    # 닫기 실패가 굽기를 깨지 않음
+  - eloquent_resolver_and_dispatcher_point_back_to_running_app  # 모델 연결 해석기·이벤트 디스패처를 되돌림
+  - paginator_resolvers_point_back_to_running_app  # 페이지네이터 해석기를 되돌림
+
+test_files:
+  - tests/Unit/Support/ConfigCacheHelperConnectionReleaseTest.php

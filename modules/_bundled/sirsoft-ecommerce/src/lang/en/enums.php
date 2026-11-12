@@ -17,6 +17,7 @@ return [
         'order_cancel_restore' => 'Order Cancel Restore',
         'earn_cancel' => 'Earn Cancel',
         'refund_credit' => 'Refund Credit',
+        'signup_earn' => 'Signup Bonus',
     ],
 
     // Mileage earn trigger (matches MileageEarnTriggerEnum values)

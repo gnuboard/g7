@@ -2,7 +2,7 @@
     "comment": "목록 위의 검색·정렬 줄. 모든 조건이 URL 쿼리로 나가므로 이 조각은 목록을 직접 다시 받지 않는다 —\n     주소가 바뀌면 목록 데이터소스가 알아서 따라온다.",
     "meta": {
         "is_partial": true,
-        "description": "검색 바 + 정렬 바 (검색 입력, 총 상품 수, 초기화, 정렬)"
+        "description": "검색 바 + 정렬 줄 (검색 입력, 총 상품 수, 초기화, 품절 제외, 정렬)"
     },
     "type": "basic",
     "name": "Div",
@@ -44,102 +44,8 @@
             }
         },
         {
-            "comment": "정렬 바 (총 상품 수 + 초기화 + 정렬)",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50"
-            },
-            "children": [
-                {
-                    "comment": "총 상품 수",
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                        "className": "text-sm font-semibold text-gray-700 dark:text-gray-300"
-                    },
-                    "text": "$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}"
-                },
-                {
-                    "comment": "오른쪽: 초기화 버튼 + 정렬",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex items-center gap-2"
-                    },
-                    "children": [
-                        {
-                            "comment": "전체 초기화 버튼 (필터 적용 시에만 표시)",
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{!!query.category || !!query.keyword}}",
-                            "actions": [
-                                {
-                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색어·카테고리·정렬·페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
-                                    "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "{{_global.shopBase}}/products",
-                                        "query": {}
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                            },
-                            "text": "$t:shop.reset_all"
-                        },
-                        {
-                            "comment": "정렬 Select",
-                            "type": "basic",
-                            "name": "Select",
-                            "actions": [
-                                {
-                                    "type": "change",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "{{_global.shopBase}}/products",
-                                        "mergeQuery": true,
-                                        "query": {
-                                            "sort": "{{$event.target.value}}",
-                                            "page": "1"
-                                        }
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "name": "sort",
-                                "aria-label": "$t:common.sort_order",
-                                "value": "{{query.sort ?? 'latest'}}",
-                                "className": "h-9 w-32",
-                                "options": [
-                                    {
-                                        "value": "latest",
-                                        "label": "$t:shop.sort.latest"
-                                    },
-                                    {
-                                        "value": "sales",
-                                        "label": "$t:shop.sort.sales"
-                                    },
-                                    {
-                                        "value": "reviews",
-                                        "label": "$t:shop.sort.reviews"
-                                    },
-                                    {
-                                        "value": "price_asc",
-                                        "label": "$t:shop.sort.price_asc"
-                                    },
-                                    {
-                                        "value": "price_desc",
-                                        "label": "$t:shop.sort.price_desc"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            ]
+            "comment": "정렬 줄(총 상품 수·초기화·품절 제외·정렬) — 분류 화면과 같이 쓰는 조각",
+            "partial": "partials/shop/list/_sort_bar.json"
         }
     ]
 }

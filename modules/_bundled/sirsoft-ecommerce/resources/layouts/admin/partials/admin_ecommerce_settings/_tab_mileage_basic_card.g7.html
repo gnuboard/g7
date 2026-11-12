@@ -44,5 +44,45 @@
       </div>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger_hint</p>
     </div>
+    <!-- 가입 적립금 -->
+    <div data-ref="mileage_signup_earn" class="border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
+      <div class="flex-between">
+        <div>
+          <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.policy.signup_earn</label>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.policy.signup_earn_hint</p>
+        </div>
+        <toggle data-type="composite" name="mileage.signup_earn_enabled" value="{{_local.form?.mileage?.signup_earn_enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <!-- audit:allow layout-input-boundary-hardcoded 금액의 하한 0 은 저장 규칙(min:0)과 같은 고정값이다 -->
+        <input type="number" name="mileage.signup_earn_amount" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.policy.signup_earn_amount" value="{{_local.form?.mileage?.signup_earn_amount ?? 0}}" min="0" step="100" class="input w-32 text-right" disabled="{{_computed.isReadOnly || !(_local.form?.mileage?.signup_earn_enabled ?? false)}}"/>
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.policy.point_unit</span>
+      </div>
+      <span data-if="{{_local.errors?.['mileage.signup_earn_amount']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['mileage.signup_earn_amount']?.[0] ?? ''}}</span>
+    </div>
+    <!-- 적립금을 쓴 주문은 구매 적립 없음 -->
+    <div data-ref="mileage_no_earn_when_points_used" class="flex-between border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.policy.no_earn_when_points_used</label>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.policy.no_earn_when_points_used_hint</p>
+      </div>
+      <toggle data-type="composite" name="mileage.no_earn_when_points_used" value="{{_local.form?.mileage?.no_earn_when_points_used ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+    </div>
+    <!-- 상품 합계가 기준 미만이면 사용 불가 -->
+    <div data-ref="mileage_min_product_total_for_use" class="border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
+      <div class="flex-between">
+        <div>
+          <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use</label>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use_hint</p>
+        </div>
+        <toggle data-type="composite" name="mileage.min_product_total_for_use_enabled" value="{{_local.form?.mileage?.min_product_total_for_use_enabled ?? false}}" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <div class="flex items-center gap-2 mt-2">
+        <!-- audit:allow layout-input-boundary-hardcoded 금액의 하한 0 은 저장 규칙(min:0)과 같은 고정값이다 -->
+        <input type="number" name="mileage.min_product_total_for_use" aria-label="$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use_amount" value="{{_local.form?.mileage?.min_product_total_for_use ?? 0}}" min="0" step="1000" class="input w-32 text-right" disabled="{{_computed.isReadOnly || !(_local.form?.mileage?.min_product_total_for_use_enabled ?? false)}}"/>
+        <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use_suffix</span>
+      </div>
+      <span data-if="{{_local.errors?.['mileage.min_product_total_for_use']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['mileage.min_product_total_for_use']?.[0] ?? ''}}</span>
+    </div>
   </div>
 </partial>

@@ -44,7 +44,7 @@ class PurgeCommand extends Command
         if (! $this->unifiedConfirm(__('analytics.console.purge.confirm'))) {
             $this->info(__('analytics.console.purge.cancelled'));
 
-            return self::SUCCESS;
+            return $this->confirmAbortExitCode();
         }
 
         $counts = $service->purgeAll();

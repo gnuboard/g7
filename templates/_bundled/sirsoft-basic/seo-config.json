@@ -63,7 +63,8 @@
                     "children": [
                         { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
                         { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular", "if": "{boardEnabled|maxVisibleBoards}" },
-                        { "tag": "a", "attrs": { "href": "{shopProductsHref}" }, "content": "$t:nav.shop", "if": "{shopEnabled|maxVisibleBoards}" }
+                        { "tag": "a", "attrs": { "href": "{shopProductsHref}" }, "content": "$t:nav.shop", "if": "{shopEnabled|maxVisibleBoards}" },
+                        { "tag": "a", "attrs": { "href": "{shopReviewsHref}" }, "content": "$t:nav.reviews", "if": "{shopEnabled|maxVisibleBoards}" }
                     ]
                 },
                 {
@@ -124,6 +125,28 @@
                         }
                     ]
                 },
+                {
+                    "tag": "div",
+                    "if": "{businessInfo.company_name|businessInfo.business_number}",
+                    "children": [
+                        { "tag": "span", "content": "$t:footer.business.company_name", "if": "{businessInfo.company_name}" },
+                        { "tag": "span", "content": "{businessInfo.company_name}", "if": "{businessInfo.company_name}" },
+                        { "tag": "span", "content": "$t:footer.business.ceo_name", "if": "{businessInfo.ceo_name}" },
+                        { "tag": "span", "content": "{businessInfo.ceo_name}", "if": "{businessInfo.ceo_name}" },
+                        { "tag": "span", "content": "$t:footer.business.address", "if": "{businessInfo.base_address}" },
+                        { "tag": "span", "content": "{businessInfo.base_address} {businessInfo.detail_address}", "if": "{businessInfo.base_address}" },
+                        { "tag": "span", "content": "$t:footer.business.phone", "if": "{businessInfo.phone}" },
+                        { "tag": "span", "content": "{businessInfo.phone}", "if": "{businessInfo.phone}" },
+                        { "tag": "span", "content": "$t:footer.business.email", "if": "{businessInfo.email}" },
+                        { "tag": "span", "content": "{businessInfo.email}", "if": "{businessInfo.email}" },
+                        { "tag": "span", "content": "$t:footer.business.business_number", "if": "{businessInfo.business_number}" },
+                        { "tag": "span", "content": "{businessInfo.business_number}", "if": "{businessInfo.business_number}" },
+                        { "tag": "span", "content": "$t:footer.business.mail_order_number", "if": "{businessInfo.mail_order_number}" },
+                        { "tag": "span", "content": "{businessInfo.mail_order_number}", "if": "{businessInfo.mail_order_number}" },
+                        { "tag": "span", "content": "$t:footer.business.hosting_provider", "if": "{businessInfo.hosting_provider}" },
+                        { "tag": "span", "content": "{businessInfo.hosting_provider}", "if": "{businessInfo.hosting_provider}" }
+                    ]
+                },
                 { "tag": "p", "content": "© {siteName}. All rights reserved." },
                 { "tag": "p", "content": "Powered by 그누보드7" }
             ]
@@ -132,7 +155,7 @@
             "type": "fields",
             "source": "$props_source",
             "link": {
-                "href": "/products/{id}",
+                "href": "/products/{product_code|id}",
                 "base_url": "$var:shopBase"
             },
             "fields": [
@@ -258,6 +281,14 @@
             "tag": "div",
             "skip": true
         },
+        "MobileBuyBar": {
+            "tag": "div",
+            "skip": true
+        },
+        "BottomSheet": {
+            "tag": "div",
+            "skip": true
+        },
         "Tooltip": {
             "tag": "span"
         },
@@ -339,6 +370,12 @@
         },
         "ExpandableContent": {
             "tag": "div"
+        },
+        "ProductRail": {
+            "tag": "section"
+        },
+        "ChipRows": {
+            "tag": "nav"
         },
         "ThemeToggle": {
             "tag": "div",

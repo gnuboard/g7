@@ -18,8 +18,12 @@
 
 import { describe, it, expect } from 'vitest';
 import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
-import purchaseCardJson from '../../layouts/partials/shop/detail/_purchase_card.json';
-import cartSummaryJson from '../../layouts/partials/shop/_cart_summary.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../helpers/inlineNamedActions';
+import purchaseCardJsonRaw from '../../layouts/partials/shop/detail/_purchase_card.json';
+const purchaseCardJson = inlineNamedActions(purchaseCardJsonRaw);
+import cartSummaryJsonRaw from '../../layouts/partials/shop/_cart_summary.json';
+const cartSummaryJson = inlineNamedActions(cartSummaryJsonRaw, 'shop/cart.json');
 import loginJson from '../../layouts/auth/login.json';
 import checkoutSummaryJson from '../../layouts/partials/shop/_checkout_summary.json';
 import checkoutOrdererJson from '../../layouts/partials/shop/_checkout_orderer.json';

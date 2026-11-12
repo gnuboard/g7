@@ -2173,7 +2173,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원이 마이페이지 주문내역에서 본인 주문 목록을 상태별 통계와 함께 페이지네이션 조회합니다. `auth:sanctum` 인증이 필요하며, `User\OrderController@index`가 `user_id`를 본인으로 고정한 뒤 `OrderService::getList()`와 `getUserStatistics()`를 호출해 `UserOrderCollection`으로 반환합니다. `status`로 특정 주문상태만 필터링할 수 있습니다. 관리자 목록과 달리 항상 본인 주문으로만 한정됩니다.
+**설명** 회원이 마이페이지 주문내역에서 본인 주문 목록을 상태별 통계와 함께 페이지네이션 조회합니다. `auth:sanctum` 인증이 필요하며, `User\OrderController@index`가 `user_id`를 본인으로 고정한 뒤 `OrderService::getList()`와 `getUserStatistics()`를 호출해 `UserOrderCollection`으로 반환합니다. `status`로 특정 주문상태만 필터링할 수 있습니다. 관리자 목록과 달리 항상 본인 주문으로만 한정됩니다. 각 주문에는 대표 배송의 송장 정보 `shipping`(`carrier_name`·`tracking_number`·`tracking_url`)이 실립니다. `tracking_url` 은 주문 상세와 같은 규칙(택배사의 조회 주소 틀에 송장 번호를 넣음)으로 만들며, 송장·택배사가 없으면 `null` 입니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/user/orders

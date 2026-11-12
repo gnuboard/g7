@@ -1055,6 +1055,94 @@
                                             "text": "{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}"
                                         }
                                     ]
+                                },
+                                {
+                                    "id": "field_hosting_provider",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "form-group"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "basic_info.hosting_provider",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider_placeholder",
+                                                "className": "{{_local.errors?.['basic_info.hosting_provider'] ? 'input input-error' : 'input'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['basic_info.hosting_provider']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['basic_info.hosting_provider']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "field_show_business_footer",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "form-group"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "form-label"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "form-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer_hint"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "props": {
+                                                        "name": "basic_info.show_business_footer",
+                                                        "value": "{{_local.form?.basic_info?.show_business_footer ?? true}}",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         }

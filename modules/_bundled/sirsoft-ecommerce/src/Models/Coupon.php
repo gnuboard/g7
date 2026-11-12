@@ -23,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\DecimalTrim;
 
 /**
  * 쿠폰 모델
@@ -248,13 +249,13 @@ class Coupon extends Model implements FulltextSearchable
         // 정률
         if ($this->discount_max_amount) {
             return __('sirsoft-ecommerce::messages.coupons.benefit_rate_with_max_format', [
-                'rate' => $this->discount_value,
+                'rate' => DecimalTrim::trim($this->discount_value),
                 'max' => ecommerce_format_price($this->discount_max_amount),
             ]);
         }
 
         return __('sirsoft-ecommerce::messages.coupons.benefit_rate_format', [
-            'rate' => $this->discount_value,
+            'rate' => DecimalTrim::trim($this->discount_value),
         ]);
     }
 
@@ -287,7 +288,7 @@ class Coupon extends Model implements FulltextSearchable
         if ($this->discount_max_amount) {
             foreach ($converter->convertToMultiCurrency((int) $this->discount_max_amount) as $code => $max) {
                 $result[$code] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_with_max_format', [
-                    'rate' => $this->discount_value,
+                    'rate' => DecimalTrim::trim($this->discount_value),
                     'max' => $max['formatted'],
                 ]);
             }
@@ -297,7 +298,7 @@ class Coupon extends Model implements FulltextSearchable
 
         // 정률(최대금액 없음): 전 통화 동일 문자열. 기본 통화 코드 1건만 채워 폴백 기준 제공.
         $result[$converter->getDefaultCurrency()] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_format', [
-            'rate' => $this->discount_value,
+            'rate' => DecimalTrim::trim($this->discount_value),
         ]);
 
         return $result;

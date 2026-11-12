@@ -1464,6 +1464,15 @@ return [
         'claim.refund_reasons.*.code' => '返金理由コード',
         'claim.refund_reasons.*.name' => '返金理由名',
         'claim.refund_reasons.*.fault_type' => '返金理由帰責区分',
+        'review_settings.author_name_masking' => '公開レビューの投稿者名マスク',
+        'basic_info.hosting_provider' => 'ホスティングサービス提供者',
+        'basic_info.show_business_footer' => '事業者情報の表示',
+        'mileage.signup_earn_enabled' => '会員登録積立金を使用',
+        'mileage.signup_earn_amount' => '会員登録積立金',
+        'mileage.no_earn_when_points_used' => 'マイレージ使用注文の積立除外',
+        'mileage.min_product_total_for_use_enabled' => '利用可能な最低商品合計を使用',
+        'mileage.min_product_total_for_use' => '利用可能な最低商品合計',
+        'product_total' => '商品合計',
     ],
     'custom' => [
         'basic_info' => [
@@ -2268,5 +2277,25 @@ return [
     'identity_policy' => [
         'target_not_owned' => 'イーコマースの本人認証ポリシーはイーコマースの地点のみを対象にできます。フック・カスタム範囲は「sirsoft-ecommerce.」、ルート範囲は「api.modules.sirsoft-ecommerce.」で始まる必要があります。',
         'nothing_to_update' => '変更する項目がありません。',
+    ],
+    'settings_attributes' => [
+        'hosting_provider' => 'ホスティングサービス提供者',
+        'show_business_footer' => '事業者情報の表示',
+        'author_name_masking' => '公開レビューの投稿者名マスク',
+        'signup_earn_enabled' => '会員登録積立金を使用',
+        'signup_earn_amount' => '会員登録積立金',
+        'no_earn_when_points_used' => 'マイレージ使用注文の積立除外',
+        'min_product_total_for_use_enabled' => '利用可能な最低商品合計を使用',
+        'min_product_total_for_use' => '利用可能な最低商品合計',
+        'product_total' => '商品合計',
+    ],
+    'user_coupon_attributes' => [
+        'coupon_ids' => 'クーポン番号リスト',
+    ],
+    'public_list_attributes' => [
+        'sort' => '並び替え基準',
+        'photo_only' => '写真レビューのみ表示',
+        'rating' => '評価',
+        'exclude_sold_out' => '品切れを除く',
     ],
 ];

@@ -1,0 +1,482 @@
+{
+    "comment": "후기 카드 한 장 — 상품 상세 후기 탭과 리뷰 모아보기 화면이 같이 쓴다. 반복 변수 `review` 와\n     별 다섯 개 목록(`_local.starList`)은 include 하는 쪽이 준다. 사진 단추는 전역의 큰 사진 창\n     (review_image_modal)을 여므로, include 하는 화면이 그 창을 선언해야 한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "후기 카드 (작성자·별점·옵션·본문·사진·판매자 답변)"
+    },
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "p-4 mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+    },
+    "children": [
+        {
+            "comment": "카드 헤더: 좌측(Avatar+이름+날짜) / 우측(별점)",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-start justify-between mb-3"
+            },
+            "children": [
+                {
+                    "comment": "작성자 정보",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "작성자 표시 이름 — 회원 후기는 회원 이름, 회원 없이 등록된 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로.\n             author_name 이 없는 옛 응답(이커머스 1.4.0 미만)은 회원 이름으로",
+                            "type": "composite",
+                            "name": "Avatar",
+                            "props": {
+                                "name": "{{review.author_name ?? review.user?.name ?? '?'}}",
+                                "avatar": "{{review.user?.avatar ?? null}}",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-medium text-sm text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{review.author_name ?? review.user?.name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "{{review.created_at}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "별점 (우측)",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-0.5 shrink-0"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "iteration": {
+                                "source": "{{_local.starList}}",
+                                "item_var": "star"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "star",
+                                        "size": "sm",
+                                        "className": "{{star <= review.rating ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "옵션 스냅샷 배지 (option_snapshot.option_values 배열에서 직접 표시)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{review.option_snapshot?.option_values?.length > 0}}",
+            "props": {
+                "className": "flex flex-wrap gap-1 mb-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "iteration": {
+                        "source": "{{review.option_snapshot?.option_values ?? []}}",
+                        "item_var": "opt"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
+                            "props": {
+                                "className": "inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
+                            },
+                            "text": "{{$localized(opt.key)}}: {{$localized(opt.value)}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "if": "{{review.content_mode !== 'html'}}",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300 mb-3 text-sm"
+            },
+            "text": "{{review.content}}"
+        },
+        {
+            "comment": "HTML 본문(다른 쇼핑몰에서 이관한 후기) — 서버가 저장 때 정화했고 컴포넌트가 한 번 더 정화한다",
+            "type": "composite",
+            "name": "HtmlContent",
+            "if": "{{review.content_mode === 'html'}}",
+            "props": {
+                "content": "{{review.content ?? ''}}",
+                "isHtml": true,
+                "className": "text-gray-700 dark:text-gray-300 mb-3 text-sm prose prose-sm dark:prose-invert max-w-none"
+            }
+        },
+        {
+            "comment": "리뷰 이미지 (최대 4개, 초과 시 +N 오버레이) — 사진마다 단추라 Tab 으로 닿고 Enter·Space 로 큰 사진 창을 그 사진부터 연다(7.1.1 — 종전 클릭만 받는 img). 사진은 장식(alt 빈 값)이고 이름은 단추의 aria-label(몇 번째 사진인지)이 맡는다",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{review.image_count > 0}}",
+            "props": {
+                "className": "flex gap-2 mt-3"
+            },
+            "children": [
+                {
+                    "comment": "이미지 1",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{(review.images ?? []).length > 0}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reviewImageIndex": 0,
+                                        "reviewForModal": {
+                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
+                                            "userAvatar": "{{review.user?.avatar ?? null}}",
+                                            "rating": "{{review.rating}}",
+                                            "createdAt": "{{review.created_at}}",
+                                            "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
+                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
+                                            "images": "{{review.images ?? []}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "review_image_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "aria-label": "$t:shop.product.review_image_open|n=1",
+                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Img",
+                            "props": {
+                                "src": "{{review.images[0].download_url}}",
+                                "alt": "",
+                                "className": "w-full h-full object-cover"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "이미지 2",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{(review.images ?? []).length > 1}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reviewImageIndex": 1,
+                                        "reviewForModal": {
+                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
+                                            "userAvatar": "{{review.user?.avatar ?? null}}",
+                                            "rating": "{{review.rating}}",
+                                            "createdAt": "{{review.created_at}}",
+                                            "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
+                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
+                                            "images": "{{review.images ?? []}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "review_image_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "aria-label": "$t:shop.product.review_image_open|n=2",
+                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Img",
+                            "props": {
+                                "src": "{{review.images[1].download_url}}",
+                                "alt": "",
+                                "className": "w-full h-full object-cover"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "이미지 3",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{(review.images ?? []).length > 2}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reviewImageIndex": 2,
+                                        "reviewForModal": {
+                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
+                                            "userAvatar": "{{review.user?.avatar ?? null}}",
+                                            "rating": "{{review.rating}}",
+                                            "createdAt": "{{review.created_at}}",
+                                            "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
+                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
+                                            "images": "{{review.images ?? []}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "review_image_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "aria-label": "$t:shop.product.review_image_open|n=3",
+                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Img",
+                            "props": {
+                                "src": "{{review.images[2].download_url}}",
+                                "alt": "",
+                                "className": "w-full h-full object-cover"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "이미지 4 (4장 정확히일 때 일반 이미지)",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{(review.images ?? []).length == 4}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reviewImageIndex": 3,
+                                        "reviewForModal": {
+                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
+                                            "userAvatar": "{{review.user?.avatar ?? null}}",
+                                            "rating": "{{review.rating}}",
+                                            "createdAt": "{{review.created_at}}",
+                                            "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
+                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
+                                            "images": "{{review.images ?? []}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "review_image_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "aria-label": "$t:shop.product.review_image_open|n=4",
+                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Img",
+                            "props": {
+                                "src": "{{review.images[3].download_url}}",
+                                "alt": "",
+                                "className": "w-full h-full object-cover"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "+N 오버레이 (5장 이상일 때 4번째 자리)",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{(review.images ?? []).length >= 5}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reviewImageIndex": 3,
+                                        "reviewForModal": {
+                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
+                                            "userAvatar": "{{review.user?.avatar ?? null}}",
+                                            "rating": "{{review.rating}}",
+                                            "createdAt": "{{review.created_at}}",
+                                            "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
+                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
+                                            "images": "{{review.images ?? []}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "review_image_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "aria-label": "$t:shop.product.review_image_open_more|n=4|count={{(review.images ?? []).length - 3}}",
+                        "className": "relative w-20 h-20 shrink-0 cursor-pointer rounded-lg overflow-hidden"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Img",
+                            "props": {
+                                "src": "{{review.images[3].download_url}}",
+                                "alt": "",
+                                "className": "w-full h-full object-cover"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg",
+                                "aria-hidden": "true"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-white font-semibold text-sm"
+                                    },
+                                    "text": "+{{(review.images ?? []).length - 3}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "판매자 답변 (이미지3: 날짜 추가)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{review.has_reply}}",
+            "props": {
+                "className": "mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border-l-4 border-gray-400 dark:border-gray-500"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-between mb-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs font-semibold text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:shop.product.seller_reply"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "{{review.replied_at}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{review.reply_content_mode !== 'html'}}",
+                    "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "{{review.reply_content}}"
+                },
+                {
+                    "type": "composite",
+                    "name": "HtmlContent",
+                    "if": "{{review.reply_content_mode === 'html'}}",
+                    "props": {
+                        "content": "{{review.reply_content ?? ''}}",
+                        "isHtml": true,
+                        "className": "text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none"
+                    }
+                }
+            ]
+        }
+    ]
+}

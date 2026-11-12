@@ -294,11 +294,11 @@ return [
         ],
         'list_price' => [
             'required' => 'Please enter the list price.',
-            'min' => 'List price must be 1 or greater.',
+            'min' => 'List price must be 0 or greater.',
         ],
         'selling_price' => [
             'required' => 'Please enter the selling price.',
-            'min' => 'Selling price must be 1 or greater.',
+            'min' => 'Selling price must be 0 or greater.',
             'lte' => 'Selling price must be less than or equal to the list price.',
         ],
         'stock_quantity' => [
@@ -1373,6 +1373,26 @@ return [
     ],
 
     // User coupon validation messages
+    'settings_attributes' => [
+        'hosting_provider' => 'Hosting Provider',
+        'show_business_footer' => 'Show Business Information',
+        'author_name_masking' => 'Public Review Author Name Masking',
+        'signup_earn_enabled' => 'Signup Bonus Enabled',
+        'signup_earn_amount' => 'Signup Bonus Amount',
+        'no_earn_when_points_used' => 'No Earning When Mileage Is Used',
+        'min_product_total_for_use_enabled' => 'Minimum Product Total for Use Enabled',
+        'min_product_total_for_use' => 'Minimum Product Total for Use',
+        'product_total' => 'Product Total',
+    ],
+    'user_coupon_attributes' => [
+        'coupon_ids' => 'coupon ID list',
+    ],
+    'public_list_attributes' => [
+        'sort' => 'sort order',
+        'photo_only' => 'photo reviews only',
+        'rating' => 'rating',
+        'exclude_sold_out' => 'exclude sold out',
+    ],
     'user_coupon' => [
         'status' => [
             'in' => 'Please select a valid coupon status.',
@@ -1450,6 +1470,7 @@ return [
         'review_settings.write_deadline_days' => 'Review write deadline (days)',
         'review_settings.max_images' => 'Max review images',
         'review_settings.max_image_size_mb' => 'Max review image size (MB)',
+        'review_settings.author_name_masking' => 'Public review author name masking',
 
         // Product display settings
         'product_display.related_order' => 'Related products order',
@@ -1525,6 +1546,14 @@ return [
         'mileage.currency_rules.*.earn_rounding_method' => 'Earning Rounding Method',
         'mileage.expiry_days' => 'Expiry Days',
         'mileage.expiry_notification_days_before' => 'Expiry Notification Days',
+        'basic_info.hosting_provider' => 'Hosting Provider',
+        'basic_info.show_business_footer' => 'Show Business Information',
+        'mileage.signup_earn_enabled' => 'Signup Bonus Enabled',
+        'mileage.signup_earn_amount' => 'Signup Bonus Amount',
+        'mileage.no_earn_when_points_used' => 'No Earning When Mileage Is Used',
+        'mileage.min_product_total_for_use_enabled' => 'Minimum Product Total for Use Enabled',
+        'mileage.min_product_total_for_use' => 'Minimum Product Total for Use',
+        'product_total' => 'Product Total',
 
         // SEO settings
         'seo' => 'SEO Settings',

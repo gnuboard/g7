@@ -1126,6 +1126,7 @@ root 실행:     --web-user=<웹서버 계정> [--web-group=<그룹>]  (없으�
     'cli_aborted' => '설치를 중단했습니다. 이어서 하려면 php g7-install --resume',
     'cli_failed_resume_hint' => '원인을 고친 뒤 php g7-install --resume 으로 이어서 설치할 수 있습니다(완료된 작업은 건너뜁니다).',
     'cli_finalize_failed_warning' => '.env 확정에 실패해 설치 런타임 파일이 남았습니다 — php g7-install --resume 으로 다시 확정하세요.',
+    'runtime_cleanup_failed_warning' => '설치 잔여 파일을 지우지 못했습니다 — storage/installer/runtime.php 를 직접 지우세요.',
     'cli_resuming' => '이어서 설치',
     'cli_chown_done' => '소유자 변경 :count건 → :user::group',
     'cli_chown_failed' => '소유자 변경 실패 :count건 — 아래 명령으로 직접 바꾸세요.',

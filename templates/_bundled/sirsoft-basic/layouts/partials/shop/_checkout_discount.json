@@ -93,7 +93,9 @@
                                             "coupons": null,
                                             "loading": true,
                                             "loadingMore": false,
-                                            "downloadingCouponId": null
+                                            "downloadingCouponId": null,
+                                            "scope": "all",
+                                            "downloadingAll": false
                                         }
                                     }
                                 },

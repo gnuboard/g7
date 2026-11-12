@@ -114,11 +114,12 @@ describe('빈 객체로 비우는 setState 는 null 로 먼저 지운다 (7.1.1)
       'layouts/shop/show.json:currentSelection',
       'layouts/shop/show.json:additionalOptions',
       'layouts/partials/shop/detail/_tab_reviews.json:reviewOptionFilters',
-      'layouts/partials/shop/detail/_purchase_card.json:currentSelection',
       'layouts/partials/shop/detail/_modal_cart_added.json:currentSelection',
       'layouts/partials/shop/_cart_item.json:selectedOptions',
       'layouts/auth/register.json:registerForm',
     ]));
+    // 담기 뒤 비우기는 상세 화면의 이름 붙은 액션에 있다 — 첫 진입 초기화와 합쳐 show.json 에 두 번 잡힌다
+    expect(keys.filter((k) => k === 'layouts/shop/show.json:currentSelection')).toHaveLength(2);
     expect(sites.length).toBeGreaterThanOrEqual(10);
   });
 });

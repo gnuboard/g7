@@ -217,6 +217,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | order_amount | query | integer | 예 | min 0 | 사용 가능 상한 계산 기준 주문금액 (마일리지 사용액은 이 금액을 넘을 수 없음) |
+| product_total | query | integer | 아니오 | min 0 | 상품 합계(판매가 × 수량 합, 쿠폰·배송비 반영 전). 주면 환경설정 「상품 합계가 기준 미만이면 사용 불가」도 함께 판정해, 기준 미만이면 `max_usable` 이 0 입니다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.mileage.max_usable_validation_rules`).
 

@@ -175,10 +175,12 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
          * @scenario setting=tab_structure
          * @effects review_settings_items_separated_by_row_stack_only
          */
-        it('카드 본문에 3개 설정 섹션이 있다', () => {
+        it('카드 본문에 4개 설정 섹션이 있다', () => {
             const cardBody = (tabReviewSettings as any).children[0].children[2];
-            // 설정 3개. 항목 사이 구분선은 row-stack 이 그린다(따로 둔 구분선 div 는 선이 이중이라 걷어냈다).
-            expect(cardBody.children.length).toBe(3);
+            // 설정 4개(작성 기한·사진 수·사진 용량·작성자 이름 가림). 항목 사이 구분선은 row-stack 이 그린다(따로 둔 구분선 div 는 선이 이중이라 걷어냈다).
+            expect(cardBody.children.length).toBe(4);
+            // 마지막 칸이 작성자 이름 가림 선택이다
+            expect(JSON.stringify(cardBody.children[3])).toContain('review_settings.author_name_masking');
         });
 
         /**

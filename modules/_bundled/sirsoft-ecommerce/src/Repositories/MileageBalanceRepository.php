@@ -19,19 +19,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInt
 class MileageBalanceRepository implements MileageBalanceRepositoryInterface
 {
     /**
-     * 적립(잔액 증가) 유형 값 목록
-     *
-     * @var array<int, string>
-     */
-    private const EARN_TYPES = [
-        'purchase_earn',
-        'admin_earn',
-        'refund_restore',
-        'order_cancel_restore',
-        'refund_credit',
-    ];
-
-    /**
      * 취소 상태 값 목록 (pending 집계 제외 대상)
      *
      * 취소는 옵션 단위로 처리되어 option_status 가 'cancelled' 로만 전이된다.
@@ -103,7 +90,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
 
             $totalEarned = (float) MileageTransaction::query()
                 ->forUserCurrency($userId, $cur)
-                ->whereIn('type', self::EARN_TYPES)
+                ->whereIn('type', MileageTransactionTypeEnum::earningValues())
                 ->sum('amount');
 
             $totalUsed = (float) abs((float) MileageTransaction::query()
@@ -234,7 +221,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
                 $q->select(DB::raw(1))
                     ->from("{$transactionsTable} as tx")
                     ->whereColumn('tx.order_option_id', 'opt.id')
-                    ->whereIn('tx.type', self::EARN_TYPES);
+                    ->whereIn('tx.type', MileageTransactionTypeEnum::earningValues());
             })
             ->sum('opt.subtotal_earned_points_amount');
     }

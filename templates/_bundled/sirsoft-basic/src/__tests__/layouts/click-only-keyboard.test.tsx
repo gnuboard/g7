@@ -40,7 +40,8 @@ import { ActionDispatcher } from '@core/template-engine/ActionDispatcher';
 import postAttachments from '../../../layouts/partials/board/show/_post_attachments.json';
 import cartSummary from '../../../layouts/partials/shop/_cart_summary.json';
 import checkoutSummary from '../../../layouts/partials/shop/_checkout_summary.json';
-import tabReviews from '../../../layouts/partials/shop/detail/_tab_reviews.json';
+// 후기 카드 본문은 상세 후기 탭과 리뷰 모아보기가 같이 쓰는 조각으로 옮겨졌다
+import tabReviews from '../../../layouts/partials/shop/detail/_review_card.json';
 import claimList from '../../../layouts/partials/mypage/claims/_list.json';
 import inquiryList from '../../../layouts/partials/mypage/inquiries/_list.json';
 

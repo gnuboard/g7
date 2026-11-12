@@ -92,6 +92,17 @@ class ProductReviewService
     }
 
     /**
+     * 전체 공개 후기 목록(리뷰 모아보기)을 조회합니다.
+     *
+     * @param  array  $filters  필터 조건 (sort, photo_only, rating, per_page)
+     * @return LengthAwarePaginator 페이지네이션된 후기 목록
+     */
+    public function getPublicFeed(array $filters = []): LengthAwarePaginator
+    {
+        return $this->repository->paginatePublicFeed($filters);
+    }
+
+    /**
      * 리뷰 작성 가능 여부 확인
      *
      * @param  int  $userId  사용자 ID

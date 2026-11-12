@@ -294,11 +294,11 @@ return [
         ],
         'list_price' => [
             'required' => '정가를 입력해주세요.',
-            'min' => '정가는 1 이상이어야 합니다.',
+            'min' => '정가는 0 이상이어야 합니다.',
         ],
         'selling_price' => [
             'required' => '판매가를 입력해주세요.',
-            'min' => '판매가는 1 이상이어야 합니다.',
+            'min' => '판매가는 0 이상이어야 합니다.',
             'lte' => '판매가는 정가 이하여야 합니다.',
         ],
         'stock_quantity' => [
@@ -1373,6 +1373,26 @@ return [
     ],
 
     // 사용자 쿠폰 조회 검증 메시지
+    'settings_attributes' => [
+        'hosting_provider' => '호스팅 서비스 제공자',
+        'show_business_footer' => '사업자 정보 표시',
+        'author_name_masking' => '공개 후기 작성자 이름 가림',
+        'signup_earn_enabled' => '가입 적립금 사용',
+        'signup_earn_amount' => '가입 적립금',
+        'no_earn_when_points_used' => '마일리지 사용 주문 적립 제외',
+        'min_product_total_for_use_enabled' => '사용 가능 최소 상품 합계 사용',
+        'min_product_total_for_use' => '사용 가능 최소 상품 합계',
+        'product_total' => '상품 합계',
+    ],
+    'user_coupon_attributes' => [
+        'coupon_ids' => '쿠폰 번호 목록',
+    ],
+    'public_list_attributes' => [
+        'sort' => '정렬 기준',
+        'photo_only' => '사진 후기만 보기',
+        'rating' => '별점',
+        'exclude_sold_out' => '품절 제외',
+    ],
     'user_coupon' => [
         'status' => [
             'in' => '올바른 쿠폰 상태를 선택해주세요.',
@@ -1450,6 +1470,7 @@ return [
         'review_settings.write_deadline_days' => '리뷰 작성 기한(일)',
         'review_settings.max_images' => '리뷰 이미지 최대 개수',
         'review_settings.max_image_size_mb' => '리뷰 이미지 최대 용량(MB)',
+        'review_settings.author_name_masking' => '공개 후기 작성자 이름 가림',
 
         // 상품 진열 설정
         'product_display.related_order' => '관련 상품 순서',
@@ -1525,6 +1546,14 @@ return [
         'mileage.currency_rules.*.earn_rounding_method' => '적립 절사 방식',
         'mileage.expiry_days' => '유효기간',
         'mileage.expiry_notification_days_before' => '소멸 예정 알림일',
+        'basic_info.hosting_provider' => '호스팅 서비스 제공자',
+        'basic_info.show_business_footer' => '사업자 정보 표시',
+        'mileage.signup_earn_enabled' => '가입 적립금 사용',
+        'mileage.signup_earn_amount' => '가입 적립금',
+        'mileage.no_earn_when_points_used' => '마일리지 사용 주문 적립 제외',
+        'mileage.min_product_total_for_use_enabled' => '사용 가능 최소 상품 합계 사용',
+        'mileage.min_product_total_for_use' => '사용 가능 최소 상품 합계',
+        'product_total' => '상품 합계',
 
         // SEO 설정
         'seo' => 'SEO 설정',

@@ -75,6 +75,10 @@
       "mail_order_number_placeholder": "제 2024-서울강남-12345 호",
       "telecom_number": "부가통신 사업자번호",
       "telecom_number_placeholder": "부가통신 사업자번호",
+      "hosting_provider": "호스팅 서비스 제공자",
+      "hosting_provider_placeholder": "예: 호스팅 회사 이름",
+      "show_business_footer": "사용자 화면 하단에 사업자 정보 표시",
+      "show_business_footer_hint": "켜면 상호·대표자·사업장 주소·전화·전자우편·사업자등록번호·통신판매업 신고번호·호스팅 서비스 제공자 중 값이 있는 항목을 사용자 화면 하단에 보여 줍니다. 끄면 이 값들을 사용자 화면으로 내보내지 않습니다.",
       "postcode_plugin_required": "다음 우편번호 플러그인이 설치되지 않았거나 비활성화 상태입니다. 관리자 > 플러그인에서 활성화해주세요."
     },
     "public_asset_storage": {
@@ -626,7 +630,11 @@
     "max_images_hint": "리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 불가)",
     "images_unit": "장",
     "max_image_size_mb_label": "이미지 최대 용량",
-    "max_image_size_mb_hint": "업로드 가능한 이미지 파일의 최대 용량"
+    "max_image_size_mb_hint": "업로드 가능한 이미지 파일의 최대 용량",
+    "author_name_masking_label": "작성자 이름 가림",
+    "author_name_masking_middle": "가운데 가림 (홍*동)",
+    "author_name_masking_none": "가리지 않음",
+    "author_name_masking_hint": "상품 상세 후기 탭과 리뷰 모아보기에 보이는 작성자 이름에 적용됩니다. 관리자 화면과 작성자 본인 화면에는 실명이 보입니다."
   },
   "product_display": {
     "title": "관련 상품",

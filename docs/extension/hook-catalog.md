@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (631)
+- [코어](#코어) (634)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -343,6 +343,7 @@
 | `core.module_settings.before_delete_directory` | action | 1 |  |
 | `core.module_settings.before_reset` | action | 1 |  |
 | `core.module_settings.before_save` | action | 2 |  |
+| `core.module_settings.filter_frontend_settings` | filter | 2 |  |
 | `core.module_settings.filter_save_data` | filter | 2 |  |
 | `core.modules.activated` | action | 1 |  |
 | `core.modules.after_activate` | action | 2 |  |
@@ -443,6 +444,7 @@
 | `core.plugin_settings.before_delete_directory` | action | 1 |  |
 | `core.plugin_settings.before_reset` | action | 1 |  |
 | `core.plugin_settings.before_save` | action | 2 |  |
+| `core.plugin_settings.filter_frontend_settings` | filter | 2 |  |
 | `core.plugin_settings.filter_save_data` | filter | 2 |  |
 | `core.plugin_settings.update_rules` | filter | 3 | 호환용 옛 이름 → `core.plugin_settings.update_validation_rules` |
 | `core.plugin_settings.update_validation_rules` | filter | 3 |  |

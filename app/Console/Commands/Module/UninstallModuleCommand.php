@@ -93,7 +93,7 @@ class UninstallModuleCommand extends Command
                 if (! $this->unifiedConfirm(__('modules.commands.uninstall.confirm_question'), false)) {
                     $this->info(__('modules.commands.uninstall.aborted'));
 
-                    return Command::SUCCESS;
+                    return $this->confirmAbortExitCode();
                 }
             }
 

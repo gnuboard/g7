@@ -149,7 +149,7 @@ class MigrateSettingsToJsonCommand extends Command
             if (! $this->unifiedConfirm(__('settings.console.migrate_to_json.confirm_overwrite'), false)) {
                 $this->info(__('settings.console.migrate_to_json.cancelled'));
 
-                return Command::SUCCESS;
+                return $this->confirmAbortExitCode();
             }
         }
 

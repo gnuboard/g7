@@ -1,0 +1,53 @@
+feature: 분류 칩 두 줄
+
+description: |
+  상품 목록·분류 화면의 분류 칩 줄. 한 줄에 다 들어가면 한 줄, 넘치면 두 줄로 나눠 가로로 넘긴다 — 분류가 많을수록
+  줄이 늘어나 상품 목록을 아래로 밀어내지 않게.
+
+  두 줄로도 넘치면 칩을 조금씩 줄이고(여백·간격·글자), 다 들어가는 단계가 있으면 거기서 멈춘다. 끝까지 넘치면
+  화면 끝에 걸친 칩이 반쯤 보이는 단계를 골라 옆에 더 있음을 드러낸다. 칩 링크와 이동 동작은 레이아웃에 그대로 남는다.
+  시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17]
+  # c01: 다 들어가면 한 줄이고 줄이지 않는다
+  # c02: 넘치면 두 줄로 나누고 폭은 더 긴 줄에 맞춘다
+  # c03: 두 줄로도 넘치면 다 들어가는 첫 단계까지만 줄인다
+  # c04: 끝까지 줄여도 넘치면 화면 끝에 걸친 칩이 35~65% 보이는 첫 단계를 고른다
+  # c05: 35~65% 단계가 없으면 반에 가장 가까운 단계를 고른다
+  # c06: 칩이 없거나 하나면 한 줄이다
+  # c07: 칩이 많아도 단계 수 × 칩 수 계산으로 끝난다
+  # c08: 다 들어가면 한 줄(줄바꿈 없음)이고 폭·줄이기 변수를 걸지 않는다
+  # c09: 넘치면 두 줄 — 안쪽 폭을 더 긴 절반에 맞추고 줄바꿈으로 나눈다
+  # c10: 두 줄로도 넘치면 줄이기 값을 변수로 걸고 끝 흐림을 보인다
+  # c11: 끝 흐림에 다크 모드 짝이 있고 누름을 가로채지 않는다
+  # c12: id·편집기 속성·클래스를 겉 nav 에 싣는다
+  # c13: 칩 줄의 뿌리가 ChipRows 이고 이름을 갖는다
+  # c14: 칩 링크와 이동 동작이 ChipRows 의 자식으로 남아 있다
+  # c15: 칩의 여백·글자 크기가 줄이기 변수를 읽고 긴 이름은 잘린다
+  # c16: 검색 엔진용 HTML 에서는 nav 로 그려 자식 링크가 남고, 변수형 클래스가 스타일 산출 목록에 있다
+  # c17: 줄은 화면의 줄바꿈처럼 앞에서부터 채워 나누고, 걸친 칩은 그렇게 나뉜 더 긴 줄에서 본다(앞 칩이 짧으면 윗줄이 절반보다 많다)
+
+effects:
+  - chips_stay_on_one_row_when_they_fit
+  - chips_split_into_two_rows_when_overflowing
+  - chips_shrink_until_two_rows_fit
+  - boundary_chip_shows_half_when_still_overflowing
+  - boundary_chip_falls_back_to_closest_to_half
+  - chips_plan_handles_empty_and_single
+  - chips_plan_is_cheap
+  - chips_plan_splits_rows_like_flex_wrap
+  - chip_rows_single_row_has_no_variables
+  - chip_rows_two_rows_width_is_longer_half
+  - chip_rows_shrink_variables_applied
+  - chip_rows_dark_pairs
+  - chip_rows_passes_editor_attributes
+  - category_chips_live_inside_chip_rows
+  - category_chip_links_stay_in_layout
+  - category_chip_classes_read_shrink_variables
+  - chip_rows_registered_for_seo_and_styles
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/support/__tests__/chipRowsPlan.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ChipRows.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-category-chip-rows.test.ts

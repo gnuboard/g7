@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 37개 (정의: `src/handlers/index.ts`).
+핸들러 41개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -13,7 +13,11 @@
 | `updateSelectedItemQuantity` | `sirsoft-basic.updateSelectedItemQuantity` |
 | `removeSelectedItem` | `sirsoft-basic.removeSelectedItem` |
 | `updateNoOptionQuantity` | `sirsoft-basic.updateNoOptionQuantity` |
+| `setNoOptionAdditionalOption` | `sirsoft-basic.setNoOptionAdditionalOption` |
 | `setBlockAdditionalOption` | `sirsoft-basic.setBlockAdditionalOption` |
+| `quickAddToCart` | `sirsoft-basic.quickAddToCart` |
+| `openQuickOption` | `sirsoft-basic.openQuickOption` |
+| `toggleWishlistQuick` | `sirsoft-basic.toggleWishlistQuick` |
 | `getDisplayPrice` | `sirsoft-basic.getDisplayPrice` |
 | `formatCurrency` | `sirsoft-basic.formatCurrency` |
 | `getCurrencySymbol` | `sirsoft-basic.getCurrencySymbol` |

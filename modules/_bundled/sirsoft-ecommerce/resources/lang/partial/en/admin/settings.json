@@ -75,6 +75,10 @@
       "mail_order_number_placeholder": "e.g., 2024-Seoul-12345",
       "telecom_number": "Telecom Business Number",
       "telecom_number_placeholder": "Telecom business number",
+      "hosting_provider": "Hosting provider",
+      "hosting_provider_placeholder": "e.g. the hosting company name",
+      "show_business_footer": "Show business information at the bottom of the storefront",
+      "show_business_footer_hint": "When on, the storefront footer shows whichever of these have a value: company name, representative, business address, phone, email, business registration number, mail-order registration number, hosting provider. When off, these values are not sent to the storefront.",
       "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins."
     },
     "public_asset_storage": {
@@ -626,7 +630,11 @@
     "max_images_hint": "Max images per review (0 = no images allowed)",
     "images_unit": "images",
     "max_image_size_mb_label": "Max Image Size",
-    "max_image_size_mb_hint": "Maximum file size for uploaded images"
+    "max_image_size_mb_hint": "Maximum file size for uploaded images",
+    "author_name_masking_label": "Author name masking",
+    "author_name_masking_middle": "Mask the middle (J**n)",
+    "author_name_masking_none": "Do not mask",
+    "author_name_masking_hint": "Applies to author names on the product review tab and the all-reviews page. Admin screens and the author's own screens always show the real name."
   },
   "product_display": {
     "title": "Related products",

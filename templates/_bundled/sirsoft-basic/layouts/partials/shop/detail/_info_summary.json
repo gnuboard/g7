@@ -231,7 +231,9 @@
                                                                 "coupons": "{{productDownloadableCoupons.data ?? null}}",
                                                                 "loading": false,
                                                                 "loadingMore": false,
-                                                                "downloadingCouponId": null
+                                                                "downloadingCouponId": null,
+                                                                "scope": "product",
+                                                                "downloadingAll": false
                                                             }
                                                         }
                                                     },
@@ -257,6 +259,113 @@
                                 "className": "flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             },
                             "text": "+{{(productDownloadableCoupons.data?.data ?? []).length - 3}}"
+                        },
+                        {
+                            "comment": "모두 받기 — 이 상품에 쓸 수 있는 쿠폰 중 받지 않은 것을 한 번에. 비회원은 다른 칩과 같이 로그인 안내로",
+                            "id": "product_coupon_download_all",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{(productDownloadableCoupons.data?.data ?? []).some(c => !c.is_downloaded)}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{_global.currentUser?.uuid}}",
+                                            "then": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "couponDownloadingAll": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/modules/sirsoft-ecommerce/user/coupons/bulk-download",
+                                                        "auth_mode": "required",
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": "{{({ coupon_ids: (productDownloadableCoupons.data?.data ?? []).filter(c => !c.is_downloaded && c.coupon_id != null).map(c => c.coupon_id) })}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "couponDownloadingAll": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "productDownloadableCoupons"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{response.message}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "couponDownloadingAll": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message ?? '$t:shop.coupon_download.download_failed'}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "comment": "비회원: 로그인 필요 안내",
+                                            "then": {
+                                                "handler": "openModal",
+                                                "target": "login_required_modal"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{!!_local.couponDownloadingAll}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "download",
+                                        "size": "xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "whitespace-nowrap"
+                                    },
+                                    "text": "$t:shop.coupon_download.download_all"
+                                }
+                            ]
                         }
                     ]
                 }

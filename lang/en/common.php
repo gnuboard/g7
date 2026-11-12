@@ -68,6 +68,8 @@ return [
             'process_failed' => 'Could not run the terminal installer script.',
         ],
         // Console yes/no confirmation prompt (HasUnifiedConfirm, ConsoleConfirm) output
+        // 확인 질문을 던질 수 없는 실행(터미널 없음·--no-interaction)에서 --yes 없이 거절로 떨어졌을 때
+        'confirm_requires_yes' => 'Not executed because this action needs confirmation (:question). Add --yes when running without a terminal.',
         'console_confirm' => [
             'invalid_answer' => 'Please answer yes, y, no, or n.',
         ],

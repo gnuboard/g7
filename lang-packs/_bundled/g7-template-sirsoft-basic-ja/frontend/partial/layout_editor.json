@@ -177,6 +177,25 @@
     },
     "visitor_counter": {
       "label": "訪問者カウンター"
+    },
+    "product_rail": {
+      "label": "横並び商品リスト",
+      "default_title": "商品リストのタイトル",
+      "default_body": "ここに商品カードを配置してください"
+    },
+    "chip_rows": {
+      "label": "カテゴリチップ列",
+      "default_body": "カテゴリチップ（リンク）をここに配置してください"
+    },
+    "mobile_buy_bar": {
+      "label": "下部購入バー",
+      "default_price": "0円",
+      "default_primary": "注文する"
+    },
+    "bottom_sheet": {
+      "label": "ボトムシート",
+      "default_title": "シートのタイトル",
+      "default_body": "シートの内容をここに配置してください"
     }
   }
 }

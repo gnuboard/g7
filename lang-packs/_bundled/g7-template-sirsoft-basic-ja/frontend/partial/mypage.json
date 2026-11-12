@@ -194,7 +194,8 @@
       "shipped": "配送中",
       "delivered": "配送完了",
       "cancelled": "キャンセル"
-    }
+    },
+    "track_shipping": "配送追跡"
   },
   "order_detail": {
     "back": "注文履歴",

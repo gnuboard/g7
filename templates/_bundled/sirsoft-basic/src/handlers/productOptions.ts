@@ -131,6 +131,17 @@ interface AddSelectedItemParams {
   newValue?: string;
 }
 
+/**
+ * 상태 쓰기 대상 선택 인자 — 모든 옵션 핸들러가 함께 받는다.
+ * 주지 않으면 화면 상태(`_local`)에 쓴다.
+ */
+export interface OptionStateTargetParams {
+  /** 'global' 이면 전역 상태에 쓴다 (기본 'local') */
+  stateTarget?: 'local' | 'global';
+  /** 전역에 쓸 때의 이름 공간 (예: 'quickOptionModal') */
+  statePath?: string;
+}
+
 interface UpdateQuantityParams {
   itemIndex: number;
   newQuantity: number;
@@ -492,9 +503,109 @@ function findMatchingOption(
  * @param context 액션 컨텍스트
  * @param updates 함께 실을 다른 상태(줄 목록 등)
  */
-function clearCurrentSelection(context: ActionContext, updates: Record<string, any> = {}): void {
-  context.setState?.({ ...updates, currentSelection: null, __mergeMode: 'shallow' });
-  context.setState?.({ ...updates, currentSelection: {}, __mergeMode: 'shallow' });
+function clearCurrentSelection(action: ActionDefinition, context: ActionContext, updates: Record<string, any> = {}): void {
+  writeState(action, context, { ...updates, currentSelection: null, __mergeMode: 'shallow' });
+  writeState(action, context, { ...updates, currentSelection: {}, __mergeMode: 'shallow' });
+}
+
+/**
+ * 핸들러 결과를 쓸 곳을 고른다.
+ *
+ * 기본은 화면 상태(`context.setState` → `_local`)다. 계속 마운트되는 창은 화면 상태에 쓰면 다시 열 때 앞 값이
+ * 남으므로(7.1.1), 호출 쪽이 `stateTarget: 'global'` 과 `statePath`(창 고유 전역 이름 공간)를 주면 같은 키를
+ * `_global.{statePath}.*` 아래에 쓴다. 전역 쓰기는 키마다 값을 통째로 바꾸므로(배열·null 은 대입) 병합 방식 표시는 뺀다.
+ *
+ * @param action 액션 정의 (params.stateTarget · params.statePath 를 읽는다)
+ * @param context 액션 컨텍스트
+ * @param updates 쓸 값 (키는 두 대상에서 같다)
+ */
+function writeState(action: ActionDefinition, context: ActionContext, updates: Record<string, any>): void {
+  const params = (action?.params ?? {}) as { stateTarget?: string; statePath?: string };
+  if (params.stateTarget !== 'global') {
+    context.setState?.(updates);
+    return;
+  }
+
+  const { __mergeMode: _mergeMode, ...values } = updates;
+  const prefix = typeof params.statePath === 'string' && params.statePath !== '' ? `${params.statePath}.` : '';
+  const dotted: Record<string, any> = {};
+  for (const [key, value] of Object.entries(values)) dotted[`${prefix}${key}`] = value;
+  (window as any).G7Core?.state?.set?.(dotted);
+}
+
+/**
+ * 옵션 한 개로 「선택한 상품」 한 줄을 만든다.
+ *
+ * 필수 추가옵션 그룹에 한해 기본 선택지(is_default)를 미리 적용한다. 비필수 그룹은 고르지 않은 상태로 둔다 —
+ * 추가옵션 선택지는 그룹마다 하나가 늘 기본으로 표시돼 있어(관리자 폼이 첫 선택지를 기본으로 채운다),
+ * 비필수까지 자동 적용하면 원하지 않은 추가금이 붙는다.
+ *
+ * @param input.id 줄 식별값 (옵션 조합 키)
+ * @param input.option 고른 옵션 레코드
+ * @param input.optionLabels 옵션 그룹명 → 고른 값
+ * @param input.preferredCurrency 표시 통화
+ * @param input.additionalOptionGroups 상품 추가옵션 목록
+ * @param input.quantity 처음 수량 (기본 1)
+ * @returns 선택 줄
+ */
+export function buildSelectedItemFromOption(input: {
+  id: string;
+  option: ProductOptionRecord;
+  optionLabels: Record<string, string>;
+  preferredCurrency?: string;
+  additionalOptionGroups?: AdditionalOptionGroup[];
+  quantity?: number;
+}): SelectedItem {
+  const { id, option, optionLabels, preferredCurrency } = input;
+  const quantity = Math.max(1, Number(input.quantity) || 1);
+  const unitPrice = option.selling_price ?? 0;
+
+  const additionalOptionGroups = input.additionalOptionGroups ?? [];
+  const additionalOptionSelections: AdditionalOptionSelections = {};
+  for (const group of additionalOptionGroups) {
+    if (!group.is_required) continue;
+    const defaultValue = group.values?.find(v => v.is_default);
+    if (defaultValue) additionalOptionSelections[group.id] = defaultValue.id;
+  }
+  const additionalOptionsTotal = computeAdditionalOptionsTotal(additionalOptionSelections, additionalOptionGroups);
+  const additionalOptionsMultiCurrencyTotal = computeAdditionalOptionsMultiCurrencyTotal(
+    additionalOptionSelections,
+    additionalOptionGroups
+  );
+  const blockTotal = (unitPrice + additionalOptionsTotal) * quantity;
+
+  return {
+    id,
+    optionId: option.id,
+    options: optionLabels,
+    optionValues: convertOptionValuesToRecord(option.option_values, option.option_values_localized),
+    quantity,
+    stock: option.stock_quantity ?? 999,
+    unitPrice,
+    unitPriceFormatted: formatPrice(unitPrice, preferredCurrency),
+    totalPrice: blockTotal,
+    totalPriceFormatted: formatPrice(blockTotal, preferredCurrency),
+    multiCurrencyUnitPrice: option.multi_currency_selling_price,
+    multiCurrencyTotalPrice: recalcMultiCurrencyTotal(
+      option.multi_currency_selling_price as any,
+      quantity,
+      additionalOptionsMultiCurrencyTotal,
+      additionalOptionsTotal
+    ),
+    additionalOptionSelections,
+    additionalOptionsTotal,
+    additionalOptionsMultiCurrencyTotal,
+  };
+}
+
+/**
+ * 선택 줄들의 통화별 합계를 만든다 (창을 여는 쪽이 미리 채운 줄의 합계용).
+ *
+ * @param items 선택 줄 목록
+ * @returns 통화코드 => { value, formatted }
+ */
+export function buildSelectedItemsTotal(items: SelectedItem[]): Record<string, { value: number; formatted: string }> {
+  return buildSelectedTotalMultiCurrency(items);
 }
 
 /**
@@ -538,7 +649,7 @@ export function addSelectedItemIfCompleteHandler(
   // 매칭되는 ProductOption 찾기
   const matchedOption = findMatchingOption(optionGroups, currentSelection, options ?? []);
   if (!matchedOption) {
-    clearCurrentSelection(context);
+    clearCurrentSelection(action, context);
     return;
   }
 
@@ -551,68 +662,27 @@ export function addSelectedItemIfCompleteHandler(
     // 이미 추가된 옵션 → 토스트 알림 + 선택 초기화
     const G7Core = (window as any).G7Core;
     G7Core?.toast?.warning?.(G7Core?.t?.('sirsoft-ecommerce.shop.already_added_option') ?? '이미 추가된 옵션입니다.');
-    clearCurrentSelection(context);
+    clearCurrentSelection(action, context);
     return;
   }
 
   // 새 옵션 조합 추가
-  const unitPrice = matchedOption.selling_price ?? 0;
   const optionLabels: Record<string, string> = {};
   optionGroups.forEach(group => {
     const groupKey = getGroupKey(group);
     optionLabels[groupKey] = currentSelection[groupKey];
   });
 
-  // 추가옵션 초기 선택: 필수(is_required) 그룹에 한해 기본 선택지(is_default)를 자동 적용한다.
-  // 비필수 그룹은 "선택하세요" 미선택 상태를 유지해야 한다 — 추가옵션 선택지는 라디오 방식이라
-  // 그룹당 1개가 항상 is_default 로 마킹되므로(관리자 폼이 첫 선택지를 기본으로 시드), 비필수까지
-  // 자동 적용하면 사용자가 원치 않은 추가금/선택이 강제로 붙는다.
-  const additionalOptionGroups = params.additionalOptionGroups ?? [];
-  const additionalOptionSelections: AdditionalOptionSelections = {};
-  for (const group of additionalOptionGroups) {
-    if (!group.is_required) continue;
-    const defaultValue = group.values?.find(v => v.is_default);
-    if (defaultValue) additionalOptionSelections[group.id] = defaultValue.id;
-  }
-  const additionalOptionsTotal = computeAdditionalOptionsTotal(
-    additionalOptionSelections,
-    additionalOptionGroups
-  );
-  const additionalOptionsMultiCurrencyTotal = computeAdditionalOptionsMultiCurrencyTotal(
-    additionalOptionSelections,
-    additionalOptionGroups
-  );
-
-  const blockUnitTotal = unitPrice + additionalOptionsTotal;
-
-  const newItem: SelectedItem = {
+  const newItem = buildSelectedItemFromOption({
     id: optionKey,
-    optionId: matchedOption.id,
-    options: optionLabels,
-    optionValues: convertOptionValuesToRecord(
-      matchedOption.option_values,
-      matchedOption.option_values_localized
-    ),
-    quantity: 1,
-    stock: matchedOption.stock_quantity ?? 999,
-    unitPrice,
-    unitPriceFormatted: formatPrice(unitPrice, preferredCurrency),
-    totalPrice: blockUnitTotal,
-    totalPriceFormatted: formatPrice(blockUnitTotal, preferredCurrency),
-    multiCurrencyUnitPrice: matchedOption.multi_currency_selling_price,
-    multiCurrencyTotalPrice: recalcMultiCurrencyTotal(
-      matchedOption.multi_currency_selling_price as any,
-      1,
-      additionalOptionsMultiCurrencyTotal,
-      additionalOptionsTotal
-    ),
-    additionalOptionSelections,
-    additionalOptionsTotal,
-    additionalOptionsMultiCurrencyTotal,
-  };
+    option: matchedOption,
+    optionLabels,
+    preferredCurrency,
+    additionalOptionGroups: params.additionalOptionGroups ?? [],
+  });
 
   const nextItems = [...items, newItem];
-  clearCurrentSelection(context, {
+  clearCurrentSelection(action, context, {
     selectedOptionItems: nextItems,
     selectedTotalMultiCurrency: buildSelectedTotalMultiCurrency(nextItems),
   });
@@ -655,7 +725,7 @@ export function updateSelectedItemQuantityHandler(
     };
   });
 
-  context.setState?.({
+  writeState(action, context, {
     selectedOptionItems: updatedItems,
     selectedTotalMultiCurrency: buildSelectedTotalMultiCurrency(updatedItems),
   });
@@ -669,6 +739,53 @@ export function updateSelectedItemQuantityHandler(
  *
  * G7Core에서 (action: ActionDefinition, context: ActionContext) 시그니처로 호출됩니다.
  */
+/**
+ * 추가옵션 한 그룹의 선택·직접 입력 값을 바꾼 새 맵을 돌려줍니다(입력 맵은 바꾸지 않음).
+ *
+ * - 직접 입력 글자(`customText` 가 주어짐): 글자만 바꾼다. 빈 글자면 그 그룹의 글자를 지운다.
+ * - 선택 해제(`valueId` 가 null): 선택과 글자를 모두 지운다.
+ * - 값 선택: 고른 값이 직접 입력을 허용하지 않으면 남아 있던 글자를 지운다.
+ *
+ * @param currentSelections 지금 선택 (그룹 id → 값 id)
+ * @param currentCustomTexts 지금 직접 입력 글자 (그룹 id → 글자)
+ * @param additionalOptionId 바꿀 그룹 id
+ * @param valueId 고른 값 id (선택 해제면 null)
+ * @param customText 직접 입력 글자 (값 선택 변경이면 undefined)
+ * @param groups 상품의 추가옵션 그룹
+ * @returns 새 선택·글자 맵
+ */
+export function applyAdditionalOptionChange(
+  currentSelections: AdditionalOptionSelections | undefined,
+  currentCustomTexts: Record<number, string> | undefined,
+  additionalOptionId: number,
+  valueId: number | null,
+  customText: string | undefined,
+  groups: AdditionalOptionGroup[] | undefined
+): { selections: AdditionalOptionSelections; customTexts: Record<number, string> } {
+  const selections: AdditionalOptionSelections = { ...(currentSelections ?? {}) };
+  const customTexts: Record<number, string> = { ...(currentCustomTexts ?? {}) };
+
+  if (customText !== undefined) {
+    if (customText.trim() === '') {
+      delete customTexts[additionalOptionId];
+    } else {
+      customTexts[additionalOptionId] = customText;
+    }
+  } else if (valueId == null) {
+    delete selections[additionalOptionId];
+    delete customTexts[additionalOptionId];
+  } else {
+    selections[additionalOptionId] = valueId;
+    const group = (groups ?? []).find((g) => g.id === additionalOptionId);
+    const value = group?.values?.find((v) => v.id === valueId);
+    if (!value?.allow_custom_text) {
+      delete customTexts[additionalOptionId];
+    }
+  }
+
+  return { selections, customTexts };
+}
+
 export function setBlockAdditionalOptionHandler(
   action: ActionDefinition,
   context: ActionContext
@@ -687,30 +804,14 @@ export function setBlockAdditionalOptionHandler(
   const updatedItems = (selectedOptionItems ?? []).map((item, idx) => {
     if (idx !== itemIndex) return item;
 
-    const selections: AdditionalOptionSelections = { ...(item.additionalOptionSelections ?? {}) };
-    const customTexts: Record<number, string> = { ...(item.additionalOptionCustomTexts ?? {}) };
-
-    if (isCustomTextMode) {
-      // 직접입력 모드: 텍스트만 갱신 (선택 value 는 유지)
-      const text = String(params.customText ?? '');
-      if (text.trim() === '') {
-        delete customTexts[additionalOptionId];
-      } else {
-        customTexts[additionalOptionId] = text;
-      }
-    } else if (valueId == null) {
-      // 그룹 선택 해제 → 선택·직접입력 모두 정리
-      delete selections[additionalOptionId];
-      delete customTexts[additionalOptionId];
-    } else {
-      selections[additionalOptionId] = valueId;
-      // 새 선택지가 직접입력을 허용하지 않으면 기존 직접입력 텍스트 정리
-      const group = (additionalOptionGroups ?? []).find((g) => g.id === additionalOptionId);
-      const value = group?.values?.find((v) => v.id === valueId);
-      if (!value?.allow_custom_text) {
-        delete customTexts[additionalOptionId];
-      }
-    }
+    const { selections, customTexts } = applyAdditionalOptionChange(
+      item.additionalOptionSelections,
+      item.additionalOptionCustomTexts,
+      additionalOptionId,
+      valueId,
+      isCustomTextMode ? String(params.customText ?? '') : undefined,
+      additionalOptionGroups
+    );
 
     const additionalOptionsTotal = computeAdditionalOptionsTotal(selections, additionalOptionGroups);
     const additionalOptionsMultiCurrencyTotal = computeAdditionalOptionsMultiCurrencyTotal(
@@ -738,7 +839,7 @@ export function setBlockAdditionalOptionHandler(
     };
   });
 
-  context.setState?.({
+  writeState(action, context, {
     selectedOptionItems: updatedItems,
     selectedTotalMultiCurrency: buildSelectedTotalMultiCurrency(updatedItems),
   });
@@ -763,7 +864,7 @@ export function removeSelectedItemHandler(
   const itemIndex = Number(params.itemIndex) || 0;
   const nextItems = (params.selectedOptionItems ?? []).filter((_, idx) => idx !== itemIndex);
 
-  context.setState?.({
+  writeState(action, context, {
     selectedOptionItems: nextItems,
     selectedTotalMultiCurrency: buildSelectedTotalMultiCurrency(nextItems),
   });
@@ -787,16 +888,100 @@ export function updateNoOptionQuantityHandler(
   const params = action.params as {
     newQuantity?: number | string;
     multiCurrencyUnitPrice?: Record<string, { value?: number; price?: number; formatted: string }>;
+    additionalOptionSelections?: AdditionalOptionSelections;
+    additionalOptionGroups?: AdditionalOptionGroup[];
   };
   if (!params) return;
 
   const quantity = Math.max(1, Number(params.newQuantity) || 1);
 
-  context.setState?.({
+  writeState(action, context, {
     noOptionQuantity: quantity,
-    noOptionTotalMultiCurrency: recalcMultiCurrencyTotal(
-      params.multiCurrencyUnitPrice as Record<string, { value: number; formatted: string }> | undefined,
-      quantity
+    noOptionTotalMultiCurrency: noOptionTotal(
+      params.multiCurrencyUnitPrice,
+      quantity,
+      params.additionalOptionSelections,
+      params.additionalOptionGroups
     ),
+  });
+}
+
+/**
+ * 옵션 하나 상품의 통화별 합계 = (단가 + 고른 추가옵션 금액) × 수량.
+ *
+ * @param unitPrice 단가 통화맵
+ * @param quantity 수량
+ * @param selections 고른 추가옵션
+ * @param groups 상품의 추가옵션 그룹
+ * @returns 통화별 합계
+ */
+function noOptionTotal(
+  unitPrice: Record<string, { value?: number; price?: number; formatted: string }> | undefined,
+  quantity: number,
+  selections: AdditionalOptionSelections | undefined,
+  groups: AdditionalOptionGroup[] | undefined
+): ReturnType<typeof recalcMultiCurrencyTotal> {
+  const hasAdditional = !!selections && Object.keys(selections).length > 0;
+
+  return recalcMultiCurrencyTotal(
+    unitPrice as Record<string, { value: number; formatted: string }> | undefined,
+    quantity,
+    hasAdditional ? computeAdditionalOptionsMultiCurrencyTotal(selections, groups) : undefined,
+    hasAdditional ? computeAdditionalOptionsTotal(selections, groups) : 0
+  );
+}
+
+/**
+ * 옵션 하나 상품(수량 선택기로 사는 상품)의 추가옵션을 고르거나 직접 입력 글자를 넣습니다.
+ *
+ * 상세 구매 카드는 추가옵션 칸을 「고른 옵션 줄」 안에만 그려, 옵션 하나 상품은 추가옵션을 고를 수 없었다(필수
+ * 추가옵션이 있으면 담기 422). 이 상품의 선택은 `noOptionAdditionalSelections`·`noOptionAdditionalCustomTexts` 에
+ * 두고, 합계 `noOptionTotalMultiCurrency` 에 추가 금액을 더한다.
+ *
+ * @param action.params.additionalOptionId 바꿀 그룹 id
+ * @param action.params.valueId 고른 값 id ('' 이면 선택 해제)
+ * @param action.params.customText 직접 입력 글자 (이 키가 있으면 글자만 바꿈)
+ * @param action.params.selections 지금 선택
+ * @param action.params.customTexts 지금 직접 입력 글자
+ * @param action.params.additionalOptionGroups 상품의 추가옵션 그룹
+ * @param action.params.quantity 지금 수량
+ * @param action.params.multiCurrencyUnitPrice 단가 통화맵
+ * G7Core에서 (action: ActionDefinition, context: ActionContext) 시그니처로 호출됩니다.
+ */
+export function setNoOptionAdditionalOptionHandler(
+  action: ActionDefinition,
+  context: ActionContext
+): void {
+  const params = action.params as {
+    additionalOptionId?: number | string;
+    valueId?: number | string | null;
+    customText?: string;
+    selections?: AdditionalOptionSelections;
+    customTexts?: Record<number, string>;
+    additionalOptionGroups?: AdditionalOptionGroup[];
+    quantity?: number | string;
+    multiCurrencyUnitPrice?: Record<string, { value?: number; price?: number; formatted: string }>;
+  };
+  if (!params) return;
+
+  const groupId = Number(params.additionalOptionId);
+  const isCustomTextMode = Object.prototype.hasOwnProperty.call(params, 'customText');
+  const valueId = params.valueId === '' || params.valueId == null ? null : Number(params.valueId);
+  const { selections, customTexts } = applyAdditionalOptionChange(
+    params.selections,
+    params.customTexts,
+    groupId,
+    valueId,
+    isCustomTextMode ? String(params.customText ?? '') : undefined,
+    params.additionalOptionGroups
+  );
+  const quantity = Math.max(1, Number(params.quantity) || 1);
+
+  writeState(action, context, {
+    noOptionAdditionalSelections: selections,
+    noOptionAdditionalCustomTexts: customTexts,
+    noOptionAdditionalTotal: computeAdditionalOptionsTotal(selections, params.additionalOptionGroups),
+    noOptionAdditionalMultiCurrencyTotal: computeAdditionalOptionsMultiCurrencyTotal(selections, params.additionalOptionGroups) ?? null,
+    noOptionTotalMultiCurrency: noOptionTotal(params.multiCurrencyUnitPrice, quantity, selections, params.additionalOptionGroups),
   });
 }

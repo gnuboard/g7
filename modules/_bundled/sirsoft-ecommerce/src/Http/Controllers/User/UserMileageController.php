@@ -19,6 +19,11 @@ use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
  */
 class UserMileageController extends AuthBaseController
 {
+    /**
+     * 회원 마일리지 서비스를 주입받습니다.
+     *
+     * @param  UserMileageService  $userMileageService  회원 마일리지 서비스
+     */
     public function __construct(
         private UserMileageService $userMileageService
     ) {}
@@ -62,7 +67,15 @@ class UserMileageController extends AuthBaseController
             $userId = Auth::id();
             $orderAmount = (int) $request->validated('order_amount');
 
-            $maxUsable = $this->userMileageService->getMaxUsable($userId, $orderAmount);
+            // 상품 합계는 선택 값 — 주면 「사용 가능 최소 상품 합계」도 함께 판정한다
+            $productTotal = $request->validated('product_total');
+
+            $maxUsable = $this->userMileageService->getMaxUsable(
+                $userId,
+                $orderAmount,
+                null,
+                $productTotal === null ? null : (int) $productTotal
+            );
             $balance = $this->userMileageService->getBalance($userId);
 
             return ResponseHelper::success('sirsoft-ecommerce::messages.mileage.max_usable_fetched', [

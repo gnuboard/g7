@@ -413,6 +413,11 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
             'sirsoft-ecommerce.cart-write' => ['cart_write', 120],
             'sirsoft-ecommerce.checkout' => ['checkout', 30],
             'sirsoft-ecommerce.guest-order-write' => ['guest_order_write', 20],
+            // 회원 쓰기 — 쿠폰 받기(단건·일괄 공유)·찜·상품 문의·상품 후기
+            'sirsoft-ecommerce.coupon-download' => ['coupon_download', 20],
+            'sirsoft-ecommerce.wishlist-write' => ['wishlist_write', 60],
+            'sirsoft-ecommerce.inquiry-write' => ['inquiry_write', 5],
+            'sirsoft-ecommerce.review-write' => ['review_write', 5],
         ];
 
         foreach ($bundles as $name => [$configKey, $default]) {

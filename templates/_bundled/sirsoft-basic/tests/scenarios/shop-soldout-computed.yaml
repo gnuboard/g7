@@ -1,0 +1,20 @@
+feature: 상품 상세 옵션 품절 표시
+
+description: |
+  재고가 없는 옵션을 옵션 선택 칸에서 「(품절)」 로 표시하고 고를 수 없게 한다. 윗칸에서 고른 값과 맞는 조합이
+  전부 품절일 때만 품절로 본다(일부만 품절이면 고를 수 있어야 한다).
+  시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05]
+  # c01: show.json computed: 단일 그룹 — 재고0 옵션 값이 disabled + "(품절)" 라벨
+  # c02: show.json computed: 다중 그룹 보수적 판정 — 일부만 품절이면 선택 가능, 전부 품절이면 비활성
+  # c03: show.json computed: 하위 그룹 — 상위 선택(빨강) 호환 조합 기준 S 품절/L 정상
+  # c04: _purchase_card.json select options: $computed.optionChoices 를 참조해 품절 결과를 펼친다
+  # c05: _purchase_card.json select options: computed 부재 시 평문 폴백(품절 표시 없이 깨지지 않음)
+
+effects:
+  - sold_out_option_choices_disabled
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-soldout-computed.test.ts

@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 
 /**
  * 사용자 주문 목록 리소스
@@ -77,6 +78,14 @@ class UserOrderListResource extends BaseApiResource
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
             'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
 
+            // 대표 배송의 송장 정보 — 목록 행의 「배송 조회」 단추가 쓴다. 조회 주소는 주문 상세와 같은 규칙
+            // (택배사의 조회 주소 틀에 송장 번호를 넣음)으로 만든다. 송장·택배사가 없으면 null.
+            'shipping' => $this->whenLoaded('firstShipping', fn () => [
+                'carrier_name' => $this->firstShipping?->carrier?->getLocalizedName(),
+                'tracking_number' => $this->firstShipping?->tracking_number,
+                'tracking_url' => $this->resolveTrackingUrl($this->firstShipping),
+            ]),
+
             // 주문 옵션 (상품 정보)
             //
             // 기본은 대표 1건만 싣는다. 마이페이지 주문내역처럼 한 주문의 아이템을 전부
@@ -102,6 +111,21 @@ class UserOrderListResource extends BaseApiResource
                 ) && PermissionHelper::check('sirsoft-ecommerce.user-orders.cancel'),
             ],
         ]);
+    }
+
+    /**
+     * 배송 레코드의 송장 조회 주소를 반환합니다.
+     *
+     * @param  OrderShipping|null  $shipping  배송 레코드
+     * @return string|null 송장 조회 주소 (택배사·송장 번호·조회 주소 틀 중 하나라도 없으면 null)
+     */
+    private function resolveTrackingUrl(?OrderShipping $shipping): ?string
+    {
+        if ($shipping === null || empty($shipping->tracking_number) || $shipping->carrier === null) {
+            return null;
+        }
+
+        return $shipping->carrier->buildTrackingUrl((string) $shipping->tracking_number);
     }
 
     /**

@@ -537,7 +537,23 @@
 
 #### refetchDataSource 와의 관계
 
-`refetchDataSource` 핸들러로 단독 데이터를 다시 부르는 경우는 `wait_for` 트리거 대상이 아니다. 이 경우 컴포넌트 단위 `blur_until_loaded` 의 객체 형태(`{ enabled: true, data_sources: ["xxx"] }`)로 처리한다 — 페이지 단위 vs 컴포넌트 단위의 역할 분리를 유지한다.
+`refetchDataSource` 핸들러로 단독 데이터를 다시 부르는 경우는 `wait_for` 트리거 대상이 아니다. 받는 동안의 표시는 컴포넌트 단위 `blur_until_loaded` 로 하되, **객체 형태(`data_sources`)는 걸리지 않는다** — 다시 받기는 엔진의 「받는 중」 표시를 세우지 않고(폴링마다 흐려지지 않게, [data-sources-advanced.md](data-sources-advanced.md)), 같은 경로 다시 받기는 앞 값을 둔 채 받아 값이 `undefined` 가 되지도 않는다. 조작이 받는 동안 켜고 끄는 값을 두고 표현식 형태로 읽는다:
+
+```html
+<on type="click">
+  <sequence>
+    <set-state target="local" photoOnly="{{!_local.photoOnly}}" :listLoading="true"/>
+    <refetch-data-source dataSourceId="reviews" :sync="true"/>
+    <set-state target="local" :listLoading="false"/>
+  </sequence>
+</on>
+<div data-blur-until-loaded="{{_local.listLoading ?? false}}">…목록…</div>
+```
+
+- `sequence` 가 필요하다 — 이벤트의 액션 배열은 서로 기다리지 않아, 나열만 하면 끄기가 응답 전에 돈다.
+- `sync: true` 가 필요하다 — 기본 다시 받기는 화면 반영을 뒤로 미뤄 끄기가 새 목록보다 먼저 그려진다.
+- 다시 받기는 실패해도 예외를 던지지 않으므로 끄기까지 간다. 같은 레이아웃 이동은 `_local` 을 유지하므로 초기화에서 그 값을 비운다.
+- 쿼리 갱신·같은 화면 이동(`navigate` + `mergeQuery`)으로 다시 받는 목록은 반대로 객체 형태가 걸린다. 그런 화면은 `wait_for` 로 덮개가 새 목록을 기다리게 하고, 덮개가 걷힌 뒤 커밋까지의 틈은 객체 형태 흐림으로 메운다.
 
 `target` 지정 시 문서에 런타임 CSS 규칙을 붙여 타겟 요소에 `::after` 의사 요소로 오버레이를 생성합니다. 타겟 요소에 `position:relative; z-index:0`을 설정하여 명시적 stacking context를 생성하므로, `::after`가 타겟 내부에 갇히고 헤더/네비게이션 등 형제 요소를 절대 가리지 않습니다. `target` 미지정 시 `document.body`에 `position:fixed` div를 삽입하는 폴백 방식을 사용합니다.
 
