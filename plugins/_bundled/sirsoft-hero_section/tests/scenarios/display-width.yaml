@@ -25,6 +25,7 @@ effects:
   - site_slider_matches_width_setting
   - preview_follows_width_before_save
   - width_saved_and_restored
+  - extension_content_class_passed_to_slider   # 조각은 확장점이 넘긴 본문 상자 클래스(contentClass · 데스크톱 contentClassDesktop)를 슬라이더에 넘긴다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php

@@ -224,12 +224,14 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_preload_by_turn
+  // @effects video_downloaded_only_on_its_turn
   it('영상은 재생 차례인 장만 다 받고, 다음 장은 정보만, 그 뒤 장은 받지 않는다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), videoBanner(2), videoBanner(3)]} settings={{ autoplay: true }} />);
     expect([...container.querySelectorAll('video')].map((v) => v.getAttribute('preload'))).toEqual(['auto', 'metadata', 'none']);
   });
 
   // @scenario surface=video_preload_by_turn
+  // @effects video_downloaded_only_on_its_turn
   it('장을 넘기면 지나간 첫 장 영상도 차례가 아닌 장처럼 받지 않는다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), videoBanner(2), videoBanner(3)]} settings={{ autoplay: true }} />);
     fireEvent.click(container.querySelector('.hs-slider__next')!);
@@ -237,6 +239,7 @@ describe('HeroSlider 영상 배너', () => {
   });
 
   // @scenario surface=video_preload_by_turn
+  // @effects video_downloaded_only_on_its_turn
   it('움직임 줄이기·데이터 절약 방문자에게는 재생하기 전까지 영상을 받지 않는다', () => {
     mockMedia({ reduce: true });
     const reduced = render(<HeroSlider banners={[videoBanner(1), videoBanner(2)]} />);

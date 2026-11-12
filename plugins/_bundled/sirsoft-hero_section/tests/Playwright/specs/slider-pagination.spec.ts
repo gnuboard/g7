@@ -44,6 +44,7 @@ async function injectBanners(page: Page, settings: Record<string, unknown>): Pro
 const hs = (page: Page) => page.locator('section.hs-slider[data-position="home_hero"]');
 
 // @scenario surface=site_pagination_variants
+// @effects pagination_follows_position_setting
 test('진행 막대 점 — 지금 장 점이 24px 막대로 길어지고 자동 넘김 동안 막대가 차며, 마우스를 올리면 가득 찬 채 멈춘다 (desktop)', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page, { autoplay: true, interval_seconds: 7, pagination: 'progress' });
@@ -71,6 +72,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     test.use({ hasTouch: viewport === 'mobile' });
 
     // @scenario surface=site_pagination_variants
+    // @effects pagination_follows_position_setting
     test(`배너 이름 탭 — 배너 제목 단추를 누르면 그 장으로 가고, 휴대폰에서는 막대만 보이되 단추 이름은 남는다 (${viewport})`, async ({ page }) => {
       await page.setViewportSize(VIEWPORTS[viewport]);
       // 자동 넘김을 켜 일시정지 단추가 있는 상태에서 겹침을 보고, 장이 넘어가지 않게 먼저 멈춘다

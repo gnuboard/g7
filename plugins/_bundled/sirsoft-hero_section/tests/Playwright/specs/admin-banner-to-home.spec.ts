@@ -2,7 +2,7 @@
  * E2E: 관리자가 배너를 다루면 사이트 홈(순서 변경은 배너가 없는 게시판) 상단 슬라이더에 그대로 반영된다 (#810)
  *
  * @scenario-manifest tests/scenarios/e2e-flows.yaml
- * @effects user_screen_reflects_admin_change, test_data_cleaned_up
+ * 효과 요약(마커 아님 — 평문): user_screen_reflects_admin_change, test_data_cleaned_up
  *
  * 관리자 조작은 데스크톱 폭에서 하고(관리자 표는 휴대폰 폭에서 카드 보기라 조작 경로가 다르다 — 그 화면 계약은
  * 레이아웃 테스트가 본다), 사용자 화면 확인은 축의 폭(데스크톱·휴대폰)으로 한다. 단언은 운영 문구가 아니라 사양이

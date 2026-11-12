@@ -44,6 +44,7 @@ const measure = (page: Page) => page.locator('section.hs-slider[data-position="h
 
 for (const viewport of ['desktop', 'mobile'] as const) {
   // @scenario surface=slider_max_height_vars
+  // @effects slider_height_capped_by_device_max_height
   test(`사이트 — 그 기기의 최대 높이에서 멈추고 이미지는 잘려 채우며, 다른 기기 값은 쓰지 않는다 (${viewport})`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[viewport]);
     // 비운 채 — 비율대로(PC 3:1, 휴대폰 3:4)

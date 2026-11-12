@@ -184,8 +184,7 @@ test('휴대폰 프로모션형(그림이 위)은 넘김 단추를 그림 칸 �
   }
 });
 
-// @scenario surface=target_settings_late_response_isolated
-// @effects target_draft_preserved_after_late_response
+// 아래 R3 두 시험(PUT·DELETE)이 함께 쓰는 늦은 응답 재현 — 조합·효과 마커는 각 시험에 둔다.
 async function lateResponse(page: Page, request: APIRequestContext, managerToken: string, method: 'PUT' | 'DELETE') {
   await hidePopups(page); await authenticatePage(page, managerToken);
   const endpoint = `${API}/admin/position-settings/board_hero/targets/4`;

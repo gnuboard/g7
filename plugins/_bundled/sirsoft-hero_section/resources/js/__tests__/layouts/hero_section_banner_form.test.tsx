@@ -34,6 +34,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=target_settings_failure_retry
+  // @effects target_settings_fetched_for_edit_without_query
   it('대상 설정은 데이터 소스 if 로 거르지 않고 init·대상 고르기에서 받는다 — if 는 _local·banner 를 못 봐 쿼리 없는 수정 진입에서 소스가 빠진다', () => {
     const source = asArray<any>(layout.data_sources).find((s) => s.id === 'form_target_settings');
     expect(source.if).toBeUndefined();
@@ -61,6 +62,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=target_settings_failure_retry
+  // @effects form_preview_uses_position_defaults_until_target_picked
   it('동적 위치에서 대상을 고르기 전에는 위치 기본값으로 미리보기를 그린다 — 대상 설정을 받을 일이 없어 기다리지 않는다', () => {
     const c = evaluateComputed(layout, { route: {}, banner: undefined, form_target_info: undefined, position_settings: {data: { positions: [{key: 'board_hero', dynamic: true, settings: {effect: 'fade'}}]}}, _local: {form: {position: 'board_hero', target_key: null}}, _global: {}, form_target_settings: undefined });
     expect(c.formTargetSettingsFailed).toBe(false);
@@ -336,6 +338,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=admin_max_height_setting
+  // @effects preview_follows_max_height_before_save
   it('편집 미리보기는 이 배너가 나갈 자리의 최종 설정(위치 기본값, 동적 위치면 대상 재정의까지)의 표시 폭·기기별 최대 높이를 받는다', () => {
     const preview = findById(form, 'form_preview')!;
     const positionSettings = { data: { positions: [
@@ -558,6 +561,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario case=admin_form_position_target
+  // @effects banner_form_saves_position_with_target
   it('위치는 레지스트리 목록에서 고르고, 동적 위치면 대상을 고른다 — 위치를 바꾸면 대상을 비우고, 저장 본문·목록 복귀가 대상을 싣는다', () => {
     const radio = findById(form, 'position_radio')!;
     expect(radio.props.autoBinding).toBe(false);
@@ -595,6 +599,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
   it('위치 설정을 받기 전에는 저장을 막고 이유를 보인다 — 동적 위치 배너가 대상 없이(target_key null) 나가 422 가 나지 않게, 받지 못하면 다시 받기를 준다', () => {
     const disabledExpr = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
     const ready = { data: { positions: [{ key: 'board_hero', label_key: 'k.board', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'k.target.board', label: null } }] } };
@@ -628,6 +633,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario case=admin_form_position_target
+  // @effects target_candidates_scoped_to_current_position
   it('대상 찾기 후보는 찾은 위치를 달고, 고르기 칸은 폼의 지금 위치 후보만 보인다 — 위치를 바꾼 뒤 늦게 온 앞 위치 응답이 섞이지 않게', () => {
     const dropdown = findById(form, 'form_target_dropdown')!;
     const success = actionsOf(dropdown, 'setState').find((a: any) => typeof a.params?.formTargetResults === 'string');
@@ -647,7 +653,6 @@ describe('배너 등록·수정 화면', () => {
   });
 });
 
-// @scenario case=admin_form_position_target
 describe('[case:components-misc-hero-position-settings-invalid-response] 수정 폼은 위치 정보를 확인한 뒤 저장한다', () => {
   const invalid = [
     ['null 응답', null],
@@ -656,6 +661,7 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 수정 
     ['위치 배열 형식 오류', { data: { positions: {} } }],
   ] as const;
   // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
   it.each(invalid)('%s이면 대상 키를 잃는 저장을 막고 다시 받기를 보인다', (_name, settings) => {
     const scope = { _local: { form: { position: 'board_hero', target_key: '9', images: { pc: { id: 1 } } } }, position_settings: settings, banner: undefined, form_target_info: undefined };
     const computed = evaluateComputed(form as any, scope);
@@ -668,10 +674,10 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 수정 
   });
 });
 
-// @scenario case=admin_form_position_target
 describe('[case:components-misc-hero-position-settings-invalid-response] 고른 위치가 위치 목록에 없으면 다시 받기 대신 위치를 다시 고르게 한다', () => {
   const defs = { data: { positions: [{ key: 'home_hero', registered: true, dynamic: false }] } };
   // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
   it('없는 위치로 연 등록 화면은 저장을 잠그고 「없는 위치」 이유를 보이며, 다른 위치를 고르면 풀린다', () => {
     const scope = (position: string) => ({ _local: { form: { position, images: { pc: { id: 1 } } } }, position_settings: defs, banner: undefined, form_target_info: undefined, _global: {} });
     const missing = scope('gone_hero');
@@ -692,6 +698,7 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 고른 
   });
 
   // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
   it('요청이 실패해 앞 응답이 남은 경우는 받지 못함이다 — 다시 받기를 보인다', () => {
     const scope = { _local: { form: { position: 'board_hero', target_key: '9' } }, position_settings: defs, banner: undefined, form_target_info: undefined, _global: { heroPositionSettingsFailed: true } };
     const computed = evaluateComputed(form as any, scope);

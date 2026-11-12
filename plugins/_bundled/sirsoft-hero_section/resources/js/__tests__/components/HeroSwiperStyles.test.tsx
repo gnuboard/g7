@@ -74,6 +74,7 @@ describe('Swiper CSS 동봉 자산', () => {
   });
 
   // @scenario surface=swiper_styles_vendor_asset
+  // @effects slider_renders_without_asset_api
   it('코어 자산 API 가 없으면(시험·코어 밖) 싣지 않고 바로 슬라이더를 그린다', async () => {
     const { HeroSlider } = await fresh();
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} />);
@@ -83,6 +84,7 @@ describe('Swiper CSS 동봉 자산', () => {
   });
 
   // @scenario surface=swiper_styles_vendor_asset
+  // @effects swiper_css_loaded_once_behind_skeleton
   it('동봉 Swiper CSS 를 한 번만 싣고, 실릴 때까지 같은 폭의 스켈레톤을 둔 뒤 실린 자리 그대로 슬라이더를 그린다', async () => {
     const core = installCore();
     const first = document.createElement('link');
@@ -109,6 +111,7 @@ describe('Swiper CSS 동봉 자산', () => {
   });
 
   // @scenario surface=swiper_styles_vendor_asset
+  // @effects autoplay_follows_interval_and_visitor
   it('데이터가 CSS 보다 먼저 와도 키보드 복귀를 감지한다 — 슬라이더를 누른 뒤 Tab 으로 돌아오면 자동 넘김이 멈춘다', async () => {
     const core = installCore();
     const { HeroSlider } = await fresh();
@@ -132,6 +135,7 @@ describe('Swiper CSS 동봉 자산', () => {
   });
 
   // @scenario surface=swiper_styles_vendor_asset
+  // @effects swiper_css_failure_notified_with_retry
   it('끝내 못 실으면 실패 알림에 다시 시도를 걸고, 슬라이더는 전환 효과 없이라도 그린다', async () => {
     const core = installCore();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -151,6 +155,7 @@ describe('Swiper CSS 동봉 자산', () => {
   });
 
   // @scenario surface=swiper_styles_vendor_asset
+  // @effects swiper_css_copied_once_into_preview
   it('미리보기 iframe 에는 실린 Swiper CSS 를 한 번만 복사한다', async () => {
     const core = installCore();
     const { styles } = await fresh();
@@ -172,6 +177,7 @@ describe('Swiper CSS 동봉 자산', () => {
   });
 
   // @scenario surface=swiper_styles_vendor_asset
+  // @effects vendored_swiper_matches_package_version
   it('동봉 판은 package.json 의 swiper 와 같고, 그 판의 CSS·라이선스 파일이 dist/vendor 에 있다', async () => {
     const { styles } = await fresh();
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -183,6 +189,7 @@ describe('Swiper CSS 동봉 자산', () => {
   });
 
   // @scenario surface=swiper_styles_vendor_asset
+  // @effects extension_css_free_of_swiper_classes
   it('확장 CSS 와 컴포넌트는 Swiper 클래스를 걸지 않는다 — 화살표·점은 자기 클래스로 그린다', () => {
     const css = fs.readFileSync(path.join(ROOT, 'resources/css/main.css'), 'utf8');
     expect(css).not.toMatch(/\.swiper-[a-z]/);

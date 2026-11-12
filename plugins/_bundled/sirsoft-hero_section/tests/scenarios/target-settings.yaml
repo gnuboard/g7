@@ -38,6 +38,15 @@ effects:
   - target_draft_preserved_after_late_response
   - target_settings_retry_restores_controls
   - promo_existing_media_and_height_options_work
+  - target_save_completion_recognized_under_base_path   # 하위 폴더 마운트(basePath)에서도 지금 대상의 저장 완료를 알아보고 응답을 반영한다
+  - target_save_handler_reregistered_after_locale_switch   # 언어 전환으로 디스패처가 바뀌어도 대상 설정 저장 처리기를 다시 등록한다
+  - target_save_sent_without_random_uuid   # crypto.randomUUID 가 없는 HTTP 관리자에서도 저장 요청을 보내고 잠금을 푼다
+  - target_save_not_resent_while_pending   # 저장이 진행 중이면 저장 단추를 다시 눌러도 요청을 또 보내지 않는다
+  - target_settings_fetched_for_edit_without_query   # 대상 설정은 데이터 소스 if 없이 init·대상 고르기에서 받아, 쿼리 없이 연 수정 화면도 그 배너의 대상 설정을 받는다
+  - form_preview_uses_position_defaults_until_target_picked   # 동적 위치에서 대상을 고르기 전 수정·등록 미리보기는 대상 설정을 기다리지 않고 위치 기본값으로 그린다
+  - target_card_saves_only_toggled_items   # 「이 대상 설정」 카드는 켠 항목만 작업본에 담아 그 대상 주소로 저장(PUT)·되돌리기(DELETE)한다
+  - target_effective_settings_overlay_toggled_items   # 대상 최종 값은 위치 기본값 위에 켠 항목만 겹치고(false·null 명시값 포함), 작업본은 지금 위치·대상 응답에만 붙으며 미리보기도 같은 값을 쓴다
+  - settings_only_target_kept_in_target_list   # 배너 없이 대상 설정만 남은 대상도 대상 목록에 「대상 설정 있음」으로 남고, 되돌리면 목록에서 빠진다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/TargetSettingControllerTest.php

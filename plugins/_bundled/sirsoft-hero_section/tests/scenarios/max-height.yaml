@@ -17,6 +17,10 @@ axes:
 
 effects:
   - preview_follows_max_height_before_save
+  - slider_height_capped_by_device_max_height   # 슬라이더는 그 기기의 최대 높이에서 멈추고(이미지는 잘려 채움) 다른 기기 값은 쓰지 않으며, 미리보기 기기 고정은 그 기기 값을 쓴다
+  - skeleton_max_height_follows_hint_then_memory   # 받는 동안 스켈레톤 최대 높이는 첫 로드 힌트를 먼저, 힌트가 없으면 직전 방문 기억을 쓴다
+  - invalid_max_height_blocks_save   # 최대 높이가 범위 밖(160~2000)이거나 정수가 아니면 안내를 보이고 저장을 잠근다(비운 칸은 괜찮다)
+  - tight_max_height_warned_without_blocking   # 메뉴 겹치기(화면 전체 폭)와 낮은 최대 높이를 같이 쓰면 문구 자리가 좁아질 수 있다고 알리되 저장은 막지 않는다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php

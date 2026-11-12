@@ -62,6 +62,7 @@ describe('대상 설정 완료 응답 격리', () => {
     await complete(); expect(core.dataSource.set).not.toHaveBeenCalled(); expect(dispatch).not.toHaveBeenCalled();
   });
   // @scenario surface=target_settings_late_response_isolated
+  // @effects target_save_completion_recognized_under_base_path
   it('하위 폴더 마운트에서도 현재 대상 저장 완료를 식별한다', async () => {
     (globalThis as any).G7Config = { basePath: '/g7' };
     window.history.replaceState({}, '', '/g7/admin/plugins/sirsoft-hero_section/banners?position=board_hero&target=4');
@@ -69,6 +70,7 @@ describe('대상 설정 완료 응답 격리', () => {
   });
 
   // @scenario surface=target_settings_late_response_isolated
+  // @effects target_draft_preserved_after_late_response
   it('같은 대상에 재진입해 새 요청을 시작했으면 이전 요청 응답도 버린다', async () => {
     local.targetSaving = { key: 'board_hero|4', id: 'new-request' };
     const before = structuredClone(local);
@@ -76,6 +78,7 @@ describe('대상 설정 완료 응답 격리', () => {
   });
 
   // @scenario surface=target_settings_late_response_isolated
+  // @effects target_save_handler_reregistered_after_locale_switch
   it('언어 전환으로 바뀐 디스패처에도 완료 처리기를 다시 등록한다', async () => {
     vi.resetModules();
     const first = { registerHandler: vi.fn() }, second = { registerHandler: vi.fn() };
@@ -88,6 +91,7 @@ describe('대상 설정 완료 응답 격리', () => {
   });
 
   // @scenario surface=target_settings_late_response_isolated
+  // @effects target_draft_preserved_after_late_response
   it('실제 요청 처리기는 await 전에 대상·제출값을 복사하고 B 입력을 보존하며 잠금을 푼다', async () => {
     local.targetSaving = null;
     let resolve!: (value: any) => void;
@@ -113,6 +117,7 @@ describe('대상 설정 완료 응답 격리', () => {
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ params: { type: 'error', message: '서버 저장 오류' } }));
   });
   // @scenario surface=target_settings_late_response_isolated
+  // @effects target_save_sent_without_random_uuid
   it('HTTP 로 연 관리자(crypto.randomUUID 없음)에서도 저장 요청을 보내고 잠금을 푼다', async () => {
     local.targetSaving = null;
     const original = Object.getOwnPropertyDescriptor(globalThis.crypto, 'randomUUID');
@@ -126,6 +131,7 @@ describe('대상 설정 완료 응답 격리', () => {
     }
   });
   // @scenario surface=target_settings_late_response_isolated
+  // @effects target_save_not_resent_while_pending
   it('진행 중 저장 단추를 다시 눌러도 요청을 중복 전송하지 않는다', async () => {
     core.api = { put: vi.fn() };
     expect(await saveTargetSettings({ params: { position: 'board_hero', target: '4', method: 'PUT', overrides: submitted } })).toBe(false);

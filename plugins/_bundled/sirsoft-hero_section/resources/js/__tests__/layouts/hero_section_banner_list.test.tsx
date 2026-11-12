@@ -161,6 +161,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario case=admin_placement_list
+  // @effects dynamic_position_lists_targets_before_detail
   it('동적 위치는 대상을 고르기 전에 배너가 있는 대상 목록을 보이고(미리보기·표·필터 없이), 고르면 대상 이름과 「대상 목록으로」가 있는 상세가 된다', () => {
     const product = [{ key: 'product_hero', label_key: null, label: '상품 상세', registered: true, dynamic: true, target: { type: 'product', label_key: null, label: '상품' } }];
     const listing = { data: { position: 'board_hero', data: [{ key: '2', label: '자유게시판', exists: true, site_url: '/board/free', total: 2, active: 1 }, { key: '9', label: null, exists: false, site_url: null, total: 1, active: 0 }], summary: { banners: 3, targets: 2 }, pagination: { current_page: 1, last_page: 2, total: 21, per_page: 20 } } };
@@ -206,6 +207,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario case=admin_placement_list
+  // @effects target_manage_link_keeps_full_key_and_page
   it('대상 목록의 「관리」 주소는 저장 키를 통째로 싣고(예약 문자 포함) 보던 쪽을 이고 가며, 「대상 목록으로」가 그 쪽으로 돌아온다', () => {
     const product = [{ key: 'qa_detail_hero', label_key: null, label: '외부', registered: true, dynamic: true, target: { type: 'event', label_key: null, label: '행사' } }];
     const page = (current: number) => ({ data: { position: 'qa_detail_hero', data: [], summary: { banners: 25, targets: 22 }, pagination: { current_page: current, last_page: 2, total: 22, per_page: 20 } } });
@@ -231,6 +233,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario case=admin_placement_list
+  // @effects target_list_failure_offers_retry
   it('대상 목록을 받지 못하면 「불러오는 중」에 머물지 않고 실패를 알리며 다시 받기를 준다 — 다른 위치·쪽의 실패 표시는 쓰지 않는다', () => {
     const scope = (query: any, failed: string | null, placements: any = undefined) => ({ query, placements, position_settings: positionSettings(), _global: { heroPlacementsFailed: failed } });
     const shown = (id: string, s: any) => evaluateBinding(findById(list, id)!.if, s, evaluateComputed(list as any, s));
@@ -263,6 +266,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario case=admin_placement_list
+  // @effects admin_list_waits_for_valid_position_info
   it('위치 설정이 오기 전에는 동적 위치를 정적 화면(미리보기·표·슬라이더 설정)으로 그리지 않고, 받지 못하면 알리고 다시 받기를 준다', () => {
     const shown = (id: string, s: any) => evaluateBinding(findById(list, id)!.if, s, evaluateComputed(list as any, s));
     const before = { query: { position: 'board_hero', target: '2' }, position_settings: undefined, _global: {} };
@@ -289,6 +293,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario case=external_output_skips
+  // @effects auto_output_skip_reason_shown
   it('다른 확장이 더한 동적 위치가 대상 값 경로를 주지 않아 히어로가 자리를 채우지 못하면 그 이유를 알린다', () => {
     const notice = findById(list, 'no_auto_output_notice')!;
     const shown = (autoOutput: boolean | undefined, registered = true) => {
@@ -508,6 +513,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=admin_max_height_setting
+  // @effects invalid_max_height_blocks_save
   it('최대 높이가 범위 밖이거나 정수가 아니면 안내를 보이고 저장을 잠근다 — 비운 칸은 괜찮다', () => {
     const invalid = (sliderForm: Record<string, unknown>) =>
       evaluateComputed(list as any, { position_settings: positionSettings(), _local: { sliderForm: { position: 'home_hero', ...sliderForm } } }).maxHeightInvalid;
@@ -528,6 +534,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=admin_max_height_setting
+  // @effects tight_max_height_warned_without_blocking
   it('메뉴 겹치기(화면 전체 폭)와 낮은 최대 높이를 같이 쓰면 문구 자리가 좁아질 수 있다고 알리되 저장은 막지 않는다', () => {
     const tight = (sliderForm: Record<string, unknown>) =>
       evaluateComputed(list as any, { position_settings: positionSettings(), _local: { sliderForm: { position: 'home_hero', ...sliderForm } } }).maxHeightOverlayTight;
@@ -549,6 +556,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=target_settings_admin_card
+  // @effects target_card_saves_only_toggled_items
   it('동적 위치에서 대상을 고르면 「이 대상 설정」 카드가 8개 항목을 보이고, 항목을 켠 것만 작업본에 담아 저장·되돌리기는 그 대상 주소로 보낸다', () => {
     const card = findById(list, 'target_settings_card')!;
     expect(card.if).toBe('{{_computed.isDynamic && _computed.targetReady}}');
@@ -579,6 +587,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=target_settings_admin_card
+  // @effects target_effective_settings_overlay_toggled_items
   it('대상 작업본은 지금 위치·대상 응답에만 붙고, 최종 값은 위치 기본값 위에 켠 항목만 겹친다 — false·null 명시값도 덮고, 미리보기도 같은 값을 쓴다', () => {
     const settingsResponse = (target: string) => ({ data: { position: 'board_hero', target: { key: target, exists: true }, overrides: { autoplay: false, max_height_pc: null }, position_settings: { autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots', max_height_pc: 400, max_height_mobile: null } } });
     const computed = (query: any, target_settings: any, local: any = {}) => evaluateComputed(list as any, { position_settings: positionSettings(), query, target_settings, _local: local });
@@ -703,6 +712,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario case=admin_target_picker
+  // @effects target_candidates_scoped_to_current_position
   it('대상 찾기 후보는 찾은 위치를 달고, 고르기 칸은 지금 위치의 후보만 보인다 — 게시판에서 찾은 「자유게시판」이 상품 탭에 남아 상품 키로 골리지 않게', () => {
     const dropdown = findById(list, 'target_dropdown')!;
     const success = actionsOf(dropdown, 'setState')
@@ -732,6 +742,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario case=admin_target_picker
+  // @effects target_pick_scopes_list_preview_and_reorder
   it('동적 위치는 대상을 먼저 고른다 — 고르기 칸은 대상 목록 API 로 찾고, 고르면 주소(target)에 담아 선택 묶음을 비우며, 목록·미리보기·순서가 그 대상을 싣는다', () => {
     const picker = findById(list, 'target_picker')!;
     expect(picker.if).toBe('{{_computed.isDynamic}}');
@@ -826,7 +837,6 @@ describe('관리 화면 배너 이미지의 썸네일 규격 (#869)', () => {
   });
 });
 
-// @scenario case=admin_placement_list
 describe('[case:components-misc-hero-position-settings-invalid-response] 완료된 잘못된 위치 정보는 재시도로 복구한다', () => {
   const invalid = [
     ['null 응답', null],
@@ -835,6 +845,7 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 완료�
     ['위치 배열 형식 오류', { data: { positions: {} } }],
   ] as const;
   // @scenario case=admin_placement_list
+  // @effects admin_list_waits_for_valid_position_info
   it.each(invalid)('%s이면 정적 화면을 열지 않고 다시 받기를 보인다', (_name, settings) => {
     const scope = { query: { position: 'board_hero' }, position_settings: settings, _global: {} };
     const computed = evaluateComputed(list as any, scope);
@@ -847,10 +858,10 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 완료�
   });
 });
 
-// @scenario case=admin_placement_list
 describe('[case:components-misc-hero-position-settings-invalid-response] 위치 목록은 왔는데 주소의 위치만 없으면 다시 받기 대신 없는 위치로 알린다', () => {
   const defs = { data: { positions: [{ key: 'home_hero', registered: true, dynamic: false }] } };
   // @scenario case=admin_placement_list
+  // @effects admin_list_waits_for_valid_position_info
   it('확장이 꺼지고 남은 배너도 없는 위치 주소 — 다시 받아도 오지 않으므로 다시 받기를 두지 않고 탭으로 옮기게 한다', () => {
     const scope = { query: { position: 'gone_hero' }, position_settings: defs, _global: {} };
     const computed = evaluateComputed(list as any, scope);
@@ -865,6 +876,7 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 위치 
   });
 
   // @scenario case=admin_placement_list
+  // @effects admin_list_waits_for_valid_position_info
   it('요청이 실패해 앞 응답이 남은 경우는 없는 위치가 아니라 받지 못함이다 — 다시 받기를 보인다', () => {
     const scope = { query: { position: 'board_hero' }, position_settings: defs, _global: { heroPositionSettingsFailed: true } };
     const computed = evaluateComputed(list as any, scope);

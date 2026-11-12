@@ -78,3 +78,18 @@ test_files:
 effects:
   - user_screen_reflects_admin_change
   - test_data_cleaned_up
+  - dynamic_skeleton_drawn_only_from_target_memory   # 동적 위치 스켈레톤은 위치 + 대상마다 따로 기억하고, 그 대상의 기억이 「배너 있음」일 때만 그린다(D8)
+  - external_position_slot_renders_banners   # 다른 확장이 더한 위치의 조각(시험용·생성 조각) 안 HeroSlider 가 그 위치 배너(제목·이미지·수정 단추)를 그린다
+  - empty_slot_renders_nothing   # 그 자리에 배너가 0건이면 사이트에 아무것도 그리지 않는다(D3)
+  - dynamic_slot_renders_only_current_target   # 동적 위치 조각은 화면 주소 값을 대상으로 받아, 응답이 지금 주소 값의 것일 때만 배너를 넘긴다(앞 대상 응답은 받는 중)
+  - third_party_fragment_matches_hero_contract   # 다른 확장의 시험용 조각이 히어로 자기 조각과 같은 공개 API·응답 읽기·슬라이더 props 계약을 쓴다
+  - fragment_hidden_when_hero_disabled   # 히어로가 꺼져 있으면 다른 확장의 조각은 아무것도 그리지 않는다
+  - banner_form_saves_position_with_target   # 등록·수정 폼은 레지스트리 위치를 고르고 동적 위치면 대상을 골라, 저장 본문·목록 복귀가 그 대상을 싣는다(위치를 바꾸면 대상을 비운다)
+  - banner_form_save_locked_until_position_info_valid   # 위치 정보가 오기 전·잘못 왔을 때·고른 위치가 없을 때 등록·수정 저장을 잠그고 이유(다시 받기 또는 위치 다시 고르기)를 보인다
+  - target_candidates_scoped_to_current_position   # 대상 찾기 후보는 찾은 위치를 달고, 고르기 칸은 지금 위치의 후보만 보인다(검색어는 100자로 자른다)
+  - dynamic_position_lists_targets_before_detail   # 동적 위치 목록은 대상을 고르기 전에 배너가 있는 대상 목록을 보이고, 고르면 대상 이름과 「대상 목록으로」가 있는 상세가 된다
+  - target_manage_link_keeps_full_key_and_page   # 대상 목록 「관리」 주소는 저장 키를 통째로(예약 문자 포함) 싣고 보던 쪽을 이고 가며, 「대상 목록으로」가 그 쪽으로 돌아온다
+  - target_list_failure_offers_retry   # 대상 목록을 받지 못하면 「불러오는 중」에 머물지 않고 실패를 알리며 다시 받기로 목록을 복구한다
+  - admin_list_waits_for_valid_position_info   # 관리자 목록은 위치 정보가 오기 전·잘못 왔을 때 정적 화면을 그리지 않고 다시 받기를 주며, 주소의 위치만 없으면 없는 위치로 알린다
+  - auto_output_skip_reason_shown   # 다른 확장이 더한 동적 위치가 경로 매개변수를 주지 않아 자동 출력이 안 되면 관리자 목록에 그 이유를 알린다
+  - target_pick_scopes_list_preview_and_reorder   # 동적 위치는 대상을 먼저 고르고, 고른 대상이 주소·목록·미리보기·순서 변경에 실리며 고르기 전·없는 대상·미등록 위치에서는 등록을 막는다

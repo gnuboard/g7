@@ -2,7 +2,7 @@
  * E2E: 동적 위치 — 게시판 목록·상품 상세·카테고리 목록에 그 대상의 배너만 나온다
  *
  * @scenario-manifest tests/scenarios/position-registry.yaml
- * @effects user_screen_reflects_admin_change, test_data_cleaned_up
+ * 효과 요약(마커 아님 — 평문): user_screen_reflects_admin_change, test_data_cleaned_up
  *
  * 개발 사이트에는 게시판(notice·free·gallery·event)·상품·카테고리(clothing·men)가 깔려 있다 — 사양은 그 대상에 배너를 만들고 지운다.
  * 조각은 화면 주소 값(게시판 slug·상품 코드·카테고리 slug)을 대상으로 공개 API 를 부르고, SPA 로 다른 대상으로 옮기면 다시 부른다.
@@ -209,6 +209,7 @@ async function fakePlacements(page: Page, items: Array<Record<string, unknown>>)
 }
 
 // @scenario case=admin_placement_list
+// @effects target_manage_link_keeps_full_key_and_page
 test('관리자: 대상 목록의 「관리」는 기호(&·=)가 든 저장 키를 통째로 싣고 보던 쪽을 이고 가며, 「대상 목록으로」가 그 쪽으로 돌아온다', async ({ page, managerToken }) => {
   await fakePlacements(page, [{ key: 'event&split=1', label: '기호 대상', exists: true, site_url: null, total: 1, active: 1 }]);
   await authenticatePage(page, managerToken);
@@ -229,6 +230,7 @@ test('관리자: 대상 목록의 「관리」는 기호(&·=)가 든 저장 키
 });
 
 // @scenario case=admin_placement_list
+// @effects target_list_failure_offers_retry
 test('관리자: 대상 목록을 받지 못하면 「불러오는 중」에 머물지 않고 실패를 알리고, 다시 받기로 목록이 나온다', async ({ page, managerToken }) => {
   let fail = true;
   await page.route(`**${API}/admin/positions/board_hero/placements*`, async (route) => {
@@ -288,6 +290,7 @@ const unusablePositionSettings = [
 
 for (const [shape, payload] of unusablePositionSettings) {
   // @scenario case=admin_placement_list
+  // @effects admin_list_waits_for_valid_position_info
   test(`관리자: 위치 설정 ${shape} 응답은 목록을 열지 않고 다시 받기로 복구한다`, async ({ page, managerToken }) => {
     await authenticatePage(page, managerToken);
     await page.route(`**${API}/admin/position-settings*`, (route) => route.fulfill({ status: 200, json: payload }));
@@ -333,6 +336,7 @@ for (const [shape, payload] of unusablePositionSettings) {
 const GONE_POSITION = 'qa_gone_hero';
 
 // @scenario case=admin_placement_list
+// @effects admin_list_waits_for_valid_position_info
 test('관리자: 위치 목록에 없는 위치 주소는 다시 받기 대신 없는 위치로 알리고 탭으로 옮길 수 있다', async ({ page, managerToken }) => {
   await authenticatePage(page, managerToken);
   await page.goto(`${ADMIN_LIST}?position=${GONE_POSITION}`);
@@ -347,6 +351,7 @@ test('관리자: 위치 목록에 없는 위치 주소는 다시 받기 대신 �
 });
 
 // @scenario case=admin_form_position_target
+// @effects banner_form_save_locked_until_position_info_valid
 test('관리자: 없는 위치로 연 등록 화면은 다시 받기 대신 위치를 다시 고르게 하고 저장을 잠근다', async ({ page, managerToken }) => {
   await authenticatePage(page, managerToken);
   await page.goto(`${ADMIN_LIST}/create?position=${GONE_POSITION}`);

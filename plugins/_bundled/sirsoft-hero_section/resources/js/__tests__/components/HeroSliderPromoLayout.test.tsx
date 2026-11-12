@@ -74,6 +74,7 @@ describe('배너 구성·프로모션형', () => {
   });
 
   // @scenario surface=promo_layout_legacy_render
+  // @effects legacy_banner_renders_unchanged
   it('새 키가 없는 옛 배너는 배경형 그대로다 — 미디어 감싸개·프로모션 칸 없이 그림·문구 띠가 장 바로 아래에 있다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { presentation: { animation: 'letters', text_width: 60, text_pc_y: 40 } })]} settings={{ autoplay: false }} />);
     const el = slide(container);
@@ -88,6 +89,7 @@ describe('배너 구성·프로모션형', () => {
   });
 
   // @scenario surface=promo_layout_render
+  // @effects promo_layout_splits_text_and_media
   it('프로모션형은 바탕색 위에 문구 칸·그림 칸을 나누고, PC 문구 폭이 문구 칸 폭이며, 가로 위치·휴대폰 세로 위치로 좌우·위아래가 정해진다', () => {
     const presentation = { layout: 'promo', background_color: '#F4F5F8', text_width_pc: 40, text_width_mobile: 100, text_pc_x: 0, text_mobile_y: 100, text_width: 70 };
     const { container, rerender } = render(<HeroSlider banners={[banner(1, { presentation })]} settings={{ autoplay: false, width: 'full' }} contentClass="max-w-7xl mx-auto px-8" />);
@@ -111,6 +113,7 @@ describe('배너 구성·프로모션형', () => {
   });
 
   // @scenario surface=promo_layout_render
+  // @effects promo_layout_honors_existing_options
   it('프로모션형도 기존 옵션을 그대로 쓴다 — 문구 바탕·밝기·정렬·링크·영상 경로', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { media_type: 'video', videos: { pc: { url: '/v/pc.mp4', mime: 'video/mp4' } }, button_text: '', presentation: { layout: 'promo', overlay: 'light', tone: 'light' } } as any)]} settings={{ autoplay: false }} />);
     const el = slide(container);
@@ -123,6 +126,7 @@ describe('배너 구성·프로모션형', () => {
   });
 
   // @scenario surface=promo_motion
+  // @effects promo_motion_timing_follows_setting
   it('순차 등장은 줄 간격 0.3초·보통 0.4초, 그림 등장 효과는 감싸개에 0.8초로 실리고, 움직임 줄이기면 둘 다 없다', () => {
     const presentation = { animation: 'sequence', animation_speed: 'normal', animation_delay: 0, media_animation: 'right' };
     expect(textMotion(presentation, false)).toEqual({ name: 'sequence', duration: 0.4, delay: 0 });
@@ -145,6 +149,7 @@ describe('배너 구성·프로모션형', () => {
   });
 
   // @scenario surface=promo_layout_render
+  // @effects promo_device_text_width_falls_back_to_common
   it('기기별 폭은 비우면 공통 폭, 미리보기 기기 고정은 두 칸에 그 기기 값을 넣는다. 바탕색이 형식에 맞지 않으면 쓰지 않는다', () => {
     expect(textWidth({ text_width: 70, text_width_pc: null }, 'pc')).toBe(70);
     expect(textWidth({ text_width: 70, text_width_mobile: 100 }, 'mobile')).toBe(100);
@@ -156,6 +161,7 @@ describe('배너 구성·프로모션형', () => {
   });
 
   // @scenario surface=promo_multiline
+  // @effects multiline_text_rendered_as_plain_text
   it('제목·설명의 줄바꿈 입력을 글자 그대로 싣는다 — HTML 로 해석하지 않는다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { title: '가을 맞이\n<b>이벤트</b>', description: '첫 줄\n둘째 줄' })]} settings={{ autoplay: false }} />);
     const title = container.querySelector('.hs-slider__title') as HTMLElement;
@@ -164,6 +170,7 @@ describe('배너 구성·프로모션형', () => {
     expect(container.querySelector('.hs-slider__description')?.textContent).toBe('첫 줄\n둘째 줄');
   });
   // @scenario surface=promo_layout_render
+  // @effects promo_slider_min_height_remembered_for_skeleton
   it('프로모션형이 한 장이라도 있으면 슬라이더에 hs-slider--promo 를 달고(PC·태블릿 최소 높이), 다음 방문 스켈레톤도 같은 높이로 잡는다', () => {
     const promo = banner(2, { presentation: { layout: 'promo' } });
     const { container, unmount } = render(<HeroSlider banners={[banner(1), promo]} settings={{ autoplay: false, width: 'full' }} position="product_hero" target="11" />);

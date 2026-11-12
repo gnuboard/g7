@@ -1,7 +1,7 @@
 /**
  * #810 후속 — 최대 길이 문구(제목 100·설명 300·버튼 30자)가 사이트 홈 구좌에서 잘리거나 넘치지 않는다.
  * @scenario-manifest tests/scenarios/preview-frame-and-conflict.yaml
- * @effects long_text_not_lost
+ * 효과 요약(마커 아님 — 평문): long_text_not_lost
  *
  * 실측(수정 전): 한글·일본어 최대 길이는 문구 상자가 구좌 위로 넘어 제목 위쪽이 가려졌고(태블릿 한글은 제목 전체),
  * 공백 없는 문자열은 줄을 바꾸지 못해 오른쪽이 잘렸으며 모바일 버튼이 구좌 폭을 넘었다. 문구를 줄이거나 지우지 않고

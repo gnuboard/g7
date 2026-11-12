@@ -97,6 +97,7 @@ async function serveVideo(page: Page): Promise<void> {
 
 // @scenario surface=video_plays_muted_inline
 // @scenario surface=video_ends_then_next
+// @effects video_plays_muted_with_device_source, video_drives_slide_advance
 test('영상 파일 배너는 소리 없이 화면 안에서 재생되고, 끝나면 간격(7초)보다 먼저 다음 장으로 넘어간다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await serveVideo(page);
@@ -116,6 +117,7 @@ test('영상 파일 배너는 소리 없이 화면 안에서 재생되고, 끝�
 });
 
 // @scenario surface=pause_keeps_video_position
+// @effects pause_controls_video_playback
 test('일시정지(❚❚)는 그 자리에서 멈추고, 다시 재생(▶)하면 이어서 본다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
@@ -138,6 +140,7 @@ test('일시정지(❚❚)는 그 자리에서 멈추고, 다시 재생(▶)하�
 });
 
 // @scenario surface=video_play_abort_is_not_failure
+// @effects video_drives_slide_advance
 test('영상을 받는 중(재생 시작 전)에 다른 배너로 넘겼다 돌아와도 그 영상은 재생된다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
@@ -173,6 +176,7 @@ test('영상을 받는 중(재생 시작 전)에 다른 배너로 넘겼다 돌�
 });
 
 // @scenario surface=video_poster_matches_device
+// @effects video_plays_muted_with_device_source
 test('휴대폰에서는 영상 대표 이미지로 모바일 이미지만 받고 PC 이미지는 받지 않는다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
   await serveVideo(page);
@@ -194,6 +198,7 @@ test('휴대폰에서는 영상 대표 이미지로 모바일 이미지만 받�
 
 // @scenario surface=reduced_motion_starts_paused
 // @scenario surface=video_preload_by_turn
+// @effects pause_controls_video_playback, video_downloaded_only_on_its_turn
 test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 다시 재생」 단추로 재생한다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -215,6 +220,7 @@ test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 
 });
 
 // @scenario surface=youtube_legacy_renders_image
+// @effects legacy_youtube_renders_poster_only
 test('옛 응답에 유튜브 종류가 와도 대표 이미지만 그리고 외부 플레이어를 부르지 않는다', async ({ page }) => {
   const external: string[] = [];
   await page.route(/youtube(-nocookie)?\.com|ytimg\.com|googlevideo\.com/, (route) => {
@@ -232,6 +238,7 @@ test('옛 응답에 유튜브 종류가 와도 대표 이미지만 그리고 외
 });
 
 // @scenario surface=form_media_type_fields
+// @effects media_type_choice_switches_form_fields
 test('등록 화면은 미디어 종류로 이미지·영상 파일만 고르고, 종류에 따라 영상 칸과 저장 잠김 이유를 바꾼다', async ({ page, managerToken }) => {
   await authenticatePage(page, managerToken);
   await page.setViewportSize(VIEWPORTS.desktop);

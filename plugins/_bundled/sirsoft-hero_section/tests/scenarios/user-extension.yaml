@@ -17,6 +17,8 @@ axes:
 
 effects:
   - extension_injected_conditionally
+  - extension_keys_use_plugin_prefix   # 조각의 data-source·전역 키는 플러그인 접두(heroSection)를 쓰고 그 이름 문구가 언어마다 있다
+  - extension_passes_edit_permission_to_slider   # 로그인했으면 선택 인증으로 받아 응답의 수정 권한을 슬라이더에 넘긴다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_extensions.test.tsx

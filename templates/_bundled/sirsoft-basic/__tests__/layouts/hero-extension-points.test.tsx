@@ -45,6 +45,7 @@ describe('히어로 확장점', () => {
   };
 
   // @scenario surface=home_layout_has_home_hero_slot
+  // @effects hero_slot_placed_outside_content_box
   it('공통 틀은 본문 상자 바로 앞에 전폭 슬롯 page_top 을 둔다', () => {
     const area = JSON.stringify(load('_user_base.json'));
     const top = area.indexOf('"slot":"page_top"');
@@ -70,6 +71,7 @@ describe('히어로 확장점', () => {
   });
 
   // @scenario surface=home_layout_has_home_hero_slot
+  // @effects hero_slot_placed_outside_content_box
   it('사이트 홈은 본문 상자 밖(page_top)에 home_hero 자리를 하나 두고, 아래 카드 줄과 같은 폭의 상자 클래스를 넘긴다', () => {
     const home = load('home.json');
     expect(slotsNamed(home, 'home_hero')).toHaveLength(1);
@@ -90,6 +92,7 @@ describe('히어로 확장점', () => {
   });
 
   // @scenario surface=shop_layout_has_shop_hero_slot
+  // @effects hero_slot_placed_outside_content_box
   it('쇼핑몰 메인은 본문 상자 밖(page_top)에 shop_hero 자리를 하나 두고 본문 상자 클래스를 넘긴다', () => {
     const shop = load('shop/index.json');
     expect(slotsNamed(shop, 'shop_hero')).toHaveLength(1);
@@ -132,6 +135,7 @@ describe('히어로 확장점', () => {
   });
 
   // @scenario surface=dynamic_layouts_have_hero_slots
+  // @effects hero_slot_placed_outside_content_box
   it('게시판 목록·상품 상세·카테고리 목록도 본문 상자 밖(page_top)에 자기 히어로 자리를 하나씩 두고, 쇼핑몰 메인과 같은 본문 상자 클래스를 넘긴다', () => {
     const main = mainContent();
     for (const [file, name] of [['board/index.json', 'board_hero'], ['shop/show.json', 'product_hero'], ['shop/category.json', 'category_hero']]) {

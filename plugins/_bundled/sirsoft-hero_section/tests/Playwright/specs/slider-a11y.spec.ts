@@ -45,6 +45,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     test.use({ hasTouch: viewport === 'mobile' });
 
     // @scenario surface=pagination_bullet_target_24px
+    // @effects pagination_bullets_have_24px_touch_target
     test(`점 표시는 10px 로 보이고 누를 자리는 24px 이며 이웃 점과 겹치지 않는다 (${viewport})`, async ({ page }) => {
       await page.setViewportSize(VIEWPORTS[viewport]);
       await injectBanners(page);
@@ -87,6 +88,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
 
 // @scenario surface=title_read_once
 // @scenario surface=counter_announced_only_on_visitor_change
+// @effects accessible_carousel_semantics
 test('화면 읽기 프로그램은 제목을 한 번만 읽고, 장 번호는 슬라이드 이름에 있으며 넘긴 때만 잠깐 알린다 (desktop)', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page);
@@ -119,6 +121,7 @@ test('화면 읽기 프로그램은 제목을 한 번만 읽고, 장 번호는 �
 });
 
 // @scenario surface=swiper_styles_vendor_asset
+// @effects autoplay_follows_interval_and_visitor
 test('배너가 Swiper CSS 보다 먼저 와도 누른 뒤 키보드로 들어오면 자동 넘김이 멈춘다 (desktop)', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page, true);
@@ -144,6 +147,7 @@ test('배너가 Swiper CSS 보다 먼저 와도 누른 뒤 키보드로 들어�
 });
 
 // @scenario surface=carousel_labels_follow_locale
+// @effects carousel_labels_follow_site_locale
 test('사이트 언어를 영어로 바꾸면 캐러셀·슬라이드 역할과 장 번호도 영어로 읽는다 (desktop)', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page);

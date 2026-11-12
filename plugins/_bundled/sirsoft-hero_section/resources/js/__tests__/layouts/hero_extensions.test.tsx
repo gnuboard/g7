@@ -47,6 +47,7 @@ describe('사용자 화면 주입 조각', () => {
 
   // @scenario surface=hidden_when_no_banners
   // @scenario surface=loading_skeleton_until_response
+  // @effects extension_injected_conditionally
   it('슬라이더는 늘 붙고, 응답 전(값 없음)이면 받는 중으로 알려 스켈레톤을 그리게 하며 0건이면 슬라이더가 스스로 숨는다', () => {
     for (const { doc, source } of fragments) {
       const slider = doc.components[0];
@@ -63,6 +64,7 @@ describe('사용자 화면 주입 조각', () => {
   });
 
   // @scenario surface=hidden_when_fetch_fails
+  // @effects extension_injected_conditionally
   it('받기에 실패하면 빈 값으로 떨어져 화면 오류 없이 숨는다', () => {
     for (const { doc } of fragments) {
       const source = doc.data_sources[0];
@@ -74,6 +76,7 @@ describe('사용자 화면 주입 조각', () => {
   });
 
   // @scenario surface=data_source_keys_prefixed
+  // @effects extension_keys_use_plugin_prefix
   it('조각의 data-source·전역 키는 플러그인 접두(heroSection)를 쓴다', () => {
     for (const { doc, source } of fragments) {
       expect(doc.data_sources.map((s: any) => s.id)).toEqual([source]);
@@ -89,6 +92,7 @@ describe('사용자 화면 주입 조각', () => {
   });
 
   // @scenario surface=admin_edit_link_for_editors
+  // @effects extension_passes_edit_permission_to_slider
   it('로그인했으면 토큰을 실어 받고(선택 인증), 응답의 수정 권한을 슬라이더에 넘긴다', () => {
     for (const { doc, source } of fragments) {
       expect(doc.data_sources[0].auth_mode).toBe('optional');
@@ -97,6 +101,7 @@ describe('사용자 화면 주입 조각', () => {
   });
 
   // @scenario surface=extension_passes_content_class
+  // @effects extension_content_class_passed_to_slider
   it('템플릿이 확장점으로 넘긴 본문 상자 클래스를 슬라이더에 넘기고, 데스크톱은 따로 넘긴 값을 쓴다(없으면 기본 값)', () => {
     for (const { doc } of fragments) {
       const slider = doc.components[0];
@@ -108,6 +113,7 @@ describe('사용자 화면 주입 조각', () => {
   });
 
   // @scenario case=dynamic_fragments_pass_route_target
+  // @effects dynamic_slot_renders_only_current_target
   it('동적 위치 조각은 화면 주소 값을 대상으로 받아 오고, 응답이 지금 주소 값의 것일 때만 배너를 넘긴다 — 첫 로드 힌트는 넘기지 않는다(D8)', () => {
     const dynamic = [
       { doc: board as any, point: 'board_hero', source: 'heroSectionBoard', route: 'route?.slug' },

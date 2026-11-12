@@ -48,6 +48,7 @@ afterEach(() => {
 
 describe('다른 확장이 더한 위치의 조각', () => {
   // @scenario case=third_party_fragment_contract
+  // @effects third_party_fragment_matches_hero_contract
   it('시험용 조각은 히어로 자기 조각과 같은 공개 API·응답 읽기·슬라이더 props 를 쓴다 — 히어로 조각 계약이 바뀌면 문서 예시도 고쳐야 한다', () => {
     for (const [mine, theirs, key] of [[home, staticFragment, 'event_hero'], [board, dynamicFragment, 'event_page_hero']] as const) {
       const own = partsOf(mine);
@@ -78,6 +79,7 @@ describe('다른 확장이 더한 위치의 조각', () => {
   });
 
   // @scenario case=third_party_fragment_renders
+  // @effects external_position_slot_renders_banners, dynamic_slot_renders_only_current_target
   it('엔진은 다른 확장의 조각 안 히어로 슬라이더를 그리고, 그 위치 배너를 넘긴다 — 동적 위치는 지금 주소 값의 응답일 때만', async () => {
     const a = await renderFragment(staticFragment, 'acmeEventHero', { data: { position: 'event_hero', target: null, banners: [{ id: 1, title: '이벤트 배너' }], settings: {} } }, { initialState: { _global: heroOn } });
     cleanups.push(a.test.cleanup);
@@ -101,6 +103,7 @@ describe('다른 확장이 더한 위치의 조각', () => {
   });
 
   // @scenario case=external_output_renders
+  // @effects external_position_slot_renders_banners, dynamic_slot_renders_only_current_target
   it('히어로가 자리를 채운 조각(생성 표본 — PHPUnit 이 빌더 출력과 같은지 본다)도 엔진이 그 위치 배너를 그린다 — 동적은 등록한 경로 매개변수(route.code) 값의 응답일 때만', async () => {
     const a = await renderFragment(generatedStatic, 'heroSection_acme_event_hero', { data: { position: 'acme_event_hero', target: null, banners: [{ id: 11, title: '자동 이벤트 배너' }], settings: {} } }, { initialState: { _global: heroOn } });
     cleanups.push(a.test.cleanup);
@@ -122,6 +125,7 @@ describe('다른 확장이 더한 위치의 조각', () => {
   });
 
   // @scenario case=third_party_fragment_renders
+  // @effects fragment_hidden_when_hero_disabled
   it('히어로가 꺼져 있으면(첫 화면 설정에 히어로가 없음) 다른 확장의 조각은 아무것도 그리지 않는다', async () => {
     const off = await renderFragment(staticFragment, 'acmeEventHero', { data: { banners: [{ id: 1, title: '이벤트 배너' }] } }, { initialState: { _global: { plugins: {} } } });
     cleanups.push(off.test.cleanup);

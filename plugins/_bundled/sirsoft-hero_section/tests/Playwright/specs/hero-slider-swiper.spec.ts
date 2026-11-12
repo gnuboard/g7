@@ -2,7 +2,7 @@
  * E2E: 사이트 홈 히어로 슬라이더의 실제 넘김(Swiper) — 단추·무한 반복·자동 재생·손가락 넘기기 (#810)
  *
  * @scenario-manifest tests/scenarios/e2e-flows.yaml
- * @effects user_screen_reflects_admin_change, test_data_cleaned_up
+ * 효과 요약(마커 아님 — 평문): user_screen_reflects_admin_change, test_data_cleaned_up
  *
  * 단위 시험(jsdom)은 Swiper 대역으로 연결 계약만 본다. 여기서는 실브라우저에서 Swiper 가 실제로 장을 넘기는지 본다.
  * 홈에는 다른 배너(운영 데이터·다른 사양)가 함께 있을 수 있으므로 장 수는 화면에서 세고, 단언은 사양이 만든 제목으로 한다.

@@ -43,6 +43,7 @@ const scrollState = (page: Page) => page.evaluate(() => {
 
 for (const viewport of ['desktop', 'mobile'] as const) {
   // @scenario surface=motion_does_not_make_text_scroll
+  // @effects motion_keeps_text_scroll_off
   test(`등장 효과가 재생되는 동안에도 문구 영역에 스크롤이 켜지지 않고, 정말 긴 문구만 스크롤된다 (${viewport})`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[viewport]);
     await injectBanners(page);

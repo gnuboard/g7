@@ -163,6 +163,7 @@ describe('HeroConflictResolver', () => {
   });
 
   // @scenario surface=conflict_others_change_kept_by_default
+  // @effects blank_defaults_not_reported_as_conflict
   it('비어 있는 다국어 칸·표시 기본값은 같은 값으로 본다(차이 없음이면 그대로 최신 revision 으로 적용)', () => {
     const base = detail({ presentation: null, button_text: null });
     const mine = detail({ presentation: { pc_x: 50, pc_y: 50, mobile_x: 50, mobile_y: 50, overlay: 'none' }, button_text: { ko: '', en: '' } });

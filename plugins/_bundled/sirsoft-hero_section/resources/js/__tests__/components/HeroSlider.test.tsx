@@ -62,6 +62,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=admin_edit_link_for_editors
+  // @effects admin_edit_link_shown_only_to_editors
   it('수정 권한이 있으면 지금 보이는 배너의 관리자 수정 화면으로 새 탭 링크를 그린다', () => {
     const { container } = render(<HeroSlider banners={[banner(7), banner(8)]} editable />);
     const link = container.querySelector<HTMLAnchorElement>('a.hs-slider__admin-edit');
@@ -75,6 +76,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=admin_edit_link_for_editors
+  // @effects admin_edit_link_shown_only_to_editors
   it('수정 권한이 없거나 편집 미리보기면 수정 링크를 그리지 않는다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(7)]} />);
     expect(container.querySelector('a.hs-slider__admin-edit')).toBeNull();
@@ -666,6 +668,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_pagination_tabs
+  // @effects pagination_follows_position_setting
   it('배너 이름 탭은 화면 전체 폭이면 일시정지 단추와 같은 본문 상자 안에 두고, 본문 폭이면 종전처럼 구획에 바로 둔다', () => {
     const full = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, width: 'full', pagination: 'tabs' }} contentClass="max-w-7xl mx-auto px-8" />);
     const tabs = full.container.querySelector('.hs-slider__tabs-layer > .hs-slider__tabs-box > .hs-slider__tabs.hs-slider__tabs--boxed') as HTMLElement;
@@ -681,6 +684,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_pagination_pill
+  // @effects pagination_follows_position_setting
   it('알약 번호는 문구 아래 왼쪽 둥근 상자에 「‹ 1 / 3 ›」을 두고, 양옆 화살표는 그리지 않으며, 상자 안 단추로 넘긴다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false, pagination: 'pill' }} contentClass="max-w-7xl mx-auto px-8" />);
     expect(container.querySelector('section')?.className).toContain('hs-slider--pagination-pill');
@@ -704,6 +708,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_pagination_pill
+  // @effects pagination_follows_position_setting
   it('알약 번호는 화면 전체 폭이면 본문 상자 왼쪽 끝에 맞추고, 배너가 1장이면 그리지 않는다', () => {
     const full = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, width: 'full', pagination: 'pill' }} contentClass="max-w-7xl mx-auto px-8" />);
     const box = full.container.querySelector('.hs-slider__pill-box') as HTMLElement;
@@ -915,6 +920,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario case=dynamic_skeleton_needs_memory
+    // @effects dynamic_skeleton_drawn_only_from_target_memory
     it('동적 위치(대상 있음)는 기억을 위치 + 대상마다 따로 두고, 첫 방문에는 스켈레톤을 그리지 않으며 그 대상의 기억이 「배너 있음」일 때만 그린다(D8)', () => {
       // 첫 방문 — 기억이 없으면 받는 동안에도 자리를 잡지 않는다(배너 없는 게시판마다 빈 자리가 깜빡이지 않게)
       const first = render(<HeroSlider banners={[]} loading position="board_hero" target="free" />);
@@ -966,6 +972,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_skipped_without_banners
+    // @effects loading_skeleton_reserves_slot
     it('[case:components-misc-hero-skeleton-first-visit-without-banners] 첫 접속이어도 첫 로드 힌트가 「배너 없음」이면 스켈레톤을 그리지 않고, 그래도 배너가 오면 그린다', () => {
       const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners={false} contentClass="px-8" />);
       expect(container.innerHTML).toBe('');
@@ -974,6 +981,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_skipped_without_banners
+    // @effects loading_skeleton_reserves_slot
     it('[case:components-misc-hero-skeleton-first-visit-without-banners] 힌트와 브라우저 기억 중 하나라도 「없음」이면 자리를 잡지 않는다 — 기간이 끝나 힌트가 낡아도 재방문자의 본문이 매번 밀리지 않는다', () => {
       window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 0, width: 'content' }));
       const expired = render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners />);
@@ -988,6 +996,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_skipped_without_banners
+    // @effects loading_skeleton_reserves_slot
     it('힌트가 없으면(옛 설정) 종전처럼 브라우저 기억을 따른다', () => {
       const first = render(<HeroSlider banners={[]} loading position="home_hero" />);
       expect(first.container.querySelector('section.hs-slider--skeleton')).not.toBeNull();
@@ -997,12 +1006,14 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_skipped_without_banners
+    // @effects loading_skeleton_reserves_slot
     it('배너가 없다는 힌트면 받는 동안 사이트 메뉴도 겹치지 않는다(메뉴가 투명해졌다 돌아오지 않게)', () => {
       render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners={false} skeletonWidth="full" skeletonOverlay />);
       expect(document.documentElement.getAttribute('data-header-overlay')).toBeNull();
     });
 
     // @scenario surface=slider_max_height_vars
+    // @effects slider_height_capped_by_device_max_height
     it('위치 설정의 기기별 최대 높이를 px 변수로 달고, 비운 기기는 변수를 두지 않는다(CSS 기본 — 비율대로)', () => {
       const { container, rerender } = render(<HeroSlider banners={[banner(1)]} settings={{ width: 'content', max_height_pc: 480, max_height_mobile: null }} position="home_hero" />);
       const slider = container.querySelector('section.hs-slider') as HTMLElement;
@@ -1018,6 +1029,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=slider_max_height_vars
+    // @effects slider_height_capped_by_device_max_height
     it('미리보기의 기기 고정은 비율처럼 최대 높이도 그 기기 값으로 맞바꾼다', () => {
       const settings = { max_height_pc: 400, max_height_mobile: 520 };
       const mobile = render(<HeroSlider banners={[banner(1)]} settings={settings} forceDevice="mobile" />);
@@ -1032,6 +1044,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=skeleton_max_height_from_hint
+    // @effects skeleton_max_height_follows_hint_then_memory
     it('받는 동안 스켈레톤은 첫 로드 최대 높이 힌트를 브라우저 기억보다 먼저 쓰고, 힌트가 없으면 직전 방문의 높이를 쓴다', () => {
       window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 2, width: 'content', maxPc: 300, maxMobile: 360 }));
       const hinted = render(<HeroSlider banners={[]} loading position="home_hero" skeletonMaxHeight={{ pc: 480, mobile: null }} />);

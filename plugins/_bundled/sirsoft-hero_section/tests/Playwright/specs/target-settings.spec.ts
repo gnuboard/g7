@@ -2,7 +2,7 @@
  * E2E: 동적 위치 대상별 슬라이더 설정·프로모션형 배너 — 실제 저장 → 새로고침 → 공개 출력
  *
  * @scenario-manifest tests/scenarios/target-settings.yaml
- * @effects public_output_follows_target_override, target_cache_invalidated_only_for_that_target
+ * 효과 요약(마커 아님 — 평문): public_output_follows_target_override, target_cache_invalidated_only_for_that_target
  *
  * 개발 사이트의 배너 없는 게시판 둘(공지·갤러리)을 대상 A·B 로 쓴다. 시작 전에 두 대상에 재정의가 없음을 확인하고(있으면 운영 값이라
  * 건드리지 않고 멈춘다), 끝나면 시험이 만든 재정의를 지워(DELETE) 「행 없음」으로 정확히 되돌린다. 배너는 사양이 만들고 지운다.
@@ -253,6 +253,7 @@ test.describe('대상별 슬라이더 설정', () => {
   });
 
   // @scenario surface=target_settings_reset
+  // @effects public_output_follows_target_override
   test('항목 하나를 상속으로 되돌려 저장하면 그 항목만 위치 기본값이 되고, 「위치 기본값으로 되돌리기」는 재정의를 지워 공개 화면이 위치 기본값이 된다', async ({ page, request, managerToken, created }) => {
     created.push(await createBanner(request, managerToken, { position: POSITION, target_key: A.id, title: { ko: uniqueTitle('상속복귀 1') } }));
     created.push(await createBanner(request, managerToken, { position: POSITION, target_key: A.id, title: { ko: uniqueTitle('상속복귀 2') } }));
@@ -310,6 +311,7 @@ test.describe('대상별 슬라이더 설정', () => {
   });
 
   // @scenario surface=target_settings_orphan_listed
+  // @effects settings_only_target_kept_in_target_list
   test('배너가 없는 대상도 대상 설정이 남으면 대상 목록에 「대상 설정 있음」으로 보이고, 들어가 되돌리면 목록에서 빠진다', async ({ page, request, managerToken }) => {
     const put = await request.put(targetUrl(B.id), { headers: auth(managerToken), data: { overrides: { autoplay: false } } });
     expect(put.status(), await put.text()).toBe(200);
@@ -381,6 +383,7 @@ test.describe('프로모션형 배너 화면 폭·밝기', () => {
 
   for (const scheme of ['light', 'dark'] as const) {
     // @scenario surface=promo_layout_render
+    // @effects promo_layout_splits_text_and_media
     test(`${scheme}: 프로모션형은 PC 에서 문구 왼쪽·그림 오른쪽, 휴대폰에서 그림 위·문구 아래로 겹치지 않고, 두 줄 제목이 잘리지 않으며 가로 넘침이 없다`, async ({ browser, request, managerToken, created }, testInfo) => {
       // 폭 4개를 새로 연다 — 개발 사이트 첫 로딩이 느리다
       test.setTimeout(600_000);

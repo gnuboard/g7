@@ -52,10 +52,9 @@ effects:
   - video_plays_muted_with_device_source   # 영상 배너는 소리 없이 화면 안에서 재생하고, 기기 폭에 맞는 영상과 대표 이미지를 쓰며, 미디어 종류가 이미지면 이미지로 그린다
   - video_drives_slide_advance   # 영상이 끝나면 다음 장으로 넘기고(마우스가 올라가 있으면 기다림), 한 장이면 반복하며, 재생 실패·중단·시간 초과는 간격 넘김으로 돌린다
   - pause_controls_video_playback   # 일시정지 단추와 움직임 줄이기가 영상을 멈추고, 멈춘 자리에서 이어 보며 다른 장으로 넘어가면 처음으로 돌린다
-  - youtube_waits_for_marketing_consent   # 마케팅 동의 전에는 YouTube 를 부르지 않고 대표 이미지와 재생 단추만 둔다. 동의하거나 재생 단추를 누르면 불러온다
-  - youtube_player_loaded_near_active   # 동의했어도 YouTube 플레이어는 지금 장과 다음 장만 불러온다
-  - youtube_player_revealed_on_play_start   # 플레이어가 재생 시작을 알리면 대표 이미지를 걷고 플레이어를 드러낸다
-  - youtube_url_validated   # YouTube 주소와 영상 ID 모양을 가려 받고, 모양이 아니면 YouTube 로 그리지 않는다
+  - video_downloaded_only_on_its_turn   # 영상은 재생 차례인 장만 다 받고 다음 장은 정보만, 그 밖과 움직임 줄이기·데이터 절약은 재생 전까지 받지 않는다
+  - legacy_youtube_renders_poster_only   # 옛 응답에 유튜브 종류가 와도 대표 이미지만 그리고 외부 플레이어·재생 단추를 두지 않는다
+  - media_type_choice_switches_form_fields   # 등록 화면 미디어 종류는 이미지·영상 파일만 고르고, 종류에 따라 영상 칸과 저장 잠김 이유가 바뀐다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Unit/Models/MediaUrlBasePrefixTest.php

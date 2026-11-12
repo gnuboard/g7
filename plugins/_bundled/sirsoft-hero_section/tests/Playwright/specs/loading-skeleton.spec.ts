@@ -62,6 +62,7 @@ async function saveSettings(request: APIRequestContext, token: string, settings:
 
 for (const viewport of ['desktop', 'mobile'] as const) {
   // @scenario surface=loading_skeleton_until_response
+  // @effects loading_skeleton_reserves_slot
   test(`응답 전에는 스켈레톤이 자리를 잡고, 배너가 와도 본문이 밀리지 않는다 (${viewport})`, async ({ page, request, managerToken, created }) => {
     // 홈에 배너가 있어야 재는 사양이다 — 운영 배너에 기대지 않고 시험 배너를 둔다(끝나면 지운다)
     created.push(await createBanner(request, managerToken));
@@ -86,6 +87,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
 }
 
 // @scenario surface=loading_skeleton_skipped_without_banners
+// @effects loading_skeleton_reserves_slot
 test('[case:components-misc-hero-skeleton-first-visit-without-banners] 배너가 없는 위치는 첫 접속(브라우저 기억 없음)에도 스켈레톤을 그리지 않는다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   // 운영 배너는 건드리지 않는다 — 첫 HTML 의 힌트와 공개 응답만 「없음」으로 바꾼다. 힌트를 못 바꾸면 이 시험은 아무것도 재지 않는다
@@ -120,6 +122,7 @@ test('[case:components-misc-hero-skeleton-first-visit-without-banners] 배너가
 });
 
 // @scenario surface=loading_skeleton_skipped_without_banners
+// @effects loading_skeleton_reserves_slot
 test('첫 HTML 의 힌트가 「있음」이어도 직전 방문이 0건이면 스켈레톤을 그리지 않는다 — 기간이 끝나 낡은 힌트가 재방문자에게 스켈레톤을 띄우지 않는다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   let hinted = false;
@@ -157,6 +160,7 @@ test('첫 HTML 의 힌트가 「있음」이어도 직전 방문이 0건이면 �
 });
 
 // @scenario surface=loading_skeleton_remembers_slot
+// @effects loading_skeleton_reserves_slot
 test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으로 기억하지 않아, 다음 방문에도 스켈레톤이 자리를 잡는다', async ({ page, request, managerToken, created }) => {
   created.push(await createBanner(request, managerToken));
   const memory = () => page.evaluate(() => JSON.parse(localStorage.getItem('sirsoft-hero_section:slot:home_hero') ?? 'null'));
@@ -187,6 +191,7 @@ test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으�
 });
 
 // @scenario surface=loading_skeleton_remembers_slot
+// @effects loading_skeleton_reserves_slot
 test('표시 폭을 바꿔 저장하면 다음 새로고침의 스켈레톤도 그 폭(화면 전체 ↔ 본문 폭)이다', async ({ page, request, managerToken }) => {
   const original = await readSettings(request, managerToken);
   await page.setViewportSize(VIEWPORTS.desktop);

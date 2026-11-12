@@ -62,6 +62,7 @@ afterEach(() => {
 
 describe('다른 확장이 더한 위치의 자동 출력 — 실제 HeroSlider', () => {
   // @scenario case=external_output_renders
+  // @effects external_position_slot_renders_banners
   it('정적 위치: 그 위치의 배너 제목·이미지를 그리고, 수정 권한이 있으면 「관리자에서 수정」 단추를 단다', async () => {
     const container = await renderOutput(generatedStatic, 'heroSection_acme_event_hero', {
       position: 'acme_event_hero', target: null, banners: [banner(21, '이벤트 메인 배너')], settings: { autoplay: false, interval_seconds: 5, effect: 'slide', width: 'content' }, abilities: { can_update: true },
@@ -75,6 +76,7 @@ describe('다른 확장이 더한 위치의 자동 출력 — 실제 HeroSlider'
   });
 
   // @scenario case=external_output_renders
+  // @effects empty_slot_renders_nothing
   it('배너가 0건이면 아무것도 그리지 않는다', async () => {
     const container = await renderOutput(generatedStatic, 'heroSection_acme_event_hero', { position: 'acme_event_hero', target: null, banners: [], settings: {} });
 
@@ -82,6 +84,7 @@ describe('다른 확장이 더한 위치의 자동 출력 — 실제 HeroSlider'
   });
 
   // @scenario case=external_output_renders
+  // @effects dynamic_slot_renders_only_current_target
   it('동적 위치: 등록한 경로 매개변수(route.code) 값의 응답이면 그 대상 배너를 그리고, 다른 대상 응답이면 그리지 않는다', async () => {
     const page = await renderOutput(generatedDynamic, 'heroSection_acme_event_page_hero', {
       position: 'acme_event_page_hero', target: 'summer', banners: [banner(22, '여름 이벤트 배너')], settings: {},

@@ -2,7 +2,7 @@
  * E2E: 사용자 화면 「관리자에서 수정」 단추와 관리자 「크게 보기」 미리보기 창 위치
  *
  * @scenario-manifest tests/scenarios/hero-slider.yaml
- * @effects user_screen_reflects_admin_change, test_data_cleaned_up
+ * 효과 요약(마커 아님 — 평문): user_screen_reflects_admin_change, test_data_cleaned_up
  *
  * 수정 단추는 공개 응답의 수정 권한(abilities.can_update)으로 그린다 — 비로그인 방문자에게는 없고, 배너 수정 권한이 있는 회원에게는
  * 슬라이더 오른쪽 위에 지금 보이는 배너의 관리자 수정 화면을 새 탭으로 여는 링크가 있다. 홈에는 다른 배너가 함께 있을 수 있으므로

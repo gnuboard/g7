@@ -79,6 +79,16 @@ effects:
   - preview_slider_moves_without_swiper   # iframe 미리보기에서는 Swiper 없이 화살표·점이 장을 옮긴다
   - slide_images_load_by_priority   # 첫 장 이미지는 즉시·높은 우선순위, 다음 장은 전환 전에 미리, 나머지는 지연으로 받는다
   - loading_skeleton_reserves_slot   # 받는 중에는 같은 비율의 스켈레톤으로 자리를 잡고, 직전 방문의 모양(0건·화면 전체)과 표시 폭 힌트를 따른다
+  - admin_edit_link_shown_only_to_editors   # 수정 권한이 있을 때만(편집 미리보기 제외) 지금 보이는 배너의 관리자 수정 화면 링크를 새 탭으로 그린다
+  - slider_renders_without_asset_api   # 코어 자산 API 가 없으면 Swiper CSS 를 싣지 않고 바로 슬라이더를 그린다
+  - swiper_css_loaded_once_behind_skeleton   # 동봉 Swiper CSS 를 한 번만 싣고, 실릴 때까지 같은 폭의 스켈레톤을 둔 뒤 실린 link 를 옮기지 않고 슬라이더를 그린다
+  - swiper_css_failure_notified_with_retry   # Swiper CSS 를 끝내 못 실으면 다시 시도가 걸린 실패 알림을 내고 슬라이더는 그대로 그린다
+  - swiper_css_copied_once_into_preview   # 미리보기 iframe 에는 실린 Swiper CSS 를 한 번만 복사한다
+  - vendored_swiper_matches_package_version   # dist/vendor 에 동봉한 Swiper 판·CSS·라이선스가 package.json 의 swiper 판과 같다
+  - extension_css_free_of_swiper_classes   # 확장 CSS 와 컴포넌트는 Swiper 클래스를 걸지 않고 화살표·점을 자기 클래스로 그린다
+  - pagination_bullets_have_24px_touch_target   # 점 표시는 10px 로 보이되 누를 자리는 24px 이고 이웃 점과 겹치지 않는다
+  - carousel_labels_follow_site_locale   # 사이트 언어를 바꾸면 캐러셀·슬라이드 역할 이름과 장 번호도 그 언어로 읽는다
+  - motion_keeps_text_scroll_off   # 등장 효과가 재생되는 동안에도 문구 영역 스크롤이 켜지지 않고, 정말 긴 문구만 스크롤된다
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
