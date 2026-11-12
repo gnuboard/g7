@@ -26,12 +26,15 @@
 | `sirsoft-hero_section.banner.filter_update_data` | filter | 수정 값 가공. 인자: (array $data, Banner $banner) | `src/Services/BannerService.php:161` |
 | `sirsoft-hero_section.banner.store_validation_rules` | filter | 등록 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/StoreBannerRequest.php:56` |
 | `sirsoft-hero_section.banner.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdateBannerRequest.php:66` |
-| `sirsoft-hero_section.banner_image.after_change` | action | 배너 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Banner $banner, string $device, string $change — replaced·removed) | `src/Services/BannerService.php:173` |
-| `sirsoft-hero_section.banner_image.after_delete` | action | 배너 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/BannerImageService.php:154` |
-| `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:134` |
-| `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:85` |
-| `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale) | `src/Services/PublicHeroService.php:69` |
-| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:152` |
+| `sirsoft-hero_section.banner_image.after_change` | action | 배너 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Banner $banner, string $device, string $change — replaced·removed) | `src/Services/BannerService.php:176` |
+| `sirsoft-hero_section.banner_image.after_delete` | action | 배너 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/BannerImageService.php:161` |
+| `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:141` |
+| `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:92` |
+| `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale, ?string $targetKey — 동적 위치의 대상, 정적 위치는 null) | `src/Services/PublicHeroService.php:89` |
+| `sirsoft-hero_section.position.registered_positions` | filter | 노출 위치 등록. 인자: (array $positions — 위치 정의 [key, label, order, target?{type, label, resolver}] 목록) | `src/Services/PositionRegistry.php:111` |
+| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:409` |
+| `sirsoft-hero_section.target_setting.after_reset` | action | — | `src/Services/PositionSettingService.php:367` |
+| `sirsoft-hero_section.target_setting.after_update` | action | — | `src/Services/PositionSettingService.php:351` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -159,6 +162,15 @@ public function register(array $positions): array
 | `core.thumbnail.filter_presets` | filter | `ThumbnailRegistrationListener` | `addPreset` | 10 |
 | `core.thumbnail.filter_source_providers` | filter | `ThumbnailRegistrationListener` | `addSourceProvider` | 10 |
 | `core.thumbnail.filter_url_patterns` | filter | `ThumbnailRegistrationListener` | `addUrlPattern` | 10 |
+| `sirsoft-board.board.after_create` | action (미선언) | `TargetChangeListener` | `onBoardChanged` | - |
+| `sirsoft-board.board.after_delete` | action (미선언) | `TargetChangeListener` | `onBoardChanged` | - |
+| `sirsoft-board.board.after_update` | action (미선언) | `TargetChangeListener` | `onBoardChanged` | - |
+| `sirsoft-ecommerce.category.after_create` | action (미선언) | `TargetChangeListener` | `onCategoryChanged` | - |
+| `sirsoft-ecommerce.category.after_delete` | action (미선언) | `TargetChangeListener` | `onCategoryChanged` | - |
+| `sirsoft-ecommerce.category.after_update` | action (미선언) | `TargetChangeListener` | `onCategoryChanged` | - |
+| `sirsoft-ecommerce.product.after_create` | action (미선언) | `TargetChangeListener` | `onProductChanged` | - |
+| `sirsoft-ecommerce.product.after_delete` | action (미선언) | `TargetChangeListener` | `onProductChanged` | - |
+| `sirsoft-ecommerce.product.after_update` | action (미선언) | `TargetChangeListener` | `onProductChanged` | - |
 | `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `BannerActivityLogListener` | `handleBulkDelete` | 20 |
 | `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `HeroCacheListener` | `onBulkDelete` | - |
 | `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `SlotWidthHintListener` | `onBannerChange` | 20 |
@@ -198,10 +210,13 @@ public function register(array $positions): array
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `ActivityLogDescriptionResolver` | 1개 | 명시 등록 | ✅ | `src/Listeners/ActivityLogDescriptionResolver.php` |
-| `BannerActivityLogListener` | 8개 | 명시 등록 | ✅ | `src/Listeners/BannerActivityLogListener.php` |
-| `HeroCacheListener` | 10개 | 명시 등록 | ✅ | `src/Listeners/HeroCacheListener.php` |
+| `BannerActivityLogListener` | 10개 | 명시 등록 | ✅ | `src/Listeners/BannerActivityLogListener.php` |
+| `BuiltinPositionListener` | 0개 | 명시 등록 | ✅ | `src/Listeners/BuiltinPositionListener.php` |
+| `HeroCacheListener` | 12개 | 명시 등록 | ✅ | `src/Listeners/HeroCacheListener.php` |
 | `PluginLifecycleListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PluginLifecycleListener.php` |
-| `SlotWidthHintListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/SlotWidthHintListener.php` |
+| `PositionOutputListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PositionOutputListener.php` |
+| `SlotWidthHintListener` | 16개 | 명시 등록 | ✅ | `src/Listeners/SlotWidthHintListener.php` |
+| `TargetChangeListener` | 9개 | 명시 등록 | ✅ | `src/Listeners/TargetChangeListener.php` |
 | `ThumbnailRegistrationListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/ThumbnailRegistrationListener.php` |
 <!-- @generated:listeners END -->
 

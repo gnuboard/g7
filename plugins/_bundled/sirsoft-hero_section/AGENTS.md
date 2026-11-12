@@ -72,10 +72,10 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 23개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 28개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 26개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 53개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 9개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 1개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -124,10 +124,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 30개 | `plugins/_bundled/sirsoft-hero_section/tests` |
-| Vitest | 16개 | `vitest.config.ts` |
-| Playwright | 19개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
+| PHPUnit | 39개 | `plugins/_bundled/sirsoft-hero_section/tests` |
+| Vitest | 20개 | `vitest.config.ts` |
+| Playwright | 24개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 23개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

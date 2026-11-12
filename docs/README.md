@@ -371,7 +371,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |
 | `sirsoft-daum_postcode` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-daum_postcode/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-daum_postcode/docs/README.md) | 훅 0 · 라우트 0 · 모델 0 · 레이아웃 1 |
 | `sirsoft-gdpr` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-gdpr/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-gdpr/docs/README.md) | 훅 5 · 라우트 19 · 모델 4 · 레이아웃 10 |
-| `sirsoft-hero_section` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-hero_section/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-hero_section/docs/README.md) | 훅 24 · 라우트 18 · 모델 3 · 레이아웃 3 |
+| `sirsoft-hero_section` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-hero_section/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-hero_section/docs/README.md) | 훅 26 · 라우트 21 · 모델 4 · 레이아웃 3 |
 | `sirsoft-koreaexim` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-koreaexim/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-koreaexim/docs/README.md) | 훅 2 · 라우트 4 · 모델 2 · 레이아웃 12 |
 | `sirsoft-marketing` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-marketing/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-marketing/docs/README.md) | 훅 4 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `sirsoft-message_bizppurio` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-message_bizppurio/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-message_bizppurio/docs/README.md) | 훅 1 · 라우트 21 · 모델 2 · 레이아웃 1 |

@@ -2334,8 +2334,15 @@
                                                         "id": "field_text_width_devices",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "hs:grid hs:grid-cols-1 hs:grid-cols-2 hs:gap-4"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "hs:grid hs:grid-cols-1 hs:sm:grid-cols-2 hs:gap-4"
+                                                            "className": "hs:grid hs:grid-cols-1 hs:gap-4"
                                                         },
                                                         "children": [
                                                             {

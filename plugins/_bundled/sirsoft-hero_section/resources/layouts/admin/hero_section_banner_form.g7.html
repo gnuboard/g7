@@ -632,7 +632,8 @@
                 <p class="hs-form-hint">$t:sirsoft-hero_section.admin.form.text_layout.width_hint</p>
               </div>
               <!-- 기기별 문구 폭 — 비우면 위 공통 폭을 따른다(옛 배너 그대로). 프로모션형은 PC 폭이 문구 칸 폭이다 -->
-              <div data-ref="field_text_width_devices" class="hs:grid hs:grid-cols-1 hs:sm:grid-cols-2 hs:gap-4">
+              <div data-ref="field_text_width_devices" class="hs:grid hs:grid-cols-1 hs:gap-4">
+                <responsive on="640-" class="hs:grid hs:grid-cols-1 hs:grid-cols-2 hs:gap-4"/>
                 <label class="hs:flex hs:flex-col hs:gap-1" htmlFor="hero_text_width_pc">
                   <span class="hs-form-label">$t:sirsoft-hero_section.admin.form.text_layout.width_pc</span>
                   <input type="number" id="hero_text_width_pc" inputMode="numeric" min="{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}" max="{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}" :step="5" class="hs-input" placeholder="{{$t('sirsoft-hero_section.admin.form.text_layout.width_follow', {width: _local.form?.presentation?.text_width ?? 100})}}" value="{{_local.form?.presentation?.text_width_pc ?? ''}}" disabled="{{_local.isSaving}}">

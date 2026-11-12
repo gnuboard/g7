@@ -244,7 +244,11 @@ describe('HeroSlider 기기 폭 판정', () => {
     expect(sliderInWidthMedia).toEqual([]);
 
     const flat = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
-    expect(flat).toContain('.hs-slider--mobile { aspect-ratio: var(--hs-ratio-mobile, 750 / 1000); }');
+    expect(flat).toContain('.hs-slider--mobile { aspect-ratio: var(--hs-ratio-mobile, 750 / 1000); max-height: var(--hs-max-height-mobile, none); }');
+    // 휴대폰 전용 최대 높이·프로모션형 쌓기도 같은 기기 클래스로 갈린다(화면 전체 폭·프로모션형은 루트 클래스에 붙인다)
+    expect(flat).toContain('.hs-slider--full.hs-slider--mobile { max-height: var(--hs-max-height-mobile, var(--hs-max-height-full, 640px)); }');
+    expect(flat).toContain('.hs-slider--promo.hs-slider--mobile, .hs-slider--promo.hs-slider--full.hs-slider--mobile { min-height: 0; }');
+    expect(flat).toContain('.hs-slider--mobile .hs-promo__box, .hs-slider--mobile [data-hs-side-pc="right"] .hs-promo__box { flex-direction: column; }');
     expect(flat).toContain('.hs-slider--mobile .hs-slider__image { object-position: var(--hs-focus-mobile, 50% 50%); }');
     expect(flat).toContain('.hs-slider--mobile .hs-slider__video { object-position: var(--hs-focus-mobile, 50% 50%); }');
     expect(flat).toMatch(/\.hs-slider--mobile \.hs-slider__text \{ --hs-tx: var\(--hs-tx-mobile, 0\); --hs-ty: var\(--hs-ty-mobile, 100\); --hs-shade: var\(--hs-shade-mobile, to bottom\); \}/);

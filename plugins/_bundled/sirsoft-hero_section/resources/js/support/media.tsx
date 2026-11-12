@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useSyncExternalStore } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 /** 공개 API 의 영상 파일 하나 */
 export interface HeroVideo {
