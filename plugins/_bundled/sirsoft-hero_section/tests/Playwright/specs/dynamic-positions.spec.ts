@@ -8,8 +8,8 @@
  * 조각은 화면 주소 값(게시판 slug·상품 코드·카테고리 slug)을 대상으로 공개 API 를 부르고, SPA 로 다른 대상으로 옮기면 다시 부른다.
  * 배너 없는 대상은 첫 방문에 자리(스켈레톤)도 잡지 않는다(D8).
  */
-import { test, expect, authenticatePage, createBanner, gotoUser, hidePopups, uniqueTitle, ADMIN_LIST, API, VIEWPORTS } from '../fixtures/hero-auth';
-import type { Page } from '@playwright/test';
+import { test, expect, auth, authenticatePage, createBanner, gotoUser, hidePopups, uniqueTitle, ADMIN_LIST, API, VIEWPORTS } from '../fixtures/hero-auth';
+import type { APIRequestContext, Page } from '@playwright/test';
 
 // 대상마다 배너를 만들고 화면을 여러 번 연다 — 개발 사이트 첫 로딩이 느리다
 test.setTimeout(180_000);
@@ -153,6 +153,8 @@ test('관리자: 동적 위치 탭은 배너 없는 대상도 찾아 고르게 �
 test('관리자: 동적 위치는 배너가 있는 대상 목록(전체·노출 중 건수)에서 관리로 들어가고, 대상 목록으로 돌아오며, 뒤로 가기·새로고침에도 같은 화면이다', async ({ page, request, managerToken, created }) => {
   const shown = uniqueTitle('대상목록 노출');
   const hidden = uniqueTitle('대상목록 비노출');
+  // 개발 사이트의 이벤트 게시판에는 운영자 배너가 이미 있을 수 있다 — 건수는 시험 전 값에 시험 배너(노출 1·비노출 1)를 더해 본다
+  const before = await placementCounts(request, managerToken, 'board_hero', BOARD.event.id);
   created.push(await createBanner(request, managerToken, { position: 'board_hero', target_key: BOARD.event.id, title: { ko: shown } }));
   created.push(await createBanner(request, managerToken, { position: 'board_hero', target_key: BOARD.event.id, title: { ko: hidden }, is_active: false }));
   await authenticatePage(page, managerToken);
@@ -164,7 +166,7 @@ test('관리자: 동적 위치는 배너가 있는 대상 목록(전체·노출 
   await expect(page.locator('#hero_banner_datagrid')).toHaveCount(0);
   await expect(page.locator('#hero_preview_heading')).toHaveCount(0);
 
-  const eventRow = card.locator('li').filter({ has: page.getByRole('link', { name: '관리' }) }).filter({ hasText: '전체 2개 · 지금 노출 1개' });
+  const eventRow = card.locator('li').filter({ has: page.getByRole('link', { name: '관리' }) }).filter({ hasText: `전체 ${before.total + 2}개 · 지금 노출 ${before.active + 1}개` });
   await expect(eventRow).toHaveCount(1, { timeout: 30_000 });
   await expect(eventRow.getByRole('link', { name: '사이트에서 보기' })).toHaveAttribute('href', `/board/${BOARD.event.slug}`);
 
@@ -194,6 +196,27 @@ test('관리자: 동적 위치는 배너가 있는 대상 목록(전체·노출 
   await expect(page.locator('#hero_banner_datagrid').getByText(shown)).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).__heroSpaMark === true)).toBe(true);
 });
+
+/**
+ * 배너가 있는 대상 목록에서 한 대상의 전체·노출 중 건수를 읽습니다(없으면 0) — 실제 응답을 쪽마다 넘겨 찾는다.
+ *
+ * @param request API 요청 문맥
+ * @param token 관리자 토큰
+ * @param position 위치 키
+ * @param target 대상 키
+ * @returns 전체·노출 중 건수
+ */
+async function placementCounts(request: APIRequestContext, token: string, position: string, target: string): Promise<{ total: number; active: number }> {
+  for (let page = 1; page <= 50; page += 1) {
+    const response = await request.get(`${API}/admin/positions/${position}/placements?page=${page}`, { headers: auth(token) });
+    expect(response.ok()).toBe(true);
+    const body = (await response.json()).data;
+    const row = (body?.data ?? []).find((item: { key: string }) => item.key === target);
+    if (row) return { total: Number(row.total), active: Number(row.active) };
+    if (page >= Number(body?.pagination?.last_page ?? 1)) break;
+  }
+  return { total: 0, active: 0 };
+}
 
 /**
  * 대상 목록 응답을 꾸며 돌려줍니다 — 외부 확장이 주는 기호 키·여러 쪽을 개발 DB 를 바꾸지 않고 만든다.
@@ -318,12 +341,12 @@ for (const [shape, payload] of unusablePositionSettings) {
     const save = page.locator('#footer_save_button');
     await expect(page.getByText('위치 정보를 받지 못해 저장할 수 없습니다', { exact: false })).toBeVisible({ timeout: 60_000 });
     await expect(save).toBeDisabled();
-    await expect(page.locator('input[name="title[ko]"]')).toHaveValue(title);
-    await page.locator('input[name="title[ko]"]').fill(`${title} 수정`);
+    await expect(page.locator('[name="title[ko]"]')).toHaveValue(title);
+    await page.locator('[name="title[ko]"]').fill(`${title} 수정`);
     await page.unroute(`**${API}/admin/position-settings*`);
     await page.getByRole('button', { name: '다시 받기', exact: true }).click();
     await expect(save).toBeEnabled({ timeout: 60_000 });
-    await expect(page.locator('input[name="title[ko]"]')).toHaveValue(`${title} 수정`);
+    await expect(page.locator('[name="title[ko]"]')).toHaveValue(`${title} 수정`);
     const put = page.waitForResponse((r) => r.url().endsWith(`${API}/admin/banners/${id}`) && r.request().method() === 'PUT');
     await save.click();
     const response = await put;

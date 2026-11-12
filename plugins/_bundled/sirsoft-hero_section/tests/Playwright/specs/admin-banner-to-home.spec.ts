@@ -78,7 +78,7 @@ test('등록 화면에서 저장을 빠르게 두 번 눌러도 배너는 한 �
   await page.setViewportSize(VIEWPORTS.desktop);
   await page.goto(`${ADMIN_LIST}/create?position=home_hero`);
   await expect(page.locator('#footer_save_button')).toBeVisible({ timeout: 30_000 });
-  await page.locator('input[name="title[ko]"]').fill(title);
+  await page.locator('[name="title[ko]"]').fill(title);
   const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
   await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
   expect((await uploaded).status()).toBe(201);
@@ -115,7 +115,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       // PC 이미지가 없으면 저장이 잠겨 있다
       await expect(page.locator('#footer_save_button')).toBeDisabled();
 
-      await page.locator('input[name="title[ko]"]').fill(title);
+      await page.locator('[name="title[ko]"]').fill(title);
       const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
       await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
       expect((await uploaded).status()).toBe(201);

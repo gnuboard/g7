@@ -884,4 +884,19 @@ describe('[case:components-misc-hero-position-settings-invalid-response] 위치 
     expect(visible('position_missing')).toBe(false);
     expect(visible('positions_failed')).toBe(true);
   });
+
+  // @scenario case=admin_placement_list
+  // @effects admin_list_waits_for_valid_position_info
+  it('없는 위치 주소에 서버가 내는 위치 칸 422 는 배너 목록·미리보기에서 묵음하고, 다른 422 는 본문 오류 화면 — 엔진이 맞는 오류 레이아웃이 없을 때도 기본 오류 화면을 그리므로 묵음이 없으면 안내 대신 오류 화면이 뜬다', () => {
+    for (const id of ['banners', 'preview']) {
+      const source = asArray((list as any).data_sources).find((d: any) => d.id === id);
+      const handler = source.errorHandling['422'];
+      expect(handler.handler, id).toBe('conditions');
+      const pickBranch = (error: Record<string, unknown>) => handler.conditions.find((branch: any) => branch.if === undefined || evaluateBinding(branch.if, { error }, {}));
+      expect(pickBranch({ status: 422, errors: { position: ['등록되지 않은 노출 위치입니다.'] } }).then.handler, id).toBe('suppress');
+      expect(pickBranch({ status: 422, errors: { sort_by: ['정렬 값이 올바르지 않습니다.'] } }).then.handler, id).toBe('showErrorPage');
+      // 묵음은 422 위치 칸만 — 다른 코드까지 삼키는 default 묵음을 두지 않는다
+      expect(json(source.errorHandling.default ?? null), id).not.toContain('suppress');
+    }
+  });
 });

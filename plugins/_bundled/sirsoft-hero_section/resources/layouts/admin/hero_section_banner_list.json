@@ -35,6 +35,26 @@
                         "target": "content"
                     }
                 },
+                "422": {
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{!!error.errors?.position}}",
+                            "then": {
+                                "handler": "suppress"
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                },
                 "default": {
                     "comment": "다시 받기 실패는 보던 목록을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
                     "handler": "conditions",
@@ -61,7 +81,7 @@
                     ]
                 }
             },
-            "comment": "배너 목록 — 쿼리가 바뀌면 다시 받는다"
+            "comment": "배너 목록 — 쿼리가 바뀌면 다시 받는다. 지금 없는 위치(꺼진 확장의 위치 주소 등)는 서버가 위치 칸 422 로 거절하는데, 화면은 위치 목록으로\n    「이 위치는 지금 없습니다」를 보이므로 그 422 만 묵음한다. 다른 422(필터 값 오류 등)는 종전처럼 본문 오류 화면"
         },
         {
             "id": "preview",
@@ -76,7 +96,29 @@
                 "position": "{{query.position || 'home_hero'}}",
                 "target_key": "{{query.target}}"
             },
-            "comment": "지금 노출 중인 배너 — 목록 위 미리보기"
+            "errorHandling": {
+                "422": {
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{!!error.errors?.position}}",
+                            "then": {
+                                "handler": "suppress"
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "지금 노출 중인 배너 — 목록 위 미리보기. 지금 없는 위치는 배너 목록과 같이 위치 칸 422 만 묵음한다"
         },
         {
             "id": "target_info",

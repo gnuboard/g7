@@ -6,12 +6,23 @@
   다른 위치 배너가 일괄 작업에 섞이지 않게. 위치 응답이 끝나도 현재 위치 정의가 없으면 정적 화면으로 추정하지 않는다 — 위치 목록이 비었으면 다시 받기를, 목록은 왔는데 주소의 위치만 없으면(확장이 꺼지고 남은 배너도 없음) 없는 위치 안내를 보인다. -->
 <layout name="hero_section_banner_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-hero_section.admin.title" description="$t:sirsoft-hero_section.admin.description"/>
-  <!-- 배너 목록 — 쿼리가 바뀌면 다시 받는다 -->
+  <!-- 배너 목록 — 쿼리가 바뀌면 다시 받는다. 지금 없는 위치(꺼진 확장의 위치 주소 등)는 서버가 위치 칸 422 로 거절하는데, 화면은 위치 목록으로
+    「이 위치는 지금 없습니다」를 보이므로 그 422 만 묵음한다. 다른 422(필터 값 오류 등)는 종전처럼 본문 오류 화면 -->
   <data-source id="banners" label_key="$t:sirsoft-hero_section.editor.data_source.banners" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/banners" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
     <params position="{{query.position || 'home_hero'}}" target_key="{{query.target}}" status="{{query.status}}" search="{{query.search}}" sort_by="{{query.sort_by || 'sort_order'}}" sort_order="{{query.sort_order || 'asc'}}" page="{{query.page || 1}}" per_page="{{query.per_page || 20}}"/>
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
+      </on-code>
+      <on-code code="422">
+        <conditions>
+          <when if="{{!!error.errors?.position}}">
+            <suppress/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </on-code>
       <default>
         <!-- 다시 받기 실패는 보던 목록을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
@@ -26,9 +37,21 @@
       </default>
     </error-handling>
   </data-source>
-  <!-- 지금 노출 중인 배너 — 목록 위 미리보기 -->
+  <!-- 지금 노출 중인 배너 — 목록 위 미리보기. 지금 없는 위치는 배너 목록과 같이 위치 칸 422 만 묵음한다 -->
   <data-source id="preview" label_key="$t:sirsoft-hero_section.editor.data_source.preview" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/banners/preview" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
     <params position="{{query.position || 'home_hero'}}" target_key="{{query.target}}"/>
+    <error-handling>
+      <on-code code="422">
+        <conditions>
+          <when if="{{!!error.errors?.position}}">
+            <suppress/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 고른 대상의 이름·사이트 주소·존재 여부 — 동적 위치에서 대상을 골랐을 때만 받는다. 지워진 대상이면 exists=false(「없는 대상」).
     화면은 `_computed.selectedTarget` 으로만 읽는다 — 응답의 위치·대상이 주소와 맞을 때만 쓴다. target 이 빠진 탭으로 옮기면 다시 받지 않아 앞 탭 응답이 남고,

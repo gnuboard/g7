@@ -1,7 +1,7 @@
 /**
  * #810 후속 — 동시 수정 충돌(409) 뒤 같은 창에서 최신본과 비교해 재적용하고 저장한다.
  * @scenario-manifest tests/scenarios/preview-frame-and-conflict.yaml
- * @effects others_changes_not_overwritten, stale_image_id_never_resent, my_temp_images_preserved
+ * 효과 요약(마커 아님 — 평문): 다른 운영자 변경을 덮지 않음, 낡은 이미지 id 를 다시 보내지 않음, 내 임시 이미지 보존
  *
  * 「다른 운영자」의 저장은 API 로 끼워 넣는다. 화면 조작은 실제 단추·입력으로만 한다. 사양이 만든 배너는 fixture 가 지운다.
  */
@@ -46,7 +46,7 @@ test('충돌 뒤 최신본을 불러와 비교하고, 둘 다 바꾼 항목을 �
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(e.message));
 
-  await page.locator('input[name="title[ko]"]').fill('내 제목');
+  await page.locator('[name="title[ko]"]').fill('내 제목');
   await page.locator('#hero_link_url').fill('/mine');
 
   const tempKey = `e2e-other-${Date.now()}`;
@@ -55,7 +55,7 @@ test('충돌 뒤 최신본을 불러와 비교하고, 둘 다 바꾼 항목을 �
   const latest = await otherSaves(request, managerToken, id, { title: { ko: '다른 운영자 제목' }, temp_key: tempKey, pc_image_id: otherPc.id });
 
   expect(await save(page, id)).toBe(409);
-  await expect(page.locator('input[name="title[ko]"]')).toHaveValue('내 제목');
+  await expect(page.locator('[name="title[ko]"]')).toHaveValue('내 제목');
   await page.locator('#conflict_load_button').click();
   const title = page.locator('[data-conflict-field="title"]');
   await expect(title).toHaveAttribute('data-change', 'both');
@@ -67,7 +67,7 @@ test('충돌 뒤 최신본을 불러와 비교하고, 둘 다 바꾼 항목을 �
   await title.locator('input[value="mine"]').check();
   await page.locator('.hs-conflict__apply').click();
   await expect(page.locator('#conflict_panel')).toHaveCount(0);
-  await expect(page.locator('input[name="title[ko]"]')).toHaveValue('내 제목');
+  await expect(page.locator('[name="title[ko]"]')).toHaveValue('내 제목');
 
   const sent = page.waitForRequest((r) => r.url().endsWith(`/admin/banners/${id}`) && r.method() === 'PUT');
   expect(await save(page, id)).toBe(200);
