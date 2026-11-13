@@ -32,6 +32,8 @@ effects:
   - vendored_asset_survives_rebuild
   - vendored_asset_declared_path_exists_on_disk
   - vendored_asset_version_matches_declaration
+  # 동봉 글꼴(Pretendard)은 글자 묶음별 woff2 + unicode-range 로 나눠 화면에 쓰인 묶음만 받는다(#879)
+  - vendored_font_split_by_unicode_range
   - vendored_editor_mounts_without_fallback
   # 본체 실패 때 코어 레이아웃 스크립트 안내와 겹치지 않고 플러그인 안내 한 건(임시 입력창 전환 문장)만 남는다.
   - editor_script_failure_shows_single_plugin_notice
@@ -75,6 +77,7 @@ test_files:
   - tests/Feature/View/TemplateExternalsRenderingTest.php
   - tests/Feature/Extension/BundledExtensionNoExternalAssetTest.php
   - tests/Feature/Extension/VendoredAssetServingTest.php
+  - tests/Unit/Templates/BundledPretendardSubsetTest.php
   - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/VendoredAssetManifestTest.php
   - resources/js/core/__tests__/TemplateApp.layoutScripts.test.ts
   - resources/js/core/template-engine/__tests__/ActionDispatcher.loadScriptBasePath.test.ts
