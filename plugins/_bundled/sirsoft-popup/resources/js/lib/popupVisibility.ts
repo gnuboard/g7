@@ -137,3 +137,18 @@ export function visiblePopups(
       && !isClosedThisPage(popup.id);
   });
 }
+
+/**
+ * 「닫기」로 함께 닫을 팝업을 고릅니다 — 이 경로의 후보 전부(기기 판정은 보지 않음).
+ *
+ * 보이던 팝업만 닫으면, 같은 페이지에서 화면 폭이 바뀌어(창 줄이기·태블릿 회전) 기기 판정이 달라질 때 숨어 있던
+ * 다른 기기 전용 팝업이 레이어를 다시 연다(#902). 닫기는 「이 페이지의 팝업 레이어를 닫는다」이므로 기기만 달라
+ * 숨어 있던 후보도 함께 닫는다. 다른 경로 전용 팝업은 그 경로에서 그대로 뜬다.
+ *
+ * @param popups 공개 API 팝업
+ * @param path 현재 경로
+ * @returns 함께 닫을 팝업 ID
+ */
+export function closableOnPage(popups: PublicPopup[], path: string): number[] {
+  return popups.filter((popup) => matchesPage(popup, path)).map((popup) => popup.id);
+}

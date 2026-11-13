@@ -50,6 +50,8 @@ axes:
     - arrow_keys_navigate
     - focus_returns_on_close
     - close_hides_until_reload_across_paths
+    - close_survives_device_switch_on_same_page
+    - dismiss_records_seen_but_closes_page_on_device_switch
     - close_on_backdrop_when_enabled
     - backdrop_click_ignored_when_disabled
     - dismiss_today_expires_local_midnight
