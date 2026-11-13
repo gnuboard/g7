@@ -20,6 +20,8 @@ description: |
   눌러도 장 끌기·링크 이동이 없다). 지금 장 점은 길쭉한 알약, 나머지는 작은 원이고 누르는 영역은 44px 이상이다. 한 줄에 들어가는 개수
   (PC 8·휴대폰 5, 좁은 창은 그 폭만큼)를 넘으면 점 대신 숫자. 일시정지는 캡슐 오른쪽 끝. 이전·다음은 PC·휴대폰 모두 본문 양옆 오버레이.
   직접 작성형 본문은 캡슐 높이만큼 아래 여백을 더 둔다. 미리보기도 같은 모양이고 본문 높이 몫에서 띠 몫(44px)이 빠졌다.
+  숨은 장 내용 지연(#879): 내용(이미지·본문 HTML)은 지금 장·다음 장·끄는 동안의 옆 장·한 번 그린 장만 그리고 나머지는 빈 자리(hidden·aria·inert 규칙 동일).
+  점으로 먼 장에 가면 그 장을 바로 그린다. 이미지를 바로 받는(eager) 장은 지금 장뿐이다.
 
 axes:
   surface:
@@ -119,6 +121,11 @@ axes:
     - pager_press_starts_no_drag_or_link
     - html_body_padded_above_pager
     - preview_pager_overlays_body
+    - hidden_slides_render_only_current_and_next
+    - hidden_slides_keep_once_rendered
+    - hidden_slides_dot_jump_renders_target
+    - hidden_slides_eager_only_current
+    - hidden_slides_drag_peer_has_content
 
 effects:
   - media_served_inside_site_mount
@@ -126,9 +133,15 @@ effects:
   - dismiss_cookie_written
   - gdpr_banner_not_covered
   - preview_sample_slides
+  - hidden_slide_media_deferred
+  - popup_filtered_for_visitor
+  - popup_image_matches_device
+  - popup_window_placed_in_viewport
+  - popup_content_rendered_safely
 
 test_files:
   - plugins/_bundled/sirsoft-popup/tests/Unit/Models/ImageUrlBasePrefixTest.php
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupLayer.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupPreview.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/lib/dismissCookie.test.ts
+  - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/popup-hidden-slide-media.spec.ts

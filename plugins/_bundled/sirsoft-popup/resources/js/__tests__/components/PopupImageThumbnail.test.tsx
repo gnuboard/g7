@@ -80,8 +80,11 @@ describe('팝업 이미지 썸네일 srcset', () => {
 
     expect(img?.getAttribute('src')).toBe(PC);
     expect(img?.getAttribute('srcset')).toBe(`${PC}?size=md 640w, ${PC} 960w`);
-    // 본문 높이(설정 520, 화면 높이 - 116 안) × 이미지 비율(960 ÷ 1040)이 폭을 더 줄일 수 있다 — 잘리지 않게 담는(contain) 폭
-    expect(img?.getAttribute('sizes')).toBe('(max-width: 512px) min(calc(100vw - 32px), calc(min(520px, 100vh - 116px) * 0.9231)), min(480px, calc(min(520px, 100vh - 116px) * 0.9231))');
+    // 본문 높이(설정 520, 화면 높이 - 116, 레이어가 줄인 상한 `--g7pp-fit-h` 중 작은 값) × 이미지 비율(960 ÷ 1040)이 폭을 더 줄일 수
+    // 있다 — 잘리지 않게 담는(contain) 폭. jsdom 화면 높이 768 에서 레이어 상한은 768 - 여백 16 = 752px
+    const fit = (container.querySelector('.g7pp-dialog') as HTMLElement).style.getPropertyValue('--g7pp-fit-h');
+    expect(fit).toBe('752px');
+    expect(img?.getAttribute('sizes')).toBe('(max-width: 512px) min(calc(100vw - 32px), calc(min(520px, 100vh - 116px, 752px) * 0.9231)), min(480px, calc(min(520px, 100vh - 116px, 752px) * 0.9231))');
   });
 
   // @scenario thumbnail_query=layer_srcset
@@ -93,7 +96,8 @@ describe('팝업 이미지 썸네일 srcset', () => {
 
     expect(img?.getAttribute('src')).toBe(MOBILE);
     expect(img?.getAttribute('srcset')).toBe(`${MOBILE}?size=md 640w, ${MOBILE} 750w`);
-    expect(img?.getAttribute('sizes')).toBe('min(calc(100vw - 48px), calc(min(70vh, 420px, 100vh - 116px) * 0.8333))');
+    // 가운데 창도 레이어가 줄인 상한(jsdom 화면 높이 768 - 16 = 752px)을 본문 높이 식에 넣는다. 하단 시트는 줄이지 않아 종전 식
+    expect(img?.getAttribute('sizes')).toBe('min(calc(100vw - 48px), calc(min(70vh, 420px, 100vh - 116px, 752px) * 0.8333))');
     cleanup();
     resetClosedThisPage();
 
@@ -137,6 +141,42 @@ describe('팝업 이미지 썸네일 srcset', () => {
     expect(popupImageSizes({ ...base, ratio: 3, isMobile: false, isSheet: false, preview: true })).toBe('720px');
     // 비율을 모르면 종전 값
     expect(popupImageSizes({ ...base, ratio: null, isMobile: true, isSheet: true, preview: false })).toBe('100vw');
+  });
+
+  // @scenario thumbnail_query=layer_sizes_contain_height
+  // @effects popup_image_sizes_capped_by_body_height
+  it('PC 창은 본문 상한(fit)을 잰 뒤에야 이미지를 붙인다 — 붙은 뒤 sizes 가 바뀌면 브라우저가 큰 후보를 먼저 받다가 끊는다(실측 lg 요청 취소)', async () => {
+    setViewportMobile(false);
+    const changed: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const r of records) {
+        if (r.type === 'attributes' && r.attributeName === 'sizes' && (r.target as Element).classList.contains('g7pp-media__img') && r.oldValue !== null) {
+          changed.push(`${r.oldValue} → ${(r.target as Element).getAttribute('sizes')}`);
+        }
+      }
+    });
+    observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['sizes'], attributeOldValue: true });
+    const { container } = show({ pc_width: 480 });
+    await Promise.resolve();
+    observer.disconnect();
+
+    expect(container.querySelector('img.g7pp-media__img')?.getAttribute('sizes')).toContain('752px');
+    expect(changed).toEqual([]);
+  });
+
+  // @scenario thumbnail_query=layer_sizes_contain_height
+  // @effects popup_image_sizes_capped_by_body_height
+  it('레이어가 헤더·배너를 피해 줄인 본문 상한(fit)도 sizes 높이에 넣는다 — CSS `.g7pp-body` 높이 식과 같은 3항', () => {
+    const base = { pcWidth: 480, pcHeight: 520, ratio: 0.75, isSheet: false, preview: false };
+    // PC 1671×770: min(520, 770 - 116 = 654, fit 427) = 427 → × 0.75 = 320px 로 그린다(종전 sizes 는 390px 라 한 단계 큰 후보를 골랐다)
+    expect(popupImageSizes({ ...base, isMobile: false, fitHeight: 427 })).toBe('(max-width: 512px) min(calc(100vw - 32px), calc(min(520px, 100vh - 116px, 427px) * 0.75)), min(480px, calc(min(520px, 100vh - 116px, 427px) * 0.75))');
+    // 휴대폰 가운데 창도 같은 본문 높이 식을 쓴다
+    expect(popupImageSizes({ ...base, isMobile: true, fitHeight: 300 })).toBe('min(calc(100vw - 48px), calc(min(70vh, 420px, 100vh - 116px, 300px) * 0.75))');
+    // fit 이 없으면(하단 시트·미리보기·아직 재지 않음) 종전 식
+    expect(popupImageSizes({ ...base, isMobile: false, fitHeight: null })).toBe('(max-width: 512px) min(calc(100vw - 32px), calc(min(520px, 100vh - 116px) * 0.75)), min(480px, calc(min(520px, 100vh - 116px) * 0.75))');
+    expect(popupImageSizes({ ...base, isMobile: true, isSheet: true, fitHeight: null })).toBe('min(100vw, calc(min(60vh, 380px, 100vh - 116px) * 0.75))');
+    // 미리보기는 기기 틀 안의 숫자 계산이라 fit 을 쓰지 않는다
+    expect(popupImageSizes({ ...base, isMobile: false, preview: true, fitHeight: 200 })).toBe('390px');
   });
 
   // @scenario thumbnail_query=layer_srcset_fallback

@@ -138,7 +138,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=renders_nothing_when_no_visible_popup
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_filtered_for_visitor
   it('보일 팝업이 없으면 아무것도 그리지 않는다', () => {
     const { container } = show([]);
     expect(container.innerHTML).toBe('');
@@ -148,7 +148,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=filters_by_route_on_path_change
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_filtered_for_visitor
   it('경로가 바뀌면 다시 판정한다(경로 경계 하위 포함)', () => {
     const popups = [htmlPopup(1, '<p>a</p>', { page_scope: 'routes', routes: ['/shop'] })];
     const { container, rerender } = show(popups, {}, '/');
@@ -162,7 +162,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=filters_by_device_on_viewport_change
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_filtered_for_visitor
   it('폭 767px 이하는 모바일 전용만, 그 위는 PC 전용만', () => {
     const popups = [htmlPopup(1, '<p>pc</p>', { device: 'pc' }), htmlPopup(2, '<p>m</p>', { device: 'mobile' }), htmlPopup(3)];
     const { container } = show(popups);
@@ -175,7 +175,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=filters_dismissed_ids_until_expiry
-  // @effects dismiss_cookie_written
+  // @effects dismiss_cookie_written, popup_filtered_for_visitor
   it('보지 않기 기록이 만료 전인 팝업은 빼고 나머지는 보인다', () => {
     const now = Math.floor(Date.now() / 1000);
     document.cookie = `${DISMISS_COOKIE}=${encodeURIComponent(JSON.stringify({ '1': now + 3600 }))}; path=/`;
@@ -186,7 +186,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=shows_expired_dismissed_ids_again
-  // @effects dismiss_cookie_written
+  // @effects dismiss_cookie_written, popup_filtered_for_visitor
   it('만료가 지난 기록은 무시하고 다시 보인다', () => {
     const now = Math.floor(Date.now() / 1000);
     document.cookie = `${DISMISS_COOKIE}=${encodeURIComponent(JSON.stringify({ '1': now - 1 }))}; path=/`;
@@ -197,7 +197,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=keeps_server_order
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_filtered_for_visitor
   it('서버 순서(관리자 순서) 그대로 넘긴다', () => {
     const { container } = show([htmlPopup(9), htmlPopup(3), htmlPopup(5)]);
 
@@ -447,7 +447,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=close_hides_until_reload_across_paths
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_filtered_for_visitor
   it('「닫기」한 팝업은 다른 경로로 가도(다시 마운트돼도) 새로고침 전까지 뜨지 않는다', () => {
     const popups = [htmlPopup(1), htmlPopup(2, '<p>b</p>', { page_scope: 'routes', routes: ['/shop'] })];
     const { getByText, container, rerender } = show(popups, {}, '/');
@@ -557,7 +557,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=new_popup_shows_after_dismiss
-  // @effects dismiss_cookie_written
+  // @effects dismiss_cookie_written, popup_filtered_for_visitor
   it('보지 않기 뒤에 새로 올린 팝업은 바로 보인다', () => {
     const { getByText } = show([htmlPopup(1)], { dismiss_mode: 'days', dismiss_days: 7 });
     fireEvent.click(getByText('7일간 보지 않기'));
@@ -579,7 +579,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=pc_center_layout_uses_size
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_window_placed_in_viewport
   it('PC 중앙은 설정 너비·높이를 쓴다', () => {
     const { container } = show([htmlPopup(1)], { pc_position: 'center', pc_width: 600, pc_height: 400 });
     const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
@@ -590,7 +590,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=pc_coords_layout_clamped_to_viewport
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_window_placed_in_viewport
   it('PC 좌표는 left·top 을 쓰고, 창보다 크면 화면 안으로 끌어들이는 식이 붙는다', () => {
     const { container } = show([htmlPopup(1)], { pc_position: 'coords', pc_left: 80, pc_top: 120, pc_width: 480, pc_height: 520 });
     const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
@@ -604,7 +604,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=mobile_center_layout
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_window_placed_in_viewport
   it('모바일 중앙형', () => {
     media.mobile = true;
     const { container } = show([htmlPopup(1)], { mobile_style: 'center' });
@@ -615,7 +615,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=mobile_sheet_layout
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_window_placed_in_viewport
   it('모바일 하단 시트형 — 손잡이 막대 없이 본문부터, 그다음이 하단 바(넘김 컨트롤 띠가 따로 없다)', () => {
     media.mobile = true;
     const { container } = show([htmlPopup(1), htmlPopup(2)], { mobile_style: 'sheet' });
@@ -891,7 +891,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=image_uses_mobile_source_on_mobile
-  // @effects media_served_inside_site_mount
+  // @effects media_served_inside_site_mount, popup_image_matches_device
   it('이미지는 레이어가 판정한 기기로 고른다 — PC 는 PC 이미지(크기 포함), 모바일은 모바일 이미지', () => {
     const { container } = show([imagePopup(1)]);
     const img = container.querySelector('.g7pp-media img') as HTMLImageElement;
@@ -911,7 +911,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=image_falls_back_to_pc_on_mobile
-  // @effects media_served_inside_site_mount
+  // @effects media_served_inside_site_mount, popup_image_matches_device
   it('모바일 이미지가 없으면 모바일에서도 PC 이미지를 쓴다', () => {
     media.mobile = true;
     const { container } = show([imagePopup(1, { image: { pc: { url: '/img/pc-1.jpg', width: 480, height: 520 }, mobile: null } })]);
@@ -920,7 +920,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=device_follows_engine_width
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_filtered_for_visitor
   it('엔진 반응형 폭(G7Core.useResponsive)이 있으면 창 폭 대신 그 폭으로 기기를 판정한다', () => {
     installCore({ useResponsive: () => ({ width: 390 }) });
     const popups = [htmlPopup(1, '<p>pc</p>', { device: 'pc' }), htmlPopup(2, '<p>m</p>', { device: 'mobile' })];
@@ -958,7 +958,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=link_new_window_rel_noopener
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_content_rendered_safely
   it('새 창 링크는 target=_blank + rel=noopener noreferrer, SPA 이동을 가로채지 않는다', () => {
     const dispatch = vi.fn();
     installCore({ dispatch });
@@ -972,7 +972,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=link_href_carries_site_mount_prefix
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, media_served_inside_site_mount
   it('하위 폴더 사이트에서 덮는 링크 href 는 마운트 접두사를 갖고, 보통 누름은 접두사 없는 경로로 엔진 이동한다', () => {
     const dispatch = vi.fn();
     installCore({ dispatch });
@@ -1010,7 +1010,7 @@ describe('PopupLayer', () => {
   });
 
   // @scenario surface=html_body_purified_on_render
-  // @effects accessible_modal_carousel
+  // @effects accessible_modal_carousel, popup_content_rendered_safely
   it('직접 작성형 본문은 출력 때 DOMPurify 로 한 번 더 거른다', () => {
     const { container } = show([htmlPopup(1, '<p onclick="x()">안내</p><script>alert(1)</script><iframe src="https://evil"></iframe><img src="x" onerror="y()">')]);
     const body = container.querySelector('.g7pp-html') as HTMLElement;
@@ -1046,6 +1046,88 @@ describe('PopupLayer', () => {
     scrollSpy.mockRestore();
     clientSpy.mockRestore();
   });
+  describe('숨은 장 내용 지연 — 지금 장 + 다음 장만 그리고, 한 번 그린 장은 둔다', () => {
+    /** 장에 내용(이미지형 `.g7pp-media` 또는 직접 작성형 `.g7pp-html`)이 그려졌는지 — 팝업 id 순서 */
+    const filled = (container: HTMLElement) => [...container.querySelectorAll('.g7pp-slide')]
+      .map((el) => !!el.querySelector('.g7pp-media, .g7pp-html'));
+
+    /** 이미지 2장 + 본문에 이미지가 든 직접 작성형 1장 */
+    const three = () => [imagePopup(1), imagePopup(2), htmlPopup(3, '<p><img src="/img/body-3.jpg" alt="본문"></p>')];
+
+    // @scenario surface=hidden_slides_render_only_current_and_next
+    // @effects hidden_slide_media_deferred
+    it('팝업 3개, 지금 장 0 — 내용은 0·1번 장뿐이고 2번 장은 빈 자리(본문 이미지도 없음)', () => {
+      const { container } = show(three());
+
+      expect(filled(container)).toEqual([true, true, false]);
+      expect(container.querySelectorAll('.g7pp-slide')).toHaveLength(3);
+      expect(container.querySelector('img[src="/img/body-3.jpg"]')).toBeNull();
+      // 빈 자리도 숨김·보조기술 규칙은 그대로
+      expect((container.querySelector('.g7pp-slide[data-popup-id="3"]') as HTMLElement).hidden).toBe(true);
+    });
+
+    // @scenario surface=hidden_slides_keep_once_rendered
+    // @effects hidden_slide_media_deferred
+    it('다음으로 넘겨 지금 장이 1이 되면 2번 장 내용이 생기고, 0번 장 내용은 그대로 둔다', () => {
+      const { container } = show(three());
+
+      fireEvent.click(container.querySelector('.g7pp-arrow--next') as HTMLElement);
+
+      expect(currentId(container)).toBe(2);
+      expect(filled(container)).toEqual([true, true, true]);
+      expect(container.querySelector('img[src="/img/body-3.jpg"]')).not.toBeNull();
+    });
+
+    // @scenario surface=hidden_slides_dot_jump_renders_target
+    // @effects hidden_slide_media_deferred
+    it('점으로 0 → 2 로 건너뛰면 2번 장 내용이 바로 생긴다', () => {
+      const { container } = show([imagePopup(1), imagePopup(2), imagePopup(3), imagePopup(4)]);
+      expect(filled(container)).toEqual([true, true, false, false]);
+
+      fireEvent.click(container.querySelectorAll('.g7pp-dot')[2] as HTMLElement);
+
+      expect(currentId(container)).toBe(3);
+      // 지금 장(2) + 다음 장(3) 이 더해지고, 이미 그린 0·1 은 남는다
+      expect(filled(container)).toEqual([true, true, true, true]);
+    });
+
+    // @scenario surface=hidden_slides_eager_only_current
+    // @effects hidden_slide_media_deferred
+    it('이미지를 바로 받는(eager) 장은 지금 장뿐 — 지금 장이 1이면 0번 장은 lazy', () => {
+      const { container } = show([imagePopup(1), imagePopup(2), imagePopup(3)]);
+      const loading = (id: number) => container.querySelector(`.g7pp-slide[data-popup-id="${id}"] img`)?.getAttribute('loading');
+
+      expect(loading(1)).toBe('eager');
+      expect(loading(2)).toBe('lazy');
+
+      fireEvent.click(container.querySelector('.g7pp-arrow--next') as HTMLElement);
+
+      expect(loading(1)).toBe('lazy');
+      expect(loading(2)).toBe('eager');
+      expect(loading(3)).toBe('lazy');
+    });
+
+    // @scenario surface=hidden_slides_drag_peer_has_content
+    // @effects hidden_slide_media_deferred
+    it('뒤로 끄는 동안 들어오는 옆 장(마지막 장)도 내용이 있다', () => {
+      (window as any).PointerEvent = TestPointerEvent;
+      const rectSpy = mockBodyWidth(400);
+      try {
+        const { container } = show([imagePopup(1), imagePopup(2), imagePopup(3), imagePopup(4)]);
+        expect(filled(container)).toEqual([true, true, false, false]);
+
+        dragOn(container.querySelector('.g7pp-body') as HTMLElement, 120, { release: false });
+
+        expect(shownIds(container)).toEqual([1, 4]);
+        expect(filled(container)[3]).toBe(true);
+        expect(filled(container)[2]).toBe(false);
+      } finally {
+        rectSpy.mockRestore();
+        delete (window as any).PointerEvent;
+      }
+    });
+  });
+
   describe('끌기 슬라이드', () => {
     let rectSpy: ReturnType<typeof mockBodyWidth>;
 
@@ -1344,7 +1426,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=preview_drag_uses_rendered_width
-    // @effects preview_sample_slides
+    // @effects preview_sample_slides, accessible_modal_carousel
     it('축소 미리보기 틀에서도 끈 거리는 실제 표시 폭 대비 비율로 잰다', () => {
       vi.useFakeTimers();
       rectSpy.mockRestore();
@@ -1494,7 +1576,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_move_footer_drag_suppresses_click
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('「닫기」·「보지 않기」 위에서 눌러 끌었다 놓으면 그 동작의 click 은 실행되지 않는다(마우스·터치) — 창은 옮겨진 채 열려 있다', () => {
       const { container } = show([htmlPopup(1)], { dismiss_mode: 'today' });
       const { close, dismiss } = footerOf(container);
@@ -1511,7 +1593,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_move_footer_tap_still_clicks
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('끌지 않은 누름(8px 미만 흔들림)은 「닫기」·「보지 않기」가 그대로 동작한다 — 앞서 끌기만 하고 click 이 오지 않았거나 누름이 바 밖에서 끝났어도 다음 누름을 막지 않는다', async () => {
       const { container } = show([htmlPopup(1)], { dismiss_mode: 'today' });
       const { close } = footerOf(container);
@@ -1546,7 +1628,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_move_clamped_to_viewport
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('창은 화면 밖으로 빠지지 않는다 — 가장자리 8px 안쪽에서 멈추고, 창이 화면보다 크면 하단 바가 보이는 데까지 올린다', () => {
       const { container, unmount } = show([htmlPopup(1)]);
       const { footer } = footerOf(container);
@@ -1570,7 +1652,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_clears_top_fixed_header
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('화면 위에 고정된 헤더(팝업 층 이상)가 창 위쪽을 덮으면 그 아래로 비켜 뜨고, 옮겨도 그 위로는 올라가지 않는다 — 팝업 층 아래 고정 요소는 무시', () => {
       const header = document.createElement('header');
       header.style.position = 'sticky';
@@ -1642,7 +1724,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_not_moved_by_keyboard
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('키보드로는 창을 옮기지 않는다 — 하단 바 단추에서 화살표·Home 을 눌러도 창은 그대로이고, ←→ 는 레이어 다른 곳처럼 장을 넘긴다', () => {
       const { container } = show([htmlPopup(1), htmlPopup(2)]);
       const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
@@ -1665,7 +1747,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_move_resets_on_path_change
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('옮긴 자리는 기억하지 않는다 — 다른 페이지로 가면 원래 자리, 새로 열려도 원래 자리', () => {
       const popups = [htmlPopup(1)];
       const { container, rerender, unmount } = show(popups);
@@ -1685,7 +1767,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_move_reclamped_on_resize
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('브라우저 창이 좁아지면 옮긴 창을 다시 화면 안으로 들이고, 템플릿이 폭에 맞춰 헤더를 다시 그린 뒤에도 다시 맞춘다', () => {
       const { container } = show([htmlPopup(1)]);
 
@@ -1732,7 +1814,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=window_move_mobile_center_by_touch
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('휴대폰 가운데 창도 하단 바를 손가락으로 끌어 옮긴다 — 끈 뒤 「닫기」 click 은 막힌다', () => {
       media.mobile = true;
       rectSpy.mockRestore();
@@ -1753,7 +1835,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=sheet_footer_drag_does_nothing
-    // @effects accessible_modal_carousel
+    // @effects accessible_modal_carousel, popup_window_placed_in_viewport
     it('휴대폰 하단 시트는 손잡이 막대가 없고 끌어 내려 닫지 않는다 — 하단 바를 끌어도 그대로이고 「닫기」 단추로 닫힌다', async () => {
       media.mobile = true;
       rectSpy.mockRestore();
@@ -1784,7 +1866,7 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=preview_window_move_disabled
-    // @effects preview_sample_slides
+    // @effects preview_sample_slides, popup_window_placed_in_viewport
     it('관리자 미리보기에서는 하단 바를 끌어도 창이 옮겨지지 않고 손잡이도 그리지 않는다', () => {
       const { container } = render(<PopupLayer popups={[htmlPopup(1)]} settings={{ autoplay: false }} preview="pc" />);
       const { footer, close } = footerOf(container);
