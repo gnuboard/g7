@@ -111,6 +111,28 @@ async function flow_close_hides_across_spa_navigation({ page, request, managerTo
     await expect(page.locator(`.g7pp-slide[data-popup-id="${id}"]`)).toHaveCount(1);
 }
 
+/** PC 폭에서 닫은 뒤 같은 페이지에서 휴대폰 폭으로 줄여도 모바일 전용 팝업이 레이어를 다시 열지 않고, 새로고침하면 뜬다(#902) */
+async function flow_close_survives_resize_to_mobile({ page, request, managerToken, created }: Ctx): Promise<void> {
+    const pc = await createHtmlPopup(request, managerToken, { device: 'pc' });
+    const mobile = await createHtmlPopup(request, managerToken, { device: 'mobile' });
+    created.push(pc, mobile);
+
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await gotoUser(page, '/');
+    await expect(page.locator(`.g7pp-slide[data-popup-id="${pc}"]`)).toHaveCount(1);
+    await expect(page.locator(`.g7pp-slide[data-popup-id="${mobile}"]`)).toHaveCount(0);
+    await layer(page).getByRole('button', { name: '닫기' }).click();
+    await expect(layer(page)).toHaveCount(0);
+
+    await page.setViewportSize(VIEWPORTS.mobile);
+    await page.waitForTimeout(1500);
+    await expect(layer(page)).toHaveCount(0);
+    await expect(page.locator(`.g7pp-slide[data-popup-id="${mobile}"]`)).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.locator(`.g7pp-slide[data-popup-id="${mobile}"]`)).toHaveCount(1);
+}
+
 /** 직접 작성형 본문이 정화된 채로 뜬다 */
 async function flow_html_popup_with_editor_content({ page, request, managerToken, created }: Ctx, viewport: Viewport): Promise<void> {
     const id = await createHtmlPopup(request, managerToken, { body_html: { ko: '<h2>점검 안내</h2><p onclick="window.__popupXss=1">본문</p><script>window.__popupXss=2</script>' } });
@@ -460,6 +482,12 @@ test.describe('팝업 → 사용자 화면', () => {
     await flow_close_hides_across_spa_navigation({ page, request, managerToken, created } as Ctx, 'desktop');
   });
 
+  // @scenario flow=close_survives_resize_to_mobile, viewport=desktop
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('PC 폭에서 닫은 뒤 휴대폰 폭으로 줄여도 레이어가 다시 열리지 않고, 새로고침하면 모바일 전용이 뜬다 (#902)', async ({ page, request, managerToken, created }) => {
+    await flow_close_survives_resize_to_mobile({ page, request, managerToken, created } as Ctx);
+  });
+
   // @scenario flow=close_hides_across_spa_navigation, viewport=mobile
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
   test('닫기 뒤 SPA 로 이동해도 다시 뜨지 않고, 새로고침하면 뜬다 (mobile)', async ({ page, request, managerToken, created }) => {
@@ -634,6 +662,7 @@ test.describe('관리자 화면', () => {
   });
 
   // @scenario flow=admin_save_lock_reason_shown, viewport=mobile
+  // @effects test_data_cleaned_up
   test('이미지형 등록에서 이미지가 없으면 저장 단추 위 한 줄에 이유가 보이고 단추가 그 문구를 가리키며, 휴대폰에서 「취소」가 갈라지지 않는다 (mobile)', async ({ page, managerToken }) => {
     await page.setViewportSize(VIEWPORTS.mobile);
     await authenticatePage(page, managerToken);

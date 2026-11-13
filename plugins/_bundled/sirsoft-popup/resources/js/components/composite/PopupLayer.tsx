@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import DOMPurify from 'dompurify';
 import { usePopupRefresh } from '../../lib/usePopupRefresh';
 import { DEFAULT_SETTINGS, type PopupDisplaySettings, type PublicPopup } from '../../lib/types';
-import { MOBILE_MAX_WIDTH, rememberClosed, visiblePopups } from '../../lib/popupVisibility';
+import { MOBILE_MAX_WIDTH, closableOnPage, rememberClosed, visiblePopups } from '../../lib/popupVisibility';
 import { readDismissed, rememberDismissed } from '../../lib/dismissCookie';
 import { translate as t } from '../../support/editor';
 import { boxesFor } from '../../lib/overlays';
@@ -674,19 +674,20 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     if (preview) {
       return;
     }
-    rememberClosed(visible.map((p) => p.id));
+    // 보이던 팝업만이 아니라 이 경로의 후보 전부 — 폭이 바뀌어 기기 판정이 달라져도 레이어가 다시 열리지 않게(#902)
+    rememberClosed(closableOnPage(Array.isArray(popups) ? popups : [], path));
     setDismissVersion((v) => v + 1);
-  }, [visible, preview]);
+  }, [popups, path, preview]);
 
   const dismiss = useCallback(() => {
     if (config.dismiss_mode === 'close' || preview) {
       return;
     }
-    const ids = visible.map((p) => p.id);
-    rememberDismissed(ids, config.dismiss_mode, config.dismiss_days);
-    rememberClosed(ids);
+    // 「보지 않기」 기록은 보이던 팝업만(2026-10-27 결정), 이 페이지에서 레이어를 닫는 것은 「닫기」와 같이 이 경로 후보 전부(#902)
+    rememberDismissed(visible.map((p) => p.id), config.dismiss_mode, config.dismiss_days);
+    rememberClosed(closableOnPage(Array.isArray(popups) ? popups : [], path));
     setDismissVersion((v) => v + 1);
-  }, [visible, config.dismiss_mode, config.dismiss_days, preview]);
+  }, [visible, popups, path, config.dismiss_mode, config.dismiss_days, preview]);
 
   const onKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
