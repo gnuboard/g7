@@ -14,7 +14,7 @@ import form from '../../../layouts/admin/hero_section_banner_form.json';
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
-import { actionsOf, collect, findById, pick, translationKeys } from './helpers';
+import { actionsOf, collect, evaluateBinding, evaluateComputed, findById, pick, translationKeys } from './helpers';
 
 const json = (node: unknown) => JSON.stringify(node);
 const layout = form as any;
@@ -23,12 +23,63 @@ const layout = form as any;
 const saveCall = () => actionsOf(findById(form, 'footer_save_button'), 'apiCall')[0];
 
 describe('배너 등록·수정 화면', () => {
+  // @scenario surface=target_settings_failure_retry
+  // @effects target_settings_retry_restores_controls
+  it('대상 설정을 받지 못한 수정 미리보기는 위치 기본값으로 추정하지 않고 재시도를 제공한다', () => {
+    const c = evaluateComputed(layout, { route: {}, banner: undefined, form_target_info: undefined, position_settings: {data: { positions: [{key: 'board_hero', dynamic: true, settings: {effect: 'slide'}}]}}, _local: {form: {position: 'board_hero', target_key: '4'}}, _global: {heroFormTargetSettingsFailed: true}, form_target_settings: null });
+    expect(c.formSettingsReady).toBe(false);
+    expect(c.formTargetSettingsFailed).toBe(true);
+    expect(evaluateBinding(findById(form, 'form_preview')!.if, {}, c)).toBe(false);
+    expect(actionsOf(findById(form, 'form_target_settings_retry'), 'refetchDataSource')[0]?.params.dataSourceId).toBe('form_target_settings');
+  });
+
+  // @scenario surface=target_settings_failure_retry
+  // @effects target_settings_fetched_for_edit_without_query
+  it('대상 설정은 데이터 소스 if 로 거르지 않고 init·대상 고르기에서 받는다 — if 는 _local·banner 를 못 봐 쿼리 없는 수정 진입에서 소스가 빠진다', () => {
+    const source = asArray<any>(layout.data_sources).find((s) => s.id === 'form_target_settings');
+    expect(source.if).toBeUndefined();
+    expect(source.auto_fetch).toBe(false);
+    // 주소는 받을 위치·대상(formTargetRef)만 읽는다 — init 때 수정 배너의 폼은 아직 _local 에 없고, 주소 식은 banner 를 보지 못한다
+    expect(source.endpoint).toContain('_local.formTargetRef?.position');
+    expect(source.endpoint).toContain('_local.formTargetRef?.target');
+    expect(source.endpoint).not.toMatch(/banner\?|_local\.form\?/);
+    // 엔진은 데이터 소스 if 를 route·query·_global 로만 평가한다 — 같은 화면의 어떤 소스도 _local·다른 소스로 조건을 걸지 않는다
+    for (const s of asArray<any>(layout.data_sources)) expect(String(s.if ?? '')).not.toMatch(/_local|_computed|banner\?|position_settings\?/);
+    const seq = asArray<any>(layout.init_actions).find((a) => a.handler === 'sequence' && json(a).includes('form_target_settings'));
+    const [ref, refetch] = seq.actions;
+    expect(refetch).toMatchObject({ handler: 'refetchDataSource', params: { dataSourceId: 'form_target_settings' } });
+    const edit = { route: { id: '7' }, banner: { data: { position: 'board_hero', target_key: '4' } }, query: {}, _local: { form: { position: 'home_hero', target_key: null } } };
+    // 수정은 배너 응답으로 — SPA 로 다른 배너에서 넘어와 남은 _local.form 을 쓰지 않는다
+    const refOf = (scope: any) => ({ position: evaluateBinding(ref.params['formTargetRef.position'], scope, {}), target: evaluateBinding(ref.params['formTargetRef.target'], scope, {}) });
+    expect(refOf(edit)).toEqual({ position: 'board_hero', target: '4' });
+    expect(evaluateBinding(refetch.if, edit, {})).toBe(true);
+    const create = { route: {}, banner: undefined, query: { position: 'board_hero', target: '2' }, _local: {} };
+    expect(refOf(create)).toEqual({ position: 'board_hero', target: '2' });
+    expect(evaluateBinding(refetch.if, { ...create, query: { position: 'home_hero' } }, {})).toBe(false);
+    const pick = findById(form, 'form_target_dropdown')!;
+    expect(json(actionsOf(pick, 'setState'))).toContain('formTargetRef');
+    expect(actionsOf(pick, 'refetchDataSource')[0]).toMatchObject({ if: '{{!!$args[0]}}', params: { dataSourceId: 'form_target_settings' } });
+  });
+
+  // @scenario surface=target_settings_failure_retry
+  // @effects form_preview_uses_position_defaults_until_target_picked
+  it('동적 위치에서 대상을 고르기 전에는 위치 기본값으로 미리보기를 그린다 — 대상 설정을 받을 일이 없어 기다리지 않는다', () => {
+    const c = evaluateComputed(layout, { route: {}, banner: undefined, form_target_info: undefined, position_settings: {data: { positions: [{key: 'board_hero', dynamic: true, settings: {effect: 'fade'}}]}}, _local: {form: {position: 'board_hero', target_key: null}}, _global: {}, form_target_settings: undefined });
+    expect(c.formTargetSettingsFailed).toBe(false);
+    expect(c.formSettingsReady).toBe(true);
+    expect(c.formSettings.effect).toBe('fade');
+    expect(evaluateBinding(findById(form, 'form_preview')!.if, {}, c)).toBe(true);
+    expect(evaluateBinding(findById(form, 'applied_settings')!.if, {}, c)).toBe(true);
+  });
+
   // @scenario surface=form_create_uses_query_position_and_temp_key
   // @effects banner_form_initializes_from_entry
   it('등록 진입은 폼을 기본값으로 되돌리고 위치를 쿼리에서, 임시 키를 새로 만든다', () => {
     const init = asArray<any>(layout.init_actions);
     const reset = init.find((a) => a.if === '{{!route.id}}' && a.params?.form && typeof a.params.form === 'object');
-    expect(reset.params.form.position).toBe("{{query.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}");
+    // 위치·대상은 목록에서 보던 탭·대상 그대로 — 위치 목록은 레지스트리라 화면이 위치를 고정하지 않는다(서버가 등록 위치인지 본다)
+    expect(reset.params.form.position).toBe("{{query.position || 'home_hero'}}");
+    expect(reset.params.form.target_key).toBe('{{query.target || null}}');
     expect(reset.params.form.images).toEqual({ pc: null, mobile: null });
     // 임시 키는 등록·수정 모두 들어올 때마다 새로 만든다
     const temp = init.find((a) => a.params?.target === 'global' && a.params?.tempKey === '{{$uuid()}}');
@@ -83,7 +134,7 @@ describe('배너 등록·수정 화면', () => {
   // @effects banner_images_apply_on_save
   it('실제 업로드 상태 식이 대기·압축·진행·실패를 막고 완료·제거 뒤 저장을 연다', () => {
     const disabled = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
-    const isDisabled = (state: any) => Function('_local', `return (${disabled})`)(state);
+    const isDisabled = (state: any) => Function('_local', '_computed', `return (${disabled})`)(state, {});
     for (const device of ['pc', 'mobile']) {
       const uploader = findById(form, `${device}_image_uploader`)!;
       expect(uploader.props.disabled).toBe('{{_local.isSaving}}');
@@ -286,11 +337,74 @@ describe('배너 등록·수정 화면', () => {
     expect(preview.props.position).toBe("{{_local.form?.position ?? 'home_hero'}}");
   });
 
+  // @scenario surface=admin_max_height_setting
+  // @effects preview_follows_max_height_before_save
+  it('편집 미리보기는 이 배너가 나갈 자리의 최종 설정(위치 기본값, 동적 위치면 대상 재정의까지)의 표시 폭·기기별 최대 높이를 받는다', () => {
+    const preview = findById(form, 'form_preview')!;
+    const positionSettings = { data: { positions: [
+      { key: 'home_hero', dynamic: false, settings: { width: 'full', max_height_pc: 400, max_height_mobile: null } },
+      { key: 'board_hero', dynamic: true, target: { type: 'board' }, settings: { width: 'content', max_height_pc: null, max_height_mobile: null } },
+    ] } };
+    const settings = (local: any, targetSettings: any = undefined) => {
+      const computed = evaluateComputed(form as any, { position_settings: positionSettings, _local: local, form_target_settings: targetSettings, form_target_info: undefined, banner: undefined, route: {} });
+      return evaluateBinding(preview.props.settings, { _local: local }, computed);
+    };
+    expect(settings({ form: { position: 'home_hero' } })).toMatchObject({ width: 'full', max_height_pc: 400, max_height_mobile: null });
+    // 동적 위치 — 대상 설정 응답이 지금 위치·대상과 같을 때만 그 최종 값
+    const target = { data: { position: 'board_hero', target: { key: '4' }, settings: { width: 'full', max_height_pc: 320, max_height_mobile: null }, overrides: { width: 'full', max_height_pc: 320 } } };
+    expect(settings({ form: { position: 'board_hero', target_key: '4' } }, target)).toMatchObject({ width: 'full', max_height_pc: 320 });
+    // 다른 대상의 응답이 남아 있으면 쓰지 않고 위치 기본값
+    expect(settings({ form: { position: 'board_hero', target_key: '9' } }, target)).toMatchObject({ width: 'content', max_height_pc: null });
+  });
+
+  // @scenario surface=promo_layout_form
+  // @effects promo_preset_fills_draft_only
+  it('배너 구성(배경형·프로모션형)·바탕색·추천값 단추·기기별 문구 폭·그림 등장 효과·순차 등장·제목 여러 줄을 입력한다 — 추천값은 작업본에만 넣는다', () => {
+    const radio = findById(form, 'layout_radio')!;
+    expect(radio.props.name).toBe('presentation.layout');
+    expect(json(radio)).toContain('"value":"background"');
+    expect(json(radio)).toContain('"value":"promo"');
+    const presetNode = findById(form, 'layout_preset_promo')!;
+    const preset = json(actionsOf(presetNode, 'setState'));
+    for (const piece of ["layout: 'promo'", 'text_width_pc: 40', 'text_width_mobile: 100', "animation: 'sequence'", "media_animation: 'right'", 'text_pc_y: 50', 'text_mobile_y: 100']) expect(preset).toContain(piece);
+    expect(actionsOf(presetNode, 'apiCall')).toHaveLength(0);
+    // 밝은 바탕에 흰 글자가 묻히지 않게 — 기본 흰색 계열 글자색만 짙은 색으로, 운영자가 고른 색은 그대로
+    const params = actionsOf(presetNode, 'setState')[0].params;
+    const colorsFor = (current: Record<string, string>) => ['title_color', 'description_color', 'eyebrow_color']
+      .map((key) => evaluateBinding(params[`form.${key}`], { _local: { form: current } }));
+    expect(colorsFor({ title_color: '#ffffff', description_color: '#E5E7EB', eyebrow_color: '#FFFFFF' })).toEqual(['#111827', '#4B5563', '#4B5563']);
+    expect(colorsFor({ title_color: '#B91C1C', description_color: '#1F2937', eyebrow_color: '#0EA5E9' })).toEqual(['#B91C1C', '#1F2937', '#0EA5E9']);
+    // 메뉴 겹치기의 흰 메뉴 글자가 연회색 띠에 묻히지 않게 — 빈 바탕을 연회색으로 채울 때 기본 밝기(어두움)만 밝음으로, 고른 바탕색·밝기는 그대로
+    const toneFor = (presentation: Record<string, unknown>) => evaluateBinding(params['form.presentation'], { _local: { form: { presentation } } }).tone;
+    expect(toneFor({})).toBe('light');
+    expect(toneFor({ tone: 'dark', background_color: null })).toBe('light');
+    expect(toneFor({ tone: 'dark', background_color: '#1F2937' })).toBe('dark');
+    expect(toneFor({ tone: 'light', background_color: '#1F2937' })).toBe('light');
+    for (const id of ['hero_text_width_pc', 'hero_text_width_mobile']) {
+      const input = collect(form, (n) => n.props?.id === id)[0];
+      expect(json(actionsOf(input, 'setState'))).toContain("$event.target.value === '' ? null : Number($event.target.value)");
+    }
+    const media = collect(form, (n) => n.props?.id === 'hero_media_animation')[0];
+    const values = (node: any) => collect(node, (n) => n.name === 'Option' || n.name === 'option').map((n: any) => n.props?.value);
+    expect(values(media)).toEqual(['none', 'fade', 'right']);
+    const anim = collect(form, (n) => n.props?.id === 'hero_text_animation')[0];
+    expect(values(anim)).toContain('sequence');
+    const title = collect(form, (n) => n.props?.name === 'title')[0];
+    expect(title.props.inputType).toBe('textarea');
+    expect(findById(form, 'applied_settings')).toBeTruthy();
+    for (const lang of [ko, en] as any[]) {
+      for (const key of ['title', 'label', 'background', 'promo', 'background_hint', 'promo_hint', 'background_color', 'preset', 'preset_hint']) expect(lang.admin.form.layout[key], key).toBeTruthy();
+      for (const key of ['width_pc', 'width_mobile', 'width_follow', 'media_animation', 'promo_spot_hint']) expect(lang.admin.form.text_layout[key], key).toBeTruthy();
+      expect(lang.admin.form.text_layout.animations.sequence).toBeTruthy();
+      expect(lang.admin.form.applied.values).toContain('{{effect}}');
+    }
+  });
+
   // @scenario surface=form_section_order_image_first
   // @effects form_guides_operator_before_save
-  it('입력 순서는 기본 정보 → 미디어 → 이미지 → 이미지 표시 → 문구 → 문구 위치·효과 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
+  it('입력 순서는 기본 정보 → 배너 구성 → 미디어 → 이미지 → 이미지 표시 → 문구 → 문구 위치·효과 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
     const sections = asArray<any>(findById(form, 'form_sections')!.children).map((n) => n.id).filter((id) => String(id).endsWith('_card'));
-    expect(sections).toEqual(['basic_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'text_layout_card', 'link_card', 'period_card']);
+    expect(sections).toEqual(['basic_card', 'layout_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'text_layout_card', 'link_card', 'period_card']);
   });
 
   // @scenario surface=form_preview_first_on_mobile
@@ -315,13 +429,14 @@ describe('배너 등록·수정 화면', () => {
   it('저장 단추가 잠기면 그 옆에 이유를 보인다 — 저장 중이 아닐 때 잠긴 경우와 이유가 늘 짝이다', () => {
     const disabledExpr = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
     // 레이아웃 계산값(_computed)을 선언 순서대로 구해 식에 넘긴다
-    const computedOf = (state: any) => Object.entries((form as any).computed as Record<string, string>).reduce((acc: Record<string, unknown>, [name, expr]) => {
-      acc[name] = Function('_local', '_computed', 'position_settings', 'query', `return (${expr.slice(2, -2)})`)(state, acc, null, {});
-      return acc;
-    }, {});
+    const settings = { data: { positions: [
+      { key: 'home_hero', label_key: 'sirsoft-hero_section.admin.position.home_hero', label: null, registered: true, dynamic: false, target: null },
+      { key: 'board_hero', label_key: 'sirsoft-hero_section.admin.position.board_hero', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'sirsoft-hero_section.admin.target.board', label: null } },
+    ] } };
+    const computedOf = (state: any) => evaluateComputed(form as any, { _local: { ...state, form: { position: 'home_hero', ...state.form } }, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
     const evaluate = (expr: string, state: any) => Function('_local', '_computed', `return (${expr})`)(state, computedOf(state));
     const isDisabled = (state: any) => evaluate(disabledExpr, state);
-    const reasonIds = ['save_reason_uploading', 'save_reason_pc_image', 'save_reason_pc_video', 'save_reason_youtube'];
+    const reasonIds = ['save_reason_settings', 'save_reason_uploading', 'save_reason_target', 'save_reason_pc_image', 'save_reason_pc_video'];
     const shown = (state: any) => reasonIds.filter((id) => evaluate(findById(form, id)!.if.slice(2, -2), state));
     const states = [
       { form: { images: { pc: null } } },
@@ -332,10 +447,14 @@ describe('배너 등록·수정 화면', () => {
       { form: { images: { pc: { id: 1 } }, media_type: 'video', videos: { pc: null } } },
       { form: { images: { pc: { id: 1 } }, media_type: 'video', videos: { pc: null } }, pcVideoUploadBlocked: true },
       { form: { images: { pc: { id: 1 } }, media_type: 'video', videos: { pc: { id: 2 } } } },
-      { form: { images: { pc: { id: 1 } }, media_type: 'youtube', youtube_url: '  ' } },
-      { form: { images: { pc: { id: 1 } }, media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk' } },
-      // 종류를 이미지로 돌리면 화면에 남은 영상·주소 유무는 저장을 막지 않는다
-      { form: { images: { pc: { id: 1 } }, media_type: 'image', videos: { pc: null }, youtube_url: '' }, pcVideoUploadBlocked: true },
+      // 종류를 이미지로 돌리면 화면에 남은 영상 유무는 저장을 막지 않는다
+      { form: { images: { pc: { id: 1 } }, media_type: 'image', videos: { pc: null } }, pcVideoUploadBlocked: true },
+      // 더는 받지 않는 종류(옛 유튜브)는 이미지로 본다 — 저장을 막지 않는다
+      { form: { images: { pc: { id: 1 } }, media_type: 'youtube' } },
+      // 동적 위치는 대상을 골라야 저장된다 — 대상 이유가 PC 이미지·영상 이유보다 먼저, 올리는 중보다는 뒤다
+      { form: { position: 'board_hero', images: { pc: null } } },
+      { form: { position: 'board_hero', images: { pc: { id: 1 } } }, pcUploadBlocked: true },
+      { form: { position: 'board_hero', target_key: '2', images: { pc: { id: 1 } } } },
     ];
     for (const state of states) {
       const reasons = shown(state);
@@ -348,9 +467,11 @@ describe('배너 등록·수정 화면', () => {
     expect(shown(states[5])).toEqual(['save_reason_pc_video']);
     expect(shown(states[6])).toEqual(['save_reason_uploading']);
     expect(isDisabled(states[7])).toBe(false);
-    expect(shown(states[8])).toEqual(['save_reason_youtube']);
+    expect(isDisabled(states[8])).toBe(false);
     expect(isDisabled(states[9])).toBe(false);
-    expect(isDisabled(states[10])).toBe(false);
+    expect(shown(states[10])).toEqual(['save_reason_target']);
+    expect(shown(states[11])).toEqual(['save_reason_uploading']);
+    expect(isDisabled(states[12])).toBe(false);
     // 이유는 저장 단추의 설명으로 읽히고, PC 이미지 칸으로 가는 단추가 함께 있다
     const save = findById(form, 'footer_save_button')!;
     expect(save.props['aria-describedby']).toBe('hero_save_reason');
@@ -437,5 +558,151 @@ describe('배너 등록·수정 화면', () => {
       expect(pick(ko, key), `ko ${key}`).toBeTruthy();
       expect(pick(en, key), `en ${key}`).toBeTruthy();
     }
+  });
+
+  // @scenario case=admin_form_position_target
+  // @effects banner_form_saves_position_with_target
+  it('위치는 레지스트리 목록에서 고르고, 동적 위치면 대상을 고른다 — 위치를 바꾸면 대상을 비우고, 저장 본문·목록 복귀가 대상을 싣는다', () => {
+    const radio = findById(form, 'position_radio')!;
+    expect(radio.props.autoBinding).toBe(false);
+    expect(radio.props.options).toContain('(_computed.formPositions ?? [])');
+    const change = actionsOf(radio, 'setState')[0];
+    expect(json(change)).toContain('"form.target_key":null');
+    expect(json(change)).toContain('"form.position":"{{$event.target.value}}"');
+    const field = findById(form, 'field_target')!;
+    expect(field.if).toBe('{{_computed.formDynamic}}');
+    const dropdown = findById(form, 'form_target_dropdown')!;
+    expect(actionsOf(dropdown, 'apiCall')[0].target).toBe('/api/plugins/sirsoft-hero_section/admin/positions/{{_local.form?.position}}/targets');
+    expect(json(actionsOf(dropdown, 'setState'))).toContain('form.target_key');
+    expect(json(saveCall())).toContain('target_key: _computed.formDynamic ? (_local.form?.target_key ?? null) : null');
+
+    const settings = { data: { positions: [
+      { key: 'home_hero', label_key: 'k.home', label: null, registered: true, dynamic: false, target: null },
+      { key: 'board_hero', label_key: 'k.board', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'k.target.board', label: null } },
+      { key: 'gone_hero', label_key: null, label: 'gone_hero', registered: false, dynamic: false, target: null },
+    ] } };
+    const c = (formState: any, extra: any = {}) => evaluateComputed(form as any, { _local: { form: formState }, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined, ...extra });
+    // 등록되지 않은 위치는 그 배너가 거기 있을 때만 고를 수 있게 남는다
+    expect(c({ position: 'home_hero' }).formPositions.map((p: any) => p.key)).toEqual(['home_hero', 'board_hero']);
+    expect(c({ position: 'gone_hero' }).formPositions.map((p: any) => p.key)).toEqual(['home_hero', 'board_hero', 'gone_hero']);
+    expect(c({ position: 'board_hero' }).targetUnpicked).toBe(true);
+    expect(c({ position: 'board_hero', target_key: '2' }).listTarget).toBe('2');
+    expect(c({ position: 'home_hero', target_key: '2' }).listTarget).toBeUndefined();
+    // 수정하는 배너의 대상이 지워졌으면(「없는 대상」) 그대로 저장은 되지만 알린다
+    const missing = c({ position: 'board_hero', target_key: '9' }, { banner: { data: { position: 'board_hero', target_key: '9', target_label: null, target_exists: false } } });
+    expect(missing.formTargetMissing).toBe(true);
+    expect(missing.targetUnpicked).toBe(false);
+    // 목록 복귀는 폼의 위치·대상으로, 자리가 바뀌었으면 쪽 번호를 버린다
+    const back = actionsOf(findById(form, 'footer_cancel_button'), 'navigate')[0];
+    expect(json(back)).toContain('"target":"{{_computed.listTarget}}"');
+    expect(json(back)).toContain('_computed.samePlacement ? query.page : undefined');
+  });
+
+  // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
+  it('위치 설정을 받기 전에는 저장을 막고 이유를 보인다 — 동적 위치 배너가 대상 없이(target_key null) 나가 422 가 나지 않게, 받지 못하면 다시 받기를 준다', () => {
+    const disabledExpr = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
+    const ready = { data: { positions: [{ key: 'board_hero', label_key: 'k.board', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'k.target.board', label: null } }] } };
+    const state = { form: { position: 'board_hero', target_key: 'event-a', images: { pc: { id: 1 } } } };
+    const computedOf = (settings: any, global: any = {}) => evaluateComputed(form as any, { _local: state, _global: global, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
+    const evaluate = (expr: string, computed: any) => Function('_local', '_computed', `return (${expr})`)(state, computed);
+
+    // 받기 전: 동적 판정을 못 하므로 저장하지 않는다
+    const before = computedOf(undefined);
+    expect(before.formReady).toBe(false);
+    expect(evaluate(disabledExpr, before)).toBe(true);
+    expect(evaluate(findById(form, 'save_reason_settings')!.if.slice(2, -2), before)).toBe(true);
+    for (const id of ['save_reason_uploading', 'save_reason_target', 'save_reason_pc_image', 'save_reason_pc_video']) {
+      expect(evaluate(findById(form, id)!.if.slice(2, -2), before), id).toBe(false);
+    }
+    expect(evaluate(findById(form, 'save_reason_settings_loading')!.if.slice(2, -2), before)).toBe(true);
+    expect(evaluate(findById(form, 'save_reason_settings_failed')!.if.slice(2, -2), before)).toBe(false);
+    // 받지 못함: 실패를 알리고 다시 받기
+    const failed = computedOf(undefined, { heroPositionSettingsFailed: true });
+    expect(evaluate(findById(form, 'save_reason_settings_failed')!.if.slice(2, -2), failed)).toBe(true);
+    expect(evaluate(findById(form, 'save_reason_settings_loading')!.if.slice(2, -2), failed)).toBe(false);
+    expect(actionsOf(findById(form, 'save_reason_settings_retry'), 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
+    // 받은 뒤: 대상과 함께 저장된다
+    const after = computedOf(ready);
+    expect(evaluate(disabledExpr, after)).toBe(false);
+    expect(evaluate(findById(form, 'save_reason_settings')!.if.slice(2, -2), after)).toBe(false);
+
+    const source = layout.data_sources.find((d: any) => d.id === 'position_settings');
+    expect(actionsOf(source.errorHandling, 'setState')[0].params).toEqual({ target: 'global', heroPositionSettingsFailed: true });
+    expect(actionsOf(source.onSuccess, 'setState')[0].params).toEqual({ target: 'global', heroPositionSettingsFailed: false });
+  });
+
+  // @scenario case=admin_form_position_target
+  // @effects target_candidates_scoped_to_current_position
+  it('대상 찾기 후보는 찾은 위치를 달고, 고르기 칸은 폼의 지금 위치 후보만 보인다 — 위치를 바꾼 뒤 늦게 온 앞 위치 응답이 섞이지 않게', () => {
+    const dropdown = findById(form, 'form_target_dropdown')!;
+    const success = actionsOf(dropdown, 'setState').find((a: any) => typeof a.params?.formTargetResults === 'string');
+    const found = evaluateBinding(success.params.formTargetResults, { response: { data: { position: 'board_hero', items: [{ key: '2', label: '자유게시판', hint: 'free' }] } } });
+    expect(found).toEqual([{ value: '2', label: '자유게시판', description: 'free', position: 'board_hero' }]);
+    // 검색어는 서버 한도(100자)로 잘라 보낸다 — 넘치면 422 로 「결과 없음」 대신 빈 실패가 된다
+    const keyword = actionsOf(dropdown, 'apiCall')[0].params.query.keyword;
+    expect(evaluateBinding(keyword, { $args: ['  ' + '가'.repeat(101)] })).toHaveLength(100);
+
+    const settings = { data: { positions: [
+      { key: 'board_hero', label_key: 'k.board', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'k.target.board', label: null } },
+      { key: 'product_hero', label_key: 'k.product', label: null, registered: true, dynamic: true, target: { type: 'product', label_key: 'k.target.product', label: null } },
+    ] } };
+    const c = (position: string) => evaluateComputed(form as any, { _local: { form: { position }, formTargetResults: found }, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
+    expect(c('board_hero').formTargetOptions.map((o: any) => o.value)).toEqual(['2']);
+    expect(c('product_hero').formTargetOptions).toEqual([]);
+  });
+});
+
+describe('[case:components-misc-hero-position-settings-invalid-response] 수정 폼은 위치 정보를 확인한 뒤 저장한다', () => {
+  const invalid = [
+    ['null 응답', null],
+    ['data null', { data: null }],
+    ['빈 위치 배열', { data: { positions: [] } }],
+    ['위치 배열 형식 오류', { data: { positions: {} } }],
+  ] as const;
+  // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
+  it.each(invalid)('%s이면 대상 키를 잃는 저장을 막고 다시 받기를 보인다', (_name, settings) => {
+    const scope = { _local: { form: { position: 'board_hero', target_key: '9', images: { pc: { id: 1 } } } }, position_settings: settings, banner: undefined, form_target_info: undefined };
+    const computed = evaluateComputed(form as any, scope);
+    expect(computed.formReady).toBe(false);
+    expect(computed.settingsFailed).toBe(true);
+    expect(evaluateBinding(findById(form, 'footer_save_button')!.props.disabled, scope, computed)).toBe(true);
+    expect(evaluateBinding(findById(form, 'save_reason_settings_failed')!.if, scope, computed)).toBe(true);
+    expect(evaluateBinding(findById(form, 'save_reason_settings_loading')!.if, scope, computed)).toBe(false);
+    expect(actionsOf(findById(form, 'save_reason_settings_retry'), 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
+  });
+});
+
+describe('[case:components-misc-hero-position-settings-invalid-response] 고른 위치가 위치 목록에 없으면 다시 받기 대신 위치를 다시 고르게 한다', () => {
+  const defs = { data: { positions: [{ key: 'home_hero', registered: true, dynamic: false }] } };
+  // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
+  it('없는 위치로 연 등록 화면은 저장을 잠그고 「없는 위치」 이유를 보이며, 다른 위치를 고르면 풀린다', () => {
+    const scope = (position: string) => ({ _local: { form: { position, images: { pc: { id: 1 } } } }, position_settings: defs, banner: undefined, form_target_info: undefined, _global: {} });
+    const missing = scope('gone_hero');
+    const computed = evaluateComputed(form as any, missing);
+    const visible = (id: string) => evaluateBinding(findById(form, id)!.if, missing, computed);
+    expect(computed.formMissing).toBe(true);
+    expect(computed.settingsFailed).toBe(false);
+    expect(evaluateBinding(findById(form, 'footer_save_button')!.props.disabled, missing, computed)).toBe(true);
+    expect(visible('save_reason_settings_missing')).toBe(true);
+    expect(visible('save_reason_settings_failed')).toBe(false);
+    expect(visible('save_reason_settings_loading')).toBe(false);
+    expect(visible('save_reason_settings_retry')).toBe(false);
+    expect(computed.formPositions.map((p: any) => p.key)).toEqual(['home_hero']);
+    const picked = scope('home_hero');
+    const after = evaluateComputed(form as any, picked);
+    expect(after.formMissing).toBe(false);
+    expect(evaluateBinding(findById(form, 'footer_save_button')!.props.disabled, picked, after)).toBe(false);
+  });
+
+  // @scenario case=admin_form_position_target
+  // @effects banner_form_save_locked_until_position_info_valid
+  it('요청이 실패해 앞 응답이 남은 경우는 받지 못함이다 — 다시 받기를 보인다', () => {
+    const scope = { _local: { form: { position: 'board_hero', target_key: '9' } }, position_settings: defs, banner: undefined, form_target_info: undefined, _global: { heroPositionSettingsFailed: true } };
+    const computed = evaluateComputed(form as any, scope);
+    expect(computed.formMissing).toBe(false);
+    expect(computed.settingsFailed).toBe(true);
   });
 });

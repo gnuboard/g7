@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Unit\Requests;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\HeroSection\Http\Requests\Admin\StoreBannerRequest;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Rules\SafeLinkUrl;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
@@ -40,6 +41,28 @@ class BannerRequestTest extends PluginTestCase
     public function test_rejects_inactive_locale_key(): void
     {
         $this->assertFails(['title' => ['ko' => '제목', 'xx' => 'nope']], 'title');
+    }
+
+    /**
+     * 언어팩을 꺼서 지원 목록에서 빠진 언어라도 저장돼 있던 번역이면 수정을 막지 않는다 — 화면에 그 칸이 없어 운영자가 지울 수 없고,
+     * 언어팩을 다시 켜면 그대로 복구돼야 한다. 저장돼 있지 않은 키는 수정에서도 거부한다.
+     *
+     * @scenario surface=update_keeps_stored_inactive_locale_key
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_keeps_stored_inactive_locale_key(): void
+    {
+        $banner = Banner::factory()->withImages()->create(['title' => ['ko' => '제목', 'xx' => '저장된 번역'], 'description' => ['ko' => '설명', 'xx' => '저장된 설명']])->refresh();
+        $url = $this->api('/admin/banners/'.$banner->id);
+        $payload = fn (array $title) => $this->bannerPayload(['title' => $title, 'description' => ['ko' => '설명', 'xx' => '저장된 설명'], 'revision' => $banner->lock_version]);
+
+        $this->actingAs($this->fullAdmin())->putJson($url, $payload(['ko' => '새 제목', 'xx' => '저장된 번역']))->assertOk();
+        $banner->refresh();
+        $this->assertSame('저장된 번역', $banner->title['xx']);
+
+        $this->actingAs($this->fullAdmin())->putJson($url, array_replace($payload(['ko' => '새 제목', 'zz' => '새 키']), ['revision' => $banner->lock_version]))
+            ->assertStatus(422)->assertJsonValidationErrors('title');
     }
 
     /**

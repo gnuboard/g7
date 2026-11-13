@@ -8,10 +8,13 @@ axes:
     - presentation_roundtrip
     - text_layout_migration_roundtrip
     - pagination_migration_roundtrip
+    - max_height_migration_roundtrip
+    - target_settings_migration_roundtrip
     - bulk_revision_conflict
     - site_clock_metadata
     - migration_roundtrip
     - media_migration_roundtrip
+    - youtube_removal_migration
     - editor_upload_gate
     - editor_preview_roundtrip
     - editor_conflict_preserves_input

@@ -12,6 +12,8 @@
 
 <!-- @intent START -->
 Controller → FormRequest(검증 SSoT) → Service(훅 발행·트랜잭션·캐시 무효화) → RepositoryInterface → Repository(모든 쿼리) → Model. 공개 노출: 확장점 조각의 data-source → 공개 API → 노출 서비스(캐시) → Repository.
+
+위치 목록: 필터 `sirsoft-hero_section.position.registered_positions` → `PositionRegistry`(검증·정렬, 요청 단위 공유) — 내장 위치는 `BuiltinPositionListener` 가 넣고(게시판·이커머스 모듈이 켜져 있으면 동적 위치), 대상 해석은 `Support/Targets/*TargetResolver`(모듈 저장소 계약만 사용), 대상이 바뀌면 `TargetChangeListener` 가 모듈 훅을 받아 공개 API 의 해석 기억을 버린다. 다른 확장이 더한 위치는 `PositionOutputListener` 가 레이아웃을 낼 때(`core.layout_extension.after_apply`) 같은 이름의 확장점에 출력 조각(`PositionFragment` — 내장 조각 파일이 원본)을 붙인다. 관리자 응답의 대상 이름은 `TargetLabels` 가 위치마다 한 번에 푼다. 검증(`RegisteredPosition`·`ValidTarget`)·저장소(`Placement` = 위치 + 대상)·공개 캐시(위치 버전 + 대상 버전)·첫 로드 힌트(정적 위치만)·미리보기 틀이 모두 레지스트리를 따른다.
 <!-- @intent END -->
 
 ## 디렉토리

@@ -10,10 +10,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\HeroSection\Enums\AnimationSpeed;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
+use Plugins\Sirsoft\HeroSection\Enums\BannerLayout;
 use Plugins\Sirsoft\HeroSection\Enums\BannerMediaType;
 use Plugins\Sirsoft\HeroSection\Enums\BannerTone;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
+use Plugins\Sirsoft\HeroSection\Enums\MediaAnimation;
 use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Enums\TextAlign;
 use Plugins\Sirsoft\HeroSection\Enums\TextAnimation;
@@ -22,17 +23,19 @@ use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Rules\SafeLinkUrl;
 use Plugins\Sirsoft\HeroSection\Rules\SelectableBannerImage;
-use Plugins\Sirsoft\HeroSection\Support\YoutubeUrl;
 
 /**
  * 배너 등록·수정 공통 규칙 — 두 요청이 같은 규칙을 쓰도록 한 곳에 둔다(Store/Update 대칭).
  *
  * 기간은 사이트 시간대 `datetime-local` 로 받아 검증 뒤 UTC 로 바꾼다(이커머스 쿠폰 발급 기간과 같은 규약).
- * 미디어 종류(`media_type`)는 보내지 않으면 등록은 이미지, 수정은 저장된 값 그대로다. 유튜브는 주소(`youtube_url`)로 받아
- * 검증 뒤 영상 ID(`youtube_id`)만 남기고, 영상 파일은 이미지처럼 임시 묶음에 올린 뒤 `pc_video_id`·`mobile_video_id` 로 고른다.
+ * 미디어 종류(`media_type`)는 보내지 않으면 등록은 이미지, 수정은 저장된 값 그대로다. 영상 파일은 이미지처럼 임시 묶음에 올린 뒤
+ * `pc_video_id`·`mobile_video_id` 로 고른다. 유튜브 등 제3자 영상 플랫폼은 미디어 종류에서 거절한다.
+ * 위치·대상은 `PlacementRules` 가 맡는다(동적 위치는 대상 필수 + 실제로 있는 대상).
  */
 trait BannerFieldRules
 {
+    use PlacementRules;
+
     /**
      * 다국어 문구 필드
      *
@@ -41,32 +44,56 @@ trait BannerFieldRules
     private array $translatableFields = ['title', 'eyebrow', 'description', 'button_text', 'image_alt'];
 
     /**
+     * 수정 요청의 언어 키 규칙 — 지원 언어와 그 배너에 이미 저장된 언어만 받는다(새 임의 키는 거부).
+     *
+     * @param  Banner|null  $stored  수정 대상 배너(등록이면 null)
+     * @param  string  $field  다국어 필드
+     * @return array<int, Closure> 규칙(등록이면 비어 있다 — 엄격 검사가 맡는다)
+     */
+    private function storedLocaleRule(?Banner $stored, string $field): array
+    {
+        if ($stored === null) {
+            return [];
+        }
+
+        return [function (string $attribute, mixed $value, Closure $fail) use ($stored, $field): void {
+            $allowed = [...config('app.translatable_locales', ['ko', 'en']), ...array_keys((array) $stored->getAttribute($field))];
+            foreach (array_keys((array) $value) as $locale) {
+                if (! in_array($locale, $allowed, true)) {
+                    $fail(__('validation.translatable.unsupported_language', ['lang' => $locale]));
+
+                    return;
+                }
+            }
+        }];
+    }
+
+    /**
      * 공통 검증 규칙을 반환합니다.
      *
+     * @param  Banner|null  $stored  수정 대상 배너(등록이면 null) — 언어팩을 꺼 지원 목록에서 빠진 언어라도 저장돼 있던 번역은 통과시킨다.
+     *                               화면에 그 칸이 없어 운영자가 지울 수 없고, 언어팩을 다시 켜면 그대로 복구돼야 한다
      * @return array<string, mixed> 검증 규칙
      */
-    protected function bannerRules(): array
+    protected function bannerRules(?Banner $stored = null): array
     {
+        $strict = $stored === null;
+
         return [
-            'position' => ['required', Rule::enum(HeroPosition::class)],
+            ...$this->placementRules(true, $stored),
             'media_type' => ['sometimes', 'required', Rule::enum(BannerMediaType::class)],
-            'youtube_url' => ['exclude_unless:media_type,'.BannerMediaType::Youtube->value, 'required', 'string', 'max:2048', function (string $attribute, mixed $value, Closure $fail) {
-                if (! is_string($value) || YoutubeUrl::videoId($value) === null) {
-                    $fail(__('sirsoft-hero_section::validation.youtube_url.invalid'));
-                }
-            }],
             'is_active' => ['required', 'boolean'],
             'display_period' => ['required', Rule::enum(DisplayPeriod::class)],
             'starts_at' => ['exclude_unless:display_period,range', 'required', 'date'],
             'ends_at' => ['exclude_unless:display_period,range', 'required', 'date', 'after:starts_at'],
-            'title' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100, strictLocales: true)],
-            'eyebrow' => ['nullable', 'array', new TranslatableField(maxLength: 50, strictLocales: true)],
+            'title' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'title')],
+            'eyebrow' => ['nullable', 'array', new TranslatableField(maxLength: 50, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'eyebrow')],
             // 머리글 보이기·색은 이전 화면·API 호출이 보내지 않아도 저장한 값(처음이면 보임·흰색)을 지킨다
             'eyebrow_visible' => ['sometimes', 'required', 'boolean'],
             'eyebrow_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'description' => ['nullable', 'array', new TranslatableField(maxLength: 300, strictLocales: true)],
-            'button_text' => ['nullable', 'array', new TranslatableField(maxLength: 30, strictLocales: true)],
-            'image_alt' => ['nullable', 'array', new TranslatableField(maxLength: 200, strictLocales: true)],
+            'description' => ['nullable', 'array', new TranslatableField(maxLength: 300, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'description')],
+            'button_text' => ['nullable', 'array', new TranslatableField(maxLength: 30, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'button_text')],
+            'image_alt' => ['nullable', 'array', new TranslatableField(maxLength: 200, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'image_alt')],
             'title_visible' => ['required', 'boolean'],
             'title_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'title_align' => ['required', Rule::enum(TextAlign::class)],
@@ -86,6 +113,12 @@ trait BannerFieldRules
             'presentation.animation_speed' => ['sometimes', 'required', Rule::enum(AnimationSpeed::class)],
             'presentation.animation_delay' => ['sometimes', 'required', 'numeric', 'between:0,'.Banner::ANIMATION_DELAY_MAX, 'multiple_of:0.1'],
             'presentation.tone' => ['sometimes', 'required', Rule::enum(BannerTone::class)],
+            'presentation.layout' => ['sometimes', 'required', Rule::enum(BannerLayout::class)],
+            'presentation.background_color' => ['sometimes', 'nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            // 기기별 문구 폭 — 비우면(null) 공통 text_width 를 따른다(옛 배너 그대로)
+            'presentation.text_width_pc' => ['sometimes', 'nullable', 'integer', 'between:'.Banner::TEXT_WIDTH_MIN.','.Banner::TEXT_WIDTH_MAX],
+            'presentation.text_width_mobile' => ['sometimes', 'nullable', 'integer', 'between:'.Banner::TEXT_WIDTH_MIN.','.Banner::TEXT_WIDTH_MAX],
+            'presentation.media_animation' => ['sometimes', 'required', Rule::enum(MediaAnimation::class)],
         ];
     }
 
@@ -130,13 +163,6 @@ trait BannerFieldRules
      */
     protected function convertPeriod(array $data): array
     {
-        if (array_key_exists('media_type', $data)) {
-            $data['youtube_id'] = $data['media_type'] === BannerMediaType::Youtube->value
-                ? YoutubeUrl::videoId($data['youtube_url'] ?? null)
-                : null;
-        }
-        unset($data['youtube_url']);
-
         foreach ([...Banner::PERCENT_KEYS, 'text_width'] as $coordinate) {
             if (isset($data['presentation'][$coordinate])) {
                 $data['presentation'][$coordinate] = (int) $data['presentation'][$coordinate];

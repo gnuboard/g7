@@ -12,7 +12,7 @@ import React, { useEffect, useRef, useState } from 'react';
 export type HeroDevice = 'pc' | 'mobile';
 
 /** 문구 등장 효과 — 서버 Enum `TextAnimation` 과 같다 */
-export type HeroTextAnimation = 'none' | 'rise' | 'fade' | 'left' | 'right' | 'zoom' | 'blur' | 'letters';
+export type HeroTextAnimation = 'none' | 'rise' | 'fade' | 'left' | 'right' | 'zoom' | 'blur' | 'letters' | 'sequence';
 
 /** 등장 효과 한 줄의 재생 시간(초) — 서버 Enum `AnimationSpeed` */
 export const ANIMATION_SECONDS: Record<string, number> = { slow: 1, normal: 0.6, fast: 0.35 };
@@ -21,7 +21,22 @@ export const ANIMATION_SECONDS: Record<string, number> = { slow: 1, normal: 0.6,
 export const LINE_STAGGER = 0.2;
 
 /** 등장 효과 목록(없음 제외) */
-const ANIMATIONS: readonly HeroTextAnimation[] = ['rise', 'fade', 'left', 'right', 'zoom', 'blur', 'letters'];
+const ANIMATIONS: readonly HeroTextAnimation[] = ['rise', 'fade', 'left', 'right', 'zoom', 'blur', 'letters', 'sequence'];
+
+/**
+ * 「순차 등장」(sequence) — 머리글 → 제목 → 설명이 0.3초 간격으로 짧게(보통 0.4초) 아래에서 올라온다. 다른 효과보다 짧고 간격이 넓어
+ * 묶음 단위로 차례차례 보인다. 속도·시작 지연은 다른 효과와 같이 조절한다.
+ */
+export const SEQUENCE_SECONDS: Record<string, number> = { slow: 0.6, normal: 0.4, fast: 0.25 };
+
+/** 「순차 등장」 줄 간격(초) */
+export const SEQUENCE_STAGGER = 0.3;
+
+/** 그림(미디어) 등장 효과 — 서버 Enum `MediaAnimation` 과 같다 */
+export type HeroMediaAnimation = 'none' | 'fade' | 'right';
+
+/** 그림 등장 효과 재생 시간(초) — 문구보다 느리게(보통 0.8초) */
+export const MEDIA_SECONDS: Record<string, number> = { slow: 1.2, normal: 0.8, fast: 0.5 };
 
 /** 표현값 중 문구에 쓰는 것 — 서버 `Banner::DEFAULT_PRESENTATION` 의 문구 키 */
 export interface HeroTextPresentation {
@@ -30,6 +45,9 @@ export interface HeroTextPresentation {
   text_mobile_x?: number;
   text_mobile_y?: number;
   text_width?: number;
+  /** 기기별 문구 폭(%) — 비우면(null) 공통 text_width */
+  text_width_pc?: number | null;
+  text_width_mobile?: number | null;
   animation?: HeroTextAnimation | string;
   animation_speed?: 'slow' | 'normal' | 'fast' | string;
   animation_delay?: number;
@@ -93,7 +111,49 @@ export function textVars(presentation: HeroTextPresentation | null | undefined, 
     '--hs-shade-pc': pc.y < 50 ? 'to top' : 'to bottom',
     '--hs-shade-mobile': mobile.y < 50 ? 'to top' : 'to bottom',
     '--hs-tw': percent(presentation?.text_width, 100, 30),
+    // 기기별 문구 폭 — 비운 기기는 공통 폭(옛 배너 그대로). 미리보기의 기기 고정은 두 칸에 그 기기 값을 넣는다
+    '--hs-tw-pc': textWidth(presentation, forceDevice ?? 'pc'),
+    '--hs-tw-mobile': textWidth(presentation, forceDevice ?? 'mobile'),
   } as React.CSSProperties;
+}
+
+/**
+ * 기기의 문구 폭(%)을 꺼냅니다 — 그 기기 값이 없으면 공통 text_width, 그것도 없으면 100.
+ *
+ * @param presentation 표현값
+ * @param device 기기
+ * @returns 30~100 정수
+ */
+export function textWidth(presentation: HeroTextPresentation | null | undefined, device: HeroDevice): number {
+  const own = presentation?.[`text_width_${device}`];
+  return percent(own === null || own === undefined ? presentation?.text_width : own, 100, 30);
+}
+
+/** 그림 등장 효과 설정 */
+export interface MediaMotion {
+  /** 효과 이름(없음이면 'none') */
+  name: HeroMediaAnimation;
+  /** 재생 시간(초) */
+  duration: number;
+  /** 시작 지연(초) — 문구 시작 지연과 같다 */
+  delay: number;
+}
+
+/**
+ * 표현값에서 그림 등장 효과를 꺼냅니다 — 모르는 값·움직임 줄이기면 없음.
+ *
+ * @param presentation 표현값
+ * @param reduced 움직임 줄이기
+ * @returns 그림 등장 효과
+ */
+export function mediaMotion(presentation: (HeroTextPresentation & { media_animation?: string | null }) | null | undefined, reduced: boolean): MediaMotion {
+  const name = presentation?.media_animation;
+  const delay = Number(presentation?.animation_delay);
+  return {
+    name: !reduced && (name === 'fade' || name === 'right') ? name : 'none',
+    duration: MEDIA_SECONDS[String(presentation?.animation_speed)] ?? MEDIA_SECONDS.normal,
+    delay: Number.isFinite(delay) ? Math.min(2, Math.max(0, Math.round(delay * 10) / 10)) : 0,
+  };
 }
 
 /** 등장 효과 설정 */
@@ -116,9 +176,10 @@ export interface TextMotion {
 export function textMotion(presentation: HeroTextPresentation | null | undefined, reduced: boolean): TextMotion {
   const name = presentation?.animation as HeroTextAnimation;
   const delay = Number(presentation?.animation_delay);
+  const seconds = name === 'sequence' ? SEQUENCE_SECONDS : ANIMATION_SECONDS;
   return {
     name: !reduced && ANIMATIONS.includes(name) ? name : 'none',
-    duration: ANIMATION_SECONDS[String(presentation?.animation_speed)] ?? ANIMATION_SECONDS.normal,
+    duration: seconds[String(presentation?.animation_speed)] ?? seconds.normal,
     delay: Number.isFinite(delay) ? Math.min(2, Math.max(0, Math.round(delay * 10) / 10)) : 0,
   };
 }
@@ -154,7 +215,8 @@ export function textOverflows(element: HTMLElement): boolean {
  * @returns CSS 변수
  */
 export function lineDelay(motion: TextMotion, line: number): React.CSSProperties {
-  return { '--hs-line-delay': `${Math.round((motion.delay + line * LINE_STAGGER) * 100) / 100}s` } as React.CSSProperties;
+  const stagger = motion.name === 'sequence' ? SEQUENCE_STAGGER : LINE_STAGGER;
+  return { '--hs-line-delay': `${Math.round((motion.delay + line * stagger) * 100) / 100}s` } as React.CSSProperties;
 }
 
 /**

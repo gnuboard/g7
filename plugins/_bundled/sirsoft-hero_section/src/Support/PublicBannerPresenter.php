@@ -47,7 +47,6 @@ class PublicBannerPresenter
             'link_url' => $banner->link_url,
             'link_new_window' => (bool) $banner->link_new_window,
             'media_type' => $banner->media_type ?? BannerMediaType::Image->value,
-            'youtube_id' => $banner->media_type === BannerMediaType::Youtube->value ? $banner->youtube_id : null,
             'images' => [
                 'pc' => self::image($banner->pcImage),
                 'mobile' => self::image($banner->mobileImage),

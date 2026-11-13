@@ -51,7 +51,7 @@ function detailBanner(id: number, overrides: Record<string, unknown> = {}): Reco
     presentation: { tone: 'dark', overlay: 'none', animation: 'none' },
     title_visible: true, title_color: '#FFFFFF', title_align: 'left',
     description_visible: true, description_color: '#E5E7EB', description_align: 'left',
-    link_url: null, link_new_window: false, youtube_id: null, youtube_url: null,
+    link_url: null, link_new_window: false,
     images: { pc: { url: IMAGE, width: 1920, height: 640 }, mobile: null },
     videos: { pc: null, mobile: null },
     ...overrides,

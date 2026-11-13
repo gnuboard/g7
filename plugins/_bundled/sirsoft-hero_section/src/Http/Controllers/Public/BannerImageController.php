@@ -13,7 +13,8 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * 공개 배너 이미지 컨트롤러 — 해시 주소로 배너 이미지·영상을 내보낸다(저장 전 미리보기를 위해 임시 업로드도 64자 해시로 내보낸다).
+ * 공개 배너 이미지 컨트롤러 — 해시 주소로 배너 이미지·영상을 내보낸다. 저장 전 미리보기를 위해 아직 배너에 연결되지 않은 임시 업로드도
+ * 내보낸다(주소는 추측할 수 없는 64자 해시다).
  */
 class BannerImageController extends PublicBaseController
 {

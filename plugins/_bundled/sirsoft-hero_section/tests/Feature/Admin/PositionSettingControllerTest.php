@@ -8,9 +8,11 @@ use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
+use Plugins\Sirsoft\HeroSection\Tests\Concerns\PinsActiveModules;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -18,6 +20,8 @@ use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
  */
 class PositionSettingControllerTest extends PluginTestCase
 {
+    use PinsActiveModules;
+
     /**
      * 관리자
      */
@@ -63,6 +67,7 @@ class PositionSettingControllerTest extends PluginTestCase
      */
     public function test_defaults_when_missing(): void
     {
+        $this->pinActiveModules([]);
         $positions = $this->actingAs($this->admin)->getJson($this->api('/admin/position-settings'))->assertOk()->json('data.positions');
 
         $this->assertSame(['home_hero', 'shop_hero'], array_column($positions, 'key'));
@@ -81,6 +86,7 @@ class PositionSettingControllerTest extends PluginTestCase
      */
     public function test_editor_meta_carries_preview_frame(): void
     {
+        $this->pinActiveModules([]);
         $frame = $this->actingAs($this->adminWith(['sirsoft-hero_section.banners.read']))
             ->getJson($this->api('/admin/position-settings'))->assertOk()->json('data.editor.preview_frame');
 
@@ -88,6 +94,52 @@ class PositionSettingControllerTest extends PluginTestCase
         $this->assertArrayHasKey('template', $frame);
         $this->assertIsArray($frame['stylesheets']);
         $this->assertSame(['home_hero', 'shop_hero'], array_keys($frame['positions']));
+    }
+
+    /**
+     * 개요는 위치 레지스트리를 따른다 — 켜진 모듈의 동적 위치가 정적 위치 뒤에 대상 정보와 함께 서고, 미리보기 틀에도 그 위치가 있다.
+     * 배너가 남은 등록되지 않은 위치(확장을 껐을 때)는 `registered: false` 로 맨 뒤에 붙는다(D7).
+     *
+     * @scenario case=overview_follows_registry
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overview_follows_registry_with_dynamic_and_unregistered_positions(): void
+    {
+        $this->pinActiveModules(['sirsoft-board']);
+        Banner::factory()->forPosition('gone_hero')->create();
+
+        $data = $this->actingAs($this->admin)->getJson($this->api('/admin/position-settings'))->assertOk()->json('data');
+        $positions = collect($data['positions'])->keyBy('key');
+
+        $this->assertSame(['home_hero', 'shop_hero', 'board_hero', 'gone_hero'], $positions->keys()->all());
+        $this->assertFalse($positions['home_hero']['dynamic']);
+        $this->assertNull($positions['home_hero']['target']);
+        $this->assertSame('sirsoft-hero_section.admin.position.home_hero', $positions['home_hero']['label_key']);
+        $this->assertTrue($positions['board_hero']['dynamic']);
+        $this->assertTrue($positions['board_hero']['registered']);
+        $this->assertSame('board', $positions['board_hero']['target']['type']);
+        $this->assertSame('sirsoft-hero_section.admin.target.board', $positions['board_hero']['target']['label_key']);
+        $this->assertFalse($positions['gone_hero']['registered']);
+        $this->assertSame('gone_hero', $positions['gone_hero']['label']);
+        $this->assertSame(['home_hero', 'shop_hero', 'board_hero'], array_keys($data['editor']['preview_frame']['positions']));
+    }
+
+    /**
+     * 등록되지 않은 위치의 슬라이더 설정은 저장하지 않는다(404) — 위치를 더한 확장이 꺼져 있으면 설정 화면도 없다.
+     *
+     * @scenario case=unregistered_position_setting_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unregistered_position_setting_update_is_not_found(): void
+    {
+        $this->pinActiveModules([]);
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/board_hero'), [
+            'autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide',
+        ])->assertNotFound();
+        $this->assertDatabaseMissing('hero_section_position_settings', ['position' => 'board_hero']);
     }
 
     /**
@@ -140,12 +192,12 @@ class PositionSettingControllerTest extends PluginTestCase
     public function test_upsert(): void
     {
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade'])
-            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots']);
+            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots', 'max_height_pc' => null, 'max_height_mobile' => null]);
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none'])
             ->assertOk();
 
         $this->assertSame(1, PositionSetting::query()->where('position', 'shop_hero')->count());
-        $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots'], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
+        $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots', 'max_height_pc' => null, 'max_height_mobile' => null], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
         $this->assertSame(0, PositionSetting::query()->where('position', 'home_hero')->count());
     }
 
@@ -174,11 +226,11 @@ class PositionSettingControllerTest extends PluginTestCase
         });
 
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content'])
-            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots']);
+            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots', 'max_height_pc' => null, 'max_height_mobile' => null]);
 
         $this->assertTrue($raced);
         $this->assertSame(1, PositionSetting::query()->where('position', 'shop_hero')->count());
-        $this->assertSame(['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots'], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
+        $this->assertSame(['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots', 'max_height_pc' => null, 'max_height_mobile' => null], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
         $this->assertSame([7, 'fade', 'full'], [$snapshot['interval_seconds'] ?? null, $snapshot['effect'] ?? null, $snapshot['width'] ?? null]);
     }
 
@@ -224,7 +276,7 @@ class PositionSettingControllerTest extends PluginTestCase
     }
 
     /**
-     * 페이징 모양은 dots·progress·tabs·fraction 만 받는다. 저장하면 공개 응답 설정에 실리고, 빼고 저장하면 지금 값을 그대로 둔다.
+     * 페이징 모양은 dots·progress·tabs·fraction·pill 만 받는다. 저장하면 공개 응답 설정에 실리고, 빼고 저장하면 지금 값을 그대로 둔다.
      * 처음 저장 전(행 없음)과 기존 행은 점(dots)이다.
      *
      * @scenario surface=position_settings_pagination
@@ -240,7 +292,7 @@ class PositionSettingControllerTest extends PluginTestCase
         $this->actingAs($this->admin)->putJson($url, $base + ['pagination' => 'bullets'])
             ->assertStatus(422)->assertJsonValidationErrors(['pagination']);
 
-        foreach (['progress', 'tabs', 'fraction', 'dots'] as $pagination) {
+        foreach (['progress', 'tabs', 'fraction', 'pill', 'dots'] as $pagination) {
             $this->actingAs($this->admin)->putJson($url, $base + ['pagination' => $pagination])
                 ->assertOk()->assertJsonPath('data.settings.pagination', $pagination);
             $this->assertSame($pagination, $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->json('data.settings.pagination'));
@@ -251,5 +303,42 @@ class PositionSettingControllerTest extends PluginTestCase
             ->assertOk()->assertJsonPath('data.settings.pagination', 'tabs');
         $this->assertSame('tabs', PositionSetting::query()->where('position', 'home_hero')->first()->toSettings()['pagination']);
         $this->assertSame('dots', $this->getJson($this->api('/hero?position=shop_hero'))->assertOk()->json('data.settings.pagination'));
+    }
+
+    /**
+     * 기기별 최대 높이는 160~2000px 정수이거나 비움(null)이다. 저장하면 공개 응답 설정에 실리고, 빼고 저장하면 지금 값을 그대로 두며,
+     * null 로 보내면 비운다. 처음 저장 전(행 없음)과 기존 행은 비어 있다. 입력 범위는 편집 메타로도 내려간다.
+     *
+     * @scenario surface=position_settings_max_height
+     *
+     * @return void 반환값 없음
+     */
+    public function test_max_height_saved_validated_kept_when_omitted_and_cleared(): void
+    {
+        $url = $this->api('/admin/position-settings/home_hero');
+        $base = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide'];
+        $public = fn (string $position = 'home_hero') => $this->getJson($this->api('/hero?position='.$position))->assertOk()->json('data.settings');
+
+        $this->assertNull($public()['max_height_pc']);
+        $this->assertNull($public()['max_height_mobile']);
+        $this->assertSame(['min' => 160, 'max' => 2000, 'overlay_hint' => 320], $this->actingAs($this->admin)->getJson($this->api('/admin/position-settings'))->assertOk()->json('data.editor.max_height_limits'));
+
+        foreach ([159, 2001, 400.5, 'tall'] as $invalid) {
+            $this->actingAs($this->admin)->putJson($url, $base + ['max_height_pc' => $invalid, 'max_height_mobile' => $invalid])
+                ->assertStatus(422)->assertJsonValidationErrors(['max_height_pc', 'max_height_mobile']);
+        }
+
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_pc' => 160, 'max_height_mobile' => 2000])
+            ->assertOk()->assertJsonPath('data.settings.max_height_pc', 160)->assertJsonPath('data.settings.max_height_mobile', 2000);
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_pc' => 480, 'max_height_mobile' => 560])->assertOk();
+        $this->assertSame([480, 560], [$public()['max_height_pc'], $public()['max_height_mobile']]);
+
+        // 빼고 저장하면 그대로, 한 기기만 null 로 보내면 그 기기만 비운다
+        $this->actingAs($this->admin)->putJson($url, ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade'])
+            ->assertOk()->assertJsonPath('data.settings.max_height_pc', 480)->assertJsonPath('data.settings.max_height_mobile', 560);
+        $this->actingAs($this->admin)->putJson($url, $base + ['max_height_pc' => null])
+            ->assertOk()->assertJsonPath('data.settings.max_height_pc', null)->assertJsonPath('data.settings.max_height_mobile', 560);
+        $this->assertSame(['max_height_pc' => null, 'max_height_mobile' => 560], array_intersect_key(PositionSetting::query()->where('position', 'home_hero')->first()->toSettings(), array_flip(['max_height_pc', 'max_height_mobile'])));
+        $this->assertNull($public('shop_hero')['max_height_mobile']);
     }
 }

@@ -9,13 +9,14 @@
 |---|---|---|---|---|
 | `Banner` | `hero_section_banners` | 26 | images→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 13 | banner→Banner | - |
-| `PositionSetting` | `hero_section_position_settings` | 8 | - | - |
+| `PositionSetting` | `hero_section_position_settings` | 10 | - | - |
+| `TargetSetting` | `hero_section_target_settings` | 4 | - | - |
 <!-- @generated:models END -->
 
 <!-- @intent START -->
-`Banner`(배너)·`BannerImage`(PC·모바일 이미지와 영상 파일)·`PositionSetting`(위치별 슬라이더 설정)을 둔다. 노출 상태는 컬럼이 아니라 `Banner::status` 접근자(조회 시점 계산)다.
+`Banner`(배너)·`BannerImage`(PC·모바일 이미지와 영상 파일)·`PositionSetting`(위치별 슬라이더 설정 — 동적 위치에서는 그 위치의 기본값)·`TargetSetting`(동적 위치의 대상별 슬라이더 재정의)을 둔다. 노출 상태는 컬럼이 아니라 `Banner::status` 접근자(조회 시점 계산)다.
 
-배너 미디어 종류는 `media_type`(`image` 기본·`youtube`·`video`, Enum `BannerMediaType`)이고, 유튜브는 영상 ID 만 `youtube_id`(11자)에 둔다(주소는 저장하지 않는다 — 사이트가 ID 로 `youtube-nocookie.com/embed/<ID>` 를 만든다). 파일 행은 `kind`(`image`·`video`, Enum `MediaKind`)와 `device`(`pc`·`mobile`)로 배너당 기기·종류마다 하나다. 등록·수정 요청의 선택 키는 이미지 `pc_image_id`·`mobile_image_id`, 영상 `pc_video_id`·`mobile_video_id` 다. 어느 미디어 종류든 PC 이미지(대표 이미지)는 필수다.
+배너 미디어 종류는 `media_type`(`image` 기본·`video`, Enum `BannerMediaType`)이다. 유튜브 등 제3자 영상 플랫폼은 받지 않는다 — 옛 유튜브 배너는 업그레이드 마이그레이션이 이미지 배너로 바꾸고 `youtube_id` 컬럼을 지운다. 파일 행은 `kind`(`image`·`video`, Enum `MediaKind`)와 `device`(`pc`·`mobile`)로 배너당 기기·종류마다 하나다. 등록·수정 요청의 선택 키는 이미지 `pc_image_id`·`mobile_image_id`, 영상 `pc_video_id`·`mobile_video_id` 다. 어느 미디어 종류든 PC 이미지(대표 이미지)는 필수다.
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -26,16 +27,21 @@
 | `hero_section_banner_images` | `BannerImage` |
 | `hero_section_banners` | `Banner` |
 | `hero_section_position_settings` | `PositionSetting` |
+| `hero_section_target_settings` | `TargetSetting` |
 <!-- @generated:tables END -->
 
 <!-- @intent START -->
-`hero_section_banners`·`hero_section_banner_images`·`hero_section_position_settings` 를 소유한다. 다국어 문구는 `text` 컬럼에 `{ko:…, en:…}` JSON 으로 저장한다. 플러그인 삭제(데이터 삭제 선택) 때만 지운다.
+`hero_section_banners`·`hero_section_banner_images`·`hero_section_position_settings`·`hero_section_target_settings` 를 소유한다.
+
+`hero_section_target_settings` 는 (`position`, `target_key`) 가 고유한 대상별 재정의 행이다. `overrides` JSON 에는 운영자가 명시한 슬라이더 항목만 담는다 — 키가 없으면 위치 기본값을 상속하고, `false`·`null` 은 명시값(자동 재생 끔·최대 높이 제한 없음)이다. 해석 순서는 `PositionSetting::DEFAULTS` → 위치 행 → 대상 재정의. 모든 항목을 상속으로 돌리면 행을 지운다. 대상(게시판·카테고리 등)이 지워져도 행을 남겨 관리 화면에서 「없는 대상」으로 보이고 되돌릴 수 있다(배너와 같은 계약). 배너가 하나도 없어도 행이 있으면 관리자 대상 목록에 남는다(`TargetSettingRepositoryInterface::targetKeys()`). 기존 설치는 이 테이블이 비어 있어 모든 대상이 위치 기본값을 그대로 따른다 — 백필 없음.
+
+배너 `presentation` JSON 의 구성 키(`layout`·`background_color`·`text_width_pc`·`text_width_mobile`·`media_animation`)는 컬럼이 아니라 JSON 키라 마이그레이션이 없다. 없는 키는 `Banner::DEFAULT_PRESENTATION`(배경형·폭 상속·그림 효과 없음)으로 읽고, 읽기만으로 저장값을 다시 쓰지 않는다. 다국어 문구는 `text` 컬럼에 `{ko:…, en:…}` JSON 으로 저장한다. 플러그인 삭제(데이터 삭제 선택) 때만 지운다.
 <!-- @intent END -->
 
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 8개.
+마이그레이션 12개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -47,6 +53,10 @@
 | `2026_10_30_000006_add_media_to_hero_section_banners.php` | - | `hero_section_banners`, `hero_section_banner_images` | ✅ |
 | `2026_10_31_000007_add_eyebrow_and_header_overlay_to_hero_section.php` | - | `hero_section_banners`, `hero_section_position_settings` | ✅ |
 | `2026_11_02_000008_add_pagination_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
+| `2026_11_09_000009_remove_youtube_from_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
+| `2026_11_10_000010_add_target_key_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
+| `2026_11_11_000011_add_max_height_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
+| `2026_11_11_000012_create_hero_section_target_settings_table.php` | `hero_section_target_settings` | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -60,22 +70,25 @@
 |---|---|---|---|
 | `AnimationSpeed` | `string` | 3 | `slow`, `normal`, `fast` |
 | `BannerDevice` | `string` | 2 | `pc`, `mobile` |
-| `BannerMediaType` | `string` | 3 | `image`, `youtube`, `video` |
+| `BannerLayout` | `string` | 2 | `background`, `promo` |
+| `BannerMediaType` | `string` | 2 | `image`, `video` |
 | `BannerStatus` | `string` | 4 | `active`, `scheduled`, `ended`, `inactive` |
 | `BannerTone` | `string` | 2 | `dark`, `light` |
 | `DisplayPeriod` | `string` | 2 | `always`, `range` |
-| `HeroPosition` | `string` | 2 | `home_hero`, `shop_hero` |
+| `MediaAnimation` | `string` | 3 | `none`, `fade`, `right` |
 | `MediaKind` | `string` | 2 | `image`, `video` |
 | `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
-| `SlidePagination` | `string` | 4 | `dots`, `progress`, `tabs`, `fraction` |
+| `SlidePagination` | `string` | 5 | `dots`, `progress`, `tabs`, `fraction`, `pill` |
 | `SlideWidth` | `string` | 2 | `content`, `full` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |
-| `TextAnimation` | `string` | 8 | `none`, `rise`, `fade`, `left`, `right`, `zoom`, `blur`, `letters` |
+| `TextAnimation` | `string` | 9 | `none`, `rise`, `fade`, `left`, `right`, `zoom`, `blur`, `letters`, `외 1개` |
 | `TextOverlay` | `string` | 3 | `none`, `dark`, `light` |
 <!-- @generated:enums END -->
 
 <!-- @intent START -->
-위치(`home_hero`·`shop_hero`), 상태(노출중·예약·종료·비활성), 노출 기간(상시·기간 지정), 정렬(좌·중·우), 전환 효과(slide·fade·cube·flip·coverflow·creative·none), 기기(pc·mobile)를 Enum 으로 둔다. 위치 Enum 이 노출 위치 목록의 SSoT 다.
+상태(노출중·예약·종료·비활성), 노출 기간(상시·기간 지정), 정렬(좌·중·우), 전환 효과(slide·fade·cube·flip·coverflow·creative·none), 기기(pc·mobile)를 Enum 으로 둔다. 노출 위치는 Enum 이 아니다 — 확장이 더할 수 있는 열린 목록이라 위치 등록 필터(`sirsoft-hero_section.position.registered_positions`, `PositionRegistry`)가 SSoT 다(docs/extension-points.md). 검증은 `RegisteredPosition`·`ValidTarget` 규칙이 맡는다.
+
+배너는 자리(위치 + 대상)에 속한다 — `hero_section_banners.target_key`(string 100, null 가능)는 동적 위치의 대상 키(게시판·상품·카테고리 id 등)이고 정적 위치는 null 이다. 순서(`sort_order`)·노출·통계는 자리 단위라 인덱스도 `(position, target_key, sort_order)`·`(position, target_key, is_active, display_period, starts_at, ends_at)` 이다. 대상 테이블에 외래 키를 걸지 않는다 — 대상은 다른 모듈의 것이고, 대상이 지워져도 배너는 남아 관리자에게 「없는 대상」으로 보인다(사이트에는 나가지 않는다). 위치를 더한 확장이 꺼져도 배너·위치 설정 행은 지우지 않는다(「등록되지 않은 위치」).
 <!-- @intent END -->
 
 ## Repository
@@ -89,6 +102,8 @@
 | `BannerRepositoryInterface` | 인터페이스 | 배너 Repository 인터페이스 — 배너 쿼리는 모두 여기서 만든다. |
 | `PositionSettingRepository` | 구현 | 위치별 슬라이더 설정 Repository |
 | `PositionSettingRepositoryInterface` | 인터페이스 | 위치별 슬라이더 설정 Repository 인터페이스 |
+| `TargetSettingRepository` | 구현 | 동적 위치 대상별 슬라이더 설정 저장소 |
+| `TargetSettingRepositoryInterface` | 인터페이스 | 동적 위치 대상별 슬라이더 설정 저장소 |
 <!-- @generated:repositories END -->
 
 <!-- @intent START -->
@@ -97,6 +112,6 @@
 
 ## 편집 표시 설정과 동시 수정
 
-추가 마이그레이션은 `hero_section_banners.presentation`(nullable JSON)과 `lock_version`(unsigned integer, 기본 0)을 더합니다. 기존 배너는 중앙 초점·배경 없음으로 해석합니다. `presentation` 에는 문구 자리·폭·등장 효과·바탕 밝기도 들어가며(컬럼을 늘리지 않는다), 없는 키는 `Banner::DEFAULT_PRESENTATION`(왼쪽 아래·전폭·효과 없음·어두움)으로 응답합니다. `000007` 은 머리글 `eyebrow`(다국어 JSON text, nullable)·`eyebrow_visible`(기본 true)·`eyebrow_color`(기본 `#FFFFFF`)와 위치 설정 `header_overlay`(boolean, 기본 false)를 더합니다 — 기존 배너는 머리글이 비어 있고 기존 위치는 겹치기가 꺼져 있어 화면이 그대로라 업그레이드 스텝이 없습니다. 모델은 presentation을 배열로, 세대를 정수로 캐스팅하며 클라이언트의 lock_version 직접 대입을 허용하지 않습니다. 일반 수정·일괄 사용 여부 변경은 세대를 증가시킵니다. 수정·단건 및 일괄 삭제는 부모 행 잠금 순서를 공유합니다.
+추가 마이그레이션은 `hero_section_banners.presentation`(nullable JSON)과 `lock_version`(unsigned integer, 기본 0)을 더합니다. 기존 배너는 중앙 초점·배경 없음으로 해석합니다. `presentation` 에는 문구 자리·폭·등장 효과·바탕 밝기도 들어가며(컬럼을 늘리지 않는다), 없는 키는 `Banner::DEFAULT_PRESENTATION`(왼쪽 아래·전폭·효과 없음·어두움)으로 응답합니다. `000007` 은 머리글 `eyebrow`(다국어 JSON text, nullable)·`eyebrow_visible`(기본 true)·`eyebrow_color`(기본 `#FFFFFF`)와 위치 설정 `header_overlay`(boolean, 기본 false)를 더합니다 — 기존 배너는 머리글이 비어 있고 기존 위치는 겹치기가 꺼져 있어 화면이 그대로라 업그레이드 스텝이 없습니다. `000011` 은 위치 설정 `max_height_pc`·`max_height_mobile`(unsigned smallint, nullable — 기기별 최대 높이 px)을 더합니다. 기존 위치는 비어 있어 종전처럼 비율대로(화면 전체 폭은 640px 에서 멈춤) 그리므로 업그레이드 스텝이 없습니다. 모델은 presentation을 배열로, 세대를 정수로 캐스팅하며 클라이언트의 lock_version 직접 대입을 허용하지 않습니다. 일반 수정·일괄 사용 여부 변경은 세대를 증가시킵니다. 수정·단건 및 일괄 삭제는 부모 행 잠금 순서를 공유합니다.
 
 > **`disk` 컬럼 (#878)** — 배너 파일를 올린 스토리지 디스크다. 업로드 때 공개 자산 디스크 설정(플러그인 `public_asset_disk` > 코어 전역)이 정한 디스크가 기록되고, 이후 서빙·썸네일 원본·삭제·전체 정리는 이 값을 따른다(설정을 바꿔도 옛 행은 그대로). 이 디스크가 직접 URL 을 내면(public·CDN) 응답의 `direct_url` 이 채워진다. 설정에서 사라진 디스크(고아)는 기본 디스크로 물러나 404 가 된다.

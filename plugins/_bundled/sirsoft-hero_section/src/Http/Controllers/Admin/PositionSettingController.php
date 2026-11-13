@@ -4,7 +4,6 @@ namespace Plugins\Sirsoft\HeroSection\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Http\Requests\Admin\UpdatePositionSettingRequest;
 use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 
@@ -42,15 +41,14 @@ class PositionSettingController extends AdminBaseController
      */
     public function update(UpdatePositionSettingRequest $request, string $position): JsonResponse
     {
-        $target = HeroPosition::tryFrom($position);
-        if ($target === null) {
+        if (! $this->settings->isRegistered($position)) {
             return $this->notFound('sirsoft-hero_section::messages.position.not_found');
         }
 
-        $setting = $this->settings->update($target, $request->validated(), $request->user()?->id);
+        $setting = $this->settings->update($position, $request->validated(), $request->user()?->id);
 
         return $this->success('sirsoft-hero_section::messages.position.updated', [
-            'position' => $target->value,
+            'position' => $position,
             'settings' => $setting->toSettings(),
         ]);
     }

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Plugins\Sirsoft\HeroSection\Enums\BannerMediaType;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
-use Plugins\Sirsoft\HeroSection\Support\YoutubeUrl;
+use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 
 /**
  * 배너 리소스 — 상세(수정 화면)와 목록 행 두 모양을 낸다.
@@ -17,10 +17,33 @@ use Plugins\Sirsoft\HeroSection\Support\YoutubeUrl;
  * 기간은 수정 화면 입력용(`*_local`, 사이트 시간대 datetime-local)과 표시용(`*_display`)을 함께 싣는다.
  * 작성자 id 는 싣지 않는다.
  *
+ * 위치·대상 상태를 함께 싣는다 — `position_registered`(위치가 지금 등록돼 있는지), `target_key`·`target_label`·`target_exists`
+ * (동적 위치의 대상과 그 이름, 지워진 「없는 대상」이면 false). 목록 행의 대상 이름은 컬렉션이 한 번에 풀어 넘긴다.
+ *
  * @mixin Banner
  */
 class BannerResource extends BaseApiResource
 {
+    /**
+     * 컬렉션이 미리 푼 대상 이름 (대상 키 => 이름, null 이면 이 리소스가 직접 푼다)
+     *
+     * @var array<string, string>|null
+     */
+    private ?array $targetLabels = null;
+
+    /**
+     * 미리 푼 대상 이름을 넘깁니다(목록·미리보기·순서 창 행마다 대상을 묻지 않게 — `TargetLabels::forBanners`).
+     *
+     * @param  array<string, string>  $labels  대상 키 => 이름 (이 배너 위치의 해석 결과)
+     * @return static 자기 자신
+     */
+    public function withTargetLabels(array $labels): static
+    {
+        $this->targetLabels = $labels;
+
+        return $this;
+    }
+
     /**
      * 상세 응답을 반환합니다(다국어 원본·이미지 2종·abilities).
      *
@@ -49,8 +72,6 @@ class BannerResource extends BaseApiResource
             'link_new_window' => (bool) $this->link_new_window,
             'starts_at_local' => TimezoneHelper::toSiteDateTimeLocalString($this->starts_at),
             'ends_at_local' => TimezoneHelper::toSiteDateTimeLocalString($this->ends_at),
-            'youtube_id' => $this->youtube_id,
-            'youtube_url' => YoutubeUrl::watchUrl($this->youtube_id),
             'images' => [
                 'pc' => $this->image($request, $this->resource->relationLoaded('pcImage') ? $this->pcImage : null),
                 'mobile' => $this->image($request, $this->resource->relationLoaded('mobileImage') ? $this->mobileImage : null),
@@ -111,6 +132,7 @@ class BannerResource extends BaseApiResource
         return [
             'id' => $this->id,
             'position' => $this->position,
+            ...$this->targetFields(),
             'media_type' => $this->media_type ?? BannerMediaType::Image->value,
             'is_active' => (bool) $this->is_active,
             'status' => $this->resource->statusAt()->value,
@@ -122,6 +144,26 @@ class BannerResource extends BaseApiResource
             'title_localized' => (string) (LocalizedValue::pick($title, app()->getLocale()) ?? ''),
             'title_locales' => array_keys(array_filter($title, fn ($v) => is_string($v) && $v !== '')),
             'created_at_display' => TimezoneHelper::toSiteDateTimeString($this->created_at),
+        ];
+    }
+
+    /**
+     * 위치·대상 상태 필드를 반환합니다 — 정적 위치·등록되지 않은 위치는 대상 이름·존재 여부가 null 이다.
+     *
+     * @return array{position_registered: bool, target_key: string|null, target_label: string|null, target_exists: bool|null} 위치·대상 필드
+     */
+    private function targetFields(): array
+    {
+        $registry = app(PositionRegistry::class);
+        $key = $this->target_key === null ? null : (string) $this->target_key;
+        $resolver = $key === null ? null : $registry->resolver((string) $this->position);
+        $labels = $resolver === null ? [] : ($this->targetLabels ?? $resolver->labels([$key]));
+
+        return [
+            'position_registered' => $registry->isRegistered((string) $this->position),
+            'target_key' => $key,
+            'target_label' => $labels[$key] ?? null,
+            'target_exists' => $resolver === null ? null : isset($labels[$key]),
         ];
     }
 

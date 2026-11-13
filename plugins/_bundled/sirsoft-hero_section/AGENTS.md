@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 플러그인 (sirsoft-hero_section) — 사이트 첫 화면 히어로섹션(메인 배너)의 데이터·관리 화면·사용자 슬라이더 소유
-2. 확장 방식: 템플릿은 확장점 `home_hero`·`shop_hero` 를 두면 자동으로 붙고, 디자인은 `HeroSlider` 컴포넌트 오버라이드로 바꾼다
+2. 확장 방식: 템플릿은 확장점(`home_hero`·`shop_hero`, 동적 `board_hero`·`product_hero`·`category_hero`)을 두면 자동으로 붙고, 다른 확장은 위치 등록 필터로 위치를 더한 뒤 같은 이름의 확장점만 열면 히어로가 자리를 채우며, 디자인은 `HeroSlider` 컴포넌트 오버라이드로 바꾼다
 3. 건드리면 안 되는 것: 노출 상태를 저장하거나 PHP 에서 거르기(조회 시점 SQL 판정이 SSoT) · Repository 밖 쿼리 · 템플릿 소유 화면 직접 수정
 4. 작업 위치: `plugins/_bundled/sirsoft-hero_section` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-hero_section --force`
@@ -17,11 +17,12 @@
 <!-- @intent START -->
 운영자가 개발자 도움 없이 사이트 홈·쇼핑몰 메인 상단 배너를 바꾸고 기간에 맞춰 예약 노출하게 하는 플러그인이다(#810).
 
-- **소유 경계**: 배너 데이터·관리 화면·사용자 슬라이더 컴포넌트는 이 플러그인이 소유한다. 사용자 템플릿은 자리(확장점)만 연다 — sirsoft-basic 은 `home_hero`(사이트 홈 상단)·`shop_hero`(쇼핑몰 메인 상단). 같은 이름의 확장점을 둔 템플릿이면 어디서든 붙는다. 플러그인을 끄면 확장점 주입이 빠져 즉시 사라진다.
-- **위치 목록**: 플러그인이 고정 목록으로 갖고(위치 키 = 확장점 이름), 템플릿이 선언하는 방식은 쓰지 않는다.
+- **소유 경계**: 배너 데이터·관리 화면·사용자 슬라이더 컴포넌트는 이 플러그인이 소유한다. 사용자 템플릿은 자리(확장점)만 연다 — sirsoft-basic 은 `home_hero`(사이트 홈 상단)·`shop_hero`(쇼핑몰 메인 상단)·`board_hero`(게시판 목록)·`product_hero`(상품 상세)·`category_hero`(카테고리 목록). 같은 이름의 확장점을 둔 템플릿이면 어디서든 붙는다. 플러그인을 끄면 확장점 주입이 빠져 즉시 사라진다.
+- **위치 목록**: 위치 등록 필터 `sirsoft-hero_section.position.registered_positions`(`PositionRegistry`)가 모은다(위치 키 = 확장점 이름). 히어로가 내장 위치를 먼저 넣고(게시판·이커머스 모듈이 켜져 있으면 동적 위치도), 다른 확장이 같은 필터로 더한다. 동적 위치는 배너가 대상(게시판·상품 등)마다 따로이고, 대상은 해석기(`TargetResolverInterface`)가 화면 값 → 저장 키로 푼다. 템플릿이 선언하는 방식은 쓰지 않는다.
+- **등록되지 않은 위치·없는 대상(D7)**: 위치를 더한 확장을 끄거나 대상을 지워도 배너는 지우지 않는다 — 관리자에게만 보이고 사이트에는 나가지 않는다.
 - **노출 상태**(노출중·예약·종료·비활성)는 저장하지 않는다. 조회 시점에 기간·사용 여부로 계산하고(cron 없음), 목록 필터·정렬과 공개 노출은 같은 SQL 조건을 쓴다. 시간은 UTC 로 저장·비교하고 사이트 시간대 변환은 입력·표시에서만 한다.
 - **다국어**: 제목·설명·버튼 문구·대체 텍스트를 언어별로 저장하고, 비운 언어는 사이트 기본 언어로 대체한다.
-- **미디어**: 배너마다 이미지·유튜브·영상 파일(`media_type`). PC 이미지는 어느 종류든 대표 이미지로 필수다. 유튜브는 영상 ID 만 저장하고 사이트는 `youtube-nocookie.com` 을 방문자 마케팅 동의(코어 `G7Core.consent`) 뒤에만 부른다. 영상 파일은 이미지 테이블의 `kind=video` 행이고 공개 응답은 범위 요청을 받는다.
+- **미디어**: 배너마다 이미지·영상 파일(`media_type`). PC 이미지는 어느 종류든 대표 이미지로 필수다. 유튜브 등 제3자 영상 플랫폼은 받지 않는다(추후 보완 출시 — 재도입 참고는 `docs/frontend.md`). 영상 파일은 이미지 테이블의 `kind=video` 행이고 공개 응답은 범위 요청을 받는다.
 - **의도적으로 하지 않는 것**: 노출수·클릭수 통계(2차), 관리자별 소유 범위, 휴지통(삭제는 영구), 이커머스 「메인배너 관리」 시안 정리(별도 이슈).
 <!-- @intent END -->
 
@@ -60,7 +61,7 @@
 ## 3. 핵심 흐름
 
 <!-- @intent START -->
-배너 관리 API·공개 API·활동 로그·공개 캐시, 관리자 화면 3개(목록·등록/수정·환경설정), 사용자 슬라이더와 확장점 주입 조각(`home_hero`·`shop_hero`)이 있다. 대표 흐름:
+배너 관리 API·공개 API·활동 로그·공개 캐시, 관리자 화면 3개(목록·등록/수정·환경설정), 사용자 슬라이더와 확장점 주입 조각(`home_hero`·`shop_hero`, 동적 `board_hero`·`product_hero`·`category_hero`)이 있다. 대표 흐름:
 
 1. 배너 등록: `BannerController@store` → `StoreBannerRequest`(기본 언어 제목·기간·링크·PC 이미지) → `BannerService::create`(before/after 훅, 위치 맨 뒤 순서, 임시 이미지 연결) → `BannerRepositoryInterface` → `Banner`.
 2. 사용자 화면 노출: 확장점 조각 data-source → `HeroController@show` → `PublicHeroService::forPosition`(캐시, 꺼낼 때 기간 재판정) → `BannerRepository` 상태 조건 → 언어 대체 후 응답.
@@ -71,10 +72,10 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 23개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 28개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 26개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 53개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 9개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 1개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -82,7 +83,8 @@
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
-- 템플릿: 확장점 `home_hero`·`shop_hero` 를 두면 붙는다. 디자인은 `HeroSlider` 오버라이드로 바꾼다(props 계약은 docs/extension-points.md).
+- 템플릿: 확장점 `home_hero`·`shop_hero`(동적 `board_hero`·`product_hero`·`category_hero`)를 두면 붙는다. 디자인은 `HeroSlider` 오버라이드로 바꾼다(props 계약은 docs/extension-points.md).
+- 다른 확장: 위치 등록 필터로 위치(동적이면 대상 해석기·`route_param` 까지)를 더하고 같은 이름의 확장점을 열면 히어로가 출력 조각을 붙인다(docs/extension-points.md 「위치 등록 필터」·「다른 확장이 위치를 더할 때」). 출력 조각은 내장 조각 파일이 원본이다 — 내장 조각을 바꾸면 `PositionFragment` 시험과 생성 표본(`generated_*.json`)도 함께 맞춘다.
 - 다른 확장: `sirsoft-hero_section.banner.*` 훅으로 저장 전후에 끼고, `sirsoft-hero_section.hero.filter_public_banners` 로 노출 목록을 가공한다.
 <!-- @intent END -->
 
@@ -94,7 +96,8 @@
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 노출 상태 판정을 바꾸면 모델 접근자·Repository 조건·공개 캐시 만료 계산을 함께 고치고 경계 시각 테스트를 돌린다
-- [ ] 확장점 이름(`home_hero`·`shop_hero`)은 다른 템플릿이 쓰는 공개 계약 — 바꾸지 않는다(바꿔야 하면 새 이름 추가 + 옛 이름 유지)
+- [ ] 확장점 이름(`home_hero`·`shop_hero`·`board_hero`·`product_hero`·`category_hero`)과 위치 등록 필터 계약은 다른 템플릿·확장이 쓰는 공개 계약 — 바꾸지 않는다(바꿔야 하면 새 이름 추가 + 옛 이름 유지)
+- [ ] 위치 목록이 필요한 곳은 `PositionRegistry` 를 쓴다 — 위치 키를 코드에 고정하지 않는다(기본값 `PositionRegistry::DEFAULT_POSITION` 만 예외). 오래 사는 객체(서비스·컨트롤러)는 레지스트리를 생성자에서 쥐지 말고 쓸 때 꺼낸다
 
 ## 6. 금지 패턴
 
@@ -121,10 +124,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 30개 | `plugins/_bundled/sirsoft-hero_section/tests` |
-| Vitest | 16개 | `vitest.config.ts` |
-| Playwright | 19개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
+| PHPUnit | 39개 | `plugins/_bundled/sirsoft-hero_section/tests` |
+| Vitest | 20개 | `vitest.config.ts` |
+| Playwright | 24개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 23개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

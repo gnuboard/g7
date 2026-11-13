@@ -16,4 +16,5 @@ enum TextAnimation: string
     case Zoom = 'zoom';
     case Blur = 'blur';
     case Letters = 'letters';
+    case Sequence = 'sequence';
 }

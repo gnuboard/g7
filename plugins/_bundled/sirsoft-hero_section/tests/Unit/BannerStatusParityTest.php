@@ -4,9 +4,9 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Unit;
 
 use Illuminate\Support\Carbon;
 use Plugins\Sirsoft\HeroSection\Enums\BannerStatus;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Repositories\BannerRepository;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -228,7 +228,7 @@ class BannerStatusParityTest extends PluginTestCase
             'after_end' => $end->copy()->addSecond(),
         };
 
-        $banner = Banner::factory()->forPosition(HeroPosition::HomeHero)->create([
+        $banner = Banner::factory()->forPosition('home_hero')->create([
             'is_active' => $active,
             'display_period' => $period,
             'starts_at' => $period === 'range' ? $start : null,
@@ -244,7 +244,7 @@ class BannerStatusParityTest extends PluginTestCase
             $this->assertSame($status === $expected, $found, 'SQL 판정 '.$status->value);
         }
 
-        $exposed = $repository->exposedForPosition(HeroPosition::HomeHero->value, $now)->pluck('id')->all();
+        $exposed = $repository->exposedForPlacement(Placement::of('home_hero'), $now)->pluck('id')->all();
         $this->assertSame($expected === BannerStatus::Active, in_array($banner->id, $exposed, true), '공개 노출');
     }
 }

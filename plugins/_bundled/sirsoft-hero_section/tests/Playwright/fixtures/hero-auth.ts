@@ -153,6 +153,15 @@ export async function gotoUser(page: Page, path = '/'): Promise<void> {
   await page.waitForFunction(() => !!(window as any).G7Core, undefined, { timeout: 30_000 });
 }
 
+/**
+ * 사이트 팝업을 비운다 — 팝업은 슬라이더를 덮어 클릭을 가로채고, 운영 데이터라 사양마다 달라진다(팝업 설정은 건드리지 않는다).
+ *
+ * @param page 페이지
+ */
+export async function hidePopups(page: Page): Promise<void> {
+  await page.route('**/api/plugins/sirsoft-popup/popups*', (route) => route.fulfill({ json: { success: true, message: '', data: { popups: [], settings: null } } }));
+}
+
 /** 사용자 화면 슬라이더 영역 */
 export const slider = (page: Page) => page.locator('section.hs-slider[role="region"]');
 

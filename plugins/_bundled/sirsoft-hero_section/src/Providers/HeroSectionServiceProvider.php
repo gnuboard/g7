@@ -9,8 +9,11 @@ use Plugins\Sirsoft\HeroSection\Repositories\BannerRepository;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Repositories\Contracts\TargetSettingRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\PositionSettingRepository;
+use Plugins\Sirsoft\HeroSection\Repositories\TargetSettingRepository;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
+use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
 
@@ -36,6 +39,7 @@ class HeroSectionServiceProvider extends BasePluginServiceProvider
         BannerRepositoryInterface::class => BannerRepository::class,
         BannerImageRepositoryInterface::class => BannerImageRepository::class,
         PositionSettingRepositoryInterface::class => PositionSettingRepository::class,
+        TargetSettingRepositoryInterface::class => TargetSettingRepository::class,
     ];
 
     /**
@@ -60,6 +64,18 @@ class HeroSectionServiceProvider extends BasePluginServiceProvider
     protected array $storageCategoryServices = [
         BannerImageService::class => 'images',
     ];
+
+    /**
+     * 서비스를 등록합니다 — 위치 레지스트리는 요청마다 한 번만 모은다(검증·저장소·응답이 같은 목록을 본다).
+     *
+     * @return void 반환값 없음
+     */
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->scoped(PositionRegistry::class);
+    }
 
     /**
      * 서비스를 시작합니다 — 콘솔 명령을 등록합니다.

@@ -6,8 +6,8 @@ import type { Swiper as SwiperInstance, SwiperOptions } from 'swiper';
 import { useSwiperStyles } from '../../support/swiperStyles';
 import { sitePath } from '../../apiUrl';
 import { mediaSrc, responsiveSrcset, sliderImageSizes, type SliderBox } from '../../support/thumbnail';
-import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useHeroScreen, useMarketingConsent, type HeroVideo } from '../../support/media';
-import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
+import { HeroVideoMedia, useHeroScreen, type HeroVideo } from '../../support/media';
+import { LetterText, lineDelay, mediaMotion, textMotion, textWidth, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
 export type { HeroVideo } from '../../support/media';
 export type { HeroTextPresentation, TextSpot } from '../../support/text';
@@ -77,14 +77,11 @@ export interface HeroBanner {
   /** 새 창 열기 */
   link_new_window?: boolean;
 
-  /** PC·모바일 이미지 — 미디어가 영상·유튜브면 대표 이미지(받는 동안·움직임 줄이기·동의 전) */
+  /** PC·모바일 이미지 — 미디어가 영상이면 대표 이미지(받는 동안·움직임 줄이기) */
   images?: { pc?: HeroImage | null; mobile?: HeroImage | null };
 
   /** 미디어 종류 — 없으면 이미지 */
-  media_type?: 'image' | 'youtube' | 'video';
-
-  /** 유튜브 영상 ID (미디어 종류가 유튜브일 때) */
-  youtube_id?: string | null;
+  media_type?: 'image' | 'video';
 
   /** PC·모바일 영상 파일 (미디어 종류가 영상 파일일 때, 모바일이 없으면 PC 영상) */
   videos?: { pc?: HeroVideo | null; mobile?: HeroVideo | null } | null;
@@ -92,7 +89,15 @@ export interface HeroBanner {
   /**
    * 기기별 이미지 초점(%)·선택적 문구 배경과 문구 자리(기기별 가로·세로 %, 폭 %)·등장 효과(효과·속도·시작 지연)·바탕 밝기(메뉴 글자색)
    */
-  presentation?: ({ pc_x?: number; pc_y?: number; mobile_x?: number; mobile_y?: number; overlay?: 'none' | 'dark' | 'light' } & HeroTextPresentation) | null;
+  presentation?: ({
+    pc_x?: number; pc_y?: number; mobile_x?: number; mobile_y?: number; overlay?: 'none' | 'dark' | 'light';
+    /** 구성 — 배경형(background, 기본·옛 배너) · 프로모션형(promo: 바탕색 위에 문구 칸과 그림 칸을 나눈다) */
+    layout?: 'background' | 'promo' | string;
+    /** 바탕색(#RRGGBB) — 프로모션형 띠 바탕, 배경형은 미디어를 받기 전 바탕 */
+    background_color?: string | null;
+    /** 그림 등장 효과 — 없음·서서히·오른쪽에서 */
+    media_animation?: 'none' | 'fade' | 'right' | string | null;
+  } & HeroTextPresentation) | null;
 }
 
 /** 전환 효과 — Swiper 효과 이름과 같고, none 은 0ms 슬라이드 */
@@ -120,15 +125,39 @@ export interface HeroSliderSettings {
 
   /**
    * 페이징 모양 — 점(dots, 기본) · 진행 막대 점(progress, 지금 장 점이 길어지고 자동 넘김까지 남은 시간이 찬다) ·
-   * 배너 이름 탭(tabs, 장마다 배너 제목과 진행 막대, 휴대폰에서는 막대만) · 번호(fraction, 「01 / 05」). 모르는 값은 점.
+   * 배너 이름 탭(tabs, 장마다 배너 제목과 진행 막대, 휴대폰에서는 막대만) · 번호(fraction, 「01 / 05」) ·
+   * 알약 번호(pill, 문구 아래 왼쪽 둥근 상자 안의 「‹ 1 / 5 ›」 — 좌우 화살표 대신 상자 안 단추로 넘긴다). 모르는 값은 점.
    */
   pagination?: HeroPagination;
+
+  /**
+   * PC 최대 높이(px) — 비율(1920:640)대로 그리다가 이 높이에서 멈추고, 넘치는 이미지는 초점 기준으로 위아래를 자른다.
+   * 비우면(null) 비율대로(화면 전체 폭은 640px 에서 멈춤).
+   */
+  max_height_pc?: number | null;
+
+  /** 휴대폰 최대 높이(px) — 화면 폭 767px 이하에서 비율(750:1000)대로 그리다가 멈추는 높이. 비우면 비율대로(화면 전체 폭은 640px 에서 멈춤) */
+  max_height_mobile?: number | null;
 }
 
-/** 페이징 모양 — 서버 Enum `SlidePagination` 과 같다 */
-export type HeroPagination = 'dots' | 'progress' | 'tabs' | 'fraction';
+/** 기기별 최대 높이(px) — 비운 기기는 null */
+export interface HeroMaxHeight {
+  pc?: number | null;
+  mobile?: number | null;
+}
 
-const PAGINATIONS: readonly HeroPagination[] = ['dots', 'progress', 'tabs', 'fraction'];
+/**
+ * 최대 높이 값을 쓸 수 있는 px 숫자로 고릅니다(0 이하·숫자가 아니면 null — 비율대로).
+ *
+ * @param value 설정·힌트·기억 값
+ * @returns px 또는 null
+ */
+const heightOf = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null);
+
+/** 페이징 모양 — 서버 Enum `SlidePagination` 과 같다 */
+export type HeroPagination = 'dots' | 'progress' | 'tabs' | 'fraction' | 'pill';
+
+const PAGINATIONS: readonly HeroPagination[] = ['dots', 'progress', 'tabs', 'fraction', 'pill'];
 
 /**
  * 장 번호를 두 자리로 맞춥니다(「01 / 05」).
@@ -157,8 +186,14 @@ export interface HeroSliderProps {
   /** 위치 슬라이더 설정 */
   settings?: HeroSliderSettings;
 
-  /** 위치 키 (`home_hero`·`shop_hero`) — 오버라이드·테스트 식별용 */
+  /** 위치 키 (`home_hero`·`shop_hero`·`board_hero` 등) — 오버라이드·테스트 식별용, 브라우저 기억 키 */
   position?: string;
+
+  /**
+   * 동적 위치의 대상 — 확장점 조각이 화면 경로 값(게시판 slug·상품 코드 등)을 넘긴다. 주면 브라우저 기억을 위치 + 대상마다 따로 두고,
+   * 기억이 「배너 있음」일 때만 받는 동안 스켈레톤을 그린다(대상마다 첫 로드 힌트를 줄 수 없어 첫 방문은 자리를 잡지 않는다).
+   */
+  target?: string;
 
   /**
    * 미리보기용 기기 고정 — 지정하면 화면 폭과 관계없이 그 기기 이미지·영상·모양을 쓴다(mobile 이면 루트에 `hs-slider--mobile`·
@@ -194,6 +229,24 @@ export interface HeroSliderProps {
   skeletonOverlay?: boolean;
 
   /**
+   * 받는 동안 스켈레톤의 기기별 최대 높이 — 확장점 조각이 플러그인 설정 힌트(`slot_max_heights`)를 넘긴다. 실제 배너와 같은 높이에서 멈춰
+   * 배너가 와도 아래 본문이 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양.
+   */
+  skeletonMaxHeight?: HeroMaxHeight | null;
+
+  /**
+   * 받는 동안 자리를 잡을지 — 확장점 조각이 첫 로드 플러그인 설정 힌트(`slot_banners`)로 넘긴다. 첫 접속은 브라우저 기억이 없으므로
+   * 이 값이 false 면 배너가 없는 위치에 스켈레톤을 그리지 않는다. 브라우저 기억이 0건이어도 그리지 않는다(둘 중 하나라도 없음이면 생략).
+   */
+  skeletonBanners?: boolean;
+
+  /**
+   * 「관리자에서 수정」 단추를 보일지 — 확장점 조각이 공개 응답의 수정 권한(`abilities.can_update`)을 넘긴다. 켜면 오른쪽 위에
+   * 지금 보이는 배너의 관리자 수정 화면을 새 탭으로 여는 링크를 그린다. 편집 미리보기(`forceDevice`)에서는 그리지 않는다.
+   */
+  editable?: boolean;
+
+  /**
    * 편집 미리보기 전용 — 주면 문구 상자를 끌거나 화살표 키로 옮길 수 있고, 놓을 때 고정 기기(`forceDevice`)의 새 자리를 알린다.
    * 사이트 화면에서는 넘기지 않는다.
    */
@@ -227,6 +280,13 @@ const EFFECTS: Record<HeroEffect, Partial<SwiperOptions>> = {
 };
 
 /** Swiper 기본 화살표 아이콘(navigation 모듈과 같은 SVG) — 이전 단추는 CSS 가 180° 돌린다 */
+/** 「관리자에서 수정」 연필 아이콘 */
+const PENCIL = (
+  <svg className="hs-slider__admin-edit-icon" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <path d="M12.15 1.15a1.5 1.5 0 0 1 2.12 0l.58.58a1.5 1.5 0 0 1 0 2.12L5.6 13.1 2 14l.9-3.6 9.25-9.25Z" />
+  </svg>
+);
+
 const ARROW = (
   <svg className="hs-slider__arrow-icon" width="11" height="20" viewBox="0 0 11 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <path d="M0.38296 20.0762C0.111788 19.805 0.111788 19.3654 0.38296 19.0942L9.19758 10.2796L0.38296 1.46497C0.111788 1.19379 0.111788 0.754138 0.38296 0.482966C0.654131 0.211794 1.09379 0.211794 1.36496 0.482966L10.4341 9.55214C10.8359 9.9539 10.8359 10.6053 10.4341 11.007L1.36496 20.0762C1.09379 20.3474 0.654131 20.3474 0.38296 20.0762Z" fill="currentColor" />
@@ -280,19 +340,13 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * 배너가 재생할 수 있는 미디어(영상 파일·유튜브)를 가졌는지 확인합니다.
+ * 배너가 재생할 수 있는 미디어(영상 파일)를 가졌는지 확인합니다.
  *
  * @param banner 배너
- * @returns 영상이면 'video', 유튜브면 'youtube', 아니면 null
+ * @returns 영상이면 'video', 아니면 null
  */
-function mediaOf(banner?: HeroBanner): 'video' | 'youtube' | null {
-  if (banner?.media_type === 'video' && banner.videos?.pc?.url) {
-    return 'video';
-  }
-  if (banner?.media_type === 'youtube' && isYoutubeId(banner.youtube_id)) {
-    return 'youtube';
-  }
-  return null;
+function mediaOf(banner?: HeroBanner): 'video' | null {
+  return banner?.media_type === 'video' && banner.videos?.pc?.url ? 'video' : null;
 }
 
 /**
@@ -356,9 +410,8 @@ function withSiteMedia(banner: HeroBanner): HeroBanner {
  * 자동으로 넘어가는 동안에는 장 번호를 화면 읽기 프로그램이 매번 읽지 않게 한다.
  * 표시 폭(`settings.width`)이 본문 폭이면 확장점이 넘긴 본문 상자(`contentClass`) 안에 그리고, 화면 전체면 끝까지 그리되
  * 문구·넘김 단추만 그 상자에 맞춘다(화면 전체는 높이 상한 640px — 그보다 넓은 화면은 초점 기준으로 위아래를 자른다).
- * 미디어가 영상 파일·유튜브인 배너는 활성 장일 때 소리 없이 재생하고, 그동안은 간격 넘김을 멈췄다가 영상이 끝나면 다음 장으로
- * 넘긴다(한 장뿐이면 반복). 유튜브는 방문자가 마케팅 쿠키에 동의했거나 동의 관리가 없는 사이트에서만 바로 불러오고, 그 전에는
- * 대표 이미지와 재생 단추만 보인다. 움직임 줄이기에서는 영상을 멈춘 채 시작하고 일시정지 단추로 재생한다. 재생할 수 없는 영상은
+ * 미디어가 영상 파일인 배너는 활성 장일 때 소리 없이 재생하고, 그동안은 간격 넘김을 멈췄다가 영상이 끝나면 다음 장으로
+ * 넘긴다(한 장뿐이면 반복). 움직임 줄이기에서는 영상을 멈춘 채 시작하고 일시정지 단추로 재생한다. 재생할 수 없는 영상은
  * 이미지처럼 간격으로 넘긴다. 일시정지 단추는 자동 넘김과 영상 재생을 함께 멈춘다.
  * 템플릿은 자기 오버라이드 폴더(템플릿 루트 기준 src/components/overrides/sirsoft-hero_section/)의 HeroSlider.tsx 로 이 컴포넌트를 대체할 수 있다(같은 props).
  */
@@ -366,11 +419,15 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   banners: givenBanners = [],
   settings = {},
   position,
+  target,
   forceDevice,
   contentClass = '',
   loading = false,
   skeletonWidth = '',
   skeletonOverlay,
+  skeletonMaxHeight,
+  skeletonBanners,
+  editable = false,
   onTextMove,
   replay = 0,
   className = '',
@@ -381,17 +438,23 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const count = banners.length;
   // Swiper CSS 가 실리기 전에는 장들이 세로로 쌓였다가 펴지며 아래 본문을 밀어내므로 같은 자리의 스켈레톤을 둔다
   const stylesReady = useSwiperStyles();
-  // 직전 방문의 그 위치 모양(배너 유무·표시 폭) — 받는 동안의 스켈레톤을 실제와 같은 폭으로, 0건 위치는 아예 그리지 않게
-  const remembered = useMemo(() => readMemory(position), [position]);
+  // 직전 방문의 그 위치(동적이면 위치 + 대상) 모양(배너 유무·표시 폭) — 받는 동안의 스켈레톤을 실제와 같은 폭으로, 0건 자리는 아예 그리지 않게
+  const dynamic = target !== undefined;
+  const slot = memorySlot(position, target);
+  const remembered = useMemo(() => readMemory(slot), [slot]);
   const width = settings.width;
   const overlaySetting = settings.header_overlay === true;
+  const maxPc = heightOf(settings.max_height_pc);
+  const maxMobile = heightOf(settings.max_height_mobile);
   const firstTone = toneOf(banners[0]);
+  // 프로모션형은 문구·그림을 가로로 나눠 배경형 비율(3:1)로는 태블릿에서 문구가 잘린다 — 한 장이라도 있으면 띠 전체에 최소 높이를 준다
+  const hasPromo = banners.some((b) => b.presentation?.layout === 'promo');
   useEffect(() => {
     // 응답이 온 때만 기억한다(공개 API 는 늘 표시 폭을 함께 준다) — 받기에 실패한 방문을 「0건」으로 기억하면 다음 방문에 스켈레톤 없이 배너가 끼어든다
     if (!loading && width !== undefined) {
-      writeMemory(position, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone });
+      writeMemory(slot, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone, ...(maxPc !== null ? { maxPc } : {}), ...(maxMobile !== null ? { maxMobile } : {}), ...(hasPromo ? { promo: true } : {}) });
     }
-  }, [loading, position, count, width, overlaySetting, firstTone]);
+  }, [loading, slot, count, width, overlaySetting, firstTone, maxPc, maxMobile, hasPromo]);
   const full = settings.width === 'full';
   const box = contentClass.trim();
   // 화면 전체 폭이면 문구·넘김 단추를 본문 상자에 맞춘다 — 넓은 화면에서 글이 화면 끝에 붙지 않고 본문과 같은 줄에 선다
@@ -409,9 +472,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const hasMedia = banners.some((banner) => mediaOf(banner) !== null);
   const [pausedChoice, setPausedChoice] = useState<boolean | null>(null);
   const paused = pausedChoice ?? (reduced && hasMedia);
-  const consent = useMarketingConsent();
-  // 방문자가 재생 단추를 누른 유튜브 배너 · 재생할 수 없던 배너 · 이번 차례에 끝까지 본 배너
-  const [allowedYoutube, setAllowedYoutube] = useState<ReadonlySet<number>>(() => new Set());
+  // 재생할 수 없던 배너 · 이번 차례에 끝까지 본 배너
   const [failedMedia, setFailedMedia] = useState<ReadonlySet<number>>(() => new Set());
   const [endedMedia, setEndedMedia] = useState<ReadonlySet<number>>(() => new Set());
   const [hovered, setHovered] = useState(false);
@@ -430,7 +491,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     };
     doc.addEventListener('keydown', onKey, true);
     return () => doc.removeEventListener('keydown', onKey, true);
-  }, [count > 0]);
+  }, [count > 0, stylesReady]);
 
   // 배너 목록이 바뀌면(언어 전환·재조회) Swiper 를 새로 만들어 첫 장으로
   const key = banners.map((b) => b.id).join(',');
@@ -442,17 +503,18 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   // 메뉴 겹침 — 사이트 화면의 화면 전체 폭에서만(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 편집 미리보기(기기 고정)는 신호를 내지 않는다.
   // 받는 동안에는 힌트(없으면 직전 방문 모양)를 따르고, 바탕 밝기는 직전 첫 장(없으면 사이트 다크 모드면 어두움)으로 둔다
   const skeletonFull = (skeletonWidth || remembered?.width) === 'full';
-  const waiting = count === 0 && loading && remembered?.banners !== 0;
+  // 첫 로드 힌트와 직전 방문 기억 중 하나라도 「없음」이면 자리를 잡지 않는다 — 첫 접속은 기억이 없어 힌트가 막고, 기간이 끝나 힌트가
+  // 낡아도(저장이 있어야 갱신된다) 저장소를 쓸 수 있는 재방문은 기억이 막는다. 틀려도 배너는 그대로 그려지고 스켈레톤만 건너뛴다.
+  // 동적 위치는 힌트가 없으므로 그 대상의 기억이 「배너 있음」일 때만 잡는다 — 배너 없는 게시판마다 빈 자리가 깜빡이지 않게
+  const waiting = count === 0 && loading && skeletonBanners !== false && (dynamic ? (remembered?.banners ?? 0) > 0 : remembered?.banners !== 0);
   const overlayOn = !forceDevice && (waiting
     ? skeletonFull && (skeletonOverlay ?? remembered?.overlay === true)
     : full && overlaySetting && count > 0);
   useHeaderOverlay(overlayOn ? (waiting ? (remembered?.tone ?? siteTone()) : toneOf(activeBanner)) : null);
-  const youtubeAllowed = (banner: HeroBanner) => consent || allowedYoutube.has(banner.id);
-  /** 이 배너의 영상이 지금 재생 차례를 맡는지 — 재생할 수 없거나(동의 전 유튜브 포함) 이번 차례에 끝났으면 이미지처럼 간격으로 넘긴다 */
+  /** 이 배너의 영상이 지금 재생 차례를 맡는지 — 재생할 수 없거나 이번 차례에 끝났으면 이미지처럼 간격으로 넘긴다 */
   const mediaRuns = (banner?: HeroBanner) => {
     const media = mediaOf(banner);
-    return !!banner && media !== null && !failedMedia.has(banner.id) && !endedMedia.has(banner.id)
-      && (media === 'video' || youtubeAllowed(banner));
+    return !!banner && media !== null && !failedMedia.has(banner.id) && !endedMedia.has(banner.id);
   };
   const activeMediaRuns = mediaRuns(activeBanner);
 
@@ -579,14 +641,22 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
   const pcRatio = FALLBACK_RATIO.pc;
   const mobileRatio = FALLBACK_RATIO.mobile;
+  // 최대 높이 — 받는 동안(배너 없음)에는 힌트(없으면 직전 방문 기억)를, 배너가 오면 위치 설정을 따른다. 비운 기기는 변수를 두지 않아 CSS 기본(비율대로)
+  const heights = count === 0
+    ? { pc: skeletonMaxHeight ? heightOf(skeletonMaxHeight.pc) : heightOf(remembered?.maxPc), mobile: skeletonMaxHeight ? heightOf(skeletonMaxHeight.mobile) : heightOf(remembered?.maxMobile) }
+    : { pc: maxPc, mobile: maxMobile };
+  const pcHeight = forceDevice === 'mobile' ? heights.mobile : heights.pc;
+  const mobileHeight = forceDevice === 'pc' ? heights.pc : heights.mobile;
   const style = {
     '--hs-ratio-pc': forceDevice === 'mobile' ? mobileRatio : pcRatio,
     '--hs-ratio-mobile': forceDevice === 'pc' ? pcRatio : mobileRatio,
+    ...(pcHeight !== null ? { '--hs-max-height-pc': `${pcHeight}px` } : {}),
+    ...(mobileHeight !== null ? { '--hs-max-height-mobile': `${mobileHeight}px` } : {}),
     ...(framed ? { '--hs-index': index } : {}),
   } as React.CSSProperties;
 
   if (count === 0 || !stylesReady) {
-    if (count === 0 && (!loading || remembered?.banners === 0)) {
+    if (count === 0 && !waiting) {
       return null;
     }
 
@@ -595,7 +665,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     const wide = count > 0 ? full : skeletonFull;
     const skeleton = (
       <section
-        className={`hs-slider hs-slider--skeleton${wide ? ' hs-slider--full' : ''}${deviceClass}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
+        className={`hs-slider hs-slider--skeleton${wide ? ' hs-slider--full' : ''}${remembered?.promo ? ' hs-slider--promo' : ''}${deviceClass}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
         style={style}
         aria-hidden="true"
         data-position={position}
@@ -625,6 +695,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     }
   };
 
+  // 배너 이름 탭 — 화면 전체 폭이면 일시정지 단추처럼 본문 상자 안에 둔다. 그래야 양옆 여백(일시정지 단추 자리)이 본문 상자 기준이 되어
+  // 상자 안으로 들어간 단추와 겹치지 않는다(휴대폰에서 8px 겹쳤다). 층은 클릭을 막지 않고 탭 단추만 받는다
+  const wrapTabs = (tabs: React.ReactNode) => (textBox
+    ? <div className="hs-slider__tabs-layer"><div className={`hs-slider__tabs-box ${textBox}`}>{tabs}</div></div>
+    : tabs);
+
   const controls = (count > 1 || hasMedia) && (
         <div className={`hs-slider__controls${textBox ? ' hs-slider__controls--boxed' : ''}`}>
           {/* 장 번호는 점 표시가 보여 주므로 화면에서는 감추고, 방문자가 넘긴 때만 화면 읽기 프로그램에 알린다 */}
@@ -644,12 +720,27 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         </div>
   );
 
+  // 관리자에서 수정 — 수정 권한이 있는 회원에게만, 지금 보이는 배너의 관리자 수정 화면을 새 탭으로 연다(상품 상세의 같은 단추와 같은 동작)
+  const editLabel = t('sirsoft-hero_section.slider.admin_edit', '관리자에서 수정');
+  const editLink = editable && !forceDevice && activeBanner && (
+    <a
+      className="hs-slider__admin-edit"
+      href={sitePath(`/admin/plugins/sirsoft-hero_section/banners/${activeBanner.id}/edit`)}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={editLabel}
+    >
+      {PENCIL}
+      <span className="hs-slider__admin-edit-label">{editLabel}</span>
+    </a>
+  );
+
   const slider = (
     <section
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs-slider hs-slider--${effect}${full ? ' hs-slider--full' : ''} hs-slider--pagination-${pagination}${framed ? ' hs-slider--static' : ''}${deviceClass}${count > 1 ? ' hs-slider--controlled' : ''}${autoplaying ? ' hs-slider--autoplaying' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
+      className={`hs-slider hs-slider--${effect}${full ? ' hs-slider--full' : ''}${hasPromo ? ' hs-slider--promo' : ''} hs-slider--pagination-${pagination}${framed ? ' hs-slider--static' : ''}${deviceClass}${count > 1 ? ' hs-slider--controlled' : ''}${autoplaying ? ' hs-slider--autoplaying' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription={t('sirsoft-hero_section.slider.carousel_role', '캐러셀')}
@@ -696,7 +787,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               index={i}
               count={count}
               active={i === index}
-              eager={i === 0 || i === (index + 1) % count}
+              eager={i === index || i === (index + 1) % count}
               forceDevice={forceDevice}
               mobileScreen={heroScreen.mobile}
               box={sliderBox ?? null}
@@ -704,11 +795,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               textBox={textBox}
               playing={i === index && !paused && mediaRuns(banner)}
               loop={count === 1}
-              youtubeAllowed={youtubeAllowed(banner)}
-              onAllowYoutube={() => {
-                setAllowedYoutube((previous) => new Set(previous).add(banner.id));
-                setPausedChoice(false);
-              }}
               onMediaEnded={() => onMediaEnded(banner)}
               onMediaFailed={() => onMediaFailed(banner)}
               reduced={reduced}
@@ -723,18 +809,38 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         <>
           {/* Swiper 기본 화살표·점 모양(navigation·pagination CSS 선언을 손 CSS 로 옮겨 자기 클래스에 둠)을 쓰되, 단추는 이름 붙은
               button 으로 직접 그린다 — Swiper 모듈은 요소를 바깥 문서에서 찾아 편집 미리보기(iframe)에서는 붙지 않는다 */}
-          <button type="button" className="hs-slider__arrow hs-slider__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
-          <button type="button" className="hs-slider__arrow hs-slider__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
-          {pagination === 'fraction' ? (
+          {pagination !== 'pill' && (
+            <>
+              <button type="button" className="hs-slider__arrow hs-slider__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
+              <button type="button" className="hs-slider__arrow hs-slider__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
+            </>
+          )}
+          {pagination === 'pill' ? (
+            // 알약 번호 — 문구 아래 왼쪽(화면 전체 폭이면 본문 상자 왼쪽 끝)의 둥근 상자 안에 이전·번호·다음. 번호는 슬라이드 이름이 읽어 주므로 감추고,
+            // 화살표 대신 이 두 단추가 넘김을 맡는다(휴대폰에서도 보인다). 층은 클릭을 막지 않고 단추만 받는다
+            <div className="hs-slider__pill-layer">
+              <div className={`hs-slider__pill-box ${textBox || 'hs-slider__pill-box--inset'}`}>
+                <div className="hs-slider__pagination hs-slider__pill">
+                  <button type="button" className="hs-slider__pill-button hs-slider__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
+                  <span className="hs-slider__pill-count" aria-hidden="true">
+                    <span className="hs-slider__pill-current">{index + 1}</span>
+                    <span className="hs-slider__pill-sep">/</span>
+                    <span data-hs-fraction="total">{count}</span>
+                  </span>
+                  <button type="button" className="hs-slider__pill-button hs-slider__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
+                </div>
+              </div>
+            </div>
+          ) : pagination === 'fraction' ? (
             // 번호 — 장 번호는 슬라이드 이름이 읽어 주므로 화면 읽기에서는 감춘다
             <div className="hs-slider__pagination hs-slider__fraction" aria-hidden="true">
               <span className="hs-slider__fraction-current">{twoDigits(index + 1)}</span>
               <span>/</span>
               <span data-hs-fraction="total">{twoDigits(count)}</span>
             </div>
-          ) : pagination === 'tabs' ? (
+          ) : pagination === 'tabs' ? wrapTabs(
             // 배너 이름 탭 — 이름은 보이는 글자(휴대폰에서는 화면 읽기용으로만 남김)가 단추 이름이다
-            <div className="hs-slider__pagination hs-slider__tabs">
+            <div className={`hs-slider__pagination hs-slider__tabs${textBox ? ' hs-slider__tabs--boxed' : ''}`}>
               {banners.map((banner, i) => (
                 <button
                   key={banner.id}
@@ -747,7 +853,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
                   <span className="hs-slider__tab-label">{banner.title || banner.image_alt || t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}</span>
                 </button>
               ))}
-            </div>
+            </div>,
           ) : (
             <div className={`hs-slider__pagination hs-slider__bullets hs-slider__pagination--${pagination}`}>
               {banners.map((banner, i) => (
@@ -771,6 +877,13 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         // 화면 전체 폭 — 단추를 본문 상자 오른쪽 끝에 맞춘다. 층은 클릭을 막지 않고 단추만 받는다
         ? <div className="hs-slider__controls-layer"><div className={`hs-slider__controls-box ${textBox}`}>{controls}</div></div>
         : controls)}
+
+      {editLink && (
+        // 오른쪽 위 — 화면 전체 폭이면 본문 상자 오른쪽 끝에 맞춘다. 층은 클릭을 막지 않고 링크만 받는다
+        <div className="hs-slider__edit-layer">
+          <div className={`hs-slider__edit-box ${textBox || 'hs-slider__edit-box--inset'}`}>{editLink}</div>
+        </div>
+      )}
     </section>
   );
 
@@ -797,17 +910,11 @@ interface HeroSlideProps {
   /** 상자를 아직 재기 전인지 — 그동안은 이미지 주소를 붙이지 않는다(곧 같은 작업 안에서 잰 값으로 다시 그린다) */
   boxPending?: boolean;
 
-  /** 영상·유튜브를 지금 재생할지 */
+  /** 영상을 지금 재생할지 */
   playing?: boolean;
 
   /** 한 장뿐이라 영상을 반복할지 */
   loop?: boolean;
-
-  /** 유튜브를 불러와도 되는지 */
-  youtubeAllowed?: boolean;
-
-  /** 유튜브 재생 단추를 눌렀다 */
-  onAllowYoutube?: () => void;
 
   /** 영상이 끝났다 */
   onMediaEnded?: () => void;
@@ -841,25 +948,52 @@ interface SlotMemory {
 
   /** 직전 첫 장의 바탕 밝기 */
   tone?: 'dark' | 'light';
+
+  /** 직전 PC 최대 높이(px) — 비웠으면 남기지 않는다 */
+  maxPc?: number | null;
+
+  /** 직전 휴대폰 최대 높이(px) — 비웠으면 남기지 않는다 */
+  maxMobile?: number | null;
+
+  /** 직전에 프로모션형 장이 있었는지 — PC·태블릿 최소 높이를 스켈레톤에도 준다 */
+  promo?: boolean;
 }
 
 /** 저장 키 접두 — 플러그인 식별자로 다른 확장과 섞이지 않게 */
 const MEMORY_KEY = `${PLUGIN}:slot:`;
 
 /**
- * 위치의 직전 모양을 읽습니다 — 저장소를 쓸 수 없거나(개인정보 동의 전 차단·사생활 모드) 값이 없으면 null.
+ * 기억 자리 이름 — 정적 위치는 위치 키 그대로(옛 기억과 같은 키), 동적 위치는 `{위치}:{대상}`.
  *
  * @param position 위치 키
+ * @param target 동적 위치의 대상 (정적 위치는 undefined)
+ * @returns 기억 자리 이름 (위치가 없거나 동적 위치의 대상이 비었으면 undefined — 기억하지 않는다)
+ */
+function memorySlot(position?: string, target?: string): string | undefined {
+  if (!position) {
+    return undefined;
+  }
+  if (target === undefined) {
+    return position;
+  }
+
+  return target === '' ? undefined : `${position}:${target}`;
+}
+
+/**
+ * 자리의 직전 모양을 읽습니다 — 저장소를 쓸 수 없거나(개인정보 동의 전 차단·사생활 모드) 값이 없으면 null.
+ *
+ * @param slot 기억 자리 이름 ({@link memorySlot})
  * @returns 직전 모양
  */
-function readMemory(position?: string): SlotMemory | null {
-  if (!position || typeof window === 'undefined') {
+function readMemory(slot?: string): SlotMemory | null {
+  if (!slot || typeof window === 'undefined') {
     return null;
   }
   try {
-    const value = JSON.parse(window.localStorage.getItem(MEMORY_KEY + position) ?? 'null');
+    const value = JSON.parse(window.localStorage.getItem(MEMORY_KEY + slot) ?? 'null');
     return value && typeof value.banners === 'number'
-      ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark' }
+      ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark', maxPc: heightOf(value.maxPc), maxMobile: heightOf(value.maxMobile), promo: value.promo === true }
       : null;
   } catch {
     return null;
@@ -867,17 +1001,17 @@ function readMemory(position?: string): SlotMemory | null {
 }
 
 /**
- * 위치의 지금 모양을 기억합니다 — 저장할 수 없으면 조용히 넘긴다(다음 방문은 기본 스켈레톤).
+ * 자리의 지금 모양을 기억합니다 — 저장할 수 없으면 조용히 넘긴다(다음 방문은 기본 스켈레톤).
  *
- * @param position 위치 키
+ * @param slot 기억 자리 이름 ({@link memorySlot})
  * @param memory 지금 모양
  */
-function writeMemory(position: string | undefined, memory: SlotMemory): void {
-  if (!position || typeof window === 'undefined') {
+function writeMemory(slot: string | undefined, memory: SlotMemory): void {
+  if (!slot || typeof window === 'undefined') {
     return;
   }
   try {
-    window.localStorage.setItem(MEMORY_KEY + position, JSON.stringify(memory));
+    window.localStorage.setItem(MEMORY_KEY + slot, JSON.stringify(memory));
   } catch {
     // 저장소 차단·용량 초과 — 기억 없이도 동작한다
   }
@@ -921,7 +1055,7 @@ function wrapBox(box: string, node: React.ReactNode): React.ReactNode {
  */
 const HeroSlide: React.FC<HeroSlideProps> = ({
   banner, index, count, active, eager, forceDevice, mobileScreen = forceDevice === 'mobile', box = null, boxPending = false, textBox = '',
-  playing = false, loop = false, youtubeAllowed = false, onAllowYoutube = noop, onMediaEnded = noop, onMediaFailed = noop,
+  playing = false, loop = false, onMediaEnded = noop, onMediaFailed = noop,
   reduced = false, replay = 0, onTextMove,
 }) => {
   const pc = banner.images?.pc ?? null;
@@ -975,6 +1109,9 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const mainSrcSet = main ? responsiveSrcset(main.url, main.width, mainSrc) : undefined;
   // srcset 이 있으면 상자를 잰 뒤에만 주소를 붙인다 — 재기 전 sizes(100vw)로 큰 후보를 받기 시작했다가 잰 값으로 다시 받지 않게
   const measuring = !!mainSrcSet && boxPending;
+  const promo = banner.presentation?.layout === 'promo';
+  const background = /^#[0-9A-Fa-f]{6}$/.test(String(banner.presentation?.background_color ?? '')) ? String(banner.presentation!.background_color) : null;
+  const mediaFx = mediaMotion(focus, reduced);
   const image = main ? (
     <picture className="hs-slider__picture">
       <img
@@ -1036,10 +1173,11 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
 
   const text = (
     <div
-      className={`hs-slider__text${overlayClass(banner.presentation?.overlay)}${textBox ? ' hs-slider__text--boxed' : ''}`}
+      className={`hs-slider__text${overlayClass(banner.presentation?.overlay)}${textBox && !promo ? ' hs-slider__text--boxed' : ''}`}
       style={textVars(focus, forceDevice, drag.dragging)}
     >
-      {wrapBox(textBox, (
+      {/* 프로모션형은 바깥(.hs-promo__box)이 본문 상자라 문구 띠가 상자를 다시 감싸지 않는다 */}
+      {wrapBox(promo ? '' : textBox, (
         <div
           key={`motion-${replay}`}
           ref={drag.boxRef}
@@ -1062,50 +1200,65 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     </div>
   );
 
+  const video = media === 'video' && (
+    <HeroVideoMedia
+      sources={banner.videos ?? {}}
+      forceDevice={forceDevice}
+      posters={forceDevice ? { pc: mediaSrc(main), mobile: mediaSrc(main) } : { pc: mediaSrc(pc), mobile: mediaSrc(mobile) }}
+      playing={playing}
+      active={active}
+      loop={loop}
+      eager={eager}
+      reduced={reduced}
+      onEnded={onMediaEnded}
+      onFailed={onMediaFailed}
+    />
+  );
+  // 그림 등장 효과 — 고른 배너만 미디어를 감싼다(효과 없는 옛 배너는 화면 구조가 종전 그대로). 다시 보기(replay)면 처음부터 다시 재생
+  const mediaStyle = { '--hs-media-duration': `${mediaFx.duration}s`, '--hs-media-delay': `${mediaFx.delay}s` } as React.CSSProperties;
+  const mediaNodes = mediaFx.name === 'none' && !promo
+    ? <>{image}{video}</>
+    : (
+      <div key={`media-${replay}`} className={`hs-slider__media${promo ? ' hs-promo__media' : ''} hs-slider__media--${mediaFx.name}`} style={mediaStyle}>
+        {image}
+        {video}
+      </div>
+    );
+  // 프로모션형 — 바탕색 위에 문구 칸과 그림 칸을 나눈다. 가로 위치(x)가 50 을 넘으면 문구가 오른쪽, 휴대폰 세로 위치(y)가 50 보다 작으면
+  // 문구가 위에 온다(그 밖은 그림이 위). 문구 칸 안의 세로 위치·폭·바탕·효과는 배경형과 같은 값을 쓴다
+  const promoSides = promo ? {
+    'data-hs-side-pc': textSpot(focus, forceDevice ?? 'pc').x > 50 ? 'right' : 'left',
+    'data-hs-stack-mobile': textSpot(focus, forceDevice ?? 'mobile').y < 50 ? 'text' : 'media',
+  } : {};
+
   return (
     <div
-      className={`hs-slider__slide${active ? ' hs-slider__slide--active' : ''}${media ? ` hs-slider__slide--${media}` : ''}`}
+      className={`hs-slider__slide${active ? ' hs-slider__slide--active' : ''}${media ? ` hs-slider__slide--${media}` : ''}${promo ? ' hs-slider__slide--promo' : ''}`}
       role="group"
       aria-roledescription={t('sirsoft-hero_section.slider.slide_role', '슬라이드')}
       aria-label={slideLabel(index, count)}
       aria-hidden={active ? undefined : true}
       data-banner-id={banner.id}
       data-index={index}
+      style={background ? ({ '--hs-slide-bg': background } as React.CSSProperties) : undefined}
+      {...promoSides}
     >
       {wholeLink && (
         <a ref={linkRef} className="hs-slider__link" {...link!} aria-label={linkName} tabIndex={active ? undefined : -1} />
       )}
-      {image}
-      {media === 'video' && (
-        <HeroVideoMedia
-          sources={banner.videos ?? {}}
-          forceDevice={forceDevice}
-          posters={forceDevice ? { pc: mediaSrc(main), mobile: mediaSrc(main) } : { pc: mediaSrc(pc), mobile: mediaSrc(mobile) }}
-          playing={playing}
-          active={active}
-          loop={loop}
-          eager={eager}
-          onEnded={onMediaEnded}
-          onFailed={onMediaFailed}
-        />
+      {promo ? (
+        <div className={`hs-promo${textBox ? '' : ' hs-promo--inset'}`}>
+          <div className={`hs-promo__box${textBox ? ` ${textBox}` : ''}`}>
+            <div className="hs-promo__text" style={{ '--hs-promo-tw': textWidth(focus, forceDevice ?? 'pc') } as React.CSSProperties}>{text}</div>
+            {mediaNodes}
+          </div>
+        </div>
+      ) : (
+        <>
+          {mediaNodes}
+          {text}
+        </>
       )}
-      {media === 'youtube' && (
-        <HeroYoutubeMedia
-          videoId={banner.youtube_id as string}
-          title={t('sirsoft-hero_section.slider.youtube_title', '유튜브 영상: {{title}}', { title: banner.title || alt })}
-          playing={playing}
-          loop={loop}
-          allowed={youtubeAllowed}
-          onAllow={onAllowYoutube}
-          playLabel={t('sirsoft-hero_section.slider.youtube_play', '유튜브 영상 재생')}
-          notice={t('sirsoft-hero_section.slider.youtube_notice', '재생하면 YouTube 에서 영상을 불러옵니다.')}
-          active={active}
-          preload={eager}
-          onEnded={onMediaEnded}
-          onFailed={onMediaFailed}
-        />
-      )}
-      {text}
     </div>
   );
 };

@@ -8,7 +8,7 @@ use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
 
 /**
- * 사용자 화면 공개 캐시 비우기 — 배너·이미지·위치 설정이 바뀌면 그 위치의 모든 언어 캐시를 무효로 한다.
+ * 사용자 화면 공개 캐시 비우기 — 배너가 바뀌면 그 자리(위치 + 대상), 위치 설정이 바뀌면 그 위치의 모든 대상의 모든 언어 캐시를 무효로 한다.
  *
  * 저장 직후 사용자 화면에 바로 반영돼야 하므로 모두 `sync` 로 돈다(큐로 미루면 그사이 옛 배너가 보인다).
  * 플러그인 설정(캐시 시간·공개 자산 디스크) 변경·비활성화 때는 전체를 비운다. 코어 환경설정의 드라이버 탭(공개 자산
@@ -33,6 +33,8 @@ class HeroCacheListener implements HookListenerInterface
             'sirsoft-hero_section.banner.after_bulk_delete' => ['method' => 'onBulkDelete'] + $sync,
             'sirsoft-hero_section.banner.after_reorder' => ['method' => 'onReorder'] + $sync,
             'sirsoft-hero_section.position_setting.after_update' => ['method' => 'onPositionSetting'] + $sync,
+            'sirsoft-hero_section.target_setting.after_update' => ['method' => 'onTargetSetting'] + $sync,
+            'sirsoft-hero_section.target_setting.after_reset' => ['method' => 'onTargetSetting'] + $sync,
             'core.plugin_settings.after_save' => ['method' => 'onPluginSettingsSaved'] + $sync,
             'core.plugin_settings.after_reset' => ['method' => 'onPluginSettingsSaved'] + $sync,
             'core.settings.after_save' => ['method' => 'onCoreSettingsSaved'] + $sync,
@@ -55,18 +57,18 @@ class HeroCacheListener implements HookListenerInterface
     public function handle(...$args): void {}
 
     /**
-     * 배너 등록 뒤 그 위치 캐시를 비웁니다.
+     * 배너 등록 뒤 그 자리 캐시를 비웁니다.
      *
      * @param  Banner  $banner  등록한 배너
      * @return void 반환값 없음
      */
     public function onBannerSaved(Banner $banner): void
     {
-        $this->hero->invalidate($banner->position);
+        $this->hero->invalidate($banner->position, $banner->target_key);
     }
 
     /**
-     * 배너 수정 뒤 옛·새 위치 캐시를 비웁니다.
+     * 배너 수정 뒤 옛·새 자리 캐시를 비웁니다 — 옛 대상은 수정 전 값(`target_key`)에서 읽는다.
      *
      * @param  Banner  $banner  수정한 배너
      * @param  array<string, mixed>|null  $snapshot  수정 전 값
@@ -75,14 +77,16 @@ class HeroCacheListener implements HookListenerInterface
      */
     public function onBannerUpdated(Banner $banner, ?array $snapshot = null, ?string $previousPosition = null): void
     {
-        $this->hero->invalidate($banner->position);
-        if ($previousPosition !== null && $previousPosition !== $banner->position) {
-            $this->hero->invalidate($previousPosition);
+        $this->hero->invalidate($banner->position, $banner->target_key);
+        $previousPosition ??= $snapshot['position'] ?? null;
+        $previousTarget = $snapshot['target_key'] ?? null;
+        if ($previousPosition !== null && ($previousPosition !== $banner->position || $previousTarget !== $banner->target_key)) {
+            $this->hero->invalidate($previousPosition, $previousTarget);
         }
     }
 
     /**
-     * 배너 삭제 뒤 그 위치 캐시를 비웁니다.
+     * 배너 삭제 뒤 그 자리 캐시를 비웁니다.
      *
      * @param  int  $bannerId  삭제한 배너 ID
      * @param  array<string, mixed>  $snapshot  삭제 전 값
@@ -90,7 +94,8 @@ class HeroCacheListener implements HookListenerInterface
      */
     public function onBannerDeleted(int $bannerId, array $snapshot = []): void
     {
-        $this->hero->invalidate($snapshot['position'] ?? null);
+        // 위치를 모르면(스냅샷 없음) 전체를 비운다
+        $this->hero->invalidate($snapshot['position'] ?? null, $snapshot['target_key'] ?? null);
     }
 
     /**
@@ -119,15 +124,16 @@ class HeroCacheListener implements HookListenerInterface
     }
 
     /**
-     * 순서 변경 뒤 그 위치 캐시를 비웁니다.
+     * 순서 변경 뒤 그 자리 캐시를 비웁니다.
      *
      * @param  string  $position  위치 키
      * @param  array<int, int>  $ids  새 순서
+     * @param  string|null  $targetKey  대상 키 (정적 위치는 null)
      * @return void 반환값 없음
      */
-    public function onReorder(string $position, array $ids = []): void
+    public function onReorder(string $position, array $ids = [], ?string $targetKey = null): void
     {
-        $this->hero->invalidate($position);
+        $this->hero->invalidate($position, $targetKey);
     }
 
     /**
@@ -143,14 +149,28 @@ class HeroCacheListener implements HookListenerInterface
     }
 
     /**
-     * 이 플러그인의 설정(캐시 시간)이 바뀌면 전체 캐시를 비웁니다.
+     * 대상 재정의 저장·초기화 뒤 그 대상의 공개 캐시만 비웁니다(같은 위치의 다른 대상·다른 위치는 그대로).
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $targetKey  대상 키
+     * @param  mixed  ...$rest  재정의 값·바꾸기 전 값(쓰지 않는다)
+     * @return void 반환값 없음
+     */
+    public function onTargetSetting(string $position, string $targetKey, ...$rest): void
+    {
+        $this->hero->invalidate($position, $targetKey);
+    }
+
+    /**
+     * 이 플러그인의 설정(캐시 시간)이 바뀌면 전체 캐시를 비웁니다. 힌트만 다시 맞추는 저장은 건너뛴다 — 공개 응답과 무관하고,
+     * 한 위치의 첫 배너를 등록했다고 다른 위치 캐시까지 비우면 안 된다(그 위치 캐시는 배너·위치 설정 훅이 이미 비운다).
      *
      * @param  mixed  ...$args  코어 훅 인자 (첫 인자: 플러그인 식별자)
      * @return void 반환값 없음
      */
     public function onPluginSettingsSaved(...$args): void
     {
-        if (($args[0] ?? null) === 'sirsoft-hero_section') {
+        if (($args[0] ?? null) === 'sirsoft-hero_section' && ! SlotWidthHintListener::syncing()) {
             $this->hero->invalidate();
         }
     }
@@ -171,16 +191,21 @@ class HeroCacheListener implements HookListenerInterface
     }
 
     /**
-     * 스냅샷들의 위치 캐시를 비웁니다.
+     * 스냅샷들의 자리 캐시를 비웁니다(같은 자리는 한 번).
      *
      * @param  array<int, array<string, mixed>>  $snapshots  배너 스냅샷
      * @return void 반환값 없음
      */
     private function invalidatePositions(array $snapshots): void
     {
-        $positions = array_unique(array_filter(array_map(fn (array $s) => $s['position'] ?? null, $snapshots)));
-        foreach ($positions as $position) {
-            $this->hero->invalidate($position);
+        $placements = [];
+        foreach ($snapshots as $snapshot) {
+            if (isset($snapshot['position'])) {
+                $placements[$snapshot['position']."\0".($snapshot['target_key'] ?? '')] = [$snapshot['position'], $snapshot['target_key'] ?? null];
+            }
+        }
+        foreach ($placements as [$position, $targetKey]) {
+            $this->hero->invalidate($position, $targetKey);
         }
     }
 }

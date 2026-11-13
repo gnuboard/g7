@@ -44,7 +44,11 @@ _목록 응답: `data` 객체 안에 행 배열(`data`)·`abilities`·`statistic
 | --- | --- | --- | --- |
 | data[] | array | `[{"id":659,"position":"home_hero","is_active":true,"statu…` | 배너 목록(쪽 단위) |
 | data[].id | integer | `659` | 배너 식별자 |
-| data[].position | string | `home_hero` | 노출 위치 키(`home_hero`·`shop_hero`) — 확장점 이름과 같다 |
+| data[].position | string | `home_hero` | 노출 위치 키 — 확장점 이름과 같다(위치 등록 필터 목록) |
+| data[].position_registered | boolean | `true` | 위치가 지금 등록돼 있는지 — false 면 「등록되지 않은 위치」(위치를 더한 확장이 꺼짐) |
+| data[].target_key | string\|null | `null` | 동적 위치의 대상 키(게시판·상품·카테고리 id), 정적 위치는 null |
+| data[].target_label | string\|null | `null` | 대상 이름(현재 언어) — 정적·등록되지 않은 위치·없는 대상은 null |
+| data[].target_exists | boolean\|null | `null` | 대상이 있는지 — false 면 「없는 대상」, 정적·등록되지 않은 위치는 null |
 | data[].is_active | boolean | `true` | 사용 여부 |
 | data[].status | string | `active` | 지금 시각 기준 상태 `active`(노출중)·`scheduled`(예약)·`ended`(종료)·`inactive`(비활성) — 저장하지 않고 조회 때 계산 |
 | data[].sort_order | integer | `0` | 위치 안 순서(0부터) |
@@ -64,8 +68,9 @@ _목록 응답: `data` 객체 안에 행 배열(`data`)·`abilities`·`statistic
 | data[].thumbnail.width | integer | `1920` | 올릴 때 잰 가로(px) — 권장 크기 안내·화면 밀림 방지에 쓴다 |
 | data[].thumbnail.height | integer | `640` | 올릴 때 잰 세로(px) |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 목록 단추용 `can_create`·`can_update`·`can_delete` |
-| statistics.positions | object | `{"home_hero":2,"shop_hero":0}` | 위치별 배너 수(탭 건수) |
-| statistics.statuses | object | `{"active":1,"scheduled":1,"ended":0,"inactive":0}` | 이 위치의 상태별 배너 수 |
+| statistics.positions | object | `{"home_hero":2,"shop_hero":0}` | 위치별 배너 수(탭 건수) — 배너가 있는 모든 위치 키(등록되지 않은 위치 포함), 0건 위치는 키가 없다 |
+| statistics.targets | object | `{}` | 요청한 위치의 대상별 배너 수(`{"2": 3}`) — 정적 위치는 빈 객체 |
+| statistics.statuses | object | `{"active":1,"scheduled":1,"ended":0,"inactive":0}` | 이 자리(위치 + 대상)의 상태별 배너 수 |
 | pagination | object | `{"current_page":1,"last_page":1,"per_page":20,"total":2,"…` | `current_page`·`last_page`·`per_page`·`total`·`from`·`to`·`has_more_pages` |
 
 **응답 예시**
@@ -202,7 +207,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 목록. 쿼리 `position`(기본 `home_hero`)·`status`(active·scheduled·ended·inactive)·`search`(제목, 모든 번역 언어)·`sort_by`(sort_order·created_at·status)·`sort_order`·`page`·`per_page`(1~100). 상태 필터·정렬은 SQL 에서 기간 조건으로 처리해 총건수·쪽 수가 정확하다. 응답에 `statistics{positions{home_hero,shop_hero}, statuses{active,scheduled,ended,inactive}}` 와 목록 단추용 `abilities{can_create,can_update,can_delete}`, 행마다 `status`·`thumbnail`·`title_localized`·`title_locales`·기간 표시 문자열(사이트 시간대)·`abilities`.
+관리자 목록. 쿼리 `position`(기본 `home_hero` — 등록된 위치, 또는 배너가 남은 등록되지 않은 위치)·`target_key`(동적 위치의 대상 — 비면 빈 목록이고 통계는 그대로, 정적 위치에 보내면 422)·`status`(active·scheduled·ended·inactive)·`search`(제목, 모든 번역 언어)·`sort_by`(sort_order·created_at·status)·`sort_order`·`page`·`per_page`(1~100). 상태 필터·정렬은 SQL 에서 기간 조건으로 처리해 총건수·쪽 수가 정확하다. 등록되지 않은 위치는 대상을 가리지 않고 그 위치 배너를 모두 보인다(확인·수정·삭제용). 응답에 `statistics{positions{위치: 건수}, targets{대상: 건수}, statuses{active,scheduled,ended,inactive}}` 와 목록 단추용 `abilities{can_create,can_update,can_delete}`, 행마다 `status`·`thumbnail`·`title_localized`·`title_locales`·기간 표시 문자열(사이트 시간대)·`abilities`.
 
 
 ### POST /api/plugins/sirsoft-hero_section/admin/banners
@@ -231,7 +236,8 @@ _단건 응답: 만든 배너 상세(조회 응답과 같은 모양)._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `659` | 배너 식별자 |
-| position | string | `home_hero` | 노출 위치 키(`home_hero`·`shop_hero`) — 확장점 이름과 같다 |
+| position | string | `home_hero` | 노출 위치 키 — 확장점 이름과 같다(위치 등록 필터 목록) |
+| target_key | string\|null | `null` | 동적 위치의 대상 키, 정적 위치는 null. 상세는 `target_label`·`target_exists`·`position_registered` 도 싣는다 |
 | is_active | boolean | `true` | 사용 여부 |
 | status | string | `active` | 지금 시각 기준 상태 `active`(노출중)·`scheduled`(예약)·`ended`(종료)·`inactive`(비활성) — 저장하지 않고 조회 때 계산 |
 | sort_order | integer | `0` | 위치 안 순서(0부터) |
@@ -368,7 +374,7 @@ _단건 응답: 만든 배너 상세(조회 응답과 같은 모양)._
 
 **설명**
 
-배너 등록. 먼저 `POST /admin/banner-images` 로 같은 `temp_key` 에 PC 이미지(필수)·모바일 이미지(선택)를 올린 뒤 부른다. 본문: position, is_active, display_period(always·range), starts_at·ends_at(range 일 때 필수, 사이트 시간대 `Y-m-d\TH:i`, 종료 > 시작), title(사이트 기본 언어 필수)·description·button_text·image_alt(다국어 객체), title/description_visible·color(#RRGGBB)·align(left·center·right), link_url(`/…` 또는 http(s), `//`·`/\` 시작과 다른 스킴 거부), link_new_window, temp_key, (선택) media_type(`image` 기본·`youtube`·`video`), youtube_url(`youtube` 일 때 필수 — 주소창·공유·쇼츠·임베드 주소 또는 영상 ID, 그 밖의 호스트는 422. 저장은 영상 ID 만 `youtube_id` 로), pc_video_id·mobile_video_id(`video` 일 때 — 같은 묶음의 영상 ID, PC 영상 필수: 없으면 `pc_video` 422), (선택) pc_image_id·mobile_image_id — 같은 `temp_key` 묶음의 이미지 ID. PC 이미지는 어느 미디어 종류든 대표 이미지로 필수다. 보낸 기기는 그 이미지만 붙고(`mobile_image_id: null` 이면 모바일 없음), 보내지 않은 기기는 묶음의 가장 최근 이미지가 붙는다 — 기기마다 한 장. 다른 묶음·다른 기기 이미지는 422(「고른 이미지를 찾을 수 없습니다」). 붙지 않은 임시 이미지는 매일 정리 명령이 지운다. 위치 맨 뒤 순서로 저장된다. 훅 before/after_create 발행.
+배너 등록. 먼저 `POST /admin/banner-images` 로 같은 `temp_key` 에 PC 이미지(필수)·모바일 이미지(선택)를 올린 뒤 부른다. 본문: position(등록된 위치), target_key(동적 위치면 필수 — 해석기가 「있다」고 한 대상만, 정적 위치에 보내면 422), is_active, display_period(always·range), starts_at·ends_at(range 일 때 필수, 사이트 시간대 `Y-m-d\TH:i`, 종료 > 시작), title(사이트 기본 언어 필수)·description·button_text·image_alt(다국어 객체), title/description_visible·color(#RRGGBB)·align(left·center·right), link_url(`/…` 또는 http(s), `//`·`/\` 시작과 다른 스킴 거부), link_new_window, temp_key, (선택) media_type(`image` 기본·`video`, 그 밖은 422 — 유튜브 등 제3자 영상 플랫폼은 받지 않는다), pc_video_id·mobile_video_id(`video` 일 때 — 같은 묶음의 영상 ID, PC 영상 필수: 없으면 `pc_video` 422), (선택) pc_image_id·mobile_image_id — 같은 `temp_key` 묶음의 이미지 ID. PC 이미지는 어느 미디어 종류든 대표 이미지로 필수다. 보낸 기기는 그 이미지만 붙고(`mobile_image_id: null` 이면 모바일 없음), 보내지 않은 기기는 묶음의 가장 최근 이미지가 붙는다 — 기기마다 한 장. 다른 묶음·다른 기기 이미지는 422(「고른 이미지를 찾을 수 없습니다」). 붙지 않은 임시 이미지는 매일 정리 명령이 지운다. 자리(위치 + 대상) 맨 뒤 순서로 저장된다. 훅 before/after_create 발행.
 
 
 ### DELETE /api/plugins/sirsoft-hero_section/admin/banners/bulk
@@ -574,7 +580,7 @@ _목록 응답: [순서 변경] 창이 쓰는 위치 전체 목록._
 
 **설명**
 
-[순서 변경] 창용 — 쿼리 `position` 의 배너 **전체**를 현재 순서대로 돌려준다(썸네일·제목·상태 포함, 쪽 나눔 없음).
+[순서 변경] 창용 — 쿼리 `position`(등록된 위치)·`target_key`(동적 위치의 대상, 비면 빈 목록)의 배너 **전체**를 현재 순서대로 돌려준다(썸네일·제목·상태 포함, 쪽 나눔 없음).
 
 
 ### PUT /api/plugins/sirsoft-hero_section/admin/banners/order
@@ -621,7 +627,7 @@ _본문 없음: `data` 는 `null` 이다. 성공 메시지만 돌려준다._
 
 **설명**
 
-위치의 순서를 바꾼다. 본문 `position` + `ids`(그 위치 배너 **전체**를 새 순서로). 빠짐·중복·다른 위치 id 가 섞이면 422 — 일부만 보내 순서 값이 겹치는 것을 막는다. sort_order 를 0 부터 다시 매기고, 활동 로그는 위치 1건, 공개 캐시는 즉시 비워진다.
+자리의 순서를 바꾼다. 본문 `position` + `target_key`(동적 위치면 필수) + `ids`(그 자리 배너 **전체**를 새 순서로). 순서는 대상마다 따로다. 빠짐·중복·다른 자리 id 가 섞이면 422 — 일부만 보내 순서 값이 겹치는 것을 막는다. sort_order 를 0 부터 다시 매기고, 활동 로그는 위치 1건, 공개 캐시는 즉시 비워진다.
 
 
 ### GET /api/plugins/sirsoft-hero_section/admin/banners/preview
@@ -754,7 +760,7 @@ _목록 응답: `data.data` 에 노출 중 배너만._
 
 **설명**
 
-목록 상단 미리보기용 — 쿼리 `position` 의 **지금 노출 중인** 배너를 공개 API 와 같은 판정·순서로 돌려준다(관리자 상세 모양).
+목록 상단 미리보기용 — 쿼리 `position`·`target_key`(동적 위치의 대상, 비면 빈 목록)의 **지금 노출 중인** 배너를 공개 API 와 같은 판정·순서로 돌려준다(관리자 상세 모양).
 
 
 ### DELETE /api/plugins/sirsoft-hero_section/admin/banners/{banner}
@@ -835,7 +841,7 @@ _단건 응답: 수정 화면용 상세(다국어 원본·이미지 2종)._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `659` | 배너 식별자 |
-| position | string | `home_hero` | 노출 위치 키(`home_hero`·`shop_hero`) — 확장점 이름과 같다 |
+| position | string | `home_hero` | 노출 위치 키 — 확장점 이름과 같다(위치 등록 필터 목록). `target_key`·`target_label`·`target_exists`·`position_registered` 를 함께 싣는다 |
 | is_active | boolean | `true` | 사용 여부 |
 | status | string | `active` | 지금 시각 기준 상태 `active`(노출중)·`scheduled`(예약)·`ended`(종료)·`inactive`(비활성) — 저장하지 않고 조회 때 계산 |
 | sort_order | integer | `0` | 위치 안 순서(0부터) |
@@ -998,7 +1004,7 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `659` | 배너 식별자 |
-| position | string | `home_hero` | 노출 위치 키(`home_hero`·`shop_hero`) — 확장점 이름과 같다 |
+| position | string | `home_hero` | 노출 위치 키 — 확장점 이름과 같다(위치 등록 필터 목록). `target_key`·`target_label`·`target_exists`·`position_registered` 를 함께 싣는다 |
 | is_active | boolean | `true` | 사용 여부 |
 | status | string | `active` | 지금 시각 기준 상태 `active`(노출중)·`scheduled`(예약)·`ended`(종료)·`inactive`(비활성) — 저장하지 않고 조회 때 계산 |
 | sort_order | integer | `0` | 위치 안 순서(0부터) |
@@ -1136,7 +1142,7 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 
 **설명**
 
-배너 수정 — 등록과 같은 규칙에 이미지 선택을 더한다. `media_type` 을 보내지 않으면 저장된 종류 그대로다. 영상 선택(`pc_video_id`·`mobile_video_id`)을 보내지 않으면 붙은 영상을 그대로 두고, `null` 로 보내면 떼어 파일까지 지운다(관리자 화면은 종류가 영상이 아니면 둘 다 `null` 을 보낸다). 유튜브가 아닌 종류로 저장하면 `youtube_id` 를 지운다. 응답에 `media_type`·`youtube_id`·`youtube_url`(보기 주소)·`videos{pc,mobile}`(업로드 응답 모양)을 더한다. 위치를 바꾸면 새 위치 맨 뒤로 가고 옛·새 위치 공개 캐시가 모두 비워진다.
+배너 수정 — 등록과 같은 규칙에 이미지 선택을 더한다. `media_type` 을 보내지 않으면 저장된 종류 그대로다. 영상 선택(`pc_video_id`·`mobile_video_id`)을 보내지 않으면 붙은 영상을 그대로 두고, `null` 로 보내면 떼어 파일까지 지운다(관리자 화면은 종류가 영상이 아니면 둘 다 `null` 을 보낸다). 응답에 `media_type`·`videos{pc,mobile}`(업로드 응답 모양)을 더한다. 위치를 바꾸면 새 위치 맨 뒤로 가고 옛·새 위치 공개 캐시가 모두 비워진다.
 
 이미지는 이 저장 때만 바뀐다. 수정 화면은 `POST /admin/banner-images` 로 임시 묶음(`temp_key`)에 올려 두고, 저장 때 화면에 남은 이미지 ID 를 보낸다.
 
@@ -1154,6 +1160,8 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 등록·수정 본문에 선택적 `presentation` 객체를 보낼 수 있습니다. `pc_x`, `pc_y`, `mobile_x`, `mobile_y`는 0~100 정수 초점 좌표이며, `overlay`는 `none`, `dark`, `light`입니다. 등록 시 생략하거나 null이면 중앙 초점과 배경 없음을 사용합니다. 수정 시 생략하면 기존 설정을 유지하고 null이면 기본값으로 되돌립니다. 상세 및 공개 hero 응답에 같은 표시 설정을 돌려줍니다.
 
 `presentation` 에는 문구 값도 들어갑니다 — `text_pc_x`·`text_pc_y`·`text_mobile_x`·`text_mobile_y`(문구 자리, 0~100 정수: 0 왼쪽·위, 100 오른쪽·아래), `text_width`(문구 상자 폭 30~100%), `animation`(`none`·`rise`·`fade`·`left`·`right`·`zoom`·`blur`·`letters`), `animation_speed`(`slow`·`normal`·`fast`), `animation_delay`(첫 줄 시작 지연 0~2초, 0.1초 단위), `tone`(배너 바탕 밝기 `dark`·`light` — 메뉴 겹치기 때 메뉴 글자색). 보내지 않은 키는 기본값(왼쪽 아래·전폭·효과 없음·보통·0·어두움 = 종전 화면)으로 응답하고, 모르는 키는 422 입니다. 문자열 숫자는 정수(지연은 소수 한 자리)로 바꿔 저장합니다.
+
+배너 구성 키 — `layout`(`background` 배경형: 미디어가 띠 전체를 덮고 문구가 그 위 · `promo` 프로모션형: 바탕색 위에 문구 칸과 그림 칸을 나눔. PC 는 `text_pc_x` ≤ 50 이면 문구 왼쪽·그림 오른쪽, 넘으면 반대. 휴대폰은 `text_mobile_y` < 50 이면 문구 위·그림 아래, 아니면 그림 위·문구 아래), `background_color`(`#RRGGBB` 또는 `null` — 프로모션형 띠 바탕, 배경형은 이미지 받기 전 바탕), `text_width_pc`·`text_width_mobile`(기기별 문구 폭 30~100% 또는 `null` — `null` 이면 `text_width`), `media_animation`(그림 등장 `none`·`fade`·`right`, 0.8초 기준·속도 설정을 따름). `animation` 에 `sequence`(머리글 0·제목 0.3·설명 0.6초 차례로, 각 0.4초)가 더해졌다. 제목·설명의 줄바꿈은 글자 그대로 저장·응답하고 화면은 줄을 나눠 보인다(HTML 로 해석하지 않음). 새 키가 없는 기존 배너는 `layout: background`·`media_animation: none`·기기별 폭 `null` 로 응답하며 저장값을 다시 쓰지 않는다. 구성을 바꿔도 다른 표현 키는 그대로 남는다.
 
 머리글은 `eyebrow`(제목 위 짧은 한 줄, 언어별 최대 50자, 선택)·`eyebrow_visible`(boolean)·`eyebrow_color`(#RRGGBB)로 받습니다. 보이기·색은 생략하면 저장된 값(처음이면 보임·`#FFFFFF`)을 지킵니다. 정렬은 제목(`title_align`)을 따릅니다.
 

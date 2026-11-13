@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 팔레트 1 · 편집 역량 1 · 프리뷰 샘플 8 · 페이지 상태 4
+> 단일 파일 · 팔레트 1 · 편집 역량 1 · 프리뷰 샘플 14 · 페이지 상태 4
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -28,7 +28,7 @@
 | `componentPalette.entries` | 편집기 "요소 추가" 팔레트에 나타나는 항목 | 1 | `editor-spec.json (인라인)` |
 | `componentPalette.groups` | 팔레트 좌측 목록의 묶음 | 1 | `editor-spec.json (인라인)` |
 | `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 1 | `editor-spec.json (인라인)` |
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 8 | `editor-spec.json (인라인)` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 14 | `editor-spec.json (인라인)` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 4 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
@@ -53,11 +53,13 @@
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 8 | `banners` · `preview` · `position_settings` · `upload_limit` · `banner` · `settings` · `heroSectionHome` · `heroSectionShop` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 14 | `banners` · `preview` · `position_settings` · `upload_limit` · `banner` · `settings` · `heroSectionHome` · `heroSectionShop` · `target_info` · `placements` · `heroSectionBoard` · `heroSectionProduct` … 외 2개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 4 | `*/admin/plugins/sirsoft-hero_section/banners` · `hero_delete_modal` · `hero_bulk_delete_modal` · `hero_reorder_modal` |
 
-_이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
+**프리뷰 샘플이 없는 `data_source` 2개** — 편집기 캔버스에서 이 자리만 빈 화면이 됩니다. 실제 화면은 정상이라 오류도 경고도 남지 않습니다.
+
+`form_target_settings` · `target_settings`
 <!-- @generated:editor-spec-samples END -->
 
 <!-- @intent START -->

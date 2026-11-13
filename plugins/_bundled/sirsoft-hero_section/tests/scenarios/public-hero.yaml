@@ -34,6 +34,9 @@ axes:
     - image_streams_inline_raster
     - image_unknown_hash_returns_404
     - image_temp_hash_streams_for_preview
+    - edit_ability_guest_is_false
+    - edit_ability_follows_update_permission
+    - edit_ability_not_cached_across_visitors
     - cache_reused_within_ttl
     - cache_ttl_capped_at_next_start
     - cache_ttl_capped_at_next_end

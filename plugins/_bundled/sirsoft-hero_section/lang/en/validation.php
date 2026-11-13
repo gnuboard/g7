@@ -4,6 +4,13 @@ return [
     'link_url' => [
         'unsafe' => 'Links must be a site path (starting with /) or an http(s) address. Addresses starting with // and schemes such as javascript: are not allowed.',
     ],
+    'position' => [
+        'unregistered' => 'This exposure position is not registered. If the extension (module or plugin) that adds it is turned off, turn it back on and try again.',
+    ],
+    'target' => [
+        'not_allowed' => 'The :position position does not take a target.',
+        'not_found' => 'The chosen target could not be found. It may have been deleted, so choose the target again.',
+    ],
     'order' => [
         'incomplete' => 'Reordering must include every banner in the position. Reload the list and try again.',
     ],
@@ -12,9 +19,6 @@ return [
     ],
     'pc_video' => [
         'required' => 'Upload a video file (PC). Without a mobile video, the PC video is used on phones.',
-    ],
-    'youtube_url' => [
-        'invalid' => 'Check the YouTube video address. Example: https://www.youtube.com/watch?v=… or https://youtu.be/…',
     ],
     'image_selection' => [
         'invalid' => 'The selected image could not be found. Upload the image again and save.',
@@ -29,8 +33,10 @@ return [
         'dimensions' => 'Image width and height must be 4000 pixels or less.',
     ],
     'attributes' => [
+        'target_key' => 'target',
+        'target' => 'target',
+        'keyword' => 'keyword',
         'media_type' => 'media type',
-        'youtube_url' => 'YouTube address',
         'pc_video' => 'PC video',
         'mobile_video' => 'mobile video',
         'kind' => 'file type',
@@ -73,6 +79,9 @@ return [
         'width' => 'width',
         'pagination' => 'pagination style',
         'header_overlay' => 'menu overlay',
+        'max_height_pc' => 'desktop & tablet max height',
+        'max_height_mobile' => 'mobile max height',
+        'overrides' => 'Target overrides',
         'ids' => 'selected banners',
         'ids_item' => 'selected banner',
     ],

@@ -1,7 +1,7 @@
 /**
  * #810 편집 개선 — 실제 업로드 대기·기기/언어 미리보기·수정 충돌.
  * @scenario-manifest tests/scenarios/editor-improvements.yaml
- * @effects editor_state_protected
+ * 효과 요약(마커 아님 — 평문): 편집 중 상태(업로드 대기·미리보기 설정·충돌 뒤 내 입력)를 지킨다
  */
 import { test, expect, authenticatePage, createBanner, auth, ADMIN_LIST, API, uniqueTitle, VIEWPORTS } from '../fixtures/hero-auth';
 import type { Page } from '@playwright/test';
@@ -32,6 +32,7 @@ async function mobilePng(page: Page) {
 }
 
 // @scenario case=editor_upload_gate
+// @effects editor_state_protected
 test('모바일 업로드 지연·실패는 저장을 막고 파일 제거 후 해제한다', async ({ page, request, managerToken, created }) => {
   const id = await createBanner(request, managerToken, { is_active: false });
   created.push(id);
@@ -57,6 +58,7 @@ test('모바일 업로드 지연·실패는 저장을 막고 파일 제거 후 �
 });
 
 // @scenario case=editor_preview_roundtrip
+// @effects editor_state_protected
 test('기기·콘텐츠 언어·확대·초점 설정을 저장하고 새로고침해도 유지한다', async ({ page, request, managerToken, created }) => {
   const id = await createBanner(request, managerToken, { is_active: false, title: { ko: uniqueTitle('편집'), en: 'English preview' } });
   created.push(id);
@@ -68,7 +70,7 @@ test('기기·콘텐츠 언어·확대·초점 설정을 저장하고 새로고�
   await page.locator('.hs-editor-language select').selectOption('en');
   await expect(page.frameLocator('iframe').locator('h2')).toHaveText('English preview');
   const title = uniqueTitle('연동');
-  await page.locator('input[name="title[ko]"]').fill(title);
+  await page.locator('[name="title[ko]"]').fill(title);
   await expect(page.locator('.hs-editor-language select')).toHaveValue('ko');
   await expect(page.frameLocator('iframe').locator('h2')).toHaveText(title);
   await page.getByRole('button', { name: '크게 보기', exact: true }).click();
@@ -93,12 +95,13 @@ test('기기·콘텐츠 언어·확대·초점 설정을 저장하고 새로고�
 });
 
 // @scenario case=editor_conflict_preserves_input
+// @effects editor_state_protected
 test('다른 운영자의 저장 뒤에는 409를 알리고 내 입력과 임시 이미지를 유지한다', async ({ page, request, managerToken, created }) => {
   const id = await createBanner(request, managerToken, { is_active: false });
   created.push(id);
   await edit(page, managerToken, id);
   const mine = uniqueTitle('내 입력');
-  await page.locator('input[name="title[ko]"]').fill(mine);
+  await page.locator('[name="title[ko]"]').fill(mine);
   const latest = await request.get(`${API}/admin/banners/${id}`, { headers: auth(managerToken) });
   const data = (await latest.json()).data;
   const changed = await request.put(`${API}/admin/banners/${id}`, { headers: auth(managerToken), data: { ...data, title: { ko: '먼저 저장한 운영자' } } });
@@ -106,7 +109,7 @@ test('다른 운영자의 저장 뒤에는 409를 알리고 내 입력과 임시
   const save = page.waitForResponse((r) => r.url().endsWith(`/admin/banners/${id}`) && r.request().method() === 'PUT');
   await page.locator('#footer_save_button').click();
   expect((await save).status()).toBe(409);
-  await expect(page.locator('input[name="title[ko]"]')).toHaveValue(mine);
+  await expect(page.locator('[name="title[ko]"]')).toHaveValue(mine);
   await expect(page.getByRole('link', { name: '최신 배너를 다른 탭에서 확인' })).toBeVisible();
   expect(new URL(page.url()).pathname).toBe(`${ADMIN_LIST}/${id}/edit`);
 });

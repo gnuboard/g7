@@ -110,10 +110,11 @@ describe('HeroConflictResolver', () => {
 
   // @scenario surface=conflict_media_compared
   // @effects my_media_change_not_dropped
-  it('미디어(종류·유튜브 주소·영상)도 비교해, 나만 바꾼 미디어는 적용 뒤에도 남는다', () => {
-    const base = detail({ media_type: 'image', youtube_url: null, youtube_id: null, videos: { pc: null, mobile: null } });
-    const mine = detail({ media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk', youtube_id: null, videos: { pc: null, mobile: null } });
-    const latest = detail({ revision: 4, title: { ko: '남이 바꾼 제목' }, media_type: 'image', youtube_url: null, youtube_id: null, videos: { pc: null, mobile: null } });
+  it('미디어(종류·영상)도 비교해, 나만 바꾼 미디어는 적용 뒤에도 남는다', () => {
+    const clip = { id: 41, device: 'pc', url: '/vid/41', original_filename: 'pc-41.mp4' };
+    const base = detail({ media_type: 'image', videos: { pc: null, mobile: null } });
+    const mine = detail({ media_type: 'video', videos: { pc: clip, mobile: null } });
+    const latest = detail({ revision: 4, title: { ko: '남이 바꾼 제목' }, media_type: 'image', videos: { pc: null, mobile: null } });
     const { row, apply, onApply } = mount(base, mine, latest);
 
     expect(row('media')?.getAttribute('data-change')).toBe('mine');
@@ -121,17 +122,8 @@ describe('HeroConflictResolver', () => {
     const [merged] = onApply.mock.calls[0];
     expect(merged.revision).toBe(4);
     expect(merged.title).toEqual({ ko: '남이 바꾼 제목' });
-    expect(merged.media_type).toBe('youtube');
-    expect(merged.youtube_url).toBe('https://youtu.be/abcdefghijk');
-  });
-
-  // @scenario surface=conflict_media_compared
-  it('같은 유튜브 영상을 다른 주소 모양으로 적었으면 같은 미디어로 본다', () => {
-    const base = detail({ media_type: 'image' });
-    const mine = detail({ media_type: 'youtube', youtube_url: 'https://www.youtube.com/watch?v=abcdefghijk' });
-    const latest = detail({ revision: 4, media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk', youtube_id: 'abcdefghijk' });
-    const { row } = mount(base, mine, latest);
-    expect(row('media')).toBeNull();
+    expect(merged.media_type).toBe('video');
+    expect(merged.videos.pc.id).toBe(41);
   });
 
   // @scenario surface=conflict_media_compared
@@ -144,7 +136,7 @@ describe('HeroConflictResolver', () => {
     expect(stale.row('media')!.querySelector<HTMLInputElement>('input[value="mine"]')!.disabled).toBe(true);
     cleanup();
 
-    const both = mount(base, detail({ media_type: 'video', videos: { pc: video(41, 'pc'), mobile: null } }), detail({ revision: 4, media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk', youtube_id: 'abcdefghijk' }));
+    const both = mount(base, detail({ media_type: 'video', videos: { pc: video(41, 'pc'), mobile: null } }), detail({ revision: 4, media_type: 'video', videos: { pc: video(42, 'pc'), mobile: null } }));
     expect(both.row('media')?.getAttribute('data-change')).toBe('both');
     expect(both.apply().disabled).toBe(true);
     fireEvent.click(both.row('media')!.querySelector<HTMLInputElement>('input[value="mine"]')!);
@@ -171,6 +163,7 @@ describe('HeroConflictResolver', () => {
   });
 
   // @scenario surface=conflict_others_change_kept_by_default
+  // @effects blank_defaults_not_reported_as_conflict
   it('비어 있는 다국어 칸·표시 기본값은 같은 값으로 본다(차이 없음이면 그대로 최신 revision 으로 적용)', () => {
     const base = detail({ presentation: null, button_text: null });
     const mine = detail({ presentation: { pc_x: 50, pc_y: 50, mobile_x: 50, mobile_y: 50, overlay: 'none' }, button_text: { ko: '', en: '' } });

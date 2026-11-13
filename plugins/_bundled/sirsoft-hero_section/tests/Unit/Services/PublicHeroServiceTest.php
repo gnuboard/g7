@@ -5,9 +5,9 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Unit\Services;
 use App\Contracts\Extension\CacheInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -60,7 +60,7 @@ class PublicHeroServiceTest extends PluginTestCase
     {
         Banner::factory()->create(['display_period' => 'range', 'starts_at' => now()->addSeconds(120), 'ends_at' => now()->addDay()]);
 
-        $this->assertSame(120, $this->service()->ttlSeconds(HeroPosition::HomeHero, now(), 10));
+        $this->assertSame(120, $this->service()->ttlSeconds(Placement::of('home_hero'), now(), 10));
     }
 
     /**
@@ -77,8 +77,8 @@ class PublicHeroServiceTest extends PluginTestCase
         Banner::factory()->create(['display_period' => 'range', 'starts_at' => now()->subDay(), 'ends_at' => now()->addSeconds(300)]);
         Banner::factory()->create(['display_period' => 'range', 'starts_at' => now()->subDay(), 'ends_at' => now()->addDays(3)]);
 
-        $this->assertSame(301, $this->service()->ttlSeconds(HeroPosition::HomeHero, now(), 10));
-        $this->assertSame(600, $this->service()->ttlSeconds(HeroPosition::ShopHero, now(), 10), '전환이 없으면 설정 시간');
+        $this->assertSame(301, $this->service()->ttlSeconds(Placement::of('home_hero'), now(), 10));
+        $this->assertSame(600, $this->service()->ttlSeconds(Placement::of('shop_hero'), now(), 10), '전환이 없으면 설정 시간');
     }
 
     /**
@@ -95,7 +95,7 @@ class PublicHeroServiceTest extends PluginTestCase
         $banner = Banner::factory()->withImages()->create([
             'display_period' => 'range', 'starts_at' => now()->subDay(), 'ends_at' => now()->addMinute(), 'title' => ['ko' => '곧 끝남'],
         ]);
-        $this->assertSame(['곧 끝남'], array_column($this->service()->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+        $this->assertSame(['곧 끝남'], array_column($this->service()->forPosition('home_hero', null, 'ko')['banners'], 'title'));
 
         // 캐시 수명이 경계를 넘도록 같은 키를 1시간짜리로 다시 담는다(만료 계산이 어긋난 상황을 흉내)
         $cache = $this->cacheOf($this->service());
@@ -104,7 +104,7 @@ class PublicHeroServiceTest extends PluginTestCase
 
         Carbon::setTestNow(now()->addMinutes(2));
         $this->assertNotNull($cache->get($key), '캐시는 아직 살아 있다');
-        $this->assertSame([], $this->service()->forPosition(HeroPosition::HomeHero, 'ko')['banners'], '꺼낼 때 다시 판정해 뺀다');
+        $this->assertSame([], $this->service()->forPosition('home_hero', null, 'ko')['banners'], '꺼낼 때 다시 판정해 뺀다');
         $this->assertNotNull($banner->fresh());
     }
 
@@ -123,15 +123,15 @@ class PublicHeroServiceTest extends PluginTestCase
         $banner = Banner::factory()->withImages()->create(['title' => ['ko' => '고치기 전']]);
         $service = $this->service();
         $cache = $this->cacheOf($service);
-        $this->assertSame(['고치기 전'], array_column($service->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+        $this->assertSame(['고치기 전'], array_column($service->forPosition('home_hero', null, 'ko')['banners'], 'title'));
 
         // 운영자가 고쳐 버전이 올라간 뒤, 버전 번호만 먼저 만료된다(배너 캐시는 아직 살아 있다)
         DB::table('hero_section_banners')->where('id', $banner->id)->update(['title' => json_encode(['ko' => '고친 뒤'])]);
         $service->invalidate('home_hero');
-        $this->assertSame(['고친 뒤'], array_column($service->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+        $this->assertSame(['고친 뒤'], array_column($service->forPosition('home_hero', null, 'ko')['banners'], 'title'));
         $cache->forget('hero:version:home_hero');
 
-        $this->assertSame(['고친 뒤'], array_column($service->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+        $this->assertSame(['고친 뒤'], array_column($service->forPosition('home_hero', null, 'ko')['banners'], 'title'));
     }
 
     /**
@@ -145,11 +145,11 @@ class PublicHeroServiceTest extends PluginTestCase
     {
         $this->setPluginSettings(['public_cache_minutes' => 0]);
         $banner = Banner::factory()->withImages()->create(['title' => ['ko' => '처음']]);
-        $this->assertSame(['처음'], array_column($this->service()->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+        $this->assertSame(['처음'], array_column($this->service()->forPosition('home_hero', null, 'ko')['banners'], 'title'));
 
         DB::table('hero_section_banners')->where('id', $banner->id)->update(['title' => json_encode(['ko' => '바로 반영'])]);
 
-        $this->assertSame(['바로 반영'], array_column($this->service()->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+        $this->assertSame(['바로 반영'], array_column($this->service()->forPosition('home_hero', null, 'ko')['banners'], 'title'));
     }
 
     /**

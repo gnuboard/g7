@@ -1,7 +1,6 @@
 // audit:allow extension-dist-source-literal-sync 중첩 템플릿 리터럴 안 객체(text_spot 의 pc·mobile·width)를 압축기가 공백 없이 `,mobile:` 로 내보내 소스의 ", mobile: " 와 글자가 달라질 뿐이다 — --production 재빌드 두 번 동일로 실측, stale 아님
 import React, { useEffect, useMemo, useState } from 'react';
 import { basic, translate } from '../../support/editor';
-import { youtubeIdFromUrl } from '../../support/media';
 
 type Detail = Record<string, any>;
 type Change = 'theirs' | 'mine' | 'both';
@@ -27,7 +26,7 @@ interface Group {
   device?: 'pc' | 'mobile';
 }
 
-/** 비교 단위 — 함께 저장되는 칸은 한 항목으로 묶는다(기간·문구 표시·링크·미디어 종류와 그 유튜브 주소·영상). */
+/** 비교 단위 — 함께 저장되는 칸은 한 항목으로 묶는다(기간·문구 표시·링크·미디어 종류와 그 영상). */
 const GROUPS: Group[] = [
   { field: 'position', keys: ['position'], kind: 'enum' },
   { field: 'is_active', keys: ['is_active'], kind: 'bool' },
@@ -42,7 +41,7 @@ const GROUPS: Group[] = [
   { field: 'description_style', keys: ['description_visible', 'description_color', 'description_align'], kind: 'style' },
   { field: 'presentation', keys: ['presentation'], kind: 'presentation' },
   { field: 'link', keys: ['link_url', 'link_new_window'], kind: 'link' },
-  { field: 'media', keys: ['media_type', 'youtube_url', 'youtube_id', 'videos'], kind: 'media' },
+  { field: 'media', keys: ['media_type', 'videos'], kind: 'media' },
   { field: 'pc_image', keys: [], kind: 'image', device: 'pc' },
   { field: 'mobile_image', keys: [], kind: 'image', device: 'mobile' },
 ];
@@ -88,12 +87,8 @@ function normalize(group: Group, value: Detail | null | undefined): unknown {
     case 'link':
       return { url: v.link_url || null, newWindow: v.link_new_window === true };
     case 'media': {
-      // 저장되는 것은 고른 종류의 값뿐이다(이미지면 유튜브 주소·영상을 보내지 않는다). 유튜브는 주소 모양이 달라도 같은 영상이면 같다
-      const type = v.media_type === 'youtube' || v.media_type === 'video' ? v.media_type : 'image';
-      if (type === 'youtube') {
-        const url = String(v.youtube_url ?? '').trim();
-        return { type, youtube: youtubeIdFromUrl(url) ?? v.youtube_id ?? (url || null) };
-      }
+      // 저장되는 것은 고른 종류의 값뿐이다(이미지면 영상을 보내지 않는다)
+      const type = v.media_type === 'video' ? 'video' : 'image';
       return type === 'video' ? { type, pc: v.videos?.pc?.id ?? null, mobile: v.videos?.mobile?.id ?? null } : { type };
     }
     case 'image':
@@ -135,9 +130,6 @@ function display(group: Group, value: Detail | null | undefined, locales: string
       return `${n.url ?? t('empty')}${n.newWindow ? ` · ${t('new_window')}` : ''}`;
     case 'media': {
       const type = translate(`admin.form.media.${n.type}`);
-      if (n.type === 'youtube') {
-        return `${type} · ${String(value?.youtube_url ?? '').trim() || n.youtube || t('empty')}`;
-      }
       if (n.type === 'video') {
         const file = (video?: Detail | null) => (video ? video.original_filename ?? `#${video.id}` : t('empty'));
         return `${type} · PC ${file(value?.videos?.pc)} / ${translate('admin.preview.mobile')} ${file(value?.videos?.mobile)}`;

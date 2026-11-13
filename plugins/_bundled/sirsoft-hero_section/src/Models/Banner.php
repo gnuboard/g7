@@ -33,6 +33,8 @@ class Banner extends Model
         'pc_x' => 50, 'pc_y' => 50, 'mobile_x' => 50, 'mobile_y' => 50, 'overlay' => 'none',
         'text_pc_x' => 0, 'text_pc_y' => 100, 'text_mobile_x' => 0, 'text_mobile_y' => 100, 'text_width' => 100,
         'animation' => 'none', 'animation_speed' => 'normal', 'animation_delay' => 0, 'tone' => 'dark',
+        // 구성·바탕색·기기별 문구 폭·그림 등장 — 없는 키는 종전 모습(배경형·바탕색 없음·공통 text_width·그림 효과 없음)
+        'layout' => 'background', 'background_color' => null, 'text_width_pc' => null, 'text_width_mobile' => null, 'media_animation' => 'none',
     ];
 
     /** 표현값 중 정수 백분율(0~100) 키 — 이미지 초점과 문구 위치 */
@@ -64,7 +66,7 @@ class Banner extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'position', 'media_type', 'youtube_id', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at',
+        'position', 'target_key', 'media_type', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at',
         'title', 'eyebrow', 'description', 'button_text', 'image_alt',
         'eyebrow_visible', 'eyebrow_color',
         'title_visible', 'title_color', 'title_align',
@@ -79,8 +81,8 @@ class Banner extends Model
      */
     public static array $activityLogFields = [
         'position' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.position', 'type' => 'text'],
+        'target_key' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.target_key', 'type' => 'text'],
         'media_type' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.media_type', 'type' => 'text'],
-        'youtube_id' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.youtube_id', 'type' => 'text'],
         'is_active' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.is_active', 'type' => 'boolean'],
         'display_period' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.display_period', 'type' => 'text'],
         'starts_at' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.starts_at', 'type' => 'datetime'],

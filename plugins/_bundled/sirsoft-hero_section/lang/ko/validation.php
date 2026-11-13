@@ -4,6 +4,13 @@ return [
     'link_url' => [
         'unsafe' => '링크는 사이트 안 경로(/로 시작) 또는 http(s) 주소만 쓸 수 있습니다. //로 시작하는 주소와 javascript: 같은 주소는 쓸 수 없습니다.',
     ],
+    'position' => [
+        'unregistered' => '등록되지 않은 노출 위치입니다. 위치를 더한 확장(모듈·플러그인)이 꺼져 있으면 다시 켠 뒤 시도하세요.',
+    ],
+    'target' => [
+        'not_allowed' => ':position 위치는 대상을 고르지 않습니다.',
+        'not_found' => '고른 대상을 찾을 수 없습니다. 지워졌을 수 있으니 대상을 다시 고르세요.',
+    ],
     'order' => [
         'incomplete' => '순서를 바꿀 때는 그 위치의 배너를 모두 보내야 합니다. 목록을 다시 불러온 뒤 시도하세요.',
     ],
@@ -12,9 +19,6 @@ return [
     ],
     'pc_video' => [
         'required' => '영상 파일(PC)을 올려 주세요. 휴대폰용 영상은 없으면 PC 영상을 씁니다.',
-    ],
-    'youtube_url' => [
-        'invalid' => '유튜브 영상 주소를 확인해 주세요. 예: https://www.youtube.com/watch?v=… 또는 https://youtu.be/…',
     ],
     'image_selection' => [
         'invalid' => '고른 이미지를 찾을 수 없습니다. 이미지를 다시 올린 뒤 저장하세요.',
@@ -29,8 +33,10 @@ return [
         'dimensions' => '이미지 가로·세로는 4000픽셀 이하여야 합니다.',
     ],
     'attributes' => [
+        'target_key' => '대상',
+        'target' => '대상',
+        'keyword' => '검색어',
         'media_type' => '미디어 종류',
-        'youtube_url' => '유튜브 주소',
         'pc_video' => 'PC 영상',
         'mobile_video' => '모바일 영상',
         'kind' => '파일 종류',
@@ -73,6 +79,9 @@ return [
         'width' => '표시 폭',
         'pagination' => '페이징 모양',
         'header_overlay' => '메뉴 겹치기',
+        'max_height_pc' => 'PC·태블릿 최대 높이',
+        'max_height_mobile' => '휴대폰 최대 높이',
+        'overrides' => '대상 재정의',
         'ids' => '선택한 배너',
         'ids_item' => '선택한 배너',
     ],

@@ -118,48 +118,43 @@ class BannerMediaTest extends PluginTestCase
     }
 
     /**
-     * 유튜브 배너는 주소창·공유·쇼츠 주소를 받아 영상 ID 만 저장하고, 공개 응답에 영상 ID 를 싣는다.
+     * 유튜브 등 제3자 영상 플랫폼 배너는 받지 않는다 — 등록·수정 모두 미디어 종류에서 거절한다(추후 보완 출시).
      *
-     * @scenario surface=youtube_store_saves_id
+     * @scenario surface=youtube_media_type_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_youtube_media_type_is_rejected(): void
+    {
+        $this->createBannerViaApi($this->admin, ['media_type' => 'youtube', 'youtube_url' => 'https://youtu.be/'.self::YT])
+            ->assertStatus(422)->assertJsonValidationErrors('media_type');
+        $this->assertSame(0, Banner::query()->count());
+
+        $id = $this->createBannerViaApi($this->admin)->assertCreated()->json('data.id');
+        $this->update($id, ['media_type' => 'youtube', 'youtube_url' => 'https://youtu.be/'.self::YT])
+            ->assertStatus(422)->assertJsonValidationErrors('media_type');
+        $this->assertSame('image', Banner::query()->find($id)->media_type);
+    }
+
+    /**
+     * 옛 화면·API 가 유튜브 주소 칸을 보내도 저장·응답에 남지 않는다 — 관리 응답과 공개 응답 모두 유튜브 필드가 없다.
+     *
+     * @scenario surface=youtube_url_ignored
      *
      * @effects public_hero_media_fields
      *
      * @return void 반환값 없음
      */
-    public function test_youtube_store_saves_id(): void
+    public function test_youtube_url_is_ignored(): void
     {
-        foreach (['https://www.youtube.com/watch?v='.self::YT.'&t=3s', 'https://youtu.be/'.self::YT, 'https://www.youtube.com/shorts/'.self::YT] as $url) {
-            $data = $this->createBannerViaApi($this->admin, ['media_type' => 'youtube', 'youtube_url' => $url])->assertCreated()->json('data');
+        $data = $this->createBannerViaApi($this->admin, ['media_type' => 'image', 'youtube_url' => 'https://youtu.be/'.self::YT])->assertCreated()->json('data');
 
-            $this->assertSame('youtube', $data['media_type']);
-            $this->assertSame(self::YT, $data['youtube_id']);
-            $this->assertSame('https://www.youtube.com/watch?v='.self::YT, $data['youtube_url']);
-        }
+        $this->assertSame('image', $data['media_type']);
+        $this->assertArrayNotHasKey('youtube_id', $data);
+        $this->assertArrayNotHasKey('youtube_url', $data);
 
         $public = $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->json('data.banners.0');
-        $this->assertSame('youtube', $public['media_type']);
-        $this->assertSame(self::YT, $public['youtube_id']);
-        $this->assertNull($public['videos']);
-        $this->assertNotNull($public['images']['pc']);
-    }
-
-    /**
-     * 유튜브가 아닌 주소·모양이 틀린 영상 ID·빈 주소는 거절하고, PC 이미지(대표 이미지)는 유튜브여도 필수다.
-     *
-     * @scenario surface=youtube_store_rejects_invalid
-     *
-     * @return void 반환값 없음
-     */
-    public function test_youtube_store_rejects_invalid(): void
-    {
-        foreach (['https://evil.example/watch?v='.self::YT, 'https://youtube.com.evil.example/watch?v='.self::YT, 'https://www.youtube.com/watch?v=short', 'javascript:alert(1)', ''] as $url) {
-            $this->createBannerViaApi($this->admin, ['media_type' => 'youtube', 'youtube_url' => $url])
-                ->assertStatus(422)->assertJsonValidationErrors('youtube_url');
-        }
-
-        $this->actingAs($this->admin)->postJson($this->api('/admin/banners'), $this->bannerPayload(['media_type' => 'youtube', 'youtube_url' => 'https://youtu.be/'.self::YT]) + ['temp_key' => (string) Str::uuid()])
-            ->assertStatus(422)->assertJsonValidationErrors('temp_key');
-        $this->assertSame(0, Banner::query()->count());
+        $this->assertArrayNotHasKey('youtube_id', $public);
     }
 
     /**
@@ -187,7 +182,7 @@ class BannerMediaTest extends PluginTestCase
         $this->assertSame('video', $data['media_type']);
         $this->assertSame($pcVideo, $data['videos']['pc']['id']);
         $this->assertSame($mobileVideo, $data['videos']['mobile']['id']);
-        $this->assertNull($data['youtube_id']);
+        $this->assertArrayNotHasKey('youtube_id', $data);
 
         $public = $this->getJson($this->api('/hero?position=home_hero'))->json('data.banners.0');
         $this->assertSame('video', $public['media_type']);
@@ -253,23 +248,6 @@ class BannerMediaTest extends PluginTestCase
         $log = DB::table('activity_logs')->where('action', 'hero_banner.video_remove')->where('loggable_id', $id)->first();
         $this->assertNotNull($log);
         $this->assertSame('pc', json_decode((string) $log->description_params, true)['device'] ?? null);
-    }
-
-    /**
-     * 유튜브에서 다른 종류로 바꾸면 저장된 영상 ID 를 지운다 — 공개 응답에 남은 ID 가 나가지 않게.
-     *
-     * @scenario surface=youtube_cleared_on_type_change
-     *
-     * @return void 반환값 없음
-     */
-    public function test_youtube_cleared_on_type_change(): void
-    {
-        $id = $this->createBannerViaApi($this->admin, ['media_type' => 'youtube', 'youtube_url' => 'https://youtu.be/'.self::YT])->assertCreated()->json('data.id');
-
-        $this->update($id, ['media_type' => 'image'])->assertOk();
-
-        $this->assertNull(Banner::query()->find($id)->youtube_id);
-        $this->assertNull($this->getJson($this->api('/hero?position=home_hero'))->json('data.banners.0.youtube_id'));
     }
 
     /**

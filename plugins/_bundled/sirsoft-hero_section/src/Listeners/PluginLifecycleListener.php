@@ -6,10 +6,11 @@ use App\Contracts\Extension\HookListenerInterface;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
 
 /**
- * 플러그인 생애주기 — 데이터까지 삭제할 때 이미지 파일을 비운다.
+ * 플러그인 생애주기 — 데이터까지 삭제하는 제거가 시작될 때 이미지가 흩어진 디스크 목록을 읽어 둔다.
  *
- * 코어 삭제는 `getDynamicTables()` 테이블만 지우고 플러그인 스토리지 파일은 남기므로, 데이터 삭제를 고른 경우에만
- * 이미지 폴더를 비운다(데이터를 남기는 삭제·비활성화에서는 건드리지 않는다).
+ * `core.plugins.before_uninstall` 은 제거 가드보다 먼저 발화하므로 여기서 지우면 제거가 막혀도 파일이 사라진다(#874).
+ * 지우기는 가드·마이그레이션 롤백을 지난 `Plugin::uninstall()` 이 하고, 그때는 테이블이 없어 행의 disk 를 읽을 수 없으므로
+ * 공개 자산 디스크를 켰다 끈 사이트의 다른 디스크까지 비우도록(#878) 목록만 미리 넘긴다.
  */
 class PluginLifecycleListener implements HookListenerInterface
 {
@@ -41,7 +42,7 @@ class PluginLifecycleListener implements HookListenerInterface
     public function handle(...$args): void {}
 
     /**
-     * 이 플러그인을 데이터까지 지울 때 이미지 폴더를 비웁니다.
+     * 이 플러그인을 데이터까지 지울 때 행이 기록한 디스크 목록을 읽어 둡니다 — 파일은 지우지 않는다.
      *
      * @param  string  $pluginName  삭제할 플러그인 식별자
      * @param  bool  $deleteData  데이터 삭제 여부
@@ -50,7 +51,7 @@ class PluginLifecycleListener implements HookListenerInterface
     public function beforeUninstall(string $pluginName, bool $deleteData = false): void
     {
         if ($pluginName === 'sirsoft-hero_section' && $deleteData) {
-            $this->images->purgeAll();
+            $this->images->rememberDisksForUninstall();
         }
     }
 }

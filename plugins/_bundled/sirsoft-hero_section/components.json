@@ -188,7 +188,12 @@
                     "position": {
                         "type": "string",
                         "required": false,
-                        "description": "위치 키 (`home_hero`·`shop_hero`) — 오버라이드·테스트 식별용"
+                        "description": "위치 키 (`home_hero`·`shop_hero`·`board_hero` 등) — 오버라이드·테스트 식별용, 브라우저 기억 키"
+                    },
+                    "target": {
+                        "type": "string",
+                        "required": false,
+                        "description": "동적 위치의 대상 — 확장점 조각이 화면 경로 값(게시판 slug·상품 코드 등)을 넘긴다. 주면 브라우저 기억을 위치 + 대상마다 따로 두고, 기억이 「배너 있음」일 때만 받는 동안 스켈레톤을 그린다(대상마다 첫 로드 힌트를 줄 수 없어 첫 방문은 자리를 잡지 않는다)."
                     },
                     "forceDevice": {
                         "type": "'pc' | 'mobile'",
@@ -219,6 +224,21 @@
                         "type": "boolean",
                         "required": false,
                         "description": "받는 동안 메뉴를 겹칠지 — 확장점 조각이 플러그인 설정 힌트(`slot_overlays`)를 넘긴다. 켜져 있으면 스켈레톤도 메뉴 밑으로 들어가 배너가 와도 화면이 위아래로 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양."
+                    },
+                    "skeletonMaxHeight": {
+                        "type": "HeroMaxHeight | null",
+                        "required": false,
+                        "description": "받는 동안 스켈레톤의 기기별 최대 높이 — 확장점 조각이 플러그인 설정 힌트(`slot_max_heights`)를 넘긴다. 실제 배너와 같은 높이에서 멈춰 배너가 와도 아래 본문이 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양."
+                    },
+                    "skeletonBanners": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "받는 동안 자리를 잡을지 — 확장점 조각이 첫 로드 플러그인 설정 힌트(`slot_banners`)로 넘긴다. 첫 접속은 브라우저 기억이 없으므로 이 값이 false 면 배너가 없는 위치에 스켈레톤을 그리지 않는다. 브라우저 기억이 0건이어도 그리지 않는다(둘 중 하나라도 없음이면 생략)."
+                    },
+                    "editable": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "「관리자에서 수정」 단추를 보일지 — 확장점 조각이 공개 응답의 수정 권한(`abilities.can_update`)을 넘긴다. 켜면 오른쪽 위에 지금 보이는 배너의 관리자 수정 화면을 새 탭으로 여는 링크를 그린다. 편집 미리보기(`forceDevice`)에서는 그리지 않는다."
                     },
                     "onTextMove": {
                         "type": "function",

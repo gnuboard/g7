@@ -1,9 +1,11 @@
-feature: 히어로섹션 확장점 슬롯 (home_hero · shop_hero)
+feature: 히어로섹션 확장점 슬롯 (home_hero · shop_hero · board_hero · product_hero · category_hero)
 
 description: |
   사이트 홈(`layouts/home`)과 쇼핑몰 메인(`layouts/shop/index`) 상단에 빈 슬롯 확장점을 둔다(#810).
   템플릿은 자리만 열고, 화면은 히어로섹션 플러그인 같은 확장이 주입한다. 주입이 없으면 지금 화면과 같아야 한다(회귀).
   확장점 이름은 다른 템플릿도 따르는 공개 계약이라 바꾸지 않는다.
+  게시판 목록(`board/index`)·상품 상세(`shop/show`)·카테고리 목록(`shop/category`)에도 대상별 배너 자리를 둔다(#874) — 대상은 확장점이 아니라
+  플러그인 조각이 화면 주소 값으로 읽는다.
   메뉴 겹침: 맨 위 배너가 `<html data-header-overlay="dark|light">` 로 알리면 헤더 높이(`--g7-header-height`)만큼 page_top 을 당기고,
   화면 맨 위에서만 데스크톱 헤더·모바일 툴바(`g7-site-header`)를 투명하게 해 글자를 바탕에 맞춘다. 신호가 없으면 화면이 그대로다.
 
@@ -11,6 +13,7 @@ axes:
   surface:
     - home_layout_has_home_hero_slot
     - shop_layout_has_shop_hero_slot
+    - dynamic_layouts_have_hero_slots
     - slot_without_injection_renders_nothing
     - header_overlay_contract
     - header_overlay_no_signal
@@ -22,6 +25,7 @@ effects:
   - header_overlays_banner
   - scroll_restores_header
   - header_unchanged_without_signal
+  - hero_slot_placed_outside_content_box   # 각 레이아웃이 본문 상자 밖(page_top)에 자기 히어로 확장점을 하나 두고 본문 상자 클래스를 넘긴다
 
 test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/hero-extension-points.test.tsx

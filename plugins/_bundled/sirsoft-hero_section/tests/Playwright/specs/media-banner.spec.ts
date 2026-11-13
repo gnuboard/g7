@@ -1,20 +1,25 @@
 /**
  * #810 후속 — 영상 배너: 영상 파일은 실브라우저에서 소리 없이 재생되고 끝나면 다음 장으로 넘어가며(간격보다 먼저),
- * 움직임 줄이기에서는 멈춘 채 시작해 단추로 재생한다. 유튜브는 마케팅 동의 전이면 대표 이미지와 재생 단추만 보이고 누르면
- * youtube-nocookie 플레이어를 부른다. 등록 화면은 미디어 종류에 따라 유튜브 주소·영상 칸과 저장 잠김 이유를 바꾼다.
+ * 움직임 줄이기에서는 멈춘 채 시작해 단추로 재생한다. 유튜브 등 제3자 영상 플랫폼은 받지 않는다 — 옛 응답에 남은 유튜브 종류도
+ * 대표 이미지로만 그리고 외부 플레이어를 부르지 않는다. 등록 화면은 미디어 종류에 따라 영상 칸과 저장 잠김 이유를 바꾼다.
  * @scenario-manifest tests/scenarios/hero-media.yaml
  *
  * 공개 API 응답은 `page.route` 로 홈 배너 앞에 시험 배너를 끼워 넣는다(운영 배너·설정은 건드리지 않는다). 시험 영상은 서버에
- * 인코더가 없어도 되도록 브라우저 안에서 canvas 를 2초 녹화한 WEBM 이다. 유튜브 서버 요청은 끊는다(주소만 본다).
+ * 인코더가 없어도 되도록 브라우저 안에서 canvas 를 2초 녹화한 WEBM 이다.
  */
-import { test, expect, gotoUser, authenticatePage, ADMIN_LIST, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, authenticatePage, ADMIN_LIST, VIEWPORTS } from '../fixtures/hero-auth';
 import type { Page, Route } from '@playwright/test';
 
 test.setTimeout(150_000);
 
+// 운영 배너가 비노출이어도 돌도록 시험 배너를 직접 둔다(끝나면 지운다)
+test.beforeEach(async ({ page, request, managerToken, created }) => {
+  await hidePopups(page);
+  created.push(await createBanner(request, managerToken));
+});
+
 const HERO_API = '**/api/plugins/sirsoft-hero_section/hero?position=home_hero*';
 const VIDEO_URL = '/e2e-hero-media/clip.webm';
-const YT = 'dQw4w9WgXcQ';
 
 /** 브라우저 안에서 canvas 를 녹화해 짧은 WEBM 을 만든다. */
 async function recordWebm(page: Page, ms = 2_000): Promise<Buffer> {
@@ -66,12 +71,13 @@ async function injectBanners(page: Page, make: (poster: unknown) => Record<strin
 
 const videoBanner = (poster: unknown) => ({
   id: 990001, title: 'E2E 영상 배너', description: '', button_text: '', image_alt: 'E2E 영상 배너', title_visible: true, description_visible: false,
-  link_url: null, link_new_window: false, images: poster, media_type: 'video', youtube_id: null,
+  link_url: null, link_new_window: false, images: poster, media_type: 'video',
   videos: { pc: { url: VIDEO_URL, mime: 'video/webm' }, mobile: null }, presentation: null,
 });
 
-const youtubeBanner = (poster: unknown) => ({
-  ...videoBanner(poster), id: 990002, title: 'E2E 유튜브 배너', image_alt: 'E2E 유튜브 배너', media_type: 'youtube', youtube_id: YT, videos: null,
+/** 옛 공개 응답 — 유튜브를 없애기 전에 담긴 캐시가 유튜브 종류와 영상 ID 를 실어 올 수 있다 */
+const legacyYoutubeBanner = (poster: unknown) => ({
+  ...videoBanner(poster), id: 990002, title: 'E2E 옛 유튜브 배너', image_alt: 'E2E 옛 유튜브 배너', media_type: 'youtube', youtube_id: 'dQw4w9WgXcQ', videos: null,
 });
 
 /** 슬라이더의 활성 장 번호 */
@@ -91,6 +97,7 @@ async function serveVideo(page: Page): Promise<void> {
 
 // @scenario surface=video_plays_muted_inline
 // @scenario surface=video_ends_then_next
+// @effects video_plays_muted_with_device_source, video_drives_slide_advance
 test('영상 파일 배너는 소리 없이 화면 안에서 재생되고, 끝나면 간격(7초)보다 먼저 다음 장으로 넘어간다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await serveVideo(page);
@@ -110,6 +117,7 @@ test('영상 파일 배너는 소리 없이 화면 안에서 재생되고, 끝�
 });
 
 // @scenario surface=pause_keeps_video_position
+// @effects pause_controls_video_playback
 test('일시정지(❚❚)는 그 자리에서 멈추고, 다시 재생(▶)하면 이어서 본다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
@@ -132,6 +140,7 @@ test('일시정지(❚❚)는 그 자리에서 멈추고, 다시 재생(▶)하�
 });
 
 // @scenario surface=video_play_abort_is_not_failure
+// @effects video_drives_slide_advance
 test('영상을 받는 중(재생 시작 전)에 다른 배너로 넘겼다 돌아와도 그 영상은 재생된다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
@@ -167,6 +176,7 @@ test('영상을 받는 중(재생 시작 전)에 다른 배너로 넘겼다 돌�
 });
 
 // @scenario surface=video_poster_matches_device
+// @effects video_plays_muted_with_device_source
 test('휴대폰에서는 영상 대표 이미지로 모바일 이미지만 받고 PC 이미지는 받지 않는다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
   await serveVideo(page);
@@ -187,6 +197,8 @@ test('휴대폰에서는 영상 대표 이미지로 모바일 이미지만 받�
 });
 
 // @scenario surface=reduced_motion_starts_paused
+// @scenario surface=video_preload_by_turn
+// @effects pause_controls_video_playback, video_downloaded_only_on_its_turn
 test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 다시 재생」 단추로 재생한다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -198,63 +210,47 @@ test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 
   await expect(toggle).toBeVisible({ timeout: 20_000 });
   await page.waitForTimeout(1_000);
   expect((await videoState(page))?.paused).toBe(true);
+  // 재생하지 않는 영상은 받지 않는다 — 큰 파일이 멈춘 화면 뒤에서 내려받히지 않게
+  const video = page.locator('.hs-slider__slide--active video.hs-slider__video');
+  await expect(video).toHaveAttribute('preload', 'none');
   await toggle.click();
   await expect.poll(async () => (await videoState(page))?.paused, { timeout: 5_000 }).toBe(false);
+  await expect(video).toHaveAttribute('preload', 'auto');
   await expect(page.getByRole('button', { name: '배너 일시정지' })).toBeVisible();
 });
 
-// @scenario surface=youtube_gate_before_consent
-// @scenario surface=youtube_play_button_loads
-test('유튜브 배너는 마케팅 동의 전에는 대표 이미지와 재생 단추만 보이고, 누르면 youtube-nocookie 플레이어를 부른다', async ({ page }) => {
-  const youtubeRequests: string[] = [];
+// @scenario surface=youtube_legacy_renders_image
+// @effects legacy_youtube_renders_poster_only
+test('옛 응답에 유튜브 종류가 와도 대표 이미지만 그리고 외부 플레이어를 부르지 않는다', async ({ page }) => {
+  const external: string[] = [];
   await page.route(/youtube(-nocookie)?\.com|ytimg\.com|googlevideo\.com/, (route) => {
-    youtubeRequests.push(route.request().url());
+    external.push(route.request().url());
     return route.abort();
   });
   await page.setViewportSize(VIEWPORTS.desktop);
-  await injectBanners(page, (poster) => [youtubeBanner(poster)], { autoplay: false });
+  await injectBanners(page, (poster) => [legacyYoutubeBanner(poster)], { autoplay: false });
   await gotoUser(page, '/');
 
   await expect(page.locator('.hs-slider__slide--active img.hs-slider__image')).toBeVisible({ timeout: 20_000 });
-  // 새 브라우저(동의 기록 없음) — 동의 관리 플러그인이 켜져 있으면 동의 전, 꺼져 있으면(none) 바로 불러온다. 어느 쪽이든 단언한다
-  await expect.poll(() => page.evaluate(() => (window as any).G7Core?.consent?.getSnapshot?.()?.status ?? 'missing'), { timeout: 10_000 }).not.toBe('unknown');
-  const consent = await page.evaluate(() => (window as any).G7Core?.consent?.getSnapshot?.() ?? null);
-  const play = page.getByRole('button', { name: '유튜브 영상 재생' });
-  if (consent?.status === 'none') {
-    await expect(play).toHaveCount(0);
-  } else {
-    expect(consent?.categories?.marketing ?? false).toBe(false);
-    await expect(play).toBeVisible();
-    await expect(page.getByText('재생하면 YouTube 에서 영상을 불러옵니다.')).toBeVisible();
-    await expect(page.locator('iframe.hs-slider__youtube-frame')).toHaveCount(0);
-    expect(youtubeRequests).toEqual([]);
-    await play.click();
-  }
-
-  const frame = page.locator('.hs-slider__slide--active iframe.hs-slider__youtube-frame');
-  await expect(frame).toBeAttached();
-  const src = new URL((await frame.getAttribute('src'))!);
-  expect(src.origin).toBe('https://www.youtube-nocookie.com');
-  expect(src.pathname).toBe(`/embed/${YT}`);
-  expect(src.searchParams.get('mute')).toBe('1');
-  await expect(play).toHaveCount(0);
+  await expect(page.locator('section.hs-slider iframe')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '유튜브 영상 재생' })).toHaveCount(0);
+  expect(external).toEqual([]);
 });
 
 // @scenario surface=form_media_type_fields
-test('등록 화면은 미디어 종류에 따라 유튜브 주소·영상 칸과 저장 잠김 이유를 바꾼다', async ({ page, managerToken }) => {
+// @effects media_type_choice_switches_form_fields
+test('등록 화면은 미디어 종류로 이미지·영상 파일만 고르고, 종류에 따라 영상 칸과 저장 잠김 이유를 바꾼다', async ({ page, managerToken }) => {
   await authenticatePage(page, managerToken);
   await page.setViewportSize(VIEWPORTS.desktop);
   await page.goto(`${ADMIN_LIST}/create?position=home_hero`);
   const reason = page.locator('#hero_save_reason');
   await expect(page.locator('#media_card')).toBeVisible({ timeout: 30_000 });
+  // 유튜브 등 제3자 영상 플랫폼은 고를 수 없다
+  await expect(page.getByRole('radio', { name: '유튜브 영상' })).toHaveCount(0);
   await expect(page.locator('#hero_youtube_url')).toHaveCount(0);
-
-  await page.getByRole('radio', { name: '유튜브 영상' }).check();
-  await expect(page.locator('#hero_youtube_url')).toBeVisible();
-  await expect(page.getByText('영상 배너에서는 이 이미지가 대표 이미지입니다.', { exact: false })).toBeVisible();
 
   await page.getByRole('radio', { name: '영상 파일' }).check();
-  await expect(page.locator('#hero_youtube_url')).toHaveCount(0);
+  await expect(page.getByText('영상 배너에서는 이 이미지가 대표 이미지입니다.', { exact: false })).toBeVisible();
   await expect(page.locator('#hero_field_pc_video')).toBeVisible();
   await expect(page.locator('#hero_field_pc_video input[type="file"]')).toHaveAttribute('accept', '.mp4,.webm');
   // PC 이미지가 먼저 — 대표 이미지 이유가 앞선다

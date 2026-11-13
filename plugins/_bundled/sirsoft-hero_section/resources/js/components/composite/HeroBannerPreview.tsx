@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HeroSlider, type HeroBanner, type HeroSliderSettings, type TextSpot } from './HeroSlider';
-import { youtubeIdFromUrl } from '../../support/media';
 import { textOverflows } from '../../support/text';
 import { copySwiperStyles, SWIPER_STYLES_ID, useSwiperStylesRevision } from '../../support/swiperStyles';
 import { basic, estimateContrast, frameClass, isLightText, localized, sampleImage, translate, type FrameBox, type PreviewFrame, type Rgb } from '../../support/editor';
@@ -12,8 +11,6 @@ export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'eyebrow' | 'descript
   description?: Record<string, string>;
   button_text?: Record<string, string>;
   image_alt?: Record<string, string>;
-  /** 운영자가 넣은 유튜브 주소 — 미리보기는 여기서 영상 ID 를 꺼낸다 */
-  youtube_url?: string | null;
 };
 
 export interface HeroBannerPreviewProps {
@@ -72,7 +69,9 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   const [body, setBody] = useState<HTMLElement | null>(null);
   const documentBody = useRef<HTMLElement | null>(null);
   const viewport = device === 'pc' ? 1366 : 390;
-  const height = device === 'pc' ? viewport / 3 : viewport / 0.75;
+  // 틀이 없을 때의 슬라이더 높이 — 비율대로 그리다가 위치 설정의 그 기기 최대 높이(비웠으면 화면 전체 폭만 640px)에서 멈춘다(main.css 와 같은 규칙)
+  const cap = (device === 'pc' ? settings?.max_height_pc : settings?.max_height_mobile) ?? (settings?.width === 'full' ? 640 : null);
+  const height = Math.min(device === 'pc' ? viewport / 3 : viewport / 0.75, typeof cap === 'number' && cap > 0 ? cap : Infinity);
   const [width, setWidth] = useState(viewport);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [box, setBox] = useState<{ top: number; height: number; width: number } | null>(null);
@@ -314,8 +313,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
     button_text: localized(draft.button_text, locale, defaultLocale),
     image_alt: localized(draft.image_alt, locale, defaultLocale) || localized(draft.title, locale, defaultLocale),
     link_url: draft.link_url ? '#preview' : null, link_new_window: false,
-    // 미디어는 고른 종류의 것만 — 종류를 바꿔도 화면에 남은 영상·주소가 미리보기에 섞이지 않게
-    youtube_id: draft.media_type === 'youtube' ? youtubeIdFromUrl(draft.youtube_url) : null,
+    // 미디어는 고른 종류의 것만 — 종류를 바꿔도 화면에 남은 영상이 미리보기에 섞이지 않게
     videos: draft.media_type === 'video' ? draft.videos ?? null : null,
   } as HeroBanner] : []) : textOnly(banners, locale, defaultLocale);
   const fallback = draft && ['title', 'eyebrow', 'description', 'button_text', 'image_alt'].some((key) => {
@@ -347,7 +345,9 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
     : undefined;
   // 효과 다시 보기 — 값이 바뀌면 슬라이더가 문구 등장 효과를 처음부터 다시 재생한다
   const [replay, setReplay] = useState(0);
-  const animated = !!draft && !!draft.presentation?.animation && draft.presentation.animation !== 'none';
+  // 문구 등장 효과나 그림 등장 효과 중 하나라도 있으면 다시 보기를 준다
+  const animated = !!draft && ((!!draft.presentation?.animation && draft.presentation.animation !== 'none')
+    || (!!draft.presentation?.media_animation && draft.presentation.media_animation !== 'none'));
   const close = () => { if (dialog.current?.open) dialog.current.close(); setExpanded(false); opener.current?.focus(); };
   const Div = basic('Div', 'div');
   const P = basic('P', 'p');

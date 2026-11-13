@@ -63,3 +63,30 @@ export function translationKeys(layout: unknown): string[] {
 export function pick(dict: unknown, dotted: string): unknown {
   return dotted.split('.').reduce<unknown>((acc, seg) => (acc && typeof acc === 'object' ? (acc as AnyNode)[seg] : undefined), dict);
 }
+
+/**
+ * 레이아웃 computed 를 선언 순서대로 평가한다 — 앞 computed 를 `_computed` 로 이어 받는 연쇄까지 실제 화면과 같이 푼다.
+ * `scope` 에는 식이 읽는 데이터 소스·`query`·`_local` 등을 넣는다. `$t` 는 키(와 인자)를 그대로 돌려준다.
+ */
+export function evaluateComputed(layout: AnyNode, scope: Record<string, unknown>): Record<string, any> {
+  const computed: Record<string, any> = {};
+  const $t = (key: string, params?: unknown) => (params ? `${key}:${JSON.stringify(params)}` : key);
+  const full: Record<string, unknown> = { $t, $localized: (v: unknown) => v, position_settings: undefined, banners: undefined, target_info: undefined, preview: undefined, placements: undefined, target_settings: undefined, form_target_settings: undefined, query: {}, _local: {}, _global: {}, ...scope };
+  for (const [name, source] of Object.entries(layout.computed ?? {})) {
+    const expr = String(source).replace(/^\{\{/, '').replace(/\}\}$/, '');
+    computed[name] = Function(...Object.keys(full), '_computed', `return (${expr})`)(...Object.values(full), computed);
+  }
+  return computed;
+}
+
+/** 바인딩 식(`{{…}}`)을 scope 와 `_computed` 로 평가한다. */
+export function evaluateBinding(binding: string, scope: Record<string, unknown>, computed: Record<string, unknown> = {}): any {
+  const $t = (key: string, params?: unknown) => (params ? `${key}:${JSON.stringify(params)}` : key);
+  const full: Record<string, unknown> = { $t, $localized: (v: unknown) => v, ...scope };
+  return Function(...Object.keys(full), '_computed', `return (${binding.replace(/^\{\{/, '').replace(/\}\}$/, '')})`)(...Object.values(full), computed);
+}
+
+/** 글자 속 바인딩(`…?a={{x}}&b={{y}}`)을 모두 풀어 실제 문자열로 만든다 — 링크 주소가 값을 어떻게 싣는지 본다. */
+export function interpolate(template: string, scope: Record<string, unknown>, computed: Record<string, unknown> = {}): string {
+  return template.replace(/\{\{([\s\S]+?)\}\}/g, (_, expr) => String(evaluateBinding(`{{${expr}}}`, scope, computed) ?? ''));
+}

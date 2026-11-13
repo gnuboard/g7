@@ -60,7 +60,7 @@ function publicBanner(id: number, title: string, overrides: Record<string, unkno
   return {
     id, title, description: '', button_text: '', image_alt: title, title_visible: true, title_color: '#FFFFFF', title_align: 'left',
     description_visible: false, description_color: '#E5E7EB', description_align: 'left', link_url: null, link_new_window: false,
-    media_type: 'image', youtube_id: null, videos: null, presentation: null, ...overrides,
+    media_type: 'image', videos: null, presentation: null, ...overrides,
   };
 }
 

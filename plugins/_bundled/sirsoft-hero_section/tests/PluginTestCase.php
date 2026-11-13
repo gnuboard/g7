@@ -4,8 +4,8 @@ namespace Plugins\Sirsoft\HeroSection\Tests;
 
 use App\Enums\PermissionType;
 use App\Extension\HookListenerRegistrar;
-use App\Extension\PluginManager;
 use App\Extension\HookManager;
+use App\Extension\PluginManager;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;

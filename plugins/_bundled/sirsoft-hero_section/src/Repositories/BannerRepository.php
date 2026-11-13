@@ -10,15 +10,17 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\HeroSection\Enums\BannerStatus;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 
 /**
  * 배너 Repository
  *
  * 노출 상태 SQL 조건은 `applyStatusFilter()`·`applyStatusSort()` 한 곳에만 있다 — `Banner::statusAt()` 과 같은
  * 순서(비활성 > 예약 > 종료 > 노출중)와 경계(시작 정각부터, 종료 정각까지)를 쓴다.
+ * 위치 + 대상(`Placement`) 조건은 `applyPlacement()` 한 곳에만 있다 — 정적 위치는 대상이 null 인 행만 본다.
  */
 class BannerRepository implements BannerRepositoryInterface
 {
@@ -28,7 +30,7 @@ class BannerRepository implements BannerRepositoryInterface
      * @var array<int, string>
      */
     private const LIST_COLUMNS = [
-        'id', 'position', 'media_type', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at', 'title', 'button_text', 'link_url',
+        'id', 'position', 'target_key', 'media_type', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at', 'title', 'button_text', 'link_url',
         'created_at', 'updated_at',
     ];
 
@@ -54,8 +56,8 @@ class BannerRepository implements BannerRepositoryInterface
         $query = Banner::query()
             ->select(self::LIST_COLUMNS)
             ->withExists(self::MOBILE_IMAGE_EXISTS)
-            ->with(self::THUMBNAIL_RELATION)
-            ->where('position', $filters['position'] ?? HeroPosition::HomeHero->value);
+            ->with(self::THUMBNAIL_RELATION);
+        $this->applyPlacement($query, self::placementFromFilters($filters));
 
         if (! empty($filters['status'])) {
             $this->applyStatusFilter($query, BannerStatus::from($filters['status']), $now);
@@ -79,26 +81,74 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
-     * @param  string  $position  상태별 건수를 낼 위치
+     * @param  Placement  $placement  상태별 건수를 낼 자리
      * @param  CarbonInterface  $now  상태 판정 기준 시각
-     * @return array{positions: array<string, int>, statuses: array<string, int>} 통계
+     * @return array{positions: array<string, int>, targets: array<string, int>, statuses: array<string, int>} 통계
      */
-    public function statistics(string $position, CarbonInterface $now): array
+    public function statistics(Placement $placement, CarbonInterface $now): array
     {
-        $counts = Banner::query()->selectRaw('position, COUNT(*) as aggregate')->groupBy('position')->pluck('aggregate', 'position');
+        $positions = Banner::query()->selectRaw('position, COUNT(*) as aggregate')->groupBy('position')->pluck('aggregate', 'position')
+            ->map(fn ($count) => (int) $count)->all();
 
-        $positions = [];
-        foreach (HeroPosition::values() as $key) {
-            $positions[$key] = (int) ($counts[$key] ?? 0);
-        }
+        $targets = Banner::query()->where('position', $placement->position)->whereNotNull('target_key')
+            ->selectRaw('target_key, COUNT(*) as aggregate')->groupBy('target_key')->pluck('aggregate', 'target_key')
+            ->map(fn ($count) => (int) $count)->all();
 
         $statuses = [];
         foreach (BannerStatus::cases() as $status) {
-            $query = Banner::query()->where('position', $position);
+            $query = $this->applyPlacement(Banner::query(), $placement);
             $statuses[$status->value] = $this->applyStatusFilter($query, $status, $now)->count();
         }
 
-        return ['positions' => $positions, 'statuses' => $statuses];
+        return ['positions' => $positions, 'targets' => $targets, 'statuses' => $statuses];
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  string  $position  위치 키
+     * @param  CarbonInterface  $now  상태 판정 기준 시각
+     * @return array<string, array{total: int, active: int}> 대상 키 => 건수
+     */
+    public function targetSummaries(string $position, CarbonInterface $now): array
+    {
+        // 대상마다 묻지 않고 두 번의 묶음 조회로 센다 — 전체(최근 수정 순)와 노출 중(공개 노출과 같은 상태 조건)
+        $totals = Banner::query()->where('position', $position)->whereNotNull('target_key')
+            ->selectRaw('target_key, COUNT(*) as aggregate, MAX(updated_at) as last_updated')
+            ->groupBy('target_key')->orderByDesc('last_updated')->orderBy('target_key')
+            ->pluck('aggregate', 'target_key')->all();
+        $active = $this->applyStatusFilter(Banner::query()->where('position', $position)->whereNotNull('target_key'), BannerStatus::Active, $now)
+            ->selectRaw('target_key, COUNT(*) as aggregate')->groupBy('target_key')
+            ->pluck('aggregate', 'target_key')->all();
+
+        $summaries = [];
+        foreach ($totals as $key => $total) {
+            $summaries[(string) $key] = ['total' => (int) $total, 'active' => (int) ($active[$key] ?? 0)];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return array<int, string> 위치 키
+     */
+    public function positionKeys(): array
+    {
+        // audit:allow query-unbounded-get reason: 위치 키 한 열의 중복 제거 — 위치는 확장이 등록한 수만큼(운영상 한 자리 수)
+        return Banner::query()->distinct()->orderBy('position')->pluck('position')->map(fn ($key) => (string) $key)->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  string  $position  위치 키
+     * @return bool 있으면 true
+     */
+    public function hasBannersAt(string $position): bool
+    {
+        return Banner::query()->where('position', $position)->exists();
     }
 
     /**
@@ -211,12 +261,12 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return int 다음 순서 값
      */
-    public function nextSortOrder(string $position): int
+    public function nextSortOrder(Placement $placement): int
     {
-        $max = Banner::query()->where('position', $position)->max('sort_order');
+        $max = $this->applyPlacement(Banner::query(), $placement)->max('sort_order');
 
         return $max === null ? 0 : ((int) $max) + 1;
     }
@@ -224,17 +274,18 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return Collection<int, Banner> 배너 목록
      */
-    public function listForPosition(string $position): Collection
+    public function listForPlacement(Placement $placement): Collection
     {
-        // audit:allow query-unbounded-get reason: 순서 변경은 그 위치의 배너 전체가 있어야 한다(일부만 보내면 순서가 꼬인다) — 위치당 배너는 운영상 수십 건
-        return Banner::query()
+        $query = Banner::query()
             ->select(self::LIST_COLUMNS)
             ->withExists(self::MOBILE_IMAGE_EXISTS)
-            ->with(self::THUMBNAIL_RELATION)
-            ->where('position', $position)
+            ->with(self::THUMBNAIL_RELATION);
+
+        // audit:allow query-unbounded-get reason: 순서 변경은 그 자리의 배너 전체가 있어야 한다(일부만 보내면 순서가 꼬인다) — 자리당 배너는 운영상 수십 건
+        return $this->applyPlacement($query, $placement)
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -243,13 +294,13 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return array<int, int> 배너 ID 목록
      */
-    public function idsForPosition(string $position): array
+    public function idsForPlacement(Placement $placement): array
     {
-        // audit:allow query-unbounded-get reason: 순서 변경 검증은 그 위치의 배너 id 전체와 대조해야 한다 — id 한 열만, 위치당 운영상 수십 건
-        return Banner::query()->where('position', $position)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        // audit:allow query-unbounded-get reason: 순서 변경 검증은 그 자리의 배너 id 전체와 대조해야 한다 — id 한 열만, 자리당 운영상 수십 건
+        return $this->applyPlacement(Banner::query(), $placement)->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
     /**
@@ -286,15 +337,15 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @param  CarbonInterface  $now  기준 시각
      * @return Collection<int, Banner> 노출 배너
      */
-    public function exposedForPosition(string $position, CarbonInterface $now): Collection
+    public function exposedForPlacement(Placement $placement, CarbonInterface $now): Collection
     {
-        $query = Banner::query()->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo'])->where('position', $position);
+        $query = $this->applyPlacement(Banner::query()->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo']), $placement);
 
-        // audit:allow query-unbounded-get reason: 슬라이더는 노출 중인 배너를 모두 돌려야 한다 — 위치당 노출 배너는 운영상 수 건~수십 건
+        // audit:allow query-unbounded-get reason: 슬라이더는 노출 중인 배너를 모두 돌려야 한다 — 자리당 노출 배너는 운영상 수 건~수십 건
         return $this->applyStatusFilter($query, BannerStatus::Active, $now)
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -304,25 +355,48 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @param  CarbonInterface  $now  기준 시각
      * @return Collection<int, Banner> 노출 후보
      */
-    public function exposureCandidatesForPosition(string $position, CarbonInterface $now): Collection
+    public function exposureCandidatesForPlacement(Placement $placement, CarbonInterface $now): Collection
     {
-        return Banner::query()
+        return $this->exposureCandidatesQuery($placement, $now)
             ->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo'])
-            ->where('position', $position)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            // audit:allow query-unbounded-get reason: 캐시에 담는 노출 후보(사용 중 + 아직 안 끝난 배너) 전체 — 자리당 운영상 수십 건
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  Placement  $placement  자리
+     * @param  CarbonInterface  $now  기준 시각
+     * @return bool 있으면 true
+     */
+    public function hasExposureCandidates(Placement $placement, CarbonInterface $now): bool
+    {
+        return $this->exposureCandidatesQuery($placement, $now)->exists();
+    }
+
+    /**
+     * 노출 후보(사용 중이고 아직 끝나지 않은 배너) 조회의 공통 조건입니다.
+     *
+     * @param  Placement  $placement  자리
+     * @param  CarbonInterface  $now  기준 시각
+     * @return Builder<Banner> 조회
+     */
+    private function exposureCandidatesQuery(Placement $placement, CarbonInterface $now): Builder
+    {
+        return $this->applyPlacement(Banner::query(), $placement)
             ->where('is_active', true)
             ->where(function (Builder $q) use ($now) {
                 $q->where('display_period', DisplayPeriod::Always->value)
                     ->orWhereNull('ends_at')
                     ->orWhere('ends_at', '>=', $now);
-            })
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            // audit:allow query-unbounded-get reason: 캐시에 담는 노출 후보(사용 중 + 아직 안 끝난 배너) 전체 — 위치당 운영상 수십 건
-            ->get();
+            });
     }
 
     /**
@@ -330,14 +404,13 @@ class BannerRepository implements BannerRepositoryInterface
      *
      * 예약 배너는 시작 시각에, 노출 중인 기간 배너는 종료 시각 다음 초에 상태가 바뀐다.
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @param  CarbonInterface  $now  기준 시각
      * @return CarbonInterface|null 다음 전환 시각
      */
-    public function nextTransitionAt(string $position, CarbonInterface $now): ?CarbonInterface
+    public function nextTransitionAt(Placement $placement, CarbonInterface $now): ?CarbonInterface
     {
-        $base = fn () => Banner::query()
-            ->where('position', $position)
+        $base = fn () => $this->applyPlacement(Banner::query(), $placement)
             ->where('is_active', true)
             ->where('display_period', DisplayPeriod::Range->value);
 
@@ -359,6 +432,38 @@ class BannerRepository implements BannerRepositoryInterface
         usort($candidates, fn (CarbonInterface $a, CarbonInterface $b) => $a <=> $b);
 
         return $candidates[0];
+    }
+
+    /**
+     * 위치 + 대상 조건을 쿼리에 겁니다 — 정적 위치(대상 null)는 대상이 비어 있는 행만, 「대상 전체」는 위치만 본다.
+     *
+     * @param  Builder  $query  배너 쿼리
+     * @param  Placement  $placement  자리
+     * @return Builder 조건을 건 쿼리
+     */
+    private function applyPlacement(Builder $query, Placement $placement): Builder
+    {
+        $query->where('position', $placement->position);
+        if ($placement->anyTarget) {
+            return $query;
+        }
+
+        return $placement->targetKey === null ? $query->whereNull('target_key') : $query->where('target_key', $placement->targetKey);
+    }
+
+    /**
+     * 목록 필터에서 자리를 읽습니다 — `all_targets` 가 참이면 대상 전체(등록되지 않은 위치 목록), 아니면 위치 + `target_key`.
+     *
+     * @param  array<string, mixed>  $filters  검증된 목록 필터
+     * @return Placement 자리
+     */
+    private static function placementFromFilters(array $filters): Placement
+    {
+        $position = (string) ($filters['position'] ?? PositionRegistry::DEFAULT_POSITION);
+
+        return ! empty($filters['all_targets'])
+            ? Placement::allTargets($position)
+            : Placement::of($position, isset($filters['target_key']) ? (string) $filters['target_key'] : null);
     }
 
     /**

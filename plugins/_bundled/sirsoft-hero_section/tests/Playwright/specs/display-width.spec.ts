@@ -4,7 +4,8 @@
  *
  * 템플릿(sirsoft-basic)은 히어로 자리를 본문 상자 밖(`_user_base` page_top)에 두고 본문 상자 클래스를 확장점 속성으로 넘긴다.
  * 본문 폭이면 슬라이더가 본문 상자 안(종전 화면과 같은 폭), 화면 전체면 화면 끝까지 그리고 제목만 본문과 같은 줄에 선다.
- * 값은 하드코딩하지 않고 같은 화면의 본문 상자(`#main_content`)를 재어 비교한다. 바꾼 위치 설정은 끝나면 되돌리고, 만든 배너는 fixture 가 지운다.
+ * 값은 하드코딩하지 않고 같은 화면의 본문을 재어 비교한다 — 쇼핑몰 메인은 본문 상자(`#main_content`), 사이트 홈은 본문 상자 안에
+ * 여백을 한 번 더 두므로 그 아래 카드 줄(`#home_top_row`)이다(히어로가 카드 영역과 같은 폭). 바꾼 위치 설정은 끝나면 되돌리고, 만든 배너는 fixture 가 지운다.
  */
 import { test, expect, authenticatePage, createBanner, gotoUser, auth, API, ADMIN_LIST, VIEWPORTS } from '../fixtures/hero-auth';
 import type { APIRequestContext, Page } from '@playwright/test';
@@ -44,12 +45,15 @@ async function measureSite(page: Page, path: string, viewport: keyof typeof SIZE
     const main = document.getElementById('main_content') as HTMLElement;
     const style = getComputedStyle(main);
     const m = main.getBoundingClientRect();
+    // 사이트 홈은 카드 줄이 본문 폭이다(본문 상자 안 여백을 한 번 더 둔다)
+    const cards = document.getElementById('home_top_row');
+    const c = cards?.getBoundingClientRect();
     const titleEl = [...hs.querySelectorAll<HTMLElement>('.hs-slider__title')].find((el) => el.textContent === text) as HTMLElement;
     // 넘김 트랙은 장마다 옆으로 밀려 있다 — 제목 위치는 그 장 안에서 잰 뒤 슬라이더 왼쪽 기준으로 옮긴다
     const slide = titleEl.closest('.hs-slider__slide') as HTMLElement;
     return {
       hsLeft: r.left, hsWidth: r.width, hsHeight: r.height, pageWidth: document.documentElement.clientWidth,
-      boxLeft: m.left + parseFloat(style.paddingLeft), boxWidth: m.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+      boxLeft: c ? c.left : m.left + parseFloat(style.paddingLeft), boxWidth: c ? c.width : m.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
       titleLeft: r.left + titleEl.getBoundingClientRect().left - slide.getBoundingClientRect().left, full: hs.classList.contains('hs-slider--full'),
       controlsRight: (hs.querySelector('.hs-slider__controls') as HTMLElement | null)?.getBoundingClientRect().right ?? null,
     };
@@ -68,7 +72,7 @@ for (const [position, path] of [['home_hero', '/'], ['shop_hero', '/shop/product
     try {
       for (const width of ['content', 'full'] as const) {
         await saveSettings(request, managerToken, position, { ...original, width });
-        for (const viewport of ['desktop', 'mobile', 'wide'] as const) {
+        for (const viewport of ['desktop', 'tablet', 'mobile', 'wide'] as const) {
           const m = await measureSite(page, path, viewport, title);
           const label = `${position} ${width} ${viewport}`;
           expect(m.full, label).toBe(width === 'full');

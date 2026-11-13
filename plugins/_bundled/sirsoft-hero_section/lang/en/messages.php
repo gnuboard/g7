@@ -22,10 +22,17 @@ return [
         'source_label' => 'Hero section banner images',
         'list_preset_label' => 'Banner list',
     ],
+    'target_setting' => [
+        'fetched' => 'Target slider settings loaded.',
+        'updated' => 'Saved slider settings for this target.',
+        'reset' => 'Reset this target to the position defaults.',
+    ],
     'position' => [
         'fetched' => 'Position settings loaded.',
         'updated' => 'Slider settings saved.',
         'not_found' => 'Position not found.',
+        'targets_fetched' => 'Fetched the target list.',
+        'placements_fetched' => 'Fetched the targets that have banners.',
     ],
     'console' => [
         'prune_temp_images' => [

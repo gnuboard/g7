@@ -5,12 +5,18 @@ namespace Plugins\Sirsoft\HeroSection;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use Illuminate\Support\Facades\Schema;
 use Plugins\Sirsoft\HeroSection\Listeners\ActivityLogDescriptionResolver;
 use Plugins\Sirsoft\HeroSection\Listeners\BannerActivityLogListener;
+use Plugins\Sirsoft\HeroSection\Listeners\BuiltinPositionListener;
 use Plugins\Sirsoft\HeroSection\Listeners\HeroCacheListener;
 use Plugins\Sirsoft\HeroSection\Listeners\PluginLifecycleListener;
+use Plugins\Sirsoft\HeroSection\Listeners\PositionOutputListener;
 use Plugins\Sirsoft\HeroSection\Listeners\SlotWidthHintListener;
+use Plugins\Sirsoft\HeroSection\Listeners\TargetChangeListener;
 use Plugins\Sirsoft\HeroSection\Listeners\ThumbnailRegistrationListener;
+use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
+use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
 
 /**
@@ -32,10 +38,13 @@ class Plugin extends AbstractPlugin
         return [
             ActivityLogDescriptionResolver::class,
             BannerActivityLogListener::class,
+            BuiltinPositionListener::class,
             HeroCacheListener::class,
             PluginLifecycleListener::class,
             SlotWidthHintListener::class,
             ThumbnailRegistrationListener::class,
+            TargetChangeListener::class,
+            PositionOutputListener::class,
         ];
     }
 
@@ -58,8 +67,8 @@ class Plugin extends AbstractPlugin
             'after_bulk_status' => ['action', '일괄 노출·비노출 직후', 'After bulk show/hide', '(array $ids, bool $isActive, array $snapshots)'],
             'before_bulk_delete' => ['action', '일괄 삭제 직전', 'Before bulk delete', '(array $ids)'],
             'after_bulk_delete' => ['action', '일괄 삭제 직후', 'After bulk delete', '(array $ids, array $snapshots)'],
-            'before_reorder' => ['action', '순서 변경 직전', 'Before reordering', '(string $position, array $ids)'],
-            'after_reorder' => ['action', '순서 변경 직후', 'After reordering', '(string $position, array $ids)'],
+            'before_reorder' => ['action', '순서 변경 직전', 'Before reordering', '(string $position, array $ids, ?string $targetKey)'],
+            'after_reorder' => ['action', '순서 변경 직후', 'After reordering', '(string $position, array $ids, ?string $targetKey)'],
             'filter_create_data' => ['filter', '등록 값 가공', 'Filters banner create data', '(array $data)'],
             'filter_update_data' => ['filter', '수정 값 가공', 'Filters banner update data', '(array $data, Banner $banner)'],
             'filter_list_params' => ['filter', '관리자 목록 조건 가공', 'Filters admin list params', '(array $filters)'],
@@ -79,7 +88,8 @@ class Plugin extends AbstractPlugin
         $hooks[] = ['name' => 'sirsoft-hero_section.banner_image.after_change', 'type' => 'action', 'description' => ['ko' => '배너 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Banner $banner, string $device, string $change — replaced·removed)', 'en' => 'After a device image changes by saving a banner edit. Arguments: (Banner $banner, string $device, string $change — replaced or removed)']];
         $hooks[] = ['name' => 'sirsoft-hero_section.banner_image.after_delete', 'type' => 'action', 'description' => ['ko' => '배너 이미지 삭제 직후. 인자: (array $snapshot)', 'en' => 'After a banner image is deleted. Arguments: (array $snapshot)']];
         $hooks[] = ['name' => 'sirsoft-hero_section.position_setting.after_update', 'type' => 'action', 'description' => ['ko' => '위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot)', 'en' => 'After position slider settings are saved. Arguments: (PositionSetting $setting, array $snapshot)']];
-        $hooks[] = ['name' => 'sirsoft-hero_section.hero.filter_public_banners', 'type' => 'filter', 'description' => ['ko' => '사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale)', 'en' => 'Filters banners exposed on user screens. Arguments: (array $banners, string $position, string $locale)']];
+        $hooks[] = ['name' => PositionRegistry::FILTER, 'type' => 'filter', 'description' => ['ko' => '노출 위치 등록. 인자: (array $positions — 위치 정의 [key, label, order, target?{type, label, resolver}] 목록)', 'en' => 'Registers exposure positions. Arguments: (array $positions — list of position definitions [key, label, order, target?{type, label, resolver}])']];
+        $hooks[] = ['name' => 'sirsoft-hero_section.hero.filter_public_banners', 'type' => 'filter', 'description' => ['ko' => '사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale, ?string $targetKey — 동적 위치의 대상, 정적 위치는 null)', 'en' => 'Filters banners exposed on user screens. Arguments: (array $banners, string $position, string $locale, ?string $targetKey — the target of a dynamic position, null for static positions)']];
 
         return $hooks;
     }
@@ -183,6 +193,28 @@ class Plugin extends AbstractPlugin
     }
 
     /**
+     * 플러그인 제거 — 데이터까지 지운 제거면 이미지 폴더를 비웁니다.
+     *
+     * 코어 삭제는 테이블만 지우고 스토리지 파일은 남긴다. `core.plugins.before_uninstall` 은 제거 가드보다 먼저 발화해
+     * 거기서 지우면 제거가 막혀도 파일만 사라지므로, 가드와 마이그레이션 롤백을 지난 이 시점에 지운다.
+     * 테이블이 남아 있으면 데이터를 보존하는 제거다 — 다시 설치하면 배너가 그대로 보여야 하므로 건드리지 않는다.
+     *
+     * @return bool 제거 성공 여부
+     */
+    public function uninstall(): bool
+    {
+        if (Schema::hasTable('hero_section_banners')) {
+            return true;
+        }
+
+        // 지금 업로드 디스크와, 제거 시작 때(테이블이 있을 때) 읽어 둔 행 디스크를 모두 비운다(#878).
+        // 파일 정리 실패가 이미 끝난 데이터 삭제를 되돌리지 못한다 — 남은 파일은 디스크별 로그로 알린다
+        BannerImageService::purgeDisks($this->getStorageFor(BannerImageService::CATEGORY), BannerImageService::takeDisksForUninstall());
+
+        return true;
+    }
+
+    /**
      * 예약 작업 — 고아 임시 이미지 정리(매일 0시).
      *
      * @return array<int, array<string, mixed>> 예약 작업
@@ -213,6 +245,7 @@ class Plugin extends AbstractPlugin
         return [
             'hero_section_banner_images',
             'hero_section_banners',
+            'hero_section_target_settings',
             'hero_section_position_settings',
         ];
     }

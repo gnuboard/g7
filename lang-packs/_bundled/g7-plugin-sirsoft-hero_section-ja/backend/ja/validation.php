@@ -60,7 +60,6 @@ return [
         'ids_item' => '選択したバナー',
         'width' => '表示幅',
         'media_type' => 'メディア種類',
-        'youtube_url' => 'YouTube アドレス',
         'pc_video' => 'PC 動画',
         'mobile_video' => 'モバイル動画',
         'kind' => 'ファイルの種類',
@@ -69,11 +68,21 @@ return [
         'eyebrow_color' => 'ヘッダー色',
         'header_overlay' => 'メニュー重なり',
         'pagination' => 'ページネーション表示',
+        'max_height_pc' => 'PC・タブレットの最大高さ',
+        'max_height_mobile' => 'スマートフォンの最大高さ',
+        'overrides' => '対象の上書き',
+        'target_key' => '対象',
+        'target' => '対象',
+        'keyword' => '検索語',
     ],
     'pc_video' => [
         'required' => '動画ファイル(PC)をアップロードしてください。モバイル用動画がない場合はPC動画を使用します。',
     ],
-    'youtube_url' => [
-        'invalid' => 'YouTube動画のアドレスを確認してください。例：https://www.youtube.com/watch?v=… または https://youtu.be/…',
+    'position' => [
+        'unregistered' => '登録されていない表示位置です。位置を追加した拡張（モジュール·プラグイン）がオフになっている場合は、再度オンにしてからお試しください。',
+    ],
+    'target' => [
+        'not_allowed' => ':position 位置は対象を選択しません。',
+        'not_found' => '選択した対象が見つかりません。削除されている可能性があるため、対象を再度選択してください。',
     ],
 ];

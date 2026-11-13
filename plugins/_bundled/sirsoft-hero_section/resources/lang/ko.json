@@ -8,7 +8,14 @@
             "position_settings": "위치·슬라이더 설정",
             "upload_limit": "업로드 한도",
             "heroSectionHome": "사이트 홈 노출 배너",
-            "heroSectionShop": "쇼핑몰 메인 노출 배너"
+            "heroSectionShop": "쇼핑몰 메인 노출 배너",
+            "target_info": "고른 대상 정보",
+            "heroSectionBoard": "게시판 목록 노출 배너",
+            "positionHero": "추가 위치 노출 배너",
+            "placements": "대상 목록 (배너가 있는 대상)",
+            "heroSectionProduct": "상품 상세 노출 배너",
+            "heroSectionCategory": "카테고리 목록 노출 배너",
+            "target_settings": "대상 슬라이더 설정"
         },
         "state": {
             "with_data": "배너 있음",
@@ -58,25 +65,63 @@
         "go_to": "{{n}}번째 배너로 이동",
         "pause": "자동 넘김 일시정지",
         "play": "자동 넘김 다시 시작",
-        "youtube_play": "유튜브 영상 재생",
-        "youtube_title": "유튜브 영상: {{title}}",
-        "youtube_notice": "재생하면 YouTube 에서 영상을 불러옵니다.",
         "media_play": "배너 다시 재생",
         "media_pause": "배너 일시정지",
         "carousel_role": "캐러셀",
         "slide_role": "슬라이드",
+        "admin_edit": "관리자에서 수정",
         "slide_label": "{{count}}개 중 {{n}}번째",
         "text_label": "배너 문구",
         "styles_label": "배너 슬라이더 모양"
     },
     "admin": {
         "title": "히어로섹션 관리",
-        "description": "사이트 홈·쇼핑몰 메인 상단에 보이는 배너를 위치별로 관리합니다.",
+        "description": "사이트 홈·쇼핑몰 메인과 게시판·상품·카테고리 화면 등의 상단에 보이는 배너를 위치별로 관리합니다.",
         "position": {
             "tabs_label": "노출 위치",
             "home_hero": "사이트 홈",
             "shop_hero": "쇼핑몰 메인",
-            "hint": "위치는 사용자 템플릿이 열어 둔 히어로섹션 자리(확장점)입니다."
+            "hint": "위치는 사용자 템플릿이 열어 둔 히어로섹션 자리(확장점)입니다.",
+            "board_hero": "게시판 목록",
+            "product_hero": "상품 상세",
+            "category_hero": "카테고리 목록",
+            "unregistered": "등록되지 않은 위치",
+            "unregistered_notice": "이 위치를 더한 확장(모듈·플러그인)이 꺼져 있어 사이트에 보이지 않습니다. 배너는 지우지 않고 남겨 두었고, 확장을 다시 켜면 그대로 보입니다. 이 탭에서는 목록 확인·수정·삭제만 할 수 있습니다.",
+            "no_auto_output": "이 위치를 더한 확장이 화면 주소에서 대상 값을 읽는 방법(route_param)을 알려 주지 않아, 히어로가 사이트 자리를 직접 채우지 않습니다. 그 확장이 자기 출력 조각을 두었다면 그대로 보이고, 아니면 배너가 사이트에 나오지 않습니다.",
+            "loading": "위치 정보를 불러오는 중입니다",
+            "load_failed": "위치 정보를 받지 못했습니다. 다시 받기를 눌러 주세요.",
+            "missing": "이 위치는 지금 없습니다. 위치를 더한 확장이 꺼졌고 남은 배너도 없거나, 주소가 잘못되었습니다. 위 탭에서 다른 위치를 고르세요."
+        },
+        "target": {
+            "board": "게시판",
+            "product": "상품",
+            "category": "카테고리",
+            "picker_label": "{{target}} 고르기",
+            "trigger": "{{target}}을(를) 고르세요",
+            "search_placeholder": "{{target}} 이름으로 찾기",
+            "search_initial": "이름을 입력하면 찾습니다",
+            "no_results": "찾는 {{target}}이(가) 없습니다",
+            "pick_first": "{{target}}을(를) 먼저 고르세요. 고른 {{target}} 화면에만 배너가 보입니다.",
+            "missing": "고른 {{target}}을(를) 찾을 수 없습니다(지워졌을 수 있습니다). 배너는 남아 있지만 사이트에는 보이지 않고, 새 배너는 등록할 수 없습니다.",
+            "missing_label": "없는 대상 ({{key}})",
+            "count": "배너 {{count}}개"
+        },
+        "target_list": {
+            "title": "배너·대상 설정이 있는 {{target}}",
+            "summary": "이 위치의 배너 {{banners}}개 · 배너를 둔 대상 {{targets}}곳",
+            "loading": "대상 목록을 불러오는 중입니다",
+            "empty": "아직 배너를 둔 {{target}}이(가) 없습니다. 위에서 {{target}}을(를) 찾아 고르면 첫 배너를 등록할 수 있습니다.",
+            "counts": "전체 {{total}}개 · 지금 노출 {{active}}개",
+            "manage": "관리",
+            "pages_label": "대상 목록 쪽",
+            "prev": "이전",
+            "next": "다음",
+            "page": "{{current}} / {{last}}",
+            "back": "대상 목록으로",
+            "detail_title": "{{target}} 배너",
+            "new_hint": "배너가 없는 {{target}}은(는) 위 고르기 칸에서 찾아 고르면 첫 배너를 등록할 수 있습니다.",
+            "load_failed": "대상 목록을 받지 못했습니다.",
+            "settings_badge": "대상 설정 있음"
         },
         "status": {
             "all": "전체",
@@ -116,7 +161,14 @@
                 "content": "본문 폭에 맞춤",
                 "full": "화면 전체 폭"
             },
-            "width_hint": "화면 전체 폭은 이미지를 화면 끝까지 넓히고 제목·버튼은 본문 폭에 맞춥니다. 화면이 1920px보다 넓으면 높이 640px에서 멈추고 이미지 초점을 기준으로 위아래가 잘립니다.",
+            "width_hint": "화면 전체 폭은 이미지를 화면 끝까지 넓히고 제목·버튼은 본문 폭에 맞춥니다. 화면이 1920px보다 넓으면 높이 640px(아래 최대 높이를 정하면 그 높이)에서 멈추고 이미지 초점을 기준으로 위아래가 잘립니다.",
+            "max_height": "최대 높이",
+            "max_height_pc": "PC·태블릿(px)",
+            "max_height_mobile": "휴대폰(px)",
+            "max_height_placeholder": "비율대로",
+            "max_height_hint": "배너는 비율대로 커지다가 이 높이에서 멈추고, 넘치는 이미지는 초점을 기준으로 위아래가 잘립니다. PC·태블릿은 화면 폭 768px 이상, 휴대폰은 767px 이하입니다. 비우면 비율대로(화면 전체 폭은 640px에서 멈춤) 그립니다. {{min}}~{{max}}px.",
+            "max_height_invalid": "최대 높이는 {{min}}~{{max}}px 사이 정수로 넣거나 비워 두세요.",
+            "max_height_overlay_tight": "메뉴 겹치기를 켜면 문구가 메뉴 높이만큼 아래에서 시작합니다. 최대 높이가 {{min}}px보다 낮으면 문구 자리가 좁아 스크롤이 생길 수 있으니 사이트 화면에서 확인하세요(편집 미리보기는 메뉴를 겹치지 않습니다).",
             "header_overlay": "메뉴 겹치기",
             "header_overlay_hint": "사이트 상단 메뉴를 배너 위에 투명하게 겹칩니다. 화면을 내리면 메뉴가 원래 배경으로 돌아오고, 메뉴 글자색은 배너마다 정한 바탕 밝기를 따릅니다.",
             "header_overlay_needs_full": "메뉴 겹치기는 표시 폭이 「화면 전체 폭」일 때만 사이트에 적용됩니다.",
@@ -126,9 +178,11 @@
                 "dots": "점",
                 "progress": "진행 막대 점",
                 "tabs": "배너 이름 탭",
-                "fraction": "번호 (01 / 05)"
+                "fraction": "번호 (01 / 05)",
+                "pill": "알약 번호 (‹ 1 / 5 ›)"
             },
-            "pagination_hint": "배너가 2장 이상일 때 보입니다. 진행 막대는 다음 배너로 넘어가기까지 남은 시간을 보여 주고, 배너 이름 탭은 휴대폰에서 막대만 보입니다."
+            "pagination_hint": "배너가 2장 이상일 때 보입니다. 진행 막대는 다음 배너로 넘어가기까지 남은 시간을 보여 주고, 배너 이름 탭은 휴대폰에서 막대만 보입니다. 알약 번호는 문구 아래 왼쪽에 이전·다음 단추와 함께 보이고, 양옆 화살표는 그리지 않습니다.",
+            "scope_dynamic": "{{position}} 위치의 기본값입니다. {{target}}마다 따로 정하지 않은 항목은 이 값을 따릅니다."
         },
         "list": {
             "create": "배너 등록",
@@ -172,8 +226,8 @@
                 "locale_missing": "{{lang}} 제목 없음",
                 "mobile_fallback": "모바일: PC 이미지 사용",
                 "button_without_link": "버튼 안 보임: 주소 없음",
-                "youtube": "유튜브",
-                "video": "영상"
+                "video": "영상",
+                "target_key": "대상 {{key}}"
             }
         },
         "reorder": {
@@ -207,6 +261,10 @@
             },
             "position": "노출 위치",
             "position_hint": "현재 사용자 템플릿이 제공하는 히어로섹션 자리입니다.",
+            "target": "대상",
+            "target_hint": "고른 {{target}} 화면에만 이 배너가 보입니다.",
+            "target_missing": "이 배너의 {{target}}을(를) 찾을 수 없습니다(지워졌을 수 있습니다). 그대로 저장할 수 있지만 사이트에는 보이지 않고, 다른 {{target}}을(를) 고르면 다시 보입니다.",
+            "position_unregistered": "등록되지 않은 위치입니다 — 이 위치를 더한 확장이 꺼져 있어 사이트에 보이지 않습니다. 그대로 고쳐 저장하거나 다른 위치로 옮길 수 있습니다.",
             "is_active": "사용",
             "is_active_hint": "끄면 기간과 상관없이 사용자 화면에 보이지 않습니다(비활성).",
             "locale_hint": "사이트에 켜 둔 언어마다 입력할 수 있습니다. 비워 둔 언어는 사이트 기본 언어 문구로 보입니다.",
@@ -240,7 +298,8 @@
                 "pc_hint": "권장 1920×640 · 최대 {{mb}}MB · JPG·PNG·WEBP",
                 "mobile": "모바일 이미지",
                 "mobile_hint": "선택 · 권장 750×1000 · 최대 {{mb}}MB · 등록하지 않으면 모바일에서도 PC 이미지를 사용합니다.",
-                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다."
+                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다.",
+                "pc_promo_hint": "그림 칸에 들어갈 PC 그림입니다. 비율을 지켜 보이므로 문구 칸을 뺀 넓이에 맞는 가로형(예: 1480×800) 투명 PNG·WebP 를 권장합니다. 최대 {{mb}}MB."
             },
             "link_url": "이동할 주소",
             "link_url_placeholder": "/shop/products 또는 https://example.com",
@@ -321,7 +380,8 @@
                     "right": "오른쪽에서",
                     "zoom": "확대",
                     "blur": "흐림 걷힘",
-                    "letters": "글자 하나씩"
+                    "letters": "글자 하나씩",
+                    "sequence": "순차 등장 (머리글→제목→설명)"
                 },
                 "speed": "속도",
                 "speeds": {
@@ -340,7 +400,17 @@
                 "drag_role": "옮길 수 있는 문구",
                 "drag_label": "문구 위치 가로 {{x}}%, 세로 {{y}}% — 끌거나 화살표 키로 옮깁니다",
                 "drag_hint": "미리보기의 문구를 끌거나, 문구를 누른 뒤 화살표 키(Shift 와 함께 10%씩)로 옮길 수 있습니다.",
-                "replay": "효과 다시 보기"
+                "replay": "효과 다시 보기",
+                "width_pc": "PC·태블릿 문구 폭(%)",
+                "width_mobile": "휴대폰 문구 폭(%)",
+                "width_follow": "비우면 공통 {{width}}%",
+                "media_animation": "그림 등장 효과",
+                "promo_spot_hint": "프로모션형에서 문구 가로 위치가 50 을 넘으면 문구가 오른쪽·그림이 왼쪽에 옵니다. 휴대폰 세로 위치가 50 보다 작으면 문구가 위, 그 밖은 그림이 위입니다. 세로 위치는 문구 칸 안의 높이입니다.",
+                "media_animations": {
+                    "none": "없음",
+                    "fade": "서서히",
+                    "right": "오른쪽에서"
+                }
             },
             "conflict_merge": {
                 "title": "최신본과 내 변경 비교",
@@ -381,7 +451,7 @@
                     "description_style": "설명 표시·색·정렬",
                     "presentation": "이미지 초점·문구 배경",
                     "link": "링크",
-                    "media": "미디어(종류·유튜브 주소·영상)",
+                    "media": "미디어(종류·영상)",
                     "pc_image": "PC 이미지",
                     "mobile_image": "모바일 이미지"
                 },
@@ -398,25 +468,66 @@
                 "go_pc_image": "PC 이미지 칸으로 가기",
                 "pc_video": "PC 영상을 올려야 저장할 수 있습니다.",
                 "go_pc_video": "PC 영상 칸으로 가기",
-                "youtube": "유튜브 주소를 넣어야 저장할 수 있습니다.",
-                "go_youtube": "유튜브 주소 칸으로 가기"
+                "target": "{{target}}을(를) 골라야 저장할 수 있습니다.",
+                "go_target": "대상 칸으로 가기",
+                "settings_loading": "위치 정보를 받는 중이라 아직 저장할 수 없습니다.",
+                "settings_failed": "위치 정보를 받지 못해 저장할 수 없습니다.",
+                "position_missing": "고른 위치가 없어 저장할 수 없습니다. 위치를 다시 고르세요."
             },
             "media": {
                 "type": "미디어 종류",
                 "image": "이미지",
-                "youtube": "유튜브 영상",
                 "video": "영상 파일",
                 "image_hint": "아래에서 올린 이미지를 배너로 보여 줍니다.",
-                "youtube_hint": "유튜브 영상을 소리 없이 자동 재생하고, 영상이 끝나면 다음 배너로 넘어갑니다. 방문자가 쿠키(마케팅)에 동의하기 전에는 대표 이미지와 재생 단추만 보입니다.",
                 "video_hint": "올린 영상을 소리 없이 자동 재생하고, 영상이 끝나면 다음 배너로 넘어갑니다(배너가 하나면 반복 재생).",
-                "youtube_url": "유튜브 주소",
-                "youtube_url_hint": "영상 페이지 주소나 공유 주소를 그대로 붙여 넣으세요. 예: https://www.youtube.com/watch?v=… · https://youtu.be/… · 쇼츠 주소",
                 "pc_video": "PC 영상",
                 "pc_video_hint": "최대 {{mb}}MB · MP4·WEBM · 가로 영상(16:9 등)을 권장합니다.",
                 "mobile_video": "모바일 영상",
                 "mobile_video_hint": "선택 · 최대 {{mb}}MB · MP4·WEBM · 올리지 않으면 휴대폰에서도 PC 영상을 재생합니다.",
-                "poster_hint": "영상 배너에서는 이 이미지가 대표 이미지입니다. 영상을 받는 동안, 움직임 줄이기를 켠 방문자, (유튜브) 쿠키 동의 전에 영상 대신 보입니다."
+                "poster_hint": "영상 배너에서는 이 이미지가 대표 이미지입니다. 영상을 받는 동안과 움직임 줄이기를 켠 방문자에게 영상 대신 보입니다."
+            },
+            "layout": {
+                "title": "배너 구성",
+                "label": "구성",
+                "background": "배경형",
+                "promo": "프로모션형",
+                "background_hint": "이미지·영상이 배너 전체를 덮고 문구가 그 위에 겹칩니다(기존 방식).",
+                "promo_hint": "바탕색 위에 문구 칸과 그림 칸을 나눕니다. PC 는 문구·그림이 좌우로, 휴대폰은 위아래로 놓입니다. 그림은 비율을 지키고 잘리지 않습니다. 글자는 이미지에 넣지 말고 문구 칸에 입력하세요.",
+                "background_color": "바탕색",
+                "background_color_none": "없음",
+                "background_color_clear": "바탕색 지우기",
+                "preset": "프로모션형 추천값 적용",
+                "preset_hint": "문구 PC 왼쪽 가운데·폭 40%, 휴대폰 그림 위·문구 아래, 순차 등장, 그림 오른쪽에서, 기본 흰색 글자는 짙은 색으로, 바탕색이 비어 있으면 연회색 바탕에 바탕 밝기 「밝음」으로 — 적용한 뒤에도 바꿀 수 있고 슬라이더 설정은 바꾸지 않습니다."
+            },
+            "applied": {
+                "values": "적용 설정: {{effect}} · {{width}} · {{pagination}} · 최대 높이 PC {{pc}} / 휴대폰 {{mobile}}",
+                "from_target": "이 대상만의 설정이 포함돼 있습니다. 바꾸려면 배너 목록의 「이 대상 설정」에서 바꿉니다.",
+                "from_position": "위치 기본값입니다. 바꾸려면 배너 목록의 슬라이더 설정에서 바꿉니다."
             }
+        },
+        "retry": "다시 받기",
+        "target_settings": {
+            "title": "이 대상 설정",
+            "scope": "{{position}} 위치의 {{target}}에만 적용됩니다. 「이 대상만 따로」를 켠 항목만 저장되고, 나머지는 위 위치 기본값을 따릅니다.",
+            "loading": "이 대상의 설정을 불러오는 중입니다.",
+            "missing": "이 대상은 지금 없습니다. 새로 저장할 수는 없고, 남은 설정을 위치 기본값으로 되돌릴 수 있습니다.",
+            "own_label": "{{item}} 이 대상만 따로 정하기",
+            "source_target": "이 대상",
+            "source_position": "위치 기본값",
+            "no_limit": "제한 없음",
+            "save": "이 대상 설정 저장",
+            "reset": "위치 기본값으로 되돌리기",
+            "items": {
+                "autoplay": "자동 재생",
+                "interval_seconds": "전환 간격",
+                "effect": "전환 효과",
+                "width": "표시 폭",
+                "header_overlay": "메뉴 겹치기",
+                "pagination": "페이징 모양",
+                "max_height_pc": "PC·태블릿 최대 높이(px)",
+                "max_height_mobile": "휴대폰 최대 높이(px)"
+            },
+            "load_failed": "이 대상의 설정을 받지 못했습니다. 입력한 내용은 그대로 있습니다. 다시 받기를 눌러 주세요."
         }
     }
 }

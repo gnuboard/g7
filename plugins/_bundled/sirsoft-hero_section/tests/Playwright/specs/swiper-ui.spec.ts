@@ -5,10 +5,16 @@
  *
  * 위치 설정은 사양이 바꾸고 끝나면 되돌린다. 배너는 사양이 만들고 fixture 가 지운다(운영 배너는 건드리지 않는다).
  */
-import { test, expect, createBanner, gotoUser, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
 import type { APIRequestContext, Page } from '@playwright/test';
 
 test.setTimeout(240_000);
+
+// 팝업이 슬라이더 클릭을 가로채지 않게 비우고, 홈 응답을 복제하는 시험이 운영 배너 없이도 돌도록 시험 배너를 둔다(끝나면 지운다)
+test.beforeEach(async ({ page, request, managerToken, created }) => {
+  await hidePopups(page);
+  created.push(await createBanner(request, managerToken));
+});
 
 type Settings = { autoplay: boolean; interval_seconds: number; effect: string; width?: string };
 
@@ -39,6 +45,7 @@ const settle = (page: Page, index: number) => expect.poll(async () => {
 
 // @scenario surface=swiper_extra_effects
 // @scenario surface=swiper_pagination_and_arrows
+// @effects transition_effect_follows_setting, slider_navigation_controls_operable
 test('추가 효과 4종이 무한 반복으로 넘어가고, 화살표·점·마우스 끌기로 장을 옮긴다(데스크톱)', async ({ page, request, managerToken, created }) => {
   const original = await readSettings(request, managerToken);
   for (let i = 0; i < 3; i++) {
@@ -113,6 +120,7 @@ async function injectThreeSlides(page: Page): Promise<void> {
 const autoplayRunning = (page: Page) => page.evaluate(() => (document.querySelector('section.hs-slider .swiper') as HTMLElement & { swiper: any }).swiper.autoplay.running);
 
 // @scenario surface=pointer_click_does_not_hold_autoplay
+// @effects autoplay_follows_interval_and_visitor
 test('마우스로 화살표를 누르고 나가면 자동 넘김이 다시 돌고, 단추 표시도 「재생 중」 그대로다(데스크톱)', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectThreeSlides(page);
@@ -131,6 +139,7 @@ test.describe('휴대폰 점 탭 뒤 자동 넘김', () => {
   test.use({ hasTouch: true, viewport: VIEWPORTS.mobile });
 
   // @scenario surface=pointer_click_does_not_hold_autoplay
+  // @effects autoplay_follows_interval_and_visitor
   test('휴대폰에서 점을 탭해 옮긴 뒤에도 자동 넘김이 계속 돈다', async ({ page }) => {
     await injectThreeSlides(page);
     await gotoUser(page, '/');
@@ -144,6 +153,7 @@ test.describe('휴대폰 점 탭 뒤 자동 넘김', () => {
 });
 
 // @scenario surface=swiper_pagination_and_arrows
+// @effects slider_navigation_controls_operable
 test('휴대폰에서는 화살표를 감추고(문구를 가리지 않게) 점 표시로 장을 옮긴다', async ({ page, request, managerToken, created }) => {
   const original = await readSettings(request, managerToken);
   for (let i = 0; i < 2; i++) {

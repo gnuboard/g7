@@ -36,7 +36,14 @@ class BannerImageService
     /**
      * 스토리지 카테고리
      */
-    private const CATEGORY = 'images';
+    public const CATEGORY = 'images';
+
+    /**
+     * before_uninstall 때 읽어 둔 행 디스크 — `uninstall()` 이 테이블이 지워진 뒤 꺼내 쓴다
+     *
+     * @var array<int, string|null>|null
+     */
+    private static ?array $disksBeforeUninstall = null;
 
     /**
      * 허용 MIME → 저장 확장자
@@ -440,14 +447,52 @@ class BannerImageService
      */
     public function purgeAll(): bool
     {
-        $storages = [$this->storage->getDisk() => $this->storage];
-        try {
-            foreach ($this->images->distinctDisks() as $disk) {
-                $storage = RowDiskStorage::resolve($this->storage, $disk);
-                $storages[$storage->getDisk()] ??= $storage;
+        return self::purgeDisks($this->storage, $this->recordedDisks());
+    }
+
+    /**
+     * 「데이터까지 삭제」 제거가 시작될 때(`core.plugins.before_uninstall`) 행이 기록한 디스크 목록만 읽어 둡니다 — 지우지 않는다.
+     *
+     * 코어는 제거 가드와 마이그레이션 롤백을 지난 뒤 `uninstall()` 을 부르는데, 그때는 테이블이 없어 행의 disk 를 읽을 수 없다.
+     * 가드에서 제거가 막히면 파일은 그대로 남아야 하므로(#874) 지우기는 `uninstall()` 이 맡고, 여기서는 목록만 넘긴다(#878).
+     *
+     * @return void 반환값 없음
+     */
+    public function rememberDisksForUninstall(): void
+    {
+        self::$disksBeforeUninstall = $this->recordedDisks();
+    }
+
+    /**
+     * 읽어 둔 디스크 목록을 꺼내고 비웁니다(한 번만 쓴다).
+     *
+     * @return array<int, string|null> 행이 기록한 디스크 이름(읽어 둔 것이 없으면 빈 배열)
+     */
+    public static function takeDisksForUninstall(): array
+    {
+        $disks = self::$disksBeforeUninstall ?? [];
+        self::$disksBeforeUninstall = null;
+
+        return $disks;
+    }
+
+    /**
+     * 주어진 스토리지(지금 업로드 디스크)와 행 디스크들의 `images` 폴더를 비웁니다 — 같은 디스크로 해석되는 값은 한 번만.
+     *
+     * @param  StorageInterface  $storage  지금 업로드가 가는 스토리지
+     * @param  array<int, string|null>  $disks  행이 기록한 디스크 이름
+     * @return bool 모두 비웠으면 true
+     */
+    public static function purgeDisks(StorageInterface $storage, array $disks): bool
+    {
+        $storages = [$storage->getDisk() => $storage];
+        foreach ($disks as $disk) {
+            try {
+                $resolved = RowDiskStorage::resolve($storage, $disk);
+                $storages[$resolved->getDisk()] ??= $resolved;
+            } catch (\Throwable $e) {
+                Log::warning('히어로섹션 이미지 디스크를 열지 못함', ['disk' => $disk, 'error' => $e->getMessage()]);
             }
-        } catch (\Throwable $e) {
-            Log::warning('히어로섹션 이미지 디스크 목록 조회 실패', ['error' => $e->getMessage()]);
         }
 
         $ok = true;
@@ -464,6 +509,22 @@ class BannerImageService
         }
 
         return $ok;
+    }
+
+    /**
+     * 행이 기록한 디스크 목록 — 읽지 못하면 로그를 남기고 빈 목록(지금 디스크만 비운다).
+     *
+     * @return array<int, string|null> 디스크 이름
+     */
+    private function recordedDisks(): array
+    {
+        try {
+            return $this->images->distinctDisks();
+        } catch (\Throwable $e) {
+            Log::warning('히어로섹션 이미지 디스크 목록 조회 실패', ['error' => $e->getMessage()]);
+
+            return [];
+        }
     }
 
     /**

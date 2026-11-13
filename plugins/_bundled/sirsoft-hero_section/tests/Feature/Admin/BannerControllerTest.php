@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Services\BannerService;
@@ -60,8 +59,8 @@ class BannerControllerTest extends PluginTestCase
      */
     public function test_list_filters_by_position(): void
     {
-        $home = Banner::factory()->forPosition(HeroPosition::HomeHero)->create();
-        $shop = Banner::factory()->forPosition(HeroPosition::ShopHero)->create();
+        $home = Banner::factory()->forPosition('home_hero')->create();
+        $shop = Banner::factory()->forPosition('shop_hero')->create();
 
         $ids = $this->actingAs($this->admin)->getJson($this->api('/admin/banners?position=shop_hero'))
             ->assertOk()->json('data.data.*.id');
@@ -210,7 +209,7 @@ class BannerControllerTest extends PluginTestCase
     {
         Banner::factory()->count(2)->create();
         Banner::factory()->scheduled()->create();
-        Banner::factory()->forPosition(HeroPosition::ShopHero)->create();
+        Banner::factory()->forPosition('shop_hero')->create();
 
         $stats = $this->actingAs($this->admin)->getJson($this->api('/admin/banners?position=home_hero'))->assertOk()->json('data.statistics');
 
@@ -361,7 +360,7 @@ class BannerControllerTest extends PluginTestCase
      */
     public function test_update_moves_to_end_of_new_position(): void
     {
-        Banner::factory()->forPosition(HeroPosition::ShopHero)->create(['sort_order' => 2]);
+        Banner::factory()->forPosition('shop_hero')->create(['sort_order' => 2]);
         $banner = Banner::factory()->withImages()->create(['sort_order' => 0]);
 
         $data = $this->actingAs($this->admin)->putJson($this->api('/admin/banners/'.$banner->id), $this->bannerPayload(['position' => 'shop_hero']))
@@ -482,6 +481,8 @@ class BannerControllerTest extends PluginTestCase
 
         $small = Banner::factory()->count(2)->withImages()->create()->pluck('id')->all();
         $large = Banner::factory()->count(8)->withImages()->create()->pluck('id')->all();
+        // 위치의 배너 유무가 바뀌면 힌트 저장이 한 번 더 돈다 — 배너 수와 무관한 일회성이라 어느 호출에서도 유무가 그대로이게 둔다
+        Banner::factory()->create();
 
         // 첫 호출에만 도는 일회성 스키마 확인이 비교를 흐리지 않게 한 번 먼저 부른다
         $service->bulkSetActive($small, true, null);
@@ -592,7 +593,7 @@ class BannerControllerTest extends PluginTestCase
     public function test_reorder_rejects_other_position_id(): void
     {
         $home = Banner::factory()->create();
-        $shop = Banner::factory()->forPosition(HeroPosition::ShopHero)->create();
+        $shop = Banner::factory()->forPosition('shop_hero')->create();
 
         $this->actingAs($this->admin)->putJson($this->api('/admin/banners/order'), ['position' => 'home_hero', 'ids' => [$home->id, $shop->id]])
             ->assertStatus(422)->assertJsonValidationErrors(['ids']);

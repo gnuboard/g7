@@ -45,6 +45,7 @@ describe('히어로 확장점', () => {
   };
 
   // @scenario surface=home_layout_has_home_hero_slot
+  // @effects hero_slot_placed_outside_content_box
   it('공통 틀은 본문 상자 바로 앞에 전폭 슬롯 page_top 을 둔다', () => {
     const area = JSON.stringify(load('_user_base.json'));
     const top = area.indexOf('"slot":"page_top"');
@@ -70,21 +71,30 @@ describe('히어로 확장점', () => {
   });
 
   // @scenario surface=home_layout_has_home_hero_slot
-  it('사이트 홈은 본문 상자 밖(page_top)에 home_hero 자리를 하나 두고 본문 상자 클래스를 넘긴다', () => {
+  // @effects hero_slot_placed_outside_content_box
+  it('사이트 홈은 본문 상자 밖(page_top)에 home_hero 자리를 하나 두고, 아래 카드 줄과 같은 폭의 상자 클래스를 넘긴다', () => {
     const home = load('home.json');
     expect(slotsNamed(home, 'home_hero')).toHaveLength(1);
     const top = home.slots.page_top as Node[];
     expect(top).toHaveLength(1);
     expect(top[0]).toMatchObject({ type: 'extension_point', name: 'home_hero', id: 'home_hero_slot', default: [] });
+    // 홈 본문은 공통 틀 본문 상자(px-4 · 데스크톱 max-w-7xl mx-auto px-8) 안에 컨테이너 여백을 한 번 더 둔다 —
+    // 히어로는 두 여백을 더한 값이라야 아래 카드 줄과 같은 폭이 된다(휴대폰 16+16 · 태블릿 16+24 · 데스크톱 32+32)
     const main = mainContent();
-    expect(top[0].props).toEqual({ contentClass: 'px-4', contentClassDesktop: 'max-w-7xl mx-auto px-8' });
-    // 넘기는 값은 공통 틀 본문 상자와 같은 여백·최대 폭이다(min-h-fit 같은 높이 클래스는 빼고)
-    expect(main.props.className).toContain(top[0].props.contentClass);
-    expect(main.responsive.desktop.props.className).toContain(top[0].props.contentClassDesktop);
-    expect((home.slots.content as Node[])[0].name).toBe('Container');
+    expect(main.props.className).toContain('px-4');
+    expect(main.responsive.desktop.props.className).toContain('max-w-7xl mx-auto px-8');
+    const container = (home.slots.content as Node[])[0];
+    expect(container.name).toBe('Container');
+    expect(container.props.className).toBe('py-6 px-4');
+    expect(container.responsive.tablet.props.className).toBe('py-6 px-6');
+    expect(container.responsive.desktop.props.className).toBe('py-6 px-8');
+    // 폭마다 다른 값은 Tailwind 폭 접두(md:)가 아니라 기기별 속성으로 넘긴다 — 히어로 조각이 엔진 responsive 로 고른다
+    expect(top[0].props).toEqual({ contentClass: 'px-8', contentClassTablet: 'px-10', contentClassDesktop: 'max-w-7xl mx-auto px-16' });
+    expect(Object.values(top[0].props).join(' ')).not.toMatch(/(?:^|\s)(?:sm|md|lg|xl|2xl):/);
   });
 
   // @scenario surface=shop_layout_has_shop_hero_slot
+  // @effects hero_slot_placed_outside_content_box
   it('쇼핑몰 메인은 본문 상자 밖(page_top)에 shop_hero 자리를 하나 두고 본문 상자 클래스를 넘긴다', () => {
     const shop = load('shop/index.json');
     expect(slotsNamed(shop, 'shop_hero')).toHaveLength(1);
@@ -124,5 +134,22 @@ describe('히어로 확장점', () => {
       expect(result.text).toBe('');
       expect(result.media).toBe(0);
     });
+  });
+
+  // @scenario surface=dynamic_layouts_have_hero_slots
+  // @effects hero_slot_placed_outside_content_box
+  it('게시판 목록·상품 상세·카테고리 목록도 본문 상자 밖(page_top)에 자기 히어로 자리를 하나씩 두고, 쇼핑몰 메인과 같은 본문 상자 클래스를 넘긴다', () => {
+    const main = mainContent();
+    for (const [file, name] of [['board/index.json', 'board_hero'], ['shop/show.json', 'product_hero'], ['shop/category.json', 'category_hero']]) {
+      const layout = load(file);
+      expect(slotsNamed(layout, name), file).toHaveLength(1);
+      const top = layout.slots.page_top as Node[];
+      expect(top).toHaveLength(1);
+      expect(top[0]).toMatchObject({ type: 'extension_point', name, id: `${name}_slot`, default: [] });
+      // 대상은 확장점이 넘기지 않는다 — 플러그인 조각이 화면 주소 값을 읽어야 SPA 이동 때 다시 받는다
+      expect(top[0].props).toEqual({ contentClass: 'px-4', contentClassDesktop: 'max-w-7xl mx-auto px-8' });
+      expect(main.props.className).toContain(top[0].props.contentClass);
+      expect(main.responsive.desktop.props.className).toContain(top[0].props.contentClassDesktop);
+    }
   });
 });

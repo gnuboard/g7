@@ -10,7 +10,6 @@ use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Log;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Throwable;
 
 /**
@@ -55,16 +54,19 @@ class PreviewFrameResolver
         try {
             $identifier = $this->templates->getActiveTemplateIdentifier('user');
         } catch (TemplateNotFoundException) {
-            return ['template' => null, 'stylesheets' => [], 'positions' => array_fill_keys(HeroPosition::values(), null)];
+            return ['template' => null, 'stylesheets' => [], 'positions' => array_fill_keys($this->registry()->keys(), null)];
         }
 
         $version = self::getExtensionCacheVersion();
+        $keys = $this->registry()->keys();
+        // 위치 목록이 바뀌면(모듈·확장을 켜고 끔) 키가 바뀐다 — 새 위치의 틀을 캐시 주기까지 기다리지 않게
+        $positionsHash = substr(md5(implode(',', $keys)), 0, 12);
 
-        $frame = $this->cache->remember("preview_frame.v2.{$identifier}.v{$version}", function () use ($identifier, $version) {
+        $frame = $this->cache->remember("preview_frame.v3.{$identifier}.v{$version}.{$positionsHash}", function () use ($identifier, $version, $keys) {
             $template = $this->templates->findByIdentifier($identifier);
             $positions = [];
-            foreach (HeroPosition::cases() as $position) {
-                $positions[$position->value] = $template ? $this->frameFor((int) $template->id, $identifier, $position->value) : null;
+            foreach ($keys as $key) {
+                $positions[$key] = $template ? $this->frameFor((int) $template->id, $identifier, $key) : null;
             }
 
             return [
@@ -214,5 +216,16 @@ class PreviewFrameResolver
     private function staticClasses(string $className): string
     {
         return trim((string) preg_replace('/\s+/', ' ', (string) preg_replace('/\{\{.*?\}\}/s', ' ', $className)));
+    }
+
+    /**
+     * 위치 레지스트리를 꺼냅니다 — 생성자에서 쥐지 않는다. 레지스트리는 요청 단위로 공유되므로, 오래 사는 객체(라우트가 기억한 컨트롤러·
+     * 작업자)가 옛 위치 목록을 붙들지 않게 쓸 때마다 컨테이너에서 받는다.
+     *
+     * @return PositionRegistry 위치 레지스트리
+     */
+    private function registry(): PositionRegistry
+    {
+        return app(PositionRegistry::class);
     }
 }
