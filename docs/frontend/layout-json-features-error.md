@@ -471,7 +471,7 @@ fallback이 있어도 errorHandling은 건너뛰지 않음
 
 `ErrorPageHandler.renderError()`는 다음 순서로 동작합니다:
 
-1. **error_config 로드** — 에러 코드별 레이아웃 매핑 정보
+1. **error_config 로드** — 에러 코드별 레이아웃 매핑 정보. 템플릿이 template.json `expose` 에 `error_config` 를 선언했으면 셸 HTML(`G7Config.templateConfig`)에 실린 값을 쓰고 API 를 부르지 않는다(engine-v1.95.0). 선언이 없으면 `/api/templates/{id}/config.json` 을 한 번 부른다
 2. **레이아웃 로드** — `LayoutLoader`를 통한 에러 레이아웃 JSON 로드 (extends 병합 자동 처리)
 3. **data_sources fetch** — blocking + progressive 데이터 소스를 모두 fetch (에러 페이지에서는 모든 데이터 로드 후 렌더링)
 4. **`processInitOptions()` 호출** — fetch된 데이터를 `initGlobal`/`initLocal` 매핑에 따라 `_global`/`_local`에 저장

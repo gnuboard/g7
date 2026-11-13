@@ -84,6 +84,8 @@ return [
         'necessary_storage_not_object' => 'necessary_storage の宣言がオブジェクト形式ではないため、すべて無視しました',
         'necessary_storage_invalid_scope' => '保存先の種類が localStorage・sessionStorage・cookie ではないか、キー一覧が配列ではないため破棄しました: :names',
         'necessary_storage_invalid_key' => '保存キーの形式が正しくないため破棄しました(英数字・_ . : @ + - で128文字以内、前方一致は末尾に * を1つ): :items',
+        'expose_not_array' => 'expose 宣言が配列ではないため、最初の画面にテンプレート設定を埋め込みません(キー名の配列で記述してください)',
+        'expose_missing_engine_keys' => 'template.json にある :keys が expose 宣言にないため、最初の画面で API の往復が1回残ります',
         'declaration_hint' => '拡張機能が宣言した値の誤りのため、再実行しても変わりません — 拡張機能の開発者に知らせてください',
     ],
     // 必須依存(dependencies)未充足の理由 — 復旧失敗・連鎖インストール失敗・CLI が同じ文を使う (7.1.4)

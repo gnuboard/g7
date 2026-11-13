@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
@@ -442,6 +443,81 @@ class TemplateService
         }
 
         return $template->identifier;
+    }
+
+    /**
+     * template.json 최상위 `expose` 에서 무시하는 예약 이름 — 선언 자체와 서버가 붙이는 캐시 버전
+     */
+    public const TEMPLATE_EXPOSE_RESERVED = ['expose', 'cache_version'];
+
+    /**
+     * 활성 템플릿의 template.json 을 읽습니다 — config API(`GET /api/templates/{id}/config`)와 셸 인라인이 같은 캐시를 쓴다.
+     *
+     * 캐시 키는 `template.config.{identifier}`(1시간)이고 템플릿 생명주기 캐시 무효화(`TemplateManager`)가 지운다.
+     * 결과는 `['success' => true, 'data' => template.json]` 또는 `['error' => 'template_not_found'|'config_not_found'|'invalid_json']`
+     * 이다. 오류는 캐시하지 않는다(일시적 상태 회복). 빈 맵(`dependencies.modules: {}` 등)은 `{}` 로 응답하도록 보존해 읽는다 (#758).
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array{success?: true, data?: array<string, mixed>, error?: string} 읽은 결과
+     */
+    public function getTemplateConfigData(string $identifier): array
+    {
+        $cache = app(CacheInterface::class);
+        $key = "template.config.{$identifier}";
+        $cached = $cache->get($key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $template = $this->findByIdentifier($identifier);
+        if (! $template || $template->status !== ExtensionStatus::Active->value) {
+            return ['error' => 'template_not_found'];
+        }
+
+        $configPath = base_path("templates/{$identifier}/template.json");
+        if (! file_exists($configPath)) {
+            return ['error' => 'config_not_found'];
+        }
+
+        $data = EmptyMap::decodePreserving((string) file_get_contents($configPath));
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
+            return ['error' => 'invalid_json'];
+        }
+
+        $result = ['success' => true, 'data' => $data];
+        $cache->put($key, $result, 3600);
+
+        return $result;
+    }
+
+    /**
+     * 셸 HTML(`G7Config.templateConfig`)에 미리 실을 템플릿 설정 — template.json `expose` 에 제작자가 선언한 키만 (#879).
+     *
+     * 설정값의 `expose`(설정 주인이 선언한 키만 G7Config 에 싣는다)와 같은 방식이다. 선언했는데 template.json 에 없는 키는
+     * null(「선언했고 값 없음」), 문자열이 아닌 항목·최상위 키 이름 모양이 아닌 항목(`a.b` 등)·예약 이름은 무시하고 중복은 하나로 둔다.
+     * `expose` 가 없거나 배열이 아니면 null — 엔진이 종전처럼 config API 를 부른다(제3자 템플릿 하위 호환).
+     * 이 값들은 config API 로도 토큰 없이 공개된다. 그래도 HTML 에는 선언한 것만 싣는다.
+     *
+     * @param  string  $identifier  템플릿 식별자 (활성 템플릿)
+     * @return array<string, mixed>|null 키 → 값 (싣지 않으면 null)
+     */
+    public function getExposedTemplateConfig(string $identifier): ?array
+    {
+        $config = $this->getTemplateConfigData($identifier);
+        $data = $config['data'] ?? null;
+        if (! is_array($data) || ! array_key_exists('expose', $data) || ! is_array($data['expose'])) {
+            return null;
+        }
+
+        $exposed = [];
+        foreach ($data['expose'] as $key) {
+            if (! is_string($key) || preg_match('/^[A-Za-z0-9_-]+$/', $key) !== 1 || in_array($key, self::TEMPLATE_EXPOSE_RESERVED, true)) {
+                continue;
+            }
+            $exposed[$key] = $data[$key] ?? null;
+        }
+
+        return $exposed;
     }
 
     /**

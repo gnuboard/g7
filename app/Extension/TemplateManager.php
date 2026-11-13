@@ -594,6 +594,57 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
+     * 엔진이 template.json 에서 읽는 최상위 키 — 셸 HTML 에 싣도록(`expose`) 선언하지 않으면 첫 화면에 config API 왕복이 남는다 (#879)
+     */
+    public const ENGINE_TEMPLATE_CONFIG_KEYS = ['scroll_restoration', 'errorHandling', 'error_config'];
+
+    /**
+     * template.json `expose`(셸 HTML 에 미리 실을 최상위 키) 선언을 검사합니다 (#879).
+     *
+     * 설치·업데이트를 막지 않고 경고로만 알린다. `expose` 가 배열이 아니면 아무것도 싣지 않는다는 경고,
+     * 엔진이 읽는 키({@see self::ENGINE_TEMPLATE_CONFIG_KEYS})가 template.json 에 있는데 `expose` 에 없으면 「첫 화면에 API 왕복
+     * 1회가 남습니다」 경고를 낸다. `expose` 가 아예 없는 템플릿(선언을 쓰지 않는 제3자 템플릿)은 경고하지 않는다 — 종전 동작이다.
+     *
+     * @param  array<string, mixed>  $manifest  template.json 데이터
+     * @param  string  $identifier  템플릿 식별자 (로그·경고 대상)
+     * @param  bool  $reportWarnings  설치·업데이트처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
+     * @return array<int, string> 경고 사유 (없으면 빈 배열)
+     */
+    public static function exposeDeclarationWarnings(array $manifest, string $identifier, bool $reportWarnings = false): array
+    {
+        if (! array_key_exists('expose', $manifest)) {
+            return [];
+        }
+
+        $reasons = [];
+        if (! is_array($manifest['expose'])) {
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.expose_not_array', [], 'expose');
+        } else {
+            $declared = array_filter($manifest['expose'], 'is_string');
+            $missing = array_values(array_filter(
+                self::ENGINE_TEMPLATE_CONFIG_KEYS,
+                fn (string $key) => array_key_exists($key, $manifest) && ! in_array($key, $declared, true),
+            ));
+            if ($missing !== []) {
+                $keys = implode(', ', $missing);
+                $reasons[] = LifecycleWarnings::reason('extensions.warnings.expose_missing_engine_keys', ['keys' => $keys], $keys);
+            }
+        }
+
+        if ($reasons !== []) {
+            Log::warning('template.json expose 선언을 확인하세요 — 첫 화면 템플릿 설정 인라인', [
+                'template' => $identifier,
+                'reasons' => $reasons,
+            ]);
+            if ($reportWarnings) {
+                LifecycleWarnings::current()->declaration('expose', $identifier, implode(' / ', $reasons));
+            }
+        }
+
+        return $reasons;
+    }
+
+    /**
      * 활성화된 템플릿을 반환합니다.
      *
      * @param  string  $type  템플릿 타입 ('admin' 또는 'user')
@@ -679,6 +730,9 @@ class TemplateManager implements TemplateManagerInterface
 
                 // 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 틀린 항목은 무시하고 경고로만 알린다(설치는 막지 않음, 7.1.3)
                 self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $templateName, reportWarnings: true);
+
+                // 셸에 미리 실을 키 선언(template.json expose) 검사 — 설치는 막지 않고 경고로만 알린다 (#879)
+                self::exposeDeclarationWarnings($template, $templateName, reportWarnings: true);
 
                 // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사) — 7.0 JSON 의 깨진 조각 참조는 경고로 모은다 (#712)
                 $this->lastLayoutWarnings = [];
@@ -3967,6 +4021,8 @@ class TemplateManager implements TemplateManagerInterface
             // 알린다. 업데이트로 들어온 선언이 틀려도 로그에만 남고 결과 창·CLI 에는 보이지 않았다 (7.1.5)
             if (is_array($template)) {
                 self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $identifier, reportWarnings: true);
+                // 셸에 미리 실을 키 선언(template.json expose) 검사 — 설치와 같이 경고로만 알린다 (#879)
+                self::exposeDeclarationWarnings($template, $identifier, reportWarnings: true);
             }
 
             // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이

@@ -93,3 +93,8 @@ __tests__/layouts/     createLayoutTest() + API 모킹 기반 렌더링 테스�
 
 여기 정한 파비콘은 이 템플릿이 켜져 있을 때 사용자 화면 탭 아이콘으로 쓰이고, 비우면 환경설정 일반 탭의 파비콘(없으면 기본 아이콘)이 쓰입니다. 형식·확장 방법은 코어 문서 `docs/extension/template-settings.md` 를 봅니다.
 
+## 첫 화면에 미리 싣는 템플릿 설정 (expose)
+
+`template.json` 최상위 `expose` 에 `scroll_restoration`·`errorHandling`·`error_config` 를 선언한다. 서버가 그 키의 값만 화면 HTML (`G7Config.templateConfig`)에 함께 실어 엔진이 앱 시작 때 템플릿 설정 API 를 부르지 않는다(코어 engine-v1.95.0 부터). template.json 에 없는 키는 `null` 로 실린다. 엔진이 읽는 키를 새로 template.json 에 더하면 `expose` 에도 더한다 — 빠지면 설치·업데이트 결과에 경고가 나오고 첫 화면에 API 왕복이 1회 남는다. 형식은 코어 문서 「템플릿 기초 — 첫 화면에 미리 싣는 키」.
+
+예시 템플릿이라 `scroll_restoration` 이 없지만 선언해 둔다 — `null` 로 실려 API 를 부르지 않는다.

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Contracts\Extension\CacheInterface;
-use App\Enums\ExtensionStatus;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
@@ -223,35 +222,8 @@ class PublicTemplateController extends PublicBaseController
         // API 사용량 기록
         $this->logApiUsage('templates.config', ['identifier' => $identifier]);
 
-        // 캐싱된 응답 반환 (1시간 유효)
-        $configData = $this->cached(
-            "template.config.{$identifier}",
-            function () use ($identifier) {
-                // 템플릿 존재 확인
-                $template = $this->templateService->findByIdentifier($identifier);
-                if (! $template || $template->status !== ExtensionStatus::Active->value) {
-                    return ['error' => 'template_not_found'];
-                }
-
-                // template.json 파일 경로
-                $configPath = base_path("templates/{$identifier}/template.json");
-
-                if (! file_exists($configPath)) {
-                    return ['error' => 'config_not_found'];
-                }
-
-                $content = file_get_contents($configPath);
-                // 빈 맵(`dependencies.modules: {}` 등)을 `{}` 로 응답하도록 보존해 읽는다 (#758)
-                $data = EmptyMap::decodePreserving((string) $content);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    return ['error' => 'invalid_json'];
-                }
-
-                return ['success' => true, 'data' => $data];
-            },
-            3600
-        );
+        // 캐싱된 template.json 읽기 (1시간 유효) — 셸 인라인(`expose`)과 같은 캐시를 쓰도록 서비스 한 곳에 둔다 (#879)
+        $configData = $this->templateService->getTemplateConfigData($identifier);
 
         // 에러 응답 처리
         if (isset($configData['error'])) {
@@ -451,14 +423,14 @@ class PublicTemplateController extends PublicBaseController
         // 같은 행 메타(`updated_at`)라 파일 stat 없이 결정적이다.
         //
         // 세 인자를 **명시**한다 — 형제 아홉 통로는 전부 넘기는데 이 통로만 생략하고 있었다
-        // (15차 G3 라운드). 셋 다 없어도 동작하는 축이라 오류로 드러나지 않는다:
+        // 셋 다 없어도 동작하는 축이라 오류로 드러나지 않는다:
         //  - `immutable: false` — 이 주소는 행 id 라 서버가 버전을 발급하지 않는다. 생략하면
         //    요청자가 붙인 `?v=1` 로 사용자 업로드물이 1년 immutable 로 나간다.
         //  - `mimeType` — 근거는 행 메타(`mime_type`)다. 스토리지 어댑터의 추정은 사본이다.
         //  - `skipCompression: true` — 사용자 업로드물이라 크기·건수가 유계가 아니다.
         //
         // 키 검증은 코어 헬퍼(`streamedFileResponseFromMeta()`)가 한다 — 서비스는 확장에 열려
-        // 있어 「지금 구현이 채운다」는 방어가 아니다 (16차 G3 라운드 E-6). `last_modified`·
+        // 있어 「지금 구현이 채운다」는 방어가 아니다. `last_modified`·
         // `mime_type` 은 서비스 메타가 아니라 **행 메타**에서 직접 채운다 — ETag 소스와 같은
         // 행(`updated_at`)이라 파일 stat 없이 결정적이고, 스토리지 어댑터의 MIME 추정은 사본이다.
         //

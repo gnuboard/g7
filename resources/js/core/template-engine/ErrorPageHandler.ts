@@ -10,6 +10,7 @@ import type { DataSourceManager, DataSource } from './DataSourceManager';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { createLogger } from '../utils/Logger';
 import { suffixed } from '../support/assetUrl';
+import { TEMPLATE_ERROR_CONFIG_KEY, hasInlineTemplateConfigKeys, readInlineTemplateConfig } from './inlineTemplateConfig';
 
 const logger = createLogger('ErrorPageHandler');
 
@@ -133,6 +134,20 @@ export class ErrorPageHandler {
      */
     async loadConfig(): Promise<ErrorConfig | null> {
         if (this.configLoaded) {
+            return this.errorConfig;
+        }
+
+        // 셸이 `error_config` 를 실었으면(template.json `expose` 선언, null 이면 「선언했고 값 없음」) API 를 부르지 않는다
+        // (@since engine-v1.95.0, #879). 실리지 않았으면 종전처럼 config API
+        const inline = readInlineTemplateConfig();
+        if (hasInlineTemplateConfigKeys(inline, [TEMPLATE_ERROR_CONFIG_KEY])) {
+            const value = inline![TEMPLATE_ERROR_CONFIG_KEY] as ErrorConfig | null;
+            this.errorConfig = value && typeof value === 'object' && (value as ErrorConfig).layouts ? value : null;
+            this.configLoaded = true;
+            if (this.debug) {
+                logger.log('Error config from shell:', this.errorConfig);
+            }
+
             return this.errorConfig;
         }
 

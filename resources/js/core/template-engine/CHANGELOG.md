@@ -5,6 +5,18 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.95.0] - 2026-11-13
+
+### Added
+
+- 셸 HTML 에 실린 템플릿 설정(`G7Config.templateConfig`)을 읽는 함수와 부팅 키 목록(`TEMPLATE_BOOT_CONFIG_KEYS` = `scroll_restoration`·`errorHandling`)을 추가했습니다. 서버는 template.json 최상위 `expose` 에 선언한 키만 싣습니다(선언했는데 없는 키는 null). 엔진은 키 단위로 판단해 부팅 키가 모두 실려 있으면(값이 null 이어도) 템플릿 설정 API 를 부르지 않고, 하나라도 빠지면 종전처럼 1회 부릅니다 (template-engine/inlineTemplateConfig.ts, 회귀: `__tests__/TemplateApp.inlineTemplateConfig.test.ts`)
+- 라우터에 순수 정적 매칭 `Router.matchRoutes(routes, pathname)` 를 추가했습니다. 인스턴스 `match()` 가 같은 함수를 부르므로 규칙은 같습니다. 라우터 인스턴스는 생성 때 popstate 를 구독하므로, 라우터를 만들기 전 부팅 단계에서 현재 경로의 레이아웃을 정할 때 씁니다 (routing/Router.ts)
+
+### Changed
+
+- 첫 화면 전 PHP 왕복을 줄였습니다(#879). ① 부팅이 템플릿 설정을 셸 HTML 에서 읽으면 `GET /api/templates/{id}/config.json` 을 부르지 않습니다(캐시 버전은 셸 주입값 `G7Config.cache_version`). ② routes 를 받고 인증 확인이 끝나면 현재 경로의 레이아웃 요청을 `LayoutLoader.prefetchLayout()` 으로 먼저 시작합니다. 종전에는 확장 번들을 다 실은 뒤에야 레이아웃 요청이 나갔습니다. 첫 라우트 처리의 `loadLayout` 은 Promise 캐시로 같은 요청을 쓰고(실패하면 캐시에서 지워져 다시 받음), 리다이렉트·인증 필요·미리보기·매칭 없음·서버 오류 셸·레이아웃 편집기 경로와, 셸이 캐시 버전을 주지 않은 경우(저장소 버전은 낡았을 수 있어 핸드셰이크가 바꾸면 옛 버전 요청이 늦게 끝나며 현재 레이아웃 기록·캐시 항목을 건드릴 수 있다)는 미리 요청하지 않습니다. 레이아웃은 인증 헤더로 걸러지므로 인증 확인 뒤에 시작해 기존 토큰 처리(401 → 토큰 없이 재시도)를 그대로 탑니다. 토큰이 있는데 인증 확인이 통과하지 못했으면(만료 토큰) 미리 요청하지 않습니다 — 그 요청이 401 재시도의 첫 시도가 되면 실패가 캐시에서 지워진 뒤 본 요청이 「토큰이 있었다」 표시 없이 끝나 로그인 화면의 세션 만료 안내가 빠지기 때문입니다. 이를 위해 `LayoutLoader` 를 병렬 로딩 전에 만들고 셸 캐시 버전을 먼저 설정합니다(핸드셰이크로 버전이 바뀌면 `setCacheVersion` 이 비움). 첫 진입도 캐시 히트 경로라 레이아웃이 깊은 복사로 전달되고(SPA 재방문과 같음), DevTools 의 레이아웃 출처 표시는 첫 방문에도 미리 요청(`api`) 다음 `cache` 로 남습니다 — 출처 `cache` 만으로 재진입이라고 판단하지 않습니다. 레이아웃 편집기와 확장 상태 재로드(`reloadExtensionState`)는 최신 값을 확인하려고 계속 API 를 씁니다 (TemplateApp.ts `init`·`prefetchInitialLayout`, 회귀: `__tests__/TemplateApp.inlineTemplateConfig.test.ts`)
+- 오류 화면 설정(`ErrorPageHandler.loadConfig`)이 셸에 실린 `error_config` 키가 있으면(null 포함) API 를 부르지 않습니다. 없으면 종전처럼 1회 부릅니다 (template-engine/ErrorPageHandler.ts)
+
 ## [engine-v1.94.0] - 2026-11-09
 
 ### Added

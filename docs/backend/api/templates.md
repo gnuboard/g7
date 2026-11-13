@@ -98172,6 +98172,9 @@ HTTP/1.1 200
 
 
 ### GET /api/templates/{identifier}/config
+
+> 응답은 활성 템플릿의 template.json 전체 + `cache_version` 이다(형식 불변). 템플릿이 template.json 최상위 `expose` 에 키 이름을 선언하면 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에도 실리고, 엔진은 앱 시작 때 이 API 를 부르지 않는다(engine-v1.95.0). 레이아웃 편집기와 확장 상태 재로드는 최신 값을 확인하려고 계속 이 API 를 부른다 — [템플릿 기초](../../extension/template-basics.md).
+
 <!-- @generated:start:api.public.templates.config.extensionless -->
 - **라우트명**: `api.public.templates.config.extensionless`
 - **컨트롤러**: `App\Http\Controllers\Api\Public\PublicTemplateController@serveConfig`

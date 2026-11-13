@@ -712,7 +712,8 @@ templates/_bundled/<id>/
     "composite": ["admin-header", "admin-sidebar", "admin-footer", "data-grid", "modal", "toast", "pagination", "page-header", "loading-spinner", "empty-state", "breadcrumb", "card", "dropdown"],
     "layout": ["container", "flex", "grid", "section"]
   },
-  // 아이콘은 assets/icon.svg 관례로 자동 감지된다. 다른 경로를 쓸 때만 "icon": "assets/brand/mark.svg" 를 적는다.
+  // 아이콘: assets/icon.svg 자동 감지(아니면 "icon" 필드)
+  "expose": ["scroll_restoration","errorHandling","error_config"],
   "error_config": {
     "layouts": { "401": "401", "403": "403", "404": "404", "500": "500", "503": "503", "maintenance": "maintenance" }
   },

@@ -62,6 +62,10 @@ vi.mock('../routing/Router', () => ({
 vi.mock('../template-engine/LayoutLoader', () => ({
   LayoutLoader: vi.fn(function (this: any) {
     this.loadLayout = vi.fn().mockResolvedValue({ components: [] });
+    // 부팅이 병렬 로딩 전에 LayoutLoader 를 만들므로(engine-v1.95.0 첫 레이아웃 미리 요청) 언어 전환의 캐시 비우기도 탄다
+    this.prefetchLayout = vi.fn().mockResolvedValue({ components: [] });
+    this.setCacheVersion = vi.fn();
+    this.clear = vi.fn();
   }),
 }));
 

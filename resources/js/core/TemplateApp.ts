@@ -12,6 +12,7 @@ import type { Route } from './routing/Router';
 import { normalizePathname } from './routing/normalizePathname';
 import { documentTitle, type SeoTitlePayload } from './routing/DocumentTitle';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
+import { TEMPLATE_BOOT_CONFIG_KEYS, hasInlineTemplateConfigKeys, readInlineTemplateConfig } from './template-engine/inlineTemplateConfig';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { BINDING_CACHE_EPOCH, DataBindingEngine } from './template-engine/DataBindingEngine';
 import { evaluateComputedDefinitions } from './template-engine/helpers/ComputedEvaluator';
@@ -665,6 +666,42 @@ export class TemplateApp {
     }
 
     /**
+     * 첫 화면 레이아웃을 미리 요청합니다 (@since engine-v1.95.0, #879).
+     *
+     * 부팅은 routes 를 받은 뒤 확장 번들을 다 싣고서야 첫 라우트를 처리해, 레이아웃 PHP 왕복이 번들 로드 뒤에 시작됐다.
+     * routes 를 받은 직후 현재 경로의 레이아웃을 `LayoutLoader.prefetchLayout()` 으로 요청해 두면, 첫 라우트 처리
+     * (`handleRouteChange` → `loadLayout`)는 Promise 캐시로 같은 요청을 쓴다. 실패하면 캐시에서 지워져 본 호출이 다시 받는다.
+     *
+     * 리다이렉트·인증 필요(가드)·미리보기(`__preview__`)·매칭 없음·서버 오류 셸(`G7Error`)·레이아웃 편집기 경로는 요청하지
+     * 않는다 — 쓰지 않을 요청을 만들지 않는다. 미리 요청은 첫 렌더를 바꾸지 않는 최적화라 어떤 실패도 부팅을 막지 않는다.
+     *
+     * @param routesData routes 응답의 data (`{ routes: Route[] }`)
+     */
+    private prefetchInitialLayout(routesData: { routes?: unknown } | null | undefined): void {
+        try {
+            if (typeof window === 'undefined' || !this.layoutLoader || !Array.isArray(routesData?.routes)) {
+                return;
+            }
+            if ((window as any).G7Error || checkLayoutEditorMode(window.location.pathname)) {
+                return;
+            }
+            const routes = this.resolveRouteExpressions(routesData.routes as Route[]);
+            // base-path:allow 라우트 대조용으로 접두사를 벗긴다(navigateToCurrentPath 와 같은 순서)
+            const matched = Router.matchRoutes(routes, stripBasePrefix(normalizePathname(window.location.pathname)));
+            const route = matched?.route;
+            if (!route || route.redirect || route.auth_required || !route.layout || route.layout.startsWith('__preview__')) {
+                return;
+            }
+            logger.log('Prefetching initial layout:', route.layout);
+            this.layoutLoader.prefetchLayout(this.config.templateId, route.layout).catch((error) => {
+                logger.warn('Initial layout prefetch failed (route change will retry):', error);
+            });
+        } catch (error) {
+            logger.warn('Initial layout prefetch skipped:', error);
+        }
+    }
+
+    /**
      * 레거시 로케일 키를 새 키로 마이그레이션
      *
      * 기존 'locale', 'g7_template_locale' 키를 'g7_locale'로 통일합니다.
@@ -719,6 +756,23 @@ export class TemplateApp {
             const storedCacheVersion =
                 injectedCacheVersion > 0 ? injectedCacheVersion : this.loadCacheVersionFromStorage() || 0;
 
+            // 템플릿 설정 — 셸이 template.json 의 `expose` 선언 키를 실었고 부팅이 읽는 키가 모두 있으면 config API 를
+            // 부르지 않는다(첫 화면 전 PHP 1왕복 제거). 캐시 버전은 셸 주입값(API 응답의 cache_version 과 같은 서버 값)이다.
+            // 키가 하나라도 빠졌거나 주입 버전이 없으면 종전처럼 API (@since engine-v1.95.0, #879)
+            const inlineTemplateConfig = readInlineTemplateConfig();
+            const useInlineTemplateConfig = injectedCacheVersion > 0
+                && hasInlineTemplateConfigKeys(inlineTemplateConfig, TEMPLATE_BOOT_CONFIG_KEYS);
+
+            // 3. LayoutLoader 초기화 (캐시 버전 설정) — routes 를 받는 즉시 첫 레이아웃을 미리 요청하려고 병렬 로딩 전에 만든다
+            // (@since engine-v1.95.0). 캐시 버전이 아래 핸드셰이크로 바뀌면 setCacheVersion 이 미리 받은 것을 비운다
+            // 셸 주입 버전(렌더 시점 서버 값)만 먼저 건다 — 저장소 버전은 낡았을 수 있고, config 가 버전을 주지 못하면 종전처럼
+            // 버전 없이 받아야 한다(낡은 `?v` 가 세션 내내 남지 않게)
+            this.layoutLoader = new LayoutLoader(componentRegistry);
+            if (injectedCacheVersion > 0) {
+                this.layoutLoader.setCacheVersion(injectedCacheVersion);
+            }
+            const authPreload = authManager.preloadAuth(this.config.templateType === 'admin' ? 'admin' : 'user');
+
             const [_, __, routesData, ___, templateConfig] = await Promise.all([
                 // 템플릿 엔진 초기화 (다국어 파일 병렬 로드)
                 initTemplateEngine({
@@ -755,6 +809,21 @@ export class TemplateApp {
                         if (!result.success) {
                             throw new Error('Failed to load routes from API');
                         }
+                        // 첫 레이아웃 미리 요청 — 인증 확인이 끝난 뒤(토큰이 정해진 뒤) 시작하고 기다리지 않는다.
+                        // 레이아웃은 인증 헤더에 따라 걸러지고, 401 이면 토큰을 지우고 다시 받으므로 부팅 인증 확인과 겹치지 않게 한다.
+                        // 캐시 버전이 셸 주입값(렌더 시점 서버 값)일 때만 한다 — 저장소 버전은 낡았을 수 있어 아래 핸드셰이크가
+                        // 버전을 바꾸면 옛 버전 요청이 늦게 끝나며 현재 레이아웃 기록·캐시 항목을 건드릴 수 있다
+                        // 토큰이 있는데 인증 확인이 통과하지 못했으면(만료·서버 오류) 미리 요청하지 않는다 — 그 요청이 401 → 토큰 제거 →
+                        // 토큰 없이 재시도의 첫 시도가 되면, 실패가 캐시에서 지워진 뒤 본 요청은 「토큰이 있었다」 표시(hadToken →
+                        // 세션 만료 안내) 없이 끝난다. 종전 경로(첫 라우트 처리)에 맡긴다
+                        if (injectedCacheVersion > 0) {
+                            void authPreload.then((authenticated) => {
+                                if (!authenticated && getApiClient().getToken()) {
+                                    return;
+                                }
+                                this.prefetchInitialLayout(result.data);
+                            });
+                        }
                         return result.data;
                     })
                     .catch(error => {
@@ -762,9 +831,11 @@ export class TemplateApp {
                         throw error;
                     }),
                 // 사용자 정보 프리로드 (에러 발생 시 무시)
-                authManager.preloadAuth(this.config.templateType === 'admin' ? 'admin' : 'user'),
-                // 템플릿 config.json 로딩 (errorHandling 파싱)
-                fetch(suffixed(`/api/templates/${this.config.templateId}/config`, 'json'))
+                authPreload,
+                // 템플릿 config.json 로딩 (errorHandling 파싱) — 셸에 실렸으면 그 값
+                useInlineTemplateConfig
+                    ? Promise.resolve({ ...inlineTemplateConfig, cache_version: injectedCacheVersion })
+                    : fetch(suffixed(`/api/templates/${this.config.templateId}/config`, 'json'))
                     .then(response => {
                         if (!response.ok) {
                             // config.json 로드 실패는 무시 (선택적)
@@ -931,8 +1002,7 @@ export class TemplateApp {
 
             logger.log('ApiClient onUnauthorized callback registered');
 
-            // 3. LayoutLoader 초기화 (캐시 버전 설정)
-            this.layoutLoader = new LayoutLoader(componentRegistry);
+            // 3. LayoutLoader 캐시 버전 확정 — 병렬 로딩 전에 만든 인스턴스를 쓴다. 버전이 같으면 미리 요청한 레이아웃을 그대로 둔다
             if (this.extensionCacheVersion > 0) {
                 this.layoutLoader.setCacheVersion(this.extensionCacheVersion);
             }
