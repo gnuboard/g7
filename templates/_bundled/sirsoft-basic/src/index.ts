@@ -107,6 +107,7 @@ import templateMetadata from '../template.json';
 
 // Handlers
 import { handlerMap } from './handlers';
+import { prefetchCartKey } from './handlers/storageHandlers';
 
 // IDV Modal Launcher (engine-v1.46.0+)
 import { registerSirsoftBasicIdentityLauncher } from './handlers/identityLauncher';
@@ -130,6 +131,9 @@ const TEMPLATE_IDENTIFIER = 'sirsoft-basic';
 // 다른 템플릿 페이지(편집기)에 실렸으면 노출하지 않는다 — 그 페이지의 로케일 전환이 이 맵을 호스트 핸들러 대신 다시 등록한다.
 if (typeof window !== 'undefined' && isPageTemplate(TEMPLATE_IDENTIFIER)) {
   (window as any).G7TemplateHandlers = handlerMap;
+  // 장바구니 키 발급을 번들이 실릴 때 시작한다 — 레이아웃 요청과 겹쳐 첫 화면 전 PHP 왕복 한 단계를 줄인다.
+  // 렌더 전 대기는 그대로다(init_actions 의 initCartKey 가 이 결과를 기다린다). 다른 템플릿 페이지(편집기)에서는 하지 않는다 (#879)
+  prefetchCartKey();
 }
 
 /**
