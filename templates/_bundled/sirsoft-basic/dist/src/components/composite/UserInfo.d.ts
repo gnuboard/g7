@@ -25,8 +25,8 @@ export interface AuthorInfo {
     id?: string | number;
     /** 사용자 UUID */
     uuid?: string;
-    /** 사용자 이름 */
-    name?: string;
+    /** 사용자 이름(서버가 그 영역의 표시 이름을 실어 준다). 보일 값이 없으면 null */
+    name?: string | null;
     /** 아바타 URL */
     avatar?: string;
     /** 사용자 상태 */
@@ -42,9 +42,9 @@ export interface UserInfoProps {
      */
     author?: AuthorInfo;
     /**
-     * 사용자 이름 (author.name보다 우선)
+     * 사용자 이름 (author.name보다 우선). null 이면 author.name 으로 넘어간다
      */
-    name?: string;
+    name?: string | null;
     /**
      * 사용자 ID (author.id보다 우선)
      */

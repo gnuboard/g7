@@ -443,6 +443,13 @@ return [
                 'dashboard_menu_missing' => '대시보드 메뉴(admin-dashboard)를 찾을 수 없어 매니저 메뉴 권한 부여를 건너뜁니다.',
                 'manager_dashboard_granted' => '매니저 역할에 대시보드 메뉴 권한을 부여했습니다.',
             ],
+            'core_field_definition' => [
+                'start' => '코어 회원 항목 시딩 시작...',
+                'no_definitions' => 'config/core.php 에 fields 선언이 없습니다.',
+                'skipped' => '  - :field 건너뜀: :reason',
+                'stale_removed' => '선언에서 빠진 코어 항목 :count개 정리',
+                'done' => '코어 회원 항목 시딩 완료 (:count건)',
+            ],
             'core_schedule' => [
                 'start' => '코어 스케줄 시딩 시작...',
                 'no_catalog' => 'config/core.php 에 schedules 카탈로그가 없습니다.',

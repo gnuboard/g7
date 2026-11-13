@@ -5,7 +5,7 @@ description: |
     - 식별자 칸: `_global.appConfig.auth.login_identifier.user` 가 `email_or_username` 이면 `type=text` + 「이메일 또는 사내 아이디」,
       아니면 `type=email` + 「이메일」.
     - 이메일 먼저 입력: 칸을 벗어날 때 값이 바뀌었으면(빈 값 제외) `POST /api/auth/login/discover`(`{identifier}`). `method=external` 이면
-      `_local.discovery` 로 비밀번호 칸·로그인 버튼을 숨기고 「{label}(으)로 계속」(redirect 쿼리 전달, 이름 없으면 「회사 계정으로 계속」)과
+      `_local.discovery` 로 비밀번호 칸·로그인 버튼을 숨기고 「{label} 계정으로 계속」(redirect 쿼리 전달, 이름 없으면 「회사 계정으로 계속」)과
       「다른 이메일로 로그인」(판정·기준값 초기화)을 보인다. `password` 판정이나 실패면 지금 화면.
 
 axes:

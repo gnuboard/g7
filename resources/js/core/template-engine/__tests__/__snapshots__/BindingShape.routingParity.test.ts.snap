@@ -300,6 +300,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "files": [
       "modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_reports_index.json",
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_usage_conditions.json",
+      "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_checkout_field_form.json",
       "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_consent_log.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_filter.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_identity_logs/_partial_filter.json",
@@ -447,7 +448,6 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_settings.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_template_layout_edit.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_template_list.json",
-      "templates/_bundled/sirsoft-admin_basic/layouts/admin_user_form.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_datagrid.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_filter.json",

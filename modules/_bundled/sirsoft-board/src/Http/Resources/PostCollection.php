@@ -7,6 +7,7 @@ use App\Enums\TotalRelation;
 use App\Http\Resources\BaseApiCollection;
 use App\Support\Query\BoundedCount;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -72,6 +73,10 @@ class PostCollection extends BaseApiCollection
         // 비밀글 썸네일 판정(SecretContentGate)이 글마다 스레드를 따로 읽지 않게, 이 페이지의 비밀글
         // 노드를 레벨당 1쿼리로 미리 채운다. 게이트는 전역 request() 로 판정하므로 같은 인스턴스에 채운다.
         app(SecretThreadAccess::class)->prime($this->collection, request());
+
+        // 작성자 표시 이름이 회원 추가 항목 값을 쓰는 설정이면 그 값을 글마다 읽지 않게 여기서 한 번에 읽어 둔다.
+        $displayNames = app(BoardDisplayNames::class);
+        $displayNames->preload($this->collection, $displayNames->areaFor($request));
 
         $data = $this->collection->map(function ($post) use ($request, &$currentNumber, $isDescending) {
             $postData = (new PostResource($post))->toListArray($request);

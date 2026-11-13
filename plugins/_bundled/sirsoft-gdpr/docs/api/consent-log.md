@@ -61,7 +61,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | ip_address | string | `127.0.0.1` | 요청/행위가 발생한 IP 주소 |
 | user_agent | string | `Mozilla/5.0 (Windows NT 10.0; Win64; …` | 동의 변경 요청의 User-Agent 문자열. DPO 감사 시 동의 표명 단말/브라우저를 식별하는 용도이며 회원 삭제 시 NULL로 익명화됩니다 |
 | created_at | string | `2026-07-03 00:24:27` | 생성 일시 |
-| user | object | `{"id":130,"uuid":"a21d03b4-df0b-4aa6-ab7a-f51143f6375a","…` | 동의 주체 회원 정보(id/uuid/name/email). 관계가 로드된 경우에만 포함되며 게스트 이력이거나 삭제로 익명화된 경우 null입니다 |
+| user | object | `{"id":130,"uuid":"a21d03b4-df0b-4aa6-ab7a-f51143f6375a","…` | 동의 주체 회원 정보(id/uuid/name/email, 실명 보조가 실릴 때 real_name). `name` 은 관리자 화면 영역 표시 이름입니다. 관계가 로드된 경우에만 포함되며 게스트 이력이거나 삭제로 익명화된 경우 null입니다 |
 
 **응답 예시**
 
@@ -98,5 +98,7 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명** 관리자 감사 화면에서 `gdpr_user_consent_histories` 테이블의 동의 로그를 페이지네이션으로 조회합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.view` 권한이 필요합니다. `email`, `session_id`, `consent_keys[]`, `actions[]`(granted|revoked|rejected — `ConsentAction` enum 전 케이스), `sources[]`(banner|preference_center|register|mypage|mypage_renew_all|withdraw — `ConsentSource` enum 전 케이스), `per_page`(1~100, 기본 20) 쿼리 필터를 지원합니다. DPO 감사 용도로 IP 주소와 User-Agent까지 노출되는 조회 전용 엔드포인트입니다.
+
+회원 이름(`user.name`)은 관리자 화면 영역(`core:admin`)의 표시 이름입니다. 보는 관리자에게 회원 조회 권한(`core.users.read`)이 있고 실명이 표시 이름과 다를 때만 `user.real_name` 이 더해지며, 그렇지 않으면 키 자체가 없습니다.
 
 

@@ -91,6 +91,14 @@
             "comment": "이전글·다음글 — 본문과 따로 받는다. 목록에서 삭제글을 보고 있었다면(del) 그 조건이 이어져야 앞뒤 순서가 목록과 어긋나지 않는다."
         }
     ],
+    "initLocal": {
+        "commentGuestForm": {
+            "guest_fields": {}
+        },
+        "replyGuestForm": {
+            "guest_fields": {}
+        }
+    },
     "computed": {
         "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
     },

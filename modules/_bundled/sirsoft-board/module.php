@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board;
 
 use App\Extension\AbstractModule;
+use App\Extension\Helpers\ExtensionLangTexts;
 use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Services\AttachmentService;
@@ -11,6 +12,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
+use Modules\Sirsoft\Board\Fields\UserNotificationFieldHandler;
 use Modules\Sirsoft\Board\Http\Middleware\EnsureBoardExists;
 use Modules\Sirsoft\Board\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
@@ -22,6 +26,8 @@ use Modules\Sirsoft\Board\Listeners\BoardScopeLedgerListener;
 use Modules\Sirsoft\Board\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Board\Listeners\CommentReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
+use Modules\Sirsoft\Board\Listeners\ExemptRequiredFieldsRoutesListener;
+use Modules\Sirsoft\Board\Listeners\GuestAuthorFieldDefinitionListener;
 use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
@@ -578,6 +584,134 @@ class Module extends AbstractModule
     }
 
     /**
+     * 이 모듈이 선언하는 항목 목록을 반환합니다.
+     *
+     * 회원 항목 집합(`core.user`)에 게시판 알림 수신 설정 4칸을 선언한다. 값은 종전과 같이 이 모듈의 테이블에 두고
+     * 핸들러(`UserNotificationFieldHandler`)가 읽고 쓴다. 요청 키와 응답 키는 항목 키 그대로(최상위 `notify_*`)다.
+     * 가입 화면 표시는 기본이 꺼짐이며 운영자가 환경설정 > 회원에서 켤 수 있다.
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     */
+    public function getFields(): array
+    {
+        $fields = [];
+        foreach (UserNotificationFieldHandler::FIELD_KEYS as $index => $key) {
+            $fields[] = [
+                'field_set' => 'core.user',
+                'key' => $key,
+                'type' => 'boolean',
+                'storage' => 'handler',
+                'storage_target' => UserNotificationFieldHandler::class,
+                'name' => $this->fieldTexts("user.{$key}.name"),
+                'description' => $this->fieldTexts("user.{$key}.description"),
+                'enabled' => true,
+                'required' => false,
+                'show_on_signup' => false,
+                'edit_scope' => 'self',
+                'ui' => ['group' => 'notifications'],
+                'sort_order' => 2000 + ($index * 10),
+            ];
+        }
+
+        // 비회원 작성자 항목 집합의 이메일. 기본은 꺼짐이고 게시판마다 글과 댓글에서 따로 켠다.
+        $fields[] = [
+            'field_set' => GuestAuthorFields::SET,
+            'key' => 'email',
+            'type' => 'email',
+            'storage' => 'value',
+            'name' => $this->fieldTexts('guest_author.email.name'),
+            'description' => $this->fieldTexts('guest_author.email.description'),
+            'enabled' => false,
+            'required' => false,
+            'sort_order' => 100,
+        ];
+
+        return $fields;
+    }
+
+    /**
+     * 이 모듈이 가진 항목 집합 선언을 반환합니다.
+     *
+     * 비회원 작성자 항목 집합(`sirsoft-board.guest_author`)은 비회원이 글과 댓글을 쓸 때 받는 항목이 모이는 자리다.
+     * 이름과 비밀번호는 글과 댓글의 컬럼에 저장하는 고정 항목이라 집합에 넣지 않는다(늘 사용, 늘 필수).
+     * 다른 확장도 `getFields()` 에서 이 집합에 항목을 선언할 수 있고, 그 항목은 게시판 설정의 「비회원 작성자 항목」 표에
+     * 출처와 함께 나타난다. 요청 키는 `guest_fields.{항목 키}`, 값은 공용 값 테이블에 저장한다.
+     *
+     * @return array<int, array<string, mixed>> 집합 선언 목록
+     */
+    public function getFieldSets(): array
+    {
+        return [
+            [
+                'key' => GuestAuthorFields::SET,
+                'label' => 'sirsoft-board::admin.guest_author_fields.set_label',
+                'owner_types' => [GuestAuthorFields::OWNER_POST, GuestAuthorFields::OWNER_COMMENT],
+                'surfaces' => [GuestAuthorFields::SURFACE_POST, GuestAuthorFields::SURFACE_COMMENT],
+                // 비회원은 파일을 올릴 소유 계정이 없다. 파일과 이미지 유형은 받지 않는다.
+                'allowed_types' => [
+                    'text', 'textarea', 'number', 'boolean', 'date', 'datetime', 'date_range',
+                    'choice', 'multi_choice', 'phone', 'email', 'url', 'address',
+                ],
+                'accepts_contributions' => true,
+                'allows_custom' => true,
+                'read_permission' => 'sirsoft-board.boards.read',
+                'manage_permission' => 'sirsoft-board.boards.update',
+                'bundle_key' => GuestAuthorFields::BUNDLE,
+            ],
+        ];
+    }
+
+    /**
+     * 이 모듈이 등록하는 표시 이름 영역을 반환합니다.
+     *
+     * - `sirsoft-board:posts`: 사용자 화면의 글, 댓글, 최근글, 인기글, 검색, 스크랩과 반응 목록의 작성자. 게시판마다
+     *   다르게 정할 수 있다(`boards.display_name_setting`). 정하지 않은 게시판은 이 영역의 설정을, 그것도 없으면 사이트 기본을 따른다.
+     * - `sirsoft-board:admin`: 관리자 화면의 게시글, 댓글, 신고, 스크랩, 반응 관리의 회원 이름. 관리자 화면 영역을 따른다.
+     *
+     * @return array<int, array<string, mixed>> 영역 선언 목록
+     */
+    public function getDisplayNameAreas(): array
+    {
+        return [
+            [
+                'key' => BoardDisplayNames::AREA_POSTS,
+                'label' => 'sirsoft-board::admin.display_name.areas.posts',
+                'audience' => 'user',
+                'parent' => 'core:site',
+                'default' => ['mode' => 'inherit'],
+                'instance_resolver' => [BoardDisplayNames::class, 'instanceSetting'],
+                'used_kinds_provider' => [BoardDisplayNames::class, 'usages'],
+                'sort_order' => 100,
+            ],
+            [
+                'key' => BoardDisplayNames::AREA_ADMIN,
+                'label' => 'sirsoft-board::admin.display_name.areas.admin',
+                'audience' => 'admin',
+                'parent' => 'core:admin',
+                'default' => ['mode' => 'inherit'],
+                'sort_order' => 110,
+            ],
+        ];
+    }
+
+    /**
+     * 항목 문구 파일(`src/lang/{언어}/fields.php`)과 이 모듈을 대상으로 하는 활성 언어팩의
+     * `backend/{언어}/fields.php` 에서 한 키의 언어별 글을 모읍니다(코어 `ExtensionLangTexts`).
+     *
+     * 번역기를 거치지 않고 파일을 직접 읽는다. 선언 동기화는 설치와 갱신 도중에도 돌아, 그때는 이 모듈의
+     * 번역 네임스페이스가 아직 등록되지 않았을 수 있다. 경로는 `getModulePath()` 로 얻는다. 갱신 도중 새 코드를 다시 읽는
+     * 인스턴스에서는 `__DIR__` 이 모듈 디렉터리를 가리키지 않을 수 있다. 언어팩(ja 등)을 읽지 않으면 그 언어 화면에서
+     * 이 모듈의 항목 이름만 한국어로 보인다. 팩을 켜고 끄면 코어가 이 선언을 다시 동기화한다.
+     *
+     * @param  string  $path  점 표기 키 (예: user.notify_comment.name)
+     * @return array<string, string> 언어 => 글
+     */
+    private function fieldTexts(string $path): array
+    {
+        return ExtensionLangTexts::collect('sirsoft-board', $this->getModulePath().'/src/lang', 'fields', $path);
+    }
+
+    /**
      * 훅 리스너 목록 반환
      */
     public function getHookListeners(): array
@@ -610,6 +744,10 @@ class Module extends AbstractModule
             BoardScopeLedgerListener::class,
             // 첨부 미리보기를 코어 이미지 썸네일의 서빙 경로·원본 제공자로 등록 (#869)
             ThumbnailServingListener::class,
+            // 비회원 작성자 항목에 게시판별 사용, 필수 설정을 입힌다
+            GuestAuthorFieldDefinitionListener::class,
+            // 추가 정보를 입력하지 않은 회원에게도 비밀번호 확인 라우트를 열어 둔다
+            ExemptRequiredFieldsRoutesListener::class,
         ];
     }
 
@@ -709,7 +847,7 @@ class Module extends AbstractModule
             // 프로토콜 상대(`//cdn/…` → `https://host//cdn/…`) · 상대 경로
             // (`img.png` → `https://hostimg.png`) · `data:` URI. 그리고 접두사를 채우는
             // 주체가 없어 리터럴 사이트 경로(`/images/logo.png`)는 하위 폴더 배치에서
-            // 접두사를 잃었다 (16차 G3 라운드 A-4).
+            // 접두사를 잃었다.
             $thumbnailRaw = (string) (data_get($post, 'thumbnail') ?? '');
             // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
             // 오리진은 `AssetUrl::siteAbsolute()` 가 위임하는 `SiteUrl`(APP_URL)이 정한다.

@@ -214,6 +214,10 @@ _단건 응답: `data` 객체의 필드 (`NotificationTemplateResource`)._
 
 **수신자 순서** `recipients` 는 보낸 규칙 순서 그대로 JSON 배열로 저장되고, 조회 응답(알림 정의 상세의 `templates[].recipients`)도 같은 순서의 배열로 나온다. 값 칸이 없는 규칙(`trigger_user`) 뒤에 값이 있는 규칙(`role` 등)을 보내도 순서가 바뀌지 않으며, 예전에 줄 번호 객체(`{"1":…,"0":…}`)로 저장된 행도 응답에서는 줄 번호 순서의 배열로 나온다.
 
+**없는 변수 경고(7.2.0)** 응답의 `data.warnings` 는 제목, 본문, 이동 주소가 쓰는 회원 항목 변수(`{member.<키>}`, `{member.custom.<키>}`) 가운데 지금 없는 것의 목록이다. 회원 항목이 지워졌거나 꺼졌거나 「관리자만 열람」이거나 이름을 잘못 적은 경우다. 저장은 그대로 되고 그 자리는 빈 글자로 발송된다. 항목은 `{"step":"template_variable","target":"member.custom.job","message":"지금 없는 변수입니다: {member.custom.job} …","level":"warning"}` 모양이고(`target` 이 변수 이름) 없으면 빈 배열 `[]` 이다. 이 키는 저장 응답에만 실리고 조회, 활성 전환, 기본값 복원 응답에는 없다.
+
+**지정 수신자의 이름** `recipients[]` 의 `type` 이 `specific_users` 인 규칙의 `display_names[]` 는 관리자 화면 영역의 표시 이름이다(저장된 uuid 순서 그대로, 지워진 회원은 uuid).
+
 
 ### POST /api/admin/notification-templates/{template}/reset
 <!-- @generated:start:api.admin.notification-templates.reset -->

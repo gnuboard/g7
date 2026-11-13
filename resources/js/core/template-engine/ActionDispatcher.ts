@@ -3061,7 +3061,7 @@ export class ActionDispatcher {
           // 이 표식이 덮는 것은 **벗기는 쪽** 축이다(`location.pathname` 을 읽으면
           // `stripBasePrefix()` 를 거치라는 계약). 붙이는 쪽 수집기 여섯은 이 줄을
           // 보지 않으므로 그쪽만 보면 「아무것도 덮지 않는 선무장 면제」로 읽히는데,
-          // 실제로 지우면 벗기는 쪽 게이트가 red 가 된다(10차 실측 — 그 판단으로
+          // 실제로 지우면 벗기는 쪽 게이트가 red 가 된다(그 판단으로
           // 한 번 지웠다가 되돌렸다).
           //
           // 면제가 정당한 이유: 이 값은 라우트 대조에 쓰이지 않고 그대로
@@ -3180,7 +3180,7 @@ export class ActionDispatcher {
           break;
 
         case 'closeModal':
-          result = await this.handleCloseModal(context);
+          result = await this.handleCloseModal(context, resolvedParams);
           break;
 
         case 'showAlert':
@@ -4598,7 +4598,7 @@ export class ActionDispatcher {
     // 여기가 **런타임 주경로**다 — 레이아웃 JSON 의 `"target": "/api/…"` 가 그대로 실려
     // 오고, 번들 레이아웃에만 387건이 있다. 생성기(`assetUrl.ts`)에만 규칙을 붙였을 때
     // 이 경로는 사각으로 남아 있었고, 증상은 오류가 아니라 **버튼이 아무 반응도 하지
-    // 않는 것**이었다 (11차 G3 라운드). 헬퍼는 멱등이고 절대 URL·프로토콜 상대 URL·
+    // 않는 것**이었다. 헬퍼는 멱등이고 절대 URL·프로토콜 상대 URL·
     // 상대 경로는 그대로 돌려주므로, 외부 주소를 target 으로 쓰는 흐름도 영향이 없다.
     finalTarget = withBasePrefix(finalTarget);
 
@@ -6514,9 +6514,15 @@ export class ActionDispatcher {
    * 모달 스택에서 최상위 모달을 제거합니다.
    * 스택이 비어있지 않으면 이전 모달이 다시 표시됩니다.
    *
+   * `params.all === true` 면 열린 창을 모두 닫습니다(engine-v1.94.0). 창 위에 뜬 안내 창에서 다른 화면으로 보낼 때
+   * 쓴다 — 맨 위 하나만 닫으면 밑의 창이 전역 창 스택에 남아, 그 화면으로 돌아왔을 때 다시 열린 채 보인다
+   * (#490 D-A3: 장바구니 「옵션 변경」 창 위의 「추가 정보가 필요합니다」 창 → 「입력하러 가기」). 엄격 비교라
+   * 문자열 "false"·숫자 1 같은 값으로는 전부 닫히지 않는다.
+   *
    * @param context 액션 컨텍스트 (선택적)
+   * @param params 액션 파라미터 (`all: true` 면 전부 닫기)
    */
-  private async handleCloseModal(context?: ActionContext): Promise<void> {
+  private async handleCloseModal(context?: ActionContext, params?: Record<string, any>): Promise<void> {
     if (!this.globalStateUpdater) {
       logger.warn('Global state updater is not set for closeModal');
       return;
@@ -6524,38 +6530,44 @@ export class ActionDispatcher {
 
     // 현재 모달 스택 가져오기 — sequence 안에서도 최신값 (engine-v1.75.2)
     const currentStack = this.latestModalStack(context);
+    const closeAll = params?.all === true;
 
-    // 닫히는 모달 ID (스택의 마지막 항목)
-    const closingModalId = currentStack.length > 0 ? currentStack[currentStack.length - 1] : null;
+    // 닫히는 모달 ID — 하나 닫기는 맨 위, 전부 닫기는 위에서부터 전부
+    const closingModalIds = closeAll ? [...currentStack].reverse() : currentStack.slice(-1);
 
-    // 스택에서 최상위 모달 제거
-    const newStack = currentStack.slice(0, -1);
+    // 스택에서 최상위 모달 제거 (전부 닫기면 빈 스택)
+    const newStack = closeAll ? [] : currentStack.slice(0, -1);
 
     // 스택이 비어있으면 activeModal도 null로 설정
     const newActiveModal = newStack.length > 0 ? newStack[newStack.length - 1] : null;
 
-    // 레이아웃 컨텍스트 스택에서 pop (scope: 'parent' 및 $parent 바인딩 지원용)
+    // 레이아웃 컨텍스트 스택에서 pop (scope: 'parent' 및 $parent 바인딩 지원용) — 전부 닫기면 남김없이 비운다
     const layoutContextStack: Array<{
       state: Record<string, any>;
       setState: (updates: any) => void;
       dataContext?: Record<string, any>;
     }> = (window as any).__g7LayoutContextStack || [];
-    if (layoutContextStack.length > 0) {
+    const popCount = closeAll ? layoutContextStack.length : Math.min(1, layoutContextStack.length);
+    for (let i = 0; i < popCount; i++) {
       // 메모리 정리: pop 전에 dataContext 참조 해제
       const poppedContext = layoutContextStack[layoutContextStack.length - 1];
       if (poppedContext) {
         poppedContext.dataContext = undefined;
       }
       layoutContextStack.pop();
+    }
+    if (popCount > 0) {
       (window as any).__g7LayoutContextStack = layoutContextStack;
-      logger.log(`[handleCloseModal] 레이아웃 컨텍스트 스택에서 pop, 스택 크기: ${layoutContextStack.length}`);
+      logger.log(`[handleCloseModal] 레이아웃 컨텍스트 스택에서 ${popCount}개 pop, 스택 크기: ${layoutContextStack.length}`);
     }
 
     // DevTools: 모달 닫힘 추적
-    if (closingModalId) {
+    if (closingModalIds.length > 0) {
       const devTools = getDevTools();
       if (devTools?.isEnabled()) {
-        devTools.trackModalClose?.(closingModalId, context?.state);
+        for (const closingModalId of closingModalIds) {
+          devTools.trackModalClose?.(closingModalId, context?.state);
+        }
       }
     }
 

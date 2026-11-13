@@ -117,6 +117,8 @@
                 <span data-if="{{!row.member?.uuid}}" class="board-text-heading">{{row.member?.name}}</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.withdrawn</badge>
               </div>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-testid="author-real-name" data-if="{{!!row.member?.real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: row.member?.real_name })}}">{{row.member?.real_name}}</span>
               <span data-if="{{row.member?.email}}" class="board-text-tertiary">({{row.member?.email}})</span>
             </div>
           </cell>
@@ -147,7 +149,11 @@
         </column>
         <column field="author_name" :sortable="false" header="$t:sirsoft-board.admin.scraps.columns.author_name">
           <cell>
-            <span class="board-text-heading">{{row.author_name ?? ''}}</span>
+            <div class="board:flex board:flex-col">
+              <span class="board-text-heading">{{row.author_name ?? ''}}</span>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-testid="author-real-name" data-if="{{!!row.author_real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: row.author_real_name })}}">{{row.author_real_name}}</span>
+            </div>
           </cell>
         </column>
         <column field="post_status" :sortable="false" header="$t:sirsoft-board.admin.scraps.columns.post_status">

@@ -9,6 +9,7 @@ use App\Extension\HookManager;
 use App\Models\Concerns\UserOverrideValueComparator;
 use App\Models\NotificationTemplate;
 use App\Notifications\Identity\IdentityNotificationType;
+use App\Notifications\MemberVariables;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -468,6 +469,11 @@ class NotificationTemplateService
             }
         }
 
+        // 회원 항목 변수는 받는 사람마다 값이 달라 미리보기에서는 [설명] 으로 보인다.
+        foreach (app(MemberVariables::class)->catalog($locale) as $var) {
+            $replacements['{'.$var['key'].'}'] ??= '['.$var['description'].']';
+        }
+
         // 명시적으로 전달된 variables가 있으면 덮어쓰기
         foreach ($data['variables'] ?? [] as $key => $value) {
             $replacements['{'.$key.'}'] = (string) $value;
@@ -477,6 +483,40 @@ class NotificationTemplateService
             'subject' => strtr($subject, $replacements),
             'body' => strtr($body, $replacements),
         ];
+    }
+
+    /**
+     * 템플릿이 쓰는 회원 항목 변수 가운데 지금 없는 것을 경고로 돌려줍니다.
+     *
+     * 회원 항목을 지우거나 끄면 그 변수를 쓰던 템플릿의 자리가 빈 글자로 나간다. 저장을 막지는 않고
+     * (운영자가 항목을 다시 켤 수도 있다) 저장 응답에 어떤 변수가 없는지 알려 준다.
+     * 항목 모양은 확장 생명주기 경고(`data.warnings`)와 같다.
+     *
+     * @param  NotificationTemplate  $template  템플릿
+     * @return array<int, array{step: string, target: string, message: string, level: string}> 경고 목록 (없으면 빈 배열)
+     */
+    public function variableWarnings(NotificationTemplate $template): array
+    {
+        $variables = app(MemberVariables::class);
+        $referenced = $variables->extract($template->subject, $template->body, $template->click_url);
+        if ($referenced === []) {
+            return [];
+        }
+
+        // 확장이 편집 화면 변수 목록에 더한 `member.…` 변수는 있는 것으로 본다.
+        $known = [];
+        foreach ($template->definition?->localizedVariables() ?? [] as $variable) {
+            if (is_array($variable) && is_string($variable['key'] ?? null)) {
+                $known[] = $variable['key'];
+            }
+        }
+
+        return array_map(static fn (string $name): array => [
+            'step' => 'template_variable',
+            'target' => $name,
+            'message' => __('notification.warnings.unknown_variable', ['variable' => '{'.$name.'}']),
+            'level' => 'warning',
+        ], $variables->unknown($referenced, $known));
     }
 
     /**

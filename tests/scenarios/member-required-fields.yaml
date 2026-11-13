@@ -1,0 +1,50 @@
+feature: member_required_fields
+
+description: |
+  비어 있는 필수 항목 판정(RequiredFieldsChecker)과 그 판정을 쓰는 관리자 회원 목록, 그리고 기존 회원 입력 요구.
+  보통 회원은 「기존 회원에게도 입력 요구」를 켠 항목만, 필수 항목을 건너뛰고 만들어진 회원은 필수 항목 전부가 대상이다.
+  목록은 행마다 미입력 항목을 싣고, 「필수 항목 미입력」과 「닉네임 중복」 필터, 운영자 추가 항목의 열과 검색 대상 정보를 준다.
+  판정은 회원과 정의 버전별로 캐시하고 회원 값이 저장되면 지운다. 미입력 회원의 쓰기 요청은 `api` 그룹 전체에서
+  403 `required_fields_pending` 으로 거부하되, 관리자 API 와 통과 표식이 붙은 라우트, 확장이 필터로 보탠 라우트는 통과시킨다.
+  추가 정보 저장은 비어 있던 필수 항목만 받고, 다 채우면 건너뛴 표시를 지운다.
+
+coverage_strategy: full
+
+axes:
+  case: [member_kind, locked, batch, list_required_missing, list_required_missing_none, list_nickname_duplicate, list_member_fields_meta, cache_version, cache_invalidation, write_block, allow_list, core_markers, admin_exception, deferred_complete, locked_not_blocked, middleware_order]
+
+effects:
+  - pending_judged_by_require_existing_flag
+  - pending_covers_all_required_for_deferred_member
+  - pending_excludes_fields_locked_for_member
+  - pending_batch_uses_constant_queries
+  - list_rows_carry_pending_required_fields
+  - list_filters_members_missing_required_fields
+  - list_missing_filter_empty_without_required_fields
+  - list_filters_members_with_duplicated_nickname
+  - list_exposes_dynamic_columns_and_search_fields
+  - pending_cached_under_user_and_definition_version
+  - pending_recomputed_when_definition_version_changes
+  - pending_cache_forgotten_on_member_value_save
+  - pending_cache_forgotten_on_member_row_change
+  - pending_member_write_rejected_with_error_code
+  - pending_member_read_passes
+  - module_route_write_rejected
+  - guest_write_passes
+  - pending_member_can_update_profile_on_both_addresses
+  - pending_member_can_logout
+  - pending_member_passes_marked_core_routes
+  - extension_filter_exempts_named_routes
+  - core_exit_routes_carry_allow_marker
+  - admin_api_write_passes_for_pending_admin
+  - pending_admin_blocked_on_user_route
+  - required_context_lists_only_pending_fields
+  - required_fields_save_accepts_only_pending_fields
+  - deferred_mark_cleared_after_all_filled
+  - auth_response_carries_pending_required_fields
+  - locked_empty_field_does_not_block_writes
+  - gate_registered_on_api_group_after_active_user_gate
+  - inactive_member_rejected_by_status_first
+
+test_files:
+  - tests/Feature/User/RequiredFieldsTest.php

@@ -748,7 +748,12 @@ class PostController extends PublicBaseController
                 ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_file_size')
                 ?? 10;
 
+            // 비회원 칸(이름, 비밀번호의 필수 여부와 게시판이 켠 항목) — 화면이 이 값으로 칸을 그린다
+            $boardData['guest_fields'] = $this->boardService->guestFieldsFor($board);
+
             $metaData = [
+                // 로그인한 회원이 이 게시판에서 어떤 이름으로 보이는지 (작성자 자리의 안내 줄). 비회원이면 모두 null
+                ...$this->boardService->authorDisplayFor($board, Auth::user()),
                 'board' => $boardData,
                 // 편집기 본문 미디어 업로드 계약 (#883) — 이 게시판 업로드 권한이 있고 받는 종류가 있을 때만. 「파일 첨부 사용」과
                 // 무관하다(D26). 이 값을 읽지 않는 복제 템플릿은 현행 동작(관리자만 편집기 자체 업로드).

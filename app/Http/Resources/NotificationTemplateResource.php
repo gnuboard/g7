@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Models\Role;
-use App\Models\User;
 use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 
@@ -21,6 +23,26 @@ class NotificationTemplateResource extends BaseApiResource
     }
 
     /**
+     * 응답에 실을 경고 목록 (null 이면 `warnings` 키를 싣지 않는다).
+     *
+     * @var array<int, array<string, string>>|null
+     */
+    private ?array $warnings = null;
+
+    /**
+     * 저장 응답에 경고 목록을 싣습니다 (없는 변수 등). 경고가 없어도 빈 배열로 싣는다.
+     *
+     * @param  array<int, array<string, string>>  $warnings  경고 목록 (`step`, `target`, `message`, `level`)
+     * @return static 체이닝용 자기 자신
+     */
+    public function withWarnings(array $warnings): static
+    {
+        $this->warnings = array_values($warnings);
+
+        return $this;
+    }
+
+    /**
      * 리소스를 배열로 변환합니다.
      *
      * @param  Request  $request
@@ -29,6 +51,7 @@ class NotificationTemplateResource extends BaseApiResource
     public function toArray(Request $request): array
     {
         return [
+            ...($this->warnings !== null ? ['warnings' => $this->warnings] : []),
             'id' => $this->getValue('id'),
             'definition_id' => $this->getValue('definition_id'),
             'channel' => $this->getValue('channel'),
@@ -88,7 +111,13 @@ class NotificationTemplateResource extends BaseApiResource
 
             if ($rule['type'] === 'specific_users' && ! empty($rule['value'])) {
                 $uuids = array_values(array_filter((array) $rule['value']));
-                $names = User::whereIn('uuid', $uuids)->pluck('name', 'uuid');
+                // 이름은 관리자 영역의 표시 이름이다 — 회원을 한 번에 읽어 한 번에 계산한다.
+                $members = app(UserRepositoryInterface::class)->findManyByUuidsKeyed($uuids);
+                $resolved = app(DisplayNameResolver::class)->resolveMany($members, DisplayNameAreaRegistry::AREA_ADMIN);
+                $names = [];
+                foreach ($members as $uuid => $member) {
+                    $names[$uuid] = $resolved[$member->getKey()] ?? null;
+                }
 
                 // **저장된 순서**로 되돌린다. DB 반환 순서로 뽑으면 화면이 인덱스로 짝지을 때
                 // 다른 사람 이름이 붙고, 삭제된 UUID 가 섞이면 그 뒤가 통째로 한 칸씩 밀린다.

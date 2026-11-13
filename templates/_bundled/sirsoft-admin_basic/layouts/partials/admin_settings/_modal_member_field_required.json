@@ -1,0 +1,219 @@
+{
+    "comment": "회원 항목을 필수로 바꿀 때의 확인 창(#490 U1). 가입 항목 표의 「필수」 스위치가, 그 항목이 비어 있는 기존 회원이 한 명이라도 있을 때만 연다\n  (0명이면 창 없이 바로 저장한다). 비어 있는 회원 수를 보이고 그 회원들에게 언제 입력을 요구할지 고르게 한다.\n  「내 정보 수정 때만」은 회원이 내 정보를 저장할 때만 요구하고, 「로그인하면 바로」는 로그인한 회원을 추가 정보 입력 화면으로 보낸다.\n  고르고 눌러야 저장되며, `required` 와 `require_existing_members` 를 한 요청으로 보낸다. 취소하면 아무것도 저장하지 않는다\n  (표의 스위치는 서버 값으로만 바뀌므로 꺼진 그대로다). 상태는 전역 `member_field_required_modal` 한 객체에 있다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 > 회원 탭 항목 필수 전환 확인 모달 — 빈 기존 회원 수와 입력 요구 시점 선택",
+        "editor_label": "$t:admin.modal_label.admin_settings.member_field_required_modal"
+    },
+    "id": "member_field_required_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.member.fields.required_confirm.title",
+        "size": "md",
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "member_field_required_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "member-field-required-cancel",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.member_field_required_modal?.isSaving === true}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "필수로 바꾸기. 필수와 「기존 회원에게도 입력 요구」(로그인하면 바로 = 켬, 내 정보 수정 때만 = 끔)를 한 요청으로 저장한다.\n               성공이든 실패든 창을 닫고 표를 다시 받는다. 다른 관리자가 먼저 바꿨으면(409) 그 문구로 알린다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "member_field_required_modal.isSaving": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/field-sets/core.user/fields/{{_global.member_field_required_modal?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PUT",
+                                    "body": {
+                                        "required": true,
+                                        "require_existing_members": "{{_global.member_field_required_modal?.mode === 'on_login'}}",
+                                        "fields_version": "{{_global.member_field_required_modal?.fieldsVersion ?? null}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.settings.member.fields.saved"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "member_field_required_modal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "member_field_required_modal": null
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.error_code === 'fields_changed' ? '$t:admin.settings.member.fields.changed_by_other' : (error.message ?? '$t:admin.settings.member.fields.save_failed')}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "member_field_required_modal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "member_field_required_modal": null
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "member-field-required-submit",
+                    "className": "flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg",
+                    "disabled": "{{_global.member_field_required_modal?.isSaving === true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.member_field_required_modal?.isSaving === true}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.member_field_required_modal?.isSaving === true ? '$t:common.saving' : '$t:admin.settings.member.fields.required_confirm.submit'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "data-testid": "member-field-required-message",
+                        "className": "text-gray-700 dark:text-gray-300 break-words"
+                    },
+                    "text": "$t:admin.settings.member.fields.required_confirm.message|name={{_global.member_field_required_modal?.label ?? ''}}|count={{Number(_global.member_field_required_modal?.missing_count ?? 0)}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.member.fields.required_confirm.mode_label"
+                        },
+                        {
+                            "id": "member_field_required_mode",
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "actions": [
+                                {
+                                    "comment": "입력 요구 시점 고르기. 값은 창 상태에만 담고, 「필수로 바꾸기」를 눌러야 저장된다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "member_field_required_modal.mode": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "member_field_required_mode",
+                                "autoBinding": false,
+                                "value": "{{_global.member_field_required_modal?.mode ?? 'on_edit'}}",
+                                "inline": false,
+                                "disabled": "{{_global.member_field_required_modal?.isSaving === true}}",
+                                "options": [
+                                    {
+                                        "value": "on_edit",
+                                        "label": "$t:admin.settings.member.fields.required_confirm.on_edit"
+                                    },
+                                    {
+                                        "value": "on_login",
+                                        "label": "$t:admin.settings.member.fields.required_confirm.on_login"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "data-testid": "member-field-required-mode-hint",
+                                "className": "form-hint break-words"
+                            },
+                            "text": "$t:admin.settings.member.fields.required_confirm.hint.{{_global.member_field_required_modal?.mode ?? 'on_edit'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

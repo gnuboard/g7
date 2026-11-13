@@ -840,5 +840,86 @@
       "running": "実行中",
       "never": "未実行"
     }
+  },
+  "checkout_fields": {
+    "title": "注文書項目",
+    "description": "注文書で入力してもらう注文者、配送先項目の使用と必須を設定します。",
+    "instant_save_notice": "この表の変更はすぐに保存されます。",
+    "no_read_permission": "注文書項目を閲覧する権限がありません。",
+    "add_button": "項目を追加",
+    "empty": "項目がありません。",
+    "col": {
+      "group": "セクション",
+      "name": "項目",
+      "source": "提供元",
+      "enabled": "使用",
+      "required": "必須"
+    },
+    "group": {
+      "orderer": "注文者",
+      "shipping": "配送先"
+    },
+    "source": {
+      "custom": "追加",
+      "extension": "拡張"
+    },
+    "unavailable": "使用不可",
+    "unavailable_desc": "この項目のタイプを提供した拡張がオフになっています。",
+    "saved": "保存しました。",
+    "save_failed": "保存できませんでした。",
+    "changed_by_other": "他の管理者が項目を変更しました。読み込み直しました。",
+    "form": {
+      "editor_label": "ショッピングモール注文書項目の追加/編集",
+      "title": {
+        "create": "注文書項目の追加",
+        "edit": "注文書項目の編集"
+      },
+      "group": "セクション",
+      "type": "タイプ",
+      "type_placeholder": "タイプを選んでください",
+      "type_locked": "タイプは作成後に変更できません。",
+      "key": "キー",
+      "key_hint": "英小文字で始まり、英小文字、数字、アンダースコアのみ使用できます(2〜50文字)。作成後は変更できません。",
+      "name": "名前",
+      "description": "案内文",
+      "options": {
+        "title": "選択肢",
+        "add_button": "選択肢を追加",
+        "hint": "選択肢を削除して保存すると、その値で入力された内容も一緒に空になります。",
+        "empty": "選択肢がありません。1個以上追加してください。",
+        "value": "値",
+        "value_placeholder": "英字の値 (例: door)",
+        "label": "名前",
+        "label_placeholder": "注文書に表示する名前"
+      }
+    },
+    "delete": {
+      "editor_label": "ショッピングモール注文書項目の削除確認",
+      "title": "注文書項目の削除",
+      "message": "この項目を削除しますか？",
+      "warning": "この項目に入力された値も一緒に削除され、元に戻せません。",
+      "success": "削除しました。",
+      "failed": "削除できませんでした。"
+    }
+  },
+  "display_name": {
+    "title": "投稿者の表示名",
+    "review_description": "商品レビューに表示する投稿者の名前を設定します。",
+    "inquiry_description": "商品問い合わせに表示する投稿者の名前を設定します。",
+    "mode_label": "表示方式",
+    "review_mode_aria": "レビュー投稿者の表示方式",
+    "review_kind_aria": "レビュー投稿者の表示名の種類",
+    "inquiry_mode_aria": "問い合わせ投稿者の表示方式",
+    "inquiry_kind_aria": "問い合わせ投稿者の表示名の種類",
+    "mode": {
+      "inherit": "上位領域に従う",
+      "fixed": "特定の種類に固定",
+      "member": "会員が選んだ値"
+    },
+    "kind_placeholder": "種類を選んでください",
+    "kind_option": "{{label}} (例: {{preview}})",
+    "effective": "現在は{{kind}}で表示されます。",
+    "effective_with_source": "現在は{{kind}}で表示されます。({{source}}の設定に基づく)",
+    "requires_nickname_hint": "ニックネームが必要な種類です。保存すると、会員項目のニックネームが使用、必須に固定されることがあります。"
   }
 }

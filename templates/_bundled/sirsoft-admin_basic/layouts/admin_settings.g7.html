@@ -338,6 +338,87 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 회원 항목 정의(#490) — 회원 탭에서만 받는다. 가입 항목 표의 행(`fields`), 낡은 표 판정용 정의 버전(`fields_version`),
+       「항목 추가」에서 고를 유형(`types`), 이 집합을 바꿀 권한(`abilities.can_update`), 표 위 경고(`notices`)를 한 번에 준다.
+       표의 스위치·순서·추가·수정·삭제는 저장하자마자 이 소스만 다시 받는다(설정 폼 `settings` 는 건드리지 않는다).
+       응답이 도착하면(성공이든 실패든) 표의 「저장 중」 표식과 끌어 놓은 순서의 임시 값을 지운다 — 표식을 요청 쪽이 아니라
+       여기서 지우는 까닭: 새 정의 버전이 도착하기 전에 다음 조작이 나가면 낡은 버전을 실어 409 로 거부된다. -->
+  <data-source id="memberFieldDefs" label_key="$t:editor.data_source.memberFieldDefs" type="api" endpoint="/api/admin/field-sets/core.user/fields" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="set" :value="{}"/>
+        <field name="fields" :value="[]"/>
+        <field name="fields_version" :value="null"/>
+        <field name="types" :value="[]"/>
+        <field name="abilities">
+          <field name="can_update" :value="false"/>
+        </field>
+        <field name="notices">
+          <field name="signup_layout_modified" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <success>
+      <set-state target="global" :memberFieldBusy="null" :memberFieldOrder="null"/>
+    </success>
+    <fail>
+      <set-state target="global" :memberFieldBusy="null" :memberFieldOrder="null"/>
+    </fail>
+  </data-source>
+  <!-- 닉네임 중복 검사 준비 작업의 진행 상태(#490 U14) — 회원 탭에서만 받는다. 「중복 금지」를 켜고 저장하면 서버가 기존 회원의
+       닉네임 비교 키를 다시 계산하는데, 그 작업이 도는 동안(`status === 'running'`) 3초마다 다시 받아 진행 막대를 그리고 끝나면 멈춘다
+       (사이트맵 진행 상태와 같은 방식). 판정은 응답값으로만 한다. 탭 전환 덮개는 이 응답을 기다리지 않는다(background). -->
+  <data-source id="memberNicknameRecompute" label_key="$t:editor.data_source.memberNicknameRecompute" type="api" endpoint="/api/admin/member-fields/nickname-recompute-status" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="status" value="idle"/>
+        <field name="processed" :value="0"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+    <success>
+      <start-interval if="{{response?.data?.data?.status === 'running'}}" id="member_nickname_recompute_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="memberNicknameRecompute"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.status !== 'running'}}" id="member_nickname_recompute_poll"/>
+    </success>
+  </data-source>
+  <!-- 표시 이름 구획이 그릴 종류와 자리 목록(#490) — 회원 탭에서만 받는다. 종류(`kinds`)는 미리보기 글자와 닉네임 필요 여부를,
+       자리(`areas`)는 나무 순서와 깊이(`depth`), 지금 저장된 방식과 종류, 상속을 다 따라간 결과(`effective`)를 싣는다.
+       `nickname_requirement` 는 지금 저장된 설정이 닉네임에 거는 요구 수준이다(none, chosen, all). 회원 탭을 저장하면 다시 받는다. -->
+  <data-source id="memberDisplayNameOptions" label_key="$t:admin.settings.member.display_name.data_source.options" type="api" endpoint="/api/admin/member-fields/display-name-options" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="kinds" :value="[]"/>
+        <field name="areas" :value="[]"/>
+        <field name="selectable_kinds" :value="[]"/>
+        <field name="member_default_kind" :value="null"/>
+        <field name="nickname_requirement" value="none"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 닉네임이 비어 있는 회원 수와 닉네임 항목의 지금 상태(#490 U12) — 회원 탭에서만 받는다. 표시 이름 설정을 닉네임이 필요한 쪽으로 고치면
+       저장하기 전에 이 숫자를 안내에 보인다. 안내용이라 탭 전환 덮개가 기다리지 않고(background), 받지 못해도 화면을 막지 않는다. -->
+  <data-source id="memberNicknameEmptyCount" label_key="$t:admin.settings.member.display_name.data_source.nickname_empty_count" type="api" endpoint="/api/admin/member-fields/nickname-empty-count" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="nickname_empty_count" :value="0"/>
+        <field name="nickname_requirement" value="none"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 알림 정의 목록 — 알림 정의 탭 전용. `extension_type="core"` 로 **코어 소유 정의만** 받는다 — 코어 선언(core)과
        운영자가 추가한 본인인증 정책 문구(admin)가 함께 들어온다. 확장이 들인 정의는 그 확장의 설정 화면 몫이다.
        `category` 는 분류 칩 값(빈 값=전체, general=일반 알림, identity=본인인증)이다. -->
@@ -463,6 +544,10 @@
   <computed name="canReadSchedules">{{current_user?.data ? (current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.schedules.read') : null}}</computed>
   <computed name="isReadOnly">{{_global.settingsAbilities?.can_update !== true}}</computed>
   <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
+  <computed name="memberFields">{{(function() { const f = memberFieldDefs?.data?.fields ?? []; const o = _global.memberFieldOrder; if (!Array.isArray(o)) return f; return [...f].sort((a, b) =&gt; o.indexOf(a.id) - o.indexOf(b.id)); })()}}</computed>
+  <computed name="memberFieldsReadOnly">{{memberFieldDefs?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="memberFieldsVersion">{{memberFieldDefs?.data?.fields_version ?? null}}</computed>
+  <computed name="memberDisplayNamePending">{{(function(areas, kinds, form, saved) { return (function(req, setting) { return (function(level) { return { level: level, saved: saved, raised: ['none', 'chosen', 'all'].indexOf(level) &gt; ['none', 'chosen', 'all'].indexOf(saved) }; })(areas.some(function(a) { return setting(a).mode === 'fixed' &amp;&amp; req(setting(a).kind); }) ? 'all' : (areas.some(function(a) { return setting(a).mode === 'member'; }) &amp;&amp; [].concat(form.display_name_selectable_kinds ?? [], [form.display_name_member_default_kind]).some(req) ? 'chosen' : 'none')); })(function(k) { return kinds.some(function(x) { return x.key === k &amp;&amp; x.requires_nickname === true; }); }, function(a) { return (form.display_name_areas ?? {})[a.key] ?? { mode: a.mode, kind: a.kind }; }); })(memberDisplayNameOptions?.data?.areas ?? [], memberDisplayNameOptions?.data?.kinds ?? [], _local.form?.member ?? {}, memberDisplayNameOptions?.data?.nickname_requirement ?? 'none')}}</computed>
   <computed name="queueConnectionList">{{(function() { const d = _local.form?.drivers ?? {}; const list = Array.isArray(d.queue_connections) ? d.queue_connections.filter(c =&gt; typeof c === 'string') : []; if (list.length &gt; 0) return list; return d.queue_driver &amp;&amp; d.queue_driver !== 'sync' ? [d.queue_driver] : []; })()}}</computed>
   <computed name="queueErrors">{{(function() { const e = _local.errors; const empty = { connections: [], namesRoot: [], names: {} }; if (!e || typeof e !== 'object') return empty; return Object.entries(e).reduce((out, [k, v]) =&gt; { const msgs = Array.isArray(v) ? v : [v]; if (k === 'drivers.queue_connections' || k.startsWith('drivers.queue_connections.')) return { ...out, connections: [...out.connections, ...msgs] }; if (k === 'drivers.queue_names') return { ...out, namesRoot: [...out.namesRoot, ...msgs] }; if (k.startsWith('drivers.queue_names.')) { const conn = k.slice('drivers.queue_names.'.length).split('.')[0]; return { ...out, names: { ...out.names, [conn]: [...(out.names[conn] ?? []), ...msgs] } }; } return out; }, empty); })()}}</computed>
   <computed name="errorsWithoutIpRules">{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) =&gt; !k.startsWith('security.ip_restriction_rules')); return rest.length &gt; 0 ? Object.fromEntries(rest) : null; })()}}</computed>
@@ -610,6 +695,8 @@
     <wait-for>passwordExpiryPreview</wait-for>
     <wait-for>passwordExpiryManualRuns</wait-for>
     <wait-for>unplaced_bundled_notice</wait-for>
+    <wait-for>memberFieldDefs</wait-for>
+    <wait-for>memberDisplayNameOptions</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -628,9 +715,9 @@
     </set-state>
     <!-- 주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두
          거짓이라 본문이 통째로 빈다. 기본 탭으로 바꿔 연다 — 목록은 탭 바와 같아야 한다(회귀 테스트가 대조한다). -->
-    <set-state if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'content', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}" target="global" activeSettingsTab="general"/>
+    <set-state if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'content', 'seo', 'security', 'member', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}" target="global" activeSettingsTab="general"/>
     <!-- audit:allow layout-list-context-navigate-merge-query 알 수 없는 탭 키 정정 — 그 탭의 목록 쿼리는 의미가 없어 물려받지 않는다(탭 전환과 같은 규칙). -->
-    <navigate if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'content', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}" path="/admin/settings" :replace="true">
+    <navigate if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'content', 'seo', 'security', 'member', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}" path="/admin/settings" :replace="true">
       <query tab="general"/>
     </navigate>
     <!-- 앱 키 재생성 창에서 외부 수단(회사 계정 다시 로그인 등)으로 본인 확인을 마치고 돌아왔다(7.2.0) — 받아 온 확인 토큰을 담고,
@@ -681,6 +768,7 @@
             <item id="content" href="/admin/settings?tab=content" label="$t:admin.settings.tabs.content"/>
             <item id="seo" href="/admin/settings?tab=seo" label="$t:admin.settings.tabs.seo"/>
             <item id="security" href="/admin/settings?tab=security" label="$t:admin.settings.tabs.security"/>
+            <item id="member" href="/admin/settings?tab=member" label="$t:admin.settings.tabs.member"/>
             <item id="drivers" href="/admin/settings?tab=drivers" label="$t:admin.settings.tabs.drivers"/>
             <item id="advanced" href="/admin/settings?tab=advanced" label="$t:admin.settings.tabs.advanced"/>
             <item id="notification_definitions" href="/admin/settings?tab=notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
@@ -725,6 +813,16 @@
             <item id="messages" label="$t:admin.settings.identity.sub_tabs.messages"/>
           </prop>
         </tab-navigation-scroll>
+        <!-- 회원 탭의 하위 탭 막대(#490) — 본인인증 탭과 같은 스크롤 추적형이다. 탭 id 에 `member_section_` 을 붙인 구획으로 스크롤한다. -->
+        <tab-navigation-scroll data-type="composite" data-ref="member_sub_tab_navigation" data-if="{{(_global.activeSettingsTab || query.tab) === 'member'}}" class="bg-white dark:bg-gray-800 flex gap-1 px-6" sectionIdPrefix="member_section_" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+          <responsive on="640-1023" class="bg-white dark:bg-gray-800 flex gap-1 px-8"/>
+          <responsive on="1024-" class="bg-white dark:bg-gray-800 flex gap-1 px-10"/>
+          <prop name="tabs">
+            <item id="fields" label="$t:admin.settings.member.sub_tabs.fields"/>
+            <item id="display_name" label="$t:admin.settings.member.display_name.sub_tab"/>
+            <item id="nickname" label="$t:admin.settings.member.sub_tabs.nickname"/>
+          </prop>
+        </tab-navigation-scroll>
       </div>
       <div data-ref="settings_tab_content" class="tab-content">
         <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
@@ -745,6 +843,7 @@
         <include src="partials/admin_settings/_tab_content.g7.html"/>
         <include src="partials/admin_settings/_tab_seo.g7.html"/>
         <include src="partials/admin_settings/_tab_security.g7.html"/>
+        <include src="partials/admin_settings/_tab_member.g7.html"/>
         <include src="partials/admin_settings/_tab_drivers.g7.html"/>
         <include src="partials/admin_settings/_tab_advanced.g7.html"/>
         <include src="partials/admin_settings/_tab_notification_definitions.g7.html"/>
@@ -787,7 +886,11 @@
                  보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).
                  업로드 탭은 썸네일 규격 표(화면용 행 `thumbnail_presets_rows`, 행마다 kind·defaults)를 저장 키 `thumbnail_presets` 로 바꿔 보낸다 —
                  표시용 칸은 빼고 og 행도 뺀다(크기를 SEO 탭이 소유하고 서버도 저장하지 않는다). 고정 슬롯 보충은 서버(mergeForSave) 몫이다.
-                 저장 뒤 썸네일 사용량도 다시 받는다 — 저장 위치를 바꿨다면 새 디스크 기준으로 세고 그 줄의 비우기 잠금이 풀린다(#869). -->
+                 저장 뒤 썸네일 사용량도 다시 받는다 — 저장 위치를 바꿨다면 새 디스크 기준으로 세고 그 줄의 비우기 잠금이 풀린다(#869).
+                 회원 탭이면 항목 정의(닉네임 잠금 반영)와 닉네임 중복 검사 준비 상태를 다시 받는다 — 중복 금지를 켜고 저장하면 준비 작업이 시작된다(#490).
+                 표시 이름의 종류와 자리 목록, 닉네임이 빈 회원 수도 다시 받는다 — 저장된 요구 수준이 바뀌어야 닉네임 안내가 거둬진다.
+                 회원 탭 본문에서 「로그인 시 닉네임 입력 요구」 지시 값(`nickname_require_existing_members`)은 닉네임 안내가 보이고 전원 필수가 되는 저장에만 싣는다
+                 (체크해 둔 뒤 설정을 되돌렸으면 싣지 않는다). -->
             <switch on="{{((_global.activeSettingsTab || query.tab) === 'notification_definitions' &amp;&amp; (settings?.data?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active !== false &amp;&amp; (_local.form?.notifications?.channels ?? []).find(c =&gt; c.id === 'mail')?.is_active === false) ? 'confirm_mail_off' : 'save'}}">
               <case when="confirm_mail_off">
                 <sequence>
@@ -812,7 +915,7 @@
                   <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
                   <set-state if="{{(_local.uploadFailedCount ?? 0) === 0}}" target="local" :isSaving="true" :errors="null"/>
                   <!-- 본문에서 .env 로 잠긴 칸(`_computed.envLocked` 의 출처 `_meta.env_locked` 의 `{탭}.{키}`)을 뺀다 — 바꿀 수 없는 값을 보내지 않는다(#869 ζ). -->
-                  <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; const locked = form._meta?.env_locked || {}; const unlocked = (t, o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => locked[t + '.' + k] !== true)); if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'upload') { const upload = Object.fromEntries(Object.entries(unlocked('upload', form.upload)).filter(([k]) => k !== 'thumbnail_presets_rows')); const rows = form.upload?.thumbnail_presets_rows; return { _tab: 'upload', upload: Array.isArray(rows) ? { ...upload, thumbnail_presets: rows.filter(r => r?.kind !== 'og').map(r => ({ name: r.name, source: r.source, width: r.width, height: r.height, fit: r.fit, anchor: r.anchor, quality: r.quality, format: r.format, upscale: r.upscale === true, pregenerate: r.pregenerate === true, numeric: r.numeric === true, enabled: r.enabled !== false })) } : upload }; } return { _tab: tab, [tab]: unlocked(tab, form[tab]) }; })()}}">
+                  <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" :auth_required="true" target="/api/admin/settings" method="POST" body="{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; const locked = form._meta?.env_locked || {}; const unlocked = (t, o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => locked[t + '.' + k] !== true)); if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'upload') { const upload = Object.fromEntries(Object.entries(unlocked('upload', form.upload)).filter(([k]) => k !== 'thumbnail_presets_rows')); const rows = form.upload?.thumbnail_presets_rows; return { _tab: 'upload', upload: Array.isArray(rows) ? { ...upload, thumbnail_presets: rows.filter(r => r?.kind !== 'og').map(r => ({ name: r.name, source: r.source, width: r.width, height: r.height, fit: r.fit, anchor: r.anchor, quality: r.quality, format: r.format, upscale: r.upscale === true, pregenerate: r.pregenerate === true, numeric: r.numeric === true, enabled: r.enabled !== false })) } : upload }; } if (tab === 'member') { const member = Object.fromEntries(Object.entries(unlocked('member', form.member)).filter(([k]) => k !== 'nickname_require_existing_members')); return { _tab: 'member', member: form.member?.nickname_require_existing_members === true &amp;&amp; _computed.memberDisplayNamePending?.raised === true &amp;&amp; _computed.memberDisplayNamePending?.level === 'all' ? { ...member, nickname_require_existing_members: true } : member }; } return { _tab: tab, [tab]: unlocked(tab, form[tab]) }; })()}}">
                     <success>
                       <set-state target="local" :isSaving="false" :hasChanges="false"/>
                       <set-state target="global" settings="{{result.data.frontend_settings ?? result.data.settings}}" uploadSettings="{{(result.data.frontend_settings ?? result.data.settings).upload}}"/>
@@ -822,6 +925,10 @@
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'security'}}" dataSourceId="passwordExpiryPreview"/>
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}" dataSourceId="queueStatus"/>
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'upload'}}" dataSourceId="thumbnailStats"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'member'}}" dataSourceId="memberFieldDefs"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'member'}}" dataSourceId="memberNicknameRecompute"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'member'}}" dataSourceId="memberDisplayNameOptions"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'member'}}" dataSourceId="memberNicknameEmptyCount"/>
                     </success>
                     <fail>
                       <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
@@ -893,6 +1000,12 @@
   <modal src="partials/admin_settings/_modal_identity_policy_form.g7.html"/>
   <!-- 인증 정책 삭제 확인 창. -->
   <modal src="partials/admin_settings/_modal_identity_policy_delete.g7.html"/>
+  <!-- 회원 항목 추가·수정·보기 겸용 창(회원 탭, #490) — 「항목 추가」와 각 행의 [설정]·[수정]·[보기]가 연다. -->
+  <modal src="partials/admin_settings/_modal_member_field_form.g7.html"/>
+  <!-- 회원 항목 삭제 확인 창(회원 탭) — 운영자가 추가한 항목의 [삭제]가 연다. 입력된 값 수를 보이고 확인 체크 뒤에만 지운다. -->
+  <modal src="partials/admin_settings/_modal_member_field_delete.g7.html"/>
+  <!-- 회원 항목을 필수로 바꿀 때의 확인 창(회원 탭, U1) — 그 항목이 빈 기존 회원이 있을 때만 「필수」 스위치가 연다. -->
+  <modal src="partials/admin_settings/_modal_member_field_required.g7.html"/>
   <!-- 개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->
   <modal src="partials/admin_settings/_modal_privacy_targets.g7.html"/>
   <!-- 개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다. -->

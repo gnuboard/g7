@@ -331,6 +331,62 @@
                             "text": "{{order.data.shipping_address?.delivery_memo_label ?? order.data.shipping_address?.delivery_memo ?? ''}}"
                         }
                     ]
+                },
+                {
+                    "comment": "배송 추가 정보 — 운영자가 주문서에 더한 항목 가운데 배송지 구획에서 받은 값(값이 있는 것만 서버가 준다). 없으면 그리지 않는다",
+                    "id": "order_detail_extra_fields_shipping",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data.extra_fields ?? []).some(function(f) { return f.section === 'shipping'; })}}",
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "id": "order_detail_extra_field_{{extraField.key}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{(order.data.extra_fields ?? []).filter(function(f) { return f.section === 'shipping'; })}}",
+                                "item_var": "extraField"
+                            },
+                            "props": {
+                                "className": "flex items-start"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "w-20 flex-shrink-0 pr-2 text-gray-500 dark:text-gray-400 text-sm break-words"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "w-28 flex-shrink-0 pr-2 text-gray-500 dark:text-gray-400 break-words"
+                                    },
+                                    "text": "{{extraField.label}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "min-w-0 text-gray-900 dark:text-white text-sm break-words"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "min-w-0 text-gray-900 dark:text-white break-words"
+                                    },
+                                    "text": "{{extraField.display_value}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },

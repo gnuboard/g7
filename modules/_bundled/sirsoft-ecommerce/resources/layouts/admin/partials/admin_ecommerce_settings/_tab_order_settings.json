@@ -1112,6 +1112,10 @@
                     "text": "{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}"
                 }
             ]
+        },
+        {
+            "comment": "주문서 항목(#490) — 이 구획만 즉시 저장이다(스위치를 누르면 바로 나간다). 위 카드들과 달리 하단 [저장]을 따르지 않는다.",
+            "partial": "_checkout_fields_table.json"
         }
     ]
 }

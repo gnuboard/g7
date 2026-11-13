@@ -578,6 +578,8 @@
                 <span class="board-text-heading">{{row.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
                 <badge data-type="composite" data-if="{{row.author?.is_guest}}" color="yellow" size="sm">$t:sirsoft-board.admin.reports.guest_badge</badge>
               </div>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-testid="author-real-name" data-if="{{!!row.author?.real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: row.author?.real_name })}}">{{row.author?.real_name}}</span>
               <span data-if="{{row.author?.email}}" class="board-text-tertiary">({{row.author?.email}})</span>
             </div>
           </cell>
@@ -586,6 +588,8 @@
           <cell>
             <div class="board:flex board:flex-col">
               <span class="board-text-heading">{{row.reporter?.name}}</span>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-testid="author-real-name" data-if="{{!!row.reporter?.real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: row.reporter?.real_name })}}">{{row.reporter?.real_name}}</span>
               <span data-if="{{row.reporter?.email}}" class="board-text-tertiary">({{row.reporter?.email}})</span>
             </div>
           </cell>

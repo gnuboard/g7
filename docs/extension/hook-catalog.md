@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (691)
+- [코어](#코어) (726)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -108,6 +108,7 @@
 | `core.auth.before_register` | action | 2 |  |
 | `core.auth.before_reset_password` | action | 1 |  |
 | `core.auth.console_password_reset_notices` | filter | 2 |  |
+| `core.auth.filter_register_data` | filter | 3 |  |
 | `core.auth.forgot_password_validation_rules` | filter | 2 |  |
 | `core.auth.lockout_minutes` | filter | 2 |  |
 | `core.auth.login_auto_redirect` | filter | 2 |  |
@@ -129,6 +130,7 @@
 | `core.auth.password_expiry_notice` | action | 2 |  |
 | `core.auth.password_reset_blocked` | action | 2 |  |
 | `core.auth.record_consents` | action | 4 |  |
+| `core.auth.register_fields_validation_rules` | filter | 2 |  |
 | `core.auth.register_validation_rules` | filter | 2 |  |
 | `core.auth.registered_credential_verifiers` | filter | 1 |  |
 | `core.auth.reset_password_validation_rules` | filter | 2 |  |
@@ -165,6 +167,9 @@
 | `core.dashboard.before_stats` | action | 0 |  |
 | `core.dashboard.resources` | filter | 1 |  |
 | `core.dashboard.stats` | filter | 1 |  |
+| `core.display_name.filter_areas` | filter | 1 |  |
+| `core.display_name.filter_kinds` | filter | 1 |  |
+| `core.display_name.filter_resolved` | filter | 4 |  |
 | `core.extension.changelog_rules` | filter | 1 | 호환용 옛 이름 → `core.extension.changelog_validation_rules` |
 | `core.extension.changelog_validation_rules` | filter | 1 |  |
 | `core.extension_custom_asset.read_validation_rules` | filter | 2 |  |
@@ -172,6 +177,19 @@
 | `core.extension_custom_asset.save_validation_rules` | filter | 2 |  |
 | `core.extension_custom_asset.search_validation_rules` | filter | 2 |  |
 | `core.extension_custom_asset.upload_validation_rules` | filter | 2 |  |
+| `core.field.filter_definitions` | filter | 4 |  |
+| `core.field.filter_rules` | filter | 4 |  |
+| `core.field.filter_sets` | filter | 1 |  |
+| `core.field.filter_types` | filter | 1 |  |
+| `core.field_definition.after_create` | action | 1 |  |
+| `core.field_definition.after_delete` | action | 1 |  |
+| `core.field_definition.after_update` | action | 2 |  |
+| `core.field_definition.filter_usages` | filter | 2 |  |
+| `core.field_definition.reorder_validation_rules` | filter | 2 |  |
+| `core.field_definition.show_validation_rules` | filter | 2 |  |
+| `core.field_definition.store_validation_rules` | filter | 2 |  |
+| `core.field_definition.update_validation_rules` | filter | 2 |  |
+| `core.fields.config` | filter | 1 |  |
 | `core.frontend.filter_app_config` | filter | 1 |  |
 | `core.geoip.database.after_update` | action | 1 |  |
 | `core.geoip.database.after_update_failed` | action | 1 |  |
@@ -188,6 +206,7 @@
 | `core.identity.challenge_expired` | action | 1 |  |
 | `core.identity.claim_validation_rules` | filter | 2 |  |
 | `core.identity.filter_default_message_definitions` | filter | 2 |  |
+| `core.identity.filter_verified_claims` | filter | 3 |  |
 | `core.identity.message.after_send` | action | 1 |  |
 | `core.identity.message.before_send` | action | 1 |  |
 | `core.identity.message.resolve_failed` | action | 1 |  |
@@ -220,6 +239,7 @@
 | `core.identity.resolve_policy` | filter | 4 |  |
 | `core.identity.runtime_policy_registered` | action | 1 |  |
 | `core.identity.settings_schema` | filter | 2 |  |
+| `core.identity.verified_claims_validation_rules` | filter | 2 |  |
 | `core.identity.verify_validation_rules` | filter | 2 |  |
 | `core.identity_policy.destroy_validation_rules` | filter | 2 |  |
 | `core.identity_policy.reset_field_validation_rules` | filter | 2 |  |
@@ -312,6 +332,7 @@
 | `core.mail.after_send` | action | 1 |  |
 | `core.mail.send_failed` | action | 1 |  |
 | `core.mail.send_skipped` | action | 1 |  |
+| `core.member_field.info_validation_rules` | filter | 2 |  |
 | `core.member_notification.after_bulk_delete` | action | 2 |  |
 | `core.member_notification.before_bulk_delete` | action | 1 |  |
 | `core.member_notification.bulk_delete_validation_rules` | filter | 2 |  |
@@ -398,7 +419,9 @@
 | `core.notification.filter_available_channels` | filter | 1 |  |
 | `core.notification.filter_default_definitions` | filter | 2 |  |
 | `core.notification.filter_list_params` | filter | 2 |  |
+| `core.notification.filter_member_variable_keys` | filter | 3 |  |
 | `core.notification.filter_seed_definitions` | filter | 2 |  |
+| `core.notification.filter_template_variables` | filter | 2 |  |
 | `core.notification.index_validation_rules` | filter | 1 |  |
 | `core.notification_definition.after_create` | action | 2 |  |
 | `core.notification_definition.after_delete` | action | 1 |  |
@@ -502,6 +525,7 @@
 | `core.queue_job.failed_list_validation_rules` | filter | 2 |  |
 | `core.queue_job.log_list_validation_rules` | filter | 2 |  |
 | `core.queue_job.pending_list_validation_rules` | filter | 2 |  |
+| `core.required_fields.filter_exempt_routes` | filter | 2 |  |
 | `core.role.after_create` | action | 1 |  |
 | `core.role.after_delete` | action | 1 |  |
 | `core.role.after_sync_permissions` | action | 3 |  |
@@ -663,6 +687,7 @@
 | `core.thumbnail.stats_validation_rules` | filter | 2 |  |
 | `core.unique_id.after_generate` | action | 2 |  |
 | `core.unique_id.before_generate` | action | 1 |  |
+| `core.user.admin_form_fields_validation_rules` | filter | 2 |  |
 | `core.user.after_block` | action | 2 |  |
 | `core.user.after_bulk_update_roles` | action | 4 |  |
 | `core.user.after_create` | action | 2 |  |
@@ -685,8 +710,15 @@
 | `core.user.bulk_update_status_validation_rules` | filter | 2 |  |
 | `core.user.change_password_validation_rules` | filter | 2 |  |
 | `core.user.check_email_validation_rules` | filter | 2 |  |
+| `core.user.complete_required_fields_validation_rules` | filter | 2 |  |
 | `core.user.create_validation_rules` | filter | 2 |  |
 | `core.user.delete_validation_rules` | filter | 2 |  |
+| `core.user.display_name_changed` | action | 2 |  |
+| `core.user.field_file.after_delete` | action | 3 |  |
+| `core.user.field_file.after_upload` | action | 3 |  |
+| `core.user.field_file_delete_validation_rules` | filter | 2 |  |
+| `core.user.field_file_upload_validation_rules` | filter | 2 |  |
+| `core.user.fields.after_update` | action | 3 |  |
 | `core.user.filter_create_data` | filter | 1 |  |
 | `core.user.filter_list_params` | filter | 1 |  |
 | `core.user.filter_list_rows` | filter | 2 |  |
@@ -695,7 +727,10 @@
 | `core.user.list_query_extensions` | filter | 2 |  |
 | `core.user.list_validation_attributes` | filter | 2 |  |
 | `core.user.list_validation_rules` | filter | 2 |  |
+| `core.user.locked_field_reasons` | filter | 3 |  |
 | `core.user.locked_fields` | filter | 3 |  |
+| `core.user.nickname_rejected` | action | 4 |  |
+| `core.user.profile_fields_validation_rules` | filter | 2 |  |
 | `core.user.search_validation_rules` | filter | 2 |  |
 | `core.user.update_language_validation_rules` | filter | 2 |  |
 | `core.user.update_profile_validation_rules` | filter | 2 |  |

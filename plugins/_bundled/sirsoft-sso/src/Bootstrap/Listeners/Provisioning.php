@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Sso\Bootstrap\Listeners;
 
 use Plugins\Sirsoft\Sso\Listeners\Provisioning\CleanProvisioningDataOnUserLeave;
 use Plugins\Sirsoft\Sso\Listeners\Provisioning\LockedFieldsListener;
+use Plugins\Sirsoft\Sso\Listeners\Provisioning\PrefillConsentFieldsListener;
 use Plugins\Sirsoft\Sso\Listeners\Provisioning\SsoSessionListener;
 use Plugins\Sirsoft\Sso\Listeners\Provisioning\SyncOnAccountResolvedListener;
 
@@ -27,6 +28,7 @@ final class Provisioning
             SsoSessionListener::class,
             SyncOnAccountResolvedListener::class,
             LockedFieldsListener::class,
+            PrefillConsentFieldsListener::class,
             CleanProvisioningDataOnUserLeave::class,
         ];
     }

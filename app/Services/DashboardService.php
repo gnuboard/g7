@@ -9,6 +9,8 @@ use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
@@ -718,12 +720,20 @@ class DashboardService
         $viewer = Auth::user();
         $logs = $this->notificationLogRepository->getRecent($limit, $viewer instanceof User ? $viewer : null);
 
-        return $logs->map(function (NotificationLog $log) {
+        // 수신 회원은 관리자 영역의 표시 이름으로 보인다. 회원이 지워졌으면 발송 당시 기록한 이름, 그것도 없으면 수신 주소.
+        $names = app(DisplayNameResolver::class)->resolveMany(
+            $logs->map(fn (NotificationLog $log) => $log->recipientUser)->filter(),
+            DisplayNameAreaRegistry::AREA_ADMIN,
+        );
+
+        return $logs->map(function (NotificationLog $log) use ($names) {
             return [
                 'id' => $log->id,
                 'type' => $log->notification_type,
                 'channel' => $log->channel,
-                'recipient' => $log->recipientUser?->name ?? $log->recipient_name ?? $log->recipient_identifier,
+                'recipient' => ($log->recipientUser ? ($names[$log->recipientUser->getKey()] ?? null) : null)
+                    ?? $log->recipient_name
+                    ?? $log->recipient_identifier,
                 'subject' => Str::limit((string) $log->subject, 50),
                 'status' => $log->status->value,
                 'time' => TimezoneHelper::toUserCarbon($log->sent_at ?? $log->created_at)?->diffForHumans(),

@@ -20,6 +20,13 @@ use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
 use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
 
+// 이 파일은 PHPUnit 밖의 개발 환경 PHP 프로세스가 Composer 오토로더만 둔 채 읽기도 한다. 그때는 `tests/bootstrap.php` 가
+// 등록하는 `Modules\Sirsoft\Board\Tests\` 네임스페이스가 없어, 아래 `use RestoresBoardSettingsStorage` 가 잡을 수 없는
+// 「Trait not found」 Fatal 로 개발 로그에 쌓였다. 같은 디렉터리의 트레이트를 직접 읽어 둔다(이미 있으면 건너뛴다).
+if (! trait_exists(RestoresBoardSettingsStorage::class, false)) {
+    require_once __DIR__.'/Concerns/RestoresBoardSettingsStorage.php';
+}
+
 /**
  * Board 모듈 테스트 베이스 클래스
  *

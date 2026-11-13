@@ -6,7 +6,7 @@ description: |
   `PATCH /api/modules/sirsoft-ecommerce/admin/users/{user}/currency` · `…/shipping-country` 의 계약.
 
   2026-09-28 결정(C1): 번들 관리자 회원 수정 화면은 이제 코어 회원 저장(`PUT /api/admin/users/{user}`)
-  본문에 두 값을 함께 보내고 `UserPreferenceCoreSaveListener` 가 코어 훅으로 검증·저장한다. 이 두 API 는
+  본문에 두 값을 함께 보내고 코어가 회원 항목 선언대로 검증해 `UserPreferenceFieldHandler` 로 저장한다. 이 두 API 는
   그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 1.3.0 까지 폐기 예고로 남기고 다음 버전에서 제거한다.
 
 axes:

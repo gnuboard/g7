@@ -86,6 +86,8 @@
               <span class="board:min-w-0 board:truncate">{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}</span>
               <span class="board:shrink-0 board:whitespace-nowrap">{{' · ' + (post?.created_at ?? '')}}</span>
             </div>
+            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <p data-ref="latest_post_real_name_{{i}}" data-testid="author-real-name" data-if="{{!!post?.real_name}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}</p>
           </a>
         </div>
       </div>
@@ -111,6 +113,8 @@
               <span data-ref="report_status_badge_{{i}}" data-if="{{!!report?.status_label}}" class="board:shrink-0 board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium {{report?.status === 'pending' ? 'board:bg-yellow-100 board:text-yellow-800 board:dark:bg-yellow-900 board:dark:text-yellow-200' : report?.status === 'review' ? 'board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200' : report?.status === 'rejected' ? 'board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900 board:dark:text-purple-200' : report?.status === 'suspended' ? 'board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200' : report?.status === 'deleted' ? 'board:bg-gray-600 board:text-white board:dark:bg-gray-600 board:dark:text-gray-100' : 'board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200'}}">{{report?.status_label ?? ''}}</span>
             </div>
             <p data-ref="report_meta_{{i}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400">{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? $t('sirsoft-board.admin.dashboard.community.anonymous')) + ' · ' + (report?.last_reported_at ?? '')}}</p>
+            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <p data-ref="report_real_name_{{i}}" data-testid="author-real-name" data-if="{{!!report?.real_name}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}</p>
           </a>
         </div>
       </div>

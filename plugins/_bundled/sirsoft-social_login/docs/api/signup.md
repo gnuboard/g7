@@ -29,11 +29,13 @@
 | --- | --- | --- | --- | --- | --- |
 | pending_token | body | string | 예 | — | 가입 대기 토큰(48자 영숫자, `size:48` `alpha_num`). 콜백이 `/register?social_pending=…&social_step=…` 으로 넘긴 값이며, 이 토큰이 곧 권한이다 |
 | name | body | string | 아니오 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
+| nickname | body | string | 아니오 | max 50 | 닉네임. 비우면 제공자가 준 닉네임을 쓴다. 사이트의 닉네임 정책(환경설정 > 회원의 중복 금지, 금지어)에 걸리면 422 이고 `errors.nickname` 에 사유가 실린다. 가입 대기는 남으므로 닉네임을 바꿔 다시 보낼 수 있다 |
 | email | body | string | 아니오 | max 255 | 이메일 주소 |
 | agree_terms | body | boolean | 예 | — | 이용약관 동의. `accepted` 규칙이라 `true`, `1`, `"yes"`, `"on"` 가운데 하나여야 하며 빠지면 422 |
 | agree_privacy | body | boolean | 예 | — | 개인정보 처리방침 동의. `accepted` 규칙이라 `true`, `1`, `"yes"`, `"on"` 가운데 하나여야 하며 빠지면 422 |
 | verification_token | body | string | 아니오 | max 255 | 코어 본인인증 확인 토큰. 본인인증 정책 `core.auth.signup_before_submit` 이 켜진 사이트에서 428 응답 뒤 본인인증을 마치고 받은 값을 넣는다 |
+| fields_version | body | string | 아니오 | max 64 | 가입 창이 받은 회원 항목의 정의 버전(코어 `GET /api/auth/register/fields` 의 `fields_version`). 실으면 운영자가 정한 가입 항목 규칙이 걸리고 항목 값이 저장된다. 지금 버전과 다르면 409(`error_code: fields_changed`). 아래 「회원 항목을 받는 가입 창」 참조 |
+| (가입 항목) | body | mixed | 항목마다 다름 | — | `fields_version` 을 실은 요청만 받는다. 가입 항목 조회가 준 폼 경로(`mobile`, `custom_fields.{키}` 등)로 보낸다 |
 
 **요청 예시**
 
@@ -103,6 +105,21 @@ Set-Cookie: g7_login_bind=…; path=/api/auth; httponly; samesite=lax
 - 인증번호로 확인한 이메일과 제공자가 검증했다고 한 고정 이메일만 회원의 이메일 인증으로 기록한다.
 - 확장은 필터 훅 `sirsoft-social_login.signup.filter_registration_data` 로 가입 데이터를 바꿀 수 있고, 가입 뒤 액션 훅 `sirsoft-social_login.auth.after_social_signup` 이 발행된다.
 - 성공하면 가입 대기 토큰은 지워진다.
+
+**회원 항목을 받는 가입 창 (`fields_version`)**
+
+가입 창이 코어 가입 화면과 같은 회원 항목(환경설정 > 회원 > 가입 항목)을 그렸으면 본문에 `fields_version` 을 싣는다. 이 값이 있고 없음에 따라 규칙과 회원이 달라진다.
+
+| 본문 | 규칙 | 만들어지는 회원 |
+| --- | --- | --- |
+| `fields_version` 있음 | 위 표의 규칙에서 `name`, `nickname` 이 빠지고 운영자가 정한 가입 항목 규칙(필수 포함)이 붙는다. 코어 가입 필터 `core.auth.register_validation_rules` 도 탄다. 운영자 추가 항목은 `custom_fields.{키}`, 그 밖의 항목은 가입 항목 조회가 준 폼 경로(`name`)로 받는다 | 받은 항목 값을 저장한다. `name`, `nickname` 은 보낸 값이 원본이다(비워 보내면 비운 채 저장하고 제공자 값으로 채우지 않는다) |
+| `fields_version` 없음 | 위 표 그대로(종전과 같다) | 운영자가 필수로 둔 다른 회원 항목은 건너뛰고 `users.required_fields_deferred_at` 에 시각을 남긴다. 그 회원이 처음 로그인하면 추가 정보 입력 화면이 빠진 항목을 받는다 |
+
+- 항목과 정의 버전은 코어 `GET /api/auth/register/fields?pending_source=sirsoft-social_login&pending_token={가입 대기 토큰}` 에서 받는다. 토큰을 넘기면 제공자가 준 이름과 닉네임이 그 항목의 초기값(`default`)으로 온다.
+- 실어 보낸 `fields_version` 이 지금의 정의 버전과 다르면(창을 연 뒤 운영자가 항목을 바꿨다) 검증보다 먼저 409 로 답하고 본문에 `error_code: "fields_changed"` 가 실린다. 가입 대기는 남으므로 항목을 다시 받아 이어 간다.
+- 필수 항목이 비면 422 이고 `errors` 의 키가 그 항목의 폼 경로다(예: `custom_fields.job`).
+- `GET signup/pending` 의 `missing` 에는 운영자가 가입 필수로 둔 회원 항목 가운데 제공자 값으로 채울 수 없는 항목의 키도 실린다.
+- 필터 훅 `sirsoft-social_login.signup.filter_registration_data` 의 이름과 인자는 그대로다. 항목을 받은 요청이면 가입 데이터에 항목 값이 함께 실린다.
 
 
 ### POST /api/plugins/sirsoft-social_login/signup/discard-existing

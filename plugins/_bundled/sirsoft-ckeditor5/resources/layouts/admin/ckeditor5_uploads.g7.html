@@ -193,7 +193,11 @@
         </column>
         <column field="uploader_name" :sortable="false" header="$t:sirsoft-ckeditor5.admin.uploads.col.uploader" width="140px">
           <cell>
-            <span class="ckeditor-text-body">{{row.uploader_name ?? '-'}}</span>
+            <div>
+              <span class="ckeditor:block ckeditor-text-body">{{row.uploader_name ?? '-'}}</span>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-if="{{!!row.uploader_real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ckeditor5.admin.uploads.real_name_sub', { name: row.uploader_real_name })}}" class="ckeditor:block ckeditor-text-tertiary">{{row.uploader_real_name}}</span>
+            </div>
           </cell>
         </column>
         <column field="created_at" header="$t:sirsoft-ckeditor5.admin.uploads.col.created_at" :sortable="true" width="170px">

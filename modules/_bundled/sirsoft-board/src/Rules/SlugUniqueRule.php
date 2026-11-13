@@ -23,6 +23,7 @@ class SlugUniqueRule implements ValidationRule
      * @param  string  $attribute  검증할 속성명
      * @param  mixed  $value  검증할 값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음 (예약어이거나 중복이면 $fail 로 실패 처리)
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

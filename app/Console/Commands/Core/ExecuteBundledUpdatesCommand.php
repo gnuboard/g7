@@ -180,7 +180,7 @@ class ExecuteBundledUpdatesCommand extends Command
             self::renderFailedItems($this, $failedItems);
             // 언어팩 단계 자식이 중단을 알렸으면 그 자식이 이미 안내했다 — 여기서 다시 알리지 않는다
             if ($aborted && ! $outcome['abort_reported']) {
-                $this->error(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
+                $this->error(trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
             }
 
             // 검색 인덱스 재생성 — 운영자가 부모 단계에서 선택했을 때만 수행 (인덱스 잠금·재색인 비용)
@@ -430,7 +430,7 @@ class ExecuteBundledUpdatesCommand extends Command
         }
 
         $command->newLine();
-        $command->warn(__('extensions.commands.bundled_update.failed_items_header', ['count' => count($failedItems)]));
+        $command->warn(trans_count('extensions.commands.bundled_update.failed_items_header', ['count' => count($failedItems)]));
 
         foreach ($failedItems as $item) {
             $type = (string) ($item['type'] ?? '');

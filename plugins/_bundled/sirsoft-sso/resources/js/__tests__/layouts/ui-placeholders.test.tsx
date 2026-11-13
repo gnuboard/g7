@@ -103,8 +103,8 @@ describe('화면 문구 자리표시자', () => {
     const ko: TranslationContext = { templateId: T, locale: 'ko' };
     const en: TranslationContext = { templateId: T, locale: 'en' };
 
-    expect(engine.resolveTranslations('$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}', ko, { idp: { label: '모의 회사 계정' } })).toBe(
-      '모의 회사 계정(으)로 로그인',
+    expect(engine.resolveTranslations('$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}', ko, { idp: { label: '모의 회사' } })).toBe(
+      '모의 회사 계정으로 로그인',
     );
     expect(engine.resolveTranslations('$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}', en, { idp: { label: 'Mock SSO' } })).toBe(
       'Sign in with Mock SSO',

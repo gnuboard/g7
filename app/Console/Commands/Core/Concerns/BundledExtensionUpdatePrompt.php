@@ -49,7 +49,7 @@ trait BundledExtensionUpdatePrompt
      * 정리 주체는 아래 `spawnBundledUpdates()` 의 `finally` 하나뿐이었다 — FPM 타임아웃 ·
      * OOM-kill 로 그 코드가 돌지 않으면 파일이 영구히 남는다. 회수는
      * `StorageLeftoverPruneService` 의 `core_pending` 대상군이 맡고, 이름 규약의 일치는
-     * 계약 테스트가 이 상수를 소스에서 읽어 잠근다 (11차 G3 라운드 E11-9).
+     * 계약 테스트가 이 상수를 소스에서 읽어 잠근다.
      */
     private const BUNDLED_MANIFEST_DIR = 'app/core_pending';
 
@@ -641,7 +641,7 @@ trait BundledExtensionUpdatePrompt
         $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
         ExecuteBundledUpdatesCommand::renderFailedItems($this, $failedItems);
         if ($aborted) {
-            $this->error(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
+            $this->error(trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
         }
 
         // 잠금 저장소 장애로 멈췄으면 검색 인덱스 재생성도 하지 않는다 — 확장 갱신이 끝나지 않았다

@@ -7,15 +7,18 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\DisplayName\Contracts\DisplayNameKindInterface;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Helpers\ExtensionScheduleSyncHelper;
+use App\Extension\Helpers\FieldDefinitionSyncHelper;
 use App\Extension\Storage\PluginStorageDriver;
 use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Support\UpgradeStepFileLoader;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
 use App\Extension\Traits\ResolvesLayoutInstallSource;
+use App\Fields\Contracts\FieldTypeInterface;
 use App\Support\ExtensionIntegrations;
 use App\Support\PublicAssetDisk;
 use App\Support\SearchScopes;
@@ -568,6 +571,129 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * @see ExtensionScheduleSyncHelper
      */
     public function getSchedules(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 가진 항목 집합 선언을 반환합니다.
+     *
+     * 항목 집합은 입력 항목들이 모이는 자리다(예: 게시판 비회원 작성자, 주문서). 집합을 선언하면 코어의
+     * 항목 엔진(`App\Fields`)이 그 자리의 검증 규칙·저장·운영자 표를 맡고, 다른 확장도 그 집합에 항목을
+     * 기여할 수 있다. 메모리 등록소에만 올라가며 DB 에 저장되지 않는다.
+     *
+     * 각 선언의 키:
+     * - `key` (필수) — 집합 식별자. `{확장 식별자}.{이름}` 형식 (예: `sirsoft-board.guest_author`)
+     * - `label` — 운영자 화면에 보일 이름 (번역 키)
+     * - `owner_types` — 값 소유자 종류 목록 (`field_values.owner_type` 값. 예: `['board_post', 'board_comment']`)
+     * - `surfaces` — 이 집합이 쓰는 표면 이름 목록
+     * - `allowed_types` — 허용 유형 키 목록 (생략하면 전부)
+     * - `accepts_contributions` — 다른 확장의 항목 기여를 받는지 (기본 true)
+     * - `allows_custom` — 운영자가 항목을 추가할 수 있는지 (기본 true)
+     * - `read_permission` / `manage_permission` — 항목 표 조회·수정 권한
+     * - `bundle_key` — 컬럼이 아닌 항목이 들어가는 요청 묶음 키 (예: `guest_fields`)
+     *
+     * @return array<int, array<string, mixed>> 집합 선언 목록
+     *
+     * @since 7.2.0
+     */
+    public function getFieldSets(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 선언하는 항목 목록을 반환합니다.
+     *
+     * 코어는 이 선언을 설치·업데이트·활성화 때 `field_definitions` 테이블로 동기화한다
+     * (`PluginManager::syncDeclarativeArtifacts()` → `FieldDefinitionSyncHelper`). 운영자가 관리 화면에서 바꾼
+     * 사용·필수·순서 등은 업데이트 때 보존된다(user_overrides). 선언에서 뺀 항목의 행과 값은 다음 동기화 때
+     * 지워지고(선언이 0건이면 실수로 비운 것일 수 있어 정리를 건너뛴다), 운영자가 만든 항목은 건드리지 않는다.
+     *
+     * 자기 집합뿐 아니라 코어 회원 집합(`core.user`)이나 다른 확장의 집합에도 선언할 수 있다. 다른 확장의
+     * 집합에 선언하려면 manifest `dependencies` 에 그 확장을 적는다 — 집합이 없거나 꺼져 있으면 건너뛴다.
+     *
+     * 각 선언의 키:
+     * - `field_set`, `key`, `type`, `name`(다국어 배열) — 필수. `key` 는 영문 소문자로 시작하는 2~50자
+     * - `storage` — `value`(기본, 공용 값 테이블) | `handler`(자기 테이블) | `column`(집합을 가진 쪽만)
+     * - `storage_target` — handler 면 `App\Fields\Contracts\FieldValueHandlerInterface` 구현 클래스명
+     * - `description`, `placeholder`(다국어), `options`(`[{value, label}]`), `constraints`
+     * - `enabled`, `required`, `show_on_signup`, `edit_scope`(self|admin_edit|admin_only), `require_existing_members`
+     * - `public_profile`, `admin_list_column`, `admin_searchable`, `display_name_usable`
+     * - `locks` — 운영자 변경을 막을 속성과 사유 (`['required' => '사유 번역 키']`)
+     * - `legacy_keys` — 수용할 옛 요청 키 목록
+     * - `ui` — `group`, `width`, `surfaces`(받을 표면을 한정)
+     * - `sort_order`
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     *
+     * @see FieldDefinitionSyncHelper
+     * @since 7.2.0
+     */
+    public function getFields(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 제공하는 항목 입력 유형을 반환합니다.
+     *
+     * `App\Fields\Contracts\FieldTypeInterface` 구현 클래스명(또는 인스턴스) 목록이다. 메모리 등록소에만 올라가며,
+     * 이 플러그인이 꺼지면 유형도 빠진다 — 그 유형으로 만든 항목은 사용자 화면에서 숨겨지고 운영자 표에 「사용 불가」로 남는다.
+     *
+     * @return array<int, class-string<FieldTypeInterface>|FieldTypeInterface> 유형 목록
+     *
+     * @since 7.2.0
+     */
+    public function getFieldTypes(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 제공하는 표시 이름 종류를 반환합니다.
+     *
+     * 표시 이름 종류는 「회원의 어떤 값을 어떤 모양으로 보일지」다(이름, 닉네임, 가린 이름 등).
+     * `App\DisplayName\Contracts\DisplayNameKindInterface` 구현 클래스명(또는 인스턴스) 목록을 돌려준다.
+     * `App\DisplayName\Kinds\AbstractDisplayNameKind` 를 이어받으면 `key()` 와 `compute()` 만 채우면 된다.
+     * 메모리 등록소에만 올라가며, 이 플러그인이 꺼지면 종류도 빠진다. 그 종류를 가리키던 설정은 상위 영역 설정이나 「이름」으로 계산된다.
+     *
+     * 종류 키는 `{확장 식별자}:{이름}` 형식을 권한다. `field:` 로 시작하는 키는 코어가 추가 항목 종류에 쓴다.
+     *
+     * @return array<int, class-string<DisplayNameKindInterface>|DisplayNameKindInterface> 종류 목록
+     *
+     * @since 7.2.0
+     */
+    public function getDisplayNameKinds(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 플러그인이 등록하는 표시 이름 영역을 반환합니다.
+     *
+     * 영역은 회원 이름이 보이는 자리 한 곳이다(게시판 글, 상품 후기, 확장의 관리자 화면 등). 영역을 등록하면 운영자가
+     * 환경설정의 회원 탭에서 그 자리의 방식(상위 영역 따름, 종류 고정, 회원이 고른 값)을 정할 수 있고,
+     * 확장은 `App\DisplayName\DisplayNameResolver::resolve($user, '{영역 키}')` 로 그 자리의 이름을 얻는다.
+     * 메모리 등록소에만 올라가며 DB 에 저장되지 않는다.
+     *
+     * 각 선언의 키:
+     * - `key` (필수) — 영역 키. `{확장 식별자}:{이름}` 형식. 구분자는 `:` 이고 점은 쓰지 못한다 (예: `sirsoft-board:posts`)
+     * - `label` — 운영자 화면에 보일 이름 (번역 키 또는 다국어 배열)
+     * - `audience` — 보는 사람 `user`(기본) | `admin` | `notification`
+     * - `parent` — 상위 영역 키. 생략하면 `audience` 가 admin 일 때 `core:admin`, 그 밖에는 `core:site`
+     * - `default` — 설정에 없을 때의 값 `['mode' => 'inherit'|'fixed'|'member', 'kind' => '종류 키']` (생략하면 상위 영역 따름)
+     * - `instance_resolver` — 영역 안에서 인스턴스마다 설정이 다를 때(게시판마다 등) 호출 문맥을 받아
+     *   `['mode' => ..., 'kind' => ...]` 또는 null(따름)을 돌려주는 호출체. 클로저, `[클래스, 메서드]`, `__invoke` 클래스명
+     * - `used_kinds_provider` — 인스턴스들이 쓰고 있는 설정 목록 `[['mode' => ..., 'kind' => ..., 'label' => '인스턴스 이름']]` 을
+     *   돌려주는 호출체. 닉네임 항목 잠금 판정과 추가 항목 삭제 차단의 사용처 안내에 쓰인다
+     * - `sort_order` — 운영자 화면의 표시 순서
+     *
+     * @return array<int, array<string, mixed>> 영역 선언 목록
+     *
+     * @since 7.2.0
+     */
+    public function getDisplayNameAreas(): array
     {
         return [];
     }

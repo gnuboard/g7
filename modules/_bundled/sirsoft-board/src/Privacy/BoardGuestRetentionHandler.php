@@ -8,6 +8,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\ReportType;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Privacy\Concerns\PaginatesBoardTargets;
@@ -293,6 +294,9 @@ class BoardGuestRetentionHandler implements PrivacyRetentionHandlerInterface
                             $this->scrubRow(Post::class, $post->id, ['author_name' => self::ANONYMIZED_AUTHOR]);
                         }
 
+                        // 비회원이 글에 남긴 작성자 항목 값(이메일 등)도 함께 파기한다 (익명화와 삭제 둘 다)
+                        app(GuestAuthorFields::class)->purge($post);
+
                         $done[] = $post->id;
                     } catch (Throwable $e) {
                         // 건별 격리 — 한 글의 실패가 나머지 파기를 멈추지 않는다. 표지(행 덮어쓰기)는
@@ -344,6 +348,9 @@ class BoardGuestRetentionHandler implements PrivacyRetentionHandlerInterface
                             $this->scrubSnapshots(ReportType::Comment, $comment->id, $mode);
                             $this->scrubRow(Comment::class, $comment->id, ['author_name' => self::ANONYMIZED_AUTHOR]);
                         }
+
+                        // 비회원이 댓글에 남긴 작성자 항목 값(이메일 등)도 함께 파기한다 (익명화와 삭제 둘 다)
+                        app(GuestAuthorFields::class)->purge($comment);
 
                         $done[] = $comment->id;
                     } catch (Throwable $e) {

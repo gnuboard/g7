@@ -31,6 +31,7 @@ effects:
   - foreign_skipped
   - conflict_hook_once
   - union_of_sync_lock
+  - lock_reason_sso
   - rejected_422_field_locked
   - unlocked_field_saved
   - rule_sources_requested

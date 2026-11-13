@@ -1,0 +1,42 @@
+feature: 페이지 관리 화면의 작성자, 수정자 표시 이름 (#490)
+
+description: |
+  관리자 페이지 목록, 상세, 버전 이력, 버전 상세의 작성자와 수정자 이름(`creator.name`, `updater.name`)은 회원 이름 컬럼을 직접
+  읽지 않고 관리자 영역(`core:admin`) 표시 이름으로 계산한다. 목록 경로의 회원 관계는 표시 이름 계산에 필요한 컬럼으로 읽고,
+  목록과 버전 이력은 한 번에 회원 값을 읽어 둔다.
+
+  실명은 이름 키에 싣지 않는다. 보는 관리자에게 회원 조회 권한(`core.users.read`)이 있고 실명이 표시 이름과 다를 때만 같은
+  묶음의 `real_name` 으로 싣고, 화면은 그 키가 있을 때만 이름 아래에 작은 글씨 보조 줄(접근 가능한 이름 「실명 ○○」)을 그린다.
+  설정을 바꾸지 않은 사이트의 응답은 수정 전과 같다.
+
+  축은 하나(`case`)다.
+
+axes:
+  case:
+    # 응답
+    - detail_nickname_with_member_read
+    - detail_nickname_without_member_read
+    - list_nickname_with_member_read
+    - versions_nickname_with_member_read
+    - default_site_unchanged
+    # 화면
+    - creator_sub_line_markup
+    - info_creator_sub_line_rendering
+    - version_creator_sub_line_rendering
+
+effects:
+  - page_creator_updater_name_follows_admin_area
+  - page_real_name_added_for_member_readers
+  - page_real_name_hidden_without_member_read
+  - page_list_creator_name_follows_admin_area
+  - page_version_creator_name_follows_admin_area
+  - page_creator_name_unchanged_on_default_site
+  - page_real_name_omitted_when_same
+  - creator_sub_line_in_info_and_version_cell
+  - creator_sub_line_label_uses_expression_translation
+  - info_creator_sub_line_drawn_only_when_key_present
+  - version_creator_sub_line_drawn_only_when_key_present
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageMemberDisplayNameTest.php
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/pageCreatorRealNameSub.test.tsx

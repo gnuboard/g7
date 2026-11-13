@@ -5,6 +5,8 @@ namespace App\Http\Requests\User;
 use App\Enums\PasswordExpiryPolicy;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Fields\FieldContext;
+use App\Http\Requests\Concerns\UsesMemberFields;
 use App\Models\Role;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
@@ -14,6 +16,11 @@ use Illuminate\Validation\Rule;
 
 class CreateUserRequest extends FormRequest
 {
+    use UsesMemberFields;
+
+    /** 종전 규칙의 키 순서 — 오류가 여럿일 때 응답에 실리는 첫 문구가 달라지지 않게 유지한다 */
+    private const LEGACY_RULE_ORDER = ['name', 'nickname', 'email', 'create_without_password', 'password', 'password_expiry_policy', 'language', 'country', 'timezone', 'status', 'homepage', 'mobile', 'phone', 'zipcode', 'address', 'address_detail', 'signature', 'bio', 'admin_memo', 'roles', 'roles.*.id', 'role_ids', 'role_ids.*'];
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -31,12 +38,9 @@ class CreateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $supportedLocales = implode(',', config('app.supported_locales', ['ko', 'en']));
-
-        $rules = [
+        // 회원 항목(이름, 닉네임, 연락처, 주소 등과 운영자 추가 항목)의 규칙은 운영자 설정에서 온다 — 아래는 항목이 아닌 고정 규칙이다.
+        $rules = $this->withMemberFieldRules([
             // 기본 정보
-            'name' => 'required|string|max:255',
-            'nickname' => 'nullable|string|max:50',
             'email' => ['required', 'email', Rule::unique(User::class, 'email'), 'max:255'],
             // 관리자가 정해 준 비밀번호는 재사용 검사를 하지 않는다(D11) — 회원이 다음 로그인 때 직접 바꾼다.
             // 「비밀번호 없이 만들기」(7.2.0) — 외부 인증(회사 계정)으로만 로그인할 회원을 미리 만든다. 켜면 비밀번호를 받지 않는다.
@@ -45,27 +49,16 @@ class CreateUserRequest extends FormRequest
                 ? ['prohibited']
                 : ['required', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
             'password_expiry_policy' => ['nullable', 'string', Rule::in(PasswordExpiryPolicy::values())],
-            'language' => 'nullable|string|in:'.$supportedLocales,
-            'country' => 'nullable|string|size:2|alpha',
-            'timezone' => ['nullable', 'string', 'timezone'],
             // 어휘는 Enum 단독 소유다 — 여기에 목록을 박아 두면 일괄 변경 경로
             // (`Rule::in(UserStatus::values())`)와 어휘가 갈려, 일괄은 통과하는 값이
             // 개별에서만 거부되는 강도 비대칭이 생긴다.
             'status' => ['nullable', 'string', Rule::in(UserStatus::values())],
 
             // 연락처 정보
-            'homepage' => 'nullable|url|max:255',
-            'mobile' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\-\+\(\)\s]+$/'],
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\-\+\(\)\s]+$/'],
 
             // 주소 정보
-            'zipcode' => 'nullable|string|max:10',
-            'address' => 'nullable|string|max:255',
-            'address_detail' => 'nullable|string|max:255',
 
             // 추가 정보
-            'signature' => 'nullable|string|max:1000',
-            'bio' => 'nullable|string|max:5000',
             'admin_memo' => 'nullable|string|max:5000',
 
             // 역할 정보 (객체 배열 또는 id 배열 모두 허용, 생략 가능)
@@ -77,7 +70,7 @@ class CreateUserRequest extends FormRequest
             'roles.*.id' => ['required', 'integer', Rule::exists(Role::class, 'id')],
             'role_ids' => 'nullable|array',
             'role_ids.*' => ['integer', Rule::exists(Role::class, 'id')],
-        ];
+        ], self::LEGACY_RULE_ORDER);
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.user.create_validation_rules', $rules, $this);
@@ -90,7 +83,7 @@ class CreateUserRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        return $this->withMemberFieldMessages([
             // 기본 정보
             'name.required' => __('user.validation.name_required'),
             'name.string' => __('user.validation.name_string'),
@@ -130,7 +123,29 @@ class CreateUserRequest extends FormRequest
             'signature.max' => __('user.validation.signature_max'),
             'bio.max' => __('user.validation.bio_max'),
             'admin_memo.max' => __('user.validation.admin_memo_max'),
-        ];
+        ]);
+    }
+
+    /**
+     * 검증 속성명 — 운영자 추가 항목과 확장 항목의 이름을 요청 로케일로 싣는다.
+     *
+     * @return array<string, string> 속성 => 이름
+     */
+    public function attributes(): array
+    {
+        return $this->withMemberFieldAttributes();
+    }
+
+    /**
+     * 관리자 추가 표면의 회원 항목 문맥을 반환합니다.
+     *
+     * @return FieldContext 문맥
+     */
+    protected function memberFieldContext(): FieldContext
+    {
+        $actor = $this->user();
+
+        return FieldContext::for(FieldContext::SURFACE_ADMIN_CREATE, null, $actor instanceof User ? $actor : null);
     }
 
     /**

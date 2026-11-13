@@ -21,6 +21,10 @@ export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
 
+// 회원 항목 입력칸 (가입, 내 정보, 추가 정보 입력 공용)
+export { default as MemberFieldInput } from './MemberFieldInput';
+export type { MemberFieldInputProps, MemberFieldContract } from './MemberFieldInput';
+
 // 게시판 관련 컴포넌트
 export { default as RichTextEditor } from './RichTextEditor';
 export { HtmlContent } from './HtmlContent';
@@ -86,6 +90,9 @@ export const compositeComponents = {
   ImageGallery: () => import('./ImageGallery'),
   ProductImageViewer: () => import('./ProductImageViewer'),
   QuantitySelector: () => import('./QuantitySelector'),
+
+  // 회원 항목
+  MemberFieldInput: () => import('./MemberFieldInput'),
 
   // 게시판
   RichTextEditor: () => import('./RichTextEditor'),

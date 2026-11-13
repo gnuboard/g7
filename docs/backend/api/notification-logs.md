@@ -65,10 +65,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | extension_identifier | string | `` | 확장 식별자 |
 | recipient_user_id | integer | `1240` | recipient user 식별자 (연관 리소스 참조) |
 | recipient_identifier | string | `apidoc-sample-user@example.com` | 수신자 식별자 (채널별: 이메일, 디바이스토큰, user_id 등) |
-| recipient_name | string | `API 문서 샘플 사용자` | 수신자 표시명 (발송 시점 스냅샷) |
+| recipient_name | string | `API 문서 샘플 사용자` | 수신자 표시명 (발송 시점 스냅샷. 회원이면 그 시점의 관리자 화면 영역 표시 이름이고 뒤에 설정이 바뀌어도 그대로다) |
 | sender_user_id | integer | `1240` | sender user 식별자 (연관 리소스 참조) |
-| sender | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 발신자 사용자 객체 (uuid/name/email — senderUser 관계 파생) |
-| recipient | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 수신자 사용자 객체 (uuid/name/email — recipientUser 관계 파생) |
+| sender | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 발신자 사용자 객체 (uuid/name/email, 조건부 real_name — senderUser 관계 파생). `name` 은 관리자 화면 영역의 표시 이름, `real_name` 은 회원 조회 권한이 있는 관리자에게만 실명이 표시 이름과 다를 때 실린다 |
+| recipient | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 수신자 사용자 객체 (uuid/name/email, 조건부 real_name — recipientUser 관계 파생). `name` 은 지금의 관리자 화면 영역 표시 이름, `real_name` 은 회원 조회 권한이 있는 관리자에게만 실명이 표시 이름과 다를 때 실린다 |
 | subject | string | `API 문서 샘플 알림` | 렌더링된 제목 |
 | body | string | `문서 실측용 알림 본문입니다.` | 렌더링된 본문 |
 | status | string | `sent` | 상태: sent, failed, skipped |

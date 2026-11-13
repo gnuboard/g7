@@ -15,6 +15,7 @@ use Plugins\Sirsoft\Sso\Models\SsoAccount;
 use Plugins\Sirsoft\Sso\Repositories\Contracts\ProvisioningAccountRepositoryInterface;
 use Plugins\Sirsoft\Sso\Repositories\Contracts\SsoAccountRepositoryInterface;
 use Plugins\Sirsoft\Sso\Repositories\Contracts\SsoUserAttributeRepositoryInterface;
+use Plugins\Sirsoft\Sso\Support\MemberName;
 
 /**
  * IdP 속성 → 회원 칸, 추가 속성 동기화와 칸 잠금.
@@ -64,6 +65,7 @@ class AttributeSyncService
      * @param  SsoAccountRepositoryInterface  $links  연결 저장소 (이메일 충돌 확인 — 대소문자 무시 회원 조회)
      * @param  UserService  $users  코어 회원 서비스
      * @param  CacheInterface  $cache  플러그인 캐시 (충돌 알림 1회)
+     * @param  NicknameRejectionLedger  $nicknameRejections  코어가 닉네임 정책으로 버린 닉네임의 사유 장부
      */
     public function __construct(
         private readonly SsoUserAttributeRepositoryInterface $attributes,
@@ -71,6 +73,7 @@ class AttributeSyncService
         private readonly SsoAccountRepositoryInterface $links,
         private readonly UserService $users,
         private readonly CacheInterface $cache,
+        private readonly NicknameRejectionLedger $nicknameRejections,
     ) {}
 
     /**
@@ -81,11 +84,11 @@ class AttributeSyncService
      * @param  IdentityProvider  $idp  IdP
      * @param  ExternalIdentity  $identity  신원
      * @param  bool  $created  이번에 처음 만든 회원인지 (`first_only` 규칙)
-     * @return array{fields: array<int, string>, attributes: array<int, string>, email: string|null} 바꾼 코어 칸, 추가 속성 키, 이메일 결과(synced, conflict, skipped)
+     * @return array{fields: array<int, string>, attributes: array<int, string>, email: string|null, skipped: array<string, string>} 바꾼 코어 칸, 추가 속성 키, 이메일 결과(synced, conflict, skipped), 반영하지 않은 코어 칸과 사유
      */
     public function sync(User $user, SsoAccount $account, IdentityProvider $idp, ExternalIdentity $identity, bool $created): array
     {
-        $result = ['fields' => [], 'attributes' => [], 'email' => null];
+        $result = ['fields' => [], 'attributes' => [], 'email' => null, 'skipped' => []];
         $coreUpdates = [];
         $caseInsensitive = self::caseInsensitiveSources($idp);
 
@@ -123,21 +126,30 @@ class AttributeSyncService
         }
 
         if ($coreUpdates !== []) {
-            SystemOperation::run('external:sirsoft-sso:attribute-sync', fn () => $this->users->updateUser($user, $coreUpdates));
+            // 닉네임이 사이트의 닉네임 정책(중복 금지, 금지어)에 걸리면 닉네임만 빼고 나머지 칸을 반영한다 — 로그인은 막지 않는다.
+            SystemOperation::run('external:sirsoft-sso:attribute-sync', fn () => $this->users->updateUser($user, $coreUpdates, ['nickname_policy' => 'skip_field']));
             $user->refresh();
+
+            $nicknameReason = $this->nicknameRejections->pull((int) $user->getKey());
+            if ($nicknameReason !== null) {
+                unset($coreUpdates['nickname']);
+                $result['skipped']['nickname'] = $nicknameReason;
+            }
             $result['fields'] = array_keys($coreUpdates);
         }
 
-        if ($result['fields'] !== [] || $result['attributes'] !== []) {
+        if ($result['fields'] !== [] || $result['attributes'] !== [] || $result['skipped'] !== []) {
             $this->logActivity('sso.attributes_synced', [
                 'loggable' => $user,
                 'description_key' => 'sirsoft-sso::activity_log.description.sso.attributes_synced',
-                'description_params' => ['user_name' => (string) $user->name, 'idp' => $idp->localizedLabel()],
+                'description_params' => ['user_name' => MemberName::forRecord($user), 'idp' => $idp->localizedLabel()],
                 'properties' => [
                     'user_id' => (int) $user->getKey(),
                     'idp_id' => (int) $idp->getKey(),
                     'fields' => $result['fields'],
                     'attributes' => $result['attributes'],
+                    // 반영하지 않은 코어 칸과 사유 (닉네임 정책: duplicate, forbidden_word)
+                    'skipped' => $result['skipped'],
                 ],
             ]);
         }
@@ -284,6 +296,44 @@ class AttributeSyncService
     }
 
     /**
+     * 처음 만드는 회원에게 IdP 가 채울 코어 칸 값과, 그 가운데 회원이 고칠 수 없는 칸을 돌려줍니다.
+     *
+     * 첫 로그인 동의 창이 회원 항목을 받을 때 쓴다 — 값은 칸의 초기값이 되고 그 칸은 읽기 전용으로 보인다.
+     * 잠그는 범위는 `sync_lock` 만이 아니라 IdP 가 값을 준 규칙 전부(`sync_lock`, `sync`, `first_only`)다: 회원을 만든 직후의
+     * 동기화(`sync(…, created: true)`)가 세 모드 모두 IdP 값으로 덮어쓰므로, 창에서 고치게 두면 입력이 말없이 버려진다.
+     * (`sync`, `first_only` 칸은 가입 뒤 내 정보에서 고칠 수 있다 — 그 잠금은 `lockedFields()` 가 `sync_lock` 만 본다.)
+     * 이메일은 회원 항목이 아니라 뺀다(가입 주소는 `AccountResolver::registrationEmail()` 이 정한다).
+     * IdP 가 값을 주지 않은 칸은 싣지 않는다(잠금 규칙이어도 회원이 직접 채울 수 있게 둔다).
+     *
+     * @param  IdentityProvider  $idp  IdP
+     * @param  ExternalIdentity  $identity  신원
+     * @return array{values: array<string, string>, locked: array<int, string>} 코어 칸 => 값, 잠긴 칸 이름
+     */
+    public function initialCoreValues(IdentityProvider $idp, ExternalIdentity $identity): array
+    {
+        $values = [];
+        $locked = [];
+        $caseInsensitive = self::caseInsensitiveSources($idp);
+
+        foreach (self::rules($idp) as $rule) {
+            if ($rule['mode'] === 'ignore' || $rule['field'] === 'email' || ! in_array($rule['field'], self::CORE_FIELDS, true)) {
+                continue;
+            }
+
+            $value = self::sourceValue($identity, $rule['source'], $caseInsensitive);
+            $value = $value !== null ? $this->fitCoreValue($rule['field'], $value) : null;
+            if ($value === null) {
+                continue;
+            }
+
+            $values[$rule['field']] = $value;
+            $locked[] = $rule['field'];
+        }
+
+        return ['values' => $values, 'locked' => array_values(array_unique($locked))];
+    }
+
+    /**
      * 코어 칸에 맞게 값을 다듬습니다 (지원하지 않는 언어는 버린다, 길이 제한).
      *
      * @param  string  $field  코어 칸
@@ -338,7 +388,7 @@ class AttributeSyncService
         $this->logActivity('sso.email_synced', [
             'loggable' => $user,
             'description_key' => 'sirsoft-sso::activity_log.description.sso.email_synced',
-            'description_params' => ['user_name' => (string) $user->name, 'idp' => $idp->localizedLabel(), 'from' => $current, 'to' => $email], // audit:allow resource-member-email-ungated reason: 활동 로그 기록(관리자 활동 로그 화면 — 응답·캐시 아님), 이메일 변경 감사 근거
+            'description_params' => ['user_name' => MemberName::forRecord($user), 'idp' => $idp->localizedLabel(), 'from' => $current, 'to' => $email], // audit:allow resource-member-email-ungated reason: 활동 로그 기록(관리자 활동 로그 화면 — 응답·캐시 아님), 이메일 변경 감사 근거
             'properties' => ['user_id' => (int) $user->getKey(), 'idp_id' => (int) $idp->getKey(), 'from' => $current, 'to' => $email],
         ]);
 
@@ -365,7 +415,7 @@ class AttributeSyncService
         $this->logActivity('sso.email_sync_conflict', [
             'loggable' => $user,
             'description_key' => 'sirsoft-sso::activity_log.description.sso.email_sync_conflict',
-            'description_params' => ['user_name' => (string) $user->name, 'idp' => $idp->localizedLabel()],
+            'description_params' => ['user_name' => MemberName::forRecord($user), 'idp' => $idp->localizedLabel()],
             'properties' => ['user_id' => (int) $user->getKey(), 'idp_id' => (int) $idp->getKey()],
         ]);
 

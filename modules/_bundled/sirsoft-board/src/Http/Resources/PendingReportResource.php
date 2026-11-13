@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
+use Modules\Sirsoft\Board\Traits\PresentsMemberName;
 
 /**
  * 대시보드 미처리 신고 리소스
@@ -14,6 +15,7 @@ use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 class PendingReportResource extends BaseApiResource
 {
     use FormatsBoardDate;
+    use PresentsMemberName;
 
     /**
      * 리소스를 배열로 변환합니다.
@@ -43,7 +45,8 @@ class PendingReportResource extends BaseApiResource
             'target_excerpt' => $excerpt,
             'status' => $this->status?->value,
             'status_label' => $this->status_label,
-            'author_name' => $this->author?->name,
+            // 관리자 화면의 표시 이름. 실명은 회원 조회 권한이 있고 표시 이름과 다를 때만 `real_name` 으로 더한다.
+            ...$this->boardMemberNameFields($this->author, $request, null, 'author_name'),
             'last_reported_at' => $this->formatCreatedAtFormat(
                 $this->last_reported_at,
                 g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')

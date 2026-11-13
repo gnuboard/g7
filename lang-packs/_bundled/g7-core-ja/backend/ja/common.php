@@ -402,6 +402,13 @@ return [
                 'dashboard_menu_missing' => 'ダッシュボードメニュー(admin-dashboard)が見つからないため、マネージャーのメニュー権限の付与をスキップします。',
                 'manager_dashboard_granted' => 'マネージャーロールにダッシュボードメニュー権限を付与しました。',
             ],
+            'core_field_definition' => [
+                'start' => 'コア会員項目のシーディングを開始...',
+                'no_definitions' => 'config/core.php に fields 宣言がありません。',
+                'skipped' => '  - :field をスキップ: :reason',
+                'stale_removed' => '宣言から外れたコア項目 :count 個を整理',
+                'done' => 'コア会員項目のシーディング完了 (:count 件)',
+            ],
             'core_schedule' => [
                 'start' => 'コアスケジュールのシーディングを開始...',
                 'no_catalog' => 'config/core.php に schedules カタログがありません。',

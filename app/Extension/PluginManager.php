@@ -42,6 +42,7 @@ use App\Extension\Helpers\ExtensionScheduleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
+use App\Extension\Helpers\FieldDefinitionSyncHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageDeclarationConverter;
@@ -62,6 +63,8 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Fields\FieldSet;
+use App\Fields\FieldSetRegistry;
 use App\Listeners\SeoExtensionCacheListener;
 use App\Models\IdentityPolicy;
 use App\Models\Module;
@@ -666,6 +669,9 @@ class PluginManager implements PluginManagerInterface
 
                 // 스케줄 선언 동기화 (schedules — 7.2.0). 비활성으로 설치돼도 행은 만들고 등록기·실행기가 거른다.
                 $this->syncPluginSchedules($plugin);
+
+                // 항목 집합과 항목 선언 동기화 (field_definitions — 7.2.0). 설치만 하고 업데이트하지 않은 사이트에도 선언한 칸이 생기게 한다.
+                $this->syncPluginFieldDefinitions($plugin);
 
                 DB::commit();
 
@@ -1311,6 +1317,14 @@ class PluginManager implements PluginManagerInterface
                             ]);
                             LifecycleWarnings::current()->add('cleanup', $plugin->getIdentifier(), $e->getMessage());
                         }
+                    }
+
+                    // 항목 선언도 data 옵션 선택 시 제거 (그 항목에 든 값 포함 — 운영자가 만든 항목은 남는다)
+                    try {
+                        app(FieldDefinitionSyncHelper::class)->removeSource('plugin', $plugin->getIdentifier());
+                    } catch (\Throwable $e) {
+                        Log::warning('항목 선언 정리 실패 (uninstall)', ['plugin' => $plugin->getIdentifier(), 'error' => $e->getMessage()]);
+                        LifecycleWarnings::current()->add('cleanup', $plugin->getIdentifier(), $e->getMessage());
                     }
 
                     // 알림 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
@@ -2600,6 +2614,7 @@ class PluginManager implements PluginManagerInterface
      *      옛 `getIdentityMessages()` 선언은 7.1.0 부터 여기서 알림 정의로 변환·합류한다(호환층).
      *   8. 예약 작업 (`getSchedules`) — `schedules` 행. 선언에서 빠진 행은 같은 소유 범위에서 정리하되,
      *      선언이 0건이면 정리하지 않는다(데이터 보호). 7.2.0.
+     *   9. 항목 집합·항목 선언 (`getFieldSets`·`getFields`) — `field_definitions` 행. 운영자가 만든 항목은 건드리지 않는다. 7.2.0.
      *
      * 각 sync 메서드는 helper 내부의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출
      * 무해 (멱등).
@@ -2617,6 +2632,7 @@ class PluginManager implements PluginManagerInterface
         $this->syncPluginIdentityPolicies($plugin);
         $this->syncPluginNotificationDefinitions($plugin);
         $this->syncPluginSchedules($plugin);
+        $this->syncPluginFieldDefinitions($plugin);
     }
 
     /**
@@ -2812,6 +2828,68 @@ class PluginManager implements PluginManagerInterface
         }
 
         return $definitions;
+    }
+
+    /**
+     * 활성 플러그인 하나의 항목 선언만 다시 동기화합니다.
+     *
+     * 언어팩을 켜고 끌 때 쓴다 — 항목 이름은 선언 동기화 때 확장 언어 파일과 활성 언어팩을 읽어 DB 행에 저장되므로
+     * (`ExtensionLangTexts`), 팩이 바뀌면 행도 다시 맞춰야 새 언어가 보이고 끈 언어가 빠진다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return bool 플러그인을 찾아 동기화했으면 true
+     *
+     * @since 7.2.0
+     */
+    public function resyncFieldDefinitions(string $identifier): bool
+    {
+        $plugin = $this->getPlugin($identifier);
+        if ($plugin === null) {
+            return false;
+        }
+        $this->syncPluginFieldDefinitions($plugin);
+
+        return true;
+    }
+
+    /**
+     * 플러그인이 선언한 항목 집합과 항목을 `field_definitions` 테이블에 동기화합니다.
+     *
+     * 자기 집합(`getFieldSets`)을 먼저 등록소에 올린 뒤 항목(`getFields`)을 동기화한다 — 설치 도중에는 아직
+     * 활성 목록에 없어 등록소가 이 확장의 집합을 모르기 때문이다. 다른 확장이 가진 집합에 선언한 항목(교차 기여)도
+     * 같은 경로로 들어가며, 받을 수 없는 선언은 건너뛰고 사유를 로그에 남긴다.
+     * 운영자 수정은 user_overrides 로 보존되고, 운영자가 만든 항목(custom)은 정리 대상이 아니다.
+     *
+     * @param  PluginInterface  $plugin  항목을 동기화할 plugin 인스턴스
+     * @return void 반환값 없음
+     *
+     * @since 7.2.0
+     */
+    protected function syncPluginFieldDefinitions(PluginInterface $plugin): void
+    {
+        if (! Schema::hasTable('field_definitions')) {
+            return; // 마이그레이션 미실행 환경 보호
+        }
+
+        $identifier = $plugin->getIdentifier();
+
+        try {
+            $sets = app(FieldSetRegistry::class);
+            $sets->flush();
+            if (method_exists($plugin, 'getFieldSets')) {
+                foreach ((array) $plugin->getFieldSets() as $data) {
+                    if (is_array($data) && isset($data['key']) && ! $sets->has((string) $data['key'])) {
+                        $sets->register(FieldSet::fromArray($data, 'plugin', $identifier));
+                    }
+                }
+            }
+
+            $fields = method_exists($plugin, 'getFields') ? (array) $plugin->getFields() : [];
+            app(FieldDefinitionSyncHelper::class)->sync('plugin', $identifier, $fields);
+        } catch (\Throwable $e) {
+            Log::warning('항목 선언 동기화 실패', ['plugin' => $identifier, 'error' => $e->getMessage()]);
+            LifecycleWarnings::current()->add('field_definitions', $identifier, $e->getMessage());
+        }
     }
 
     /**

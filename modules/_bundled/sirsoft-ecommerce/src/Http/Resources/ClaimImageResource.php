@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use App\Support\AssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 클레임 첨부 이미지 리소스
@@ -60,7 +61,11 @@ class ClaimImageResource extends BaseApiResource
             // 그리지 않으므로 조용한 거짓 대신 공백이 남는다.
             'uploader_type' => $this->uploader_type?->value,
             'uploader_type_label' => $this->uploader_type?->isDisplayable() ? $this->uploader_type->label() : null,
-            'uploader_name' => $this->whenLoaded('creator', fn () => $this->creator?->name),
+            // 올린 사람의 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역, 그 밖은 사이트 기본). 실명은 회원 조회 권한이
+            // 있는 관리자에게만 `uploader_real_name` 으로 더해진다. 관계를 읽어 두지 않은 응답에는 종전처럼 키가 없다.
+            ...($this->resource->relationLoaded('creator')
+                ? MemberDisplayName::staffFields($this->resource->creator, $request, 'uploader_name')
+                : []),
             'download_url' => AssetUrl::sitePath(URL::temporarySignedRoute(
                 'api.modules.sirsoft-ecommerce.claim-image.download',
                 now()->addMinutes(self::SIGNED_DOWNLOAD_TTL_MINUTES),

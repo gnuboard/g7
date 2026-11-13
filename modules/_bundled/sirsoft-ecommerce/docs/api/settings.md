@@ -59,6 +59,8 @@ _단건 응답: `data` 객체의 필드._
 | active_rate_provider | null | `null` | `language_currency.rate_provider` 로 선택된 제공자가 지금 등록돼 있으면 그 항목(객체), 선택이 없거나 선택한 제공자가 등록돼 있지 않으면 `null` |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
 | available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
+| display_name | object | `{"review":{"mode":"inherit","kind":null},"inquiry":{"mode":"fixed","kind":"masked_name"}}` | 기능별 작성자 표시 이름의 저장된 설정. 키는 `review`(상품 후기), `inquiry`(상품 문의)이고 값은 `{mode, kind}` 다. `mode` 는 `inherit`(상위 영역을 따름), `fixed`(종류 하나로 고정), `member`(회원이 고른 값) 가운데 하나, `kind` 는 `fixed` 일 때만 종류 키이고 그 밖에는 `null`. 이커머스 설정 파일의 값이 아니라 코어의 표시 이름 영역 설정(`sirsoft-ecommerce:review`, `sirsoft-ecommerce:inquiry`)에서 읽는다 |
+| display_name_options | object | `{"kinds":[{"key":"name","label":"이름","preview":"홍길동","requires_nickname":false}],"effective":{"review":{…},"inquiry":{…}}}` | 표시 이름 칸이 그릴 읽기 전용 목록. `kinds[]` 는 고를 수 있는 종류(`key`, `label`, 표본 회원으로 계산한 `preview`, 닉네임이 필요한 종류인지 `requires_nickname`), `effective.{review,inquiry}` 는 상속을 다 따라간 지금 적용되는 값(`mode`, `kind`, `kind_label`, 그 값을 정한 영역의 이름 `source_label`). 저장 요청에 실려 와도 무시한다 |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 | _meta | object | `{"limits":{"auto_cancel_days_min":1,"auto_cancel_days_max…` | 설정 화면 전용 메타. `limits` 는 숫자 입력의 경계값 맵(`config('sirsoft-ecommerce.limits')`)으로, 저장 규칙(FormRequest)과 같은 출처다 — 화면이 리터럴 경계를 들면 규칙 변경을 따라가지 못해 "화면은 받는데 저장은 422" 가 되므로 입력 min/max 는 이 값을 바인딩한다 |
 
@@ -515,6 +517,9 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | _tab | body | string | 아니오 | `basic_info`, `language_currency`, `seo`, `order_settings`, `claim`, `shipping`, `review_settings`, `product_display`, `notification_definitions`, `notifications`, `inquiry`, `mileage`, `privacy_retention` | 저장할 설정 탭(카테고리) 지정 (탭별 부분 저장 식별용) |
+| display_name | body | array | 아니오 | — | 기능별 작성자 표시 이름. 리뷰 설정 탭과 기본 정보 탭이 함께 싣는다. 실려 오지 않으면 표시 이름 설정을 건드리지 않고, 한 기능만 실려 오면 그 기능만 바꾼다. 이커머스 설정 파일이 아니라 코어의 표시 이름 영역 설정에 저장하며(다른 영역의 값은 그대로 둔다), 저장하면 검색 엔진용으로 미리 그린 화면을 비운다 |
+| display_name.review.mode, display_name.inquiry.mode | body | string | 해당 기능 객체가 있으면 필수 | `inherit`, `fixed`, `member` | 표시 방식 |
+| display_name.review.kind, display_name.inquiry.kind | body | string | `mode` 가 `fixed` 면 필수 | 지금 등록된 종류 키 (`name`, `nickname`, `masked_name`, `masked_id`, `name_nickname`, `field:{항목 키}` 등) | 고정할 종류. `mode` 가 `fixed` 가 아니면 보지 않고 저장하지 않는다. 닉네임이 필요한 종류로 고정하면 회원 항목의 닉네임이 사용, 필수로 잠긴다 |
 | notifications | body | array | 아니오 | — | 알림 채널 설정 배열 (채널 ID·활성 여부·정렬 순서) |
 | notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 항목별 `id`(문자열, max 50, 필수), `is_active`(boolean, 필수), `sort_order`(integer, min 0) |
 | basic_info | body | array | 아니오 | — | 쇼핑몰 기본 정보 섹션 (쇼핑몰명·라우트 경로·상호·사업자번호·주소·연락처 등) |
@@ -854,6 +859,8 @@ _단건 응답: `data` 객체의 필드._
 | active_rate_provider | null | `null` | `language_currency.rate_provider` 로 선택된 제공자가 지금 등록돼 있으면 그 항목(객체), 선택이 없거나 선택한 제공자가 등록돼 있지 않으면 `null` |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
 | available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
+| display_name | object | `{"review":{"mode":"fixed","kind":"nickname"},"inquiry":{"mode":"fixed","kind":"masked_name"}}` | 저장 뒤의 기능별 작성자 표시 이름 (조회 응답의 같은 키와 모양이 같다) |
+| display_name_options | object | `{"kinds":[…],"effective":{"review":{…},"inquiry":{…}}}` | 표시 이름 칸의 읽기 전용 목록 (조회 응답의 같은 키와 모양이 같다) |
 
 **응답 예시**
 

@@ -1,0 +1,127 @@
+<!-- 추가 정보 입력 — 운영자가 「기존 회원에게도 입력 요구」를 켠 필수 항목이 비어 있는 회원이 로그인 뒤 거치는 화면이다. 비어 있는 필수 칸만 받으므로 기존 값을 바꾸지 못하고, 그래서 비밀번호 재확인 없이 바로 입력을 받는다.
+     저장하면 원래 가려던 곳(주소의 redirect)으로, 없으면 홈으로 보낸다. 남은 항목이 없는 회원이 들어오면 입력 없이 곧바로 그곳으로 보낸다. 이 화면에서 나갈 길은 저장과 로그아웃이다(약관 문서, 본인인증, 비밀번호 변경, 탈퇴 화면은 유도 대상에서 빠져 있어 그대로 열린다). -->
+<layout name="mypage/required-info" version="1.0.0" extends="_user_base">
+  <meta title="$t:member.required_info.title"/>
+  <!-- 비어 있는 필수 항목 — 내 정보 항목 API 에 context=required 를 주면 그 회원에게 비어 있는 필수 항목만 공용 항목 계약 모양으로 온다(없으면 빈 배열).
+       id 가 profileFields 인 것은 공용 항목 조각의 파일 갈래가 파일을 올리거나 지운 뒤 이 id 를 다시 받기 때문이다(파일 항목은 저장 단추가 아니라 그 자리에서 바로 올린다).
+       아래 computed 넷이 이 응답과 주소를 읽는다: requiredInfoGroups 는 공용 조각에 넘기는 묶음(약관 묶음 항목도 함께 그린다), memberFieldCtx 는 조각의 문맥(폼 이름, 오류, 저장 중 여부),
+       requiredInfoOrphanErrors 는 어느 칸에도 속하지 않는 오류 문구 목록, requiredInfoTarget 은 마치고 갈 곳이다 — 주소의 redirect 가 사이트 안 경로(/ 로 시작하고 // 나 /\ 로 시작하지 않으며 이 화면 자신이 아님)일 때만 그 값을 쓰고 아니면 홈이다. -->
+  <data-source id="profileFields" label_key="$t:editor.data_source.profileFields" type="api" endpoint="/api/me/fields" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :refetchOnMount="true" :cache="false">
+    <params context="required"/>
+    <error-handling>
+      <default>
+        <!-- 처음 받기 실패는 본문 오류 화면, 다시 받기 실패는 받아 둔 항목을 그대로 두고 알린다. -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
+  <computed name="requiredInfoGroups">{{[{ key: 'required', includeAgreements: true, fields: profileFields?.data?.fields ?? [] }]}}</computed>
+  <computed name="memberFieldCtx">{{({ formKey: 'requiredInfoForm', errors: _local.requiredInfoErrors ?? {}, disabled: !!_local.isSavingRequiredInfo })}}</computed>
+  <computed name="requiredInfoOrphanErrors">{{Object.entries(_local.requiredInfoErrors ?? {}).filter(function(entry) { return !(profileFields?.data?.fields ?? []).some(function(f) { return entry[0] === f.name || entry[0].indexOf(f.name + '.') === 0 || Object.values(f.parts ?? {}).indexOf(entry[0]) !== -1; }); }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })}}</computed>
+  <computed name="requiredInfoTarget">{{(typeof query?.redirect === 'string' &amp;&amp; query.redirect.charAt(0) === '/' &amp;&amp; query.redirect.charAt(1) !== '/' &amp;&amp; query.redirect.charCodeAt(1) !== 92 &amp;&amp; query.redirect.indexOf('/mypage/required-info') !== 0) ? query.redirect : '/'}}</computed>
+  <init>
+    <!-- 깊은 병합(기본)은 빈 객체로 앞 값을 지우지 못한다 — null 로 먼저 지우고 다시 쓴다. 같은 화면으로 다시 들어와도 앞 입력이 남지 않는다. -->
+    <set-state target="local" :requiredInfoForm="null"/>
+    <set-state target="local" :isSavingRequiredInfo="false" :requiredInfoErrors="null" :requiredInfoForm="{}"/>
+  </init>
+  <slot name="content">
+    <flex data-type="layout" justify="center" align="start" class="min-h-[60vh] py-12">
+      <responsive on="portable" class="min-h-[60vh] py-6"/>
+      <!-- 남은 항목 없이 들어온 경우 — 항목을 받았는데 비어 있으면 입력 없이 곧바로 목적지로 보낸다. 이 노드가 그려지는 순간이 이동 시점이다(저장 중에는 저장 성공 처리가 이동을 맡으므로 그리지 않는다). -->
+      <div data-if="{{!!profileFields?.data &amp;&amp; (profileFields.data.fields ?? []).length === 0 &amp;&amp; !_local.isSavingRequiredInfo}}" data-ref="required_info_done">
+        <div>
+          <on event="mount">
+            <!-- 돌아갈 주소(계산값 requiredInfoTarget)로 보낸다. 주소가 없거나 이동할 수 없으면 첫 화면으로 간다. -->
+            <navigate path="{{$computed.requiredInfoTarget ?? '/'}}" fallbackPath="/"/>
+          </on>
+        </div>
+      </div>
+      <div data-ref="required_info_card" class="w-full max-w-lg p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <responsive on="portable" class="w-full p-5 bg-white dark:bg-gray-800 rounded-lg shadow"/>
+        <h1 data-ref="required_info_title" class="text-2xl font-bold text-gray-900 dark:text-white mb-6 break-words">
+          <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white mb-4 break-words"/>
+          $t:member.required_info.title
+        </h1>
+        <!-- 불러오는 중 — 항목을 받기 전에는 폼 대신 진행 표시만 둔다. -->
+        <div data-if="{{!profileFields?.data}}" data-ref="required_info_loading" class="flex items-center gap-3 py-6 text-sm text-gray-600 dark:text-gray-300" role="status" aria-live="polite">
+          <div class="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin"/>
+          <span>$t:member.required_info.loading</span>
+        </div>
+        <div data-if="{{(profileFields?.data?.fields ?? []).length > 0}}" class="space-y-6">
+          <!-- 안내와 남은 개수 -->
+          <div data-ref="required_info_notice" class="flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800" role="status">
+            <icon name="circle-info" size="md" class="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+            <p class="text-sm text-blue-800 dark:text-blue-200 break-words">$t:member.required_info.notice|count={{(profileFields?.data?.fields ?? []).length}}</p>
+          </div>
+          <!-- 어느 칸에도 속하지 않는 오류만 모으는 상자 — 칸에 속한 오류는 그 칸 아래에 뜬다. -->
+          <div data-if="{{($computed.requiredInfoOrphanErrors ?? []).length > 0}}" data-ref="required_info_orphan_errors" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" role="alert">
+            <ul class="list-disc list-inside space-y-1">
+              <li data-each="message in {{$computed.requiredInfoOrphanErrors ?? []}}" class="text-sm text-red-700 dark:text-red-300 break-words">{{message}}</li>
+            </ul>
+          </div>
+          <form data-key="requiredInfoForm" data-ref="required_info_form" :noValidate="true" class="space-y-6">
+            <on type="submit">
+              <!-- 저장 — 폼에 입력한 값을 항목의 폼 경로 그대로 보낸다(기본 항목은 최상위 키, 운영자 추가 항목은 custom_fields 아래). 서버는 비어 있던 필수 항목만 받는다.
+                   성공하면 로그인 사용자를 다시 받아 헤더와 유도 판정이 새 상태를 보게 하고, 남은 항목이 없으면 목적지로 보낸다. 파일 항목처럼 이 요청으로 채우지 못한 것이 남으면 화면에 남아 항목을 다시 받는다.
+                   실패하면 오류를 칸 아래에 붙인다. -->
+              <sequence>
+                <set-state target="local" :isSavingRequiredInfo="true" :requiredInfoErrors="null"/>
+                <api-call :auth_required="true" target="/api/me/required-fields" method="PUT" body="{{_local?.requiredInfoForm ?? {}}}">
+                  <success>
+                    <refetch-data-source dataSourceId="current_user"/>
+                    <conditions>
+                      <when if="{{(response.data?.pending_required_fields ?? []).length === 0}}">
+                        <sequence>
+                          <toast type="success" message="$t:member.required_info.saved"/>
+                          <navigate path="{{$computed.requiredInfoTarget ?? '/'}}" fallbackPath="/"/>
+                        </sequence>
+                      </when>
+                      <else>
+                        <sequence>
+                          <set-state target="local" :isSavingRequiredInfo="false" :requiredInfoErrors="null"/>
+                          <refetch-data-source dataSourceId="profileFields"/>
+                          <toast type="info" message="$t:member.required_info.remaining|count={{(response.data?.pending_required_fields ?? []).length}}"/>
+                        </sequence>
+                      </else>
+                    </conditions>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSavingRequiredInfo="false" requiredInfoErrors="{{error.errors ?? {message: error.message}}}"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <!-- 비어 있는 필수 항목 칸 — 공용 항목 조각이 라벨, 필수 별표, 입력칸, 안내, 칸 아래 오류를 그린다. -->
+            <div data-ref="required_info_fields">
+              <div data-each="memberFieldGroup in {{$computed.requiredInfoGroups ?? []}}" data-ref="member_fields_each_{{memberFieldGroup.key}}">
+                <include src="partials/member/_member_fields.g7.html"/>
+              </div>
+            </div>
+            <button type="submit" data-ref="required_info_save" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer" disabled="{{!!_local.isSavingRequiredInfo}}">
+              <div data-if="{{!!_local.isSavingRequiredInfo}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              <span data-if="{{!_local.isSavingRequiredInfo}}">$t:member.required_info.save</span>
+              <span data-if="{{!!_local.isSavingRequiredInfo}}">$t:member.required_info.saving</span>
+            </button>
+          </form>
+        </div>
+        <!-- 로그아웃 — 지금 입력하지 않고 나가는 길. 폼 밖에 두어 제출로 가로채이지 않게 한다. -->
+        <div class="mt-4 flex justify-center">
+          <button type="button" data-ref="required_info_logout" class="inline-flex items-center justify-center min-h-11 px-4 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{!!_local.isSavingRequiredInfo}}">
+            <on type="click">
+              <logout/>
+            </on>
+            $t:member.required_info.logout
+          </button>
+        </div>
+      </div>
+    </flex>
+  </slot>
+</layout>

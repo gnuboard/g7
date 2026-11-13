@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Models\Export;
 use Modules\Sirsoft\Ecommerce\Models\ExportDownload;
 use Modules\Sirsoft\Ecommerce\Support\ExportAccess;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 내보내기 다운로드 이력 컬렉션 (다운로드 이력 모달)
@@ -59,7 +60,10 @@ class ExportDownloadCollection extends BaseApiCollection
                 'id' => $download->id,
                 'sequence' => $total - $offset - $i,
                 'user' => [
-                    'name' => $download->user?->name ?? $download->user_name_snapshot,
+                    // 받은 사람 이름은 받을 때 남긴 이름 그대로다(기록물). 남긴 이름이 없는 행만 이커머스 관리자 영역의 표시 이름으로 보인다.
+                    'name' => filled($download->user_name_snapshot)
+                        ? $download->user_name_snapshot
+                        : MemberDisplayName::name($download->user, MemberDisplayName::AREA_ADMIN),
                     'uuid' => $download->user?->uuid,
                 ],
                 'ip_address' => $showIp ? $download->ip_address : null,

@@ -49,6 +49,7 @@
     "list_description": "掲示板リストページに関連する設定です",
     "post": "投稿設定",
     "post_description": "投稿作成に関連する設定です",
+    "guest_author_fields": "非会員投稿者項目",
     "reply": "回答投稿設定",
     "reply_description": "回答投稿に関連する設定です",
     "comment": "コメント設定",
@@ -659,5 +660,9 @@
       "running": "実行中",
       "never": "未実行"
     }
+  },
+  "guest_author_fields": {
+    "label": "非会員投稿者項目の既定値",
+    "description": "新しい掲示板を作成するとき、その掲示板の非会員投稿者項目の設定としてコピーされます。作成済みの掲示板は変わりません。名前とパスワードは常に入力を求めます。"
   }
 }

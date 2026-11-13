@@ -128,6 +128,7 @@ interface UserRepositoryInterface
      *
      * 번호만 들고 있는 목록(방문자 통계의 원장 행 등)이 한 쪽에 실린 회원을 한 번에
      * 읽을 때 씁니다 — 행마다 읽으면 한 쪽에 쪽 크기만큼 질의가 납니다.
+     * 읽는 칸은 표시 이름 계산에 필요한 `User::DISPLAY_COLUMNS` 입니다.
      *
      * @param  array<int, int>  $ids  사용자 번호 목록
      * @return Collection<int, User> id => User 매핑
@@ -253,13 +254,14 @@ interface UserRepositoryInterface
     public function getIdsByUuids(array $uuids): array;
 
     /**
-     * 사용자 ID 목록에 해당하는 이름을 ID 로 색인해 반환합니다.
+     * 사용자 ID 목록에 해당하는 이름(원본 실명)을 ID 로 색인해 반환합니다.
      *
-     * 목록 화면이 작성자 이름을 행마다 조회하면 N+1 이 되므로, 표시에 필요한
-     * 이름만 한 번에 모아 오기 위한 배치 조회입니다.
+     * 화면에 보일 이름을 만드는 용도가 아닙니다. 응답에 이름을 실을 때는 `findManyByIdsKeyed()` 로 회원을 읽어
+     * `App\DisplayName\DisplayNameResolver::resolveMany()` 로 표시 이름을 계산합니다(7.2.0).
+     * 이름을 받지 않는 사이트의 회원은 빈 문자열입니다.
      *
      * @param  array  $ids  사용자 ID 배열
-     * @return array<int, string> 사용자 ID => 이름
+     * @return array<int, string> 사용자 ID => 이름 (이름이 없으면 빈 문자열)
      */
     public function getNamesByIds(array $ids): array;
 
@@ -354,4 +356,96 @@ interface UserRepositoryInterface
      * @since 7.1.0
      */
     public function queryByIds(array $ids): Builder;
+
+    /**
+     * 주어진 컬럼 가운데 하나라도 빈(null 또는 빈 문자열) 회원 수를 반환합니다 (탈퇴 회원 제외).
+     *
+     * 컬럼 저장 항목을 필수로 바꾸기 전에 「비어 있는 기존 회원 N명」을 보여 주는 데 쓴다.
+     *
+     * @param  array<int, string>  $columns  users 컬럼명 목록 (호출자가 허용 목록으로 고른 값)
+     * @return int 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function countMembersWithEmptyColumns(array $columns): int;
+
+    /**
+     * 값 테이블 저장 항목에 값이 없는 회원 수를 반환합니다 (탈퇴 회원 제외).
+     *
+     * @param  int  $definitionId  항목 ID (field_definitions.id)
+     * @return int 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function countMembersWithoutFieldValue(int $definitionId): int;
+
+    /**
+     * 같은 정규화 닉네임을 쓰는 다른 회원이 있는지 반환합니다.
+     *
+     * @param  string  $normalized  정규화 닉네임
+     * @param  int|null  $exceptUserId  비교에서 뺄 회원 ID (자기 자신)
+     * @return bool 있으면 true
+     *
+     * @since 7.2.0
+     */
+    public function nicknameNormalizedTaken(string $normalized, ?int $exceptUserId = null): bool;
+
+    /**
+     * 닉네임이 있는 회원 수를 반환합니다 (닉네임 키 재계산의 전체 수).
+     *
+     * @return int 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function countMembersWithNickname(): int;
+
+    /**
+     * 닉네임이 있는 회원을 ID 순으로 한 묶음 읽습니다 (닉네임 키 재계산용).
+     *
+     * @param  int  $afterId  이 ID 다음부터
+     * @param  int  $limit  묶음 크기
+     * @return Collection<int, User> id, nickname, nickname_normalized, nickname_unique_key 만 담은 회원
+     *
+     * @since 7.2.0
+     */
+    public function nicknameRowsAfter(int $afterId, int $limit): Collection;
+
+    /**
+     * 주어진 정규화 닉네임 가운데 두 회원 이상이 쓰는 값을 반환합니다.
+     *
+     * @param  array<int, string>  $normalizedValues  정규화 닉네임 목록
+     * @return array<int, string> 겹치는 값
+     *
+     * @since 7.2.0
+     */
+    public function duplicatedNicknameNormalized(array $normalizedValues): array;
+
+    /**
+     * 지금 겹치는 닉네임의 종 수와 그 닉네임을 쓰는 회원 수를 반환합니다.
+     *
+     * @return array{nicknames: int, members: int} 겹치는 닉네임 종 수, 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function nicknameDuplicateSummary(): array;
+
+    /**
+     * 회원의 닉네임 비교 컬럼을 고칩니다 (모델 이벤트와 수정 시각을 건드리지 않는다).
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array{nickname_normalized?: string|null, nickname_unique_key?: string|null}  $columns  고칠 컬럼
+     * @return void
+     *
+     * @since 7.2.0
+     */
+    public function updateNicknameKeys(int $userId, array $columns): void;
+
+    /**
+     * 모든 회원의 닉네임 중복 키를 비웁니다 (중복 금지를 끌 때).
+     *
+     * @return int 비운 행 수
+     *
+     * @since 7.2.0
+     */
+    public function clearNicknameUniqueKeys(): int;
 }

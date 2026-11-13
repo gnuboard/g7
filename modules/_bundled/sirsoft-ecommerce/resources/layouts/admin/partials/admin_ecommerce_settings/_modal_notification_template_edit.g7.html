@@ -17,6 +17,22 @@
         <!-- 창 닫힘 정리 — 창 머리 닫기·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때, 「특정 회원」 검색 결과(이름·이메일)와 고른 회원 이름을 담은 창 이름 공간을 비운다(7.1.1). 여는 쪽이 열 때마다 새로 채운다 -->
         <set-state target="global" :ecommerce_notification_template_form_modal="null"/>
       </on>
+      <!-- 저장은 됐지만 알릴 것이 있을 때의 경고 상자. 지금 없는 회원 항목 변수(지워졌거나 꺼진 항목, 잘못 적은 이름)를
+           제목, 본문, 이동 주소에 썼으면 서버가 저장 응답의 warnings 에 실어 준다. 그 자리는 빈 글자로 발송되므로
+           운영자가 창을 닫기 전에 고칠 수 있게 창을 닫지 않고 여기에 보인다. 스크롤 영역 밖(위)에 두어 본문을 아래까지
+           내린 채 저장해도 보인다. 문구는 코어 알림 템플릿 창과 같은 키를 쓴다. -->
+      <div data-ref="ecommerce_template_save_warnings" data-if="{{(_global.ecommerce_notification_template_form_modal?.warnings ?? []).length > 0}}" role="alert" class="ecommerce:flex-shrink-0 ecommerce:mb-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:border ecommerce:border-amber-300 ecommerce:dark:border-amber-700 ecommerce:bg-amber-50 ecommerce:dark:bg-amber-900/30 ecommerce:text-amber-800 ecommerce:dark:text-amber-300 ecommerce:text-sm">
+        <div class="ecommerce:flex ecommerce:gap-3">
+          <icon name="triangle-exclamation" size="sm" class="ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+          <div class="ecommerce:min-w-0">
+            <h3 class="ecommerce:font-medium">$t:admin.settings.notification_definitions.edit_modal.warnings_title</h3>
+            <p class="ecommerce:mt-1">$t:admin.settings.notification_definitions.edit_modal.warnings_description</p>
+            <ul class="ecommerce:mt-2 ecommerce:list-disc ecommerce:list-inside ecommerce:space-y-1">
+              <li data-each="warn, warnIdx in {{_global.ecommerce_notification_template_form_modal?.warnings ?? []}}" data-ref="ecommerce_template_save_warning_{{warnIdx}}" class="ecommerce:break-words">{{warn.message ?? warn.target ?? ''}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <div class="ecommerce:flex-1 ecommerce:overflow-y-auto ecommerce:space-y-5 ecommerce:pr-1">
         <div data-ref="ecommerce_template_validation_error" data-if="{{_global.ecommerce_notification_template_form_modal?.errors}}" class="ecommerce-alert-danger">
           <div class="ecommerce:flex ecommerce:gap-3">
@@ -256,13 +272,35 @@
         </div>
         <div data-ref="ecommerce_template_variables_info" data-if="{{((_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).length > 0) &amp;&amp; !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-md ecommerce:p-4">
           <h4 class="ecommerce-text-body ecommerce:font-medium ecommerce:mb-2">$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.variables_title</h4>
-          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
-            <span data-each="v in {{_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-xs ecommerce:px-2 ecommerce:py-1 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded ecommerce:text-gray-700 ecommerce:dark:text-gray-300">
+          <!-- 이 알림이 선언한 변수. 회원 공통 변수(group 이 member)는 아래 「회원 항목」 묶음으로 가른다. -->
+          <div data-ref="ecommerce_template_variables_own" data-if="{{(_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member').length > 0}}" class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+            <span data-each="v in {{(_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member')}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-xs ecommerce:px-2 ecommerce:py-1 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded ecommerce:text-gray-700 ecommerce:dark:text-gray-300">
               <span class="ecommerce:font-mono">{</span>
               <span class="ecommerce:font-mono">{{v.key}}</span>
               <span class="ecommerce:font-mono">}</span>
               <span> — {{v.description ?? ''}}</span>
             </span>
+          </div>
+          <!-- 회원 항목 묶음. 서버가 알림 정의의 변수 뒤에 회원 공통 변수(표시 이름, 코어와 확장 항목, 운영자 추가 항목)를
+               group: member 로 덧붙인다. 운영자가 항목을 더할수록 길어지므로 접어 두고, 제목 단추로 펼친다. 문구는 코어 창과 같은 키다. -->
+          <div data-ref="ecommerce_template_variables_member" data-if="{{(_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length > 0}}" class="ecommerce:mt-3 ecommerce:pt-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+            <button type="button" data-ref="ecommerce_template_variables_member_toggle" aria-expanded="{{_global.ecommerce_notification_template_form_modal?.memberVariablesOpen === true}}" aria-controls="ecommerce_template_variables_member_list" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:min-h-[44px] ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:hover:text-gray-900 ecommerce:dark:hover:text-gray-100">
+              <on type="click">
+                <!-- 펼침 상태는 창 이름 공간에 둔다. 창을 열 때마다 이름 공간을 새로 채우므로 다시 열면 접힌 채로 시작한다. -->
+                <set-state target="global" ecommerce_notification_template_form_modal.memberVariablesOpen="{{!(_global.ecommerce_notification_template_form_modal?.memberVariablesOpen === true)}}"/>
+              </on>
+              <icon name="{{_global.ecommerce_notification_template_form_modal?.memberVariablesOpen === true ? 'chevron-down' : 'chevron-right'}}" class="ecommerce:text-xs"/>
+              <span>{{$t('admin.settings.notification_definitions.edit_modal.member_variables_title', { count: (_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length })}}</span>
+            </button>
+            <p data-if="{{_global.ecommerce_notification_template_form_modal?.memberVariablesOpen === true}}" class="ecommerce-form-hint ecommerce:mb-2">$t:admin.settings.notification_definitions.edit_modal.member_variables_hint</p>
+            <div data-ref="ecommerce_template_variables_member_list" data-if="{{_global.ecommerce_notification_template_form_modal?.memberVariablesOpen === true}}" class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+              <span data-each="mv in {{(_global.ecommerce_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member')}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-xs ecommerce:px-2 ecommerce:py-1 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded ecommerce:text-gray-700 ecommerce:dark:text-gray-300">
+                <span class="ecommerce:font-mono">{</span>
+                <span class="ecommerce:font-mono">{{mv.key}}</span>
+                <span class="ecommerce:font-mono">}</span>
+                <span> — {{mv.description ?? ''}}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -294,21 +332,27 @@
             <set-state target="global" :ecommerce_notification_template_form_modal="null"/>
           </sequence>
         </on>
-        $t:common.cancel
+        <!-- 저장이 끝나 경고만 보이는 상태에서는 되돌릴 것이 없으므로 「닫기」로 읽힌다. -->
+        <span>{{(_global.ecommerce_notification_template_form_modal?.warnings ?? []).length > 0 ? '$t:common.close' : '$t:common.cancel'}}</span>
       </button>
       <!-- 편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
       <extension-point name="notification_template_form_footer_actions" data-ref="ecommerce_template_form_footer_ext" definition="{{_global.ecommerce_notification_template_form_modal?.definition}}" template="{{_global.ecommerce_notification_template_form_modal?.template}}" channel="{{_global.ecommerce_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_ecommerce_notification_template_edit" stateKey="ecommerce_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.ecommerce_notification_template_form_modal?.template?.id}}" refetchDataSourceId="ecommerceNotificationDefinitions"/>
       <button data-if="{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.ecommerce_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce:px-4 ecommerce:py-2 ecommerce:rounded-md ecommerce:bg-indigo-600 ecommerce:text-white ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerce_notification_template_form_modal?.isSaving ?? false}}">
         <on type="click">
-          <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다. -->
+          <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.
+               서버가 경고(지금 없는 회원 항목 변수)를 함께 주면 저장은 된 것이므로 목록 재조회와 성공 안내는 그대로 하고,
+               창은 닫지 않은 채 경고를 창 안 상자와 경고 토스트로 알린다. 다시 저장하기 전에 지난 경고를 비운다.
+               갈래는 응답 값으로만 가른다(성공 처리 안에서 방금 쓴 전역 상태를 형제 액션의 조건으로 다시 읽으면 갱신 전 값이다). -->
           <sequence>
-            <set-state target="global" :ecommerce_notification_template_form_modal.isSaving="true" :ecommerce_notification_template_form_modal.errors="null"/>
+            <set-state target="global" :ecommerce_notification_template_form_modal.isSaving="true" :ecommerce_notification_template_form_modal.errors="null" :ecommerce_notification_template_form_modal.warnings="null"/>
             <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + _global.ecommerce_notification_template_form_modal?.template?.id}}" method="PUT">
               <success>
                 <refetch-data-source dataSourceId="ecommerceNotificationDefinitions"/>
                 <toast message="$t:sirsoft-ecommerce.admin.settings.notification_definitions.save_success" type="success"/>
-                <close-modal target="modal_ecommerce_notification_template_edit"/>
-                <set-state target="global" :ecommerce_notification_template_form_modal="null"/>
+                <close-modal if="{{(response?.data?.warnings ?? []).length === 0}}" target="modal_ecommerce_notification_template_edit"/>
+                <set-state if="{{(response?.data?.warnings ?? []).length === 0}}" target="global" :ecommerce_notification_template_form_modal="null"/>
+                <set-state if="{{(response?.data?.warnings ?? []).length > 0}}" target="global" :ecommerce_notification_template_form_modal.isSaving="false" ecommerce_notification_template_form_modal.warnings="{{response?.data?.warnings ?? []}}"/>
+                <toast if="{{(response?.data?.warnings ?? []).length > 0}}" type="warning" message="$t:admin.settings.notification_definitions.edit_modal.warnings_toast|count={{(response?.data?.warnings ?? []).length}}"/>
               </success>
               <fail>
                 <set-state target="global" :ecommerce_notification_template_form_modal.isSaving="false" ecommerce_notification_template_form_modal.errors="{{error.errors}}"/>

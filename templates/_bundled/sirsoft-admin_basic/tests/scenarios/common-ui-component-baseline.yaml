@@ -38,6 +38,7 @@ effects:
   - toast_announces_politely_with_named_close_button
   # 토글
   - toggle_reflects_checked_value_and_changes_on_click
+  - toggle_awaiting_confirmation_ignores_repeat_clicks
   - toggle_applies_size_disabled_and_dark_styles
   - toggle_exposes_switch_role_name_and_keyboard
   # 폼 (609 docblock 정리 — 소유 매니페스트가 하위 폴더 접두사 축뿐이던 기본 렌더 계약을 이 축으로 묶는다)

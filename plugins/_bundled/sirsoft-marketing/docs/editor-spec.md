@@ -13,13 +13,13 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 프리뷰 샘플 2 · 페이지 상태 3
+> 단일 파일 · 프리뷰 샘플 1 · 페이지 상태 3
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
-마케팅 동의 플러그인의 스펙은 `sampleData` 한 블록, ID 하나가 전부입니다. 이 플러그인이
-소유한 화면이 설정 화면 하나뿐이고 그 화면이 읽는 도메인 데이터가 `marketing_settings`
-하나이기 때문입니다.
+마케팅 동의 플러그인의 스펙은 `sampleData` 한 블록, 데이터소스 ID 하나(`settings`)가 전부입니다.
+이 플러그인이 소유한 화면이 설정 화면 하나뿐이고 그 화면이 읽는 데이터소스가 `settings` 하나이기
+때문입니다. 가입 화면과 내 정보 수정 조각이 읽던 `marketing_settings` 샘플은 그 조각들과 함께 지웠습니다.
 
 스펙이 작다는 것이 곧 부실을 뜻하지는 않습니다. 필요한 만큼만 선언하는 것이 규율이고,
 쓰지 않는 블록을 빈 값으로 채워 두면 다음 사람이 그것을 채워야 할 자리로 오해합니다.
@@ -30,7 +30,7 @@
 <!-- @generated:editor-spec-blocks START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 블록 | 역할 | 항목 수 | 출처 |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 2 | `editor-spec.json (인라인)` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 1 | `editor-spec.json (인라인)` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 3 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
@@ -65,7 +65,7 @@ _이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 �
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 2 | `marketing_settings` · `settings` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 1 | `settings` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 3 | `*/admin/plugins/sirsoft-marketing/settings` · `channel_edit_modal` · `channel_deactivate_modal` |
 
@@ -73,12 +73,13 @@ _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습�
 <!-- @generated:editor-spec-samples END -->
 
 <!-- @intent START -->
-마케팅 동의는 회원가입 폼·마이페이지 등 **다른 확장이 소유한 화면**에도 얹힙니다.
-그 자리들은 레이아웃 확장 조각으로 주입되므로 이 스펙이 아니라 그 화면을 소유한 쪽의
-샘플로 그려집니다 — 여기 `sampleData` 가 하나뿐인 이유입니다.
+마케팅 동의 칸은 가입 화면, 내 정보 수정, 관리자 회원 폼처럼 **템플릿이 소유한 화면**에 나타나지만,
+그 칸은 이 플러그인의 조각이 아니라 템플릿이 회원 항목 계약대로 그립니다. 그래서 그 화면의 프리뷰는
+템플릿 스펙의 샘플(회원 항목 계약 응답)로 그려집니다 — 여기 `sampleData` 가 하나뿐인 이유입니다.
 
-이 플러그인이 주입한 조각이 편집기에서 비어 보인다면 고칠 자리는 여기가 아니라
-그 화면을 소유한 확장의 스펙입니다.
+이 플러그인이 주입하는 조각은 관리자 회원 상세의 동의 이력 하나이고, 자기 데이터소스 없이 그 화면의
+회원 응답(`consent_histories`)을 읽습니다. 그 조각이나 동의 칸이 편집기에서 비어 보인다면 고칠 자리는
+여기가 아니라 그 화면을 소유한 템플릿의 스펙입니다.
 <!-- @intent END -->
 
 ## 수정 시 동반 의무

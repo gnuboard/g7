@@ -41,6 +41,7 @@
         "TabNavigation",
         "TabNavigationScroll",
         "Toggle",
+        "MemberFieldInput",
         "Accordion",
         "FormField",
         "Form",
@@ -598,6 +599,26 @@
         "props": {
           "label": "$t:layout_editor.palette.toggle.default_label",
           "checked": false
+        }
+      }
+    },
+    "MemberFieldInput": {
+      "label": "$t:layout_editor.palette.member_field_input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "MemberFieldInput",
+        "props": {
+          "field": {
+            "key": "sample",
+            "name": "sample",
+            "type": "text",
+            "label": "$t:layout_editor.palette.member_field_input.default_label",
+            "required": false,
+            "options": [],
+            "constraints": {}
+          },
+          "name": "sample"
         }
       }
     },

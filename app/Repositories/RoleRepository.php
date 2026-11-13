@@ -400,4 +400,20 @@ class RoleRepository implements RoleRepositoryInterface
     {
         return $role->permissions()->count();
     }
+
+    /**
+     * 사용 중인 역할이 권한을 가졌는지 반환합니다.
+     *
+     * @param  string  $roleIdentifier  역할 식별자 (예: user)
+     * @param  string  $permissionIdentifier  권한 식별자
+     * @return bool 역할이 사용 중이고 그 권한을 가졌으면 true
+     */
+    public function activeRoleHasPermission(string $roleIdentifier, string $permissionIdentifier): bool
+    {
+        return Role::query()
+            ->where('identifier', $roleIdentifier)
+            ->where('is_active', true)
+            ->whereHas('permissions', fn ($query) => $query->where('identifier', $permissionIdentifier))
+            ->exists();
+    }
 }

@@ -99,7 +99,7 @@ _에러 없음 (공개 조회 — 인증·검증·도메인 예외 경로가 없
 
 **설명**
 
-비로그인 상태에서도 조회 가능한 공개 설정 엔드포인트다(`PublicBaseController`). 회원가입 폼과 마이페이지의 마케팅 동의 UI 가, 어떤 동의 항목을 노출할지·약관 링크가 존재하는지·어떤 채널을 반복 렌더링할지 결정하기 위해 소비한다. `plugin_settings` 저장값과 `channels` JSON 을 조합해 반환하며 별도 DB 모델을 두지 않는다.
+비로그인 상태에서도 조회 가능한 공개 설정 엔드포인트다(`PublicBaseController`). 어떤 동의 항목을 받는지, 약관 링크가 있는지, 어떤 채널이 사용 중인지를 알려 준다. 번들 화면은 더 이상 이 엔드포인트를 읽지 않는다(가입 화면, 내 정보 수정, 관리자 회원 폼은 회원 항목 계약을 읽는다). 엔드포인트는 호환을 위해 남아 있다. `plugin_settings` 저장값과 `channels` JSON 을 조합해 반환하며 별도 DB 모델을 두지 않는다.
 
 - **약관 slug 은 값을 노출하지 않는다.** 각 동의 항목마다 실제 slug(`*_terms_slug`)와 존재 플래그(`*_terms_slug_set`)를 함께 반환하되, slug 미설정 시 값은 `null` 이고 플래그는 `false` 다. 프론트는 링크 표시 여부를 `*_terms_slug_set` 으로 판정하고, slug 값 자체는 약관 페이지 라우팅에만 쓴다.
 - **세 가지 법적 동의 축**: `marketing_consent_*`(광고성 정보 수신 전체 동의), `third_party_consent_*`(제3자 제공), `info_disclosure_*`(정보 이용 안내). 각 축의 `*_enabled` 가 false 면 해당 동의 UI 를 렌더하지 않는다. `marketing_consent_enabled` 는 미설정 시 기본 `true`, 나머지 두 축은 기본 `false`.

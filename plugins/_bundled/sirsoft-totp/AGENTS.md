@@ -149,8 +149,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 1개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 7개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 8개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -183,6 +183,7 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-totp` 재실행 + `docs/api/**` 갱신
+- [ ] 로그인한 회원이 부르는 쓰기 라우트(POST, PUT, PATCH, DELETE)를 더할 때 코어 필터 `core.required_fields.filter_exempt_routes` 에 보탤지 판단한다. 코어는 추가 정보를 아직 입력하지 않은 회원의 쓰기 요청을 403 `required_fields_pending` 으로 막는다. 그런 회원도 반드시 할 수 있어야 하는 요청(인증 앱 등록과 해제처럼 로그인 2단계 인증 수단을 다루는 요청)이면 `src/Listeners/ExemptRequiredFieldsRoutesListener.php` 의 `ROUTES` 에 라우트 이름을 더하고, 사용자 콘텐츠를 만드는 요청이면 더하지 않는다
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] `requestChallenge()` 의 로그 상태를 바꿨다면 코어 `AuthService::startTwoFactorChallenge()` 의 `Failed` 판정과 함께 확인 — `Requested` 로 두면 로그인이 차단됩니다
 - [ ] `canChallengeUser()` 의 판정을 바꿨다면 **부작용이 없는지**(조회만 하는지) 확인 — 코어 로그인 판정 경로에서 호출되므로 challenge 나 로그를 만들면 안 됩니다
@@ -223,10 +224,10 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 9개 | `plugins/_bundled/sirsoft-totp/tests` |
+| PHPUnit | 11개 | `plugins/_bundled/sirsoft-totp/tests` |
 | Vitest | 9개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 10개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -91,12 +91,12 @@ class ScheduleResource extends BaseApiResource
             'extension_identifier' => $this->getValue('extension_identifier'),
 
             // 관계형 데이터
-            'creator' => $this->whenLoaded('creator', function () {
+            'creator' => $this->whenLoaded('creator', function () use ($request) {
                 $creator = $this->getValue('creator');
 
                 return $creator ? [
                     'uuid' => $creator->uuid,
-                    'name' => $creator->name,
+                    ...$this->memberNameFields($creator, $request),
                 ] : null;
             }),
 
@@ -157,7 +157,7 @@ class ScheduleResource extends BaseApiResource
             'creator' => $this->resource->relationLoaded('creator') && $this->resource->creator
                 ? [
                     'uuid' => $this->resource->creator->uuid,
-                    'name' => $this->resource->creator->name,
+                    ...$this->memberNameFields($this->resource->creator, $request),
                 ]
                 : null,
             'created_at' => $this->getValue('created_at')

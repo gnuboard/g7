@@ -17,6 +17,11 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class ShippingCountryListenersTest extends ModuleTestCase
 {
+    /**
+     * 해외배송을 켜고 배송 가능 국가(KR, US 활성)를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,6 +34,15 @@ class ShippingCountryListenersTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 회원 응답에 저장된 배송국가와 현지화한 국가명이 실리는지 확인한다.
+     *
+     * @scenario actor=member, setting_location=profile_view, module_state=intl_on
+     *
+     * @effects mypage_view_shows_saved_country
+     *
+     * @return void 반환값 없음
+     */
     public function test_info_listener_injects_country_and_localized_name(): void
     {
         app()->setLocale('ko');
@@ -43,6 +57,15 @@ class ShippingCountryListenersTest extends ModuleTestCase
         $this->assertSame('미국', $result['ecommerce_preferred_shipping_country_name']);
     }
 
+    /**
+     * 배송국가를 정한 적이 없는 회원의 응답에는 두 키가 null 로 실리는지 확인한다.
+     *
+     * @scenario actor=member, setting_location=profile_view, module_state=intl_on
+     *
+     * @effects mypage_view_shows_saved_country
+     *
+     * @return void 반환값 없음
+     */
     public function test_info_listener_injects_null_when_unset(): void
     {
         $user = User::factory()->create();
@@ -54,6 +77,15 @@ class ShippingCountryListenersTest extends ModuleTestCase
         $this->assertNull($result['ecommerce_preferred_shipping_country_name']);
     }
 
+    /**
+     * 가입 데이터에 실린 배송국가가 활성 국가면 그 값으로 정해지는지 확인한다 (요청 검증을 거치지 않는 내부 가입 호출의 경로).
+     *
+     * @scenario actor=member, setting_location=register, module_state=intl_on
+     *
+     * @effects register_field_prefill_and_persist
+     *
+     * @return void 반환값 없음
+     */
     public function test_register_listener_uses_submitted_country_when_active(): void
     {
         $user = User::factory()->create();
@@ -69,6 +101,15 @@ class ShippingCountryListenersTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 가입 데이터의 배송국가가 비활성이면 기본 국가로 정해지는지 확인한다.
+     *
+     * @scenario actor=member, setting_location=register, module_state=intl_on
+     *
+     * @effects resolve_priority_saved_geoip_default
+     *
+     * @return void 반환값 없음
+     */
     public function test_register_listener_falls_back_to_default_when_submitted_inactive(): void
     {
         $user = User::factory()->create();
@@ -85,6 +126,15 @@ class ShippingCountryListenersTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 이미 배송국가가 정해진 회원은 기본값 지정이 덮어쓰지 않는지 확인한다 (가입 트랜잭션에서 회원 항목 핸들러가 먼저 저장한 값 보존).
+     *
+     * @scenario actor=member, setting_location=register, module_state=intl_on
+     *
+     * @effects register_field_prefill_and_persist
+     *
+     * @return void 반환값 없음
+     */
     public function test_register_listener_does_not_overwrite_existing(): void
     {
         $user = User::factory()->create();
@@ -102,19 +152,37 @@ class ShippingCountryListenersTest extends ModuleTestCase
         );
     }
 
-    public function test_register_validation_rule_rejects_inactive_country(): void
+    /**
+     * 가입 요청에서 비활성 국가는 옛 키로 보내도 회원 항목 키의 검증 오류로 거절된다.
+     *
+     * 가입 검증은 리스너의 규칙 필터가 아니라 회원 항목 선언(선택지 = 활성 국가)이 한다.
+     *
+     * @scenario actor=member, setting_location=register, module_state=intl_on
+     *
+     * @effects inactive_country_rejected_422
+     *
+     * @return void 반환값 없음
+     */
+    public function test_register_rejects_inactive_country_on_field_key(): void
     {
-        $listener = app(AssignDefaultShippingCountryOnRegisterListener::class);
-        $rules = $listener->addShippingCountryRule([]);
+        $this->syncMemberFieldDeclarations();
 
-        $this->assertArrayHasKey('preferred_shipping_country', $rules);
+        $this->assertArrayNotHasKey(
+            'core.auth.register_validation_rules',
+            AssignDefaultShippingCountryOnRegisterListener::getSubscribedHooks(),
+        );
 
-        // 비활성 국가(JP)는 closure 규칙에서 실패해야 함
-        $failed = false;
-        $closure = collect($rules['preferred_shipping_country'])->first(fn ($r) => $r instanceof \Closure);
-        $closure('preferred_shipping_country', 'JP', function () use (&$failed) {
-            $failed = true;
-        });
-        $this->assertTrue($failed, '비활성 국가는 가입 검증에서 거부되어야 합니다.');
+        $response = $this->postJson('/api/auth/register', [
+            'name' => 'Test User',
+            'email' => 'reg_'.uniqid().'@example.com',
+            'password' => 'password1234',
+            'password_confirmation' => 'password1234',
+            'agree_terms' => '1',
+            'agree_privacy' => '1',
+            'preferred_shipping_country' => 'JP',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('ecommerce_preferred_shipping_country');
     }
 }

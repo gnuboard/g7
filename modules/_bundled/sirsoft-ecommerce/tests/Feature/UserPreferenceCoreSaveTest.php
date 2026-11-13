@@ -13,9 +13,9 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 코어 회원 저장 한 번으로 결제 통화·배송국가까지 저장되는지 검증한다.
  *
- * 회원 수정 화면은 코어 회원 저장 API(`PUT /api/admin/users/{user}`, `PUT /api/me`)만 호출하고,
- * 이커머스가 코어 훅(검증 규칙 필터·`filter_update_data`·`after_update`)으로 자기 두 칸을
- * 같은 요청 안에서 검증·저장한다. 검증 오류는 필드 이름 키로 돌아와 그 칸 아래에 뜬다.
+ * 회원 수정 화면은 코어 회원 저장 API(`PUT /api/admin/users/{user}`, `PUT /api/me`)만 호출한다.
+ * 두 칸은 회원 항목(core.user)으로 선언돼 있어 코어가 선언대로 검증하고, 같은 요청 안에서
+ * `UserPreferenceFieldHandler` 로 저장한다. 검증 오류는 필드 이름 키로 돌아와 그 칸 아래에 뜬다.
  */
 class UserPreferenceCoreSaveTest extends ModuleTestCase
 {
@@ -37,6 +37,7 @@ class UserPreferenceCoreSaveTest extends ModuleTestCase
         ]);
 
         $this->createDefaultRoles();
+        $this->syncMemberFieldDeclarations();
     }
 
     /**
@@ -105,7 +106,7 @@ class UserPreferenceCoreSaveTest extends ModuleTestCase
 
         $response = $this->putJson("/api/admin/users/{$target->uuid}", $this->adminBody($target, [
             'ecommerce_preferred_currency' => 'USD',
-            'ecommerce_preferred_shipping_country' => 'us',
+            'ecommerce_preferred_shipping_country' => 'US',
         ]));
 
         $response->assertOk();

@@ -840,5 +840,86 @@
       "running": "실행 중",
       "never": "미실행"
     }
+  },
+  "checkout_fields": {
+    "title": "주문서 항목",
+    "description": "주문서에서 받는 주문자, 배송지 항목의 사용 여부와 필수 여부를 정합니다.",
+    "instant_save_notice": "이 표의 변경은 바로 저장됩니다.",
+    "no_read_permission": "주문서 항목을 볼 권한이 없습니다.",
+    "add_button": "항목 추가",
+    "empty": "항목이 없습니다.",
+    "col": {
+      "group": "구획",
+      "name": "항목",
+      "source": "출처",
+      "enabled": "사용",
+      "required": "필수"
+    },
+    "group": {
+      "orderer": "주문자",
+      "shipping": "배송지"
+    },
+    "source": {
+      "custom": "추가",
+      "extension": "확장"
+    },
+    "unavailable": "사용 불가",
+    "unavailable_desc": "이 항목의 유형을 제공한 확장이 꺼져 있습니다.",
+    "saved": "저장했습니다.",
+    "save_failed": "저장하지 못했습니다.",
+    "changed_by_other": "다른 관리자가 항목을 바꿨습니다. 다시 불러왔습니다.",
+    "form": {
+      "editor_label": "쇼핑몰 주문서 항목 추가/수정",
+      "title": {
+        "create": "주문서 항목 추가",
+        "edit": "주문서 항목 수정"
+      },
+      "group": "구획",
+      "type": "유형",
+      "type_placeholder": "유형을 고르세요",
+      "type_locked": "유형은 만든 뒤 바꿀 수 없습니다.",
+      "key": "키",
+      "key_hint": "영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄만 쓸 수 있습니다(2~50자). 만든 뒤에는 바꿀 수 없습니다.",
+      "name": "이름",
+      "description": "안내",
+      "options": {
+        "title": "선택지",
+        "add_button": "선택지 추가",
+        "hint": "선택지를 지우고 저장하면 그 값으로 입력된 내용이 함께 비워집니다.",
+        "empty": "선택지가 없습니다. 1개 이상 넣어 주세요.",
+        "value": "값",
+        "value_placeholder": "영문 값 (예: door)",
+        "label": "이름",
+        "label_placeholder": "주문서에 보이는 이름"
+      }
+    },
+    "delete": {
+      "editor_label": "쇼핑몰 주문서 항목 삭제 확인",
+      "title": "주문서 항목 삭제",
+      "message": "이 항목을 삭제할까요?",
+      "warning": "이 항목에 입력된 값도 함께 지워지며 되돌릴 수 없습니다.",
+      "success": "삭제했습니다.",
+      "failed": "삭제하지 못했습니다."
+    }
+  },
+  "display_name": {
+    "title": "작성자 표시 이름",
+    "review_description": "상품 후기에 보이는 작성자 이름을 정합니다.",
+    "inquiry_description": "상품 문의에 보이는 작성자 이름을 정합니다.",
+    "mode_label": "표시 방식",
+    "review_mode_aria": "후기 작성자 표시 방식",
+    "review_kind_aria": "후기 작성자 표시 이름 종류",
+    "inquiry_mode_aria": "문의 작성자 표시 방식",
+    "inquiry_kind_aria": "문의 작성자 표시 이름 종류",
+    "mode": {
+      "inherit": "상위 영역 따름",
+      "fixed": "특정 종류 고정",
+      "member": "회원이 고른 값"
+    },
+    "kind_placeholder": "종류를 고르세요",
+    "kind_option": "{{label}} (예: {{preview}})",
+    "effective": "지금 적용: {{kind}}",
+    "effective_with_source": "지금 적용: {{kind}} ({{source}} 설정 기준)",
+    "requires_nickname_hint": "닉네임이 필요한 종류입니다. 저장하면 회원 항목의 닉네임이 사용, 필수로 고정될 수 있습니다."
   }
 }

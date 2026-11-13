@@ -6,7 +6,7 @@ feature: 관리자 로그인 수단 판정, 자동 이동, 외부 인증 안내 
 
 description: |
   이메일 칸 blur(값이 바뀐 경우만) → POST /api/auth/admin/login/discover → external 이면 _local.discovery 로
-  비밀번호 칸과 로그인 버튼을 숨기고 「…(으)로 계속」. 관리자 자동 이동(_global.appConfig.auth.auto_redirect.admin)은
+  비밀번호 칸과 로그인 버튼을 숨기고 「… 계정으로 계속」. 관리자 자동 이동(_global.appConfig.auth.auto_redirect.admin)은
   local, login_handoff, sso_error, sso_pending, sso_link 쿼리가 있으면 하지 않고, 그 사이트에는 ?local=1 링크가 있다.
   403 auth.password_auth_disabled 는 이동 버튼(loginAlternate*), 409 auth.external_step_required 는 이동.
   식별자 칸 type 은 login_identifier.admin 을 따른다. 안내 데이터는 error.errors.* 로만 읽는다.

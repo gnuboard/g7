@@ -74,7 +74,7 @@
 
 **콜백 분기** (`OAuthFlowService::callback` → `CallbackDispatcher::dispatch`, state 의 의도별) — 로그인: 연결된 회원이면 `SocialLoginService::loginLinked`(관리자 차단 확인 → 코어 `LoginHandoffService::issue`)로 `/login?login_handoff=` 인계, 없으면 `SignupFlowService::begin` 이 가입 대기 토큰을 만들어 `/register?social_pending=` 가입 모달로(같은 제공자 계정으로 다시 시작하면 앞 대기 토큰은 지운다 — `PendingSignupStore`). 연결: `AccountLinkService::completeLink` → 마이페이지. 재확인: `SocialReauthService::complete` → 코어 본인인증 확인 후 1회용 수령 코드로 돌아갈 주소.
 
-**가입 모달** (`SignupController`, `LinkExistingController`) → `SignupFlowService::complete` 가 코어 `AuthService::register(…, ['issue_token' => false])` 로 비밀번호 없는 회원을 만들고 `AccountLinkService::attach` → 인계 주소. 같은 이메일의 기존 계정은 `LinkExistingService`(비밀번호 또는 메일 인증번호, 5회 한도)로 연결한다. 플러그인은 토큰을 직접 만들지 않는다.
+**가입 모달** (`SignupController`, `LinkExistingController`) → `SignupFlowService::complete` 가 코어 `AuthService::register(…, ['issue_token' => false])` 로 비밀번호 없는 회원을 만들고 `AccountLinkService::attach` → 인계 주소. 같은 이메일의 기존 계정은 `LinkExistingService`(비밀번호 또는 메일 인증번호, 5회 한도)로 연결한다. 플러그인은 토큰을 직접 만들지 않는다. 가입 창이 받는 회원 항목은 요청의 `fields_version` 으로 갈린다. 가입 창이 코어 가입 화면과 같은 항목(환경설정 > 회원 > 가입 항목)을 그렸으면 받은 정의 버전을 `fields_version` 으로 싣는다 — `CompleteSignupRequest` 가 규칙을 「고정 규칙 + `FieldRuleFactory`(가입 표면)」로 만들고(코어 가입 필터 `core.auth.register_validation_rules` 도 탄다), 버전이 지금과 다르면 코어 가입과 같은 409(`fields_changed`)로 답하며, `complete` 는 고정 키가 아닌 검증된 입력(연락처, `custom_fields.*`, 확장이 선언한 항목)을 가입 데이터에 실어 코어 가입이 저장하게 한다. `fields_version` 이 없는 요청(이 플러그인에 든 원본 창, 오버라이드가 없는 템플릿)은 종전 고정 규칙만 걸고 `required_fields => 'defer'` 옵션으로 넘긴다 — 코어가 `users.required_fields_deferred_at` 을 채우고, 그 회원이 처음 로그인하면 추가 정보 입력 화면으로 보낸다. 가입 창은 항목을 코어 `GET /api/auth/register/fields` 에서 받으며 `pending_source=sirsoft-social_login`, `pending_token` 을 넘긴다 — `PrefillSignupFieldsListener`(필터 `core.field.filter_definitions`)가 가입 대기의 제공자 이름과 닉네임을 그 항목의 초기값으로 채운다. `view` 의 `missing` 에는 가입 필수 항목 가운데 제공자 값으로 채울 수 없는 항목의 키가 든다. 닉네임은 사이트의 닉네임 정책(중복 금지, 금지어)을 따른다. 가입 창에 적은 닉네임은 `CompleteSignupRequest` 가 `NicknamePolicy::rules()` 로, 제공자가 준 닉네임은 코어 가입이 판정한다. 이 경로는 사람이 가입 창을 보고 있으므로 `nickname_policy => 'skip_field'` 를 넘기지 않는다 — 걸리면 닉네임 칸의 검증 오류(422)가 나고 가입 대기는 남아 다른 닉네임으로 다시 보낼 수 있다.
 
 **제공자 목록** (`ProviderRegistry::all`) → `ProviderRepository::all` 행을 `driver` 로 드라이버 인스턴스화 → 필터 `provider.filter_registered`(모의 제공자 리스너 포함) → 요청당 한 번 캐시.
 
@@ -90,9 +90,9 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 17개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 19개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 18개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 21개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 12개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 11개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -111,8 +111,10 @@
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-social_login` 재실행 + `docs/api/**` 갱신
+- [ ] 로그인한 회원이 부르는 쓰기 라우트(POST, PUT, PATCH, DELETE)를 더할 때 코어 필터 `core.required_fields.filter_exempt_routes` 에 보탤지 판단한다. 코어는 추가 정보를 아직 입력하지 않은 회원의 쓰기 요청을 403 `required_fields_pending` 으로 막는다. 그런 회원도 반드시 할 수 있어야 하는 요청(계정 연결과 해제, 본인 재확인처럼 로그인 수단을 다루는 요청)이면 `src/Listeners/ExemptRequiredFieldsRoutesListener.php` 의 `ROUTES` 에 라우트 이름을 더하고, 사용자 콘텐츠를 만드는 요청이면 더하지 않는다
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`sl:` 접두 유틸리티 · `sl-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-social_login --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 가입 창 조각(`resources/extensions/auth_register_social_modals.g7.html`)을 고치면 기본 사용자 템플릿의 판본(`templates/_bundled/sirsoft-basic/extensions/sirsoft-social_login/auth_register_social_modals.g7.html`)도 함께 고친다 — 그 템플릿은 이 조각을 통째로 대체해 회원 항목을 그리므로 원본만 고치면 기본 템플릿 사이트에는 반영되지 않는다. 플러그인 버전을 마이너 이상 올리면 판본의 `version-constraint`(지금 `~1.0.0`)도 함께 넓힌다(벗어나면 코어가 원본 창으로 되돌린다). 가입 완료 요청의 규칙을 바꿀 때는 `fields_version` 이 있는 요청과 없는 요청 둘 다 받아들여지는지 `tests/Feature/SignupFieldSetTest.php` 로 확인한다
 - [ ] 로그인 관련 변경은 코어 로그인 인계 계약(`docs/backend/authentication.md` 「외부 인증 로그인」)과 맞는지 확인하고, 플러그인이 토큰을 직접 만들지 않는지 `grep -rnE "createToken\(|Auth::login\(" src` 로 0 을 확인
 - [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 이동, 링크, 요청 주소는 `sitePath()`/`apiUrl()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 로그인/가입 버튼이 사이트 밖 시작 주소로 간다. 제공자 인가 주소(https 절대 주소)는 대상이 아니므로 그 줄 위에 예외 사유 주석을 단다
 
@@ -138,10 +140,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 43개 | `plugins/_bundled/sirsoft-social_login/tests` |
-| Vitest | 8개 | `vitest.config.ts` |
+| PHPUnit | 47개 | `plugins/_bundled/sirsoft-social_login/tests` |
+| Vitest | 9개 | `vitest.config.ts` |
 | Playwright | 8개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 20개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -5,10 +5,14 @@ namespace Plugins\Sirsoft\SocialLogin\Services;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Fields\FieldContext;
+use App\Fields\FieldFormSchema;
+use App\Fields\FieldSet;
 use App\Models\User;
 use App\Services\AuthService;
 use App\Services\IdentityVerificationService;
 use App\Support\SiteUrl;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
@@ -63,6 +67,15 @@ class SignupFlowService
 
     /** 가입 화면 단계 — 이미 가입된 이메일 모달 */
     public const STEP_EXISTING = 'existing';
+
+    /** 가입 항목 조회(`GET /api/auth/register/fields`)의 `pending_source` 값 — 이 플러그인의 가입 대기를 가리킨다 */
+    public const PENDING_SOURCE = 'sirsoft-social_login';
+
+    /** @var array<int, string> 회원 항목이 아닌 가입 완료 입력 키 — 항목 값으로 넘기지 않는다 */
+    private const FIXED_INPUT_KEYS = ['pending_token', 'name', 'nickname', 'email', 'agree_terms', 'agree_privacy', 'verification_token', 'fields_version'];
+
+    /** @var array<int, string> 가입 창의 회원 항목 값이 덮지 못하는 가입 데이터 키 (비밀번호, 권한, 상태, 가입 경로) */
+    private const PROTECTED_REGISTRATION_KEYS = ['password', 'password_confirmation', 'is_super', 'status', 'social_provider'];
 
     /**
      * @param  PendingSignupStore  $pending  가입 대기
@@ -161,6 +174,9 @@ class SignupFlowService
     /**
      * 가입 화면이 그릴 가입 대기 정보를 돌려줍니다 (토큰·원본 프로필은 싣지 않는다).
      *
+     * `missing` 은 가입 전에 채워야 할 칸이다 — 입력 모드의 `email`, 제공자가 이름과 별명을 모두 주지 않았을 때의 `name`,
+     * 그리고 운영자가 환경설정 > 회원에서 가입 필수로 둔 회원 항목 가운데 제공자 값으로 채울 수 없는 항목의 키.
+     *
      * @param  string  $token  대기 토큰
      * @return array<string, mixed> 화면 데이터
      *
@@ -201,10 +217,12 @@ class SignupFlowService
                 'requires_code' => $mode === self::EMAIL_INPUT,
                 'challenge_id' => $data['email_challenge']['id'] ?? null,
             ],
-            'missing' => array_values(array_filter([
+            'missing' => array_values(array_unique(array_filter([
                 $mode === self::EMAIL_INPUT ? 'email' : null,
                 $nameMissing ? 'name' : null,
-            ])),
+                // 운영자가 가입 필수로 둔 회원 항목 가운데 제공자 값으로 채울 수 없는 것
+                ...$this->missingRequiredFields($profile),
+            ]))),
             'show_profile_fields' => $alwaysExtra || $nameMissing,
             'existing_account' => $existing,
             'expires_at' => date(DATE_ATOM, (int) $data['expires_at']),
@@ -286,7 +304,7 @@ class SignupFlowService
      * 가입을 마칩니다.
      *
      * @param  string  $token  대기 토큰
-     * @param  array<string, mixed>  $input  검증된 입력 (name·nickname·email·agree_terms·agree_privacy·verification_token)
+     * @param  array<string, mixed>  $input  검증된 입력 (name·nickname·email·agree_terms·agree_privacy·verification_token, 회원 항목을 받는 창이면 fields_version 과 항목 값)
      * @return array{handoff_url?: string, handoff_cookie?: Cookie, redirect_url?: string} 다음 주소 (같은 출처 상대 경로)와 인계 코드의 묶음 쿠키(컨트롤러가 응답에 싣는다)
      *
      * @throws SocialFlowException 만료·이메일 미확인·이미 쓰는 이메일·이미 연결됨·가입 닫힘(`registration_closed`, 403)
@@ -313,9 +331,24 @@ class SignupFlowService
         $emailConfirmed = $data['email_mode'] === self::EMAIL_INPUT
             || ($data['email_mode'] === self::EMAIL_LOCKED && $profile->emailVerified === true);
 
-        $name = trim((string) ($input['name'] ?? '')) ?: ($profile->name ?? $profile->nickname ?? '');
-        if ($name === '') {
-            throw new SocialFlowException('name_required');
+        // 가입 창이 코어 가입 화면과 같은 회원 항목을 그렸는지 — 그 창은 받은 항목의 정의 버전을 실어 보낸다.
+        // 항목을 받은 창이면 요청 규칙이 필수 여부를 이미 판정했고, 제공자가 준 이름과 닉네임은 창의 초기값으로 쓰였다.
+        $withFields = is_string($input['fields_version'] ?? null) && $input['fields_version'] !== '';
+
+        if ($withFields) {
+            // 창이 칸을 보냈으면(비워 보낸 것 포함) 그 값이 원본이다. 칸이 가입 항목에서 빠져 요청에 없을 때만 제공자 값을 쓴다.
+            $name = array_key_exists('name', $input)
+                ? trim((string) ($input['name'] ?? ''))
+                : (string) ($profile->name ?? $profile->nickname ?? '');
+            $nickname = array_key_exists('nickname', $input)
+                ? (trim((string) ($input['nickname'] ?? '')) ?: null)
+                : $profile->nickname;
+        } else {
+            $name = trim((string) ($input['name'] ?? '')) ?: ($profile->name ?? $profile->nickname ?? '');
+            if ($name === '') {
+                throw new SocialFlowException('name_required');
+            }
+            $nickname = trim((string) ($input['nickname'] ?? '')) ?: $profile->nickname;
         }
 
         if ($this->findAnyByEmail($email)) {
@@ -323,12 +356,16 @@ class SignupFlowService
         }
 
         $registration = [
-            'name' => mb_substr($name, 0, 255),
-            'nickname' => ($nickname = trim((string) ($input['nickname'] ?? '')) ?: $profile->nickname) !== null ? mb_substr($nickname, 0, 50) : null,
+            // 가입 창이 받은 회원 항목 값(연락처, 운영자 추가 항목 `custom_fields.*`, 확장이 선언한 항목) — 고정 키가 아닌
+            // 검증된 입력을 그대로 넘긴다. 어떤 키를 저장할지는 코어 가입이 가입 항목 정의로 고른다.
+            ...($withFields ? Arr::except($input, [...self::FIXED_INPUT_KEYS, ...self::PROTECTED_REGISTRATION_KEYS]) : []),
+            'name' => $name !== '' ? mb_substr($name, 0, 255) : null,
+            'nickname' => $nickname !== null ? mb_substr($nickname, 0, 50) : null,
             'email' => $email, // audit:allow resource-member-email-ungated 코어 가입에 넘기는 저장 데이터(응답 아님)
             'agree_terms' => (bool) ($input['agree_terms'] ?? false),
             'agree_privacy' => (bool) ($input['agree_privacy'] ?? false),
-            'language' => app()->getLocale(),
+            // 창이 언어 칸을 받았으면 그 값, 아니면 요청 언어
+            'language' => $withFields && is_string($input['language'] ?? null) && $input['language'] !== '' ? $input['language'] : app()->getLocale(),
             'social_provider' => $key,
         ];
         if (isset($input['verification_token']) && is_string($input['verification_token']) && $input['verification_token'] !== '') {
@@ -341,8 +378,12 @@ class SignupFlowService
             $registration = array_merge($registration, $filtered);
         }
 
-        [$user, $account] = DB::transaction(function () use ($registration, $key, $profile, $tokens, $emailConfirmed) {
-            $user = $this->auth->register($registration, ['issue_token' => false])['user'];
+        // 회원 항목을 그리지 않는 창(이름, 닉네임, 이메일, 약관만 받는다)으로 가입한 회원은 운영자가 필수로 둔 다른 회원
+        // 항목을 첫 로그인 뒤 추가 정보 입력 화면이 받도록 표시한다. 항목을 받은 창은 필수 항목을 이미 채웠다.
+        $options = $withFields ? ['issue_token' => false] : ['issue_token' => false, 'required_fields' => 'defer'];
+
+        [$user, $account] = DB::transaction(function () use ($registration, $options, $key, $profile, $tokens, $emailConfirmed) {
+            $user = $this->auth->register($registration, $options)['user'];
             if ($emailConfirmed && $user->email === $registration['email']) {
                 $this->users->markEmailVerified($user);
             }
@@ -371,6 +412,57 @@ class SignupFlowService
             'handoff_url' => SocialLoginService::handoffPath($ticket->code, (string) ($data['redirect'] ?? '/')),
             'handoff_cookie' => $ticket->cookie,
         ];
+    }
+
+    /**
+     * 가입 창의 회원 항목에 채울 제공자 값을 돌려줍니다 (가입 항목 조회의 초기값).
+     *
+     * 가입 대기가 없거나 만료됐으면 null 이다(오류를 내지 않는다 — 항목 조회는 초기값 없이 그대로 답한다).
+     *
+     * @param  string  $token  대기 토큰
+     * @return array<string, string>|null 항목 키 => 초기값 (값이 없는 키는 싣지 않는다)
+     */
+    public function fieldDefaults(string $token): ?array
+    {
+        if (preg_match('/^[A-Za-z0-9]{48}$/', $token) !== 1) {
+            return null;
+        }
+
+        $data = $this->pending->get($token);
+        if ($data === null) {
+            return null;
+        }
+
+        $profile = NormalizedProfile::fromArray((array) $data['profile']);
+
+        return array_filter([
+            'name' => $profile->name ?? $profile->nickname,
+            'nickname' => $profile->nickname,
+        ], fn ($value) => is_string($value) && $value !== '');
+    }
+
+    /**
+     * 운영자가 가입 필수로 둔 회원 항목 가운데 제공자 값으로 채울 수 없는 항목의 키를 돌려줍니다.
+     *
+     * 이름은 따로 판정한다(`view()` 의 `name`). 닉네임은 제공자가 줬으면 채워진 것으로 본다.
+     *
+     * @param  NormalizedProfile  $profile  제공자 프로필
+     * @return array<int, string> 항목 키
+     */
+    private function missingRequiredFields(NormalizedProfile $profile): array
+    {
+        $missing = [];
+        foreach (app(FieldFormSchema::class)->forSurface(FieldSet::CORE_USER, FieldContext::for(FieldContext::SURFACE_SIGNUP)) as $field) {
+            if (($field['required'] ?? false) !== true || ($field['deferred'] ?? false) === true || $field['key'] === 'name') {
+                continue;
+            }
+            if ($field['key'] === 'nickname' && ($profile->nickname ?? '') !== '') {
+                continue;
+            }
+            $missing[] = (string) $field['key'];
+        }
+
+        return $missing;
     }
 
     /**

@@ -13,6 +13,11 @@
  * 상세의 이름 칸은 글자다. 고칠 수 있는 값은 입력칸으로, 시스템이 적는 기록값은 같은 자리에
  * 잠근 채로 둔다. 그 판정은 아래 RECORD_ONLY 가 이름으로 적는다.
  *
+ * 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 두 화면 모두 공용 조각이 그린다(#490 6단계) —
+ * 수정 화면은 입력 조각(partials/member/_member_fields), 상세는 보기 조각(partials/member/_member_fields_view).
+ * 두 조각은 칸에 같은 id(`field_{키}`)를 주므로, 조각 참조를 실제 조각으로 풀어 놓고 종전과 같은 방법으로 순서를 견준다.
+ * 어느 묶음을 어느 자리에 놓는지(반복 원본 식)도 두 화면이 같아야 한다.
+ *
  * @vitest-environment jsdom
  */
 import fs from 'node:fs';
@@ -22,8 +27,33 @@ import { describe, expect, it } from 'vitest';
 const root = path.resolve(__dirname, '../../layouts');
 const read = (file: string) => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
 
-const detail = read('admin_user_detail.json');
-const form = read('admin_user_form.json');
+/** `partial` 참조 노드를 실제 조각으로 바꿔 한 트리로 만든다(설치가 하는 인라인과 같은 모양). */
+const resolveIncludes = (node: unknown): unknown => {
+  if (Array.isArray(node)) return node.map(resolveIncludes);
+  if (!node || typeof node !== 'object') return node;
+  const n = node as Record<string, unknown>;
+  if (typeof n.partial === 'string' && !n.name) return resolveIncludes(read(n.partial));
+  return Object.fromEntries(Object.entries(n).map(([k, v]) => [k, resolveIncludes(v)]));
+};
+
+const detailRaw = read('admin_user_detail.json');
+const formRaw = read('admin_user_form.json');
+const detail = resolveIncludes(detailRaw) as Record<string, any>;
+const form = resolveIncludes(formRaw) as Record<string, any>;
+
+/** 회원 항목 조각을 놓은 자리 — 조각 파일과 그 자리의 묶음 반복 원본 식을 나온 순서대로 모은다. */
+const memberFieldSlots = (node: unknown, out: Array<{ partial: string; source: string }> = []): Array<{ partial: string; source: string }> => {
+  if (!node || typeof node !== 'object') return out;
+  if (Array.isArray(node)) {
+    node.forEach((n) => memberFieldSlots(n, out));
+    return out;
+  }
+  const n = node as Record<string, any>;
+  const child = Array.isArray(n.children) ? n.children.find((c: any) => typeof c?.partial === 'string' && c.partial.startsWith('partials/member/')) : null;
+  if (child) out.push({ partial: child.partial, source: String(n.iteration?.source ?? '') });
+  Object.values(n).forEach((v) => memberFieldSlots(v, out));
+  return out;
+};
 
 /** 트리를 훑어 `data-ref` 로 붙은 id 를 **나온 순서대로** 모은다. */
 const refsInOrder = (node: unknown, out: string[] = []): string[] => {
@@ -116,6 +146,24 @@ describe('관리자 회원 상세 ↔ 수정 정합 (#599)', () => {
     const formOrder = sectionsAndFields(form).filter((id) => !FORM_ONLY.includes(id));
 
     expect(formOrder).toEqual(detailOrder);
+    // 조각이 그리는 칸도 순서에 들어 있다 — 조각 참조를 풀지 않으면 이 칸들은 보이지 않아 어긋나도 잡히지 않는다
+    expect(detailOrder.filter((id) => id === 'field_{{field.key}}')).toHaveLength(6);
+  });
+
+  // @scenario surface=admin_user_detail_form
+  // @effects admin_user_form_and_detail_place_same_member_field_groups
+  it('회원 항목 묶음을 놓은 자리와 순서가 두 화면에서 같다 — 수정은 입력 조각, 상세는 보기 조각', () => {
+    const formSlots = memberFieldSlots(formRaw);
+    const detailSlots = memberFieldSlots(detailRaw);
+
+    expect(formSlots.map((slot) => slot.partial)).toEqual(Array(6).fill('partials/member/_member_fields.json'));
+    expect(detailSlots.map((slot) => slot.partial)).toEqual(Array(6).fill('partials/member/_member_fields_view.json'));
+    // 묶음을 고르는 식(어느 묶음을, 어떤 배치로)이 자리마다 같다
+    expect(formSlots.map((slot) => slot.source)).toEqual(detailSlots.map((slot) => slot.source));
+    const groupOf = (source: string) => /g\.key === '([a-z]+)'/.exec(source)?.[1];
+    expect(formSlots.map((slot) => groupOf(slot.source))).toEqual(['basic', 'contact', 'location', 'profile', 'extra', 'extension']);
+    // 묶음을 가르는 계산식도 한 벌이다
+    expect(formRaw.computed.memberFieldGroups).toBe(detailRaw.computed.memberFieldGroups);
   });
 
   // @scenario surface=admin_user_detail_form
@@ -146,12 +194,11 @@ describe('관리자 회원 상세 ↔ 수정 정합 (#599)', () => {
   // @effects admin_user_form_editable_fields_carry_a_form_name
   it('고칠 수 있는 칸은 저장에 실린다 — name 바인딩이 있다', () => {
     // 칸만 세우고 `name` 을 빠뜨리면 화면에는 보이는데 저장 body 에 담기지 않는다.
-    // `field_country` 는 제외한다 — 두 화면 모두 `:data-if="false"` 로 꺼둔 칸이고, 되살릴 때를
-    // 위해 배선만 남겨 둔 상태다. 그 배선은 `name` 이 아니라 change 에서 `form.country` 를
-    // 직접 세우는 방식이라(searchable-dropdown 은 폼 바인딩을 받지 않는다) 여기 규칙이 닿지 않는다.
+    // 회원 항목 칸(`field_{{field.key}}`)은 조각이 항목의 폼 경로(`{{field.name}}`)로 잇는다 — 국가 칸도 입력 컴포넌트가
+    // 같은 경로로 값을 낸다(종전에는 change 에서 `form.country` 를 직접 세웠다).
     const editable = sectionsAndFields(form)
       .filter((id) => id.startsWith('field_'))
-      .filter((id) => !RECORD_ONLY.includes(id) && id !== 'field_password_group' && id !== 'field_country')
+      .filter((id) => !RECORD_ONLY.includes(id) && id !== 'field_password_group')
       // `field_create_without_password` 는 자동 바인딩을 끄고 change 에서 `form.create_without_password` 를 boolean 으로 직접 세운다
       // (빈 문자열이 실리지 않게, 7.2.0 A2t) — name 규칙 대신 아래에서 그 배선을 따로 확인한다.
       .filter((id) => id !== 'field_create_without_password');
@@ -169,10 +216,15 @@ describe('관리자 회원 상세 ↔ 수정 정합 (#599)', () => {
         else Object.values(n).forEach(walk);
       };
       walk(form);
-      return hit ? !/"name":\s*"(email|name|nickname|password|password_confirmation|current_password|password_expiry_policy|role_ids|status|mobile|phone|homepage|zipcode|address|address_detail|country|language|timezone|signature|bio|admin_memo)"/.test(JSON.stringify(hit)) : true;
+      return hit ? !/"name":\s*"(email|password|password_confirmation|current_password|password_expiry_policy|role_ids|status|admin_memo|\{\{field\.name\}\})"/.test(JSON.stringify(hit)) : true;
     });
 
     expect(missing).toEqual([]);
+    // 주소 항목의 세 칸은 항목이 준 부분별 폼 경로로 잇는다
+    const partialJson = JSON.stringify(read('partials/member/_member_fields.json'));
+    for (const part of ['zipcode', 'address', 'address_detail']) {
+      expect(partialJson).toContain(`"name":"{{field.parts?.${part}}}"`);
+    }
   });
 
   // @scenario surface=admin_user_detail_form

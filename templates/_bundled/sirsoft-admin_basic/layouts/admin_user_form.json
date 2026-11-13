@@ -149,10 +149,63 @@
                 "data": []
             },
             "comment": "부여 가능한 역할 목록(활성 역할만). 회원 조회와 달리 실패해도 화면을 접지 않고 토스트만 띄운다 —\n       역할 칸이 비는 것이지 폼 전체가 못 쓰게 되는 것은 아니다. 403 만 예외로 에러 화면이다."
+        },
+        {
+            "id": "memberFields",
+            "label_key": "$t:editor.data_source.memberFields",
+            "type": "api",
+            "endpoint": "/api/admin/users/{{route?.id ? route.id + '/form-fields' : 'form-fields'}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "comment": "처음 받기 실패는 본문 오류 화면(칸이 빠진 폼으로 저장하지 않게), 다시 받기(파일 올린 뒤 갱신 등) 실패는 받아 둔 항목을 그대로 두고 알린다.",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "회원 항목 — 운영자가 환경설정 > 회원에서 정한 항목 계약(순서, 필수, 유형, 선택지)에 항목마다 범위(edit_scope)가 붙어 온다. 관리자만 수정, 관리자만 열람 항목도 모두 온다.\n       추가 화면은 회원 없이(파일 항목은 deferred — 저장한 뒤에 올린다), 수정 화면은 그 회원 기준으로 받는다: 올라간 파일(files), 회사 계정 등 관리자도 못 바꾸는 칸의 잠금(readonly, locked_reason),\n       그리고 회원의 항목 상태(member: 닉네임 마지막 변경 시각, 본인이 다시 바꿀 수 있는 시각, 비어 있는 필수 항목)가 함께 온다.\n       값은 싣지 않는다(값은 위 `user` 소스가 폼에 채운다) — 폼 상태 전체가 저장 본문으로 나가므로 정의를 폼 상태에 섞지 않으려고 소스를 가른다.\n       아래 computed 넷이 이 응답을 읽는다: memberFieldGroups 는 구획별 묶음 목록이고(항목이 있는 묶음만. basic, contact, location, profile 은 항목의 ui.group,\n       extra 는 묶음이 없는 운영자 추가 항목, extension 은 모듈과 플러그인이 선언한 항목), memberFieldCtx 는 공용 항목 조각(partials/member/_member_fields)에 넘기는 문맥,\n       memberFieldErrorTabs 는 검증 오류가 난 칸이 든 탭 id 목록(탭 이름 옆 빨간 점), memberFieldOrphanErrors 는 조각이 그린 어느 항목에도 속하지 않는 오류 문구 목록이다(위쪽 상자가 이것만 나열한다).\n       파일 항목을 올리거나 지우면 공용 조각이 이 소스를 다시 받는다."
         }
     ],
     "initLocal": {
         "activeTab": "basic_info"
+    },
+    "computed": {
+        "memberFieldGroups": "{{['basic', 'contact', 'location', 'profile', 'extra', 'extension'].map(function(g) { return { key: g, fields: (memberFields?.data?.fields ?? []).filter(function(f) { return g === 'extension' ? (f.owner_type === 'module' || f.owner_type === 'plugin') : (!(f.owner_type === 'module' || f.owner_type === 'plugin') && (g === 'extra' ? (!f.ui?.group && f.owner === 'custom') : f.ui?.group === g)); }) }; }).filter(function(g) { return g.fields.length > 0; })}}",
+        "memberFieldCtx": "{{({ formKey: 'form', errors: (_local.errors && typeof _local.errors === 'object') ? _local.errors : {}, disabled: false })}}",
+        "memberFieldErrorTabs": "{{Object.keys(((_local.errors && typeof _local.errors === 'object') ? _local.errors : {})).map(function(k) { return [k, (memberFields?.data?.fields ?? []).find(function(x) { return (k === x.name || k.indexOf(x.name + '.') === 0 || Object.values(x.parts ?? {}).indexOf(k) !== -1); })]; }).map(function(pair) { return pair[1] ? ((pair[1].owner_type === 'module' || pair[1].owner_type === 'plugin') ? 'extension_fields' : (({ basic: 'basic_info', contact: 'contact_info', location: 'location_info', profile: 'profile_memo' })[pair[1].ui?.group] ?? (pair[1].owner === 'custom' ? 'extra_fields' : ''))) : (({ email: 'contact_info', role_ids: 'basic_info', roles: 'basic_info', status: 'basic_info', password: 'basic_info', password_confirmation: 'basic_info', current_password: 'basic_info', verification_token: 'basic_info', create_without_password: 'basic_info', admin_memo: 'profile_memo' })[pair[0].split('.')[0]] ?? ''); }).filter(function(tab) { return tab !== ''; })}}",
+        "memberFieldOrphanErrors": "{{Object.entries(((_local.errors && typeof _local.errors === 'object') ? _local.errors : {})).filter(function(entry) { return !(memberFields?.data?.fields ?? []).some(function(f) { return ((f.owner_type === 'module' || f.owner_type === 'plugin') || ['basic', 'contact', 'location', 'profile'].indexOf(f.ui?.group) !== -1 || (!f.ui?.group && f.owner === 'custom')) && (entry[0] === f.name || entry[0].indexOf(f.name + '.') === 0 || Object.values(f.parts ?? {}).indexOf(entry[0]) !== -1); }); }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })}}"
     },
     "permissions": {
         "or": [
@@ -160,207 +213,12 @@
             "core.users.update"
         ]
     },
-    "defines": {
-        "countryList": [
-            {
-                "code": "KR",
-                "name": "$t:countries.KR"
-            },
-            {
-                "code": "US",
-                "name": "$t:countries.US"
-            },
-            {
-                "code": "JP",
-                "name": "$t:countries.JP"
-            },
-            {
-                "code": "CN",
-                "name": "$t:countries.CN"
-            },
-            {
-                "code": "GB",
-                "name": "$t:countries.GB"
-            },
-            {
-                "code": "DE",
-                "name": "$t:countries.DE"
-            },
-            {
-                "code": "FR",
-                "name": "$t:countries.FR"
-            },
-            {
-                "code": "CA",
-                "name": "$t:countries.CA"
-            },
-            {
-                "code": "AU",
-                "name": "$t:countries.AU"
-            },
-            {
-                "code": "IN",
-                "name": "$t:countries.IN"
-            },
-            {
-                "code": "BR",
-                "name": "$t:countries.BR"
-            },
-            {
-                "code": "RU",
-                "name": "$t:countries.RU"
-            },
-            {
-                "code": "IT",
-                "name": "$t:countries.IT"
-            },
-            {
-                "code": "ES",
-                "name": "$t:countries.ES"
-            },
-            {
-                "code": "MX",
-                "name": "$t:countries.MX"
-            },
-            {
-                "code": "NL",
-                "name": "$t:countries.NL"
-            },
-            {
-                "code": "SE",
-                "name": "$t:countries.SE"
-            },
-            {
-                "code": "CH",
-                "name": "$t:countries.CH"
-            },
-            {
-                "code": "SG",
-                "name": "$t:countries.SG"
-            },
-            {
-                "code": "HK",
-                "name": "$t:countries.HK"
-            },
-            {
-                "code": "TW",
-                "name": "$t:countries.TW"
-            },
-            {
-                "code": "TH",
-                "name": "$t:countries.TH"
-            },
-            {
-                "code": "VN",
-                "name": "$t:countries.VN"
-            },
-            {
-                "code": "PH",
-                "name": "$t:countries.PH"
-            },
-            {
-                "code": "MY",
-                "name": "$t:countries.MY"
-            },
-            {
-                "code": "ID",
-                "name": "$t:countries.ID"
-            },
-            {
-                "code": "NZ",
-                "name": "$t:countries.NZ"
-            },
-            {
-                "code": "AT",
-                "name": "$t:countries.AT"
-            },
-            {
-                "code": "BE",
-                "name": "$t:countries.BE"
-            },
-            {
-                "code": "DK",
-                "name": "$t:countries.DK"
-            },
-            {
-                "code": "FI",
-                "name": "$t:countries.FI"
-            },
-            {
-                "code": "NO",
-                "name": "$t:countries.NO"
-            },
-            {
-                "code": "PL",
-                "name": "$t:countries.PL"
-            },
-            {
-                "code": "PT",
-                "name": "$t:countries.PT"
-            },
-            {
-                "code": "IE",
-                "name": "$t:countries.IE"
-            },
-            {
-                "code": "GR",
-                "name": "$t:countries.GR"
-            },
-            {
-                "code": "CZ",
-                "name": "$t:countries.CZ"
-            },
-            {
-                "code": "HU",
-                "name": "$t:countries.HU"
-            },
-            {
-                "code": "TR",
-                "name": "$t:countries.TR"
-            },
-            {
-                "code": "IL",
-                "name": "$t:countries.IL"
-            },
-            {
-                "code": "AE",
-                "name": "$t:countries.AE"
-            },
-            {
-                "code": "SA",
-                "name": "$t:countries.SA"
-            },
-            {
-                "code": "ZA",
-                "name": "$t:countries.ZA"
-            },
-            {
-                "code": "EG",
-                "name": "$t:countries.EG"
-            },
-            {
-                "code": "AR",
-                "name": "$t:countries.AR"
-            },
-            {
-                "code": "CL",
-                "name": "$t:countries.CL"
-            },
-            {
-                "code": "CO",
-                "name": "$t:countries.CO"
-            },
-            {
-                "code": "PE",
-                "name": "$t:countries.PE"
-            }
-        ]
-    },
     "transition_overlay": {
         "wait_for": [
             "user",
             "user_check",
-            "roles"
+            "roles",
+            "memberFields"
         ]
     },
     "init_actions": [
@@ -478,7 +336,7 @@
                         },
                         "children": [
                             {
-                                "comment": "탭이 넘치면 글자 단위로 줄바꿈되지 않고 막대가 가로로 스크롤된다(상세와 같다)",
+                                "comment": "탭이 넘치면 글자 단위로 줄바꿈되지 않고 막대가 가로로 스크롤된다(상세와 같다).\n             검증 오류가 난 칸이 든 탭은 이름 옆에 빨간 점이 붙는다(errorDot) — 오류 키를 항목의 묶음과 대조한 computed memberFieldErrorTabs 가 탭 id 를 준다.\n             「위치정보」「추가 항목」「확장 항목」 탭은 그 묶음에 항목이 있을 때만 보인다(운영자가 항목을 모두 끄면 갈 구획이 없다).",
                                 "id": "user_form_tabs",
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
@@ -501,22 +359,40 @@
                                     "className": "tab-nav-default overflow-x-auto",
                                     "activeClassName": "tab-btn-base tab-btn-default-active shrink-0 whitespace-nowrap",
                                     "inactiveClassName": "tab-btn-base tab-btn-default shrink-0 whitespace-nowrap",
+                                    "errorDotLabel": "$t:admin.users.member_fields.tab_has_error",
                                     "tabs": [
                                         {
                                             "id": "basic_info",
-                                            "label": "$t:admin.users.detail.tabs.basic_info"
+                                            "label": "$t:admin.users.detail.tabs.basic_info",
+                                            "errorDot": "{{(_computed.memberFieldErrorTabs ?? []).indexOf('basic_info') !== -1}}"
                                         },
                                         {
                                             "id": "contact_info",
-                                            "label": "$t:admin.users.detail.tabs.contact_info"
+                                            "label": "$t:admin.users.detail.tabs.contact_info",
+                                            "errorDot": "{{(_computed.memberFieldErrorTabs ?? []).indexOf('contact_info') !== -1}}"
                                         },
                                         {
                                             "id": "location_info",
-                                            "label": "$t:admin.users.detail.tabs.location_info"
+                                            "label": "$t:admin.users.detail.tabs.location_info",
+                                            "if": "{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}",
+                                            "errorDot": "{{(_computed.memberFieldErrorTabs ?? []).indexOf('location_info') !== -1}}"
                                         },
                                         {
                                             "id": "profile_memo",
-                                            "label": "$t:admin.users.detail.tabs.profile_memo"
+                                            "label": "$t:admin.users.detail.tabs.profile_memo",
+                                            "errorDot": "{{(_computed.memberFieldErrorTabs ?? []).indexOf('profile_memo') !== -1}}"
+                                        },
+                                        {
+                                            "id": "extra_fields",
+                                            "label": "$t:admin.users.member_fields.extra_title",
+                                            "if": "{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}",
+                                            "errorDot": "{{(_computed.memberFieldErrorTabs ?? []).indexOf('extra_fields') !== -1}}"
+                                        },
+                                        {
+                                            "id": "extension_fields",
+                                            "label": "$t:admin.users.member_fields.extension_title",
+                                            "if": "{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extension'; })}}",
+                                            "errorDot": "{{(_computed.memberFieldErrorTabs ?? []).indexOf('extension_fields') !== -1}}"
                                         },
                                         {
                                             "id": "activity_info",
@@ -649,11 +525,12 @@
                                                         "text": "{{_local.errors}}"
                                                     },
                                                     {
+                                                        "comment": "회원 항목 칸에 속한 오류는 그 칸 아래에 뜨고 탭 이름 옆 빨간 점으로 알린다 — 여기에는 그 밖의 오류만 나열한다(computed memberFieldOrphanErrors).",
                                                         "type": "basic",
                                                         "name": "Ul",
-                                                        "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                                        "if": "{{(_computed.memberFieldOrphanErrors ?? []).length > 0}}",
                                                         "iteration": {
-                                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                            "source": "{{_computed.memberFieldOrphanErrors ?? []}}",
                                                             "item_var": "message"
                                                         },
                                                         "props": {
@@ -728,9 +605,25 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면\n                 상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라\n                 잠긴다(종전과 같다).",
+                                                "comment": "이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면\n                 상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라\n                 잠긴다(종전과 같다).\n                 기본 묶음(이름, 닉네임) — 환경설정 > 회원이 정한 항목 계약대로 공용 조각이 그린다. 넓은 화면에서는 두 칸을 나란히 둔다. 운영자가 두 항목을 모두 끄면 아무것도 그리지 않는다.\n                 관리자 화면의 이름, 닉네임 칸은 가리지 않은 원본 값이다.",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'basic'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-1 gap-4', wideClassName: 'grid grid-cols-2 gap-4' }); })}}",
+                                                    "item_var": "memberFieldGroup"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "partial": "partials/member/_member_fields.json"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "회원의 항목 상태(수정 화면, 읽기 전용) — 닉네임을 마지막으로 바꾼 때, 회원 본인이 다시 바꿀 수 있는 때, 비어 있는 필수 항목. 값이 없는 줄은 그리지 않고 셋 다 없으면 구획째 그리지 않는다.\n                 추가 화면에서는 직전 회원의 응답이 남아 있을 수 있어 `route.id` 로 막는다.",
+                                                "id": "member_status_info",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id && (!!memberFields?.data?.member?.nickname_changed_at || !!memberFields?.data?.member?.nickname_next_changeable_at || (memberFields?.data?.member?.pending_required_fields ?? []).length > 0 || (memberFields?.data?.member?.display_name ?? null) !== null || (memberFields?.data?.member?.display_name_admin ?? null) !== null || !!memberFields?.data?.member?.display_name_kind || !!memberFields?.data?.member?.display_name_effective_kind_label)}}",
                                                 "responsive": {
                                                     "768-": {
                                                         "props": {
@@ -743,67 +636,120 @@
                                                 },
                                                 "children": [
                                                     {
-                                                        "id": "field_name",
+                                                        "comment": "표시 이름(U17, 읽기 전용) — 회원이 고른 종류와 지금 보이는 이름(사이트 기본 자리, 관리자 화면 자리). 종류는 회원 본인만 바꿀 수 있어 관리자 화면에는 입력 칸이 없다.\n                   고르지 않았으면 회원 기본 종류로, 고른 종류가 지금 허용에서 빠졌으면 그 사실과 함께 회원 기본 종류로 보인다고 알린다.",
+                                                        "id": "member_status_display_name_kind",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "if": "{{!!route?.id && (!!memberFields?.data?.member?.display_name_kind || !!memberFields?.data?.member?.display_name_effective_kind_label)}}",
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
                                                                     "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.member_fields.status.display_name_kind"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "data-testid": "member-status-display-name-kind",
+                                                                    "className": "text-primary text-sm break-words"
+                                                                },
+                                                                "text": "{{!!memberFields?.data?.member?.display_name_kind ? (memberFields?.data?.member?.display_name_kind_label ?? memberFields?.data?.member?.display_name_kind) : $t('admin.users.member_fields.status.display_name_kind_none', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!route?.id && memberFields?.data?.member?.display_name_kind_unavailable === true}}",
+                                                                "props": {
+                                                                    "data-testid": "member-status-display-name-kind-unavailable",
+                                                                    "className": "text-xs text-yellow-700 dark:text-yellow-400 mt-1 break-words"
+                                                                },
+                                                                "text": "{{$t('admin.users.member_fields.status.display_name_kind_unavailable', { kind: memberFields?.data?.member?.display_name_effective_kind_label ?? '' })}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "$t:admin.users.member_fields.status.display_name_kind_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "member_status_display_name",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!!route?.id && ((memberFields?.data?.member?.display_name ?? null) !== null || (memberFields?.data?.member?.display_name_admin ?? null) !== null)}}",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.member_fields.status.display_name_current"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm break-words"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
-                                                                        "text": "$t:admin.users.form.fields.name"
+                                                                        "props": {
+                                                                            "className": "text-label-subtle mr-1"
+                                                                        },
+                                                                        "text": "$t:admin.users.member_fields.status.display_name_site"
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                            "data-testid": "member-status-display-name-site"
                                                                         },
-                                                                        "text": "*"
+                                                                        "text": "{{memberFields?.data?.member?.display_name ?? '-'}}"
                                                                     }
                                                                 ]
                                                             },
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Input",
+                                                                "name": "Div",
                                                                 "props": {
-                                                                    "type": "text",
-                                                                    "name": "name",
-                                                                    "placeholder": "$t:admin.users.form.fields.name",
-                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('name')}}",
-                                                                    "className": ""
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "P",
-                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('name')}}",
-                                                                "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                    "className": "text-primary text-sm break-words"
                                                                 },
-                                                                "text": "$t:admin.users.form.fields.locked_by_company"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{_local.errors?.name}}",
-                                                                "props": {
-                                                                    "className": "text-red-600 dark:text-red-400 text-xs mt-1"
-                                                                },
-                                                                "text": "{{_local.errors?.name?.[0] ?? ''}}"
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-label-subtle mr-1"
+                                                                        },
+                                                                        "text": "$t:admin.users.member_fields.status.display_name_admin"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "data-testid": "member-status-display-name-admin"
+                                                                        },
+                                                                        "text": "{{memberFields?.data?.member?.display_name_admin ?? '-'}}"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     },
                                                     {
-                                                        "id": "field_nickname",
+                                                        "id": "member_status_nickname_changed_at",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "if": "{{!!route?.id && !!memberFields?.data?.member?.nickname_changed_at}}",
                                                         "children": [
                                                             {
                                                                 "type": "basic",
@@ -811,27 +757,87 @@
                                                                 "props": {
                                                                     "className": "form-label"
                                                                 },
-                                                                "text": "$t:admin.users.form.fields.nickname"
+                                                                "text": "$t:admin.users.member_fields.status.nickname_changed_at"
                                                             },
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Input",
+                                                                "name": "Div",
                                                                 "props": {
-                                                                    "type": "text",
-                                                                    "name": "nickname",
-                                                                    "placeholder": "$t:admin.users.form.fields.nickname",
-                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('nickname')}}",
-                                                                    "className": ""
-                                                                }
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{memberFields?.data?.member?.nickname_changed_at ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "member_status_nickname_next_changeable_at",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!!route?.id && !!memberFields?.data?.member?.nickname_next_changeable_at}}",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.member_fields.status.nickname_next_changeable_at"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-primary text-sm"
+                                                                },
+                                                                "text": "{{memberFields?.data?.member?.nickname_next_changeable_at ?? ''}}"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
-                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('nickname')}}",
                                                                 "props": {
                                                                     "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
                                                                 },
-                                                                "text": "$t:admin.users.form.fields.locked_by_company"
+                                                                "text": "$t:admin.users.member_fields.status.nickname_next_changeable_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "member_status_pending_required",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!!route?.id && (memberFields?.data?.member?.pending_required_fields ?? []).length > 0}}",
+                                                        "props": {
+                                                            "className": "col-span-full"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:admin.users.member_fields.status.pending_required"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex flex-wrap gap-1"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "iteration": {
+                                                                            "source": "{{memberFields?.data?.member?.pending_required_fields ?? []}}",
+                                                                            "item_var": "pendingField"
+                                                                        },
+                                                                        "props": {
+                                                                            "className": "badge badge-yellow"
+                                                                        },
+                                                                        "text": "{{pendingField.label}}"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     }
@@ -1705,117 +1711,20 @@
                                                                 "text": "{{_local.errors?.email?.[0] ?? ''}}"
                                                             }
                                                         ]
-                                                    },
-                                                    {
-                                                        "id": "field_homepage",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.homepage"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "url",
-                                                                    "name": "homepage",
-                                                                    "placeholder": "https://",
-                                                                    "className": ""
-                                                                }
-                                                            }
-                                                        ]
                                                     }
                                                 ]
                                             },
                                             {
+                                                "comment": "연락처 묶음(휴대폰, 전화번호, 홈페이지) — 항목 계약대로 공용 조각이 그린다. 넓은 화면에서는 두 칸씩 나란히 둔다.",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "responsive": {
-                                                    "768-": {
-                                                        "props": {
-                                                            "className": "grid grid-cols-2 gap-4"
-                                                        }
-                                                    }
-                                                },
-                                                "props": {
-                                                    "className": "grid grid-cols-1 gap-4"
+                                                "iteration": {
+                                                    "source": "{{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'contact'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-1 gap-4', wideClassName: 'grid grid-cols-2 gap-4' }); })}}",
+                                                    "item_var": "memberFieldGroup"
                                                 },
                                                 "children": [
                                                     {
-                                                        "id": "field_mobile",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.mobile"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "tel",
-                                                                    "name": "mobile",
-                                                                    "placeholder": "$t:admin.users.form.fields.mobile",
-                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('mobile')}}",
-                                                                    "className": ""
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "P",
-                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('mobile')}}",
-                                                                "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.locked_by_company"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "field_phone",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.phone"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "tel",
-                                                                    "name": "phone",
-                                                                    "placeholder": "$t:admin.users.form.fields.phone",
-                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('phone')}}",
-                                                                    "className": ""
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "P",
-                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('phone')}}",
-                                                                "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.locked_by_company"
-                                                            }
-                                                        ]
+                                                        "partial": "partials/member/_member_fields.json"
                                                     }
                                                 ]
                                             }
@@ -1824,9 +1733,11 @@
                                 ]
                             },
                             {
+                                "comment": "위치정보 — 언어, 국가, 시간대, 주소. 모두 운영자가 끌 수 있는 항목이라 하나도 없으면 구획과 탭을 그리지 않는다.\n             국가 선택지는 회원 목록의 국가 필터(`countryList`)와 같은 목록이다(입력 컴포넌트가 갖고 있다). 주소 칸에는 주소 검색 확장점(address_search_slot)이 붙는다.",
                                 "id": "section_location_info",
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}",
                                 "props": {
                                     "id": "location_info",
                                     "className": "admin-card"
@@ -1848,199 +1759,15 @@
                                         },
                                         "children": [
                                             {
-                                                "id": "field_country",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.country"
-                                                    },
-                                                    {
-                                                        "type": "composite",
-                                                        "name": "SearchableDropdown",
-                                                        "actions": [
-                                                            {
-                                                                "comment": "국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가\n                       이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다.",
-                                                                "type": "change",
-                                                                "event": "onChange",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "form.country": "{{$args[0]}}"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "props": {
-                                                            "aria-label": "$t:admin.users.form.fields.country",
-                                                            "options": "{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}",
-                                                            "value": "{{_local.form?.country ?? ''}}",
-                                                            "triggerLabel": "$t:admin.users.form.fields.country_select",
-                                                            "searchPlaceholder": "$t:admin.users.form.fields.country_search",
-                                                            "noResultsText": "$t:common.no_results",
-                                                            "className": "w-full"
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "responsive": {
-                                                    "768-": {
-                                                        "props": {
-                                                            "className": "grid grid-cols-2 gap-4"
-                                                        }
-                                                    }
-                                                },
-                                                "props": {
-                                                    "className": "grid grid-cols-1 gap-4"
+                                                "iteration": {
+                                                    "source": "{{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'location'; }).map(function(g) { return Object.assign({}, g, { className: 'grid grid-cols-1 gap-4', wideClassName: 'grid grid-cols-2 gap-4' }); })}}",
+                                                    "item_var": "memberFieldGroup"
                                                 },
                                                 "children": [
                                                     {
-                                                        "id": "field_language",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.language"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Select",
-                                                                "props": {
-                                                                    "name": "language",
-                                                                    "className": "w-full",
-                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('language')}}",
-                                                                    "defaultValue": "{{$locale}}",
-                                                                    "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "P",
-                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('language')}}",
-                                                                "props": {
-                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.locked_by_company"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "field_timezone",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "form-label"
-                                                                },
-                                                                "text": "$t:admin.users.form.fields.timezone"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Select",
-                                                                "props": {
-                                                                    "name": "timezone",
-                                                                    "className": "w-full",
-                                                                    "defaultValue": "Asia/Seoul",
-                                                                    "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
-                                                                    "searchable": true,
-                                                                    "searchPlaceholder": "{{$t('common.search')}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "field_address",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "space-y-2"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.address"
-                                                    },
-                                                    {
-                                                        "comment": "우편번호 + 주소 검색 버튼",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "props": {
-                                                            "className": "flex gap-2"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "text",
-                                                                    "name": "zipcode",
-                                                                    "placeholder": "$t:admin.users.form.fields.zipcode",
-                                                                    "readOnly": false,
-                                                                    "className": "w-32"
-                                                                }
-                                                            },
-                                                            {
-                                                                "id": "admin_user_address_search_slot",
-                                                                "type": "extension_point",
-                                                                "name": "address_search_slot",
-                                                                "props": {
-                                                                    "readOnlyFields": [
-                                                                        "zipcode",
-                                                                        "address"
-                                                                    ],
-                                                                    "targetFields": {
-                                                                        "zipcode": "form.zipcode",
-                                                                        "address": "form.address",
-                                                                        "region": "form.region",
-                                                                        "city": "form.city"
-                                                                    }
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "comment": "기본 주소",
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "text",
-                                                            "name": "address",
-                                                            "placeholder": "$t:admin.users.form.fields.address",
-                                                            "readOnly": false,
-                                                            "className": ""
-                                                        }
-                                                    },
-                                                    {
-                                                        "comment": "상세 주소",
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "text",
-                                                            "name": "address_detail",
-                                                            "placeholder": "$t:admin.users.form.fields.address_detail",
-                                                            "className": ""
-                                                        }
+                                                        "partial": "partials/member/_member_fields.json"
                                                     }
                                                 ]
                                             }
@@ -2073,52 +1800,16 @@
                                         },
                                         "children": [
                                             {
-                                                "id": "field_signature",
+                                                "comment": "프로필 묶음(서명, 자기소개) — 항목 계약대로 공용 조각이 한 줄에 하나씩 그린다. 관리자 메모는 항목이 아니라 이 화면의 고정 칸이다.",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'profile'; })}}",
+                                                    "item_var": "memberFieldGroup"
+                                                },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.signature"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Input",
-                                                        "props": {
-                                                            "type": "text",
-                                                            "name": "signature",
-                                                            "placeholder": "$t:admin.users.form.fields.signature",
-                                                            "className": ""
-                                                        }
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "field_bio",
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Label",
-                                                        "props": {
-                                                            "className": "form-label"
-                                                        },
-                                                        "text": "$t:admin.users.form.fields.bio"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Textarea",
-                                                        "props": {
-                                                            "name": "bio",
-                                                            "rows": 3,
-                                                            "placeholder": "$t:admin.users.form.fields.bio",
-                                                            "className": "resize-none"
-                                                        }
+                                                        "partial": "partials/member/_member_fields.json"
                                                     }
                                                 ]
                                             },
@@ -2146,6 +1837,74 @@
                                                         }
                                                     }
                                                 ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "추가 항목 — 운영자가 환경설정 > 회원에서 추가한 항목(묶음 없음). 관리자만 수정, 관리자만 열람 항목도 여기서 고친다. 파일 항목은 수정 화면에서 바로 올리고 지운다. 항목이 없으면 구획과 탭을 그리지 않는다.",
+                                "id": "section_extra_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}",
+                                "props": {
+                                    "id": "extra_fields",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.member_fields.extra_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "iteration": {
+                                            "source": "{{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'extra'; })}}",
+                                            "item_var": "memberFieldGroup"
+                                        },
+                                        "children": [
+                                            {
+                                                "partial": "partials/member/_member_fields.json"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "확장 항목 — 모듈과 플러그인이 선언한 회원 항목. 그런 항목이 없으면 구획과 탭을 그리지 않는다.",
+                                "id": "section_extension_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_computed.memberFieldGroups ?? []).some(function(g) { return g.key === 'extension'; })}}",
+                                "props": {
+                                    "id": "extension_fields",
+                                    "className": "admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:admin.users.member_fields.extension_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "iteration": {
+                                            "source": "{{(_computed.memberFieldGroups ?? []).filter(function(g) { return g.key === 'extension'; })}}",
+                                            "item_var": "memberFieldGroup"
+                                        },
+                                        "children": [
+                                            {
+                                                "partial": "partials/member/_member_fields.json"
                                             }
                                         ]
                                     }

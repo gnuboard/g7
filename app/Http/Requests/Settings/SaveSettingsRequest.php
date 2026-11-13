@@ -15,6 +15,7 @@ use App\Rules\ContentCustomTagsRule;
 use App\Rules\CspSourceHost;
 use App\Rules\EmbedCustomProviderRule;
 use App\Rules\IpOrCidr;
+use App\Rules\MemberDisplayNameSettings;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
@@ -616,7 +617,7 @@ class SaveSettingsRequest extends FormRequest
         $rules = [
             // 탭 식별자
             // 여기 빠진 탭 이름으로 저장하면 본문이 아무리 올바라도 422 다 — 탭을 신설하면 반드시 함께 넣는다.
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy', 'system', 'content'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy', 'system', 'content', 'member'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -632,6 +633,21 @@ class SaveSettingsRequest extends FormRequest
             'privacy' => ['sometimes', 'array'],
             'system' => ['sometimes', 'array'],
             'content' => ['sometimes', 'array'],
+            'member' => ['sometimes', 'array'],
+
+            // 회원 (#490) — 닉네임 정책. 표시 이름 설정은 종류, 영역 등록소로 검증한다(MemberDisplayNameSettings).
+            'member.nickname_unique' => ['nullable', 'boolean'],
+            'member.nickname_banned_words' => ['nullable', 'array', 'max:500'],
+            'member.nickname_banned_words.*' => ['string', 'max:50', 'distinct'],
+            'member.nickname_change_interval_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
+            'member.display_name_selectable_kinds' => ['nullable', 'array', 'min:1', 'max:50'],
+            'member.display_name_selectable_kinds.*' => ['string', 'max:120', 'distinct', new MemberDisplayNameSettings(MemberDisplayNameSettings::TARGET_KIND)],
+            'member.display_name_member_default_kind' => ['nullable', 'string', 'max:120', new MemberDisplayNameSettings(MemberDisplayNameSettings::TARGET_DEFAULT)],
+            'member.display_name_areas' => ['nullable', 'array', new MemberDisplayNameSettings(MemberDisplayNameSettings::TARGET_AREAS)],
+            'member.display_name_areas.*.mode' => ['required_with:member.display_name_areas', 'string', Rule::in(['fixed', 'member', 'inherit'])],
+            'member.display_name_areas.*.kind' => ['nullable', 'string', 'max:120'],
+            // 저장하지 않는 지시 값 — 켜면 닉네임 항목의 「기존 회원에게도 입력 요구」를 함께 켠다(로그인 시 닉네임 입력 요구).
+            'member.nickname_require_existing_members' => ['nullable', 'boolean'],
 
             // 본문 콘텐츠 (#883) — 허용 후보·외부 영상 서비스·운영자 추가 태그·미디어 주소 유효 시간
             'content.allow_figure_caption' => ['nullable', 'boolean'],
@@ -2194,6 +2210,18 @@ class SaveSettingsRequest extends FormRequest
             'identity' => __('validation.attributes.settings_tab_identity'),
             'analytics' => __('validation.attributes.settings_tab_analytics'),
             'privacy' => __('validation.attributes.settings_tab_privacy'),
+            'member' => __('validation.attributes.settings_tab_member'),
+            'member.nickname_unique' => __('validation.attributes.member_nickname_unique'),
+            'member.nickname_banned_words' => __('validation.attributes.member_nickname_banned_words'),
+            'member.nickname_banned_words.*' => __('validation.attributes.member_nickname_banned_words'),
+            'member.nickname_change_interval_days' => __('validation.attributes.member_nickname_change_interval_days'),
+            'member.display_name_selectable_kinds' => __('validation.attributes.member_display_name_selectable_kinds'),
+            'member.display_name_selectable_kinds.*' => __('validation.attributes.member_display_name_selectable_kinds'),
+            'member.display_name_member_default_kind' => __('validation.attributes.member_display_name_member_default_kind'),
+            'member.display_name_areas' => __('validation.attributes.member_display_name_areas'),
+            'member.display_name_areas.*.mode' => __('validation.attributes.member_display_name_area_mode'),
+            'member.display_name_areas.*.kind' => __('validation.attributes.member_display_name_area_kind'),
+            'member.nickname_require_existing_members' => __('validation.attributes.member_nickname_require_existing_members'),
             'system' => __('common.system'),
             // 배열 항목 — 인덱스가 붙은 원시 키(seo.bot_user_agents.0 …)가 문구에 실리지 않도록
             // 와일드카드 한 줄로 전 인덱스를 덮는다.

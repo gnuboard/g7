@@ -1,0 +1,68 @@
+feature: 관리자 회원 폼과 회원 상세의 회원 항목 칸 (#490 6단계)
+
+description: |
+  관리자 회원 추가, 수정 화면과 회원 상세가 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목을 서버가 준
+  항목 계약(데이터소스 memberFields)대로 그린다. 수정 화면은 입력 조각(partials/member/_member_fields), 상세는 보기 조각
+  (partials/member/_member_fields_view)을 묶음마다 부른다. 칸의 DOM id 는 종전 회원 폼과 같은 field_{키} 다.
+
+  항목마다 범위 배지(본인 수정, 관리자만 수정, 관리자만 열람)가 붙는다. 관리자도 못 바꾸는 칸(회사 계정 관리 등)은 비활성이고
+  사유에 맞는 안내가 칸 아래에 보인다. 주소 항목은 부분별 폼 경로로 세 칸을 잇고 주소 검색 확장점(address_search_slot)에
+  종전과 같은 값을 넘긴다. 파일 항목은 폼 저장과 따로 관리자 API 로 바로 올리고 지운 뒤 항목을 다시 받는다. 회원 추가 화면의
+  파일 항목은 「저장한 뒤 올릴 수 있습니다」 안내 줄만 나온다. 확장이 제공한 유형은 확장점 member_field_input 이 그린다.
+
+  묶음이 없는 운영자 추가 항목은 새 구획 「추가 항목」, 모듈과 플러그인이 선언한 항목은 「확장 항목」에 모인다. 두 구획과 그 탭,
+  그리고 「위치정보」는 항목이 있을 때만 보인다. 검증 오류는 칸 아래에 뜨고 그 칸이 든 탭 이름 옆에 빨간 점이 붙으며(U22),
+  위쪽 상자는 조각이 그린 항목에 속하지 않는 오류만 나열한다. 수정과 상세 화면에는 회원의 항목 상태(닉네임 마지막 변경일,
+  본인이 다시 바꿀 수 있는 날, 비어 있는 필수 항목 이름)를 값이 있는 줄만 읽기 전용으로 보인다(U17).
+  같은 자리에 회원이 고른 표시 이름 종류와 지금 보이는 이름(사이트 기본 자리, 관리자 화면 자리)도 읽기 전용으로 보인다(#490 8단계).
+  종류는 회원 본인만 바꿀 수 있어 입력 칸이 없고, 고르지 않았으면 회원 기본 종류를, 고른 종류가 허용에서 빠졌으면 그 사실을 알린다.
+  고정 칸(역할, 상태, 비밀번호, 이메일, 관리자 메모 등)과 확장 주입 자리는 그대로다.
+
+# axis 의미:
+#   case — 재는 장면 하나.
+#          조각의 구조: root(루트), row(칸과 오류 줄 id), label(필수 별표), scope_badge(범위 배지), input(입력칸), address(주소 갈래),
+#          locked(잠금 안내), file(파일 갈래), extension(확장 유형 갈래), deferred(저장 뒤 올리기 안내), dark(다크 짝), view(보기 조각), view_file(보기 조각의 파일)
+#          화면의 배선: form_source(폼의 항목 데이터소스), detail_source(상세의 항목 데이터소스), groups(묶음 가르기), sections(새 구획), tabs(새 탭),
+#          error_dot(오류 키와 탭 대조), orphan_errors(칸 밖 오류), anchors(유지되는 고정 칸과 주입 자리), lang_keys(문구 키의 ko, en 짝)
+#          실제 엔진 렌더: render_edit(수정 화면), render_create_deferred(추가 화면의 파일 항목), render_locked(잠긴 칸), render_errors(오류와 탭의 빨간 점),
+#          render_tabs(항목 없는 묶음의 탭), render_member_status(회원 항목 상태 줄), render_display_name_status(수정 화면의 표시 이름 정보),
+#          render_detail_display_name(상세의 표시 이름 정보), render_detail(상세)
+axes:
+  case: [root, row, label, scope_badge, input, address, locked, file, extension, deferred, dark, view, view_file, form_source, detail_source, groups, sections, tabs, error_dot, orphan_errors, anchors, lang_keys, render_edit, render_create_deferred, render_locked, render_errors, render_tabs, render_member_status, render_display_name_status, render_detail_display_name, render_detail]
+
+effects:
+  - root_id_and_layout_follow_group
+  - row_and_error_ids_follow_field_key
+  - required_star_follows_field_required
+  - scope_badge_shows_edit_scope
+  - builtin_input_binds_by_field_name
+  - address_parts_bind_by_parts_paths_and_keep_search_slot
+  - locked_reason_picks_one_notice
+  - file_branch_lists_files_and_gates_add_by_count
+  - file_upload_and_delete_use_admin_api_and_refetch_member_fields
+  - extension_type_slot_receives_field
+  - deferred_field_shows_upload_after_save_notice_only
+  - every_color_class_has_dark_pair
+  - view_row_keeps_field_id_and_shows_display_value
+  - view_file_lists_names_and_downloads
+  - form_fetches_fields_by_mode_without_blocking
+  - detail_fetches_same_fields_source_without_error_page
+  - groups_split_by_ui_group_custom_and_extension_owner
+  - new_sections_have_html_ids_and_show_only_with_fields
+  - new_tabs_follow_profile_and_show_only_with_fields
+  - error_keys_map_to_tabs_by_field_group
+  - top_box_lists_only_errors_outside_member_fields
+  - fixed_fields_and_extension_anchors_untouched
+  - member_fields_keys_exist_in_ko_and_en
+  - form_renders_fields_with_field_ids_badges_and_values
+  - create_mode_file_field_shows_notice_without_upload
+  - locked_field_is_disabled_with_company_notice
+  - errors_render_under_fields_and_mark_tabs_with_red_dot
+  - tabs_hide_groups_without_fields
+  - member_status_lines_render_only_with_values
+  - display_name_status_shows_chosen_kind_and_shown_names_read_only
+  - detail_shows_chosen_kind_and_shown_names
+  - detail_renders_display_values_badges_files_and_member_status
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-form-member-fields.test.tsx

@@ -364,6 +364,8 @@
           <cell>
             <div class="sso:flex sso:flex-col">
               <a href="/admin/users/{{row.user?.uuid}}" class="sso:text-sm sso:font-medium sso:text-blue-700 sso:dark:text-blue-300">{{row.user?.name ?? '-'}}</a>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-if="{{!!row.user?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-sso.admin.common.real_name_sub', { name: row.user?.real_name })}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{row.user?.real_name}}</span>
               <span class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{row.user?.email ?? ''}}</span>
             </div>
           </cell>

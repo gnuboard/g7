@@ -1,0 +1,40 @@
+feature: 쇼핑몰 설정의 기능별 작성자 표시 이름 칸 (#490)
+
+description: |
+  후기와 문의에 보이는 작성자 이름을 기능별로 정한다. 후기 칸은 리뷰 설정 탭의 별도 카드에, 문의 칸은 기본 정보 탭의
+  문의 설정 카드 안에 있다. 방식은 「상위 영역 따름 / 특정 종류 고정 / 회원이 고른 값」이고 종류 칸은 고정일 때만 나온다.
+  종류 선택지는 종류 이름과 미리보기다.
+
+  값은 설정 폼(`form.display_name`)에 담겨 하단 [저장]으로 나간다(주문서 항목 표와 달리 즉시 저장이 아니다). 두 칸이 있는
+  탭(리뷰 설정, 기본 정보)의 저장만 `display_name` 을 싣고, 읽기 전용 목록(`display_name_options`)은 싣지 않는다.
+  고정이 아닌 방식으로 바꾸면 종류를 비운다. 고정인데 종류가 비어 서버가 422 를 주면 그 칸 아래에 문구를 보인다.
+
+  상위 영역을 따르는 칸은 「지금은 ○○(으)로 보입니다」를 곁들인다. 서버가 주는 「지금 값」은 저장된 설정 기준이므로,
+  저장된 방식도 상위 영역 따름일 때만 보인다. 서버가 종류 목록을 주지 않으면 칸을 그리지 않는다.
+
+axes:
+  case:
+    - placement
+    - mode_inherit
+    - mode_fixed
+    - mode_change
+    - effective_line
+    - options_missing
+    - save_review_tab
+    - save_basic_tab
+    - save_other_tab
+    - save_validation
+
+effects:
+  - display_name_fields_placed_in_review_tab_and_inquiry_card
+  - inherit_mode_hides_kind_and_shows_effective_kind
+  - fixed_mode_shows_kind_select_with_previews
+  - mode_change_writes_form_marks_dirty_and_resets_kind
+  - effective_line_only_for_saved_inherit
+  - fields_hidden_without_options_and_locked_when_read_only
+  - save_body_carries_display_name_without_options
+  - other_tabs_do_not_send_display_name
+  - kind_validation_error_shown_under_field
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceDisplayNameSettings.test.tsx

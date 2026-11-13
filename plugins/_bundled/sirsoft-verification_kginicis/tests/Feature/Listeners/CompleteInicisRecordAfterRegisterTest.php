@@ -37,6 +37,11 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
 
     private CacheInterface $cache;
 
+    /**
+     * 로그, 기록 저장소와 이 플러그인 도메인 캐시 드라이버를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,9 +57,13 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
     }
 
     /**
+     * 가입 완료 훅이 오면 이니시스 기록을 새 회원으로 저장하고 로그 user_id 를 채운 뒤 대기 캐시를 지우는지 검증합니다.
+     *
      * @scenario case=all_present
      *
-     * @effects success_with_record_stored
+     * @effects success_with_record_stored, listener_upserts_inicis_identity_records_for_new_user_on_after_register_hook, listener_backfills_log_user_id_with_new_user_id, listener_clears_pending_record_cache_after_successful_upsert
+     *
+     * @return void 반환값 없음
      */
     public function test_listener_upserts_record_backfills_user_id_and_clears_cache_on_after_register_hook(): void
     {
@@ -89,6 +98,15 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         );
     }
 
+    /**
+     * 코어 리스너가 consumed_at 을 찍은 토큰이어도 이 리스너가 기록 저장, user_id 채움, 캐시 정리를 마치는지 검증합니다.
+     *
+     * @scenario registration_context=token_consumed_by_core
+     *
+     * @effects listener_processes_token_after_core_listener_marks_consumed, listener_upserts_inicis_identity_records_for_new_user_on_after_register_hook, listener_backfills_log_user_id_with_new_user_id, listener_clears_pending_record_cache_after_successful_upsert
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_processes_token_even_after_core_listener_consumed_it(): void
     {
         // 회귀 차단: 코어 AssertIdentityVerifiedBeforeRegister (priority 10) 가
@@ -116,6 +134,15 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         );
     }
 
+    /**
+     * 훅 컨텍스트에 verification_token 이 없으면 이니시스 기록을 만들지 않는지 검증합니다.
+     *
+     * @scenario registration_context=missing_token
+     *
+     * @effects listener_noops_when_verification_token_missing_in_context
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_noops_when_verification_token_missing_in_context(): void
     {
         $user = User::factory()->create();
@@ -128,6 +155,15 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $this->assertDatabaseMissing('inicis_identity_records', ['user_id' => $user->id]);
     }
 
+    /**
+     * 어떤 인증 완료 로그와도 맞지 않는 토큰이면 이니시스 기록을 만들지 않는지 검증합니다.
+     *
+     * @scenario registration_context=bogus_token
+     *
+     * @effects listener_noops_when_token_does_not_match_any_verified_log
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_noops_when_token_does_not_match_any_verified_log(): void
     {
         $user = User::factory()->create();
@@ -139,6 +175,15 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         $this->assertDatabaseMissing('inicis_identity_records', ['user_id' => $user->id]);
     }
 
+    /**
+     * 토큰이 다른 제공자(mail) 로그와 맞으면 기록을 만들지 않고 대기 캐시도 건드리지 않는지 검증합니다.
+     *
+     * @scenario registration_context=other_provider_token
+     *
+     * @effects listener_noops_when_log_provider_id_is_not_inicis, listener_does_not_clear_cache_for_other_provider_log
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_noops_when_log_belongs_to_other_provider(): void
     {
         // 다른 provider (mail 등) 의 verified log — token 매칭은 되지만 우리가 처리할 대상 아님
@@ -158,6 +203,15 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         );
     }
 
+    /**
+     * 대기 캐시에 PII 가 없으면 기록을 만들지 않고, 코어가 로그를 회원에 묶은 뒤에도 그 로그에서 인증 값이 나오지 않는지 검증합니다.
+     *
+     * @scenario registration_context=cache_pii_missing
+     *
+     * @effects listener_skips_when_cache_pii_payload_missing_or_empty, verified_claims_null_when_listener_skipped_record_for_bound_log
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_logs_warning_and_skips_when_cache_pii_missing(): void
     {
         // log 는 있지만 Cache 가 비어있는 경우 (TTL 만료 등)
@@ -171,11 +225,24 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         ]);
 
         $this->assertDatabaseMissing('inicis_identity_records', ['user_id' => $user->id]);
-        // backfill 도 없음
+
+        // 요청 행의 회원 연결은 이 리스너가 아니라 코어 가입 기록(SyncVerifiedClaimsToUser, 7.2.0)이 맡는다 —
+        // 가입 토큰으로 확인을 마친 행이므로 가입 회원에 묶인다. 이니시스 리스너는 PII 가 없어 기록을 만들지 않았으므로
+        // 묶인 뒤에도 이 행에서 꺼낼 인증 값이 없어야 한다(빈 기록으로 잠금 항목이 생기지 않는다).
         $reload = $this->logRepository->findById($log->id);
-        $this->assertNull($reload->user_id);
+        $this->assertSame($user->id, (int) $reload->user_id);
+        $this->assertNull(app(InicisIdentityProvider::class)->verifiedClaims($reload, $user->fresh()));
     }
 
+    /**
+     * 로그에 이미 다른 회원 user_id 가 있으면 backfill 이 그 값을 덮어쓰지 않는지 검증합니다.
+     *
+     * @scenario registration_context=existing_user_id_on_log
+     *
+     * @effects listener_does_not_overwrite_existing_user_id_on_log_via_backfill_safe_guard
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_does_not_overwrite_existing_user_id_via_backfill(): void
     {
         // 코어 backfillUserId 의 안전 가드 (이미 user_id 있으면 false 반환) 가 적용되는지 확인
@@ -197,6 +264,15 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * backfill 이 예외를 던져도 저장한 기록은 남고 대기 캐시는 지워지며 예외가 가입 흐름으로 번지지 않는지 검증합니다.
+     *
+     * @scenario registration_context=backfill_throws
+     *
+     * @effects listener_keeps_record_and_clears_cache_when_backfill_throws
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_clears_cache_even_when_backfill_fails(): void
     {
         // 보강 회귀: record upsert 성공 후 backfill 이 실패해도 (1) PII 저장은 유지되고
@@ -228,6 +304,11 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
 
     /**
      * inicis 본인확인 verified 로그를 직접 만들어 cache 와 함께 기본 환경 셋업.
+     *
+     * @param  string  $token  로그에 넣을 verification_token
+     * @param  int|null  $userId  로그에 미리 묶을 회원 ID (null 이면 비로그인 가입 로그)
+     * @param  string  $providerId  로그의 제공자 ID (기본은 이니시스)
+     * @return IdentityVerificationLog 저장한 인증 완료 로그
      */
     private function createVerifiedSignupLog(
         string $token,
@@ -257,6 +338,9 @@ class CompleteInicisRecordAfterRegisterTest extends PluginTestCase
 
     /**
      * provider.verify() 가 비로그인 사용자에 대해 cache 에 PII stash 하는 동작을 시뮬레이션.
+     *
+     * @param  string  $logId  대기 캐시 키에 붙일 인증 로그 ID
+     * @return void 반환값 없음
      */
     private function stashPendingRecord(string $logId): void
     {

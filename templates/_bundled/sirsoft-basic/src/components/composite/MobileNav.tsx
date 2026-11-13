@@ -42,7 +42,10 @@ interface Board {
 
 interface User {
   id: number;
-  name: string;
+  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+  name: string | null;
+  /** 사이트 기본 영역에서 보이는 이름(표시 이름). 드로어는 이 값을 먼저 쓴다 */
+  display_name?: string | null;
   avatar?: string;
 }
 
@@ -100,6 +103,9 @@ const MobileNav: React.FC<MobileNavProps> = ({
   const isPortable = responsiveValue
     ? responsiveValue.width < 1024
     : typeof window !== 'undefined' && window.innerWidth < 1024;
+
+  // 드로어에 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
+  const userShownName = user?.display_name ?? user?.name ?? '';
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -169,14 +175,14 @@ const MobileNav: React.FC<MobileNavProps> = ({
           <Div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <Div className="flex items-center gap-3">
               {user.avatar ? (
-                <Img src={user.avatar} alt={user.name} className="w-12 h-12 shrink-0 rounded-full" thumbPreset="sm" />
+                <Img src={user.avatar} alt={userShownName} className="w-12 h-12 shrink-0 rounded-full" thumbPreset="sm" />
               ) : (
                 <Div className="w-12 h-12 shrink-0 rounded-full bg-blue-600 dark:bg-blue-600 flex items-center justify-center text-white text-lg font-medium">
-                  {(user.name || 'U').charAt(0).toUpperCase()}
+                  {(userShownName || 'U').charAt(0).toUpperCase()}
                 </Div>
               )}
               <Div className="min-w-0">
-                <P className="font-medium text-gray-900 dark:text-white truncate">{user.name}</P>
+                <P className="font-medium text-gray-900 dark:text-white truncate">{userShownName}</P>
                 <LinkButton href={'/mypage'} onNavigate={() => { onClose(); navigate('/mypage'); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                   {t('common.mypage')}
                 </LinkButton>

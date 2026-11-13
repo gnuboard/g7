@@ -1475,6 +1475,20 @@
                                                                                 "className": "ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block"
                                                                             },
                                                                             "text": "{{order.data?.orderer_name}} ({{order.data?.orderer_email ?? order.data?.user_login_id ?? ''}})"
+                                                                        },
+                                                                        {
+                                                                            "comment": "실명 보조 줄(#490) — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 주문서에 적힌 주문자 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다.",
+                                                                            "id": "orderer_real_name_sub",
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{!!order.data?.user?.real_name && order.data?.user?.real_name !== order.data?.orderer_name}}",
+                                                                            "props": {
+                                                                                "data-testid": "real-name-sub",
+                                                                                "role": "note",
+                                                                                "aria-label": "{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: order.data?.user?.real_name })}}",
+                                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate ecommerce:block"
+                                                                            },
+                                                                            "text": "{{order.data?.user?.real_name}}"
                                                                         }
                                                                     ]
                                                                 }
@@ -2355,6 +2369,72 @@
                                                 "className": "ecommerce-form-error-xs ecommerce:mt-1 ecommerce:block"
                                             },
                                             "text": "{{_local.errors?.delivery_memo?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "주문서 추가 항목(#490) — 운영자가 주문서에 더한 항목과 다른 확장이 기여한 항목 가운데 값이 있는 것만 서버가 준다(`order.data.extra_fields`). 없으면 구획을 그리지 않는다. 읽기 전용이다.",
+                    "id": "admin_order_extra_fields",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(order.data?.extra_fields ?? []).length > 0}}",
+                    "props": {
+                        "className": "ecommerce:mt-8 ecommerce:pt-8"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:mb-4"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.extra_fields.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
+                            },
+                            "children": [
+                                {
+                                    "id": "admin_order_extra_field_{{extraField.key}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{order.data?.extra_fields ?? []}}",
+                                        "item_var": "extraField"
+                                    },
+                                    "props": {
+                                        "className": "ecommerce:min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce-text-label-subtle ecommerce:block ecommerce:mb-1 ecommerce:break-words"
+                                            },
+                                            "text": "{{extraField.label}} ({{$t(extraField.section === 'orderer' ? 'sirsoft-ecommerce.admin.order.detail.order_info.extra_fields.section_orderer' : 'sirsoft-ecommerce.admin.order.detail.order_info.extra_fields.section_shipping')}})"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "ecommerce:bg-gray-100 ecommerce:dark:bg-gray-800 ecommerce:rounded ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:break-words"
+                                            },
+                                            "text": "{{extraField.display_value}}"
                                         }
                                     ]
                                 }

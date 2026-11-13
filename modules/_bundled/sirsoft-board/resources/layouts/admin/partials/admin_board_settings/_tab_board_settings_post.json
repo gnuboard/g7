@@ -614,6 +614,486 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "comment": "비회원 작성자 항목 기본값 카드 — 새 게시판을 만들 때 그 게시판의 비회원 작성자 항목 설정으로 복사된다(이미 만든 게시판은 그대로)",
+                    "id": "section_guest_author_defaults",
+                    "type": "layout",
+                    "name": "SectionLayout",
+                    "props": {
+                        "className": "board-admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "board-card-title"
+                            },
+                            "text": "$t:sirsoft-board.admin.settings.sections.guest_author_fields"
+                        },
+                        {
+                            "comment": "비회원 작성자 항목 기본값 — 새 게시판이 물려받는 사용, 필수(모듈 설정 basic_defaults.guest_author_fields). 게시판 수정 화면의 표와 같은 모양이다(#490).\n             행은 서버가 준 `form.guest_author_field_rows`(고정 항목 이름과 비밀번호 + 항목 엔진의 항목)이고,\n             스위치가 바꾸는 값은 `form.guest_author_fields[항목 키].{post|comment}.{enabled|required}`(불리언)이다.\n             행마다 `_v` 에 지금 값(폼 값 우선, 없으면 서버가 준 행 값)을 얹어 네 칸이 같은 값을 읽는다. 「사용」이 꺼지면 「필수」도 꺼진 것으로 본다.\n             이 표에서는 항목을 더하거나 지우지 않는다(다른 확장이 기여한 항목은 그 확장이, 추가 항목은 항목 관리 화면이 맡는다).\n             넓은 화면은 표, 좁은 화면은 항목별 카드로 같은 값을 그린다",
+                            "id": "default_guest_author_fields_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "default_guest_author_fields_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "board-form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.settings.guest_author_fields.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "default_guest_author_fields_description",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "board-form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.settings.guest_author_fields.description"
+                                },
+                                {
+                                    "id": "default_guest_author_fields_list",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "board:mt-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "default_board_guest_author_fields_cards",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "id": "default_guest_field_card_{{row.key}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "(_local.form?.basic_defaults?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true && (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true && (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))",
+                                                                "item_var": "row"
+                                                            },
+                                                            "props": {
+                                                                "className": "board-excel-card board:mb-3"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "board-excel-card-header"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "board:min-w-0"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Div",
+                                                                                    "props": {
+                                                                                        "className": "board-excel-card-title board:min-w-0 board:wrap-anywhere"
+                                                                                    },
+                                                                                    "text": "{{row.label}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "P",
+                                                                                    "if": "{{row.fixed === true}}",
+                                                                                    "props": {
+                                                                                        "className": "board-form-hint"
+                                                                                    },
+                                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "P",
+                                                                                    "if": "{{row.fixed !== true && row.available !== false && !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}",
+                                                                                    "props": {
+                                                                                        "className": "board-form-hint"
+                                                                                    },
+                                                                                    "text": "{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200 board:shrink-0"
+                                                                            },
+                                                                            "text": "{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "board-excel-card-body"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "if": "{{row.available === false}}",
+                                                                            "props": {
+                                                                                "className": "board-excel-card-row"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "board-badge board-badge-yellow"
+                                                                                    },
+                                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.unavailable"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "board-excel-card-value board-text-tertiary"
+                                                                                    },
+                                                                                    "text": "{{row.post?.lock_reason ?? row.comment?.lock_reason ?? $t('sirsoft-board.admin.form.guest_author_fields.unavailable_hint')}}"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "iteration": {
+                                                                                "source": "(row.available === false ? [] : [{s: 'post', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_enabled')}, {s: 'post', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_required')}, {s: 'comment', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled')}, {s: 'comment', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_required')}])",
+                                                                                "item_var": "cell"
+                                                                            },
+                                                                            "props": {
+                                                                                "className": "board-excel-card-row"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "board-excel-card-label"
+                                                                                    },
+                                                                                    "text": "{{cell.label}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Div",
+                                                                                    "props": {
+                                                                                        "className": "board-excel-card-value"
+                                                                                    },
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "id": "default_guest_field_{{row.key}}_{{cell.s}}_{{cell.p}}_m",
+                                                                                            "type": "composite",
+                                                                                            "name": "Toggle",
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "comment": "넓은 화면 표의 스위치와 같은 규칙으로 같은 값을 바꾼다",
+                                                                                                    "type": "change",
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "local",
+                                                                                                        "form.basic_defaults.guest_author_fields": "{{Object.assign({}, _local.form?.basic_defaults?.guest_author_fields ?? {}, Object.fromEntries([[row.key, Object.assign({}, row._v, Object.fromEntries([[cell.s, cell.p === 'enabled' ? {enabled: !row._v[cell.s].enabled, required: false} : {enabled: row._v[cell.s].enabled, required: !row._v[cell.s].required}]]))]]))}}",
+                                                                                                        "hasChanges": true
+                                                                                                    }
+                                                                                                }
+                                                                                            ],
+                                                                                            "props": {
+                                                                                                "checked": "{{row._v[cell.s][cell.p]}}",
+                                                                                                "ariaLabel": "$t:common.row_cell|row={{row.label}}|column={{cell.label}}",
+                                                                                                "size": "sm",
+                                                                                                "disabled": "{{_computed.isReadOnly || row.fixed === true || row[cell.s]?.[cell.p + '_locked'] === true || (cell.p === 'required' && !row._v[cell.s].enabled)}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "board:overflow-x-clip board:mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "default_board_guest_author_fields_table",
+                                            "type": "basic",
+                                            "name": "Table",
+                                            "props": {
+                                                "className": "board:w-full"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Thead",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Tr",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.columns.field"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2 board:w-32"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.columns.source"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.columns.post_enabled"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.columns.post_required"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.columns.comment_required"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tbody",
+                                                    "children": [
+                                                        {
+                                                            "id": "default_guest_field_row_{{row.key}}",
+                                                            "type": "basic",
+                                                            "name": "Tr",
+                                                            "iteration": {
+                                                                "source": "(_local.form?.basic_defaults?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true && (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true && (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))",
+                                                                "item_var": "row"
+                                                            },
+                                                            "props": {
+                                                                "className": "board:border-t board:border-gray-200 board:dark:border-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "board:px-4 board:py-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "board-flex-center board:gap-2 board:min-w-0"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Icon",
+                                                                                    "if": "{{row.fixed === true}}",
+                                                                                    "props": {
+                                                                                        "name": "lock",
+                                                                                        "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "board-text-heading board:min-w-0 board:wrap-anywhere"
+                                                                                    },
+                                                                                    "text": "{{row.label}}"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "P",
+                                                                            "if": "{{row.fixed === true}}",
+                                                                            "props": {
+                                                                                "className": "board-form-hint"
+                                                                            },
+                                                                            "text": "$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint"
+                                                                        },
+                                                                        {
+                                                                            "id": "default_guest_field_lock_reason_{{row.key}}",
+                                                                            "type": "basic",
+                                                                            "name": "P",
+                                                                            "if": "{{row.fixed !== true && row.available !== false && !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}",
+                                                                            "props": {
+                                                                                "className": "board-form-hint"
+                                                                            },
+                                                                            "text": "{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "board:px-4 board:py-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "id": "default_guest_field_source_{{row.key}}",
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200"
+                                                                            },
+                                                                            "text": "{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "유형을 제공한 확장이 꺼진 항목은 스위치 대신 「사용 불가」 한 칸으로 남긴다(행을 지우지 않는다 — 확장을 다시 켜면 설정이 그대로 돌아온다)",
+                                                                    "id": "default_guest_field_unavailable_{{row.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "if": "{{row.available === false}}",
+                                                                    "props": {
+                                                                        "colSpan": 4,
+                                                                        "className": "board:px-4 board:py-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "board-flex-center board:gap-2"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "board-badge board-badge-yellow"
+                                                                                    },
+                                                                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.unavailable"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "board-text-tertiary"
+                                                                                    },
+                                                                                    "text": "{{row.post?.lock_reason ?? row.comment?.lock_reason ?? $t('sirsoft-board.admin.form.guest_author_fields.unavailable_hint')}}"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "iteration": {
+                                                                        "source": "(row.available === false ? [] : [{s: 'post', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_enabled')}, {s: 'post', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_required')}, {s: 'comment', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled')}, {s: 'comment', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_required')}])",
+                                                                        "item_var": "cell"
+                                                                    },
+                                                                    "props": {
+                                                                        "className": "board:px-4 board:py-2 board:text-center"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "id": "default_guest_field_{{row.key}}_{{cell.s}}_{{cell.p}}",
+                                                                            "type": "composite",
+                                                                            "name": "Toggle",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "comment": "한 칸을 뒤집는다. 「사용」을 끄면 같은 표면의 「필수」도 끈다(쓰지 않는 항목이 필수일 수 없다). 값은 항목 키 아래 네 칸을 통째로 불리언으로 다시 쓴다 — 서버가 문자열 값을 받지 않는다",
+                                                                                    "type": "change",
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "form.basic_defaults.guest_author_fields": "{{Object.assign({}, _local.form?.basic_defaults?.guest_author_fields ?? {}, Object.fromEntries([[row.key, Object.assign({}, row._v, Object.fromEntries([[cell.s, cell.p === 'enabled' ? {enabled: !row._v[cell.s].enabled, required: false} : {enabled: row._v[cell.s].enabled, required: !row._v[cell.s].required}]]))]]))}}",
+                                                                                        "hasChanges": true
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "props": {
+                                                                                "checked": "{{row._v[cell.s][cell.p]}}",
+                                                                                "ariaLabel": "$t:common.row_cell|row={{row.label}}|column={{cell.label}}",
+                                                                                "size": "sm",
+                                                                                "disabled": "{{_computed.isReadOnly || row.fixed === true || row[cell.s]?.[cell.p + '_locked'] === true || (cell.p === 'required' && !row._v[cell.s].enabled)}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "default_guest_author_fields_error",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['basic_defaults.guest_author_fields']}}",
+                                    "props": {
+                                        "className": "board-form-error-xs board:mt-1"
+                                    },
+                                    "text": "{{_local.errors?.['basic_defaults.guest_author_fields']?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         }

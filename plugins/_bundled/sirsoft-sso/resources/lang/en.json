@@ -104,7 +104,8 @@
             "copied": "Copied.",
             "copy_failed": "Could not copy. Please select and copy it manually.",
             "remove_row": "Remove row",
-            "search": "Search"
+            "search": "Search",
+            "real_name_sub": "Real name {{name}}"
         },
         "protocols": {
             "oidc": "OpenID Connect",
@@ -429,7 +430,7 @@
                 "all_idps": "All IdPs",
                 "all_status": "All statuses",
                 "all_via": "All methods",
-                "search": "Member name or email"
+                "search": "Member name, nickname, or email"
             },
             "unlink": "Unlink",
             "unlink_named": "Unlink {{name}}",

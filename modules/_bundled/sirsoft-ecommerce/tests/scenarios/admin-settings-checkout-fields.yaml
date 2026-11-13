@@ -1,0 +1,75 @@
+feature: 쇼핑몰 설정 주문 설정 탭의 주문서 항목 구획 (#490 D1, D23)
+
+description: |
+  주문 설정 탭 맨 아래의 「주문서 항목」 구획은 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 항목을 표로 그리고,
+  좁은 화면에서는 같은 배선의 카드로 바꿔 그린다. 항목 정의(`checkoutFieldDefs`)는 주문 설정 탭에서만 코어 항목 집합 API 로 받는다.
+
+  표의 사용, 필수 스위치는 누르자마자 `PUT …/fields/{id}` 로 저장하고 `checkoutFieldDefs` 만 다시 받는다. 설정 폼(`_local.form`)과
+  「변경 있음」(`hasChanges`)은 건드리지 않는다. 건드리면 화면 하단 「저장」과 탭 전환 확인 창이 이 표 때문에 켜진다.
+  요청마다 정의 버전(`fields_version`)을 싣고, 다른 관리자가 먼저 바꿔 409 `fields_changed` 가 오면 「다른 관리자가 항목을 바꿨습니다.
+  다시 불러왔습니다」를 알린 뒤 다시 받는다. 저장이 도는 동안에는 다른 스위치와 행 단추를 잠그고 항목 정의가 도착하면 푼다.
+
+  행은 주문자 구획을 앞에, 배송지 구획을 뒤에 둔다(구획이 없으면 배송지). 출처 칸은 이커머스가 선언한 항목에 모듈 이름을,
+  다른 확장이 기여한 항목에 그 확장 이름을, 운영자가 추가한 항목에 「추가」를 보인다. 선언한 쪽이 잠근 속성은 스위치를 잠그고
+  자물쇠가 사유를 준다. 유형을 준 확장이 꺼진 항목은 스위치 대신 「사용 불가」를 보인다. 수정 권한이 없으면 스위치가 전부 잠긴다.
+
+  수정과 삭제 단추는 운영자가 추가한 항목에만 있다. 「항목 추가」는 운영자 추가를 받는 집합일 때만 나오고, 창은 구획, 유형, 키,
+  이름, 안내, 사용, 필수와 선택 유형의 선택지만 다룬다(회원 전용 옵션은 없다). 추가는 POST, 수정은 PUT(키와 유형 없이),
+  삭제는 정의 버전을 쿼리로 실은 DELETE 다. 검증 실패는 각 칸 아래에 서버 문구로 보인다.
+
+axes:
+  case:
+    - wiring
+    - rows
+    - unavailable
+    - empty
+    - locks
+    - read_only
+    - row_buttons
+    - switch_saves_once
+    - switch_structure
+    - instant_notice
+    - switch_failure
+    - switch_conflict
+    - busy_lock
+    - cards
+    - add_button
+    - add_modal
+    - add_save
+    - add_validation
+    - edit_modal
+    - edit_conflict
+    - delete_modal
+    - delete_failure
+
+effects:
+  - checkout_fields_source_fetched_only_on_order_tab
+  - checkout_fields_section_included_in_order_tab_with_modals
+  - rows_grouped_orderer_first_with_group_and_source
+  - row_description_shown_in_request_locale
+  - group_falls_back_to_shipping
+  - unavailable_row_shows_badge_instead_of_switches
+  - empty_and_forbidden_states_explained
+  - locked_switch_disabled_with_reason
+  - contributed_lock_applies_per_attribute
+  - read_only_admin_gets_disabled_switches_and_no_row_buttons
+  - only_custom_rows_have_edit_and_delete
+  - checkout_switch_click_sends_one_put_and_keeps_settings_form
+  - checkout_switches_not_bound_to_settings_form
+  - instant_save_notice_shown_above_table
+  - checkout_switch_failure_toasts_and_refetches
+  - checkout_stale_table_conflict_toasts_changed_by_other_and_refetches
+  - checkout_busy_locks_other_controls_until_definitions_arrive
+  - cards_render_same_rows_with_card_ids
+  - checkout_card_switch_uses_same_wiring
+  - add_button_follows_allows_custom
+  - add_opens_modal_with_fresh_state
+  - add_posts_key_type_group_and_options
+  - validation_errors_shown_under_fields
+  - edit_locks_key_and_type_and_puts_without_them
+  - modal_conflict_keeps_modal_and_drops_stale_version
+  - delete_sends_version_in_query_and_refetches
+  - delete_failure_keeps_modal_and_shows_server_message
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminCheckoutFieldsTable.test.tsx

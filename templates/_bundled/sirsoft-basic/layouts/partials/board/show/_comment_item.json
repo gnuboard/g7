@@ -683,6 +683,12 @@
                                                             },
                                                             "onError": [
                                                                 {
+                                                                    "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                                                    "handler": "openModal",
+                                                                    "target": "required_info_pending_modal",
+                                                                    "if": "{{error.error_code === 'required_fields_pending'}}"
+                                                                },
+                                                                {
                                                                     "comment": "실패 롤백 — 이 댓글 자리의 override 를 걷어내 서버값(comment.*)으로 되돌린다",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -695,6 +701,7 @@
                                                                 },
                                                                 {
                                                                     "handler": "toast",
+                                                                    "if": "{{error.error_code !== 'required_fields_pending'}}",
                                                                     "params": {
                                                                         "type": "error",
                                                                         "message": "$t:board.reaction.failed"
@@ -922,6 +929,12 @@
                                                     ],
                                                     "onError": [
                                                         {
+                                                            "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                                            "handler": "openModal",
+                                                            "target": "required_info_pending_modal",
+                                                            "if": "{{error.error_code === 'required_fields_pending'}}"
+                                                        },
+                                                        {
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
@@ -930,6 +943,7 @@
                                                         },
                                                         {
                                                             "handler": "toast",
+                                                            "if": "{{error.error_code !== 'required_fields_pending'}}",
                                                             "params": {
                                                                 "type": "error",
                                                                 "message": "{{error?.message ?? '$t:board.comment_update_error'}}"
@@ -1009,57 +1023,172 @@
                             ]
                         },
                         {
-                            "comment": "비회원 작성자 정보 입력 (이름/비밀번호)",
+                            "comment": "비회원 작성자 정보 입력 (이름/비밀번호) — 새 댓글 입력칸과 같은 규칙이다: 두 칸을 나란히 두고, 필수 표시(칸 옆 별표, required, aria-required)는 글 응답의 guest_fields.fixed 를 따르며(값이 없으면 필수), 접근 가능한 이름(aria-label)을 준다",
+                            "id": "board_reply_guest_fixed_fields",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{!_global.currentUser?.uuid}}",
                             "props": {
-                                "className": "flex gap-3 mb-3"
+                                "className": "grid grid-cols-2 gap-3 mb-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Input",
-                                    "actions": [
-                                        {
-                                            "comment": "답글의 비회원 이름 — 새 댓글 입력창과 다른 칸이다(둘이 동시에 열려 있을 수 있어 값을 나눠 담는다).",
-                                            "type": "input",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "guest_reply_author_name": "{{$event.target.value}}"
-                                            }
-                                        }
-                                    ],
+                                    "name": "Div",
                                     "props": {
-                                        "type": "text",
-                                        "name": "guest_reply_author_name",
-                                        "value": "{{_local.guest_reply_author_name ?? ''}}",
-                                        "placeholder": "$t:board.guest_author_name",
-                                        "className": "flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    }
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "board_reply_guest_author_name",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "답글의 비회원 이름 — 새 댓글 입력창과 다른 칸이다(둘이 동시에 열려 있을 수 있어 값을 나눠 담는다).",
+                                                            "type": "input",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "guest_reply_author_name": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "name": "guest_reply_author_name",
+                                                        "aria-label": "$t:board.guest_author_name",
+                                                        "required": "{{post?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}",
+                                                        "aria-required": "{{post?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}",
+                                                        "aria-invalid": "{{!!_local.replyErrors?.author_name}}",
+                                                        "value": "{{_local.guest_reply_author_name ?? ''}}",
+                                                        "placeholder": "$t:board.guest_author_name",
+                                                        "className": "min-w-0 flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 {{_local.replyErrors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-blue-300 dark:border-blue-600 focus:ring-blue-500 focus:border-blue-500'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "board_reply_guest_author_name_required",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{post?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}",
+                                                    "props": {
+                                                        "aria-hidden": "true",
+                                                        "className": "shrink-0 text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "board_reply_guest_author_name_error",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.replyErrors?.author_name}}",
+                                            "props": {
+                                                "className": "mt-1 text-xs text-red-600 dark:text-red-400 break-words"
+                                            },
+                                            "text": "{{_local.replyErrors?.author_name?.[0] ?? _local.replyErrors?.author_name}}"
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Input",
-                                    "actions": [
-                                        {
-                                            "comment": "답글의 비회원 비밀번호 — 이 답글을 나중에 고치거나 지울 때 물어볼 값이다.",
-                                            "type": "input",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "guest_reply_password": "{{$event.target.value}}"
-                                            }
-                                        }
-                                    ],
+                                    "name": "Div",
                                     "props": {
-                                        "type": "password",
-                                        "name": "guest_reply_password",
-                                        "value": "{{_local.guest_reply_password ?? ''}}",
-                                        "placeholder": "$t:board.guest_password",
-                                        "className": "flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    }
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "board_reply_guest_password",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "답글의 비회원 비밀번호 — 이 답글을 나중에 고치거나 지울 때 물어볼 값이다.",
+                                                            "type": "input",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "guest_reply_password": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "password",
+                                                        "name": "guest_reply_password",
+                                                        "aria-label": "$t:board.guest_password",
+                                                        "required": "{{post?.data?.board?.guest_fields?.fixed?.password?.required ?? true}}",
+                                                        "aria-required": "{{post?.data?.board?.guest_fields?.fixed?.password?.required ?? true}}",
+                                                        "aria-invalid": "{{!!_local.replyErrors?.password}}",
+                                                        "value": "{{_local.guest_reply_password ?? ''}}",
+                                                        "placeholder": "$t:board.guest_password",
+                                                        "className": "min-w-0 flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 {{_local.replyErrors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-blue-300 dark:border-blue-600 focus:ring-blue-500 focus:border-blue-500'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "board_reply_guest_password_required",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{post?.data?.board?.guest_fields?.fixed?.password?.required ?? true}}",
+                                                    "props": {
+                                                        "aria-hidden": "true",
+                                                        "className": "shrink-0 text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "board_reply_guest_password_error",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.replyErrors?.password}}",
+                                            "props": {
+                                                "className": "mt-1 text-xs text-red-600 dark:text-red-400 break-words"
+                                            },
+                                            "text": "{{_local.replyErrors?.password?.[0] ?? _local.replyErrors?.password}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "게시판이 켠 비회원 항목(이메일, 추가 항목) — 답글도 댓글의 항목 구성을 따른다. 값은 폼 자동 바인딩으로 _local.replyGuestForm.guest_fields.{키} 에 담긴다(새 댓글 입력칸과 값을 나눠 담는다). 항목이 없으면 묶음 자체를 그리지 않는다",
+                            "id": "board_reply_guest_fields",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.currentUser?.uuid && (post?.data?.board?.guest_fields?.comment ?? []).length > 0}}",
+                            "dataKey": "replyGuestForm",
+                            "props": {
+                                "className": "mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{[{ key: 'reply', formKey: 'replyGuestForm', fields: post?.data?.board?.guest_fields?.comment ?? [], errors: (_local.replyErrors && typeof _local.replyErrors === 'object') ? _local.replyErrors : {}, disabled: _local.commentSubmitting === true, inputClassName: 'w-full px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500' }]}}",
+                                        "item_var": "boardGuestFieldGroup"
+                                    },
+                                    "children": [
+                                        {
+                                            "partial": "partials/board/_guest_fields.json"
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -1077,7 +1206,7 @@
                                     "name": "Avatar",
                                     "if": "{{_global.currentUser?.uuid}}",
                                     "props": {
-                                        "name": "{{_global.currentUser?.name}}",
+                                        "name": "{{_global.currentUser?.display_name ?? _global.currentUser?.name ?? ''}}",
                                         "avatar": "{{_global.currentUser?.avatar}}",
                                         "size": "sm"
                                     }
@@ -1144,7 +1273,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
-                                                            "comment": "답글 등록 — 새 댓글과 같은 주소로 보내되 부모 댓글 번호를 얹어 깊이가 한 단 내려간다. 성공하면 답글창을 닫고(대상 비움) 글을 다시 받아 새 답글이 제자리에 끼워지게 한다.",
+                                                            "comment": "답글 등록 — 새 댓글과 같은 주소로 보내되 부모 댓글 번호를 얹어 깊이가 한 단 내려간다. 성공하면 답글창을 닫고(대상 비움) 글을 다시 받아 새 답글이 제자리에 끼워지게 한다. 비회원이면 게시판이 켠 비회원 항목 값을 guest_fields 에 키별로 싣고, 검증 오류(422)는 칸 아래에 그리도록 담아 둔다.",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1152,7 +1281,8 @@
                                                                     "handler": "setState",
                                                                     "params": {
                                                                         "target": "local",
-                                                                        "commentSubmitting": true
+                                                                        "commentSubmitting": true,
+                                                                        "replyErrors": null
                                                                     }
                                                                 },
                                                                 {
@@ -1165,7 +1295,8 @@
                                                                             "content": "{{_local.reply_content}}",
                                                                             "parent_id": "{{_local.replyToCommentId}}",
                                                                             "author_name": "{{_local.guest_reply_author_name}}",
-                                                                            "password": "{{_local.guest_reply_password}}"
+                                                                            "password": "{{_local.guest_reply_password}}",
+                                                                            "guest_fields": "{{(!_global.currentUser?.uuid && (post?.data?.board?.guest_fields?.comment ?? []).length > 0) ? Object.fromEntries(post.data.board.guest_fields.comment.map(function(f) { return [f.key, (_local.replyGuestForm?.guest_fields ?? {})[f.key] ?? f.default ?? null]; }).filter(function(entry) { return entry[1] !== null && entry[1] !== ''; })) : undefined}}"
                                                                         }
                                                                     },
                                                                     "onSuccess": [
@@ -1178,7 +1309,17 @@
                                                                                 "guest_reply_password": "",
                                                                                 "replyToCommentId": null,
                                                                                 "replyToCommentDepth": null,
-                                                                                "commentSubmitting": false
+                                                                                "commentSubmitting": false,
+                                                                                "replyErrors": null
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "comment": "비회원 항목 값 비우기 — 기본(깊은) 병합은 빈 객체로 덮어도 이전 키가 남으므로 얕은 병합으로 통째로 갈아 끼운다",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "merge": "shallow",
+                                                                                "replyGuestForm": "{{({ guest_fields: {} })}}"
                                                                             }
                                                                         },
                                                                         {
@@ -1197,14 +1338,22 @@
                                                                     ],
                                                                     "onError": [
                                                                         {
+                                                                            "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                                                            "handler": "openModal",
+                                                                            "target": "required_info_pending_modal",
+                                                                            "if": "{{error.error_code === 'required_fields_pending'}}"
+                                                                        },
+                                                                        {
                                                                             "handler": "setState",
                                                                             "params": {
                                                                                 "target": "local",
-                                                                                "commentSubmitting": false
+                                                                                "commentSubmitting": false,
+                                                                                "replyErrors": "{{error?.errors ?? null}}"
                                                                             }
                                                                         },
                                                                         {
                                                                             "handler": "toast",
+                                                                            "if": "{{error.error_code !== 'required_fields_pending'}}",
                                                                             "params": {
                                                                                 "type": "error",
                                                                                 "message": "{{error.message}}"

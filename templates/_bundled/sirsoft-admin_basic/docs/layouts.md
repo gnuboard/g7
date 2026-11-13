@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 208개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 218개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 42개 |
 | `auth` | 1개 |
 | `errors` | 7개 |
-| `partials` | 158개 |
+| `partials` | 168개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -162,6 +162,9 @@
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
+| `_modal_member_field_delete` | `partials` | partial | - |
+| `_modal_member_field_form` | `partials` | partial | - |
+| `_modal_member_field_required` | `partials` | partial | - |
 | `_modal_notification_channel_off_confirm` | `partials` | partial | - |
 | `_modal_notification_definition_reset` | `partials` | partial | - |
 | `_modal_notification_identity_definition_add` | `partials` | partial | - |
@@ -188,6 +191,11 @@
 | `_tab_info` | `partials` | partial | - |
 | `_tab_language_packs` | `partials` | partial | - |
 | `_tab_mail` | `partials` | partial | - |
+| `_tab_member` | `partials` | partial | - |
+| `_tab_member_display_name` | `partials` | partial | - |
+| `_tab_member_fields` | `partials` | partial | - |
+| `_tab_member_fields_cards` | `partials` | partial | - |
+| `_tab_member_nickname` | `partials` | partial | - |
 | `_tab_notification_definitions` | `partials` | partial | - |
 | `_tab_privacy` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
@@ -220,6 +228,8 @@
 | `_tab_user` | `partials` | partial | - |
 | `_modal_bulk_roles` | `partials` | partial | - |
 | `_partial_filter_section` | `partials` | partial | - |
+| `_member_fields` | `partials` | partial | - |
+| `_member_fields_view` | `partials` | partial | - |
 | `_content_section` | `partials` | partial | - |
 | `_header_section` | `partials` | partial | - |
 | `_info_card` | `partials` | partial | - |
@@ -304,11 +314,11 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
   `<init>` 의 로그인 인계 교환(`?login_handoff={코드}` → `loginHandoff`, 관리자 경로)이 같은 분기를 씁니다 — 두 곳에 복제하지
   않습니다. 인계 교환은 상태 초기화 **뒤**에 하고, 코드는 한 번만 통하므로 주소에서 지웁니다.
 - 같은 화면의 나머지 분기: 이메일 칸을 벗어날 때 `POST /api/auth/admin/login/discover` 로 수단을 묻고 외부 수단이면 비밀번호 칸 대신
-  「…(으)로 계속」(`_global.adminLoginDiscovery`·`adminLoginDiscoveryFor` — 폼 저장소 `_local` 과 분리해, 판정 요청 중 친 비밀번호가 응답 처리에 지워지지 않게 한다) / 403 `auth.password_auth_disabled` 는 오류 아래 그 수단으로 가는 버튼(`_local.loginAlternate*`) /
+  「… 계정으로 계속」(`_global.adminLoginDiscovery`·`adminLoginDiscoveryFor` — 폼 저장소 `_local` 과 분리해, 판정 요청 중 친 비밀번호가 응답 처리에 지워지지 않게 한다) / 403 `auth.password_auth_disabled` 는 오류 아래 그 수단으로 가는 버튼(`_local.loginAlternate*`) /
   409 `auth.external_step_required` 는 그 주소로 이동 / 칸 종류는 `_global.appConfig.auth.login_identifier.admin` / 자동 이동은
   `_global.appConfig.auth.auto_redirect.admin`(쿼리 `local`·`login_handoff`·`sso_error`·`sso_pending`·`sso_link` 가 있으면 멈춤 — 오류로 돌아온
   화면이 다시 떠나면 무한 왕복이 된다), 켜진 사이트면 하단에 `?local=1` 링크(비상 계정 진입로).
-- 판정이 외부 수단이면 「…(으)로 계속」 위에 「…(으)로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를, `?local=1` 로 들어오면 폼 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 보입니다.
+- 판정이 외부 수단이면 「… 계정으로 계속」 위에 「… 계정으로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를, `?local=1` 로 들어오면 폼 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 보입니다.
 - 오류 안내 데이터는 `error.errors.*`(`code`, `redirect_url`, `method_label`)로 읽습니다 — `error.data` 는 audit 규칙이 막습니다.
 - 확장점 `admin_login_extensions` — 로그인 폼 아래 빈 슬롯. 다른 관리자 로그인 수단(회사 계정 버튼 등)을 확장이 붙입니다.
 - `admin_user_form` — 등록 화면 「비밀번호 없이 만들기」(`create_without_password`, 켜면 비밀번호 두 칸을 숨기고 이미 적은 값도 비운다).
@@ -629,9 +639,12 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── admin_user_list.g7.html (목록)
 │   ├── admin_user_form.g7.html (생성/수정)
 │   ├── admin_user_detail.g7.html (상세)
-│   └── partials/admin_user_list/
-│       ├── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
-│       └── _modal_bulk_roles.g7.html (선택 회원 역할 일괄 추가·제거 창)
+│   ├── partials/admin_user_list/
+│   │   ├── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
+│   │   └── _modal_bulk_roles.g7.html (선택 회원 역할 일괄 추가·제거 창)
+│   └── partials/member/
+│       ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 회원 추가와 수정 화면이 구획마다 `data-each="memberFieldGroup in …"` 안에서 부름, #490)
+│       └── _member_fields_view.g7.html (회원 항목 보기 조각 — 회원 상세가 같은 방식으로 부르고 `display_value` 를 보임, 값이 없으면 「-」, #490)
 │
 ├── 역할 관리
 │   ├── admin_role_list.g7.html (목록)
@@ -693,6 +706,14 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_identity_policies.g7.html (인증 정책 — 정책 조회 권한이 없으면 목록 대신 권한 안내)
 │           ├── _tab_identity_providers.g7.html (인증 수단 — 프로바이더 설정 조회 권한이 없으면 목록 대신 권한 안내)
 │           ├── _tab_language_packs.g7.html (언어팩 — 언어팩 조회 권한이 없으면 탭 항목 숨김, 직접 진입은 권한 안내)
+│           ├── _tab_member.g7.html (회원 — 가입 항목, 표시 이름, 닉네임 정책 세 구획을 담는 껍데기. 하위 탭 막대는 부모 화면 고정 머리에 있고 `member_section_*` 구획으로 스크롤, #490)
+│           ├── _tab_member_fields.g7.html (회원 > 가입 항목 표 — 스위치와 순서는 즉시 저장, 설정 폼과 「변경 있음」은 건드리지 않음)
+│           ├── _tab_member_fields_cards.g7.html (회원 > 가입 항목의 768px 미만 카드 판 — 표와 같은 배선에 「위로」「아래로」 순서 단추)
+│           ├── _tab_member_display_name.g7.html (회원 > 표시 이름 — 고를 수 있는 종류, 회원 기본 종류, 자리별 방식(따름, 고정, 회원 선택). 하단 「저장」으로 보냄)
+│           ├── _tab_member_nickname.g7.html (회원 > 닉네임 정책 — 중복 금지, 금지어, 변경 주기. 하단 「저장」으로 보내고 중복 금지를 켤 때 겹치는 닉네임을 먼저 확인)
+│           ├── _modal_member_field_form.g7.html (회원 항목 추가, 수정, 보기 겸용 창 — 추가는 유형 고르기 다음 내용 적기의 두 단계)
+│           ├── _modal_member_field_delete.g7.html (회원 항목 삭제 확인 — 값이 있는 회원 수를 보이고 확인 체크 뒤에 삭제, 표시 이름 종류로 쓰이면 서버가 409 로 막음)
+│           ├── _modal_member_field_required.g7.html (회원 항목을 필수로 바꿀 때 비어 있는 기존 회원에게 언제 입력을 요구할지 고르는 창)
 │           ├── _modal_notification_identity_definition_add.g7.html (알림 설정 > 본인인증 — 정책별 문구 추가)
 │           ├── _modal_notification_identity_definition_delete.g7.html (알림 설정 > 본인인증 — 정책별 문구 삭제)
 │           ├── _modal_notification_channel_off_confirm.g7.html (알림 설정 [저장] — 메일 채널 끄기 확인)

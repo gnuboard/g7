@@ -787,6 +787,55 @@
         }
       },
       {
+        "name": "MemberFieldInput",
+        "type": "composite",
+        "description": "회원 항목 1개의 입력칸 (서버 항목 계약의 유형과 제한 값으로 입력칸을 고른다)",
+        "path": "src/components/composite/MemberFieldInput.tsx",
+        "props": {
+          "field": {
+            "type": "object",
+            "required": true,
+            "description": "서버가 준 항목 계약 (key, name, type, label, required, options, constraints 등)"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "폼 경로 (자동 바인딩의 필드 이름)"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "이 칸의 검증 오류 문구"
+          },
+          "errorId": {
+            "type": "string",
+            "required": false,
+            "description": "오류 문구 노드의 id (aria-describedby)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성 여부"
+          },
+          "timezones": {
+            "type": "array",
+            "required": false,
+            "description": "시간대 선택지 (생략하면 전역 appConfig.supportedTimezones 를 읽는다. 항목의 constraints.widget 이 timezone 일 때만 쓴다)"
+          },
+          "inputClassName": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸에 붙일 클래스"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
         "name": "FileUploader",
         "type": "composite",
         "description": "파일 업로드 컴포넌트",

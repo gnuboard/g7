@@ -105,6 +105,56 @@ describe('admin_user_form.json — 생성 모드 form 잔존 제거', () => {
   });
 
   /**
+   * 회원 항목(#490 6단계)도 같은 위험이 있다 — 항목 응답(`memberFields`)의 `member`(닉네임 변경 시각, 비어 있는 필수 항목)는
+   * 수정 화면의 회원 것이라, 수정 → 등록 이동 직후 다시 받기 전까지 직전 회원의 값이 남는다. 항목 정의(`fields`)는 등록 화면도
+   * 쓰므로 읽어도 되지만, `member` 는 수정 모드 가드 안에서만 읽어야 한다. 소스는 들어올 때마다 다시 받는다.
+   *
+   * @scenario form=user
+   * @effects create_mode_clears_previous_form
+   */
+  it('회원 항목 상태(memberFields 의 member)는 수정 모드 가드 안에서만 읽고, 항목 소스는 화면에 들어올 때마다 다시 받는다', () => {
+    const source = userForm.data_sources.find((d: any) => d.id === 'memberFields');
+    expect(source.refetchOnMount).toBe(true);
+    // 등록과 수정이 한 소스를 쓴다 — 등록은 회원 없는 주소
+    expect(source.endpoint).toBe("/api/admin/users/{{route?.id ? route.id + '/form-fields' : 'form-fields'}}");
+    expect(source.if).toBeUndefined();
+
+    const leaks: string[] = [];
+    const scan = (owner: string, key: string, v: unknown) => {
+      if (typeof v === 'string') {
+        if (/memberFields\?\.data\?\.member/.test(v) && !/!!route\?\.id/.test(v)) leaks.push(`${owner}.${key} = ${v}`);
+        return;
+      }
+      if (v && typeof v === 'object') {
+        for (const [k, sub] of Object.entries(v)) scan(owner, `${key}.${k}`, sub);
+      }
+    };
+    const walk = (n: any, guarded: boolean): void => {
+      if (!n || typeof n !== 'object') return;
+      if (Array.isArray(n)) {
+        n.forEach((c) => walk(c, guarded));
+        return;
+      }
+      if (!n.type && !n.name) {
+        Object.values(n).forEach((c) => walk(c, guarded));
+        return;
+      }
+      const g = guarded || (typeof n.if === 'string' && /!!route\?\.id/.test(n.if));
+      if (!g) {
+        for (const [k, v] of Object.entries(n)) {
+          if (k !== 'children' && k !== 'slots') scan(n.id ?? n.name, k, v);
+        }
+      }
+      if (n.children) walk(n.children, g);
+      if (n.slots) walk(n.slots, g);
+    };
+    walk(userForm.slots, false);
+    expect(leaks).toEqual([]);
+    // 가드가 실제로 걸려 있다(읽는 자리가 하나도 없어서 통과한 것이 아니다)
+    expect(JSON.stringify(userForm.slots)).toContain('memberFields?.data?.member?.nickname_changed_at');
+  });
+
+  /**
    * @scenario form=user
    * @effects create_mode_clears_previous_form
    */

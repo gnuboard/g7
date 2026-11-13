@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\PrivacyManualRunRepositoryInterface;
 use App\Enums\PrivacyManualRunStatus;
 use App\Models\PrivacyManualRun;
+use App\Models\User;
 
 /**
  * 개인정보 조치 직권 실행 기록 Repository
@@ -75,7 +76,7 @@ class PrivacyManualRunRepository implements PrivacyManualRunRepositoryInterface
             ->pluck('id');
 
         return PrivacyManualRun::query()
-            ->with('requester:id,name')
+            ->with('requester:'.User::displayColumns())
             ->whereKey($latestIds)
             ->get()
             ->keyBy('target')

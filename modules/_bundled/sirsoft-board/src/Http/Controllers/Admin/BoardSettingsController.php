@@ -55,6 +55,7 @@ class BoardSettingsController extends AdminBaseController
             $settings = $this->settingsService->getAllSettings();
             $settings['report_permissions'] = $this->settingsService->getReportPermissionRoles();
             $settings = $this->appendReactionTypesToSettings($settings);
+            $settings = $this->settingsService->appendGuestAuthorDefaults($settings);
 
             $user = $request->user();
             $canUpdate = PermissionHelper::check('sirsoft-board.settings.update', $user);
@@ -102,6 +103,7 @@ class BoardSettingsController extends AdminBaseController
             // 그리려면 같은 응답에 실어야 한다.
             if ($category === 'basic_defaults') {
                 $settings['reaction_types'] = $this->reactionTypeService->getTypesForSettings();
+                $settings = $this->settingsService->appendGuestAuthorDefaults(['basic_defaults' => $settings])['basic_defaults'];
             }
 
             return ResponseHelper::moduleSuccess(
@@ -156,6 +158,9 @@ class BoardSettingsController extends AdminBaseController
                 ? (Arr::pull($settings['basic_defaults'], 'reaction_types') ?? [])
                 : null;
 
+            // 비회원 작성자 항목 기본값 — 화면용 행을 버리고 값을 정리한다
+            $settings = $this->settingsService->normalizeGuestAuthorDefaults($settings);
+
             if ($reactionTypes !== null) {
                 // 설정 파일을 쓰기 전에 동기화한다 — 사용 중 유형 삭제로 422 가 나면
                 // JSON 은 손대지 않은 상태로 남아야 한다(부분 저장 금지).
@@ -183,6 +188,7 @@ class BoardSettingsController extends AdminBaseController
                 $updatedSettings = $this->settingsService->getAllSettings();
                 $updatedSettings['report_permissions'] = $this->settingsService->getReportPermissionRoles();
                 $updatedSettings = $this->appendReactionTypesToSettings($updatedSettings);
+                $updatedSettings = $this->settingsService->appendGuestAuthorDefaults($updatedSettings);
 
                 return ResponseHelper::moduleSuccess(
                     'sirsoft-board',

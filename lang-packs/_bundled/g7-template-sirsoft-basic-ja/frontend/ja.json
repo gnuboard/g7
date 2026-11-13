@@ -67,5 +67,8 @@
   },
   "settings": {
     "$partial": "partial/settings.json"
+  },
+  "member": {
+    "$partial": "partial/member.json"
   }
 }

@@ -126,17 +126,17 @@
             "naver": "네이버 로그인",
             "google": "Google 계정으로 로그인",
             "facebook": "Facebook으로 로그인",
-            "custom": "{{provider}}(으)로 로그인"
+            "custom": "{{provider}} 계정으로 로그인"
         },
         "register_with": {
             "kakao": "카카오 로그인",
             "naver": "네이버로 가입",
             "google": "Google 계정으로 가입",
             "facebook": "Facebook으로 가입",
-            "custom": "{{provider}}(으)로 가입"
+            "custom": "{{provider}} 계정으로 가입"
         },
         "link_with": "{{provider}} 연결",
-        "reauth_with": "{{provider}}(으)로 다시 확인",
+        "reauth_with": "{{provider}} 계정으로 다시 확인",
         "reconsent_with": "{{provider}} 이메일 제공 다시 동의하기"
     },
     "errors": {

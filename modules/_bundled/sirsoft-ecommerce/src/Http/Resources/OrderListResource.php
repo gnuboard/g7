@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 주문 목록 리소스
@@ -89,9 +90,11 @@ class OrderListResource extends BaseApiResource
             'is_first_order' => $this->is_first_order,
 
             // 회원 정보 (null 가능 - 비회원 주문)
+            // 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역). 실명은 회원 조회 권한이 있는 관리자에게만 `real_name` 으로 더해진다.
+            // 주문서에 적힌 주문자 이름과 수령인(`address`)은 표시 이름과 무관하게 적힌 그대로다.
             'user' => $this->whenLoaded('user', fn () => [
                 'uuid' => $this->user->uuid,
-                'name' => $this->user->name,
+                ...MemberDisplayName::staffFields($this->user, $request),
             ]),
 
             // 첫 번째 옵션 (대표 상품 표시용)

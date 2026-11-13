@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Reaction;
@@ -179,14 +181,14 @@ class ReactionRepository implements ReactionRepositoryInterface
         // 삭제된 대상도 목록에는 "삭제된 게시글/댓글" 행으로 남아야 하므로 withTrashed 로 싣는다.
         $posts = $postIds === [] ? collect() : Post::query()
             ->withTrashed()
-            ->with('user:id,name,status')
+            ->with('user:'.User::displayColumns())
             ->whereIn('id', $postIds)
             ->get(['id', 'board_id', 'user_id', 'title', 'status', 'author_name', 'deleted_at'])
             ->keyBy('id');
 
         $comments = $commentIds === [] ? collect() : Comment::query()
             ->withTrashed()
-            ->with('user:id,name,status')
+            ->with('user:'.User::displayColumns())
             ->whereIn('id', $commentIds)
             ->get(['id', 'board_id', 'post_id', 'user_id', 'content', 'status', 'author_name', 'deleted_at'])
             ->keyBy('id');
@@ -306,7 +308,7 @@ class ReactionRepository implements ReactionRepositoryInterface
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
             relations: [
-                'user:id,uuid,name,email,status',
+                'user:'.User::displayColumns(),
                 'board:id,slug,name,is_active,use_reaction,use_comment_reaction',
                 'reactionType.iconAttachment:id,hash,original_filename,mime_type,size',
             ],
@@ -471,13 +473,14 @@ class ReactionRepository implements ReactionRepositoryInterface
         $commentsTable = (new Comment)->getTable();
         $reactionsTable = (new Reaction)->getTable();
 
-        $keyword = addcslashes(trim($search), '%_\\');
+        $rawKeyword = trim($search);
+        $keyword = addcslashes($rawKeyword, '%_\\');
         $like = "%{$keyword}%";
 
         $searchesTitle = in_array($field, ['title', 'title_content', 'all', 'target_title'], true);
         $searchesContent = in_array($field, ['content', 'title_content', 'all', 'target_content'], true);
 
-        $query->where(function (Builder $outer) use ($like, $field, $searchesTitle, $searchesContent, $excludeDeletedTargets, $postsTable, $commentsTable, $reactionsTable) {
+        $query->where(function (Builder $outer) use ($like, $rawKeyword, $field, $searchesTitle, $searchesContent, $excludeDeletedTargets, $postsTable, $commentsTable, $reactionsTable) {
             if ($searchesTitle || $searchesContent) {
                 $outer->orWhereExists(function ($sub) use ($like, $searchesTitle, $searchesContent, $excludeDeletedTargets, $postsTable, $reactionsTable) {
                     $sub->select(DB::raw(1))
@@ -520,26 +523,37 @@ class ReactionRepository implements ReactionRepositoryInterface
             }
 
             if ($field === 'member' || $field === 'all') {
-                $outer->orWhereHas('user', fn (Builder $u) => $u->where(
-                    fn (Builder $w) => $w->where('name', 'like', $like)->orWhere('email', 'like', $like)
-                ));
+                // 반응한 회원: 이름, 닉네임, 이메일
+                $outer->orWhereHas('user', fn (Builder $u) => $u->where(function (Builder $w) use ($rawKeyword, $like) {
+                    app(BoardDisplayNames::class)->constrainUsersForAdmin($w, $rawKeyword);
+                    $w->orWhere('email', 'like', $like);
+                }));
             }
 
             if ($field === 'author_name' || $field === 'all') {
-                $outer->orWhereExists(function ($sub) use ($like, $postsTable, $reactionsTable) {
+                // 대상 글과 댓글의 작성자: 비회원은 입력한 이름, 회원은 이름과 닉네임.
+                // 회원이 쓴 글과 댓글은 작성자 이름 컬럼이 비어 있어, 회원을 따로 찾지 않으면 걸리지 않는다.
+                $memberAuthor = fn (string $table) => app(BoardDisplayNames::class)->constrainUsersForAdmin(
+                    User::query()->selectRaw('1')->whereColumn((new User)->getTable().'.id', "{$table}.user_id"),
+                    $rawKeyword,
+                );
+
+                $outer->orWhereExists(function ($sub) use ($like, $postsTable, $reactionsTable, $memberAuthor) {
                     $sub->select(DB::raw(1))
                         ->from($postsTable)
                         ->whereColumn("{$postsTable}.id", "{$reactionsTable}.target_id")
                         ->where("{$reactionsTable}.target_type", ReactionService::TARGET_POST)
-                        ->where("{$postsTable}.author_name", 'like', $like);
+                        ->where(fn ($w) => $w->where("{$postsTable}.author_name", 'like', $like)
+                            ->orWhereExists($memberAuthor($postsTable)));
                 });
 
-                $outer->orWhereExists(function ($sub) use ($like, $commentsTable, $reactionsTable) {
+                $outer->orWhereExists(function ($sub) use ($like, $commentsTable, $reactionsTable, $memberAuthor) {
                     $sub->select(DB::raw(1))
                         ->from($commentsTable)
                         ->whereColumn("{$commentsTable}.id", "{$reactionsTable}.target_id")
                         ->where("{$reactionsTable}.target_type", ReactionService::TARGET_COMMENT)
-                        ->where("{$commentsTable}.author_name", 'like', $like);
+                        ->where(fn ($w) => $w->where("{$commentsTable}.author_name", 'like', $like)
+                            ->orWhereExists($memberAuthor($commentsTable)));
                 });
             }
         });

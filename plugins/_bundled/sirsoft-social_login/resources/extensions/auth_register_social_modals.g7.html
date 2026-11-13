@@ -66,7 +66,7 @@
             </div>
           </div>
           <!-- 이메일 — 제공자가 검증한 이메일이면 보여 주기만, 없거나 미검증이면 입력 + 인증번호, 대체 이메일이면 안내 -->
-          <div data-if="{{_global.socialLoginSignup?.email?.mode === 'locked'}}" class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">
+          <div data-if="{{_global.socialLoginSignup?.email?.mode === 'locked'}}" class="sl:min-w-0 sl:break-all sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">
             <span class="sl:font-medium">$t:sirsoft-social_login.signup.email</span>
             <span> {{_global.socialLoginSignup?.email?.value ?? ''}}</span>
           </div>

@@ -25,6 +25,10 @@ export default defineConfig({
     },
     resolve: {
         alias: {
+            // 레이아웃을 엔진 렌더러로 그려 보는 시험이 렌더러와 같은 react 하나를 쓰게 한다 — 이 플러그인 폴더에 react 사본이 있어
+            // 그대로 두면 렌더러는 이 사본을, 시험 도구(코어 쪽 @testing-library/react)는 코어의 react 를 읽어 훅 호출이 깨진다
+            react: path.resolve(projectRoot, 'node_modules/react'),
+            'react-dom': path.resolve(projectRoot, 'node_modules/react-dom'),
             '@': path.resolve(__dirname, 'resources/js'),
             '@core': path.resolve(projectRoot, 'resources/js/core'),
         },

@@ -12,6 +12,7 @@ use Plugins\Sirsoft\Sso\Models\SsoAccount;
 use Plugins\Sirsoft\Sso\Plugin;
 use Plugins\Sirsoft\Sso\Repositories\Policy\Contracts\SitePolicyRepositoryInterface;
 use Plugins\Sirsoft\Sso\Services\Policy\EnforcementPolicy;
+use Plugins\Sirsoft\Sso\Support\MemberName;
 
 /**
  * 이 플러그인 알림 7종의 치환 값과 수신 문맥을 만듭니다.
@@ -167,21 +168,22 @@ class NotificationDataListener implements HookListenerInterface
             return ['context' => ['skip' => true]] + $default;
         }
 
+        // 받는 사람이 그 회원 본인이다 — 이름은 자리표시로 싣고 코어가 받는 사람과 채널마다 표시 이름으로 푼다
         return array_merge($default, [
-            'data' => ['app_name' => (string) config('app.name'), 'name' => (string) ($user->name ?? '')] + $extra,
+            'data' => ['app_name' => (string) config('app.name'), 'name' => '{recipient_name}'] + $extra,
             'context' => ['trigger_user_id' => (int) $user->getKey(), 'trigger_user' => $user],
         ]);
     }
 
     /**
-     * 회원 이름.
+     * 알림 본문에 실을 사건 회원 이름 — 받는 사람이 아닌 회원이라 알림 영역(`core:notification`) 표시 이름이다.
      *
      * @param  mixed  $user  회원
-     * @return string 이름
+     * @return string 이름 (회원이 아니면 빈 문자열)
      */
     private function userName(mixed $user): string
     {
-        return $user instanceof User ? (string) ($user->name ?? '') : '';
+        return $user instanceof User ? MemberName::forNotification($user) : '';
     }
 
     /**
@@ -218,7 +220,7 @@ class NotificationDataListener implements HookListenerInterface
     /**
      * 비밀번호 찾기 안내 메일의 로그인 방법 문장 (언어별 값).
      *
-     * OIDC, SAML 은 로그인 화면의 「○○(으)로 로그인」 버튼을 누른다. LDAP 은 버튼이 없고 같은 로그인 폼에 사내 아이디(또는 회사 이메일)와
+     * OIDC, SAML 은 로그인 화면의 「○○ 계정으로 로그인」 버튼을 누른다. LDAP 은 버튼이 없고 같은 로그인 폼에 사내 아이디(또는 회사 이메일)와
      * 회사 비밀번호를 넣는다. 안내할 IdP 가 없거나 LDAP 인데 폼으로 들어갈 길이 없으면 관리자 문의로 안내한다.
      *
      * @param  mixed  $idp  안내할 IdP

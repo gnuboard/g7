@@ -397,6 +397,18 @@
                             "text": "{{post?.data?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                         },
                         {
+                            "comment": "실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!post?.data?.author?.real_name}}",
+                            "props": {
+                                "data-testid": "author-real-name",
+                                "className": "board-text-label-subtle",
+                                "aria-label": "{{$t('sirsoft-board.common.real_name_label', { name: post?.data?.author?.real_name })}}"
+                            },
+                            "text": "{{$t('sirsoft-board.common.real_name_label', { name: post?.data?.author?.real_name })}}"
+                        },
+                        {
                             "type": "basic",
                             "name": "Span",
                             "if": "{{post?.data?.author?.email}}",
@@ -544,6 +556,31 @@
                                 "className": "board-text-tertiary"
                             },
                             "text": "IP: {{post?.data?.ip_address}}"
+                        },
+                        {
+                            "comment": "비회원 작성자가 낸 항목 값(이메일 등, #490) — 게시판 관리 권한(admin.manage)이 있을 때만 응답에 실린다(IP 와 같은 기준)",
+                            "id": "post_guest_field_values",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(post?.data?.guest_field_values ?? []).length > 0}}",
+                            "props": {
+                                "className": "board-flex-center board:gap-2 board:flex-wrap board:min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "id": "post_guest_field_{{gv.key}}",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "iteration": {
+                                        "source": "{{post?.data?.guest_field_values ?? []}}",
+                                        "item_var": "gv"
+                                    },
+                                    "props": {
+                                        "className": "board-text-tertiary board:min-w-0 board:wrap-anywhere"
+                                    },
+                                    "text": "· {{gv.label}}: {{gv.display_value ?? gv.value ?? ''}}"
+                                }
+                            ]
                         }
                     ]
                 }

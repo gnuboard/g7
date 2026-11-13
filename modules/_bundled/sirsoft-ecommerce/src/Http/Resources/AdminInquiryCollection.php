@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 관리자 상품문의 목록 컬렉션
@@ -39,6 +40,9 @@ class AdminInquiryCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
+        // 행마다 회원 표시 이름을 계산하기 전에 필요한 값을 한 번에 읽어 둔다(추가 항목을 표시 이름으로 쓰는 사이트에서 행 수만큼 쿼리가 늘지 않게).
+        MemberDisplayName::preloadRelations($this->collection, ['user'], MemberDisplayName::AREA_ADMIN, $request);
+
         return array_merge([
             'data' => $this->mapWithRowNumber(
                 fn ($row) => (new AdminInquiryResource($row))->toArray($request)

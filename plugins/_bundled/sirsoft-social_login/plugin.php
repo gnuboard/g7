@@ -10,8 +10,10 @@ use Plugins\Sirsoft\SocialLogin\Http\Middleware\MockGateMiddleware;
 use Plugins\Sirsoft\SocialLogin\Listeners\ActivityLogListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserDelete;
 use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserWithdraw;
+use Plugins\Sirsoft\SocialLogin\Listeners\ExemptRequiredFieldsRoutesListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\InjectSocialProvidersIntoUserResource;
 use Plugins\Sirsoft\SocialLogin\Listeners\NotificationDataListener;
+use Plugins\Sirsoft\SocialLogin\Listeners\PrefillSignupFieldsListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\RegisterMockProvidersListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\RegisterSocialReauthProviderListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\UserListSocialProviderFilter;
@@ -163,6 +165,7 @@ class Plugin extends AbstractPlugin
      *  - UserListSocialProvidersColumn: 관리자 회원 목록 「소셜 연결」 열 데이터(한 번의 조회)
      *  - NotificationDataListener: 알림 5종의 치환 값·수신 문맥, 기본 정의 복원
      *  - ActivityLogListener: 연결·해제·가입·제공자 변경·정책 저장 활동 로그
+     *  - ExemptRequiredFieldsRoutesListener: 추가 정보 미입력 회원에게도 열어 둘 연결, 해제, 재확인 라우트
      *
      * @return array<class-string> 리스너 클래스 목록
      */
@@ -175,10 +178,12 @@ class Plugin extends AbstractPlugin
             CleanAccountsOnUserDelete::class,
             CleanAccountsOnUserWithdraw::class,
             InjectSocialProvidersIntoUserResource::class,
+            PrefillSignupFieldsListener::class,
             UserListSocialProviderFilter::class,
             UserListSocialProvidersColumn::class,
             NotificationDataListener::class,
             ActivityLogListener::class,
+            ExemptRequiredFieldsRoutesListener::class,
         ];
     }
 

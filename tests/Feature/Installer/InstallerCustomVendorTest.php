@@ -24,6 +24,9 @@ class InstallerCustomVendorTest extends TestCase
     {
         parent::setUp();
 
+        // 이 파일은 자기 의존을 require 하지 않는다(호출부가 미리 로드) — 함수 가용 판정 `installerHasFunction()` 은
+        // 실행 모드 파일이 정의한다. 설치 마법사 진입점처럼 먼저 싣지 않으면 단독 실행에서 미정의 함수로 죽는다.
+        require_once base_path('public/install/includes/execution-mode.php');
         require_once base_path('public/install/includes/vendor-bundle-installer.php');
         $this->base = storage_path('framework/testing/installer_custom_vendor_'.uniqid());
         File::ensureDirectoryExists($this->base);

@@ -1,15 +1,4 @@
 {
-  "form": {
-    "sections": {
-      "notification_settings": "Board Notification Settings"
-    },
-    "notifications": {
-      "post_complete": "Post Complete Notification",
-      "post_reply": "Post Reply Notification",
-      "comment": "Comment Notification",
-      "reply_comment": "Reply Comment Notification"
-    }
-  },
   "scraps": {
     "tab_label": "Scraps",
     "title": "Post scraps",

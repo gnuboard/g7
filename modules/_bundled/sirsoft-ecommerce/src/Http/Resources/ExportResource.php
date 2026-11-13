@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exports\ExportTypeRegistry;
 use Modules\Sirsoft\Ecommerce\Models\Export;
 use Modules\Sirsoft\Ecommerce\Support\ExportAccess;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 내보내기 작업 리소스 (관리 화면 목록·상세)
@@ -49,7 +50,11 @@ class ExportResource extends BaseApiResource
             'status' => $status->value,
             'status_label' => $status->label(),
             'requester' => [
-                'name' => $export->requester?->name ?? $export->requester_name_snapshot,
+                // 요청자 이름은 요청 때 남긴 이름 그대로다(기록물). 회원의 지금 이름이나 표시 이름 설정을 따라 바뀌지 않는다.
+                // 남긴 이름이 없는 작업만 이커머스 관리자 영역의 표시 이름으로 보인다.
+                'name' => filled($export->requester_name_snapshot)
+                    ? $export->requester_name_snapshot
+                    : MemberDisplayName::name($export->requester, MemberDisplayName::AREA_ADMIN),
                 'email' => $export->requester && $this->canExposeMemberEmail($request, (int) $export->requester->id) ? $export->requester->email : null,
                 'uuid' => $export->requester?->uuid,
             ],

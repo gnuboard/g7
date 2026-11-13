@@ -487,6 +487,8 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액�
 
 부수 섹션(`<data-source>`/`<script>`/`<modal>`)과 `<init>` 은 두 형태 모두 허용.
 
+봉투 속성은 `target-layout`, `extension-point`, `mode`, `priority`, `version-constraint` 다섯이다. `version-constraint` 는 템플릿 오버라이드 조각(`templates/{t}/extensions/{대상 확장}/`)이 대상 확장의 버전 제약을 적는 자리이고 JSON 키 `version_constraint` 로 나간다 — 맞지 않는 판에서는 서빙이 원본 조각으로 되돌린다([layout-extensions.md](../extension/layout-extensions.md) 「대체 범위와 버전 제약」).
+
 ---
 
 ## 10. 외래 관용구 거부

@@ -103,7 +103,7 @@ async function discover(page: Page, email: string): Promise<string> {
  * @scenario case=discover
  * @effects e2e_owned_domain_switches_to_company_button, e2e_other_domain_keeps_password_form
  */
-test('소유 도메인 이메일을 넣으면 비밀번호 칸 대신 「…(으)로 계속」이, 다른 도메인이면 비밀번호 칸이 보이고 여러 번 바꿔도 화면이 따라간다', async ({ page }) => {
+test('소유 도메인 이메일을 넣으면 비밀번호 칸 대신 「… 계정으로 계속」이, 다른 도메인이면 비밀번호 칸이 보이고 여러 번 바꿔도 화면이 따라간다', async ({ page }) => {
   await page.goto('/login');
   await dismissCookieBanner(page);
   const passwordInput = page.locator('input[name="password"]');

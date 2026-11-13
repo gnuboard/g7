@@ -226,10 +226,10 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 47개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| PHPUnit | 48개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
 | Vitest | 24개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 31개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 32개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

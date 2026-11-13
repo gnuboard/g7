@@ -337,7 +337,8 @@
   "common": {
     "loading": "読み込み中...",
     "refresh": "更新",
-    "list_load_failed": "一覧を読み込めませんでした。しばらくしてからもう一度お試しください。"
+    "list_load_failed": "一覧を読み込めませんでした。しばらくしてからもう一度お試しください。",
+    "real_name_sub": "実名 {{name}}"
   },
   "banner": {
     "re_appear_reason": "クッキーポリシーがバージョン{version}に変更されたため、同意を改めてご確認します。",

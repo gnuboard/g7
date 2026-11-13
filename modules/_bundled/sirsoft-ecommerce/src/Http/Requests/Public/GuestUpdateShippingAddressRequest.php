@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
+use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -37,7 +38,7 @@ class GuestUpdateShippingAddressRequest extends FormRequest
         // SQL 무결성 위반이 났다. 서비스의 폴백(?? 'KR')과 동일한 기준으로 판정한다.
         $isDomestic = $this->isDomesticShipping();
 
-        return [
+        $rules = [
             'recipient_name' => ['required', 'string', 'max:50'],
             'recipient_phone' => ['required', 'string', 'max:20'],
             'recipient_tel' => ['nullable', 'string', 'max:20'],
@@ -57,6 +58,11 @@ class GuestUpdateShippingAddressRequest extends FormRequest
 
             'delivery_memo' => ['nullable', 'string', 'max:255'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.guest_order.shipping_address_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

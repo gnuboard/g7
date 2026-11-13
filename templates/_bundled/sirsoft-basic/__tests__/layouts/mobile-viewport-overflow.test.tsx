@@ -99,34 +99,43 @@ function findAllNodes(node: any, predicate: (n: any) => boolean, acc: any[] = []
   return acc;
 }
 
-describe('게시판 비회원 입력 행 — 좁은 화면에서 세로 스택', () => {
-  // @scenario case=guest_comment_form_stacked
-  // @effects guest_fields_stack_vertically
-  it('댓글 입력폼의 이름/비밀번호 행이 기본 flex-col, 640 이상 flex-row 다 (+81px 오버플로 회귀)', () => {
+describe('게시판 비회원 입력 행 — 좁은 화면 대비', () => {
+  // @scenario case=guest_comment_form_two_columns
+  // @effects guest_comment_fields_two_columns_without_overflow
+  it('댓글 입력폼의 이름/비밀번호 행은 좁은 화면에서도 2열이고, 칸이 격자 폭 안에서 줄어들어 넘치지 않는다 (+81px 오버플로 회귀)', () => {
+    // 종전에는 줄어들지 못하는 flex-1 입력 2개가 문서를 +81px 넘겨 좁은 화면에서 세로로 쌓았다.
+    // 회원 항목 설정(#490)에서 이름과 비밀번호를 좁은 화면에서도 나란히 두기로 하면서, 넘침은 격자(각 열 minmax(0, 1fr))와
+    // 칸과 입력의 min-w-0 으로 막는다. 플레이스홀더가 짧아(「이름」, 「비밀번호」) 글쓰기폼 같은 잘림이 없다.
     const layout = loadLayout('partials/board/show/_comment_input.json');
-    const guestRow = findNode(
-      layout,
-      (n) => typeof n.if === 'string' && n.if.includes('!_global.currentUser?.uuid')
-    );
+    const guestRow = findNode(layout, (n) => n.id === 'board_comment_guest_fixed_fields');
     expect(guestRow).toBeTruthy();
+    expect(guestRow.if).toContain('!_global.currentUser?.uuid');
 
-    expect(classTokens(guestRow)).toContain('flex-col');
-    expect(classTokens(guestRow)).not.toContain('flex-row');
-    expect(classTokens(guestRow, '640-')).toContain('flex-row');
+    expect(classTokens(guestRow)).toContain('grid');
+    expect(classTokens(guestRow)).toContain('grid-cols-2');
+    expect(classTokens(guestRow)).not.toContain('flex');
+    expect(guestRow.responsive).toBeUndefined();
+    expect(guestRow.children).toHaveLength(2);
+    for (const cell of guestRow.children) {
+      expect(classTokens(cell)).toContain('min-w-0');
+    }
+    const inputs = findAllNodes(guestRow, (n) => n.name === 'Input');
+    expect(inputs).toHaveLength(2);
+    for (const input of inputs) {
+      expect(classTokens(input)).toContain('min-w-0');
+      expect(classTokens(input)).toContain('flex-1');
+    }
   });
 
   // @scenario case=guest_write_form_stacked
   // @effects guest_fields_stack_vertically
   it('글쓰기폼의 이름/비밀번호 행이 기본 grid-cols-1, 640 이상 grid-cols-2 다 (147px 압착 회귀)', () => {
     const layout = loadLayout('partials/board/form/_post_form.json');
-    const guestRow = findNode(
-      layout,
-      (n) =>
-        typeof n.if === 'string' &&
-        n.if.includes('!_global.currentUser?.uuid') &&
-        n.if.includes('!route.id')
-    );
+    // 이름과 비밀번호 행 — 같은 조건 조각(비회원, 새 글)을 읽는 다른 노드(회원용 안내 줄, 추가 항목 묶음)와 섞이지 않게 id 로 찾는다
+    const guestRow = findNode(layout, (n) => n.id === 'board_guest_fixed_fields');
     expect(guestRow).toBeTruthy();
+    expect(guestRow.if).toContain('!_global.currentUser?.uuid');
+    expect(guestRow.if).toContain('!route.id');
 
     expect(classTokens(guestRow)).toContain('grid-cols-1');
     // 기본 className 의 grid-cols-2 는 모바일에서 그대로 2열이 된다

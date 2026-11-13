@@ -58,7 +58,8 @@ describe('관리자 헤더 사용자 사진·로고 썸네일', () => {
   it('헤더 사진은 eager 로딩이고 alt 대체 문구가 다국어 키다', () => {
     const img = byId(layout, 'user_avatar_img');
     expect(img?.props?.loading).toBe('eager');
-    expect(img?.props?.alt).toBe("{{current_user.data?.name ?? $t('admin.default_user_name')}}");
+    // 대체 문구는 옆 이름 줄과 같이 표시 이름을 먼저 읽는다(#490 8단계)
+    expect(img?.props?.alt).toBe("{{current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name')}}");
     expect(String(img?.props?.alt)).not.toContain("'User'");
   });
 

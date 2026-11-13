@@ -8,7 +8,7 @@
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
 | `Attachment` | `board_attachments` | 16 | board→Board, post→Post, creator→User | SoftDeletes |
-| `Board` | `boards` | 44 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
+| `Board` | `boards` | 46 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
 | `BoardStat` | `board_stats` | 3 | - | - |
 | `BoardType` | `board_types` | 3 | - | HasUserOverrides |
 | `Comment` | `board_comments` | 15 | board→Board, post→Post, user→User, parent→self, replies→self | SoftDeletes |
@@ -91,7 +91,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 48개.
+마이그레이션 49개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -143,6 +143,7 @@
 | `2026_10_19_000001_add_display_order_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_11_09_000001_add_guest_owner_hash_to_board_attachments_table.php` | - | `board_attachments` | ✅ |
 | `2026_11_10_000001_add_content_media_policy_to_boards_table.php` | - | `boards` | ✅ |
+| `2026_11_12_000001_add_member_field_settings_to_boards_table.php` | - | `boards` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->

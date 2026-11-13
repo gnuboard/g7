@@ -1704,7 +1704,7 @@ return [
             // 내보내기(#787)
             'export_retention_days' => [
                 'integer' => 'Export file retention must be a number.',
-                'min' => 'Export file retention must be at least :min day(s).',
+                'min' => 'Export file retention (days) must be at least :min.',
                 'max' => 'Export file retention cannot exceed :max days.',
             ],
         ],

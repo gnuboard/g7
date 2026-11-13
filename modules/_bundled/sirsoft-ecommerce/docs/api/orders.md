@@ -738,6 +738,7 @@ _단건 응답: `data` 객체의 필드._
 | recipient_detail_address | null | `null` | 수령인 상세 주소 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo | string | `parcel_box` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | string | `택배함에 넣어주세요` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| extra_fields[] | array | `[{"key":"company","label":"회사명","section":"orderer","display_value":"시르소프트"}]` | 주문서 추가 항목의 값(운영자가 추가한 항목, 다른 확장이 기여한 항목). 값이 있는 것만 싣고 없으면 빈 배열이다. `section` 은 `orderer`(주문자 구획) 또는 `shipping`(배송지 구획), `display_value` 는 보기용 글자다. 주문 목록 응답에는 없다 |
 | options | array | `[{"id":1263,"option_status":"payment_complete","option_st…` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
 | options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
 | options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
@@ -3000,7 +3001,7 @@ HTTP/1.1 200
 | shipping.country_code | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | shipping.zipcode | body | string | 아니오 | max 10 | 우편번호 |
 | shipping.address | body | string | 아니오 | max 255 | 기본 주소 |
-| shipping.address_detail | body | string | 아니오 | max 255 | 상세 주소 |
+| shipping.address_detail | body | string | 조건부 | max 255 | 상세 주소. 주문서 항목 설정을 따른다 — 기본은 사용과 필수(해외 주소 1행 `shipping.address_line_1` 이 없을 때만 필수), 선택으로 바꾸면 비워도 되고, 사용을 끄면 보내도 저장하지 않는다 |
 | shipping.address_type_code | body | string | 아니오 | `R`, `J` | 국내 주소 표기 방식 (`R` 도로명 / `J` 지번) |
 | shipping.address_line_1 | body | string | 아니오 | max 255 | 주소 1행 (기본 주소) |
 | shipping.address_line_2 | body | string | 아니오 | max 255 | 주소 2행 (상세 주소) |
@@ -3009,7 +3010,7 @@ HTTP/1.1 200
 | shipping.intl_postal_code | body | string | 아니오 | max 20 | 우편번호 (국제 주소) |
 | payment_method | body | string | 예 | — | 결제수단. 코어 8종(`card`/`vbank`/`dbank`/`bank`/`phone`/`point`/`deposit`/`free`) 과 PG 플러그인이 등록한 확장 결제수단 ID(예: `nhnkcp_naverpay`, `kginicis_lpay`)를 모두 허용한다. 확장 결제수단도 1급 시민으로 그대로 저장된다. 카탈로그에 없는 값은 422. 결제 통화(회원 선호 통화 → `X-Currency` → 기본 통화)에서 고를 수 없는 수단도 422(`payment_method_not_allowed_for_currency`) — 판정은 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 이고 주문서 응답의 `allowed_payment_methods` 와 같다(#639) |
 | expected_total_amount | body | number | 예 | min 0 | 프론트가 계산한 예상 결제금액 (서버 재계산값과 대조해 금액 위변조 검증) |
-| shipping_memo | body | string | 아니오 | max 500 | 배송 요청사항 메모 |
+| shipping_memo | body | string | 조건부 | max 500 | 배송 요청사항 메모. 주문서 항목 설정을 따른다 — 기본은 사용과 선택, 필수로 바꾸면 없을 때 422, 사용을 끄면 보내도 저장하지 않는다 |
 | depositor_name | body | string | 아니오 | max 50 | depositor 이름 (식별자) |
 | dbank.bank_code | body | string | 아니오 | max 10 | 수동 무통장입금 계좌의 은행코드 (`payment_method=dbank` 이면 필수) |
 | dbank.bank_name | body | string | 아니오 | max 50 | 수동 무통장입금 계좌의 은행명 (표시용) |
@@ -3025,7 +3026,9 @@ HTTP/1.1 200
 | refund_bank.bank_code | body | string | 아니오 | max 10 | 환불 계좌 은행코드 (세 필드는 전부 입력하거나 전부 비워야 함) |
 | refund_bank.account_number | body | string | 아니오 | max 50 | 환불 계좌번호 |
 | refund_bank.holder | body | string | 아니오 | max 50 | 환불 계좌 예금주 |
-| orderer.email | body | email | 예 | max 255 | 이메일 주소 |
+| orderer.email | body | email | 조건부 | max 255 | 이메일 주소. 비회원은 늘 필수다. 회원은 주문서 항목 설정을 따른다 — 기본은 사용과 선택, 필수로 바꾸면 없을 때 422, 사용을 끄면 보내도 저장하지 않는다 |
+| extra_fields | body | object | 아니오 | — | 주문서 추가 항목 값(운영자가 추가한 항목, 다른 확장이 기여한 항목). 키는 항목 키다 |
+| extra_fields.{key} | body | 항목 유형에 따름 | 조건부 | 항목의 제한 | 추가 항목 한 건의 값. 주소 유형은 `extra_fields.{key}.zipcode`, `.address`, `.address_detail` 로 보낸다. 필수 항목을 보내지 않으면 422 이고 오류 키가 `extra_fields.{key}` 다. 사용이 꺼진 항목과 없는 항목은 보내도 무시한다 |
 | guest_lookup_password | body | string | 예 | min 8, max 255 | 비회원 주문 조회 비밀번호 (비회원만 필수, 8자 이상 · 해시로 저장) |
 | guest_lookup_password_confirmation | body | string | 예 | — | 조회 비밀번호 확인 (guest_lookup_password 와 일치해야 함) |
 
@@ -3315,6 +3318,7 @@ _단건 응답: `data` 객체의 필드._
 | recipient_detail_address | null | `null` | 수령인 상세 주소 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo | null | `null` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | null | `null` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| extra_fields[] | array | `[{"key":"company","label":"회사명","section":"orderer","display_value":"시르소프트"}]` | 주문서 추가 항목의 값(운영자가 추가한 항목, 다른 확장이 기여한 항목). 값이 있는 것만 싣고 없으면 빈 배열이다. `section` 은 `orderer`(주문자 구획) 또는 `shipping`(배송지 구획), `display_value` 는 보기용 글자다. 주문 목록 응답에는 없다 |
 | options | array | `[]` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
 | options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
 | options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
@@ -4168,6 +4172,7 @@ _단건 응답: `data` 객체의 필드._
 | recipient_detail_address | null | `null` | 수령인 상세 주소 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo | null | `null` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | null | `null` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
+| extra_fields[] | array | `[{"key":"company","label":"회사명","section":"orderer","display_value":"시르소프트"}]` | 주문서 추가 항목의 값(운영자가 추가한 항목, 다른 확장이 기여한 항목). 값이 있는 것만 싣고 없으면 빈 배열이다. `section` 은 `orderer`(주문자 구획) 또는 `shipping`(배송지 구획), `display_value` 는 보기용 글자다. 주문 목록 응답에는 없다 |
 | options | array | `[]` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
 | options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
 | options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
@@ -4224,6 +4229,7 @@ _단건 응답: `data` 객체의 필드._
 | recipient_name / recipient_phone | string | `심채원` / `010-3955-6018` | 수령인 정보 |
 | recipient_zipcode / recipient_address / recipient_detail_address | string | `38022` / `부산광역시 양천구 공항대로 9` / `101동 202호` | 수령인 주소 |
 | delivery_memo / delivery_memo_label | string \| null | `parcel_box` / `택배함에 넣어주세요` | 배송 메모 및 라벨 |
+| extra_fields[] | array | `[{"key":"company","label":"회사명","section":"orderer","display_value":"시르소프트"}]` | 주문서 추가 항목의 값(운영자가 추가한 항목, 다른 확장이 기여한 항목). 값이 있는 것만 싣고 없으면 빈 배열이다. `section` 은 `orderer`(주문자 구획) 또는 `shipping`(배송지 구획), `display_value` 는 보기용 글자다. 주문 목록 응답에는 없다 |
 | options | array | `[{"id":1,"option_status":"payment_complete", …}]` | 주문 옵션 목록 (OrderOptionResource) |
 | shipping_address | object | `{"recipient_name":"심채원", …}` | 배송지 상세 (OrderAddressResource) |
 | payment | object \| null | `{"payment_method":"dbank", …}` | 대표 결제 정보 (OrderPaymentResource) |

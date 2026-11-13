@@ -8,7 +8,8 @@
  * 결함처럼 보이게 한다. 메일 템플릿 탭은 알림 정의 탭으로 옮겨 갔으므로 옛 조각 두 개를 지웠고,
  * 이 테스트가 같은 종류의 잔재가 다시 쌓이지 않게 막는다.
  *
- * @effects admin_settings_partials_are_all_included, removed_mail_template_fragments_stay_removed
+ * 재는 것: 조각이 모두 끌려오는가, 지운 옛 메일 템플릿 조각이 되살아나지 않는가, 회원 탭 조각이 빠짐없이 있는가.
+ * 어느 테스트가 어느 효과를 재는지는 각 테스트의 주석에 적는다.
  */
 
 import fs from 'node:fs';
@@ -74,6 +75,38 @@ describe('환경설정 partial — 죽은 조각 0', () => {
             .filter((ref) => !included.has(ref));
 
         expect(orphans).toEqual([]);
+    });
+
+    /**
+     * @scenario partial_reach=included
+     * @effects member_tab_partials_are_included
+     */
+    it('회원 탭(#490) 조각 여덟(표시 이름 구획 포함)이 모두 있고 끌려온다', () => {
+        const included = includedPartials();
+        const names = [
+            '_tab_member',
+            '_tab_member_fields',
+            '_tab_member_fields_cards',
+            '_tab_member_display_name',
+            '_tab_member_nickname',
+            '_modal_member_field_form',
+            '_modal_member_field_delete',
+            '_modal_member_field_required',
+        ];
+
+        for (const name of names) {
+            // 소스와 짝 JSON 이 함께 있어야 설치와 편집기가 같은 조각을 본다
+            expect(fs.existsSync(path.join(settingsPartialsDir, `${name}.g7.html`)), `${name}.g7.html`).toBe(true);
+            expect(fs.existsSync(path.join(settingsPartialsDir, `${name}.json`)), `${name}.json`).toBe(true);
+            expect(included.has(`partials/admin_settings/${name}.json`), name).toBe(true);
+        }
+
+        // 회원 탭 조각은 위 여덟뿐이다(표시 이름 구획 `_tab_member_display_name` 은 8단계에서 들어왔다)
+        const memberFiles = fs
+            .readdirSync(settingsPartialsDir)
+            .filter((name) => /^_(tab|modal)_member/.test(name))
+            .map((name) => name.replace(/\.(g7\.html|json)$/, ''));
+        expect([...new Set(memberFiles)].sort()).toEqual([...names].sort());
     });
 
     /**

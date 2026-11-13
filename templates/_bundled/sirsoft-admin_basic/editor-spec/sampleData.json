@@ -6225,32 +6225,6 @@
         }
       }
     },
-    "marketing_settings": {
-      "data": {
-        "marketing_consent_enabled": true,
-        "marketing_consent_terms_slug": "marketing-terms",
-        "marketing_consent_terms_slug_set": true,
-        "third_party_consent_enabled": true,
-        "third_party_consent_terms_slug": null,
-        "third_party_consent_terms_slug_set": false,
-        "info_disclosure_enabled": true,
-        "info_disclosure_terms_slug": null,
-        "info_disclosure_terms_slug_set": false,
-        "channels": [
-          {
-            "key": "email_subscription",
-            "label": "광고성 이메일 수신",
-            "label_i18n": {
-              "ko": "광고성 이메일 수신",
-              "en": "Email Marketing"
-            },
-            "enabled": true,
-            "terms_slug": null,
-            "terms_slug_set": false
-          }
-        ]
-      }
-    },
     "dashboard_recent_notifications": {
       "data": [
         {
@@ -7586,6 +7560,711 @@
         "active_visitors": 7,
         "window_minutes": 5,
         "updated_at": "2026-09-21T09:20:00+09:00"
+      }
+    },
+    "memberFieldDefs": {
+      "data": {
+        "set": {
+          "key": "core.user",
+          "label": "회원 항목",
+          "owner_type": "core",
+          "owner": "core",
+          "allows_custom": true,
+          "surfaces": [
+            "signup",
+            "admin_create",
+            "admin_update",
+            "self_update",
+            "required_info"
+          ]
+        },
+        "fields": [
+          {
+            "id": 1,
+            "field_set": "core.user",
+            "key": "name",
+            "attribute": "name",
+            "source_type": "core",
+            "source_identifier": "core",
+            "is_custom": false,
+            "type": "text",
+            "type_label": "한 줄 글",
+            "available": true,
+            "storage": "column",
+            "name": {
+              "ko": "이름"
+            },
+            "label": "이름",
+            "description": {},
+            "placeholder": {},
+            "options": [],
+            "constraints": {},
+            "enabled": true,
+            "required": true,
+            "show_on_signup": true,
+            "edit_scope": "self",
+            "require_existing_members": false,
+            "public_profile": false,
+            "admin_list_column": false,
+            "admin_searchable": false,
+            "display_name_usable": false,
+            "idv_claim": null,
+            "idv_lock": false,
+            "locks": {},
+            "ui": {
+              "group": "basic"
+            },
+            "sort_order": 10,
+            "supports": {
+              "signup": true,
+              "unique": false,
+              "search": true,
+              "list_column": true,
+              "display_name": true,
+              "options": false
+            },
+            "user_overrides": []
+          },
+          {
+            "id": 2,
+            "field_set": "core.user",
+            "key": "nickname",
+            "attribute": "nickname",
+            "source_type": "core",
+            "source_identifier": "core",
+            "is_custom": false,
+            "type": "text",
+            "type_label": "한 줄 글",
+            "available": true,
+            "storage": "column",
+            "name": {
+              "ko": "닉네임"
+            },
+            "label": "닉네임",
+            "description": {},
+            "placeholder": {},
+            "options": [],
+            "constraints": {},
+            "enabled": true,
+            "required": false,
+            "show_on_signup": true,
+            "edit_scope": "self",
+            "require_existing_members": false,
+            "public_profile": false,
+            "admin_list_column": false,
+            "admin_searchable": false,
+            "display_name_usable": false,
+            "idv_claim": null,
+            "idv_lock": false,
+            "locks": {},
+            "ui": {
+              "group": "basic"
+            },
+            "sort_order": 20,
+            "supports": {
+              "signup": true,
+              "unique": false,
+              "search": true,
+              "list_column": true,
+              "display_name": true,
+              "options": false
+            },
+            "user_overrides": []
+          },
+          {
+            "id": 3,
+            "field_set": "core.user",
+            "key": "mobile",
+            "attribute": "mobile",
+            "source_type": "core",
+            "source_identifier": "core",
+            "is_custom": false,
+            "type": "phone",
+            "type_label": "전화번호",
+            "available": true,
+            "storage": "column",
+            "name": {
+              "ko": "휴대폰"
+            },
+            "label": "휴대폰",
+            "description": {},
+            "placeholder": {},
+            "options": [],
+            "constraints": {},
+            "enabled": true,
+            "required": false,
+            "show_on_signup": true,
+            "edit_scope": "self",
+            "require_existing_members": false,
+            "public_profile": false,
+            "admin_list_column": false,
+            "admin_searchable": false,
+            "display_name_usable": false,
+            "idv_claim": null,
+            "idv_lock": false,
+            "locks": {},
+            "ui": {
+              "group": "basic"
+            },
+            "sort_order": 30,
+            "supports": {
+              "signup": true,
+              "unique": false,
+              "search": true,
+              "list_column": true,
+              "display_name": true,
+              "options": false
+            },
+            "user_overrides": []
+          },
+          {
+            "id": 4,
+            "field_set": "core.user",
+            "key": "job",
+            "attribute": "custom_fields.job",
+            "source_type": "custom",
+            "source_identifier": "custom",
+            "is_custom": true,
+            "type": "choice",
+            "type_label": "하나 선택",
+            "available": true,
+            "storage": "value",
+            "name": {
+              "ko": "직업"
+            },
+            "label": "직업",
+            "description": {},
+            "placeholder": {},
+            "options": [
+              {
+                "value": "student",
+                "label": {
+                  "ko": "학생"
+                }
+              },
+              {
+                "value": "worker",
+                "label": {
+                  "ko": "직장인"
+                }
+              }
+            ],
+            "constraints": {},
+            "enabled": true,
+            "required": false,
+            "show_on_signup": true,
+            "edit_scope": "self",
+            "require_existing_members": false,
+            "public_profile": false,
+            "admin_list_column": false,
+            "admin_searchable": false,
+            "display_name_usable": false,
+            "idv_claim": null,
+            "idv_lock": false,
+            "locks": {},
+            "ui": {
+              "group": "basic"
+            },
+            "sort_order": 40,
+            "supports": {
+              "signup": true,
+              "unique": false,
+              "search": true,
+              "list_column": true,
+              "display_name": false,
+              "options": true
+            },
+            "user_overrides": []
+          }
+        ],
+        "fields_version": "06425d431332",
+        "types": [
+          {
+            "key": "text",
+            "label": "한 줄 글",
+            "description": "이름, 직함처럼 짧은 글을 받습니다.",
+            "category": "text",
+            "renderer": "builtin",
+            "owner_type": "core",
+            "owner": "core",
+            "available": true
+          },
+          {
+            "key": "choice",
+            "label": "하나 선택",
+            "description": "선택지 가운데 하나를 고르게 합니다.",
+            "category": "choice",
+            "renderer": "builtin",
+            "owner_type": "core",
+            "owner": "core",
+            "available": true
+          }
+        ],
+        "abilities": {
+          "can_update": true
+        },
+        "notices": {
+          "signup_layout_modified": false
+        }
+      }
+    },
+    "memberFields": {
+      "data": {
+        "fields": [
+          {
+            "renderer": "builtin",
+            "owner": "core",
+            "owner_type": "core",
+            "placeholder": null,
+            "help": null,
+            "required": true,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [],
+            "constraints": {},
+            "default": null,
+            "ui": {
+              "group": "basic"
+            },
+            "parts": null,
+            "display_value": "이서연",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "self",
+            "key": "name",
+            "name": "name",
+            "type": "text",
+            "label": "이름"
+          },
+          {
+            "renderer": "builtin",
+            "owner": "core",
+            "owner_type": "core",
+            "placeholder": null,
+            "help": null,
+            "required": false,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [],
+            "constraints": {},
+            "default": null,
+            "ui": {
+              "group": "basic"
+            },
+            "parts": null,
+            "display_value": "서연",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "self",
+            "key": "nickname",
+            "name": "nickname",
+            "type": "text",
+            "label": "닉네임"
+          },
+          {
+            "renderer": "builtin",
+            "owner": "core",
+            "owner_type": "core",
+            "placeholder": null,
+            "help": null,
+            "required": false,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [],
+            "constraints": {},
+            "default": null,
+            "ui": {
+              "group": "contact"
+            },
+            "parts": null,
+            "display_value": "010-1234-5678",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "self",
+            "key": "mobile",
+            "name": "mobile",
+            "type": "phone",
+            "label": "휴대폰"
+          },
+          {
+            "renderer": "builtin",
+            "owner": "core",
+            "owner_type": "core",
+            "placeholder": null,
+            "help": null,
+            "required": false,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [
+              {
+                "value": "ko",
+                "label": "한국어"
+              },
+              {
+                "value": "en",
+                "label": "English"
+              }
+            ],
+            "constraints": {
+              "display": "select"
+            },
+            "default": "ko",
+            "ui": {
+              "group": "location"
+            },
+            "parts": null,
+            "display_value": "한국어",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "self",
+            "key": "language",
+            "name": "language",
+            "type": "choice",
+            "label": "언어"
+          },
+          {
+            "renderer": "address",
+            "owner": "core",
+            "owner_type": "core",
+            "placeholder": null,
+            "help": null,
+            "required": false,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [],
+            "constraints": {},
+            "default": null,
+            "ui": {
+              "group": "location"
+            },
+            "parts": {
+              "zipcode": "zipcode",
+              "address": "address",
+              "address_detail": "address_detail"
+            },
+            "display_value": "(04524) 서울특별시 중구 세종대로 110",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "self",
+            "key": "address",
+            "name": "address",
+            "type": "address",
+            "label": "주소"
+          },
+          {
+            "renderer": "builtin",
+            "owner": "core",
+            "owner_type": "core",
+            "placeholder": null,
+            "help": null,
+            "required": false,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [],
+            "constraints": {
+              "max_length": 5000
+            },
+            "default": null,
+            "ui": {
+              "group": "profile"
+            },
+            "parts": null,
+            "display_value": "안녕하세요.",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "self",
+            "key": "bio",
+            "name": "bio",
+            "type": "textarea",
+            "label": "자기소개"
+          },
+          {
+            "renderer": "builtin",
+            "owner": "custom",
+            "owner_type": "custom",
+            "placeholder": null,
+            "help": null,
+            "required": true,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [
+              {
+                "value": "worker",
+                "label": "직장인"
+              },
+              {
+                "value": "student",
+                "label": "학생"
+              }
+            ],
+            "constraints": {
+              "display": "select"
+            },
+            "default": null,
+            "ui": {},
+            "parts": null,
+            "display_value": "직장인",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "self",
+            "key": "job",
+            "name": "custom_fields.job",
+            "type": "choice",
+            "label": "직업"
+          },
+          {
+            "renderer": "builtin",
+            "owner": "custom",
+            "owner_type": "custom",
+            "placeholder": null,
+            "help": null,
+            "required": false,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [],
+            "constraints": {},
+            "default": null,
+            "ui": {},
+            "parts": null,
+            "display_value": "A",
+            "files": null,
+            "file_rules": null,
+            "edit_scope": "admin_only",
+            "key": "grade",
+            "name": "custom_fields.grade",
+            "type": "text",
+            "label": "내부 등급"
+          },
+          {
+            "renderer": "file",
+            "owner": "custom",
+            "owner_type": "custom",
+            "placeholder": null,
+            "help": null,
+            "required": false,
+            "readonly": false,
+            "locked_reason": null,
+            "deferred": false,
+            "options": [],
+            "constraints": {},
+            "default": null,
+            "ui": {},
+            "parts": null,
+            "display_value": "biz.pdf",
+            "files": [
+              {
+                "id": 1,
+                "name": "biz.pdf",
+                "url": "/api/attachment/sample"
+              }
+            ],
+            "file_rules": {
+              "extensions": [
+                "pdf"
+              ],
+              "max_count": 1,
+              "max_size_mb": 10
+            },
+            "edit_scope": "admin_edit",
+            "key": "license",
+            "name": "custom_fields.license",
+            "type": "file",
+            "label": "사업자등록증"
+          }
+        ],
+        "fields_version": "sample",
+        "member": {
+          "nickname_changed_at": "2026-11-01 10:00",
+          "nickname_next_changeable_at": "2026-11-08 10:00",
+          "required_fields_deferred_at": null,
+          "pending_required_fields": [
+            {
+              "key": "job",
+              "label": "직업"
+            }
+          ]
+        }
+      }
+    },
+    "memberNicknameRecompute": {
+      "data": {
+        "status": "idle",
+        "processed": 0,
+        "total": 0,
+        "unique": 0,
+        "started_at": null,
+        "finished_at": null
+      }
+    },
+    "memberDisplayNameOptions": {
+      "data": {
+        "kinds": [
+          {
+            "key": "name",
+            "label": "이름",
+            "owner_type": "core",
+            "owner": "core",
+            "requires_nickname": false,
+            "searchable": true,
+            "fallback": "nickname",
+            "preview": "홍길동"
+          },
+          {
+            "key": "nickname",
+            "label": "닉네임",
+            "owner_type": "core",
+            "owner": "core",
+            "requires_nickname": true,
+            "searchable": true,
+            "fallback": "masked_id",
+            "preview": "길동이"
+          },
+          {
+            "key": "masked_name",
+            "label": "가린 이름",
+            "owner_type": "core",
+            "owner": "core",
+            "requires_nickname": false,
+            "searchable": false,
+            "fallback": "masked_id",
+            "preview": "홍*동"
+          },
+          {
+            "key": "masked_id",
+            "label": "아이디 가림",
+            "owner_type": "core",
+            "owner": "core",
+            "requires_nickname": false,
+            "searchable": false,
+            "fallback": null,
+            "preview": "gil***"
+          },
+          {
+            "key": "name_nickname",
+            "label": "이름(닉네임)",
+            "owner_type": "core",
+            "owner": "core",
+            "requires_nickname": true,
+            "searchable": true,
+            "fallback": "name",
+            "preview": "홍길동(길동이)"
+          }
+        ],
+        "areas": [
+          {
+            "key": "core:site",
+            "label": "사이트 기본",
+            "parent": null,
+            "depth": 0,
+            "audience": "user",
+            "owner_type": "core",
+            "owner": "core",
+            "can_inherit": false,
+            "mode": "fixed",
+            "kind": "name",
+            "default": {
+              "mode": "fixed",
+              "kind": "name"
+            },
+            "effective": {
+              "mode": "fixed",
+              "kind": "name",
+              "source": "core:site"
+            }
+          },
+          {
+            "key": "core:admin",
+            "label": "관리자 화면",
+            "parent": "core:site",
+            "depth": 1,
+            "audience": "admin",
+            "owner_type": "core",
+            "owner": "core",
+            "can_inherit": true,
+            "mode": "fixed",
+            "kind": "name",
+            "default": {
+              "mode": "fixed",
+              "kind": "name"
+            },
+            "effective": {
+              "mode": "fixed",
+              "kind": "name",
+              "source": "core:admin"
+            }
+          },
+          {
+            "key": "core:notification",
+            "label": "알림",
+            "parent": "core:site",
+            "depth": 1,
+            "audience": "notification",
+            "owner_type": "core",
+            "owner": "core",
+            "can_inherit": true,
+            "mode": "inherit",
+            "kind": null,
+            "default": {
+              "mode": "inherit",
+              "kind": null
+            },
+            "effective": {
+              "mode": "fixed",
+              "kind": "name",
+              "source": "core:site"
+            }
+          },
+          {
+            "key": "core:notification:mail",
+            "label": "알림: 메일",
+            "parent": "core:notification",
+            "depth": 2,
+            "audience": "notification",
+            "owner_type": "core",
+            "owner": "core",
+            "can_inherit": true,
+            "mode": "inherit",
+            "kind": null,
+            "default": {
+              "mode": "inherit",
+              "kind": null
+            },
+            "effective": {
+              "mode": "fixed",
+              "kind": "name",
+              "source": "core:site"
+            }
+          }
+        ],
+        "selectable_kinds": [
+          "name"
+        ],
+        "member_default_kind": "name",
+        "sample": {
+          "name": "홍길동",
+          "nickname": "길동이",
+          "id": "gildong"
+        },
+        "nickname_requirement": "none"
+      }
+    },
+    "memberNicknameEmptyCount": {
+      "data": {
+        "nickname_empty_count": 12,
+        "nickname": {
+          "enabled": true,
+          "required": false,
+          "require_existing_members": false
+        },
+        "nickname_requirement": "none"
       }
     }
   }

@@ -130,6 +130,15 @@ return [
         ],
     ],
     // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification, identity: shared identity verification variables. Missing keys fall back to the declared string.
+    // 템플릿 편집 창의 회원 공통 변수 설명 ({member.display_name}, {member.<키>}, {member.custom.<키>})
+    'member_variables' => [
+        'display_name' => 'Name shown for the recipient',
+        'field' => 'Member field: :name',
+    ],
+    // 템플릿 저장 응답의 경고 (data.warnings)
+    'warnings' => [
+        'unknown_variable' => 'This variable does not exist now: :variable (it is sent as empty text when the member field was deleted or turned off)',
+    ],
     'variables' => [
         'common' => [
             'name' => 'Recipient name',

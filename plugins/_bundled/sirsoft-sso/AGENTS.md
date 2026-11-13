@@ -26,6 +26,8 @@
 - 강제 판정은 진입 경로가 아니라 회원 기준이다. 식별자 기준(도메인, 사이트 전체)은 비밀번호 시도 전, 회원 기준(역할, 연결 회원)은 비밀번호가 맞은 뒤에 본다(계정 열거 방지).
 - 정책과 IdP 설정은 플러그인 표(`sso_site_policies`, `sso_identity_providers`)와 플러그인 API 로 저장한다. 코어 설정 저장 경로로 최고관리자 전용 칸을 우회 저장할 수 없게 `getSettingsSchema()` 는 비워 둔다.
 - 행위자 없는 경로(SCIM, 주기 점검, 퇴사 뒤 탈퇴, 로그인 중 동기화)는 코어 `SystemOperation::run()` 안에서 돈다.
+- 첫 로그인 동의 창이 받는 회원 항목은 요청의 `fields_version` 으로 갈린다. 동의 창이 코어 가입 화면과 같은 항목(환경설정 > 회원 > 가입 항목)을 그렸으면 받은 정의 버전을 싣는다 — `ConsentCompleteRequest` 가 규칙을 「약관 + `FieldRuleFactory`(가입 표면)」로 만들고(코어 가입 필터 `core.auth.register_validation_rules` 를 태우되 `verification_token` 규칙은 뺀다 — 이 라우트에는 본인인증 미들웨어가 없다), 버전이 다르면 409(`fields_changed`)로 답하며, `AccountResolver::register()` 가 검증된 항목 값(`custom_fields.*`, 확장이 선언한 항목 포함)을 가입 데이터에 실어 `defer` 없이 만든다. 창은 항목을 코어 `GET /api/auth/register/fields` 에서 받으며 `pending_source=sirsoft-sso`, `pending_token` 을 넘긴다 — `PrefillConsentFieldsListener`(필터 `core.field.filter_definitions`)가 대기의 신원으로 초기값과 잠금(`locked_reason = sso`)을 채운다. 잠그는 칸은 IdP 속성 규칙이 값을 준 칸 전부(`sync_lock`, `sync`, `first_only`)다: 생성 직후 동기화가 세 모드 모두 IdP 값으로 덮어쓰므로 고치게 두면 입력이 말없이 버려진다. 잠긴 칸은 규칙에서 빠지고 값을 보내도 IdP 값이 저장된다. 대기를 읽는 곁가지 조회는 `PendingStore::peek()` 을 쓴다(묶음이 맞지 않아도 대기를 폐기하지 않는다). `fields_version` 이 없는 요청(이 플러그인에 든 원본 창, 관리자 로그인 화면의 동의 창)은 약관만 받고 `defer` 로 만든다.
+- 회원을 만드는 세 경로(로그인 시 자동 생성, SCIM 생성, 관리자 사전 등록과 CSV 가져오기)는 코어 `AuthService::register()` 에 `required_fields => 'defer'` 를 넘긴다(로그인 시 자동 생성은 위의 항목을 받은 동의 창을 뺀 나머지). 운영자가 환경설정 > 회원에서 필수로 둔 회원 항목 때문에 생성이 실패하지 않고, 코어가 `users.required_fields_deferred_at` 을 채워 그 회원이 처음 로그인하면 추가 정보 입력 화면으로 보낸다. 같은 세 경로와 회원을 고치는 두 경로(`AttributeSyncService::sync`, `ScimUserService::apply`)는 `nickname_policy => 'skip_field'` 도 넘긴다 — 회사 계정이 준 닉네임이 사이트의 닉네임 정책(중복 금지, 금지어)에 걸리면 코어가 닉네임만 빼고 저장하고 액션 `core.user.nickname_rejected` 를 발화한다. `RecordNicknameRejectionListener` 가 그 사유를 장부(`NicknameRejectionLedger`)에 적고 `AttributeSyncService` 가 꺼내 결과의 `skipped` 와 활동 로그 `sso.attributes_synced` 의 `properties.skipped` 에 싣는다. 회원을 고치는 호출을 새로 더할 때는 이 옵션을 함께 넘기고 `NicknameRejectionLedger::pull()` 로 사유를 꺼낸다(꺼내지 않으면 같은 요청의 다음 호출이 낡은 사유를 읽는다).
 
 **의도적으로 하지 않는 것**
 
@@ -91,9 +93,9 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 1개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 34개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 20개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 38개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 23개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 11개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -117,7 +119,9 @@
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 로그인 화면 모달 조각(`resources/extensions/auth-login-sso-modals.g7.html`)을 고치면 기본 사용자 템플릿의 판본(`templates/_bundled/sirsoft-basic/extensions/sirsoft-sso/auth-login-sso-modals.g7.html`)도 함께 고친다 — 그 템플릿은 이 조각을 통째로 대체해 동의 창에 회원 항목을 그리므로 원본만 고치면 기본 템플릿 사이트에는 반영되지 않는다. 플러그인 버전을 마이너 이상 올리면 판본의 `version-constraint`(지금 `~1.0.0`)도 함께 넓힌다(벗어나면 코어가 원본 창으로 되돌린다). 동의 완료 요청의 규칙을 바꿀 때는 `fields_version` 이 있는 요청과 없는 요청 둘 다 받아들여지는지 `tests/Feature/ConsentFieldSetTest.php` 로 확인한다. 관리자 로그인 화면의 판본(`admin-login-sso-modals`)은 회원 항목을 받지 않는다
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-sso` 재실행 + `docs/api/**` 갱신 (SCIM 주소는 SCIM 응답 형식 그대로라 G7 응답 봉투를 쓰지 않는다)
+- [ ] 로그인한 회원이 부르는 쓰기 라우트(POST, PUT, PATCH, DELETE)를 더할 때 코어 필터 `core.required_fields.filter_exempt_routes` 에 보탤지 판단한다. 코어는 추가 정보를 아직 입력하지 않은 회원의 쓰기 요청을 403 `required_fields_pending` 으로 막는다. 그런 회원도 반드시 할 수 있어야 하는 요청(계정 연결과 해제처럼 로그인 수단을 다루는 요청)이면 `src/Listeners/ExemptRequiredFieldsRoutesListener.php` 의 `ROUTES` 에 라우트 이름을 더하고, 사용자 콘텐츠를 만드는 요청이면 더하지 않는다
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`sso:` 접두 유틸리티 · `sso-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-sso --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] `composer.json` 의존성을 바꾸면 `php artisan plugin:vendor-bundle sirsoft-sso` 로 vendor-bundle 을 다시 만들고 `composer.lock` 과 함께 반영
 - [ ] 로그인 관련 변경은 코어 로그인 인계 계약(`docs/backend/authentication.md` 「외부 인증 로그인」, 「외부 인증 확장점」)과 맞는지 확인하고, `grep -rnE "createToken\(|Auth::login\(" src` 가 0 인지 확인
@@ -169,10 +173,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 93개 | `plugins/_bundled/sirsoft-sso/tests` |
-| Vitest | 9개 | `vitest.config.ts` |
+| PHPUnit | 98개 | `plugins/_bundled/sirsoft-sso/tests` |
+| Vitest | 10개 | `vitest.config.ts` |
 | Playwright | 5개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 31개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 36개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -5,6 +5,7 @@ namespace Tests\Unit\Notifications;
 use App\Http\Resources\NotificationDefinitionResource;
 use App\Models\NotificationDefinition;
 use App\Notifications\Identity\IdentityNotificationType;
+use App\Notifications\MemberVariables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Lang;
@@ -172,7 +173,11 @@ class NotificationVariableDescriptionLocaleTest extends TestCase
             ['key' => 'name', 'description' => 'Recipient (inquirer) name'],
             ['key' => 'inquiry_url', 'description' => 'Inquiry details URL (My Page)'],
             ['key' => 'qa_unknown_variable', 'description' => '선언 그대로'],
-        ], $array['variables']);
+        ], array_slice($array['variables'], 0, 3));
+
+        // 선언 변수 뒤에는 회원 공통 변수 묶음이 그대로 붙는다(#490 — 본인인증 알림이 아니면 덧붙인다)
+        $this->assertNotEmpty(app(MemberVariables::class)->catalog());
+        $this->assertSame(app(MemberVariables::class)->catalog(), array_slice($array['variables'], 3));
     }
 
     /**

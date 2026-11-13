@@ -320,8 +320,8 @@ describe('플러그인 sirsoft-marketing — 입력칸 접근 가능한 이름 (
      * @effects controls_have_accessible_name
      */
     it('모집단(레이아웃 JSON·입력칸)이 비어 있지 않다', () => {
-        expect(files.length).toBeGreaterThanOrEqual(4);
-        expect(judged.length).toBeGreaterThanOrEqual(24);
+        expect(files.length).toBeGreaterThanOrEqual(2);
+        expect(judged.length).toBeGreaterThanOrEqual(11);
     });
 
     /**
@@ -369,16 +369,13 @@ describe('플러그인 sirsoft-marketing — 입력칸 접근 가능한 이름 (
     });
 
     /**
-     * 사용자 화면에 주입되는 조각 — 이름 없는 칸이 0 개다.
+     * 사용자 화면에 주입되는 조각이 없다 — 동의 칸은 회원 항목으로 선언되어 코어 템플릿이 그린다(#490).
+     * 사용자 화면 조각이 다시 생기면 곁 라벨을 인정하지 않는 판정으로 잠가야 하므로 여기서 알린다.
      *
-     * @scenario surface=user_extension
-     * @effects controls_have_accessible_name
+     * @scenario surface=admin_layout
+     * @effects no_user_screen_fragment_controls
      */
-    it('user_extension: 사용자 화면에 주입되는 조각의 칸이 모두 이름을 갖는다', () => {
-        const here = judged.filter((j) => j.surface === 'user_extension');
-        expect(here.length).toBeGreaterThan(0);
-        expect(here.filter((j) => !j.named).map((j) => j.label)).toEqual([]);
-        // 반복(data-each·<sortable>·셀) 안 칸의 이름 출처에 행 값 {{…}} 이 없으면 행마다 같은 이름으로 읽힌다
-        expect(here.filter((j) => j.rowConstant).map((j) => j.label)).toEqual([]);
+    it('사용자 화면에 주입되는 조각의 칸이 없다', () => {
+        expect(judged.filter((j) => j.surface === 'user_extension' || j.surface === 'user_layout').map((j) => j.label)).toEqual([]);
     });
 });

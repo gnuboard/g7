@@ -152,6 +152,10 @@ export type { PageLoadingProps } from './PageLoading';
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';
 
+// 회원 항목 입력칸 (관리자 회원 추가, 수정 화면)
+export { MemberFieldInput } from './MemberFieldInput';
+export type { MemberFieldInputProps, MemberFieldContract, MemberFieldOption } from './MemberFieldInput';
+
 export { TagInput } from './TagInput';
 export type { TagInputProps, TagOption } from './TagInput';
 

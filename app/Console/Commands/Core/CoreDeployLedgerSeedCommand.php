@@ -40,7 +40,7 @@ class CoreDeployLedgerSeedCommand extends Command
      *
      * 반환값의 `[]` 만으로는 「완전한 원장이라 더할 것이 없음(정상)」과 「원장 쓰기 실패」를
      * 구분할 수 없다 — 씨앗기는 실패 시 경고 통로(`getLastRootFileWarnings()`)에 사유를 싣는다.
-     * 그래서 경고가 있으면 그 사유를 방출하고 비-0 으로 끝낸다 (17차 B-1) — 종전에는 쓰기 실패도
+     * 그래서 경고가 있으면 그 사유를 방출하고 비-0 으로 끝낸다 — 종전에는 쓰기 실패도
      * 「기록했습니다/건너뜀」으로 위장돼 운영자가 원장 부재를 알 수 없었다. 실패해도 인스톨러는
      * 이 커맨드의 비-0 을 「건너뜀」 로그로만 기록하고 설치를 멈추지 않는다(원장이 없으면 다음
      * 업데이트가 보존 쪽으로 떨어질 뿐이다).
@@ -64,7 +64,7 @@ class CoreDeployLedgerSeedCommand extends Command
         if ($seeded === []) {
             $this->info(__('settings.core_update.deploy_fragment_ledger_seed_skipped'));
         } else {
-            $this->info(__('settings.core_update.deploy_fragment_ledger_seeded', ['count' => count($seeded)]));
+            $this->info(trans_count('settings.core_update.deploy_fragment_ledger_seeded', ['count' => count($seeded)]));
 
             // 씨앗을 **실제로 수행했을 때만** 그 전제를 알린다. 클래스 docblock 의
             // 「선행 조건」참조 — 설치 직후가 아닌 시점(특히 롤백 직후)에 실행하면

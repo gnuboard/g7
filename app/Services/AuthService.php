@@ -13,6 +13,7 @@ use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameChoicePolicy;
 use App\Enums\ActivityLogType;
 use App\Enums\ConsentType;
 use App\Enums\IdentityVerificationPurpose;
@@ -31,6 +32,9 @@ use App\Extension\Auth\CredentialVerifierManager;
 use App\Extension\Auth\ExternalCredentialMatch;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Fields\FieldContext;
+use App\Fields\FieldSet;
+use App\Fields\FieldValueService;
 use App\Models\User;
 use App\Services\Auth\PasswordAuthPolicyService;
 use App\Services\Screen\ScreenAuth;
@@ -41,6 +45,7 @@ use App\Support\UndeliverableEmail;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -1326,10 +1331,14 @@ class AuthService
      *                                      본인인증 정책(가입 전 인증, 가입 후 인증 대기)을 따르지 않는다. 회사 IdP 처럼 신원을 이미 보증한 가입에만 쓴다. 사유가 없으면
      *                                      생략하지 않는다. 생략하면 활동 로그 `user.register_identity_policy_skipped` 가 남는다.
      *                                      - `record_consents => false` — 이용약관·개인정보 동의 기록을 남기지 않는다(동의를 받지 않은 사전 등록·프로비저닝).
+     *                                      - `required_fields => 'defer'` — 필수 회원 항목을 받지 않고 만든다(화면 없는 생성). `users.required_fields_deferred_at` 에
+     *                                      생성 시각을 남기고, 그 회원이 처음 로그인하면 추가 정보 입력 화면으로 보낸다.
+     *                                      - `nickname_policy => 'skip_field'` — 닉네임이 닉네임 정책(중복 금지, 금지어)에 걸리면 닉네임만 비우고 만든다(화면 없는 생성).
+     *                                      버린 사실은 액션 `core.user.nickname_rejected` 로 알린다. 이 옵션이 없으면 검증 예외(`nickname`)를 던진다.
      * @param  array<string, mixed>  $data  RegisterRequest 가 검증한 가입 데이터 (확장 호출은 같은 키 모양)
-     * @param  array{issue_token?: bool, identity_policy?: string, identity_policy_reason?: string, record_consents?: bool}  $options
-     *                                                                                                                                 issue_token=false 면 토큰·세션을 만들지 않는다 — 호출자가 로그인
-     *                                                                                                                                 인계(`LoginHandoffService`)로 코어 로그인 관문을 거치게 할 때
+     * @param  array{issue_token?: bool, identity_policy?: string, identity_policy_reason?: string, record_consents?: bool, required_fields?: string, nickname_policy?: string}  $options
+     *                                                                                                                                                                                     issue_token=false 면 토큰·세션을 만들지 않는다 — 호출자가 로그인
+     *                                                                                                                                                                                     인계(`LoginHandoffService`)로 코어 로그인 관문을 거치게 할 때
      * @return array{user: User, token: string|null, token_type: string} 사용자 + 토큰 (issue_token=false 면 token=null)
      */
     public function register(array $data, array $options = []): array
@@ -1359,48 +1368,92 @@ class AuthService
             ? UserStatus::PendingVerification->value
             : UserStatus::Active->value;
 
-        $userData = [
-            'name' => $data['name'],
-            'nickname' => $data['nickname'] ?? null,
+        // 회원 항목 — 운영자 설정(환경설정 > 회원)에서 사용 중이고 가입에서 받는 항목만 저장한다.
+        // 컬럼 저장 항목(이름, 닉네임, 휴대폰 등)은 회원 행에, 그 밖의 항목(운영자 추가 항목 등)은 생성 뒤 같은 트랜잭션에서 저장한다.
+        // 꺼진 항목의 값은 요청에 실려 와도 버린다(이름을 끈 사이트는 users.name 이 NULL 이다).
+        $fieldContext = FieldContext::for(FieldContext::SURFACE_SIGNUP);
+        $fieldValues = app(FieldValueService::class);
+        $fields = $fieldValues->partition(FieldSet::CORE_USER, $data, $fieldContext);
+
+        $fixedData = [
             'email' => $data['email'], // audit:allow resource-member-email-ungated 가입 저장 데이터(응답 아님)
             'password' => isset($data['password']) && $data['password'] !== '' ? Hash::make($data['password']) : null,
-            'mobile' => $data['mobile'] ?? null,
-            'phone' => $data['phone'] ?? null,
-            'language' => $data['language'] ?? 'ko',
-            'country' => $this->detectCountryFromAcceptLanguage(),
             'ip_address' => request()->ip(),
             'status' => $status,
         ];
+        $userData = array_merge($fields['columns'], ['country' => $this->detectCountryFromAcceptLanguage()], $fixedData);
+        // 언어를 받지 않았으면 종전 기본값을 쓴다(컬럼이 NOT NULL).
+        $userData['language'] = $userData['language'] ?? 'ko';
+
+        // 표시 이름 종류 — 고를 권한이 있고 운영자가 허용한 종류일 때만 저장한다. 요청 규칙을 거친 가입은 이미 통과했고,
+        // 요청을 거치지 않는 경로가 실어 보낸 값도 같은 판정으로 거른다(맞지 않으면 버리고 회원 기본 종류로 보인다).
+        $chosenKind = $data['display_name_kind'] ?? null;
+        if (is_string($chosenKind) && $chosenKind !== '' && app(DisplayNameChoicePolicy::class)->rejection(null, $chosenKind) === null) {
+            $userData['display_name_kind'] = $chosenKind;
+        }
+
+        // 필수 항목을 건너뛰고 만드는 경로(화면 없는 외부 인증 생성, 관리자 사전 등록 등)는 그 사실을 남긴다 —
+        // 그 회원이 처음 로그인하면 추가 정보 입력 화면으로 보낸다.
+        if (($options['required_fields'] ?? null) === 'defer') {
+            $userData['required_fields_deferred_at'] = $now;
+        }
+
+        // 확장이 가입 저장 데이터(회원 행의 컬럼 값)를 조정할 수 있게 한다. 이메일, 비밀번호, 상태, 접속 IP 는 필터가 바꾸지 못한다.
+        $filteredData = HookManager::applyFilters('core.auth.filter_register_data', $userData, $data, $options);
+        if (is_array($filteredData)) {
+            $userData = array_merge($filteredData, $fixedData);
+        }
+
+        // 닉네임 정책 — 요청 규칙을 거친 가입은 이미 통과했고, 요청을 거치지 않는 경로(외부 인증 가입 등)는 여기서 판정한다.
+        // 통과하면 비교용 정규화 값과 중복 키를 함께 저장한다.
+        $nicknamePolicy = app(NicknamePolicyService::class);
+        [$userData, $nicknameRejected] = $nicknamePolicy->apply(null, $userData, FieldContext::SURFACE_SIGNUP, null, $options);
 
         // 계정 생성 이후 단계에서 실패하면 이메일만 점유한 유령 계정이 남아
         // 같은 이메일로 재가입조차 불가능해진다. 생성~토큰 발급을 하나로 묶는다.
-        [$user, $newToken] = DB::transaction(function () use ($userData, $data, $now, $issueToken, $recordConsents) {
-            $user = $this->userRepository->create($userData);
+        try {
+            [$user, $newToken] = DB::transaction(function () use ($userData, $data, $now, $issueToken, $recordConsents, $fields, $fieldValues, $fieldContext) {
+                $user = $this->userRepository->create($userData);
 
-            // 비밀번호 만료 기준일 — 가입 시점이 첫 변경일이다.
-            $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::Register);
+                // 컬럼이 아닌 회원 항목 값(운영자 추가 항목, 확장 핸들러 항목)
+                $fieldValues->write($user, FieldSet::CORE_USER, $fields['values'], $fieldContext);
 
-            // 약관 동의 이력 기록 (동의를 받지 않은 확장 내부 가입은 남기지 않는다)
-            if ($recordConsents) {
-                $this->recordConsents($user, $data, $now);
-            }
+                // 비밀번호 만료 기준일 — 가입 시점이 첫 변경일이다.
+                $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::Register);
 
-            // 'user' 역할 자동 할당 (UserService 패턴과 동일)
-            $userRole = $this->roleRepository->findByIdentifier('user');
-            if ($userRole) {
-                $user->roles()->sync([$userRole->id]);
-            }
+                // 약관 동의 이력 기록 (동의를 받지 않은 확장 내부 가입은 남기지 않는다)
+                if ($recordConsents) {
+                    $this->recordConsents($user, $data, $now);
+                }
 
-            $newToken = $issueToken
-                ? $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())
-                : null;
+                // 'user' 역할 자동 할당 (UserService 패턴과 동일)
+                $userRole = $this->roleRepository->findByIdentifier('user');
+                if ($userRole) {
+                    $user->roles()->sync([$userRole->id]);
+                }
 
-            return [$user, $newToken];
-        });
+                $newToken = $issueToken
+                    ? $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())
+                    : null;
+
+                return [$user, $newToken];
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            // 판정과 저장 사이에 다른 회원이 같은 닉네임을 먼저 저장한 경우 — 닉네임 칸의 검증 오류로 알린다.
+            throw $nicknamePolicy->duplicateFrom($e) ?? $e;
+        }
         $token = $newToken?->plainTextToken;
 
         // 커밋 후 부수효과 (캐시는 DB 트랜잭션의 롤백 대상이 아니다)
         $user->flushPermissionCaches();
+
+        // 정책에 걸려 버린 닉네임을 알린다(외부 인증 확장이 자기 기록에 사유를 남긴다).
+        if ($nicknameRejected !== null) {
+            HookManager::doAction('core.user.nickname_rejected', $user, $nicknameRejected['nickname'], $nicknameRejected['reason'], [
+                'surface' => FieldContext::SURFACE_SIGNUP,
+                'operation' => 'register',
+            ]);
+        }
 
         // 가입 직후에도 개발자 화면에서 로그인으로 보이도록 서버 세션에 로그인을 남기고 토큰과 짝을 맺는다
         // (가입 라우트가 세션을 연 경우에만 — #792 D20).

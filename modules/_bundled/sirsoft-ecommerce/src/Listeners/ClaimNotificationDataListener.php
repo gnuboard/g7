@@ -21,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
 use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\RefundBreakdown;
 
 /**
@@ -482,7 +483,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
     /**
      * 신청자 표시 이름을 반환합니다.
      *
-     * 회원은 계정 이름, 비회원은 주문의 주문자명이다.
+     * 회원은 알림 영역의 표시 이름(회원 이름을 직접 읽지 않는다), 비회원은 주문서에 적힌 주문자 이름이다.
      *
      * @param  OrderExchange|OrderReturn|OrderRefund  $claim  신청서
      * @param  Order|null  $order  주문
@@ -493,7 +494,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
         if (! $claim->isGuestRequest()) {
             $claim->loadMissing('requestedByUser');
 
-            $name = $claim->requestedByUser?->name;
+            $name = MemberDisplayName::name($claim->requestedByUser, MemberDisplayName::AREA_NOTIFICATION);
 
             if ($name !== null && $name !== '') {
                 return $name;

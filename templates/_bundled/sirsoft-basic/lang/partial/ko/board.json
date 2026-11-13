@@ -135,6 +135,13 @@
   "guest_password_post_delete_message": "비회원 게시글을 삭제하시려면 비밀번호를 입력해주세요.",
   "guest_password_comment_edit_message": "비회원 댓글을 수정하시려면 비밀번호를 입력해주세요.",
   "guest_password_comment_delete_message": "비회원 댓글을 삭제하시려면 비밀번호를 입력해주세요.",
+  "guest_fields": {
+    "group_label": "비회원 작성자 추가 정보"
+  },
+  "author_display": {
+    "notice": "이 게시판에서 보이는 이름: {{name}} ({{kind}})",
+    "notice_without_kind": "이 게시판에서 보이는 이름: {{name}}"
+  },
   "password_placeholder": "비밀번호를 입력하세요",
   "password_incorrect": "비밀번호가 일치하지 않습니다.",
   "password_verify": {

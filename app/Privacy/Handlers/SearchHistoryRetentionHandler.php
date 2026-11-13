@@ -2,7 +2,10 @@
 
 namespace App\Privacy\Handlers;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Extension\HookManager;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
 use App\Privacy\DTO\PrivacyRetentionTarget;
@@ -35,9 +38,13 @@ class SearchHistoryRetentionHandler implements PrivacyRetentionHandlerInterface
 
     /**
      * @param  UserSearchHistoryRepositoryInterface  $histories  최근 검색어 저장소
+     * @param  UserRepositoryInterface  $users  회원 저장소 (명단의 회원 표시 이름)
+     * @param  DisplayNameResolver  $displayNames  표시 이름 계산기
      */
     public function __construct(
         private readonly UserSearchHistoryRepositoryInterface $histories,
+        private readonly UserRepositoryInterface $users,
+        private readonly DisplayNameResolver $displayNames,
     ) {}
 
     /**
@@ -79,11 +86,16 @@ class SearchHistoryRetentionHandler implements PrivacyRetentionHandlerInterface
     {
         $declared = SearchScopes::all();
 
-        return $this->histories
-            ->paginateExpiredGroups(SearchScopes::retentionPolicies(), Carbon::now(), $page, $perPage)
+        $groups = $this->histories->paginateExpiredGroups(SearchScopes::retentionPolicies(), Carbon::now(), $page, $perPage);
+
+        // 명단의 회원 칸은 관리자 영역의 표시 이름이다 — 이 쪽의 회원을 한 번에 읽어 계산한다.
+        $userIds = array_values(array_unique(array_map(static fn (object $row): int => (int) $row->user_id, $groups->items())));
+        $names = $this->displayNames->resolveMany($this->users->findManyByIdsKeyed($userIds), DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $groups
             ->through(fn (object $row) => new PrivacyRetentionTarget(
                 id: $row->user_id.':'.$row->scope,
-                title: (string) $row->user_name,
+                title: (string) ($names[(int) $row->user_id] ?? $row->user_name ?? ''),
                 subtitle: SearchScopes::labelText($declared[$row->scope]['label'] ?? null, (string) $row->scope),
                 context: __('privacy.targets.keyword_count_value', ['count' => (int) $row->keyword_count]),
                 date: $row->oldest_searched_at !== null ? Carbon::parse($row->oldest_searched_at) : null,

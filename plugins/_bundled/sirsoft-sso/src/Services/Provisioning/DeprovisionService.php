@@ -17,6 +17,7 @@ use Plugins\Sirsoft\Sso\Repositories\Contracts\IdentityProviderRepositoryInterfa
 use Plugins\Sirsoft\Sso\Repositories\Contracts\ProvisioningAccountRepositoryInterface;
 use Plugins\Sirsoft\Sso\Services\AccountResolver;
 use Plugins\Sirsoft\Sso\Services\SessionService;
+use Plugins\Sirsoft\Sso\Support\MemberName;
 
 /**
  * 퇴사 처리와 재활성, 퇴사 N일 뒤 탈퇴.
@@ -276,7 +277,8 @@ class DeprovisionService
             return 'skipped_admin';
         }
 
-        $name = (string) $user->name;
+        // 탈퇴 처리가 이름을 바꾸기 전에 그 시점의 관리자 영역 표시 이름을 잡아 기록에 남긴다
+        $name = MemberName::forRecord($user);
 
         try {
             SystemOperation::run('external:sirsoft-sso:withdraw-deprovisioned', fn () => $this->users->withdrawUser($user));

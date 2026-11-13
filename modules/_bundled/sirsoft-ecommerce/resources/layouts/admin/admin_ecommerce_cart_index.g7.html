@@ -261,6 +261,8 @@
                 <span data-if="{{!row.member}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.carts.badges.guest</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.carts.badges.withdrawn</badge>
               </div>
+              <!-- 실명 보조 줄(#490) — 이름 칸은 관리자 영역 표시 이름이다. 서버가 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. -->
+              <span data-if="{{!!row.member?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.member?.real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.member?.real_name}}</span>
               <span data-if="{{row.member?.email}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.member?.email}}</span>
             </div>
           </cell>

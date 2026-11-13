@@ -19,6 +19,8 @@ description: |
     - 마이페이지 프로필 오류 메시지(`profileErrors` — 가드와 표시식의 옵셔널 엇갈림)
     - 마이페이지 알림 수신 체크박스 4종 — 값의 타입(boolean)을 화면이 전제하지 않도록
       자동바인딩 대신 `autoBinding:false` + `checked` + `change` 명시 바인딩으로 전환
+      (7.2.0: 이 칸들은 게시판 모듈이 회원 항목으로 선언하고 수정 화면의 확장별 카드가 공용 항목 조각으로 그린다.
+      저장값 타입과 무관하게 체크를 정하고 true/false 를 내보내는 일은 공용 입력 컴포넌트 MemberFieldInput 이 맡는다)
 
 axes:
   mount_path: [initial_load, reload, spa_return]   # 진입 / 새로고침 / SPA 이동 후 복귀

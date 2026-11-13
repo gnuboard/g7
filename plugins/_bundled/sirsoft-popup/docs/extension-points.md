@@ -149,3 +149,28 @@ _등록하는 알림 정의가 없습니다._
 <!-- @intent START -->
 알림을 보내지 않는다.
 <!-- @intent END -->
+
+## 활동 로그 훅
+
+> 이 플러그인이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 8개입니다.
+> 기록은 `ResolvesActivityLogType::logActivity()` 로 남기며, 로그 유형은 요청 문맥에서 판정합니다
+> (모두 관리자 화면의 동작이므로 Admin). 설명 문구는 `sirsoft-popup::activity_log.description.*` 이고
+> 이 플러그인의 `lang/{ko,en}/activity_log.php` 와 번들 일본어 팩이 함께 정의합니다.
+> 일괄 처리(노출과 비노출, 복사, 삭제)는 팝업마다 한 줄을 남깁니다. 삭제 기록은 행이 이미 없으므로
+> 훅이 넘긴 삭제 전 값으로 남깁니다.
+
+### 팝업 훅 (PopupActivityLogListener)
+
+**파일**: `plugins/_bundled/sirsoft-popup/src/Listeners/PopupActivityLogListener.php`
+**총 8훅**
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-popup.popup.after_create` | `handleCreated` | `popup.create` | Admin | Popup |
+| `sirsoft-popup.popup.after_update` | `handleUpdated` | `popup.update` | Admin | Popup |
+| `sirsoft-popup.popup.after_delete` | `handleDeleted` | `popup.delete` | Admin | Popup (ID 지정) |
+| `sirsoft-popup.popup.after_bulk_status` | `handleBulkStatus` | `popup.bulk_status` | Admin | Popup |
+| `sirsoft-popup.popup.after_bulk_copy` | `handleBulkCopy` | `popup.bulk_copy` | Admin | Popup (복사본) |
+| `sirsoft-popup.popup.after_bulk_delete` | `handleBulkDelete` | `popup.bulk_delete` | Admin | Popup (ID 지정) |
+| `sirsoft-popup.popup.after_reorder` | `handleReordered` | `popup.reorder` | Admin | 없음 |
+| `sirsoft-popup.popup_image.after_change` | `handleImageChanged` | `popup.image_update`, `popup.image_remove` | Admin | Popup |

@@ -158,6 +158,10 @@
       "label": "사용자 정보",
       "default_name": "사용자명"
     },
+    "member_field_input": {
+      "label": "회원 항목 입력칸",
+      "default_label": "항목 이름"
+    },
     "quantity_selector": {
       "label": "수량 선택기"
     },

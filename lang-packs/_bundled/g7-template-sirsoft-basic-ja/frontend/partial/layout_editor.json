@@ -155,6 +155,10 @@
       "label": "ユーザー情報",
       "default_name": "ユーザー名"
     },
+    "member_field_input": {
+      "label": "会員項目入力欄",
+      "default_label": "項目名"
+    },
     "quantity_selector": {
       "label": "数量セレクター"
     },

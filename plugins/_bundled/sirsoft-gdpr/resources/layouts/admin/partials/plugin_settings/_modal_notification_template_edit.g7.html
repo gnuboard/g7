@@ -21,6 +21,22 @@
              고른 회원 이름이 다음에 열 때까지 전역에 남지 않게(7.1.1). 이 틀은 조건·반복 없이 창이 열려 있는 동안 내내 붙어 있고, 여는 쪽이 매번 새로 채운다 -->
         <set-state target="global" :gdpr_notification_template_form_modal="null"/>
       </on>
+      <!-- 저장은 됐지만 알릴 것이 있을 때의 경고 상자. 지금 없는 회원 항목 변수(지워졌거나 꺼진 항목, 잘못 적은 이름)를
+           제목, 본문, 이동 주소에 썼으면 서버가 저장 응답의 warnings 에 실어 준다. 그 자리는 빈 글자로 발송되므로
+           운영자가 창을 닫기 전에 고칠 수 있게 창을 닫지 않고 여기에 보인다. 스크롤 영역 밖(위)에 두어 본문을 아래까지
+           내린 채 저장해도 보인다. 문구는 코어 알림 템플릿 창과 같은 키를 쓴다. -->
+      <div data-ref="gdpr_template_save_warnings" data-if="{{(_global.gdpr_notification_template_form_modal?.warnings ?? []).length > 0}}" role="alert" class="gdpr:flex-shrink-0 gdpr:mb-3 gdpr:p-3 gdpr:rounded-lg gdpr:border gdpr:border-amber-300 gdpr:dark:border-amber-700 gdpr:bg-amber-50 gdpr:dark:bg-amber-900/30 gdpr:text-amber-800 gdpr:dark:text-amber-300 gdpr:text-sm">
+        <div class="gdpr:flex gdpr:gap-3">
+          <icon name="triangle-exclamation" size="sm" class="gdpr:flex-shrink-0 gdpr:mt-0.5"/>
+          <div class="gdpr:min-w-0">
+            <h3 class="gdpr:font-medium">$t:admin.settings.notification_definitions.edit_modal.warnings_title</h3>
+            <p class="gdpr:mt-1">$t:admin.settings.notification_definitions.edit_modal.warnings_description</p>
+            <ul class="gdpr:mt-2 gdpr:list-disc gdpr:list-inside gdpr:space-y-1">
+              <li data-each="warn, warnIdx in {{_global.gdpr_notification_template_form_modal?.warnings ?? []}}" data-ref="gdpr_template_save_warning_{{warnIdx}}" class="gdpr:break-words">{{warn.message ?? warn.target ?? ''}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <div class="gdpr:flex-1 gdpr:overflow-y-auto gdpr:space-y-5 gdpr:pr-1">
         <div data-ref="gdpr_template_validation_error" data-if="{{_global.gdpr_notification_template_form_modal?.errors}}" class="gdpr-alert-danger">
           <div class="gdpr:flex gdpr:gap-3">
@@ -260,13 +276,35 @@
         </div>
         <div data-ref="gdpr_template_variables_info" data-if="{{((_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).length > 0) &amp;&amp; !((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" class="gdpr:bg-gray-50 gdpr:dark:bg-gray-900 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-4">
           <h4 class="gdpr:text-sm gdpr:font-medium gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:mb-2">$t:sirsoft-gdpr.notification_definitions.edit_modal.variables_title</h4>
-          <div class="gdpr:flex gdpr:flex-wrap gdpr:gap-2">
-            <span data-each="v in {{_global.gdpr_notification_template_form_modal?.definition?.variables ?? []}}" class="gdpr:inline-flex gdpr:items-center gdpr:gap-1 gdpr:text-xs gdpr:px-2 gdpr:py-1 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-600 gdpr:rounded gdpr:text-gray-700 gdpr:dark:text-gray-300">
+          <!-- 이 알림이 선언한 변수. 회원 공통 변수(group 이 member)는 아래 「회원 항목」 묶음으로 가른다. -->
+          <div data-ref="gdpr_template_variables_own" data-if="{{(_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member').length > 0}}" class="gdpr:flex gdpr:flex-wrap gdpr:gap-2">
+            <span data-each="v in {{(_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member')}}" class="gdpr:inline-flex gdpr:items-center gdpr:gap-1 gdpr:text-xs gdpr:px-2 gdpr:py-1 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-600 gdpr:rounded gdpr:text-gray-700 gdpr:dark:text-gray-300">
               <span class="gdpr:font-mono">{</span>
               <span class="gdpr:font-mono">{{v.key}}</span>
               <span class="gdpr:font-mono">}</span>
               <span> — {{v.description ?? ''}}</span>
             </span>
+          </div>
+          <!-- 회원 항목 묶음. 서버가 알림 정의의 변수 뒤에 회원 공통 변수(표시 이름, 코어와 확장 항목, 운영자 추가 항목)를
+               group: member 로 덧붙인다. 운영자가 항목을 더할수록 길어지므로 접어 두고, 제목 단추로 펼친다. 문구는 코어 창과 같은 키다. -->
+          <div data-ref="gdpr_template_variables_member" data-if="{{(_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length > 0}}" class="gdpr:mt-3 gdpr:pt-3 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700">
+            <button type="button" data-ref="gdpr_template_variables_member_toggle" aria-expanded="{{_global.gdpr_notification_template_form_modal?.memberVariablesOpen === true}}" aria-controls="gdpr_template_variables_member_list" class="gdpr:flex gdpr:items-center gdpr:gap-2 gdpr:min-h-[44px] gdpr:text-sm gdpr:font-medium gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:hover:text-gray-900 gdpr:dark:hover:text-gray-100">
+              <on type="click">
+                <!-- 펼침 상태는 창 이름 공간에 둔다. 창을 열 때마다 이름 공간을 새로 채우므로 다시 열면 접힌 채로 시작한다. -->
+                <set-state target="global" gdpr_notification_template_form_modal.memberVariablesOpen="{{!(_global.gdpr_notification_template_form_modal?.memberVariablesOpen === true)}}"/>
+              </on>
+              <icon name="{{_global.gdpr_notification_template_form_modal?.memberVariablesOpen === true ? 'chevron-down' : 'chevron-right'}}" class="gdpr:text-xs"/>
+              <span>{{$t('admin.settings.notification_definitions.edit_modal.member_variables_title', { count: (_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length })}}</span>
+            </button>
+            <p data-if="{{_global.gdpr_notification_template_form_modal?.memberVariablesOpen === true}}" class="gdpr-form-hint gdpr:mb-2">$t:admin.settings.notification_definitions.edit_modal.member_variables_hint</p>
+            <div data-ref="gdpr_template_variables_member_list" data-if="{{_global.gdpr_notification_template_form_modal?.memberVariablesOpen === true}}" class="gdpr:flex gdpr:flex-wrap gdpr:gap-2">
+              <span data-each="mv in {{(_global.gdpr_notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member')}}" class="gdpr:inline-flex gdpr:items-center gdpr:gap-1 gdpr:text-xs gdpr:px-2 gdpr:py-1 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-600 gdpr:rounded gdpr:text-gray-700 gdpr:dark:text-gray-300">
+                <span class="gdpr:font-mono">{</span>
+                <span class="gdpr:font-mono">{{mv.key}}</span>
+                <span class="gdpr:font-mono">}</span>
+                <span> — {{mv.description ?? ''}}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -297,21 +335,27 @@
           <!-- 취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1) -->
           <set-state target="global" :gdpr_notification_template_form_modal="null"/>
         </on>
-        $t:common.cancel
+        <!-- 저장이 끝나 경고만 보이는 상태에서는 되돌릴 것이 없으므로 「닫기」로 읽힌다. -->
+        <span>{{(_global.gdpr_notification_template_form_modal?.warnings ?? []).length > 0 ? '$t:common.close' : '$t:common.cancel'}}</span>
       </button>
       <!-- 편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다. -->
       <extension-point name="notification_template_form_footer_actions" data-ref="gdpr_template_form_footer_ext" definition="{{_global.gdpr_notification_template_form_modal?.definition}}" template="{{_global.gdpr_notification_template_form_modal?.template}}" channel="{{_global.gdpr_notification_template_form_modal?.template?.channel ?? ''}}" modalId="modal_gdpr_notification_template_edit" stateKey="gdpr_notification_template_form_modal" saveEndpoint="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" refetchDataSourceId="gdprNotificationDefinitions"/>
       <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="gdpr-flex-center gdpr:gap-2 gdpr:text-sm gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:bg-indigo-600 gdpr:text-white gdpr:hover:bg-indigo-700 gdpr:dark:bg-indigo-500 gdpr:dark:hover:bg-indigo-600 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
         <on type="click">
-          <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다. -->
+          <!-- 저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.
+               서버가 경고(지금 없는 회원 항목 변수)를 함께 주면 저장은 된 것이므로 목록 재조회와 성공 안내는 그대로 하고,
+               창은 닫지 않은 채 경고를 창 안 상자와 경고 토스트로 알린다. 다시 저장하기 전에 지난 경고를 비운다.
+               갈래는 응답 값으로만 가른다(성공 처리 안에서 방금 쓴 전역 상태를 형제 액션의 조건으로 다시 읽으면 갱신 전 값이다). -->
           <sequence>
-            <set-state target="global" :gdpr_notification_template_form_modal.isSaving="true" :gdpr_notification_template_form_modal.errors="null"/>
+            <set-state target="global" :gdpr_notification_template_form_modal.isSaving="true" :gdpr_notification_template_form_modal.errors="null" :gdpr_notification_template_form_modal.warnings="null"/>
             <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + _global.gdpr_notification_template_form_modal?.template?.id}}" method="PUT">
               <success>
                 <refetch-data-source dataSourceId="gdprNotificationDefinitions"/>
                 <toast message="$t:sirsoft-gdpr.notification_definitions.save_success" type="success"/>
-                <close-modal target="modal_gdpr_notification_template_edit"/>
-                <set-state target="global" :gdpr_notification_template_form_modal="null"/>
+                <close-modal if="{{(response?.data?.warnings ?? []).length === 0}}" target="modal_gdpr_notification_template_edit"/>
+                <set-state if="{{(response?.data?.warnings ?? []).length === 0}}" target="global" :gdpr_notification_template_form_modal="null"/>
+                <set-state if="{{(response?.data?.warnings ?? []).length > 0}}" target="global" :gdpr_notification_template_form_modal.isSaving="false" gdpr_notification_template_form_modal.warnings="{{response?.data?.warnings ?? []}}"/>
+                <toast if="{{(response?.data?.warnings ?? []).length > 0}}" type="warning" message="$t:admin.settings.notification_definitions.edit_modal.warnings_toast|count={{(response?.data?.warnings ?? []).length}}"/>
               </success>
               <fail>
                 <set-state target="global" :gdpr_notification_template_form_modal.isSaving="false" gdpr_notification_template_form_modal.errors="{{error.errors}}"/>

@@ -85,7 +85,8 @@ class NotificationDefinitionsTest extends PluginTestCase
         $this->assertSame($member->id, $reset['context']['trigger_user_id']);
         // IdP 이름은 언어별 값으로 싣고 코어가 받는 사람 언어로 고른다(키 순서는 저장 JSON 순서라 무관) — 그린 결과는 test_values_follow_recipient_language
         $this->assertEquals(['ko' => '본사 계정', 'en' => 'HQ account'], $reset['data']['idp_label']);
-        $this->assertSame('김직원', $reset['data']['name']);
+        // 받는 사람이 그 회원 본인이라 이름은 자리표시다 — 코어가 받는 사람과 채널마다 표시 이름으로 푼다(#490)
+        $this->assertSame('{recipient_name}', $reset['data']['name']);
 
         $deprovisioned = HookManager::applyFilters('sirsoft-sso.notification.extract_data', $base, 'sso_super_admin_deprovisioned', [$super, $account, 'scim']);
         $this->assertTrue($deprovisioned['context']['related_users']['super_admins']->contains('id', $super->id));
@@ -201,7 +202,7 @@ class NotificationDefinitionsTest extends PluginTestCase
     /**
      * 비밀번호 찾기 안내 메일이 회원이 실제로 할 수 있는 로그인 방법을 적는지 확인한다.
      *
-     * LDAP/AD 는 로그인 화면에 버튼이 없고 같은 폼에 사내 아이디(또는 회사 이메일)와 회사 비밀번호를 넣는다 — 「○○(으)로 로그인」을
+     * LDAP/AD 는 로그인 화면에 버튼이 없고 같은 폼에 사내 아이디(또는 회사 이메일)와 회사 비밀번호를 넣는다 — 「○○ 계정으로 로그인」을
      * 누르라는 안내는 OIDC, SAML 에만 맞다. 안내할 IdP 가 없으면 관리자 문의로 안내한다.
      *
      * @scenario type=sso_password_reset_redirect, guide_idp=ldap_username|ldap_email|oidc|none, recipient=ko|en
@@ -249,7 +250,7 @@ class NotificationDefinitionsTest extends PluginTestCase
         $this->assertStringContainsString('company email', $mail($ldapEmail, 'en'));
 
         // OIDC — 종전처럼 버튼 안내
-        $this->assertStringContainsString('「본사 계정(으)로 로그인」을 눌러', $mail($oidc, 'ko'));
+        $this->assertStringContainsString('「본사 계정 계정으로 로그인」을 눌러', $mail($oidc, 'ko'));
         $this->assertStringContainsString('Sign in with HQ account', $mail($oidc, 'en'));
 
         // 안내할 IdP 없음 — 없는 버튼 대신 관리자 문의

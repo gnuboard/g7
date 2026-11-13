@@ -194,6 +194,16 @@
               </div>
             </div>
           </div>
+          <!-- 주문자 추가 정보 — 운영자가 주문서에 더한 항목 가운데 주문자 구획에서 받은 값(값이 있는 것만 서버가 준다). 없으면 구획을 그리지 않는다 -->
+          <div data-if="{{(orderData?.data?.extra_fields ?? []).some(function(f) { return f.section === 'orderer'; })}}" data-ref="order_complete_extra_fields_orderer" class="py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">$t:shop.checkout_fields.orderer_extra</h3>
+            <div class="space-y-1 text-sm">
+              <p data-each="extraField in {{(orderData?.data?.extra_fields ?? []).filter(function(f) { return f.section === 'orderer'; })}}" data-ref="order_complete_extra_field_{{extraField.key}}" class="flex gap-2">
+                <span class="shrink-0 text-gray-600 dark:text-gray-400 break-words">{{extraField.label}}:</span>
+                <span class="min-w-0 text-gray-900 dark:text-white break-words">{{extraField.display_value}}</span>
+              </p>
+            </div>
+          </div>
           <!-- 배송지 정보 -->
           <div class="py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 class="font-semibold text-gray-900 dark:text-white mb-3">$t:shop.order_complete.shipping_address</h3>
@@ -205,6 +215,13 @@
               <p>{{orderData?.data?.shipping_address?.address}}</p>
               <p>{{orderData?.data?.shipping_address?.city}}, {{orderData?.data?.shipping_address?.state}} {{orderData?.data?.shipping_address?.zipcode}}</p>
               <p>{{orderData?.data?.shipping_address?.recipient_country_code}}</p>
+            </div>
+            <!-- 배송 추가 정보 — 운영자가 주문서에 더한 항목 가운데 배송지 구획에서 받은 값 -->
+            <div data-if="{{(orderData?.data?.extra_fields ?? []).some(function(f) { return f.section === 'shipping'; })}}" data-ref="order_complete_extra_fields_shipping" class="mt-2 space-y-1 text-sm">
+              <p data-each="extraField in {{(orderData?.data?.extra_fields ?? []).filter(function(f) { return f.section === 'shipping'; })}}" data-ref="order_complete_extra_field_{{extraField.key}}" class="flex gap-2">
+                <span class="shrink-0 text-gray-600 dark:text-gray-400 break-words">{{extraField.label}}:</span>
+                <span class="min-w-0 text-gray-900 dark:text-white break-words">{{extraField.display_value}}</span>
+              </p>
             </div>
             <!-- 배송지 저장 버튼 (로그인 사용자만).
                  본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,
@@ -226,8 +243,10 @@
                     </sequence>
                   </success>
                   <fail>
-                    <!-- 409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다 -->
+                    <!-- 409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다.
+                         추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
                     <conditions>
+                      <when if="{{error.error_code === 'required_fields_pending'}}"><open-modal target="required_info_pending_modal"/></when>
                       <when if="{{error.status === 409}}"><toast type="info" message="$t:shop.order_complete.address_name_exists"/></when>
                       <else><toast type="error" message="{{error.message ?? '$t:shop.order_complete.address_save_failed'}}"/></else>
                     </conditions>

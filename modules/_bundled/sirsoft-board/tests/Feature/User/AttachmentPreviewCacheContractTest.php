@@ -151,6 +151,10 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
 
         $since = gmdate('D, d M Y H:i:s', strtotime($row->updated_at)).' GMT';
 
+        // `Expires` 는 응답 시각(PHP time())에 max-age 를 더한 값이라 Carbon 시간 고정이 듣지 않는다.
+        // 두 요청이 초 경계를 넘으면 같은 계약인데도 1초 차이로 갈린다 — 다음 초가 시작될 때 두 요청을 보낸다.
+        time_sleep_until(floor(microtime(true)) + 1);
+
         $full = $this->get($this->previewUrl($row->hash));
         $full->assertStatus(200);
 
@@ -162,7 +166,7 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
         //
         // 종전에는 이 라우트에서 상태코드만 봤다 — 형제 코어 통로
         // (`StreamedFileConditionalRequestTest`)는 200·304 의 캐시 축 동일성을
-        // 단언하는데 이 통로만 그 축이 비어 있었다 (10차 G3 라운드 B10-8).
+        // 단언하는데 이 통로만 그 축이 비어 있었다.
         foreach (['Cache-Control', 'Expires', 'Last-Modified', 'ETag'] as $header) {
             $this->assertSame(
                 $full->headers->get($header),
@@ -209,8 +213,7 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * 덮어쓰기**라 그 뒤에 읽는 크기가 PHP stat 캐시의 축소 전 값일 수 있고, 그러면
      * 행의 `size` 가 실제보다 커져 `Content-Length` 선언이 응답을 자른다.
      *
-     * 8차가 「적용 전에 실측했다」고 적은 축이 이것인데 코드로 고정된 것이 없었다
-     * (10차 G3 라운드 B10-6).
+     * 「적용 전에 실측했다」고 적힌 축이 이것인데 코드로 고정된 것이 없었다.
      *
      * @scenario serving_type=preview, contract_axis=content_length
      *
@@ -265,7 +268,7 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * 형제 `preview()` 가 반환 타입 union 결손으로 실파일 요청에서 전부 500 이던 것이
      * 초록으로 남았던 이유는 「그 경로를 성공까지 태우는 테스트가 하나도 없어서」였다.
      * 같은 조건이 `download()` 에 그대로 남아 있었다 — 그 메서드의 200 을 태우는
-     * 테스트가 저장소에 0건이었다 (10차 G3 라운드 B10-7).
+     * 테스트가 저장소에 0건이었다.
      *
      * @scenario serving_type=download, contract_axis=content_length
      *
@@ -294,8 +297,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      *
      * 원문 파일명을 헤더로 직접 넘기면 Flysystem 어댑터가 자기 `makeDisposition()` 을
      * 통째로 건너뛴다 — 이름에 따옴표가 들어간 업로드에서 헤더 구조가 깨지고, 같은
-     * 파일이 통로마다 다른 이름으로 저장된다. 형제 `preview()` 는 8차에 위임됐는데
-     * 이 메서드만 남아 있었다 (10차 G3 라운드 B10-2).
+     * 파일이 통로마다 다른 이름으로 저장된다. 형제 `preview()` 는 먼저 위임됐는데
+     * 이 메서드만 남아 있었다.
      *
      * @scenario serving_type=download, contract_axis=filename_declaration
      *
@@ -363,7 +366,7 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * 회차 10 이 이 축의 단언 2건을 mock 기반 유닛 테스트에서 삭제하면서 대체를 넣지
      * 않아 저장소 전체에서 이 축을 재는 곳이 0 이 됐다 — 그 두 건은 스토리지가
      * mock 이라 실제 헤더를 볼 수 없었으므로, 대체는 응답 헤더를 직접 재는 이 자리다
-     * (11차 G3 라운드 F-3). 따옴표 축 형제 케이스와 같은 형태로 둔다.
+     * 따옴표 축 형제 케이스와 같은 형태로 둔다.
      *
      * @scenario serving_type=download, contract_axis=filename_declaration
      *

@@ -58,8 +58,8 @@ class DependencyMessageTypeTest extends TestCase
             App::setLocale('ko');
             $ko = $checker->unmetDependencyMessages($dependencies, $langPrefix);
             $this->assertSame([
-                '의존하는 모듈 "sirsoft-board"이(가) 설치되지 않았거나 비활성 상태입니다.',
-                '의존하는 플러그인 "sirsoft-ckeditor5"이(가) 설치되지 않았거나 비활성 상태입니다.',
+                '의존하는 모듈 "sirsoft-board" — 설치되지 않았거나 비활성 상태입니다.',
+                '의존하는 플러그인 "sirsoft-ckeditor5" — 설치되지 않았거나 비활성 상태입니다.',
             ], $ko, $langPrefix);
 
             App::setLocale('en');

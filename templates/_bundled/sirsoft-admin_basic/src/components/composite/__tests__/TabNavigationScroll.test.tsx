@@ -1087,4 +1087,52 @@ describe('TabNavigationScroll', () => {
       expect(screen.queryByRole('button', { name: /쇼핑 데이터/ })).not.toBeInTheDocument();
     });
   });
+
+  describe('탭의 빨간 점 (errorDot)', () => {
+    const dotTabs: Tab[] = [
+      { id: 'basic', label: '기본정보', errorDot: true },
+      { id: 'list', label: '목록설정', errorDot: false },
+      { id: 'permissions', label: '권한설정' },
+    ];
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_error_dot_marks_tab
+    it('errorDot 이 참인 탭 이름 옆에만 점을 그리고, 점의 읽기 이름은 errorDotLabel 이다', () => {
+      render(<TabNavigationScroll tabs={dotTabs} errorDotLabel="오류가 있는 칸이 있습니다" />);
+
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs.map((tab) => tab.querySelector('[data-tab-error-dot]') !== null)).toEqual([true, false, false]);
+      const dot = tabs[0].querySelector('[data-tab-error-dot]') as HTMLElement;
+      expect(dot.getAttribute('role')).toBe('img');
+      expect(dot.getAttribute('aria-label')).toBe('오류가 있는 칸이 있습니다');
+      expect(dot.className).toContain('bg-red-500');
+      expect(dot.className).toContain('dark:bg-red-400');
+      // 탭 이름은 그대로다
+      expect(tabs[0].textContent).toBe('기본정보');
+    });
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_error_dot_marks_tab
+    it('레이아웃 식이 글자 「true」로 풀려 와도 점을 그리고, 그 밖의 값은 그리지 않는다', () => {
+      const tabs: Tab[] = [
+        { id: 'a', label: '가', errorDot: 'true' },
+        { id: 'b', label: '나', errorDot: 'false' },
+        { id: 'c', label: '다', errorDot: '' },
+      ];
+      render(<TabNavigationScroll tabs={tabs} />);
+
+      expect(screen.getAllByRole('tab').map((tab) => tab.querySelector('[data-tab-error-dot]') !== null)).toEqual([true, false, false]);
+    });
+
+    // @scenario viewport=mobile
+    // @effects tab_nav_error_dot_marks_tab
+    it('모바일 선택 목록에서는 탭 이름 뒤에 표식을 붙인다', () => {
+      setMobile();
+      render(<TabNavigationScroll tabs={dotTabs} activeTabId="list" />);
+
+      fireEvent.click(screen.getByRole('button', { name: /목록설정/ }));
+      expect(screen.getByText('기본정보 ●')).toBeInTheDocument();
+      expect(screen.queryByText('목록설정 ●')).not.toBeInTheDocument();
+    });
+  });
 });

@@ -18,6 +18,11 @@ export interface DataGridColumn {
     sortable?: boolean;
     hidden?: boolean;
     required?: boolean;
+    /**
+     * 값이 비었을 때(null, undefined, 빈 문자열) 대신 그릴 글자.
+     * `cellChildren`, `render` 가 없는 열에만 적용됩니다. 주지 않으면 빈 칸입니다.
+     */
+    emptyText?: string;
     render?: (value: any, row: any) => React.ReactNode;
     cellChildren?: DataGridCellChild[];
 }

@@ -33,7 +33,9 @@
             <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
           </success>
           <fail>
-            <toast type="error" message="{{error.message}}"/>
+            <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+            <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
+            <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message}}"/>
           </fail>
         </api-call>
       </sequence>
@@ -83,7 +85,9 @@
                 <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
               </success>
               <fail>
-                <toast type="error" message="{{error.message}}"/>
+                <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
+                <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message}}"/>
               </fail>
             </api-call>
           </on>
@@ -153,7 +157,9 @@
                 <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
               </success>
               <fail>
-                <toast type="error" message="{{error.message}}"/>
+                <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
+                <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message}}"/>
               </fail>
             </api-call>
           </sequence>
@@ -211,10 +217,10 @@
       </label>
       <div class="space-y-2">
         <!-- 우편번호 + 검색 버튼 -->
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <!-- 주소 검색 SDK 를 못 불러오면 이 칸은 편집 가능 상태로 열린다(플러그인 폴백). 그때 사용자가 친 값이 상태로 가려면 이 change 액션이 있어야 한다 — 평소에는 openPostcode 가 shipping.* 를 직접 써서 넣으므로 없어도 드러나지 않지만, 폴백 상황에서는 결제 버튼이 이 값을 요구해 영영 비활성이 된다. -->
-          <input aria-label="$t:shop.checkout.zipcode" type="text" name="zipcode" value="{{_local.shipping?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.errors?.['shipping.zipcode'] ? 'w-28 px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
-            <responsive on="portable" class="{{_local.errors?.['shipping.zipcode'] ? 'w-24 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
+          <input aria-label="$t:shop.checkout.zipcode" type="text" name="zipcode" value="{{_local.shipping?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.errors?.['shipping.zipcode'] ? 'w-28 min-w-0 px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
+            <responsive on="portable" class="{{_local.errors?.['shipping.zipcode'] ? 'w-24 min-w-0 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-24 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
             <on type="change">
               <set-state target="local" shipping.zipcode="{{$event.target.value}}"/>
             </on>
@@ -236,7 +242,9 @@
                     <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
                   </success>
                   <fail>
-                    <toast type="error" message="{{error.message}}"/>
+                    <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                    <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
+                    <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message}}"/>
                   </fail>
                 </api-call>
               </sequence>
@@ -252,20 +260,23 @@
           </on>
         </input>
         <span data-if="{{_local.errors?.['shipping.address']}}" class="text-red-600 dark:text-red-400 text-xs block">{{_local.errors?.['shipping.address']?.[0] ?? ''}}</span>
-        <!-- 상세 주소 — 국내 주문의 필수 칸이다(서버가 해외 주소 1행이 없을 때 요구한다). 별표와 칸 아래 오류가
-             없으면 결제하기가 422 로 막혀도 어느 칸이 비었는지 찾을 수 없다. 해외 폼에는 이 칸이 없다(주소 2행이 대신한다). -->
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          <span>$t:shop.checkout.detail_address</span>
-          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
-        </label>
-        <input aria-label="$t:shop.checkout.detail_address" type="text" name="address_detail" value="{{_local.shipping?.address_detail ?? ''}}" placeholder="$t:shop.checkout.detail_address_placeholder" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
-          <responsive on="portable" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
-          <on type="change">
-            <!-- 입력한 상세 주소를 배송지 상태에 담는다 — 주문 제출이 이 값을 싣는다 -->
-            <set-state target="local" shipping.address_detail="{{$event.target.value}}"/>
-          </on>
-        </input>
-        <span data-if="{{_local.errors?.['shipping.address_detail']}}" class="text-red-600 dark:text-red-400 text-xs block">{{_local.errors?.['shipping.address_detail']?.[0] ?? ''}}</span>
+        <!-- 상세 주소 — 사용과 필수 여부는 운영자 설정(계산값 checkoutFields.address_detail)을 따른다. 설정이 없는 응답에서는 종전대로 사용과 필수다.
+             필수인데 별표와 칸 아래 오류가 없으면 결제하기가 422 로 막혀도 어느 칸이 비었는지 찾을 수 없다. 해외 폼에는 이 칸이 없다(주소 2행이 대신한다).
+             사용이 꺼지면 칸을 그리지 않고 주문 요청에도 이 값을 싣지 않는다. -->
+        <div data-if="{{_computed.checkoutFields?.address_detail?.enabled !== false}}" data-ref="checkout_field_address_detail" class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <span>$t:shop.checkout.detail_address</span>
+            <span data-if="{{!!_computed.checkoutFields?.address_detail?.required}}" data-ref="checkout_field_address_detail_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
+          </label>
+          <input aria-label="$t:shop.checkout.detail_address" aria-required="{{!!_computed.checkoutFields?.address_detail?.required}}" required="{{!!_computed.checkoutFields?.address_detail?.required}}" type="text" name="address_detail" value="{{_local.shipping?.address_detail ?? ''}}" placeholder="$t:shop.checkout.detail_address_placeholder" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+            <responsive on="portable" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
+            <on type="change">
+              <!-- 입력한 상세 주소를 배송지 상태에 담는다 — 주문 제출이 이 값을 싣는다 -->
+              <set-state target="local" shipping.address_detail="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span data-if="{{_local.errors?.['shipping.address_detail']}}" class="text-red-600 dark:text-red-400 text-xs block">{{_local.errors?.['shipping.address_detail']?.[0] ?? ''}}</span>
+        </div>
       </div>
     </div>
     <!-- 해외 주소 입력 폼 (KR 이외 국가 선택 시 표시) -->
@@ -339,11 +350,15 @@
         <span data-if="{{_local.errors?.['shipping.intl_postal_code']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['shipping.intl_postal_code']?.[0] ?? ''}}</span>
       </div>
     </div>
-    <!-- 배송 메모 -->
-    <div class="mb-4">
+    <!-- 배송 메모 — 사용과 필수 여부는 운영자 설정(계산값 checkoutFields.shipping_memo)을 따른다. 설정이 없는 응답에서는 종전대로 사용과 선택이다.
+         사용이 꺼지면 고르는 칸과 직접 입력칸을 모두 그리지 않고 주문 요청에도 싣지 않는다. -->
+    <div data-if="{{_computed.checkoutFields?.shipping_memo?.enabled !== false}}" data-ref="checkout_field_shipping_memo" class="mb-4">
       <responsive on="portable" class="mb-3"/>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_memo</label>
-      <select name="shipping_memo" aria-label="$t:shop.checkout.shipping_memo" value="{{_local.shippingMemo ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:shop.checkout.shipping_memo</span>
+        <span data-if="{{!!_computed.checkoutFields?.shipping_memo?.required}}" data-ref="checkout_field_shipping_memo_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
+      </label>
+      <select name="shipping_memo" aria-label="$t:shop.checkout.shipping_memo" aria-required="{{!!_computed.checkoutFields?.shipping_memo?.required}}" required="{{!!_computed.checkoutFields?.shipping_memo?.required}}" value="{{_local.shippingMemo ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <options>
           <option value="">$t:shop.checkout.memo_none</option>
@@ -358,9 +373,10 @@
           <set-state target="local" shippingMemo="{{$event.target.value}}"/>
         </on>
       </select>
+      <span data-if="{{_local.errors?.shipping_memo}}" data-ref="checkout_field_shipping_memo_error" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.shipping_memo?.[0] ?? ''}}</span>
     </div>
     <!-- 직접 입력 (custom 선택 시) -->
-    <div data-if="{{_local.shippingMemo === 'custom'}}" class="mb-4">
+    <div data-if="{{_computed.checkoutFields?.shipping_memo?.enabled !== false &amp;&amp; _local.shippingMemo === 'custom'}}" class="mb-4">
       <responsive on="portable" class="mb-3"/>
       <input aria-label="$t:shop.checkout.shipping_memo" type="text" name="shipping_memo_custom" value="{{_local.shippingMemoCustom ?? ''}}" placeholder="$t:shop.checkout.memo_custom_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
@@ -394,6 +410,10 @@
         </on>
       </checkbox>
       <label for="save_shipping_address" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">$t:shop.checkout.save_shipping_address_checkbox</label>
+    </div>
+    <!-- 배송지 구획의 추가 항목 — 운영자가 더한 항목과 다른 확장이 보탠 항목. 항목이 없으면 묶음 자체를 그리지 않는다 -->
+    <div data-each="checkoutFieldGroup in {{(_computed.checkoutFields?.shipping ?? []).length > 0 ? [{ key: 'shipping', label: $t('shop.checkout_fields.shipping_extra'), fields: _computed.checkoutFields.shipping }] : []}}">
+      <include src="partials/shop/_checkout_extra_fields.g7.html"/>
     </div>
   </div>
 </partial>

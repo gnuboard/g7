@@ -1,0 +1,755 @@
+{
+    "comment": "쇼핑몰 설정 — 주문 설정 탭의 **주문서 항목** 구획(#490). 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 항목을 표로 그리고,\n  좁은 화면(768px 미만)에서는 같은 배선의 카드 조각(`_checkout_fields_cards`)으로 바꿔 그린다. 한쪽을 고치면 다른 쪽도 같이 본다.\n\n  **이 표의 조작은 즉시 저장이다.** 사용, 필수 스위치는 누르자마자 코어 항목 API 로 나가고, 성공이든 실패든 `checkoutFieldDefs` 만\n  다시 받는다. 설정 폼(`_local.form`)과 「변경 있음」(`hasChanges`)은 건드리지 않으므로 화면 하단 「저장」 단추와 탭 전환 확인 창이\n  이 표 때문에 켜지지 않는다. 스위치에 name 이 없는 것도 그래서다(자동 바인딩 금지). 스위치는 누른다고 스스로 바뀌지 않고\n  (`awaitConfirmation`) 다시 받은 서버 값으로만 바뀐다. 그래서 실패하면 원래 모양 그대로다.\n\n  요청마다 정의 버전(`fields_version`)을 싣는다. 다른 관리자가 먼저 바꿔 버전이 낡았으면 서버가 409 `fields_changed` 로 거부하고,\n  화면은 그 문구를 토스트로 알린 뒤 표를 다시 받는다. 요청이 도는 동안(`_global.checkoutFieldBusy`)에는 다른 스위치를 잠근다.\n  새 버전이 도착하기 전에 다음 조작이 나가면 자기 자신의 앞선 저장 때문에 거부되기 때문이다. 표식은 항목 정의가 도착하면 내려간다.\n\n  항목은 세 갈래다. 이커머스가 선언한 항목(출처 칸에 모듈 이름), 다른 확장이 기여한 항목(그 확장 이름 배지), 운영자가 추가한 항목\n  (「추가」 배지). 삭제와 수정 단추는 운영자가 추가한 항목에만 있다. 선언한 쪽이 잠근 속성(`locks`)은 스위치를 잠그고 자물쇠와 사유를 보인다.\n  유형을 제공한 확장이 꺼진 항목(`available === false`)은 스위치 대신 「사용 불가」 배지를 보인다.\n  수정 권한이 없는 관리자(`abilities.can_update !== true`)에게는 스위치와 「항목 추가」가 잠기고 행 단추가 나오지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 > 주문 설정 탭 주문서 항목 표 — 스위치는 즉시 저장하고 checkoutFieldDefs 만 다시 받는다. 모달은 별도 조각"
+    },
+    "id": "checkout_fields_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "ecommerce-admin-card"
+    },
+    "children": [
+        {
+            "id": "checkout_fields_header",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"
+                    }
+                }
+            },
+            "props": {
+                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:mb-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce:min-w-0"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "ecommerce-card-title"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "ecommerce-text-label-subtle"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.description"
+                        }
+                    ]
+                },
+                {
+                    "id": "checkout_field_add_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{checkoutFieldDefs?.data?.set?.allows_custom === true}}",
+                    "actions": [
+                        {
+                            "comment": "항목 추가 창 열기. 창 상태를 여기서 통째로 만들어 넣는다(창은 자기 초기값이 없다). 앞서 연 항목의 상태를 먼저 비운다.\n               깊은 병합은 빈 객체로 앞 값을 지우지 못한다. 폼은 한 식으로 준다(유형과 키가 함께 있는 객체라 풀어 쓰면 화면 노드처럼 보인다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "checkout_field_form_modal": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "checkout_field_form_modal": {
+                                            "isNew": true,
+                                            "errors": null,
+                                            "isSaving": false,
+                                            "fieldsVersion": "{{_computed.checkoutFieldsVersion}}",
+                                            "form": "{{({ id: null, key: '', type: '', group: 'shipping', name: {}, description: {}, options: [], enabled: true, required: false })}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "checkout_field_form_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "checkout-field-add",
+                        "type": "button",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:transition-colors ecommerce:whitespace-nowrap ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:disabled:hover:bg-indigo-600 ecommerce:dark:disabled:hover:bg-indigo-500",
+                        "disabled": "{{_computed.checkoutFieldsReadOnly || !!_global.checkoutFieldBusy}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "plus",
+                                "className": "ecommerce:text-xs"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.add_button"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "항목 조회 권한이 없으면(403) 빈 표 대신 이유를 보인다. 표지는 데이터소스 오류 처리가 남긴다.",
+            "id": "checkout_fields_no_permission",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_computed.checkoutFieldsNoReadPermission}}",
+            "props": {
+                "className": "ecommerce:flex ecommerce:gap-2 ecommerce-text-tertiary"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "lock",
+                        "size": "sm",
+                        "className": "ecommerce:mt-0.5 ecommerce:flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.no_read_permission"
+                }
+            ]
+        },
+        {
+            "id": "checkout_fields_body",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_computed.checkoutFieldsNoReadPermission}}",
+            "children": [
+                {
+                    "id": "checkout_fields_instant_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-alert-info ecommerce:mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce-tone-info-soft ecommerce:text-xs"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.instant_save_notice"
+                        }
+                    ]
+                },
+                {
+                    "id": "checkout_fields_table_desktop",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "mobile": {
+                            "if": "{{false}}"
+                        }
+                    },
+                    "props": {
+                        "className": "ecommerce:overflow-x-auto"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Table",
+                            "props": {
+                                "className": "ecommerce:w-full ecommerce:text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Thead",
+                                    "props": {
+                                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Tr",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.group"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.name"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.source"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.enabled"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.required"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:common.actions"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "checkout_fields_tbody",
+                                    "type": "basic",
+                                    "name": "Tbody",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Tr",
+                                            "iteration": {
+                                                "source": "{{_computed.checkoutFields}}",
+                                                "item_var": "row"
+                                            },
+                                            "props": {
+                                                "id": "{{'checkout_field_row_' + row.key}}",
+                                                "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap"
+                                                    },
+                                                    "text": "{{$t('sirsoft-ecommerce.admin.settings.checkout_fields.group.' + (row.ui?.group === 'orderer' ? 'orderer' : 'shipping'))}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "ecommerce-text-primary ecommerce:font-medium ecommerce-break-all"
+                                                            },
+                                                            "text": "{{row.label ?? row.key}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!!$localized(row.description ?? {})}}",
+                                                            "props": {
+                                                                "className": "ecommerce-form-hint ecommerce-break-all"
+                                                            },
+                                                            "text": "{{$localized(row.description ?? {})}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{row.is_custom === true}}",
+                                                            "props": {
+                                                                "className": "ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900 ecommerce-tone-info-soft"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.source.custom"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{row.is_custom !== true && row.source_identifier === 'sirsoft-ecommerce'}}",
+                                                            "props": {
+                                                                "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap"
+                                                            },
+                                                            "text": "{{row.source_label ?? $t('sirsoft-ecommerce.common.module_name')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{row.is_custom !== true && row.source_identifier !== 'sirsoft-ecommerce'}}",
+                                                            "props": {
+                                                                "className": "ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-yellow-100 ecommerce:dark:bg-yellow-900 ecommerce-tone-warning-soft"
+                                                            },
+                                                            "text": "{{row.source_label ?? row.source_identifier ?? $t('sirsoft-ecommerce.admin.settings.checkout_fields.source.extension')}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "if": "{{row.available === false}}",
+                                                    "props": {
+                                                        "colSpan": 2,
+                                                        "className": "ecommerce:px-3 ecommerce:py-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-red-100 ecommerce:dark:bg-red-900 ecommerce-tone-error-soft"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.unavailable"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "ecommerce-text-label-subtle ecommerce:text-xs"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.unavailable_desc"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "if": "{{row.available !== false}}",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "ecommerce-flex-center ecommerce:gap-1.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "사용 스위치(표 판). 끄면 주문서에서 이 항목이 빠진다. 성공이든 실패든 표를 다시 받는다. 카드 판에 같은 배선이 있다.",
+                                                                            "type": "change",
+                                                                            "handler": "sequence",
+                                                                            "if": "{{!_global.checkoutFieldBusy}}",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "checkoutFieldBusy": "{{row.id + ':enabled'}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields/{{row.id}}",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "PUT",
+                                                                                        "body": {
+                                                                                            "enabled": "{{!row.enabled}}",
+                                                                                            "fields_version": "{{_computed.checkoutFieldsVersion}}"
+                                                                                        }
+                                                                                    },
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "success",
+                                                                                                "message": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "refetchDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "checkoutFieldDefs"
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.error_code === 'fields_changed' ? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other' : (error.message ?? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.save_failed')}}"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "refetchDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "checkoutFieldDefs"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "id": "{{'checkout_field_enabled_' + row.key}}",
+                                                                        "checked": "{{Boolean(row.enabled)}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('sirsoft-ecommerce.admin.settings.checkout_fields.col.enabled')}}",
+                                                                        "size": "sm",
+                                                                        "awaitConfirmation": true,
+                                                                        "pending": "{{_global.checkoutFieldBusy === row.id + ':enabled'}}",
+                                                                        "disabled": "{{_computed.checkoutFieldsReadOnly || !!row.locks?.enabled || !!_global.checkoutFieldBusy}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!!row.locks?.enabled}}",
+                                                                    "props": {
+                                                                        "data-testid": "{{'checkout-field-table-enabled-lock-' + row.key}}",
+                                                                        "role": "img",
+                                                                        "aria-label": "{{row.locks?.enabled ?? ''}}",
+                                                                        "title": "{{row.locks?.enabled ?? ''}}",
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "lock",
+                                                                                "className": "ecommerce:text-xs"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "if": "{{row.available !== false}}",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "ecommerce-flex-center ecommerce:gap-1.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "필수 스위치(표 판). 켜면 주문서가 이 항목을 비운 채로 넘어가지 못한다. 사용 스위치와 같은 배선이다.",
+                                                                            "type": "change",
+                                                                            "handler": "sequence",
+                                                                            "if": "{{!_global.checkoutFieldBusy}}",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "checkoutFieldBusy": "{{row.id + ':required'}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields/{{row.id}}",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "PUT",
+                                                                                        "body": {
+                                                                                            "required": "{{!row.required}}",
+                                                                                            "fields_version": "{{_computed.checkoutFieldsVersion}}"
+                                                                                        }
+                                                                                    },
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "success",
+                                                                                                "message": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "refetchDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "checkoutFieldDefs"
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.error_code === 'fields_changed' ? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other' : (error.message ?? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.save_failed')}}"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "refetchDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "checkoutFieldDefs"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "id": "{{'checkout_field_required_' + row.key}}",
+                                                                        "checked": "{{Boolean(row.required)}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('sirsoft-ecommerce.admin.settings.checkout_fields.col.required')}}",
+                                                                        "size": "sm",
+                                                                        "awaitConfirmation": true,
+                                                                        "pending": "{{_global.checkoutFieldBusy === row.id + ':required'}}",
+                                                                        "disabled": "{{_computed.checkoutFieldsReadOnly || !!row.locks?.required || !!_global.checkoutFieldBusy}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!!row.locks?.required}}",
+                                                                    "props": {
+                                                                        "data-testid": "{{'checkout-field-table-required-lock-' + row.key}}",
+                                                                        "role": "img",
+                                                                        "aria-label": "{{row.locks?.required ?? ''}}",
+                                                                        "title": "{{row.locks?.required ?? ''}}",
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "lock",
+                                                                                "className": "ecommerce:text-xs"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "props": {
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:whitespace-nowrap"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{row.is_custom === true && row.available !== false && !_computed.checkoutFieldsReadOnly}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "수정 창 열기. 운영자가 추가한 항목에서만 나온다. 행의 값으로 창을 채운다(키와 유형은 창에서 잠긴다).\n                         표의 저장이 도는 동안에는 잠긴다(낡은 정의 버전으로 창을 열지 않게).",
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "checkout_field_form_modal": null
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "checkout_field_form_modal": {
+                                                                                    "isNew": false,
+                                                                                    "errors": null,
+                                                                                    "isSaving": false,
+                                                                                    "fieldsVersion": "{{_computed.checkoutFieldsVersion}}",
+                                                                                    "form": "{{({ id: row.id, key: row.key, type: row.type, type_label: row.type_label ?? row.type, group: row.ui?.group === 'orderer' ? 'orderer' : 'shipping', name: row.name ?? {}, description: Array.isArray(row.description) ? {} : (row.description ?? {}), options: row.options ?? [], enabled: row.enabled !== false, required: row.required === true })}}"
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "checkout_field_form_modal"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "data-testid": "{{'checkout-field-table-edit-' + row.key}}",
+                                                                "type": "button",
+                                                                "aria-label": "$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('common.edit')}}",
+                                                                "className": "ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:bg-indigo-600 ecommerce:text-white ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:disabled:hover:bg-indigo-600",
+                                                                "disabled": "{{!!_global.checkoutFieldBusy}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:common.edit"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{row.is_custom === true && !_computed.checkoutFieldsReadOnly}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "삭제 창 열기. 운영자가 추가한 항목에서만 나온다(선언 항목과 다른 확장이 기여한 항목은 사용을 끌 수 있을 뿐이다).\n                         대상 id, 이름, 정의 버전을 전역에 담아 준다(창은 별도 문맥이라 이 행을 보지 못한다).",
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "checkout_field_delete_modal": null
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "checkout_field_delete_modal": {
+                                                                                    "id": "{{row.id}}",
+                                                                                    "label": "{{row.label ?? row.key}}",
+                                                                                    "isDeleting": false,
+                                                                                    "fieldsVersion": "{{_computed.checkoutFieldsVersion}}"
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "checkout_field_delete_modal"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "data-testid": "{{'checkout-field-table-delete-' + row.key}}",
+                                                                "type": "button",
+                                                                "aria-label": "$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('common.delete')}}",
+                                                                "className": "ecommerce:ml-2 ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:border ecommerce:border-red-300 ecommerce:dark:border-red-600 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/30 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                                                "disabled": "{{!!_global.checkoutFieldBusy}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:common.delete"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "checkout_fields_cards_mobile",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{false}}",
+                    "responsive": {
+                        "mobile": {
+                            "if": "{{true}}"
+                        }
+                    },
+                    "children": [
+                        {
+                            "partial": "_checkout_fields_cards.json"
+                        }
+                    ]
+                },
+                {
+                    "id": "checkout_fields_empty",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{checkoutFieldDefs !== undefined && _computed.checkoutFields.length === 0}}",
+                    "props": {
+                        "className": "ecommerce:py-10 ecommerce:text-center ecommerce-text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.empty"
+                }
+            ]
+        }
+    ]
+}

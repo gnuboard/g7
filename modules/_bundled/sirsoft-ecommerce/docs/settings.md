@@ -167,6 +167,27 @@ _`getSettingsSchema()` 선언이 없습니다._
 `sirsoft-ecommerce.notification.channels` 필터를 **발송 경로와 같은 순서로** 거치므로, 화면 표시와
 실제 발송 채널이 갈라지지 않습니다. 이 모듈 필터만 직접 부르면 코어에 등록된 채널이 카드에서 빠집니다.
 
+**기능별 작성자 표시 이름(`display_name`)은 이 모듈의 설정 파일에 저장하지 않습니다.** 리뷰 설정 탭의 「작성자 표시 이름」
+(상품 후기)과 기본 정보 탭 상품 문의 구획의 같은 칸(상품 문의)은 저장 본문에 `display_name: { review: {mode, kind},
+inquiry: {mode, kind} }` 를 함께 싣습니다. 서버는 이 값을 설정 구역으로 보지 않고(`validatedSettings()` 에 들어가지 않습니다)
+코어 설정 `member.display_name_areas` 의 두 영역 키(`sirsoft-ecommerce:review`, `sirsoft-ecommerce:inquiry`)에 씁니다.
+환경설정의 회원 탭에서 같은 영역을 바꿔도 값이 하나이고, 닉네임이 필요한 종류로 고정하면 코어가 회원 항목의 닉네임을 잠급니다.
+
+| 값 | 뜻 |
+| --- | --- |
+| `mode: inherit` | 상위 영역을 따른다 (후기와 문의의 상위는 사이트 기본) |
+| `mode: fixed` + `kind` | 종류 하나로 고정한다. `kind` 는 지금 등록된 종류여야 한다 |
+| `mode: member` | 회원이 고른 종류로 보인다 |
+
+- 영역 묶음은 저장할 때 통째로 바뀌므로 `EcommerceDisplayNameSettingsService::save()` 가 지금 저장된 묶음 전체에 넘어온 기능의
+  영역만 덮어써서 넘깁니다. 다른 영역(코어, 게시판, 꺼진 확장)의 값이 지워지면 안 됩니다.
+- `display_name` 이 실려 오지 않은 저장(다른 탭)은 영역 설정을 건드리지 않습니다. 한 기능만 실려 오면 그 기능만 바꿉니다.
+- 방식이 고정이 아니면 `kind` 를 저장하지 않습니다.
+- 설정 조회와 저장 응답은 저장된 값(`display_name`)과 읽기 전용 목록(`display_name_options`: 고를 수 있는 종류와 미리보기,
+  상속을 다 따라간 지금 적용되는 값과 그 값을 정한 영역의 이름)을 함께 싣습니다. 목록은 저장 요청에 실려 와도 무시합니다.
+- 저장하면 코어가 닉네임 항목 잠금 판정을 다시 하고 검색 엔진용으로 미리 그린 화면을 비웁니다.
+- 상품 문의의 기본값은 「가린 이름」 고정입니다(홍길동 → 홍*동). 종전에 문의 목록이 하던 가림과 같은 결과입니다.
+
 ### 터미널에서 설정 지정 (`settings:set --module=sirsoft-ecommerce`, 1.3.3 · 코어 7.1.4)
 
 코어 `php artisan settings:set --module=sirsoft-ecommerce {범주.항목} {값}` 은 이 모듈 설정 서비스의 선택 메서드

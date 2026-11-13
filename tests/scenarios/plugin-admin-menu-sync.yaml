@@ -35,6 +35,7 @@ sub_flows:
       않으므로, 두 경로 모두 소스에서 도출해 대조한다.
     effects:
       - plugin_install_path_syncs_declared_menus
+      - module_install_path_syncs_every_declared_artifact
 
 effects:
   - plugin_admin_menu_synced_on_declarative_sync

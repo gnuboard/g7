@@ -237,7 +237,7 @@ return [
 
     // Dashboard alerts (scheduled tasks not running)
     'alerts' => [
-        'not_running_title' => 'Scheduled tasks have not run for :days day(s)',
+        'not_running_title' => 'Scheduled tasks have not run for :days day|Scheduled tasks have not run for :days days',
         'not_running_guidance_web' => 'Copy the call address from Settings > System and register it in the scheduled task feature of your hosting control panel.',
         'not_running_guidance_cron' => 'Check whether the scheduled task (crontab) registered on the server is running.',
         'not_running_action' => 'Open schedule settings',

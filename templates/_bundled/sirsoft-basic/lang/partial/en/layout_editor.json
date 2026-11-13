@@ -158,6 +158,10 @@
       "label": "User info",
       "default_name": "Username"
     },
+    "member_field_input": {
+      "label": "Member field input",
+      "default_label": "Field name"
+    },
     "quantity_selector": {
       "label": "Quantity selector"
     },

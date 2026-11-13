@@ -107,6 +107,11 @@ export interface ColumnSelectorProps {
    * 기존 columns 배열에 동적으로 병합될 컬럼들입니다.
    * dynamicColumnsInsertAfter가 지정된 경우 해당 필드 뒤에 삽입되고,
    * 그렇지 않으면 columns 배열 끝에 추가됩니다.
+   *
+   * 처음 보는 동적 컬럼은 스스로 켜집니다(`visible: false` 인 것은 꺼진 채 선택지에만 나옵니다).
+   * 「이미 본 동적 컬럼」 목록을 표시 컬럼 저장값 옆에 따로 남기므로, 표시 컬럼 저장값이 있는
+   * 사용자에게도 그 뒤에 새로 생긴 동적 컬럼은 켜지고, 사용자가 끈 동적 컬럼은 새로고침 뒤에도
+   * 다시 켜지지 않습니다.
    */
   dynamicColumns?: ColumnItem[];
   /**
@@ -260,6 +265,37 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
     }
   };
 
+  // 「이미 본 동적 컬럼」 저장 키. 표시 컬럼 저장값만으로는 「사용자가 끈 컬럼」과 「저장한 뒤에 새로 생긴
+  // 컬럼」을 가를 수 없어 따로 남긴다. 접두가 표시 컬럼 키와 같아 template.json 의 필수 저장 선언(g7_columns_*)에 든다.
+  const knownDynamicStorageKey = storageKey ? `${storageKey}::dynamic` : null;
+
+  // 이미 본 동적 컬럼 목록 불러오기 (남긴 적이 없으면 null)
+  const getKnownDynamicFields = (): string[] | null => {
+    if (!knownDynamicStorageKey) return null;
+    try {
+      const stored = localStorage.getItem(knownDynamicStorageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((field): field is string => typeof field === 'string');
+        }
+      }
+    } catch (error) {
+      logger.warn('Failed to load known dynamic columns from localStorage:', error);
+    }
+    return null;
+  };
+
+  // 이미 본 동적 컬럼 목록 저장
+  const saveKnownDynamicFields = (fields: string[]) => {
+    if (!knownDynamicStorageKey) return;
+    try {
+      localStorage.setItem(knownDynamicStorageKey, JSON.stringify(fields));
+    } catch (error) {
+      logger.warn('Failed to save known dynamic columns to localStorage:', error);
+    }
+  };
+
   // 초기 컬럼 결정 (우선순위: localStorage > externalVisibleColumns > defaultColumns > 모든 컬럼)
   const getInitialColumns = (): string[] => {
     // 1. localStorage에서 불러오기
@@ -305,10 +341,13 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
     }
   }, [externalVisibleColumns, isInitialized]);
 
-  // 동적 컬럼이 새로 추가될 때만 visibleColumns에 자동 포함
-  // localStorage에 저장된 값이 있으면 사용자의 선택을 존중하고 자동 추가하지 않음
+  // 처음 보는 동적 컬럼만 visibleColumns에 자동 포함
+  // 「이미 본 동적 컬럼」은 저장소에 남긴다. 표시 컬럼 저장값이 있어도 그 뒤에 새로 생긴 동적 컬럼은 켜지고,
+  // 사용자가 끈 동적 컬럼은 이미 본 것이라 다시 켜지지 않는다.
+  // (종전에는 표시 컬럼 저장값이 있으면 새 동적 컬럼을 전혀 켜지 않았다. 처음 켜진 동적 컬럼이 저장값을
+  //  만들기 때문에 두 번째로 생긴 동적 컬럼부터는 선택기를 열어 직접 켜야만 보였다.)
   const prevDynamicFieldsRef = useRef<string[]>([]);
-  const hasStoredColumnsRef = useRef<boolean | null>(null);
+  const knownDynamicLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!isInitialized) return; // 초기화 전에는 실행하지 않음
@@ -316,34 +355,30 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
     if (dynamicColumns && dynamicColumns.length > 0) {
       const currentDynamicFields = dynamicColumns.map((col) => col.field);
 
-      // 최초 실행 시 localStorage 존재 여부 확인 및 prevDynamicFields 초기화
-      if (hasStoredColumnsRef.current === null) {
-        const stored = getStoredColumns();
-        hasStoredColumnsRef.current = stored !== null;
-
-        // localStorage에 저장된 값이 있으면 현재 동적 필드를 "이미 알려진" 것으로 기록
-        // 이렇게 하면 페이지 새로고침 시 동적 컬럼이 다시 자동 추가되지 않음
-        if (stored !== null) {
-          prevDynamicFieldsRef.current = currentDynamicFields;
-          return; // localStorage 값 존중, 자동 추가 안 함
-        }
+      // 최초 실행 시 저장소의 「이미 본 동적 컬럼」을 불러온다
+      if (!knownDynamicLoadedRef.current) {
+        knownDynamicLoadedRef.current = true;
+        prevDynamicFieldsRef.current = getKnownDynamicFields() ?? [];
       }
 
       const prevDynamicFields = prevDynamicFieldsRef.current;
 
-      // 새로 추가된 동적 필드만 찾기 (기존에 없던 필드)
+      // 처음 보는 동적 필드만 찾기
       const trulyNewFields = currentDynamicFields.filter(
         (field) => !prevDynamicFields.includes(field)
       );
 
-      // 새로운 동적 필드가 있을 때만 자동 추가
       if (trulyNewFields.length > 0) {
         const currentVisible = externalVisibleColumns && externalVisibleColumns.length > 0
           ? externalVisibleColumns
           : internalVisibleColumns;
 
-        // 현재 visible에 없는 새 필드만 추가
-        const fieldsToAdd = trulyNewFields.filter((field) => !currentVisible.includes(field));
+        // 현재 visible에 없는 새 필드만 추가 (visible: false 인 동적 컬럼은 스스로 켜지 않는다)
+        const fieldsToAdd = trulyNewFields.filter(
+          (field) =>
+            !currentVisible.includes(field) &&
+            dynamicColumns.find((col) => col.field === field)?.visible !== false
+        );
 
         if (fieldsToAdd.length > 0) {
           const updatedVisible = [...currentVisible, ...fieldsToAdd];
@@ -351,10 +386,12 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
           saveToStorage(updatedVisible);
           onColumnVisibilityChange?.(updatedVisible, { source: 'dynamic' });
         }
-      }
 
-      // 현재 동적 필드 목록 저장
-      prevDynamicFieldsRef.current = currentDynamicFields;
+        // 본 것으로 남긴다. 지금 목록에서 빠진 필드도 지우지 않는다(다시 생겼을 때 사용자가 끈 선택을 지킨다)
+        const knownFields = [...prevDynamicFields, ...trulyNewFields];
+        prevDynamicFieldsRef.current = knownFields;
+        saveKnownDynamicFields(knownFields);
+      }
     }
   }, [dynamicColumns, isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 

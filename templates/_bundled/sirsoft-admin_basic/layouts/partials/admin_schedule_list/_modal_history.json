@@ -269,6 +269,17 @@
                                     "name": "Span",
                                     "if": "{{item.triggered_by?.name}}",
                                     "text": "$t:admin.schedules.history.triggered_by|user={{item.triggered_by?.name}}"
+                                },
+                                {
+                                    "comment": "실명 보조. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다.",
+                                    "id": "history_triggered_by_real_name_{{$idx}}",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!item.triggered_by?.real_name}}",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:admin.common.real_name.with_label|name={{item.triggered_by?.real_name}}"
                                 }
                             ]
                         },

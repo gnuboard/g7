@@ -226,6 +226,10 @@ _단건 응답: `data` 객체의 필드._
 | abilities | object | `{"can_read":true,"can_create":true,"can_update":true,"can…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 | is_super | boolean | `true` | 본인의 최고관리자 여부 (User::isSuperAdmin() — 로그인 사용자 본인 응답에만 싣고 회원 목록 응답에는 없음) |
 | can_edit_layouts | boolean | `true` | 본인이 레이아웃 편집기에 들어갈 수 있는지 (`User::hasPermission('core.templates.layouts.edit', admin)` — 편집기 API 가드와 같은 판정, 사용 중지한 역할의 권한은 제외. 로그인 사용자 본인 응답에만 싣는다) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키(7.2.0). 비어 있지 않으면 사용자 화면이 추가 정보 입력 화면으로 보내고, 그 회원의 쓰기 요청은 `403` `required_fields_pending` 으로 거부됩니다 |
+| display_name | string\|null | `최고관리자` | 관리자 화면에 보이는 본인 이름(관리자 화면 영역의 표시 이름) |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 
 **응답 예시**
 
@@ -863,6 +867,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::login()` 이 반환한 �
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 로그인 직후 추가 정보 입력 화면으로 보냅니다. 로그인을 마친 응답(2단계 인증 확인, 로그인 인계, 비밀번호 변경 단계 완료와 연기 포함)에 실립니다 |
 
 **응답 예시**
 
@@ -1058,6 +1063,7 @@ _단건 응답: `POST /api/auth/login` 과 **같은 세 형태**다 — 인증 �
 | user | object | `{ "uuid": "…" }` | 인증 완료 형태에만 — 사용자 리소스 |
 | token | string | `12\|a1b2…` | 인증 완료 형태에만 — Bearer 토큰 |
 | token_type | string | `Bearer` | 인증 완료 형태에만 |
+| pending_required_fields | array | `[]` | 로그인이 끝난 형태에만. 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
 | dormancy_restored | boolean | `true` | 이 로그인으로 휴면이 풀렸을 때만 실린다 |
 | two_factor_required | boolean | `true` | 2단계 인증 형태에만 |
 | password_change_required | boolean | `true` | 비밀번호 변경 형태에만 |
@@ -1139,6 +1145,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 �
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 로그인이 끝난 형태에만. 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 
 **응답 예시**
@@ -1219,6 +1226,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 �
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 로그인이 끝난 형태에만. 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 | postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
 
@@ -1299,6 +1307,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::completeTwoFactor()` 가 
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
 
 > 위 문서의 실측이 `422` 로 관측된 것은 유효한 challenge 없이 프로브가 호출됐기 때문이다. 정상 흐름(비밀번호 단계가 돌려준 `challenge_id` + 올바른 코드)에서는 `200` 과 위 페이로드가 반환된다.
 
@@ -1488,6 +1497,143 @@ HTTP/1.1 200
 현재 사용자 토큰을 폐기해 로그아웃한다(`message: auth.logout_success`). 현재 요청에 사용된 토큰만 폐기하며, 모든 기기에서 로그아웃하려면 `/api/user/auth/logout-all-devices` 를 사용한다.
 
 
+### GET /api/auth/register/fields
+<!-- @generated:start:api.auth.register.fields -->
+- **라우트명**: `api.auth.register.fields`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@registerFields`
+- **인증/권한**: 없음 (공개)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| verification_token | query | string | 아니오 | 최대 255자 | 본인인증을 거쳐 온 가입에서 인증 값으로 채울 칸을 받을 때. 인증 값을 주는 수단의 유효한 토큰이면 연결된 항목의 `default` 가 인증 값으로 채워지고, 「인증 값으로 채우고 잠금」을 켠 항목은 `readonly: true`, `locked_reason: identity` 로 옵니다 |
+| pending_token | query | string | 아니오 | 최대 255자 | 외부 계정 가입 창이 대기 중인 가입의 초기값과 잠금을 받을 때 |
+| pending_source | query | string | 아니오 | 최대 64자 | 대기 토큰을 발급한 확장의 식별자 |
+| preview_name | query | string | 아니오 | 최대 255자 | 표시 이름 종류 미리보기에 쓸 입력 중인 이름 (저장하지 않는다) |
+| preview_nickname | query | string | 아니오 | 최대 50자 | 미리보기에 쓸 입력 중인 닉네임 |
+| preview_email | query | string | 아니오 | 최대 255자 | 미리보기에 쓸 입력 중인 이메일 (아이디 가림 종류) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.register_fields_validation_rules`).
+
+**요청 예시**
+
+```http
+GET /api/auth/register/fields HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Accept-Language: ko
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| fields[] | array | — | 가입 화면이 그릴 항목. 표시 순서대로 옵니다 |
+| fields[].key | string | `name` | 항목 키 |
+| fields[].name | string | `name` | 폼 경로. 가입 요청에서 이 항목이 쓰는 키이자 검증 오류 키입니다. 운영자 추가 항목은 `custom_fields.{key}` |
+| fields[].type | string | `text` | 유형 키 |
+| fields[].renderer | string | `builtin` | 그리기 갈래(builtin, address, file, extension) |
+| fields[].owner | string | `core` | 항목을 선언한 쪽. 운영자 추가 항목은 `custom` |
+| fields[].owner_type | string | `core` | 출처(core, module, plugin, custom) |
+| fields[].source_label | string\|null | `null` | 항목을 선언한 확장의 이름. 화면이 확장별 묶음 제목으로 쓴다. 코어 항목과 운영자 추가 항목은 null |
+| fields[].label | string | `이름` | 요청 로케일로 풀린 항목 이름 |
+| fields[].placeholder | string\|null | `이름을 입력하세요` | 예시 글 |
+| fields[].help | string\|null | `null` | 안내 문구 |
+| fields[].required | boolean | `true` | 가입에서 필수인지 |
+| fields[].readonly | boolean | `false` | 읽기 전용인지 |
+| fields[].locked_reason | string\|null | `null` | 잠긴 사유 |
+| fields[].deferred | boolean | `false` | 가입 화면에서 받지 않는 유형(파일, 이미지)이면 true. 화면은 안내 줄만 그리고 값은 가입 뒤에 받습니다 |
+| fields[].options[] | array | `[{"value":"ko","label":"한국어"}]` | 선택지(요청 로케일의 글자) |
+| fields[].constraints | object | `{"max_length":255}` | 화면이 쓰는 제한 값(길이, 범위, 표시 방식 등) |
+| fields[].default | mixed | `null` | 값이 없을 때 화면이 골라 보일 값. 언어 항목은 요청 로케일 |
+| fields[].ui | object | `{"group":"basic"}` | 묶음 등 표시 힌트 |
+| fields[].parts | object\|null | `null` | 여러 칸으로 받는 유형(주소)의 부분별 폼 경로 |
+| fields[].display_value | string\|null | `null` | 보기용 문자열(가입에서는 항상 null) |
+| fields[].files | array\|null | `null` | 파일, 이미지 항목에 올라가 있는 파일(가입에서는 빈 배열). 그 밖의 유형은 null |
+| fields[].file_rules | object\|null | `null` | 파일, 이미지 항목의 업로드 제한(`extensions`, `max_count`, `max_size_mb`). 그 밖의 유형은 null |
+| fields_version | string | `55e0c42db93a` | 항목 정의 버전. 가입 요청에 실어 보냅니다 |
+| verified_claims | object\|null | `{"status":"applied","filled":["name","mobile"],"locked":["name"]}` | 본인인증 채움 결과. `verification_token` 없이 부르면 null. `status` 는 `applied`(채움), `no_claims`(이 수단은 인증 값을 주지 않음), `expired`(만료됐거나 이미 쓴 토큰), `invalid`(알 수 없는 토큰). `applied` 가 아니면 `filled`, `locked` 는 빈 배열이고 항목은 잠기지 않습니다. 화면은 `expired`, `invalid` 를 칸에 속하지 않는 오류로 안내합니다 |
+| display_name.can_choose | boolean | `true` | 종류 선택 칸을 보일지 (권한이 있고 고를 종류가 둘 이상) |
+| display_name.value | string\|null | `nickname` | 회원이 고른 종류. 고르지 않았거나 고른 종류가 허용에서 빠졌으면 null (가입 화면은 항상 null) |
+| display_name.value_unavailable | boolean | `false` | 전에 고른 종류가 허용에서 빠졌는지. true 면 화면이 「종류를 다시 골라 주세요」를 보인다 |
+| display_name.unavailable_kind | object\|null | `{"value":"field:alias","label":"활동명"}` | 허용에서 빠진, 전에 고른 종류와 그 이름 |
+| display_name.default_kind | string | `name` | 고르지 않았을 때 적용되는 회원 기본 종류 |
+| display_name.default_kind_label | string | `이름` | 회원 기본 종류의 이름 |
+| display_name.effective_kind | string | `nickname` | 지금 이 회원에게 적용되는 종류 |
+| display_name.current | string\|null | `길동이` | 지금 다른 회원에게 보이는 이름 (가입 화면은 null) |
+| display_name.options[] | array | — | 고를 수 있는 종류. 고를 수 없으면 빈 배열 |
+| display_name.options[].value | string | `masked_name` | 종류 키. 요청의 `display_name_kind` 로 보낸다 |
+| display_name.options[].label | string | `가린 이름` | 종류 이름 |
+| display_name.options[].preview | string\|null | `홍*동` | 그 종류를 고르면 보일 글자. 가림 규칙이 서버와 같게 서버가 계산한다 |
+| display_name.options[].requires_nickname | boolean | `false` | 닉네임이 필요한 종류인지. 고르면 닉네임이 필수가 된다 |
+| display_name.options[].is_default | boolean | `false` | 회원 기본 종류인지 |
+| display_name.preview_is_sample | boolean | `false` | 미리보기를 표본 회원(홍길동, 길동이)으로 계산했는지 |
+| display_name.nickname_requirement | string | `chosen` | 표시 이름 설정이 닉네임에 거는 요구 (`all` 전원 필수, `chosen` 닉네임 종류로 보이는 회원만 필수, `none`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "fields": [
+            {
+                "key": "name",
+                "name": "name",
+                "type": "text",
+                "renderer": "builtin",
+                "owner": "core",
+                "owner_type": "core",
+                "source_label": null,
+                "label": "이름",
+                "placeholder": "이름을 입력하세요",
+                "help": null,
+                "required": true,
+                "readonly": false,
+                "locked_reason": null,
+                "deferred": false,
+                "options": [],
+                "constraints": { "max_length": 255 },
+                "default": null,
+                "ui": { "group": "basic" },
+                "parts": null,
+                "display_value": null,
+                "files": null,
+                "file_rules": null
+            }
+        ],
+        "fields_version": "55e0c42db93a",
+        "display_name": {
+            "can_choose": false,
+            "value": null,
+            "value_unavailable": false,
+            "unavailable_kind": null,
+            "default_kind": "name",
+            "default_kind_label": "이름",
+            "effective_kind": "name",
+            "current": null,
+            "options": [],
+            "preview_is_sample": true,
+            "nickname_requirement": "none"
+        },
+        "verified_claims": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 조회 인자가 검증 규칙을 위반한 경우 |
+
+<!-- @generated:end -->
+
+**설명** 가입 화면이 그릴 회원 항목입니다. 운영자가 환경설정 > 회원 > 가입 항목에서 정한 사용 여부, 필수 여부, 가입 화면 표시, 순서가 반영됩니다. 사용을 끈 항목, 가입 화면 표시를 끈 항목, 본인 수정 범위가 아닌 항목은 오지 않습니다. 이메일, 비밀번호, 약관 동의는 항목이 아니라 고정 칸이라 이 응답에 없습니다. 화면은 받은 `fields_version` 을 가입 요청에 실어 보내고, 그 사이 운영자가 항목을 바꿨으면 가입 요청이 409 `fields_changed` 로 알립니다. `display_name` 은 표시 이름 종류 선택 칸의 묶음입니다. `can_choose` 가 true 일 때만 칸을 그리고, 고른 값은 가입 요청의 `display_name_kind` 로 보냅니다. `options[].preview` 는 조회 인자 `preview_name`, `preview_nickname`, `preview_email` 로 입력 중인 값을 주면 그 값으로, 주지 않으면 표본 회원으로 계산합니다.
+
+
 ### POST /api/auth/register
 <!-- @generated:start:api.auth.register -->
 - **라우트명**: `api.auth.register`
@@ -1498,22 +1644,29 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | string | 예 | max 255 | 이메일 주소 |
-| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 길이·특수문자와 운영자가 켠 조합·추측 방지 규칙(아이디 포함·반복·연속)을 따른다(#736) |
-| mobile | body | string | 아니오 | max 20 | 휴대폰번호 (선택) |
-| phone | body | string | 아니오 | max 20 | 전화번호 (선택) |
-| language | body | string | 아니오 | `ko`, `en`, `ja` | 언어 코드 |
-| agree_terms | body | string | 아니오 | — | 이용약관 동의 (코어 필수 동의 — accepted 규칙, 미동의 시 가입 거부) |
-| agree_privacy | body | string | 아니오 | — | 개인정보 처리방침 동의 (코어 필수 동의 — accepted 규칙, 미동의 시 가입 거부) |
-| agree_email_subscription | body | boolean | 아니오 | — | 광고성 이메일 수신 동의 (marketing 플러그인 주입, 선택 항목) |
-| agree_marketing_consent | body | boolean | 아니오 | — | 마케팅 정보 수신 전체 동의 (marketing 플러그인 주입, 선택 항목) |
-| agree_third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 (marketing 플러그인 주입, 선택 항목) |
-| agree_info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 (marketing 플러그인 주입, 선택 항목) |
-| preferred_currency | body | string | 아니오 | — | 선호 결제 통화 (ecommerce 모듈 주입, 가입 시 계정 기본 통화로 저장) |
-| preferred_shipping_country | body | string | 아니오 | — | 선호 배송 국가 코드 (ecommerce 모듈 주입, 가입 시 계정 기본 배송 국가로 저장) |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다. 사용을 끄면 보내도 저장하지 않는다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어)에 걸리면 422. 표시 이름 설정이 닉네임을 요구하면 필수가 된다 |
+| display_name_kind | body | string | 아니오 | 운영자가 허용한 종류 | 표시 이름 종류 선택. 고를 권한이 없거나 허용하지 않은 종류면 422. 닉네임이 필요한 종류를 고르면 닉네임이 필수가 된다 |
+| email | body | string | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 길이·특수문자와 운영자가 켠 조합·추측 방지 규칙(아이디 포함·반복·연속)을 따른다(#736). 고정 칸이라 늘 필수다 |
+| password_confirmation | body | string | 예 | `password` 와 같은 값 | 비밀번호 확인 |
+| mobile | body | string | 항목 설정에 따름 (기본값 아니오) | max 20 | 휴대폰번호 |
+| phone | body | string | 항목 설정에 따름 (기본값 아니오) | max 20 | 전화번호 |
+| language | body | string | 항목 설정에 따름 (기본값 아니오) | `ko`, `en`, `ja` | 언어 코드. 받지 않으면 `ko` 로 저장한다 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 가입 화면 표시를 켠 항목만 받는다. 폼 경로와 오류 키는 `GET /api/auth/register/fields` 의 `fields[].name` 이다 |
+| fields_version | body | string | 아니오 | max 64 | 화면이 `GET /api/auth/register/fields` 에서 받은 항목 정의 버전. 지금 버전과 다르면 409 `fields_changed`. 보내지 않으면 버전을 대조하지 않는다. 저장하지 않고 확장 훅에도 넘기지 않는다 |
+| verification_token | body | string | 가입 전 본인인증 정책을 켠 사이트에서 예 | max 255 | 본인인증을 마치고 받은 토큰. 「인증 값으로 채우고 잠금」을 켠 항목은 보낸 값과 상관없이 인증 값으로 저장한다 |
+| agree_terms | body | boolean | 예 | 동의 값(`true`, `1`, `"on"`, `"yes"`) | 이용약관 동의 (고정 규칙 `accepted`, 미동의면 422) |
+| agree_privacy | body | boolean | 예 | 동의 값(`true`, `1`, `"on"`, `"yes"`) | 개인정보 처리방침 동의 (고정 규칙 `accepted`, 미동의면 422) |
+| marketing_consent | body | boolean | 아니오 | — | 마케팅 정보 수신 전체 동의 (sirsoft-marketing 이 선언한 회원 항목. 옛 키 `agree_marketing_consent` 도 받는다) |
+| email_subscription | body | boolean | 아니오 | — | 광고성 이메일 수신 동의 (sirsoft-marketing 의 채널 항목. 옛 키 `agree_email_subscription` 도 받는다. 운영자가 채널을 더하면 그 키도 같은 방식으로 받는다) |
+| third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 (sirsoft-marketing. 옛 키 `agree_third_party_consent`) |
+| info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 (sirsoft-marketing. 옛 키 `agree_info_disclosure`) |
+| ecommerce_preferred_currency | body | string | 아니오 | 고를 수 있는 통화 | 결제 통화 (sirsoft-ecommerce 가 선언한 회원 항목. 옛 키 `preferred_currency` 도 받는다) |
+| ecommerce_preferred_shipping_country | body | string | 아니오 | 배송 가능 국가 | 배송국가 (sirsoft-ecommerce. 옛 키 `preferred_shipping_country` 도 받는다) |
 
+> 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 옵니다. 이 표는 기본 설정과 번들 확장을 기준으로 적은 것이고, 지금 사이트가 받는 항목은 `GET /api/auth/register/fields` 가 알려 줍니다.
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.register_validation_rules`).
 
 **요청 예시**
@@ -1529,17 +1682,22 @@ Content-Type: application/json
     "nickname": "예시 이름",
     "email": "user@example.com",
     "password": "Password123!",
+    "password_confirmation": "Password123!",
     "mobile": "010-1234-5678",
     "phone": "010-1234-5678",
     "language": "ko",
-    "agree_terms": "예시값",
-    "agree_privacy": "예시값",
-    "agree_email_subscription": true,
-    "agree_marketing_consent": true,
-    "agree_third_party_consent": true,
-    "agree_info_disclosure": true,
-    "preferred_currency": "예시값",
-    "preferred_shipping_country": "KR"
+    "custom_fields": {
+        "job": "직장인"
+    },
+    "fields_version": "55e0c42db93a",
+    "agree_terms": true,
+    "agree_privacy": true,
+    "marketing_consent": true,
+    "email_subscription": true,
+    "third_party_consent": true,
+    "info_disclosure": true,
+    "ecommerce_preferred_currency": "KRW",
+    "ecommerce_preferred_shipping_country": "KR"
 }
 ```
 
@@ -1593,7 +1751,8 @@ HTTP/1.1 201
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`auth.register_failed` — `error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 요청의 `fields_version` 이 지금 항목 정의 버전과 다른 경우(화면을 연 뒤 운영자가 회원 항목을 바꿨다). 검증보다 먼저 판정하므로 422 대신 이 응답이 온다. 최상위 `error_code` 가 `fields_changed` 이고 `data.fields_version` 에 지금 버전이 실린다. `fields_version` 을 보내지 않은 요청에는 나오지 않는다 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`auth.register_failed` — `error.errors` 에 필드별 메시지). 오류 키는 항목의 폼 경로다(운영자 추가 항목은 `custom_fields.{키}`) |
 | 428 | Precondition Required | 가입 전 본인인증 정책이 매칭되었으나 유효한 `verification_token` 이 없는 경우 (`core.auth.before_register` 훅) |
 | 403 | Forbidden | 사이트가 일반 회원가입을 받지 않음(7.2.0 — 환경설정 「일반 회원가입 받기」 꺼짐 또는 `core.auth.self_registration_open` 필터): `auth.registration_disabled` |
 
@@ -1603,7 +1762,28 @@ HTTP/1.1 201
 
 **설명**
 
-회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. `agree_*` 동의 파라미터(약관/개인정보/이메일수신/마케팅/제3자제공/정보공개)는 가입 시점의 동의 이력으로 기록된다 — 그중 `agree_email_subscription`/`agree_marketing_consent`/`agree_third_party_consent`/`agree_info_disclosure` 및 `preferred_currency`/`preferred_shipping_country` 는 marketing·ecommerce 확장이 훅(`core.auth.register_validation_rules`)으로 주입하는 파라미터로, 해당 확장 비활성 시 무시된다. 검증 실패 시 `422 auth.register_failed`.
+회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. 검증 실패 시 `422 auth.register_failed`.
+
+받는 칸은 두 갈래다. 이메일, 비밀번호, 이용약관 동의, 개인정보 처리방침 동의는 고정 규칙이라 사이트 설정과 무관하게 필수다. 이름, 닉네임, 휴대폰, 전화번호, 언어와 운영자 추가 항목, 확장이 선언한 항목은 회원 항목이라 운영자가 환경설정 > 회원에서 정한 사용 여부, 필수 여부, 가입 화면 표시를 따른다. 이름은 기본 설정이 필수일 뿐 고정 필수가 아니다. 운영자가 이름의 필수를 풀거나 사용을 끄면 이름 없이 가입되고, 사용을 끈 사이트에서는 보낸 이름도 저장하지 않는다. 사용을 끈 항목과 가입 화면 표시를 끈 항목의 값은 요청에 실려 와도 버린다.
+
+운영자 추가 항목은 `custom_fields.{키}` 로, 확장이 선언한 항목(sirsoft-marketing 의 동의 항목, sirsoft-ecommerce 의 결제 통화와 배송국가)은 항목 키 그대로 최상위에 보낸다. 확장 항목의 옛 요청 키(`agree_marketing_consent`, `preferred_currency` 등)는 정식 키가 비어 있을 때만 정식 키로 옮겨 받는다. 해당 확장이 꺼져 있으면 그 키는 무시된다. 약관과 동의 항목의 값은 가입 시점의 동의 이력으로 기록된다.
+
+화면은 `GET /api/auth/register/fields` 가 준 `fields_version` 을 함께 보낸다. 그 사이 운영자가 항목을 바꿨으면 검증 오류보다 먼저 아래 409 가 온다(「없는 칸이 필수」 같은 엉뚱한 오류를 막는다). 화면은 항목을 다시 불러 그린다.
+
+```json
+{
+    "success": false,
+    "message": "가입 항목이 바뀌었습니다. 화면을 새로 불러왔습니다.",
+    "data": {
+        "fields_version": "8a94cf438e2c"
+    },
+    "error_code": "fields_changed"
+}
+```
+
+본인인증을 마치고 온 가입은 `verification_token` 을 함께 보낸다. 가입 전 본인인증 정책을 켠 사이트에서는 이 토큰이 필수이고, 켜지 않은 사이트에서도 받는다. 토큰이 유효하면 「인증 값으로 채우고 잠금」을 켠 항목은 보낸 값과 달라도 오류 없이 인증 값으로 저장된다. 잠금을 켜지 않은 채움 항목은 화면이 `default` 로 받은 값을 폼 값으로 넣어 보내야 저장된다.
+
+`display_name_kind` 는 표시 이름 종류를 고를 권한이 있는 가입에서만 받는다. 닉네임이 필요한 종류를 고르면 닉네임이 필수가 된다.
 
 
 ### POST /api/auth/reset-password
@@ -1739,6 +1919,10 @@ _단건 응답: `data` 객체의 필드._
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_create":true,"can_update":true,"can…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 | can_edit_layouts | boolean | `false` | 본인이 레이아웃 편집기에 들어갈 수 있는지 (`User::hasPermission('core.templates.layouts.edit', admin)` — 편집기 API 가드와 같은 판정. 사용자 사이트의 편집 진입 단추가 읽는다, #869) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키(7.2.0). 비어 있지 않으면 사용자 화면이 추가 정보 입력 화면으로 보내고, 그 회원의 쓰기 요청은 `403` `required_fields_pending` 으로 거부됩니다 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 | notify_post_complete | boolean | `false` | 게시판 새 글 작성 완료 알림 수신 설정 (marketing 플러그인 주입) |
 | notify_post_reply | boolean | `false` | 내 게시글에 답글 달림 알림 수신 설정 (marketing 플러그인 주입) |
 | notify_comment | boolean | `false` | 내 게시글에 댓글 달림 알림 수신 설정 (marketing 플러그인 주입) |

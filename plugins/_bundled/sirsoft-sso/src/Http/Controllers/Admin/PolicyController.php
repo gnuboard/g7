@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\Sso\Http\Controllers\Admin;
 
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -80,13 +82,18 @@ class PolicyController extends AdminBaseController
     {
         $actor = $this->getCurrentUser();
 
+        $emergencyUsers = $this->policy->emergencyUsers($policy['emergency_user_ids']);
+        $presenter = app(MemberNamePresenter::class);
+        $presenter->preload($emergencyUsers, null, DisplayNameAreaRegistry::AREA_ADMIN);
+
         return [
             'policy' => $policy,
-            'emergency_users' => $this->policy->emergencyUsers($policy['emergency_user_ids'])
+            // 이름은 다른 관리자 화면과 같이 관리자 영역 표시 이름 — 회원 조회 권한이 있으면 실명이 다를 때 `real_name` 이 따로 실린다
+            'emergency_users' => $emergencyUsers
                 ->map(fn (User $user) => [
                     'id' => (int) $user->getKey(),
                     'uuid' => (string) $user->uuid,
-                    'name' => (string) $user->name,
+                    ...$presenter->fields($user, null, DisplayNameAreaRegistry::AREA_ADMIN),
                     'email' => (string) $user->email, // audit:allow resource-member-email-ungated 정책 화면(settings.view) 비상 계정 표시
                     'has_password' => $user->hasPassword(),
                 ])->values()->all(),

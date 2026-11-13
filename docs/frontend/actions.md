@@ -437,7 +437,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `setState` | 상태 변경 | - | target (`global`/`local`, 생략 시 local), 상태 값들. `_global` 은 전역이 아니다(지역 상태에 써진다 — 레이아웃 lint 경고) |
 | `setError` | 에러 상태 설정 | 에러 메시지 | - |
 | `openModal` | 모달 열기 | 모달 ID | - |
-| `closeModal` | 모달 닫기 — 맨 위 모달 하나를 닫는다 | 무시됨 (모달 id 를 적어도 맨 위 모달을 닫는다) | - |
+| `closeModal` | 모달 닫기 — 맨 위 모달 하나를 닫는다 | 무시됨 (모달 id 를 적어도 맨 위 모달을 닫는다) | all (`true` 면 열린 모달 전부, engine-v1.94.0+) |
 | `showAlert` | 알림 표시 (alert) | 메시지 | - |
 | `toast` | 토스트 알림 표시 | - | type, message |
 | `switch` | 조건 분기 처리 | - | params.value, cases (케이스별 액션 정의, default 지원) |

@@ -1,0 +1,22 @@
+feature: 웹 인스톨러 vendor 번들 shim 과 Laravel 클래스의 동등성
+
+description: |
+  설치 마법사는 Laravel 이 뜨기 전에 돌므로 public/install/includes/vendor-bundle-installer.php 의 함수
+  (verifyVendorBundle, extractVendorBundle)로 vendor 번들을 검증하고 푼다. 같은 입력에 대해 이 함수들이
+  App\Extension\Vendor\VendorIntegrityChecker, VendorBundleInstaller 와 같은 결과를 내는지 고정한다.
+  검증은 정상 번들, zip 부재, 해시 불일치 세 경우를, 해제는 정상 번들과 안전하지 않은 항목 경로 두 경우를 잰다.
+
+coverage_strategy: full
+
+axes:
+  bundle_case: [valid_verify, zip_missing_verify, hash_mismatch_verify, valid_extract, unsafe_entry_extract]
+
+effects:
+  - shim_verify_matches_laravel_checker_on_valid_bundle
+  - shim_verify_reports_bundle_zip_missing_like_laravel_checker
+  - shim_verify_reports_zip_hash_mismatch_like_laravel_checker
+  - shim_extract_produces_same_files_as_laravel_installer
+  - shim_extract_rejects_unsafe_entry_path
+
+test_files:
+  - tests/Feature/Installer/VendorBundleInstallerShimTest.php

@@ -50,4 +50,12 @@ interface EcommerceUserProfileRepositoryInterface
      * @return EcommerceUserProfile 저장된 프로필
      */
     public function setPreferredShippingCountry(int $userId, string $countryCode): EcommerceUserProfile;
+
+    /**
+     * 사용자의 프로필 행을 지웁니다 (탈퇴 회원 파기, 회원 삭제).
+     *
+     * @param  int  $userId  사용자 ID
+     * @return int 지운 행 수 (행이 없으면 0)
+     */
+    public function deleteByUserId(int $userId): int;
 }

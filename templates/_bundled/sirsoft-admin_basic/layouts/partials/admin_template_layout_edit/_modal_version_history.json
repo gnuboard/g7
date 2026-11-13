@@ -268,6 +268,17 @@
                                 "className": "mt-2 text-label-subtle"
                             },
                             "text": "$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name ?? 'admin'}}"
+                        },
+                        {
+                            "comment": "실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 created_by_real_name 을 싣는다.",
+                            "id": "version_saved_by_real_name_{{idx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!version.created_by_real_name}}",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.common.real_name.with_label|name={{version.created_by_real_name}}"
                         }
                     ]
                 }

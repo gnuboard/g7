@@ -21,7 +21,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 다운로드 두 통로는 `download()` 의 스트림을 **그대로** 돌려줘 검증자가 하나도 없었다 —
  * 같은 첨부가 미리보기로는 304 로 재검증되고 내려받기로는 매번 전문을 받아 갔다. 오류도
  * 로그도 없이 대역폭으로만 나타나고, 링크가 되는 서버의 정적 서빙은 두 통로를 가리지
- * 않으므로 링크 유무로 동작이 갈리는 상태였다 (14차 G3 라운드).
+ * 않으므로 링크 유무로 동작이 갈리는 상태였다.
  *
  * @scenario serving_type=download, contract_axis=conditional_request
  */
@@ -187,6 +187,10 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
     {
         $row = $this->uploadTextAttachment();
 
+        // `Expires` 는 응답 시각(PHP time())에 max-age 를 더한 값이라 Carbon 시간 고정이 듣지 않는다.
+        // 두 요청이 초 경계를 넘으면 같은 계약인데도 1초 차이로 갈린다 — 다음 초가 시작될 때 두 요청을 보낸다.
+        time_sleep_until(floor(microtime(true)) + 1);
+
         $full = $this->get($this->userDownloadUrl($row->hash));
         $full->assertStatus(200);
 
@@ -207,6 +211,10 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
     public function test_user_download_answers_if_modified_since_with_304(): void
     {
         $row = $this->uploadTextAttachment();
+
+        // `Expires` 는 응답 시각(PHP time())에 max-age 를 더한 값이라 Carbon 시간 고정이 듣지 않는다.
+        // 두 요청이 초 경계를 넘으면 같은 계약인데도 1초 차이로 갈린다 — 다음 초가 시작될 때 두 요청을 보낸다.
+        time_sleep_until(floor(microtime(true)) + 1);
 
         $full = $this->get($this->userDownloadUrl($row->hash));
         $full->assertStatus(200);
@@ -268,6 +276,10 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
         $admin = $this->createAdminUser([
             "sirsoft-board.{$this->board->slug}.admin.attachments.download",
         ]);
+
+        // `Expires` 는 응답 시각(PHP time())에 max-age 를 더한 값이라 Carbon 시간 고정이 듣지 않는다.
+        // 두 요청이 초 경계를 넘으면 같은 계약인데도 1초 차이로 갈린다 — 다음 초가 시작될 때 두 요청을 보낸다.
+        time_sleep_until(floor(microtime(true)) + 1);
 
         $full = $this->actingAs($admin)->get($this->adminDownloadUrl($row->hash));
         $full->assertStatus(200);

@@ -21,7 +21,8 @@ use Tests\TestCase;
  * 그리는 클라이언트 스택이다. 서버 쪽 경계를 고정한다.
  *
  * - 레이아웃 권한 403 응답은 운영·디버그 어느 모드에서도 예외 정보를 싣지 않는다.
- * - Laravel 기본 예외 렌더링(abort(403) 등)은 디버그 모드에서만 스택을 싣고 운영 모드에서는 싣지 않는다.
+ * - `api/*` 의 HTTP 예외(abort(403) 등)는 코어 렌더러(bootstrap/app.php `HttpExceptionInterface`)가 디버그 여부와 무관하게
+ *   `{success, message}` 로 답한다(7.2.0). 프레임워크 기본 렌더링의 디버그 스택은 `api/*` 에 나가지 않는다.
  * - ResponseHelper::error 에 예외를 넘겨도 운영 모드에서는 예외 메시지·스택이 나가지 않는다.
  */
 class ForbiddenResponseDebugTraceBoundaryTest extends TestCase
@@ -121,7 +122,11 @@ class ForbiddenResponseDebugTraceBoundaryTest extends TestCase
     }
 
     /**
-     * 기본 예외 렌더링의 403 은 운영 모드에서 스택을 싣지 않고, 디버그 모드에서만 싣는다(의도된 디버그 동작).
+     * `api/*` 의 HTTP 예외 403 은 운영, 디버그 어느 모드에서도 `{success, message}` 만 싣는다.
+     *
+     * 7.1.x 에서는 `Accept: application/json` 요청이 프레임워크 기본 렌더링으로 흘러 디버그 모드에서 스택을 실었다.
+     * 7.2.0 의 `api/*` HTTP 예외 렌더러는 응답 형태를 `expectsJson() || is('api/*')` 한 곳에서 고정하므로(같은 라우트가
+     * `Accept` 에 따라 `{success,message}` 와 `{message, trace}` 로 갈리지 않게) 디버그 모드에서도 스택이 나가지 않는다.
      *
      * @scenario mode=production
      *
@@ -136,12 +141,14 @@ class ForbiddenResponseDebugTraceBoundaryTest extends TestCase
         config(['app.debug' => false]);
         $production = $this->getJson('/api/__qa736_pi_abort_403');
         $production->assertStatus(403);
+        $this->assertSame(['success', 'message'], array_keys($production->json()));
         $this->assertNoExceptionDetail($production->getContent());
 
         config(['app.debug' => true]);
         $debug = $this->getJson('/api/__qa736_pi_abort_403');
         $debug->assertStatus(403);
-        $this->assertArrayHasKey('trace', $debug->json(), '디버그 모드의 기본 렌더링은 스택을 싣는다(개발용)');
+        $this->assertSame(['success', 'message'], array_keys($debug->json()), 'api/* HTTP 예외 렌더러는 디버그 모드에서도 응답 형태를 고정한다');
+        $this->assertNoExceptionDetail($debug->getContent());
     }
 
     /**

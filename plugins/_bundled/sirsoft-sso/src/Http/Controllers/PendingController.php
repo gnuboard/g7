@@ -55,7 +55,7 @@ class PendingController extends PublicBaseController
     public function complete(ConsentCompleteRequest $request, string $token): JsonResponse
     {
         try {
-            $issued = $this->service->completeConsent($token, $request);
+            $issued = $this->service->completeConsent($token, $request, $request->memberFieldInput());
         } catch (SsoException $e) {
             return self::flowError($e);
         }

@@ -1,0 +1,116 @@
+<!-- 주문서 항목 구획의 **좁은 화면 카드 판**(#490). 표 조각(`_checkout_fields_table`)이 768px 미만에서 이 조각을 그린다.
+  배선은 표와 같다. 스위치는 즉시 저장하고 `checkoutFieldDefs` 만 다시 받으며, 설정 폼과 「변경 있음」은 건드리지 않는다.
+  표의 열(구획, 항목, 출처, 사용, 필수, 동작)을 카드 한 장에 위에서 아래로 놓는다. -->
+<partial description="쇼핑몰 설정 > 주문 설정 탭 주문서 항목 카드(768px 미만) — 표와 같은 즉시 저장 배선">
+  <div data-ref="checkout_fields_cards" class="ecommerce-divider-list">
+    <div data-each="row in {{_computed.checkoutFields}}" id="{{'checkout_field_card_' + row.key}}" class="ecommerce:p-4 ecommerce-row-stack">
+      <div class="ecommerce-flex-start ecommerce:justify-between ecommerce:gap-3">
+        <div class="ecommerce:flex-1 ecommerce:min-w-0">
+          <div class="ecommerce-text-primary ecommerce:font-medium ecommerce-break-all">{{row.label ?? row.key}}</div>
+          <div class="ecommerce-form-hint">{{$t('sirsoft-ecommerce.admin.settings.checkout_fields.group.' + (row.ui?.group === 'orderer' ? 'orderer' : 'shipping'))}}</div>
+          <p data-if="{{!!$localized(row.description ?? {})}}" class="ecommerce-form-hint ecommerce-break-all">{{$localized(row.description ?? {})}}</p>
+        </div>
+        <div class="ecommerce:flex-shrink-0">
+          <span data-if="{{row.is_custom === true}}" class="ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900 ecommerce-tone-info-soft">$t:sirsoft-ecommerce.admin.settings.checkout_fields.source.custom</span>
+          <span data-if="{{row.is_custom !== true &amp;&amp; row.source_identifier === 'sirsoft-ecommerce'}}" class="ecommerce-text-tertiary ecommerce:whitespace-nowrap">{{row.source_label ?? $t('sirsoft-ecommerce.common.module_name')}}</span>
+          <span data-if="{{row.is_custom !== true &amp;&amp; row.source_identifier !== 'sirsoft-ecommerce'}}" class="ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-yellow-100 ecommerce:dark:bg-yellow-900 ecommerce-tone-warning-soft">{{row.source_label ?? row.source_identifier ?? $t('sirsoft-ecommerce.admin.settings.checkout_fields.source.extension')}}</span>
+        </div>
+      </div>
+      <div data-if="{{row.available === false}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
+        <span class="ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-red-100 ecommerce:dark:bg-red-900 ecommerce-tone-error-soft">$t:sirsoft-ecommerce.admin.settings.checkout_fields.unavailable</span>
+        <span class="ecommerce-text-label-subtle ecommerce:text-xs">$t:sirsoft-ecommerce.admin.settings.checkout_fields.unavailable_desc</span>
+      </div>
+      <div data-if="{{row.available !== false}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
+        <div class="ecommerce-flex-center ecommerce:gap-2">
+          <span class="ecommerce-text-tertiary ecommerce:text-xs">$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.enabled</span>
+          <toggle data-type="composite" id="{{'checkout_field_card_enabled_' + row.key}}" checked="{{Boolean(row.enabled)}}" ariaLabel="$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('sirsoft-ecommerce.admin.settings.checkout_fields.col.enabled')}}" size="sm" :awaitConfirmation="true" pending="{{_global.checkoutFieldBusy === row.id + ':enabled'}}" disabled="{{_computed.checkoutFieldsReadOnly || !!row.locks?.enabled || !!_global.checkoutFieldBusy}}">
+            <on type="change">
+              <!-- 사용 스위치(카드 판). 표 판과 같은 배선이다. -->
+              <sequence if="{{!_global.checkoutFieldBusy}}">
+                <set-state target="global" checkoutFieldBusy="{{row.id + ':enabled'}}"/>
+                <api-call :auth_required="true" target="/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields/{{row.id}}" method="PUT">
+                  <body enabled="{{!row.enabled}}" fields_version="{{_computed.checkoutFieldsVersion}}"/>
+                  <success>
+                    <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"/>
+                    <refetch-data-source dataSourceId="checkoutFieldDefs"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.error_code === 'fields_changed' ? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other' : (error.message ?? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.save_failed')}}"/>
+                    <refetch-data-source dataSourceId="checkoutFieldDefs"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+          </toggle>
+          <span data-if="{{!!row.locks?.enabled}}" data-testid="{{'checkout-field-card-enabled-lock-' + row.key}}" role="img" aria-label="{{row.locks?.enabled ?? ''}}" title="{{row.locks?.enabled ?? ''}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+            <icon name="lock" class="ecommerce:text-xs"/>
+          </span>
+        </div>
+        <div class="ecommerce-flex-center ecommerce:gap-2">
+          <span class="ecommerce-text-tertiary ecommerce:text-xs">$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.required</span>
+          <toggle data-type="composite" id="{{'checkout_field_card_required_' + row.key}}" checked="{{Boolean(row.required)}}" ariaLabel="$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('sirsoft-ecommerce.admin.settings.checkout_fields.col.required')}}" size="sm" :awaitConfirmation="true" pending="{{_global.checkoutFieldBusy === row.id + ':required'}}" disabled="{{_computed.checkoutFieldsReadOnly || !!row.locks?.required || !!_global.checkoutFieldBusy}}">
+            <on type="change">
+              <!-- 필수 스위치(카드 판). 표 판과 같은 배선이다. -->
+              <sequence if="{{!_global.checkoutFieldBusy}}">
+                <set-state target="global" checkoutFieldBusy="{{row.id + ':required'}}"/>
+                <api-call :auth_required="true" target="/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields/{{row.id}}" method="PUT">
+                  <body required="{{!row.required}}" fields_version="{{_computed.checkoutFieldsVersion}}"/>
+                  <success>
+                    <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"/>
+                    <refetch-data-source dataSourceId="checkoutFieldDefs"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.error_code === 'fields_changed' ? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other' : (error.message ?? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.save_failed')}}"/>
+                    <refetch-data-source dataSourceId="checkoutFieldDefs"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+          </toggle>
+          <span data-if="{{!!row.locks?.required}}" data-testid="{{'checkout-field-card-required-lock-' + row.key}}" role="img" aria-label="{{row.locks?.required ?? ''}}" title="{{row.locks?.required ?? ''}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+            <icon name="lock" class="ecommerce:text-xs"/>
+          </span>
+        </div>
+      </div>
+      <div data-if="{{row.is_custom === true &amp;&amp; !_computed.checkoutFieldsReadOnly}}" class="ecommerce-flex-center ecommerce:justify-end ecommerce:gap-2">
+        <button data-if="{{row.available !== false}}" data-testid="{{'checkout-field-card-edit-' + row.key}}" type="button" aria-label="$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('common.edit')}}" class="ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:bg-indigo-600 ecommerce:text-white ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:disabled:hover:bg-indigo-600" disabled="{{!!_global.checkoutFieldBusy}}">
+          <on type="click">
+            <!-- 수정 창 열기(카드 판). 표 판과 같다. -->
+            <sequence>
+              <set-state target="global" :checkout_field_form_modal="null"/>
+              <set-state target="global">
+                <field name="checkout_field_form_modal">
+                  <field name="isNew" :value="false"/>
+                  <field name="errors" :value="null"/>
+                  <field name="isSaving" :value="false"/>
+                  <field name="fieldsVersion" value="{{_computed.checkoutFieldsVersion}}"/>
+                  <field name="form" value="{{({ id: row.id, key: row.key, type: row.type, type_label: row.type_label ?? row.type, group: row.ui?.group === 'orderer' ? 'orderer' : 'shipping', name: row.name ?? {}, description: Array.isArray(row.description) ? {} : (row.description ?? {}), options: row.options ?? [], enabled: row.enabled !== false, required: row.required === true })}}"/>
+                </field>
+              </set-state>
+              <open-modal target="checkout_field_form_modal"/>
+            </sequence>
+          </on>
+          <span>$t:common.edit</span>
+        </button>
+        <button data-testid="{{'checkout-field-card-delete-' + row.key}}" type="button" aria-label="$t:common.row_cell|row={{row.label ?? row.key}}|column={{$t('common.delete')}}" class="ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:border ecommerce:border-red-300 ecommerce:dark:border-red-600 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/30 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!!_global.checkoutFieldBusy}}">
+          <on type="click">
+            <!-- 삭제 창 열기(카드 판). 표 판과 같다. -->
+            <sequence>
+              <set-state target="global" :checkout_field_delete_modal="null"/>
+              <set-state target="global">
+                <field name="checkout_field_delete_modal">
+                  <field name="id" value="{{row.id}}"/>
+                  <field name="label" value="{{row.label ?? row.key}}"/>
+                  <field name="isDeleting" :value="false"/>
+                  <field name="fieldsVersion" value="{{_computed.checkoutFieldsVersion}}"/>
+                </field>
+              </set-state>
+              <open-modal target="checkout_field_delete_modal"/>
+            </sequence>
+          </on>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

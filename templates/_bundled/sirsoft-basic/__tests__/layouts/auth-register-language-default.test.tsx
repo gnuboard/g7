@@ -18,15 +18,23 @@
  *    → 렌더 시점에는 $locale 이 컨텍스트에 들어가 있어 영문/한국어 정확히 구분
  *    → 사용자 변경 시 dataKey 자동바인딩이 _local.registerForm.language 갱신, 우선 적용
  *
- * 본 테스트는 위 3가지 보호 장치가 회귀로 사라지지 않도록 JSON 정합성을 검증함.
+ * 7.2.0: 언어 칸은 폼에 박힌 Select 가 아니라 운영자 설정을 따르는 공용 항목 조각이 그린다. 3번 장치는
+ *   「항목 계약의 기본값(서버가 요청 로케일로 계산)을 입력 컴포넌트가 골라 보이되 폼에 써넣지 않는다」로 바뀌었다 —
+ *   회원이 바꾸면 폼 자동 바인딩이 _local.registerForm.language 를 쓰고 그 값이 우선한다. 1, 2번 장치는 그대로다.
+ *
+ * 본 테스트는 위 3가지 보호 장치가 회귀로 사라지지 않도록 JSON 정합성과 렌더 결과를 검증함.
  *
  * @scenario-manifest tests/scenarios/auth-register-language-default.yaml
  */
 
+import React from 'react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 
 import registerLayout from '../../layouts/auth/register.json';
 import registerForm from '../../layouts/partials/auth/_register_form.json';
+import memberFields from '../../layouts/partials/member/_member_fields.json';
+import MemberFieldInput from '../../src/components/composite/MemberFieldInput';
 
 type Node = {
   type?: string;
@@ -51,6 +59,7 @@ describe('회원가입 폼 언어 Select 기본값', () => {
   describe('register.json init_actions', () => {
     /**
      * @scenario layout_part=register_init_actions
+     * @effects register_form_seed_without_language
      */
     it('init_actions 에 registerForm 초기 상태 setState 가 존재한다', () => {
       const initActions = (registerLayout as any).init_actions ?? [];
@@ -98,60 +107,50 @@ describe('회원가입 폼 언어 Select 기본값', () => {
     });
   });
 
-  describe('_register_form.json 언어 Select', () => {
-    function findLanguageSelect(): Node | undefined {
-      let found: Node | undefined;
+  describe('언어 칸 (7.2.0 — 운영자 설정을 따르는 공용 항목 조각이 그린다)', () => {
+    /**
+     * @scenario layout_part=register_form_partial
+     * @effects language_select_not_hardcoded_in_form
+     */
+    it('폼 조각에 언어 Select 가 박혀 있지 않다 (언어 칸은 항목 계약에 있을 때 공용 조각이 그린다)', () => {
+      let found = false;
       walk(registerForm as Node, (node) => {
-        if (
-          node.name === 'Select' &&
-          node.props?.name === 'language'
-        ) {
-          found = node;
-        }
+        if (node.props?.name === 'language') found = true;
       });
-      return found;
-    }
-
-    /**
-     * @scenario layout_part=register_form_partial
-     */
-    it('Select 에 name="language" 가 존재한다', () => {
-      const select = findLanguageSelect();
-      expect(select).toBeDefined();
+      expect(found).toBe(false);
     });
 
     /**
-     * @scenario layout_part=register_form_partial
-     * @effects language_select_value_prefers_local_then_locale
+     * @scenario layout_part=member_fields_partial
+     * @effects language_value_binds_to_form_without_explicit_value
      */
-    it('Select 에 명시적 value prop 이 정의되어 있다 (렌더 시점 $locale 평가)', () => {
-      const select = findLanguageSelect();
-      expect(select?.props?.value).toBeDefined();
+    it('공용 조각의 입력칸은 value 를 직접 주지 않는다 (폼 자동 바인딩이 _local.registerForm.language 를 잇는다)', () => {
+      let input: Node | undefined;
+      walk(memberFields as Node, (node) => {
+        if (node.name === 'MemberFieldInput') input = node;
+      });
+      expect(input).toBeDefined();
+      expect(input?.props?.name).toBe('{{field.name}}');
+      expect(input?.props?.value).toBeUndefined();
     });
 
     /**
-     * @scenario layout_part=register_form_partial
-     * @effects language_select_value_prefers_local_then_locale
+     * @scenario layout_part=member_fields_partial
+     * @effects language_default_shown_from_contract_without_seeding
      */
-    it('value 표현식이 _local.registerForm.language 우선, $locale fallback 패턴이다', () => {
-      const select = findLanguageSelect();
-      const value = select?.props?.value as string;
-      expect(value).toContain('_local');
-      expect(value).toContain('registerForm');
-      expect(value).toContain('language');
-      expect(value).toContain('$locale');
-    });
+    it('값이 없으면 항목 계약의 기본값(서버가 요청 로케일로 준다)을 골라 보이고, 그 값을 폼에 써넣지 않는다', () => {
+      (window as any).G7Core = { t: (key: string) => key, createChangeEvent: ({ value, name }: any) => ({ target: { value, name } }) };
+      const emitted: unknown[] = [];
+      const field = {
+        key: 'language', name: 'language', type: 'choice', label: 'Language', required: false,
+        options: [{ value: 'ko', label: '한국어' }, { value: 'en', label: 'English' }],
+        constraints: { display: 'select' }, default: 'en',
+      };
+      render(<MemberFieldInput field={field} name="language" value={undefined} onChange={(e: any) => emitted.push(e.target.value)} />);
 
-    /**
-     * @scenario layout_part=register_form_partial
-     * @effects language_select_options_from_locales
-     */
-    it('options 가 $locales 배열을 매핑한다', () => {
-      const select = findLanguageSelect();
-      const options = select?.props?.options as string;
-      expect(options).toContain('$locales');
-      expect(options).toContain('value');
-      expect(options).toContain('label');
+      // 닫힌 드롭다운의 단추에 기본값의 라벨이 보인다
+      expect(screen.getByText('English')).toBeTruthy();
+      expect(emitted).toEqual([]);
     });
   });
 });

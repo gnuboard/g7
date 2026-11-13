@@ -42,9 +42,10 @@ class NotificationTemplateController extends AdminBaseController
                 $this->getCurrentAdmin()?->id
             );
 
+            // 지워졌거나 꺼진 회원 항목의 변수를 쓰면 저장은 하되 경고로 알린다(data.warnings).
             return $this->success(
                 __('notification.template_updated'),
-                new NotificationTemplateResource($updated)
+                (new NotificationTemplateResource($updated))->withWarnings($this->templateService->variableWarnings($updated))
             );
         } catch (\Exception $e) {
             Log::error('알림 템플릿 수정 실패', [

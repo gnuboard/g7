@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductReviewFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 상품 리뷰 모델
@@ -101,17 +102,15 @@ class ProductReview extends Model
     /**
      * 작성자 표시 이름을 반환합니다.
      *
-     * 회원 후기는 회원 이름, 회원 없는 후기는 저장된 작성자 이름 그대로(가린 이름이면 가린 채로).
+     * 회원 후기는 그 영역의 표시 이름(회원 이름을 직접 읽지 않는다), 회원 없는 후기는 저장된 작성자 이름 그대로(가린 이름이면 가린 채로).
+     * 탈퇴한 회원은 탈퇴 문구로 보인다.
      *
+     * @param  string  $area  표시 이름 영역 키 (기본: 사용자 화면의 상품 후기. 관리자 화면은 `MemberDisplayName::AREA_ADMIN`)
      * @return string 작성자 표시 이름 (알 수 없으면 빈 문자열)
      */
-    public function displayAuthorName(): string
+    public function displayAuthorName(string $area = MemberDisplayName::AREA_REVIEW): string
     {
-        if ($this->isImported()) {
-            return (string) ($this->author_name ?? '');
-        }
-
-        return (string) ($this->user?->name ?? $this->author_name ?? '');
+        return (string) (MemberDisplayName::name($this->isImported() ? null : $this->user, $area, $this->author_name) ?? '');
     }
 
     /**

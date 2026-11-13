@@ -80,7 +80,10 @@ class ResourceFieldDescriber
         'recipient' => '수신자 사용자 객체 (uuid/name/email — recipientUser 관계 파생)',
         'sender' => '발신자 사용자 객체 (uuid/name/email — senderUser 관계 파생)',
         'author' => '작성자 사용자 객체 (uuid/name — author 관계 파생)',
-        'actor_name' => '행위를 수행한 주체(사용자/시스템)의 이름',
+        'actor_name' => '행위를 수행한 주체(사용자/시스템)의 이름 (회원이면 그 자리의 표시 이름)',
+        'real_name' => '회원의 실명 (관리자 응답에서 요청자에게 회원 조회 권한이 있고 표시 이름과 다를 때만 실림)',
+        'created_by_real_name' => '저장자의 실명 (관리자 응답에서 요청자에게 회원 조회 권한이 있고 표시 이름과 다를 때만 실림)',
+        'requester_real_name' => '접수자의 실명 (관리자 응답에서 요청자에게 회원 조회 권한이 있고 표시 이름과 다를 때만 실림)',
 
         // 시스템/집계 공통 (DashboardService/UserRepository/SettingsService)
         'total' => '전체 개수 (집계)',

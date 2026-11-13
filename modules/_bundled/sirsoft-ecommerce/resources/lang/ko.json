@@ -17,6 +17,7 @@
             "availableChannels": "사용 가능 채널",
             "brands": "브랜드 목록",
             "carriers": "택배사 목록",
+            "checkoutFieldDefs": "주문서 항목 정의",
             "categories": "카테고리 목록",
             "commonInfos": "공통정보 목록",
             "common_infos": "공통정보 목록",
@@ -136,6 +137,9 @@
         "mileage_transactions": {
             "$partial": "partial/ko/admin/mileage_transactions.json"
         },
+        "common": {
+            "real_name_sub": "실명 {{name}}"
+        },
         "user_mileage": {
             "tab_label": "마일리지",
             "title": "마일리지",
@@ -145,20 +149,6 @@
             "expiring_soon": "소멸 예정",
             "view_history": "이 회원 내역 보기",
             "disabled_notice": "마일리지 기능이 비활성화되어 있습니다. 환경설정에서 활성화할 수 있습니다."
-        },
-        "user_currency": {
-            "title": "결제 통화",
-            "description": "이 회원의 주문·결제 시 사용할 통화를 지정합니다.",
-            "save_button": "저장",
-            "saved": "회원 결제 통화가 변경되었습니다.",
-            "save_failed": "회원 결제 통화 변경에 실패했습니다."
-        },
-        "user_shipping_country": {
-            "title": "배송국가",
-            "description": "이 회원의 기본 배송국가를 지정합니다.",
-            "save_button": "저장",
-            "saved": "회원 배송국가가 변경되었습니다.",
-            "save_failed": "회원 배송국가 변경에 실패했습니다."
         },
         "user_filter": {
             "title": "쇼핑몰 조건",
@@ -477,16 +467,6 @@
     },
     "user": {
         "$partial": "partial/ko/user.json"
-    },
-    "auth": {
-        "register_currency": {
-            "label": "결제 통화",
-            "hint": "주문·결제 시 사용할 통화입니다. 가입 후 내 정보에서 변경할 수 있습니다."
-        },
-        "register_shipping_country": {
-            "label": "배송국가",
-            "hint": "기본 배송국가입니다. 가입 후 내 정보에서 변경할 수 있습니다."
-        }
     },
     "user_mileage": {
         "title": "내 마일리지",

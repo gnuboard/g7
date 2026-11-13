@@ -133,6 +133,29 @@
             "default": "errors/default"
         }
     },
+    "errorHandling": {
+        "403": {
+            "handler": "conditions",
+            "conditions": [
+                {
+                    "if": "{{error.error_code === 'required_fields_pending'}}",
+                    "then": {
+                        "handler": "openModal",
+                        "target": "required_info_pending_modal"
+                    }
+                },
+                {
+                    "then": {
+                        "handler": "toast",
+                        "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                        }
+                    }
+                }
+            ]
+        }
+    },
     "features": {
         "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" },
         "dark_mode": true,

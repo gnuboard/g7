@@ -150,10 +150,11 @@
                             }
                         },
                         {
+                            "comment": "필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — 로그인 화면의 applyLoginResult 최종 이동과 같은 식이다(이 성공 지점은 그 액션을 거치지 않는다).",
                             "handler": "navigate",
                             "if": "{{!response.password_change_required}}",
                             "params": {
-                                "path": "{{query.redirect ?? '/'}}",
+                                "path": "{{((response.pending_required_fields ?? []).length > 0 && (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}",
                                 "fallbackPath": "/"
                             }
                         }
@@ -210,9 +211,10 @@
                             }
                         },
                         {
+                            "comment": "필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — applyLoginResult 최종 이동과 같은 식.",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{query.redirect ?? '/'}}",
+                                "path": "{{((response.pending_required_fields ?? []).length > 0 && (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}",
                                 "fallbackPath": "/"
                             }
                         }
@@ -358,7 +360,7 @@
                     "name": "Input",
                     "actions": [
                         {
-                            "comment": "이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 그 식별자의 로그인 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신\n               「…(으)로 계속」 버튼을 보인다. 판정은 도메인으로만 하므로 회원 유무가 드러나지 않는다. 실패하면 지금 화면 그대로다.",
+                            "comment": "이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 그 식별자의 로그인 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신\n               「… 계정으로 계속」 버튼을 보인다. 판정은 도메인으로만 하므로 회원 유무가 드러나지 않는다. 실패하면 지금 화면 그대로다.",
                             "event": "onBlur",
                             "handler": "sequence",
                             "if": "{{!!$event.target.value && $event.target.value !== _local.discoveryFor}}",
@@ -1163,9 +1165,10 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — applyLoginResult 최종 이동과 같은 식.",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "{{query.redirect ?? '/'}}",
+                                                        "path": "{{((response.pending_required_fields ?? []).length > 0 && (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}",
                                                         "fallbackPath": "/"
                                                     }
                                                 }

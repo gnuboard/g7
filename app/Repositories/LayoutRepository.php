@@ -6,6 +6,7 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 
@@ -488,7 +489,7 @@ class LayoutRepository implements LayoutRepositoryInterface
         // 정렬 기준은 `version` — 레이아웃 안에서 유일하다(uk_layout_version). 종전의
         // `latest()`(created_at)는 같은 초에 저장된 버전들의 순서를 정하지 못해, 상한이 걸린
         // 지금은 "어느 100건이 오는가" 까지 실행마다 달라질 수 있다.
-        return TemplateLayoutVersion::with('creator:id,name')
+        return TemplateLayoutVersion::with('creator:'.User::displayColumns())
             ->where('layout_id', $layoutId)
             ->orderBy('version', 'desc')
             ->limit($limit)
@@ -506,7 +507,7 @@ class LayoutRepository implements LayoutRepositoryInterface
     public function findVersionByNumber(int $layoutId, int $version): ?TemplateLayoutVersion
     {
         // creator eager load — 단건 버전 조회(showVersion)도 저장자 이름 일관 노출.
-        return TemplateLayoutVersion::with('creator:id,name')
+        return TemplateLayoutVersion::with('creator:'.User::displayColumns())
             ->where('layout_id', $layoutId)
             ->where('version', $version)
             ->first();

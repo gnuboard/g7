@@ -283,10 +283,25 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 게시글 목록·상세, 댓글 목록, 게시판 상세, 상품평 목록처럼 인증 없이 열람되는 경로가 이에 해당합니다.
 회원 이메일이 필요한 화면은 관리자 엔드포인트를 사용하세요.
 
+### 회원 이름과 실명 보조 (7.2.0)
+
+응답에 실리는 회원 이름(`user.name`, `creator.name`, `author.name`, `member.name`, `created_by_name` 등)은 그 자리의 **표시 이름**입니다.
+운영자가 환경설정의 회원 탭에서 자리(영역)마다 정한 방식으로 계산하며, 설정을 바꾸지 않은 사이트에서는 종전처럼 회원 이름입니다.
+관리자 엔드포인트는 관리자 화면 영역, 그 밖의 엔드포인트는 사이트 기본 영역(또는 그 기능의 영역)을 씁니다.
+
+실명은 별도 키 `real_name` 으로만 옵니다. 다음을 모두 만족할 때만 키가 실리고, 아니면 키 자체가 없습니다.
+
+- 관리자 엔드포인트의 응답이다.
+- 요청한 관리자에게 회원 조회 권한(`core.users.read`)이 있다. 권한 범위가 「본인」이나 「소유 역할」이면 자기 자신의 실명만 온다.
+- 실명이 비어 있지 않고 표시 이름과 다르다. 탈퇴한 회원이 아니다.
+
+이름 키가 `name` 이 아닌 응답은 같은 꼬리말의 키를 씁니다(`created_by_name` 과 `created_by_real_name`, `requester_name` 과 `requester_real_name`).
+회원 자신의 정보를 다루는 응답(관리자 회원 목록과 상세, 본인 응답)의 `name`, `nickname` 은 원본 그대로이고 표시 이름은 `display_name` 으로 함께 옵니다.
+
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 45 · **엔드포인트 수**: 392
+- **문서 수**: 46 · **엔드포인트 수**: 399
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -304,6 +319,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [dashboard.md](dashboard.md) | `dashboard` | 5 |
 | [extensions.md](extensions.md) | `extensions` | 8 |
 | [favicon.md](favicon.md) | `favicon` | 1 |
+| [field-sets.md](field-sets.md) | `field-sets` | 7 |
 | [frontend-config.md](frontend-config.md) | `frontend-config` | 2 |
 | [identity.md](identity.md) | `identity` | 27 |
 | [language-packs.md](language-packs.md) | `language-packs` | 15 |

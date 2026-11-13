@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 상품 리뷰 Repository 구현체
@@ -68,11 +69,8 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
                         });
                     });
                 } elseif ($field === 'reviewer') {
-                    $q->whereHas('user', function ($uq) use ($keyword) {
-                        $uq->where('name', 'like', "%{$keyword}%")
-                            ->orWhere('email', 'like', "%{$keyword}%")
-                            ->orWhere('nickname', 'like', "%{$keyword}%");
-                    })
+                    // 회원 작성자는 이름과 닉네임을 모두 찾는다(관리자 화면의 회원 검색 공통 규칙). 이메일도 종전대로 찾는다.
+                    $q->whereHas('user', fn ($uq) => MemberDisplayName::constrainUsersForAdmin($uq, (string) $keyword, withEmail: true))
                         // 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 작성자 이름으로 찾는다
                         ->orWhere('author_name', 'like', "%{$keyword}%");
                 } elseif ($field === 'content') {

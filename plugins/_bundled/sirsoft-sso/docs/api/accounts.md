@@ -30,7 +30,7 @@
 | idp_id | query | integer | 아니오 | 1 이상 | 이 IdP 의 연결만 |
 | status | query | string | 아니오 | `active`, `inactive` | 활성 연결 또는 퇴사 처리된(비활성) 연결만 |
 | via | query | string | 아니오 | `jit`, `domain`, `verify`, `admin`, `csv`, `scim` | 연결 방식으로 거른다 |
-| q | query | string | 아니오 | 최대 100자 | 회원 이름 또는 이메일 부분 일치 |
+| q | query | string | 아니오 | 최대 100자 | 회원 이름, 닉네임, 이메일 부분 일치. `%`, `_` 는 글자 그대로 찾는다 |
 | page | query | integer | 아니오 | 1 이상 | 페이지 번호 |
 | per_page | query | integer | 아니오 | 1~100 | 페이지당 건수(기본 20) |
 
@@ -52,7 +52,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | idps | array | — | 필터 선택지. 등록된 IdP 전부 `{id, key, label, protocol}` |
 | data | array | — | 연결 행(최근 연결 순) |
 | data[].id | integer | — | 연결 ID. 해제 API 의 `{id}` |
-| data[].user | object\|null | — | 회원 `{id, uuid, name, email, has_password, is_privileged}`. `is_privileged` 는 관리자 또는 최고관리자 |
+| data[].user | object\|null | — | 회원 `{id, uuid, name, real_name?, email, has_password, is_privileged}`. `name` 은 관리자 화면의 표시 이름(환경설정 > 회원의 관리자 화면 설정)이다. `real_name` 은 보는 운영자에게 회원 조회 권한이 있고 실명이 `name` 과 다를 때만 실린다(조건에 맞지 않으면 키가 없다). `is_privileged` 는 관리자 또는 최고관리자 |
 | data[].idp | object\|null | — | IdP `{id, key, label, protocol}` |
 | data[].subject_masked | string | — | IdP 고유 식별자를 앞뒤 2자만 남기고 가린 값 |
 | data[].linked_via | string | — | 연결 방식 `jit`(자동 생성), `domain`(소유 도메인 자동 연결), `verify`(본인 확인 연결), `admin`, `csv`, `scim` |
@@ -152,7 +152,7 @@ Content-Type: application/json
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | — | 만든 연결 ID |
-| user | object | — | 연결된 회원 `{id, uuid, name, email, has_password, is_privileged}` |
+| user | object | — | 연결된 회원 `{id, uuid, name, real_name?, email, has_password, is_privileged}`. 이름 규칙은 목록과 같다 |
 | idp | object | — | IdP `{id, key, label, protocol}` |
 | subject_masked | string | — | 가린 고유 식별자 |
 | linked_via | string | — | 언제나 `admin` |

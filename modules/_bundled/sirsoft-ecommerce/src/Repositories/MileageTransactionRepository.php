@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 마일리지 거래(원장) Repository 구현체
@@ -414,9 +415,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
                         break;
                     case 'member':
                     default:
-                        $outer->whereHas('user', function ($q) use ($keyword) {
-                            $q->where('name', 'like', "%{$keyword}%");
-                        });
+                        // 회원 검색은 이름과 닉네임을 모두 찾는다(화면에 보이는 표시 이름이 어느 쪽이든 찾을 수 있게)
+                        $outer->whereHas('user', fn ($q) => MemberDisplayName::constrainUsersForAdmin($q, (string) $keyword));
                         break;
                 }
             });

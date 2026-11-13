@@ -412,6 +412,8 @@ overlay 를 슬롯으로 **전환**할 때는 기설치본을 함께 본다. 확
 
 ### 예시: 사용자 폼에 알림 설정 추가
 
+> 아래는 Overlay 주입 문법을 보이는 예시다. 회원 폼(가입, 내 정보, 관리자 회원 폼)에 **입력 칸을 더하는 용도**라면 조각을 붙이지 말고 회원 항목으로 선언한다([field-sets.md](field-sets.md)). 선언한 항목은 조각 없이 네 화면에 그려지고 검증과 저장도 코어가 맡는다. 번들 게시판의 알림 설정도 7.2.0 부터 조각이 아니라 항목 선언이다.
+
 ```html
 <extension target-layout="admin_user_form" priority="100">
   <inject target-id="section_marketing_consent" position="append">
@@ -544,12 +546,27 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `auth_register_extensions` (7.2.0+) | 가입 화면, 가입 폼 바로 앞 | 소셜 로그인 | 가입 화면에 소셜 가입 단추가 없다 (호환 심이 채운다) |
 | `mypage_reauth_methods` (7.2.0+) | 정보 수정 진입 확인, 비밀번호 없는 회원의 재확인 안내 자리 | 소셜 로그인 | 메일을 받을 수 없는 비밀번호 없는 회원이 「소셜 계정으로 다시 확인」을 못 본다 (호환 심이 채운다) |
 | `mypage_change_password_reauth` (7.2.0+) | 비밀번호 변경, 비밀번호 없는 회원의 첫 설정 재확인 안내 자리 | 소셜 로그인 | 같은 회원이 비밀번호 첫 설정 전 재확인 단추를 못 본다 (호환 심이 채운다) |
+| `member_field_input` | 회원 항목을 그리는 조각(가입, 내 정보, 추가 정보 입력, 소셜과 SSO 가입 창, 게시판 비회원 입력, 주문서 추가 입력)에서 `renderer` 가 `extension` 인 항목 자리. 속성 `field`, `error`, `disabled`, `formKey` 를 넘긴다 | (번들 사용처 없음. 회원 항목 유형을 더한 확장의 자리) | 확장이 더한 유형의 항목에 입력칸이 없다. 계약은 [user-template-contract.md](user-template-contract.md#회원-항목-확장점-2종) |
 
 - `html_editor` 의 props(7.1.5): `name`·`content`/`value`·`isHtml`·`multilingual`·`placeholder`·`label`·`rows`·`disabled`/`readOnly`·`showHtmlModeToggle`, 그리고 **`mediaUpload`** — 본문 미디어 업로드 계약(`ContentMediaUploadTarget` 또는 `null`). 편집기 플러그인은 이 값을 읽기만 하고, 없으면 종전 동작이다. 형식·서버 도구는 [본문 미디어 업로드 계약](content-media.md).
 - 슬롯형 확장점은 `<extension-point name="…"><default/></extension-point>` 로 둔다. 주입이 없으면 아무것도 그리지 않는다.
 - 메뉴 겹침(`home_hero`·`shop_hero` 를 여는 템플릿 선택 계약, 7.2.0+): 맨 위 배너가 `<html data-header-overlay="dark|light">`(배너 바탕 밝기)를 달면 템플릿은 보이는 헤더 높이를 `--g7-header-height`(px)로 문서 뿌리에 알리고, 배너 자리를 그만큼 위로 당겨 헤더를 배너 위에 투명하게 겹친다(글자는 dark → 흰색, light → 검은색, 스크롤하면 원래 배경). 배너는 이 값만큼 문구를 아래에서 시작한다. 지원하지 않는 템플릿은 아무것도 하지 않으면 된다 — 변수가 없어 배너가 겹침 없이 그려진다. sirsoft-basic 구현: `templates/_bundled/sirsoft-basic/src/support/headerOverlay.ts`·`templates/_bundled/sirsoft-basic/src/styles/main.css`.
 - 모달 안의 목록(예: 탈퇴 경고)은 노드 id 를 겨냥하는 Overlay 가 닿지 않으므로 확장점으로 연다.
 - 표시 분기(결제수단·PG·발급 상태 등)는 주입하는 쪽이 조건으로 처리한다 — 템플릿은 자리만 둔다.
+
+##### 사용자 템플릿의 표준 앵커 id
+
+확장점이 아니라 노드 id(`target_id`)로 겨냥하는 자리다. 가입 화면과 내 정보 화면에 다섯 개가 있고, 사용자 템플릿이 이 id 의 노드를 두지 않으면 그 자리에 붙는 조각이 빠진다. 조건으로 감춰도 노드는 트리에 남겨 둔다. 화면별 문맥과 회원 항목을 그리는 약속은 [user-template-contract.md](user-template-contract.md) 에 정리했다.
+
+| 앵커 id | 대상 화면 | 놓는 곳 | 붙는 확장 | 빠지면 |
+| --- | --- | --- | --- | --- |
+| `register_extension_fields` | `auth/register` | 가입 폼의 회원 항목 뒤, 약관 동의 줄 앞 | (번들 사용처 없음. 확장 공용 자리) | 가입 폼에 칸을 더할 곳이 없다 |
+| `register_privacy_agreement` | `auth/register` | 가입 폼의 개인정보 동의 줄 | (번들 사용처 없음) | 동의 줄 뒤에 줄을 더할 곳이 없다 |
+| `profile_bio_card` | `mypage/profile-edit` | 내 정보 수정의 서명과 자기소개 카드 | (번들 사용처 없음) | 내 정보 수정에 카드를 더할 곳이 없다 |
+| `profile_view_bio_card` | `mypage/profile` | 내 정보 보기의 서명과 자기소개 카드 | 소셜 로그인, GDPR, SSO, 본인인증 플러그인 2종(KG이니시스, NHN KCP) | 연결 계정, 개인정보, 회사 계정, 본인인증 카드가 보이지 않는다 |
+| `mypage_tab_content` | 마이페이지 탭 화면 전부 | 탭 내비게이션 아래 본문 | 이커머스(`mypage/profile` 의 마일리지 카드, 배송지 카드) | 마일리지와 배송지 카드가 보이지 않는다. 탭 전환 표시가 본문 대신 화면 전체를 덮는다 |
+
+회원 한 사람에게 딸린 값을 받으려는 확장은 이 앵커에 조각을 붙이는 대신 회원 항목으로 선언한다. 선언한 항목은 가입, 내 정보, 관리자 회원 화면에 함께 나타난다. 번들 확장의 게시판 알림 수신, 이커머스 결제 통화와 배송 국가, 마케팅 동의가 이 방식으로 옮겨졌다.
 
 ##### 옛 템플릿 호환 심 (7.2.0+)
 
@@ -868,6 +885,44 @@ templates/_bundled/sirsoft-basic/
 3. 모듈 확장 (source_type = Module)            ← 가장 낮은 우선순위
 ```
 
+### 대체 범위와 버전 제약 (`version-constraint`)
+
+오버라이드는 **파일 단위로 원본 조각을 대체**합니다. 같은 대상(`target-layout` 또는 `extension-point`)에 붙은 대상 확장의 조각은 초기 액션, 모달, 데이터소스까지 통째로 가려지므로, 원본이 가진 것 가운데 남길 것은 오버라이드 파일에 모두 옮겨 적어야 합니다. 확장 조각은 `<include>` 를 풀지 않으므로 템플릿의 공용 조각을 끌어다 쓸 수 없고, 필요한 마크업은 파일 안에 직접 적습니다.
+
+원본을 옮겨 적은 판본은 대상 확장이 원본을 고쳐도 따라가지 않습니다. `<extension>` 봉투에 `version-constraint` 로 **대상 확장의 버전 제약**(Composer 표기)을 적어 두면, 설치된 대상 확장의 버전이 제약에 맞지 않을 때 코어가 오버라이드 대신 원본 조각을 그립니다(코어 7.2.0+).
+
+```html
+<extension target-layout="auth/register" priority="100" version-constraint="~1.0.0">
+  <init>
+    <toast message="$t:auth.welcome"/>
+  </init>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "target_layout": "auth/register",
+  "priority": 100,
+  "init_actions": [
+    { "handler": "toast", "params": { "message": "$t:auth.welcome" } }
+  ],
+  "version_constraint": "~1.0.0"
+}
+```
+
+| 상황 | 그려지는 것 |
+| --- | --- |
+| `version-constraint` 를 적지 않음 | 늘 오버라이드 |
+| 대상 확장 버전이 제약에 맞음 | 오버라이드 |
+| 대상 확장 버전이 제약에 맞지 않음 | 원본 조각 (관리자 화면에 비호환 경고) |
+| 제약 문자열을 해석하지 못함, 대상 확장의 버전을 알 수 없음 | 오버라이드 (로그에 남김) |
+
+- 템플릿 오버라이드에서만 뜻이 있습니다. 모듈, 플러그인이 자기 조각에 적으면 무시됩니다.
+- 제약은 「이 판본이 확인한 원본의 범위」로 적습니다(예: 원본 1.0.x 를 옮겨 적었으면 `~1.0.0`). 대상 확장을 올린 뒤에는 원본과 대조해 판본을 고치고 제약을 넓힙니다.
+- 원본으로 되돌아가도 화면이 깨지지 않게, 오버라이드가 서버에 보내는 요청은 원본이 보내는 요청과 함께 받아들여지는 모양이어야 합니다.
+
 ### 오버라이드 예시
 
 모듈의 기본 확장을 템플릿에서 스타일 변경:
@@ -921,7 +976,7 @@ templates/_bundled/sirsoft-basic/
 
 ### 조각 식별자 `fragment_key`
 
-`fragment_key` 는 조각 소스 파일의 기본 이름에서 `.g7.html`/`.json` 을 뗀 문자열이다(`admin-user-currency-field.g7.html` → `admin-user-currency-field`). 같은 확장이 **같은 대상에 조각을 둘** 보낼 수 있으므로(예: 회원 폼에 통화 필드와 배송 국가 필드) DB 행은 대상만으로 갈리지 않고, 이 키가 행을 가른다. 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다. 관리자 레이아웃 편집기의 확장 목록은 대상 이름 아래 이 키를 작게 표시해 같은 대상의 두 행을 구분한다.
+`fragment_key` 는 조각 소스 파일의 기본 이름에서 `.g7.html`/`.json` 을 뗀 문자열이다(`admin-user-list-filter-address.g7.html` → `admin-user-list-filter-address`). 같은 확장이 **같은 대상에 조각을 둘** 보낼 수 있으므로(예: 회원 목록 필터에 주소 필터와 마일리지 필터) DB 행은 대상만으로 갈리지 않고, 이 키가 행을 가른다. 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다. 관리자 레이아웃 편집기의 확장 목록은 대상 이름 아래 이 키를 작게 표시해 같은 대상의 두 행을 구분한다.
 
 확장이 `LayoutExtensionService::registerExtension()` 을 직접 부르는 자리는 여섯 번째 인자로 이 키를 넘긴다. 업데이트 뒤 조각 재등록은 코어 업데이트 절차가 하므로(켜진 템플릿 가운데 붙을 자리가 있는 곳에만) 확장이 업데이트 완료 훅에서 조각을 따로 다시 등록할 필요는 없다 — 그렇게 하면 꺼 둔 템플릿에까지 행을 만들기 쉽다. 넘기지 않으면 같은 대상의 기존 행이 하나일 때 그 키를 잇고, 둘 이상이면 어느 조각인지 알 수 없어 처리하지 않는다(경고 로그).
 

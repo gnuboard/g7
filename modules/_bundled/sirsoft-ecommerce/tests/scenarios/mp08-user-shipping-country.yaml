@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 |
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
 #   각 axis 조합은 PHPUnit(Resolver/User·Admin 컨트롤러/OrderProcessing 차단·저장) + Vitest(핸들러)
 #   + Playwright(설정 주입·게이트·차단) 로 커버되며 green 이다.
@@ -35,6 +35,8 @@ effects:
   - setting_ui_hidden_when_intl_off               # 해외배송 OFF 시 설정 UI 숨김
   - header_dropdown_changes_country               # 헤더 드롭다운에서 배송국가 변경
   - country_change_refetches_cart_checkout        # 국가 변경 시 cartItems/checkoutData refetch
+  - checkout_country_change_recalculates_shipping_fee  # A3 — 주문서 국가를 바꾸면 그 국가 배송비로 재계산(PUT /checkout)
+  - cart_shipping_fee_matches_selected_country    # C — 장바구니 배송비가 고른 배송국가 기준
   - checkout_select_visible_when_intl_on          # B1 — 체크아웃 국가 Select 렌더(shippingSettings 경로)
   - checkout_default_synced_with_header           # D5 — 체크아웃 기본값 = _global.preferredShippingCountry
   - register_field_prefill_and_persist            # D6 — 가입폼 prefill + 가입 시 저장
@@ -74,4 +76,5 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationShippingSnapshotTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/initPreferredShippingCountry.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingCountryLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/User/UserPreferenceFieldSetTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-shipping-country.spec.ts

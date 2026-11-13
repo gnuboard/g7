@@ -113,7 +113,11 @@ public function handleUserAfterCreate(User $user, array $data): void
         'loggable' => $user,
         'description_key' => 'activity_log.description.user_create',
         'description_params' => ['user_id' => $user->uuid],
-        'properties' => ['email' => $user->email, 'name' => $user->name],
+        // 기록에 남기는 회원 이름은 그 시점의 관리자 화면 영역 표시 이름이다 (users.name 을 직접 읽지 않는다)
+        'properties' => [
+            'email' => $user->email,
+            'name' => app(DisplayNameResolver::class)->resolve($user, DisplayNameAreaRegistry::AREA_ADMIN),
+        ],
     ]);
 }
 

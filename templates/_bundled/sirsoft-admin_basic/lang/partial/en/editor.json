@@ -1184,6 +1184,7 @@
     "tab_navigation": "Tab navigation",
     "tab_navigation_scroll": "Scroll tab navigation",
     "toggle": "Toggle switch",
+    "member_field_input": "Member field input",
     "input": "Input",
     "textarea": "Textarea",
     "label": "Label",
@@ -1787,6 +1788,9 @@
     "queue_failed": "Failed queue jobs",
     "queue_logs": "Queue processing log",
     "coreSchedules": "Core scheduled tasks",
-    "template_settings": "Template settings"
+    "template_settings": "Template settings",
+    "memberFieldDefs": "Member Field Definitions",
+    "memberFields": "Member Fields",
+    "memberNicknameRecompute": "Nickname Duplicate Check Preparation Status"
   }
 }

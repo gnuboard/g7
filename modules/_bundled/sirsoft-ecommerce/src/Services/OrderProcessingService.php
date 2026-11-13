@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ReactivationCouponConflictException;
 use Modules\Sirsoft\Ecommerce\Exceptions\UnsupportedPaymentCurrencyException;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
@@ -127,6 +129,7 @@ class OrderProcessingService
      * @param  string|null  $guestLookupPassword  비회원 조회 비밀번호 평문 (해시로 저장, 회원 주문은 null)
      * @param  array|null  $cashReceiptInfo  현금영수증 신청 정보 (type/identifier_type/identifier, 미신청 시 null)
      * @param  array|null  $refundBankInfo  환불 계좌 정보 (bank_code/account_number/holder, 미입력 시 null)
+     * @param  array<string, mixed>  $extraFields  주문서 추가 항목 값 (항목 키 => 값. 운영자가 추가한 항목과 다른 확장이 기여한 항목)
      * @return Order 생성된 주문
      *
      * @throws OrderAmountChangedException 재계산 금액 변동 시
@@ -144,7 +147,8 @@ class OrderProcessingService
         ?array $dbankInfo = null,
         ?string $guestLookupPassword = null,
         ?array $cashReceiptInfo = null,
-        ?array $refundBankInfo = null
+        ?array $refundBankInfo = null,
+        array $extraFields = []
     ): Order {
         // 생성 전 훅
         HookManager::doAction('sirsoft-ecommerce.order.before_create', $tempOrder, $ordererInfo, $shippingInfo, $paymentMethod);
@@ -234,6 +238,7 @@ class OrderProcessingService
             $isZeroPayable,
             $cashReceiptInfo,
             $refundBankInfo,
+            $extraFields,
             &$zeroAmountSnapshot
         ) {
             // 주문 생성
@@ -244,6 +249,12 @@ class OrderProcessingService
 
             // 주문 주소 생성 (주문자 + 배송지)
             $this->createOrderAddresses($order, $ordererInfo, $shippingInfo, $shippingMemo);
+
+            // 주문서 추가 항목 값 저장 (주문과 같은 트랜잭션. 결제창으로 넘어가기 전에 주문에 붙어 있다)
+            if ($extraFields !== []) {
+                $actor = Auth::user();
+                app(OrderContactFields::class)->store($order, $extraFields, $actor instanceof User ? $actor : null);
+            }
 
             // 결제 정보 생성
             $this->createOrderPayment($order, $paymentMethod, $depositorName, $dbankInfo, $calculationResult, $currencySnapshot, $ordererInfo, $cashReceiptInfo, $refundBankInfo);

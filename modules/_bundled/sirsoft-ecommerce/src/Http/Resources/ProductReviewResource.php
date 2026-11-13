@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 상품 리뷰 리소스
@@ -28,6 +29,11 @@ class ProductReviewResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
+        // 작성자 이름의 영역: 관리자 컨트롤러에 도달한 요청은 이커머스 관리자 영역, 그 밖(상품 상세의 후기 목록, 내 후기)은 후기 영역.
+        $area = MemberDisplayName::areaFor($request, MemberDisplayName::AREA_REVIEW);
+        $author = $this->resource->isImported() ? null : $this->user;
+        $authorFields = MemberDisplayName::fields($author, $request, $area, 'author_name', $this->resource->author_name);
+
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
@@ -35,17 +41,20 @@ class ProductReviewResource extends BaseApiResource
             'user_id' => $this->user?->uuid,
 
             // 작성자 정보
+            // 이름은 그 영역의 표시 이름이다. 실명은 회원 조회 권한이 있는 관리자에게만 `real_name` 으로 더해진다.
             // 이메일은 관리자 화면 응답과 본인 열람에만 싣는다 — 상품 리뷰 목록은 인증 없이
             // 열리므로, 이메일을 그대로 실으면 구매자 주소록이 응답 본문으로 수집된다.
             'user' => $this->whenLoaded('user', fn () => [
                 'uuid' => $this->user->uuid,
-                'name' => $this->user->name,
+                ...MemberDisplayName::fields($this->user, $request, $area),
                 'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ]),
 
-            // 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는
+            // 작성자 표시 이름 — 회원 후기는 그 영역의 표시 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는
             // 저장된 이름 그대로(가린 이름이면 가린 채로). 그 후기는 `user`·`orderOption` 이 null 이다.
-            'author_name' => $this->resource->displayAuthorName(),
+            // 실명은 회원 조회 권한이 있는 관리자에게만 `author_real_name` 으로 더해진다(조건에 맞지 않으면 키가 없다).
+            ...$authorFields,
+            'author_name' => (string) ($authorFields['author_name'] ?? ''),
             'is_imported' => $this->resource->isImported(),
 
             // 상품 정보
@@ -106,9 +115,10 @@ class ProductReviewResource extends BaseApiResource
             'reply_content' => $this->reply_content,
             'reply_content_mode' => $this->reply_content_mode,
             'reply_admin_uuid' => $this->whenLoaded('replyAdmin', fn () => $this->replyAdmin->uuid),
+            // 답변한 관리자의 이름도 표시 이름이다(관리자 화면은 이커머스 관리자 영역, 사용자 화면은 사이트 기본).
             'reply_admin' => $this->whenLoaded('replyAdmin', fn () => [
                 'uuid' => $this->replyAdmin->uuid,
-                'name' => $this->replyAdmin->name,
+                ...MemberDisplayName::staffFields($this->replyAdmin, $request),
                 'email' => $this->canExposeMemberEmail($request, $this->replyAdmin->id) ? $this->replyAdmin->email : null,
             ]),
             'replied_at' => $this->formatDateTimeStringForUser($this->replied_at),

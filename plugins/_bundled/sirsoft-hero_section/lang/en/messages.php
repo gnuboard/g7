@@ -8,8 +8,8 @@ return [
         'updated' => 'Banner updated.',
         'deleted' => 'Banner deleted.',
         'reordered' => 'Banner order changed.',
-        'bulk_status' => 'Changed visibility of :count banner(s).',
-        'bulk_deleted' => 'Deleted :count banner(s).',
+        'bulk_status' => 'Changed visibility of :count banner.|Changed visibility of :count banners.',
+        'bulk_deleted' => 'Deleted :count banner.|Deleted :count banners.',
     ],
     'image' => [
         'uploaded' => 'Image uploaded.',
@@ -37,8 +37,8 @@ return [
     'console' => [
         'prune_temp_images' => [
             'retention_disabled' => 'Retention is shorter than 1 day, so temporary images are not pruned.',
-            'dry_run' => ':count temporary image(s) older than :days day(s) would be pruned.',
-            'done' => 'Deleted :deleted of :scanned temporary image(s) older than :days day(s) (:failed failed).',
+            'dry_run' => ':count temporary images older than :days days would be pruned.',
+            'done' => 'Deleted :deleted of :scanned temporary images older than :days days (:failed failed).',
         ],
     ],
 ];

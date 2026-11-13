@@ -135,6 +135,13 @@
   "guest_password_post_delete_message": "非会員の投稿を削除するにはパスワードを入力してください。",
   "guest_password_comment_edit_message": "非会員のコメントを編集するにはパスワードを入力してください。",
   "guest_password_comment_delete_message": "非会員のコメントを削除するにはパスワードを入力してください。",
+  "guest_fields": {
+    "group_label": "非会員投稿者の追加情報"
+  },
+  "author_display": {
+    "notice": "この掲示板で表示される名前: {{name}} ({{kind}})",
+    "notice_without_kind": "この掲示板で表示される名前: {{name}}"
+  },
   "password_placeholder": "パスワードを入力してください",
   "password_incorrect": "パスワードが一致しません。",
   "password_verify": {

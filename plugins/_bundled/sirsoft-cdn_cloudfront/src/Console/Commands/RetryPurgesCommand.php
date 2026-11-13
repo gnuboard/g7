@@ -41,7 +41,7 @@ class RetryPurgesCommand extends Command
         ]));
 
         if ($result['abandoned'] > 0) {
-            $this->warn(__('sirsoft-cdn_cloudfront::messages.retry.abandoned', ['count' => $result['abandoned']]));
+            $this->warn(trans_count('sirsoft-cdn_cloudfront::messages.retry.abandoned', ['count' => $result['abandoned']]));
         }
 
         return self::SUCCESS;

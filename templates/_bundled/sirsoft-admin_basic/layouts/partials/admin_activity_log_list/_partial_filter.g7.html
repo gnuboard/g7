@@ -88,7 +88,7 @@
                 바꿔 담는다. 실패하면 결과를 비워 「없음」 문구가 뜨게 둔다. -->
               <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                 <success>
-                  <set-state target="local" actorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                  <set-state target="local" actorSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.display_name ?? u.name, description: u.email }))}}"/>
                 </success>
                 <fail>
                   <set-state target="local" :actorSearchResults="[]"/>

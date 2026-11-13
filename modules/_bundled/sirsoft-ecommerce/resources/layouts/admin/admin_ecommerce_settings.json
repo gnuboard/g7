@@ -390,6 +390,69 @@
                 "data": []
             },
             "comment": "정책에 붙일 인증 제공자 선택지 — 설치·활성된 플러그인에 따라 달라진다. 권한이 필요 없는 공개 목록에서 받는다(폼은 id·이름만 쓴다) —\n       코어 관리자 목록은 코어 권한을 요구해, 이커머스 권한만 가진 운영자의 선택지가 비었다"
+        },
+        {
+            "id": "checkoutFieldDefs",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.checkoutFieldDefs",
+            "type": "api",
+            "endpoint": "/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'order_settings'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "set": {},
+                    "fields": [],
+                    "fields_version": null,
+                    "types": [],
+                    "abilities": {
+                        "can_update": false
+                    }
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "checkoutFieldBusy": null,
+                        "checkoutFieldsLoadError": null
+                    }
+                }
+            ],
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "checkoutFieldBusy": null,
+                        "checkoutFieldsLoadError": "forbidden"
+                    }
+                },
+                "default": {
+                    "comment": "그 밖의 실패 — 저장 중 표식만 내린다. 다시 받기 실패는 받아 둔 표를 그대로 두고 알린다",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "checkoutFieldBusy": null
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "if": "{{error.refetch}}",
+                            "params": {
+                                "type": "error",
+                                "message": "$t:core.errors.refresh_failed"
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "주문 설정 탭에서만 — 주문서 항목 표(#490)가 읽는 항목 정의. 코어 항목 집합 API 를 이 모듈의 집합(`sirsoft-ecommerce.order_contact`)으로 부른다.\n       표의 스위치와 창의 저장은 이 소스만 다시 받는다(설정 전체를 다시 받으면 다른 칸에서 고친 값이 덮인다). 도착하면(성공이든 실패든)\n       표의 저장 중 표식을 내려 다음 조작을 연다. 조회 권한이 없으면(403) 표지를 남겨 빈 표 대신 이유를 보인다"
         }
     ],
     "initLocal": {
@@ -408,7 +471,11 @@
         "managedRateCodes": "{{settings?.data?.active_rate_provider?.managed_codes ?? []}}",
         "isNotificationReadOnly": "{{ecommerceNotificationDefinitions?.data?.abilities?.can_update !== true}}",
         "identityPoliciesNoReadPermission": "{{!ecommerceIdentityPolicies?.data?.abilities && _local.identityPoliciesLoadError === 'forbidden'}}",
-        "isIdentityPolicyReadOnly": "{{ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}"
+        "isIdentityPolicyReadOnly": "{{ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}",
+        "checkoutFields": "{{[...(checkoutFieldDefs?.data?.fields ?? []).filter(f => f.ui?.group === 'orderer'), ...(checkoutFieldDefs?.data?.fields ?? []).filter(f => f.ui?.group !== 'orderer')]}}",
+        "checkoutFieldsReadOnly": "{{checkoutFieldDefs?.data?.abilities?.can_update !== true}}",
+        "checkoutFieldsVersion": "{{checkoutFieldDefs?.data?.fields_version ?? null}}",
+        "checkoutFieldsNoReadPermission": "{{_global.checkoutFieldsLoadError === 'forbidden' && (checkoutFieldDefs?.data?.fields ?? []).length === 0}}"
     },
     "permissions": [
         "sirsoft-ecommerce.settings.read"
@@ -448,7 +515,8 @@
             "carriers",
             "ecommerceNotificationDefinitions",
             "availableChannels",
-            "ecommerceIdentityPolicies"
+            "ecommerceIdentityPolicies",
+            "checkoutFieldDefs"
         ]
     },
     "init_actions": [
@@ -867,7 +935,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의\n              값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에\n              걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —\n              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.\n              통화 탭은 환율 제공자가 관리하는 기존 통화의 환율을 빼고 보낸다 — 그 칸은 잠겨 있어\n              운영자가 바꿀 수 없고, 화면을 연 사이 제공자가 환율을 갱신했으면 받아 둔 값이 저장값과\n              달라 저장 전체가 「관리 환율 변경」 오류로 막힌다. 빠진 값은 서버가 저장값으로 채운다.\n              키를 빼는 데 구조분해 매개변수를 쓰지 않는다 — 식 평가기가 읽지 못해 본문 전체가 식 원문\n              문자열로 나가 모든 탭 저장이 아무것도 저장하지 못했다(#703 실측).",
+                                        "comment": "저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의\n              값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에\n              걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —\n              그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.\n              리뷰 설정 탭과 기본 정보 탭은 기능별 작성자 표시 이름(`display_name` 의 후기, 문의)을 함께 싣는다(#490) —\n              두 칸이 그 탭에 있고, 읽기 전용 목록(`display_name_options`)은 싣지 않는다.\n              통화 탭은 환율 제공자가 관리하는 기존 통화의 환율을 빼고 보낸다 — 그 칸은 잠겨 있어\n              운영자가 바꿀 수 없고, 화면을 연 사이 제공자가 환율을 갱신했으면 받아 둔 값이 저장값과\n              달라 저장 전체가 「관리 환율 변경」 오류로 막힌다. 빠진 값은 서버가 저장값으로 채운다.\n              키를 빼는 데 구조분해 매개변수를 쓰지 않는다 — 식 평가기가 읽지 못해 본문 전체가 식 원문\n              문자열로 나가 모든 탭 저장이 아무것도 저장하지 못했다(#703 실측).",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -904,7 +972,7 @@
                                                 "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
-                                                    "body": "{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } if (tab === 'language_currency') { const managed = _computed.managedRateCodes ?? []; const savedCodes = (settings?.data?.language_currency?.currencies ?? []).map(c => c?.code); const lc = form.language_currency ?? {}; const currencies = Array.isArray(lc.currencies) ? lc.currencies.map(c => (c && managed.includes(c.code) && savedCodes.includes(c.code)) ? Object.keys(c).filter(k => k !== 'exchange_rate').reduce((o, k) => ({ ...o, [k]: c[k] }), {}) : c) : lc.currencies; return { _tab: tab, language_currency: { ...lc, currencies }, inquiry: form.inquiry ?? {} }; } return { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}"
+                                                    "body": "{{(function() { const tab = _global.activeEcommerceSettingsTab || query.tab || 'basic_info'; const form = _local.form ?? {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'mileage') { return { _tab: 'mileage', mileage: form.mileage ?? {} }; } if (tab === 'language_currency') { const managed = _computed.managedRateCodes ?? []; const savedCodes = (settings?.data?.language_currency?.currencies ?? []).map(c => c?.code); const lc = form.language_currency ?? {}; const currencies = Array.isArray(lc.currencies) ? lc.currencies.map(c => (c && managed.includes(c.code) && savedCodes.includes(c.code)) ? Object.keys(c).filter(k => k !== 'exchange_rate').reduce((o, k) => ({ ...o, [k]: c[k] }), {}) : c) : lc.currencies; return { _tab: tab, language_currency: { ...lc, currencies }, inquiry: form.inquiry ?? {} }; } return (tab === 'review_settings' || tab === 'basic_info') && form.display_name ? { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {}, display_name: { review: form.display_name.review ?? null, inquiry: form.display_name.inquiry ?? null } } : { _tab: tab, [tab]: form[tab] ?? {}, inquiry: form.inquiry ?? {} }; })()}}"
                                                 },
                                                 "onSuccess": [
                                                     {
@@ -1044,6 +1112,14 @@
         {
             "comment": "저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다",
             "partial": "partials/admin_ecommerce_settings/_modal_unsaved_tab_switch.json"
+        },
+        {
+            "comment": "주문서 항목 추가·수정(주문 설정 탭, 운영자가 추가한 항목)",
+            "partial": "partials/admin_ecommerce_settings/_modal_checkout_field_form.json"
+        },
+        {
+            "comment": "주문서 항목 삭제 확인(주문 설정 탭, 운영자가 추가한 항목)",
+            "partial": "partials/admin_ecommerce_settings/_modal_checkout_field_delete.json"
         }
     ]
 }

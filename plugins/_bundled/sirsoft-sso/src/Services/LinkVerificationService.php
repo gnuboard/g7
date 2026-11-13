@@ -80,20 +80,48 @@ class LinkVerificationService
     /**
      * 동의를 받고 회원을 만들어 인계 코드를 발급합니다.
      *
+     * 동의 창이 회원 항목을 받았으면(`$fieldInput`) 그 값을 회원에 저장한다. 관리자 로그인 화면의 동의 창은 추가 정보 입력으로
+     * 이끄는 화면이 없으므로 항목 값을 보냈어도 받지 않고, 빠진 필수 항목은 그 회원이 사용자 화면에 로그인할 때 받는다.
+     *
      * @param  string  $token  대기 토큰
      * @param  Request  $request  요청
+     * @param  array<string, mixed>|null  $fieldInput  동의 창이 받은 회원 항목 값 (검증된 입력). 항목을 받지 않는 창이면 null
      * @return object{code: string, cookie: Cookie|null, guard: string, redirect: string} 인계 코드
      *
      * @throws SsoException 만료, 다른 브라우저, 생성 거절
      */
-    public function completeConsent(string $token, Request $request): object
+    public function completeConsent(string $token, Request $request, ?array $fieldInput = null): object
     {
         [$data, $idp, $identity] = $this->load($token, PendingStore::TYPE_CONSENT, $request);
         $this->pending->forget($token);
 
-        $result = $this->resolver->completeConsent($idp, $identity);
+        if (($data['guard'] ?? 'user') !== 'user') {
+            $fieldInput = null;
+        }
+
+        $result = $this->resolver->completeConsent($idp, $identity, $fieldInput);
 
         return $this->handoff($idp, $identity, $result, $data);
+    }
+
+    /**
+     * 동의 창의 회원 항목에 채울 초기값과 잠글 칸을 돌려줍니다 (가입 항목 조회와 동의 완료 요청이 함께 쓴다).
+     *
+     * 대기가 없거나 만료됐거나 다른 브라우저의 요청이면 null 이다 — 오류를 내지 않고 대기도 폐기하지 않는다.
+     *
+     * @param  string  $token  대기 토큰
+     * @param  Request  $request  요청 (묶음 쿠키 대조)
+     * @return array{values: array<string, string>, locked: array<int, string>}|null 항목 키 => 초기값, 잠긴 항목 키
+     */
+    public function consentFieldValues(string $token, Request $request): ?array
+    {
+        $data = $this->pending->peek($token, PendingStore::TYPE_CONSENT, $request);
+        $idp = $data !== null ? $this->idps->findById((int) ($data['idp_id'] ?? 0)) : null;
+        if ($data === null || $idp === null || ! $idp->enabled) {
+            return null;
+        }
+
+        return $this->resolver->consentFieldValues($idp, ExternalIdentity::fromArray((array) ($data['identity'] ?? [])));
     }
 
     /**

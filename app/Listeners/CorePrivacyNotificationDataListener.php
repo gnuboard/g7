@@ -81,7 +81,8 @@ class CorePrivacyNotificationDataListener implements HookListenerInterface
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
-                'name' => (string) ($user->name ?? ''),
+                // 받는 사람 이름은 발송 직전에 채널의 표시 이름으로 바뀐다.
+                'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => ScreenUrl::absolute('auth.login', '/login'),
                 'site_url' => ScreenUrl::userBase(),

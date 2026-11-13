@@ -3,6 +3,8 @@
 namespace Plugins\Sirsoft\Sso\Services\Admin;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use App\Extension\HookManager;
 use App\Http\Resources\Traits\ExposesMemberContact;
 use App\Models\User;
@@ -16,6 +18,7 @@ use Plugins\Sirsoft\Sso\Repositories\Policy\Contracts\AdminAccountRepositoryInte
 use Plugins\Sirsoft\Sso\Repositories\Policy\Contracts\AdminIdpRepositoryInterface;
 use Plugins\Sirsoft\Sso\Services\AccountResolver;
 use Plugins\Sirsoft\Sso\Services\LoginFlowService;
+use Plugins\Sirsoft\Sso\Support\MemberName;
 
 /**
  * 관리자 「회원 연결」 — 목록, 단건 연결 추가, 사전 등록(비밀번호 없는 회원), 연결 해제 (D6 ③, D5, P7, W26, W42).
@@ -55,6 +58,8 @@ class AccountAdminService
     public function list(array $filters): array
     {
         $page = $this->accounts->paginate($filters);
+        // 행마다 추가 항목 값을 읽지 않게 회원 이름의 계산 재료를 한 번에 읽어 둔다(추가 항목 종류를 쓰지 않으면 쿼리 없음)
+        app(MemberNamePresenter::class)->preloadRelations($page->items(), ['user'], null, DisplayNameAreaRegistry::AREA_ADMIN);
 
         return [
             'idps' => $this->idps->all()->map(fn (IdentityProvider $idp) => ['id' => (int) $idp->id, 'key' => $idp->key, 'label' => $idp->localizedLabel(), 'protocol' => $idp->protocol])->values()->all(),
@@ -175,6 +180,10 @@ class AccountAdminService
             'identity_policy' => 'skip',
             'identity_policy_reason' => 'external:sirsoft-sso:'.$idp->key,
             'record_consents' => false,
+            // 관리자가 대신 만드는 사전 등록(CSV 가져오기 포함) — 필수 회원 항목은 그 회원이 첫 로그인 뒤 직접 넣는다.
+            'required_fields' => 'defer',
+            // 닉네임이 닉네임 정책(중복 금지, 금지어)에 걸리면 닉네임만 비우고 만든다 — 화면 없는 생성이 닉네임 때문에 실패하지 않게 한다.
+            'nickname_policy' => 'skip_field',
         ]);
 
         /** @var User $user */
@@ -183,7 +192,7 @@ class AccountAdminService
         $this->logActivity('sso.preregistered', [
             'loggable' => $user,
             'description_key' => 'sirsoft-sso::activity_log.description.sso.preregistered',
-            'description_params' => ['user_name' => (string) $user->name, 'idp' => $idp->localizedLabel()],
+            'description_params' => ['user_name' => MemberName::forRecord($user), 'idp' => $idp->localizedLabel()],
             'properties' => ['idp_key' => $idp->key, 'via' => $via, 'target_user_id' => (int) $user->getKey()],
         ]);
 
@@ -255,6 +264,9 @@ class AccountAdminService
     /**
      * 목록 1행 — subject 는 가린다.
      *
+     * 회원 이름(`user.name`)은 관리자 영역 표시 이름이다. 보는 관리자에게 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만
+     * `user.real_name` 이 더해진다(조건에 맞지 않으면 키가 없다).
+     *
      * @param  SsoAccount  $account  연결 (회원, IdP 함께)
      * @return array<string, mixed> 행
      */
@@ -268,7 +280,7 @@ class AccountAdminService
             'user' => $user instanceof User ? [
                 'id' => (int) $user->getKey(),
                 'uuid' => (string) $user->uuid,
-                'name' => (string) $user->name,
+                ...app(MemberNamePresenter::class)->fields($user, null, DisplayNameAreaRegistry::AREA_ADMIN),
                 'email' => $this->canExposeMemberEmail(null, (int) $user->getKey()) ? (string) $user->email : null,
                 'has_password' => $user->hasPassword(),
                 'is_privileged' => AccountResolver::isPrivileged($user),

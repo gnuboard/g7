@@ -287,7 +287,10 @@ class BoardRepository implements BoardRepositoryInterface
             'board_slug' => $post->board?->slug,
             'board_name' => $post->board?->getLocalizedName(),
             'title' => $post->title,
-            'author_name' => $post->author_name,
+            // 회원 글의 작성자 이름은 여기서 정하지 않는다. 이 배열은 캐시에 저장되어 모든 요청이 같은 값을 받으므로,
+            // 서비스가 캐시에서 꺼낸 뒤 `_author` 로 그 시점의 표시 이름을 계산해 채운다(비회원 글은 입력한 이름).
+            'author_name' => $post->user_id === null ? $post->author_name : null,
+            '_author' => $this->authorMarker($post, (int) $post->board_id),
             'created_at' => $this->formatCreatedAt($post->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count,
@@ -323,6 +326,7 @@ class BoardRepository implements BoardRepositoryInterface
         $posts = Post::query()
             ->select([
                 'id',
+                'user_id',
                 'title',
                 'author_name',
                 'created_at',
@@ -347,7 +351,9 @@ class BoardRepository implements BoardRepositoryInterface
         return $posts->map(fn ($post) => [
             'id' => $post->id,
             'title' => $post->title,
-            'author_name' => $post->author_name,
+            // 회원 글의 작성자 이름은 서비스가 `_author` 로 표시 이름을 계산해 채운다(비회원 글은 입력한 이름)
+            'author_name' => $post->user_id === null ? $post->author_name : null,
+            '_author' => $this->authorMarker($post, (int) $board->id),
             'created_at' => $this->formatCreatedAt($post->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count,
@@ -376,6 +382,7 @@ class BoardRepository implements BoardRepositoryInterface
         $posts = Post::query()
             ->select([
                 'id',
+                'user_id',
                 'title',
                 'author_name',
                 'created_at',
@@ -402,7 +409,9 @@ class BoardRepository implements BoardRepositoryInterface
         return $posts->map(fn ($post) => [
             'id' => $post->id,
             'title' => $post->title,
-            'author_name' => $post->author_name,
+            // 회원 글의 작성자 이름은 서비스가 `_author` 로 표시 이름을 계산해 채운다(비회원 글은 입력한 이름)
+            'author_name' => $post->user_id === null ? $post->author_name : null,
+            '_author' => $this->authorMarker($post, (int) $boardId),
             'created_at' => $this->formatCreatedAt($post->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count,
@@ -413,6 +422,26 @@ class BoardRepository implements BoardRepositoryInterface
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
         ])->toArray();
+    }
+
+    /**
+     * 작성자 표시 이름을 나중에 계산할 때 쓸 표식을 만듭니다.
+     *
+     * 최근글과 인기글 배열은 캐시에 저장된다. 회원 이름을 구워 넣으면 회원이 이름을 바꾸거나 표시 이름 설정이
+     * 바뀌어도 캐시가 살아 있는 동안 옛 이름이 나간다. 그래서 회원 번호와 비회원 이름, 게시판만 담아 두고
+     * 이름은 서비스가 캐시에서 꺼낸 뒤 계산한다(응답 전에 이 표식을 뺀다).
+     *
+     * @param  Post  $post  게시글 (`user_id`, `author_name`)
+     * @param  int  $boardId  게시판 ID
+     * @return array{user_id: int|null, guest_name: string|null, board_id: int} 표식
+     */
+    private function authorMarker($post, int $boardId): array
+    {
+        return [
+            'user_id' => $post->user_id !== null ? (int) $post->user_id : null,
+            'guest_name' => $post->author_name,
+            'board_id' => $boardId,
+        ];
     }
 
     /**
@@ -549,7 +578,6 @@ class BoardRepository implements BoardRepositoryInterface
                 DB::raw("LEFT(`{$prefixedPostsTable}`.`content`, 300) as content_raw"),
                 'board_posts.user_id',
                 'board_posts.author_name as guest_author_name',
-                "{$usersTable}.name as user_name",
                 "{$usersTable}.status as user_status",
                 "{$attachmentsTable}.hash as attachment_hash",
                 'board_posts.view_count',
@@ -584,9 +612,9 @@ class BoardRepository implements BoardRepositoryInterface
             // 사용자 상태 처리 (탈퇴한 사용자는 익명화)
             $userStatus = $post->user_id ? UserStatus::tryFrom($post->user_status) : null;
             $isWithdrawn = $userStatus === UserStatus::Withdrawn;
-            $authorName = $post->user_id
-                ? ($isWithdrawn ? __('user.withdrawn_user') : $post->user_name)
-                : $post->guest_author_name;
+            // 회원 글의 작성자 이름은 여기서 정하지 않는다. 이 배열은 캐시에 저장되어 모든 요청이 같은 값을 받으므로,
+            // 서비스가 캐시에서 꺼낸 뒤 `_author` 로 그 시점의 표시 이름을 계산해 채운다(비회원 글은 입력한 이름).
+            $authorName = $post->user_id ? null : $post->guest_author_name;
 
             return [
                 'id' => $post->id,
@@ -604,6 +632,11 @@ class BoardRepository implements BoardRepositoryInterface
                     'avatar' => $isWithdrawn ? null : $avatarUrl,
                     'status' => $post->user_status,
                     'status_label' => $userStatus?->label() ?? $post->user_status,
+                ],
+                '_author' => [
+                    'user_id' => $post->user_id !== null ? (int) $post->user_id : null,
+                    'guest_name' => $post->guest_author_name,
+                    'board_id' => (int) $post->board_id,
                 ],
                 'view_count' => $viewCount,
                 'comment_count' => $commentCount,
@@ -893,5 +926,16 @@ class BoardRepository implements BoardRepositoryInterface
         }
 
         return $updated;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getBoardsWithDisplayNameSetting(): Collection
+    {
+        // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
+        return Board::query()
+            ->whereNotNull('display_name_setting')
+            ->get(['id', 'slug', 'name', 'display_name_setting']);
     }
 }

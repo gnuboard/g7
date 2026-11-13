@@ -68,6 +68,9 @@
 - 레이아웃 편집기 미리보기 줌의 「実際のサイズ」 토글 이름과 안내 문구 2건(`layout_editor.zoom.actual_size`, `actual_size_hint`)의 일본어 번역을 추가했습니다.
 - `template:deactivate` 가 유형의 마지막 활성 템플릿을 끄지 않을 때 `--force` 로 다시 실행하라는 안내(`templates.commands.deactivate.last_active_force_hint`)의 일본어 번역을 추가했습니다.
 - 레이아웃 편집기가 편집기 정보(컴포넌트 목록, 스타일 설정, 상태 전환)를 받지 못했을 때 띄우는 알림과 다시 시도 단추 문구(`layout_editor.chrome.spec_load_error.*` 4건)의 일본어 번역을 추가했습니다.
+- 회원 항목 설정과 닉네임 정책에 쓰는 문구의 일본어 번역을 추가했습니다 — 닉네임 금지어, 중복, 변경 주기 안내(`user.validation.nickname_*`, `validation.forbidden_word`), 회원 설정 항목 이름(`validation.attributes.settings_tab_member`, `member_nickname_*`, `member_display_name_*`), 회원 추가 항목 수정 활동 로그, 코어 회원 항목 시딩 명령 출력, 항목 유형 이름과 항목 검증 문구와 파일 항목 안내(`fields.*`), 회원 목록 필터 항목 이름 2건(`user.list_filter_attributes.nickname_duplicate`, `required_missing`) (#490)
+- 표시 이름 설정 문구의 일본어 번역을 추가했습니다 — 표시 이름 종류, 영역, 방식 이름과 미리보기 표본, 닉네임 항목 잠금 사유, 항목이 표시 이름으로 쓰이는 곳, 검증 문구(`display_name.*`), 본인인증으로 확인한 항목 잠금 안내와 본인인증 목적 항목 이름(`fields.validation.locked_identity`, `fields.attributes.purpose`), 알림 템플릿의 회원 공통 변수 설명과 없는 변수 경고(`notification.member_variables.*`, `notification.warnings.unknown_variable`), 추가 정보 입력 안내 3건(`user.required_fields_*`), 검증 항목 이름 2건(`validation.attributes.member_nickname_require_existing_members`, `display_name_kind`) (#490)
+- 코어 회원 항목(이름, 닉네임, 휴대폰, 전화번호, 언어, 국가, 시간대, 홈페이지, 주소, 서명, 자기소개)의 이름과 예시 글의 일본어 번역을 추가했습니다. 가입 화면, 내 정보, 관리자 회원 폼, 환경설정의 가입 항목 표에서 일본어로 보입니다 (#490)
 
 ### Changed
 

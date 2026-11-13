@@ -239,7 +239,7 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
         $output = Artisan::output();
 
         $this->assertSame(1, $exit, $output);
-        $this->assertSame(1, substr_count($output, __('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 3])), '중단 안내가 한 번만 나와야 한다: '.$output);
+        $this->assertSame(1, substr_count($output, trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 3])), '중단 안내가 한 번만 나와야 한다: '.$output);
         $this->assertStringNotContainsString('acme-i161-b', $output, '중단 뒤 다음 항목을 시도했다');
         $payload = $this->resultPayload($output);
         $this->assertSame(['success' => 0, 'failed' => 1, 'skipped' => 3, 'aborted' => true], $payload);
@@ -273,7 +273,7 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
         $this->assertSame(1, $exit);
         $this->assertStringContainsString(__('extensions.errors.update_already_running', ['name' => 'acme-i161-busy']), $output);
         $this->assertStringContainsString('acme-i161-next', $output, '진행 중 항목 뒤 다음 항목을 건너뛰었다');
-        $this->assertStringNotContainsString(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 1]), $output);
+        $this->assertStringNotContainsString(trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 1]), $output);
         $payload = $this->resultPayload($output);
         $this->assertSame(2, $payload['failed']);
         $this->assertFalse($payload['aborted']);

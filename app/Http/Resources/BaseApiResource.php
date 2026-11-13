@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\Traits\ExposesMemberContact;
+use App\Http\Resources\Traits\ExposesMemberDisplayName;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use App\Support\LocalizedValue;
 use Carbon\Carbon;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\App;
 class BaseApiResource extends JsonResource
 {
     use ExposesMemberContact;
+    use ExposesMemberDisplayName;
     use HasAbilityCheck;
 
     /**

@@ -4,7 +4,7 @@ return [
     'disk_label' => 'CloudFront (S3 + CDN)',
     'retry' => [
         'summary' => 'CDN cache invalidation retry: :succeeded succeeded, :failed failed out of :retried',
-        'abandoned' => ':count invalidation(s) stopped after reaching the retry limit. Check the last error on the plugin settings screen.',
+        'abandoned' => ':count invalidation stopped after reaching the retry limit. Check the last error on the plugin settings screen.|:count invalidations stopped after reaching the retry limit. Check the last error on the plugin settings screen.',
     ],
     'test_connection' => [
         'success' => 'Connected to the CloudFront distribution.',

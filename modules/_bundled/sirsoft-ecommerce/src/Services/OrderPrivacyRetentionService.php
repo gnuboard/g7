@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Privacy\OrderRetentionHandler;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPrivacyRetentionRepositoryInterface;
@@ -86,6 +87,9 @@ class OrderPrivacyRetentionService
         DB::transaction(function () use ($order, $meta) {
             $this->retentionRepository->anonymizeOrder($order->id, $meta, self::ANONYMIZED_VALUE);
 
+            // 주문서 추가 항목 값(운영자가 추가한 항목, 다른 확장이 기여한 항목)은 가릴 수 없는 자유 입력이라 지운다.
+            app(OrderContactFields::class)->purge($order);
+
             // 주문 한 건 익명화 훅 — 확장이 자기 소유 칸(결제 플러그인의 payment_meta 등)에 남긴 개인정보
             // 사본을 같은 트랜잭션에서 지운다. 리스너가 던지면 익명화 표지까지 롤백되어 다음 실행이 다시 잡는다.
             // 훅 이름을 리터럴로 적는다 — 조립하면 문서 생성기와 이름 검색이 찾지 못한다.
@@ -107,7 +111,8 @@ class OrderPrivacyRetentionService
      */
     private function scrubOrderMeta(array $meta): array
     {
-        unset($meta['save_shipping_address'], $meta['shipping_info_for_save']);
+        // 주문서 추가 항목 스냅숏도 자유 입력 사본이다. 여기서 빼야 저장소가 한 번에 써서 수정 시각이 그대로 남는다.
+        unset($meta['save_shipping_address'], $meta['shipping_info_for_save'], $meta[OrderContactFields::SNAPSHOT_META_KEY]);
 
         if (is_array($meta['calculation_input']['shipping_address'] ?? null)) {
             foreach (self::CALCULATION_ADDRESS_KEYS as $key) {
@@ -143,6 +148,8 @@ class OrderPrivacyRetentionService
 
         DB::transaction(function () use ($order) {
             $this->reviewService->purgeForOrderOptions($this->retentionRepository->optionIds($order->id));
+            // 주문서 추가 항목 값은 주문 FK 가 없어(공용 값 테이블) 주문을 지워도 남는다. 먼저 지운다.
+            app(OrderContactFields::class)->purge($order);
             $this->retentionRepository->purgeOrder($order->id);
         });
 

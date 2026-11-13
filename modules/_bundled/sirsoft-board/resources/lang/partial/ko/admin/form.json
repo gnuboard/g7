@@ -246,5 +246,68 @@
     "show_in_admin_menu_desc": "이 게시판을 관리자 메뉴에 노출합니다. 저장 시 반영되며, [게시판 관리] 메뉴 아래에 추가됩니다.",
     "menu_added_success": "관리자 메뉴에 추가되었습니다.",
     "menu_add_failed": "메뉴 추가에 실패했습니다."
+  },
+  "display_name": {
+    "label": "작성자 표시 이름",
+    "description": "이 게시판의 글과 댓글에서 회원 작성자를 어떤 이름으로 보일지 정합니다.",
+    "mode_label": "작성자 표시 이름 방식",
+    "kind_label": "고정할 표시 이름 종류",
+    "kind_placeholder": "종류 선택",
+    "modes": {
+      "inherit": "사이트 기본값 따름",
+      "fixed": "특정 종류 고정",
+      "member": "회원이 고른 값"
+    },
+    "inherited_hint": "지금 적용되는 값: {{value}}",
+    "member_hint": "회원이 내 정보에서 고른 표시 이름으로 보입니다.",
+    "requires_nickname_notice": "이 종류를 고정하면 회원 항목의 닉네임이 사용, 필수로 잠깁니다."
+  },
+  "guest_author_fields": {
+    "label": "비회원 작성자 항목",
+    "description": "비회원이 글과 댓글을 쓸 때 입력받는 항목입니다. 이름과 비밀번호는 항상 받습니다.",
+    "columns": {
+      "field": "항목",
+      "source": "출처",
+      "post_enabled": "글 사용",
+      "post_required": "글 필수",
+      "comment_enabled": "댓글 사용",
+      "comment_required": "댓글 필수",
+      "actions": "관리"
+    },
+    "source": {
+      "board": "게시판",
+      "custom": "추가"
+    },
+    "fixed_hint": "항상 사용하는 필수 항목입니다.",
+    "unavailable": "사용 불가",
+    "unavailable_hint": "이 항목을 제공한 확장이 꺼져 있습니다.",
+    "add": {
+      "button": "항목 추가",
+      "title": "비회원 작성자 항목 추가",
+      "notice": "항목은 모든 게시판에 꺼진 채로 생깁니다. 이 게시판에서 쓰려면 표에서 「사용」을 켜고 게시판을 저장하세요.",
+      "key": "키",
+      "key_hint": "영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄만 쓸 수 있습니다. 만든 뒤에는 바꿀 수 없습니다.",
+      "type": "유형",
+      "name": "이름",
+      "options": "선택지",
+      "options_placeholder": "seoul=서울\nbusan=부산",
+      "options_hint": "한 줄에 하나씩 「값=이름」으로 적으세요. 값은 영문 소문자, 숫자, 밑줄, 하이픈만 쓸 수 있습니다.",
+      "success": "항목을 추가했습니다."
+    },
+    "types": {
+      "text": "한 줄 글",
+      "textarea": "여러 줄 글",
+      "number": "숫자",
+      "boolean": "예/아니오",
+      "date": "날짜",
+      "phone": "전화번호",
+      "email": "이메일",
+      "url": "URL",
+      "choice": "하나 선택",
+      "multi_choice": "여러 개 선택"
+    },
+    "delete": "{{label}} 항목 삭제",
+    "delete_confirm": "「{{label}}」 항목을 지우면 모든 게시판에서 사라지고, 비회원이 이 항목에 낸 값도 함께 지워집니다. 지울까요?",
+    "delete_success": "항목을 삭제했습니다."
   }
 }

@@ -97,6 +97,8 @@ IdP 의 `require_consent` 가 켜진 상태에서 처음 온 사람을 자동 �
 | token | path | string | 예 | 영숫자 48자 | 동의 대기 토큰 |
 | agree_terms | body | boolean | 예 | `accepted` (`true`, `1`, `"yes"`, `"on"`) | 이용약관 동의 |
 | agree_privacy | body | boolean | 예 | `accepted` (`true`, `1`, `"yes"`, `"on"`) | 개인정보 처리방침 동의 |
+| fields_version | body | string | 아니오 | 최대 64자 | 동의 창이 받은 회원 항목의 정의 버전(코어 `GET /api/auth/register/fields` 의 `fields_version`). 실으면 운영자가 정한 가입 항목 규칙이 걸리고 항목 값이 저장된다. 지금 버전과 다르면 409(`error_code: fields_changed`). 아래 「회원 항목을 받는 동의 창」 참조 |
+| (가입 항목) | body | mixed | 항목마다 다름 | — | `fields_version` 을 실은 요청만 받는다. 가입 항목 조회가 준 폼 경로(`mobile`, `custom_fields.{키}` 등)로 보낸다 |
 | g7_sso_bind | cookie | string | 예 | — | 로그인을 시작한 브라우저의 묶음 쿠키 |
 
 **요청 예시**
@@ -157,3 +159,18 @@ Set-Cookie: g7_login_bind={MASKED}; path=/api/auth; httponly; samesite=lax
 **설명**
 
 토큰을 먼저 지운 뒤 회원을 만든다. 그래서 같은 토큰으로 두 번 완료할 수 없고, 회원 결정이 거절돼도 토큰은 다시 쓸 수 없다(처음부터 다시 로그인). 회원은 비밀번호 없이 만들고 약관 동의를 기록한 뒤 연결(`via = jit`)을 붙인다. 화면(로그인 화면 모달)은 받은 `handoff_code` 로 엔진 `loginHandoff` 액션을 실행해 사용자 또는 관리자 로그인 결과로 분기한다. 묶음 쿠키 `g7_login_bind` 는 이 응답을 받은 브라우저에만 있으므로 코드를 다른 브라우저로 옮기면 교환되지 않는다.
+
+**회원 항목을 받는 동의 창 (`fields_version`)**
+
+동의 창이 코어 가입 화면과 같은 회원 항목(환경설정 > 회원 > 가입 항목)을 그렸으면 본문에 `fields_version` 을 싣는다. 이 값이 있고 없음에 따라 규칙과 회원이 달라진다.
+
+| 본문 | 규칙 | 만들어지는 회원 |
+| --- | --- | --- |
+| `fields_version` 있음 | 약관 둘에 운영자가 정한 가입 항목 규칙(필수 포함)이 붙는다. 코어 가입 필터 `core.auth.register_validation_rules` 도 타되 본인인증 확인 토큰(`verification_token`) 규칙은 뺀다. 운영자 추가 항목은 `custom_fields.{키}`, 그 밖의 항목은 가입 항목 조회가 준 폼 경로(`name`)로 받는다 | 받은 항목 값을 저장한다 |
+| `fields_version` 없음 | 약관 둘(종전과 같다) | 운영자가 필수로 둔 회원 항목은 건너뛰고 `users.required_fields_deferred_at` 에 시각을 남긴다. 그 회원이 사용자 화면에 처음 로그인하면 추가 정보 입력 화면이 빠진 항목을 받는다 |
+
+- 항목과 정의 버전은 코어 `GET /api/auth/register/fields?pending_source=sirsoft-sso&pending_token={동의 대기 토큰}` 에서 받는다(묶음 쿠키 `g7_sso_bind` 가 같이 가야 한다). IdP 속성 규칙이 값을 주는 칸은 그 값이 초기값(`default`)으로, 읽기 전용(`readonly: true`, `locked_reason: "sso"`)으로 온다. 속성 규칙이 없는 이름 칸은 자동 생성 이름이 초기값이고 고칠 수 있다. 다른 브라우저의 조회에는 값을 주지 않고 대기도 폐기하지 않는다.
+- IdP 가 값을 주는 칸은 규칙에서 빠진다. 본문에 다른 값을 실어도 무시하고 IdP 값으로 저장한다.
+- 실어 보낸 `fields_version` 이 지금의 정의 버전과 다르면 검증보다 먼저 409 로 답하고 본문에 `error_code: "fields_changed"` 가 실린다. 409 와 422(검증 오류)는 토큰을 지우기 전에 답하므로 같은 토큰으로 다시 보낼 수 있다.
+- 관리자 로그인 화면에서 시작한 대기(`guard = admin`)는 `fields_version` 을 실어도 항목 값을 저장하지 않고 건너뛴 것으로 표시한다(관리자 화면에는 추가 정보 입력으로 이끄는 화면이 없다).
+- 필터 훅 `sirsoft-sso.jit.filter_registration_data` 의 이름과 인자는 그대로다. 항목을 받은 요청이면 가입 데이터에 항목 값이 함께 실린다.

@@ -175,6 +175,8 @@
                        데이터소스 `current_user` 를 직접 읽는다 — 7.1.0 실측(E-D4) 때 표 셀이 `_computed` 를 받지 못해 이렇게 썼다(engine-v1.92.0 에서 셀도 부모 `_computed` 를 받게 고쳐졌고, 이 직접 읽기도 그대로 맞다). -->
                   <span data-if="{{!!row.user?.name &amp;&amp; !(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" class="text-hint block">{{row.user.name}}</span>
                   <a data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" href="/admin/users/{{row.user.uuid}}" target="_blank" class="text-hint underline block text-left">{{row.user.name}}</a>
+                  <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->
+                  <span data-ref="realtime_member_real_name_{{$rowNumber}}" data-if="{{!!row.user?.real_name}}" title="$t:admin.common.real_name.label" class="text-hint block">{{row.user.real_name}}</span>
                 </cell>
               </column>
             </data-grid>

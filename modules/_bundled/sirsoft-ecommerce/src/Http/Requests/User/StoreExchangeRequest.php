@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\User;
 
+use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -56,7 +57,7 @@ class StoreExchangeRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'items' => ['required', 'array', 'min:1', 'max:200'],
             'items.*.order_option_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -100,6 +101,11 @@ class StoreExchangeRequest extends FormRequest
             ],
             'redelivery_address.changed_by_user' => ['nullable', 'boolean'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.exchange.store_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

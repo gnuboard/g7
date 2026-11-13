@@ -3,12 +3,14 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
 use App\Extension\HookManager;
+use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptIdentifierType;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Rules\CashReceiptIdentifier;
 use Modules\Sirsoft\Ecommerce\Services\CheckoutPaymentMethodFilter;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
@@ -17,9 +19,20 @@ use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
  * 주문 생성 (결제하기) 요청
  *
  * 임시 주문을 실제 주문으로 변환합니다.
+ *
+ * 규칙은 「고정 규칙 + 주문서 항목 집합의 규칙」이다. 주문자 이름과 연락처, 수령인, 배송 주소, 결제 정보는 고정 규칙이고
+ * 주문자 이메일, 상세 주소, 배송 메모와 추가 항목(`extra_fields.{키}`)은 운영자가 정한 사용과 필수를 따른다
+ * ({@see OrderContactFields}). 꺼진 항목은 규칙에서 빠지고 요청에 실려 와도 저장하지 않는다.
  */
 class CreateOrderRequest extends FormRequest
 {
+    /**
+     * 이 요청에서 계산한 주문서 기본 항목의 사용과 필수 (한 번만 계산한다).
+     *
+     * @var array<string, array{enabled: bool, required: bool}>|null
+     */
+    private ?array $orderFieldSettings = null;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -38,7 +51,7 @@ class CreateOrderRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            // 주문자 정보 (이메일은 회원/비회원 분기 — getOrdererEmailRules)
+            // 주문자 정보 (이메일은 주문서 항목 설정을 따른다. 비회원은 늘 필수)
             'orderer.name' => 'required|string|max:50',
             'orderer.phone' => 'required|string|max:20',
 
@@ -51,9 +64,8 @@ class CreateOrderRequest extends FormRequest
             // 국내 배송 주소 (국내인 경우 필수)
             'shipping.zipcode' => 'required_without:shipping.intl_postal_code|nullable|string|max:10',
             'shipping.address' => 'required_without:shipping.address_line_1|nullable|string|max:255',
-            // 상세주소는 국내 폼에만 있다 — 해외 폼은 주소 1·2행으로 대신하고 배송국가를 바꾸면 이 값이 비워지므로
+            // 상세주소(shipping.address_detail)는 주문서 항목 설정을 따른다. 국내 폼에만 있어, 필수일 때도
             // 기본 주소(address)와 같은 짝(해외 주소 1행이 없을 때만 필수)으로 판정한다.
-            'shipping.address_detail' => 'required_without:shipping.address_line_1|nullable|string|max:255',
             'shipping.address_type_code' => 'nullable|string|in:R,J',
 
             // 해외 배송 주소 (해외인 경우 필수)
@@ -122,9 +134,6 @@ class CreateOrderRequest extends FormRequest
             ],
             'expected_total_amount' => 'required|numeric|min:0',
 
-            // 배송 메모
-            'shipping_memo' => 'nullable|string|max:500',
-
             // 무통장입금 (vbank/dbank) 공통
             'depositor_name' => 'required_if:payment_method,vbank|required_if:payment_method,dbank|nullable|string|max:50',
 
@@ -168,8 +177,9 @@ class CreateOrderRequest extends FormRequest
             'refund_bank.holder' => 'nullable|string|max:50',
         ];
 
-        // 주문자 이메일은 회원/비회원 분기 (비회원은 알림 수신 통로가 이메일뿐 → 필수)
-        $rules = array_merge($rules, $this->getOrdererEmailRules());
+        // 주문서 항목 집합의 규칙: 주문자 이메일, 상세 주소, 배송 메모(운영자가 정한 사용과 필수)와 추가 항목.
+        // 비회원의 주문자 이메일은 알림 수신 통로가 이메일뿐이라 설정과 무관하게 필수다.
+        $rules = array_merge($rules, app(OrderContactFields::class)->rules($this->orderActor()));
 
         // 비회원 주문일 때만 조회 비밀번호 규칙 추가 (회원은 미요구)
         $rules = array_merge($rules, $this->getGuestLookupRules());
@@ -212,25 +222,6 @@ class CreateOrderRequest extends FormRequest
     }
 
     /**
-     * 주문자 이메일 검증 규칙을 반환합니다.
-     *
-     * 회원은 가입 시점에 이메일을 보유하고 주문서에서 자동 채워지므로 nullable 로 유지하고,
-     * 비회원은 주문 확인/배송/취소 알림을 받을 통로가 주문자 이메일뿐이므로 required 로 강제합니다.
-     *
-     * @return array<string, mixed>
-     */
-    protected function getOrdererEmailRules(): array
-    {
-        // 로그인 사용자(회원)는 이메일 자동 채움 → 형식만 검증
-        if ($this->user()) {
-            return ['orderer.email' => ['nullable', 'email', 'max:255']];
-        }
-
-        // 비회원 주문 → 알림 수신 통로 확보를 위해 이메일 필수
-        return ['orderer.email' => ['required', 'email', 'max:255']];
-    }
-
-    /**
      * 비회원 주문 조회 비밀번호 검증 규칙을 반환합니다.
      *
      * 로그인 사용자(회원)는 조회 비밀번호가 필요 없으므로 nullable 로 유지하고,
@@ -270,6 +261,9 @@ class CreateOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
+            // 운영자가 추가 항목에 적은 형식 오류 문구
+            ...app(OrderContactFields::class)->messages($this->orderActor()),
+
             // 주문자 정보
             'orderer.name.required' => __('sirsoft-ecommerce::validation.order.orderer_name_required'),
             'orderer.phone.required' => __('sirsoft-ecommerce::validation.order.orderer_phone_required'),
@@ -322,12 +316,16 @@ class CreateOrderRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            // 추가 항목의 이름 (오류 문구가 `extra_fields.{키}` 대신 운영자가 적은 이름으로 나온다)
+            ...app(OrderContactFields::class)->attributes($this->orderActor()),
             'save_shipping_address_id' => __('sirsoft-ecommerce::validation.request_attributes.save_shipping_address'),
         ];
     }
 
     /**
      * 주문자 정보 반환
+     *
+     * 운영자가 주문자 이메일 항목을 껐으면 요청에 실려 와도 저장하지 않는다(빈 값으로 돌려준다).
      *
      * @return array{name: string, phone: string, email: string} 주문자 정보
      */
@@ -338,18 +336,81 @@ class CreateOrderRequest extends FormRequest
         return [
             'name' => $orderer['name'] ?? '',
             'phone' => $orderer['phone'] ?? '',
-            'email' => $orderer['email'] ?? '',
+            'email' => $this->orderFieldEnabled('orderer_email') ? ($orderer['email'] ?? '') : '',
         ];
     }
 
     /**
      * 배송지 정보 반환
      *
+     * 운영자가 상세 주소 항목을 껐으면 요청에 실려 와도 저장하지 않는다(키를 뺀다).
+     *
      * @return array<string, mixed> 배송지 입력값 배열
      */
     public function getShippingInfo(): array
     {
-        return $this->input('shipping', []);
+        $shipping = (array) $this->input('shipping', []);
+
+        if (! $this->orderFieldEnabled('address_detail')) {
+            unset($shipping['address_detail'], $shipping['detail_address']);
+        }
+
+        return $shipping;
+    }
+
+    /**
+     * 배송 메모 반환
+     *
+     * @return string|null 배송 메모 (운영자가 배송 메모 항목을 껐으면 요청에 실려 와도 null)
+     */
+    public function getShippingMemo(): ?string
+    {
+        if (! $this->orderFieldEnabled('shipping_memo')) {
+            return null;
+        }
+
+        $memo = $this->input('shipping_memo');
+
+        return is_string($memo) ? $memo : null;
+    }
+
+    /**
+     * 추가 항목 값 반환 (운영자가 추가한 항목, 다른 확장이 기여한 항목)
+     *
+     * 검증을 통과한 값만 돌려준다. 규칙이 없는 키(꺼진 항목, 없는 항목)는 들어 있지 않다.
+     *
+     * @return array<string, mixed> 항목 키 => 값 (없으면 빈 배열)
+     */
+    public function getExtraFields(): array
+    {
+        $extra = $this->validated()[OrderContactFields::BUNDLE] ?? [];
+
+        return is_array($extra) ? $extra : [];
+    }
+
+    /**
+     * 주문하는 회원을 반환합니다.
+     *
+     * @return User|null 회원 (비회원 주문이면 null)
+     */
+    private function orderActor(): ?User
+    {
+        $user = $this->user();
+
+        return $user instanceof User ? $user : null;
+    }
+
+    /**
+     * 주문서 기본 항목(주문자 이메일, 상세 주소, 배송 메모)이 이 주문에서 쓰이는지 반환합니다.
+     *
+     * @param  string  $key  항목 키 (orderer_email | address_detail | shipping_memo)
+     * @return bool 쓰이면 true
+     */
+    private function orderFieldEnabled(string $key): bool
+    {
+        $this->orderFieldSettings ??= app(OrderContactFields::class)->builtin($this->orderActor());
+
+        return (bool) ($this->orderFieldSettings[$key]['enabled'] ?? true);
     }
 
     /**

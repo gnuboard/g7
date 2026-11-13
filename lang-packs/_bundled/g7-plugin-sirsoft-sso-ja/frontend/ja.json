@@ -104,7 +104,8 @@
       "copied": "コピーしました。",
       "copy_failed": "コピーできませんでした。直接選択してコピーしてください。",
       "remove_row": "行を削除",
-      "search": "検索"
+      "search": "検索",
+      "real_name_sub": "実名 {{name}}"
     },
     "protocols": {
       "oidc": "OpenID Connect",
@@ -429,7 +430,7 @@
         "all_idps": "すべての IdP",
         "all_status": "すべての状態",
         "all_via": "すべての方式",
-        "search": "会員名、メールアドレス"
+        "search": "会員名、ニックネーム、メールアドレス"
       },
       "unlink": "連携解除",
       "unlink_named": "{{name}} の連携解除",

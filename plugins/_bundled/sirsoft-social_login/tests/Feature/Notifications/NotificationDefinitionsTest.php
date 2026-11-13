@@ -103,7 +103,8 @@ class NotificationDefinitionsTest extends PluginTestCase
         $extract = fn (string $type, array $args) => HookManager::applyFilters('sirsoft-social_login.notification.extract_data', $default, $type, $args);
 
         $last = $extract('social_login_last_login_method_removed', [$user, 'kakao']);
-        $this->assertSame('연결회원', $last['data']['name']);
+        // 받는 사람이 회원 본인이라 이름은 자리표시다. 코어가 받는 사람과 채널마다 표시 이름으로 푼다(#490).
+        $this->assertSame('{recipient_name}', $last['data']['name']);
         $this->assertSame('카카오', $last['data']['provider_label']);
         $this->assertStringEndsWith('/forgot-password', $last['data']['reset_url']);
         $this->assertSame($user->id, $last['context']['trigger_user_id']);

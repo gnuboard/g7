@@ -9,6 +9,7 @@ use App\Services\SettingsService;
 use Plugins\Sirsoft\Totp\Listeners\CleanTotpCredentialOnUserDelete;
 use Plugins\Sirsoft\Totp\Listeners\CleanTotpCredentialOnUserWithdraw;
 use Plugins\Sirsoft\Totp\Listeners\ConsolePasswordResetNoticeListener;
+use Plugins\Sirsoft\Totp\Listeners\ExemptRequiredFieldsRoutesListener;
 use Plugins\Sirsoft\Totp\Listeners\ExtendLoginPurposeChannels;
 use Plugins\Sirsoft\Totp\Listeners\RegisterTotpProviderListener;
 use Plugins\Sirsoft\Totp\Listeners\TotpAdminResetActivityLogListener;
@@ -109,6 +110,7 @@ class Plugin extends AbstractPlugin
      *  - TotpAdminResetActivityLogListener: 관리자 강제 해제를 활동 로그에 기록
      *  - UserTotpEnrollmentInfoListener: 관리자 회원 상세 응답에 인증 앱 등록 여부(해제 권한자에게만)
      *  - ConsolePasswordResetNoticeListener: 터미널 비밀번호 재설정 결과에 인증 앱 초기화 안내(등록 회원만)
+     *  - ExemptRequiredFieldsRoutesListener: 추가 정보 미입력 회원에게도 열어 둘 등록 관리 라우트
      *
      * @return array<class-string> 리스너 클래스 목록
      */
@@ -122,6 +124,7 @@ class Plugin extends AbstractPlugin
             TotpAdminResetActivityLogListener::class,
             UserTotpEnrollmentInfoListener::class,
             ConsolePasswordResetNoticeListener::class,
+            ExemptRequiredFieldsRoutesListener::class,
         ];
     }
 

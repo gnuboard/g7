@@ -5,9 +5,9 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 유형: 플러그인 (sirsoft-marketing) — 회원의 마케팅 수신 동의를 항목별로 받고 이력을 남긴다. 자기 화면 없이 코어 회원 화면에 조각 5개를 주입
+1. 유형: 플러그인 (sirsoft-marketing) — 회원의 마케팅 수신 동의를 항목별로 받고 이력을 남긴다. 동의 칸은 코어 회원 항목(`core.user`)으로 선언하고 코어 템플릿이 그린다. 자기 조각은 관리자 회원 상세의 동의 이력 하나
 2. 확장 방식: 동의 상태 변화를 알리는 발행 훅 4개(`user.consent_changed` / `subscribed` / `unsubscribed` / `filter_consent_data`). 동의 항목 추가는 코드가 아니라 `channels` 설정
-3. 건드리면 안 되는 것: 항목마다 컬럼 추가(EAV 구조가 전제), 이력 없는 상태 갱신, 코어 User 모델·컨트롤러 직접 수정, 회원 삭제 정리를 CASCADE 에 위임
+3. 건드리면 안 되는 것: 항목마다 컬럼 추가(EAV 구조가 전제), 이력 없는 상태 갱신, 검증 규칙 필터나 저장 액션 훅으로 동의 값을 다시 처리하기(이중 검증, 이중 저장), 회원 삭제 정리를 CASCADE 에 위임
 4. 작업 위치: `plugins/_bundled/sirsoft-marketing` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-marketing --force`
 ```
@@ -19,21 +19,28 @@
 이메일·SMS 같은 수신 채널을 운영자가 자유롭게 추가할 수 있고, 제3자 제공 동의·정보 공개
 동의처럼 채널이 아닌 항목도 같은 구조로 다룹니다.
 
-**자기 화면이 없습니다.** 관리자 설정 화면 하나를 빼면 이 플러그인의 UI 는 전부 **다른 화면에
-끼워 넣는 조각**입니다 — 회원가입 폼·회원 상세·회원 수정 폼·마이페이지 프로필에 동의 항목이
-나타나는 것이 그것입니다. 코어 회원 화면을 고치지 않고 동의 항목을 늘리기 위한 구조입니다.
+**동의 칸을 직접 그리지 않습니다.** 동의 값(전체 동의, 수신 채널, 법적 동의 둘)은 코어 회원 항목 집합
+`core.user` 의 예/아니오 항목으로 선언하고(`Plugin::getFields()` → `src/Fields/MarketingConsentFields.php`),
+가입 화면의 약관 동의 자리, 내 정보 수정과 보기, 관리자 회원 폼의 동의 칸은 코어 템플릿이 항목 계약
+(`ui.group = agreements`, `ui.link`, `ui.role`, `ui.parent`)대로 그립니다. 이 플러그인이 가진 화면은 관리자
+설정 화면 하나와 관리자 회원 상세에 끼우는 동의 이력 조각(`user-marketing-detail`) 하나입니다.
 
 **설계 원칙 셋**:
 
 1. **EAV 구조로 항목을 데이터화한다.** 동의 항목마다 컬럼을 만들면 항목을 늘릴 때 스키마
    변경이 필요합니다. 대신 `user_marketing_consents` 한 테이블에 `consent_key` 별 행을 두어,
    채널 추가가 **설정 변경만으로** 끝나게 했습니다.
-2. **코어 회원 흐름에 훅으로 붙는다.** 구독 훅 11개가 전부 코어 것입니다 — 가입·생성·수정·
-   삭제·조회 각 지점의 검증 규칙과 데이터에 동의 항목을 얹습니다. 코어 `User` 모델이나 회원
-   컨트롤러를 고치지 않습니다.
-3. **철회는 동의만큼 쉬워야 한다.** 마이페이지 조각이 항상 노출되고, 동의·철회가 모두
-   `user_marketing_consent_histories` 에 기록됩니다(행위·출처·IP). 동의를 받은 경로와 철회
-   경로가 대칭이 아니면 그 동의는 법적 근거로 쓸 수 없습니다.
+2. **값은 자기 테이블에 두고 회원 항목 엔진에 잇는다.** 가입, 관리자 회원 추가와 수정, 내 정보 수정
+   네 경로의 검증과 저장은 코어 회원 항목 엔진이 하고, 저장소 어댑터
+   (`src/Fields/MarketingConsentFieldHandler.php`, `storage = handler`)가 그 값을 동의 테이블로 넘깁니다.
+   코어 `User` 모델이나 회원 컨트롤러를 고치지 않고, 검증 규칙 필터나 저장 액션 훅도 구독하지 않습니다.
+3. **철회는 동의만큼 쉬워야 한다.** 동의 항목은 본인 수정 범위(`edit_scope = self`)라 내 정보 수정에
+   항상 나타나고, 동의와 철회가 모두 `user_marketing_consent_histories` 에 기록됩니다(행위, 출처, IP).
+   동의를 받은 경로와 철회 경로가 대칭이 아니면 그 동의는 법적 근거로 쓸 수 없습니다.
+
+**사용 여부는 이 플러그인 설정이 정합니다.** 전체 동의(`marketing_consent_enabled`), 채널의 사용 여부,
+법적 동의의 `{키}_enabled` 가 기준이고, 「환경설정 > 회원」의 회원 항목 표에서는 이 항목들의 「사용」이
+잠겨 있습니다(`locks.enabled`). 그 표에서 운영자가 정하는 것은 필수 여부, 가입 화면 표시, 순서입니다.
 
 **의도적으로 하지 않는 것**: 실제 발송(메일·SMS)·권한 선언·관리자 메뉴·프론트 액션 핸들러.
 이 플러그인은 "누가 무엇에 동의했는가"만 답하고, 그 동의를 근거로 무엇을 보낼지는 발송을
@@ -73,23 +80,34 @@
 ## 3. 핵심 흐름
 
 <!-- @intent START -->
-**회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.g7.html` 조각을 그 자리에
-받아 동의 체크박스를 그림 → 제출 → 코어 가입 흐름에서 `core.auth.register_validation_rules`
-필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.after_register` 액션에서(동의 값은 훅 인자 `registration_data` 에서 읽음)
-`MarketingConsentListener::afterRegister()` 가 동의 값을 `user_marketing_consents` 에 기록하고
-이력을 남깁니다. **코어 가입 코드는 이 플러그인을 알지 못합니다.**
+**회원가입 시 동의 수집**: 가입 화면이 항목 계약(`GET /api/auth/register/fields`)을 받아 약관 동의
+자리에 동의 체크박스를 그림 → 제출 → 코어 가입 요청이 회원 항목 선언으로 검증 규칙을 만듦 →
+회원 생성과 같은 트랜잭션에서 코어가 `MarketingConsentFieldHandler::write()` 를 부름 →
+`MarketingConsentService` 가 `user_marketing_consents` 에 기록하고 이력을 남깁니다.
+요청 키는 접두 없는 항목 키(`marketing_consent`, `email_subscription` 등)입니다. 가입 경로가 쓰던 옛 키
+`agree_{키}` 도 계속 받습니다 — 코어가 정식 키가 없을 때만 정식 키로 복사하고, 리스너가
+`core.auth.register_validation_rules` 로 옛 키의 규칙을 주어 가입 데이터(`registration_data`)에는
+둘 다 실립니다.
 
-**동의 변경 → 이력 적재**: 회원이 마이페이지에서, 또는 운영자가 회원 수정 화면에서 동의를
-바꾸면 → `core.user.filter_update_data` / `update_validation_rules` 로 동의 필드가 흐름에
-편입 → `core.user.after_update` 에서 리스너가 `MarketingConsentService` 로 위임 → 항목별
-현재 상태(`is_consented` · `consented_at` · `revoked_at` · `consent_count` · `last_source`)를
-갱신하고 이력 한 줄(`action` · `source` · `ip_address`)을 적재한 뒤
-`sirsoft-marketing.user.consent_changed` 를 발행합니다.
+**동의 변경 → 이력 적재**: 회원이 내 정보 수정에서, 또는 운영자가 회원 추가와 수정 화면에서 동의를
+바꾸면 → 코어 회원 저장이 바뀐 항목만 골라 저장소 어댑터에 넘김 → `MarketingConsentService` 가 항목별
+현재 상태(`is_consented`, `consented_at`, `revoked_at`, `consent_count`, `last_source`)를
+갱신하고 이력 한 줄(`action`, `source`, `ip_address`)을 적재한 뒤
+`sirsoft-marketing.user.consent_changed` 를 발행합니다. 이력의 출처는 요청 경로가 아니라 회원 항목의
+표면에서 정합니다(`signup` → `register`, `admin_create`와 `admin_update` → `admin`,
+`self_update`와 `required_info` → `profile`).
 
 **채널 추가**: 운영자가 설정 화면에서 채널을 더함 → `PUT admin/channels` →
 `core.plugin_settings.filter_save_data` 필터가 저장 형태를 정규화 → `channels` 설정(JSON)에
-반영. 다음 요청부터 가입 폼·마이페이지 조각에 그 항목이 나타납니다 — **스키마 변경도 배포도
-필요 없습니다.**
+반영 → `core.plugin_settings.after_save` 에서 리스너가 항목 선언을 다시 동기화 → 회원 항목 표에 그
+채널의 행이 생기고 가입 화면과 내 정보 수정에 나타납니다. **스키마 변경도 배포도 필요 없습니다.**
+운영자가 회원 항목 표에서 바꿔 둔 필수, 가입 화면 표시, 순서는 재동기화에서 보존됩니다.
+항목 키 형식(영문 소문자로 시작, 2~50자)에 맞지 않는 채널 키나 다른 항목과 겹치는 키는 행이 되지
+못합니다. 형식만 맞지 않는 경우는 리스너가 요청 시점에 항목으로 더해 값은 받습니다.
+
+**요청마다 하는 일**: `core.field.filter_definitions` 에서 리스너가 회원 항목 목록을 지금 설정에
+맞춥니다 — 설정에서 끈 항목을 빼고, 지금 받는 항목인데 행이 없는 채널을 더하고, 약관 페이지를 정한
+항목에 약관 「보기」 링크(`ui.link`)를 붙입니다.
 
 **회원 삭제**: `core.user.before_delete` 에서 그 회원의 동의 기록을 정리합니다. 코어 회원
 삭제가 이 플러그인의 테이블을 알지 못하므로, 이 훅이 없으면 고아 행이 남습니다.
@@ -101,9 +119,9 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 11개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 구독 훅 | 6개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -119,15 +137,24 @@
 | `user.subscribed` · `user.unsubscribed` | 동의/철회로 갈라진 지점. 수신 목록 추가·제거를 각각 배선할 때 |
 | `filter_consent_data` | 동의 데이터를 다른 확장이 가공해야 할 때 |
 
-**구독 방향이 이 플러그인의 성격을 더 잘 보여줍니다.** 11개 구독이 전부 코어 회원·가입
-흐름이며, 이것이 곧 "코어를 고치지 않고 회원 도메인에 필드를 더하는 방법" 의 선례입니다:
-검증 규칙은 `*_validation_rules` 필터로, 저장 데이터는 `filter_update_data` 로, 응답 표현은
-`filter_resource_data` 로, 생명주기 정리는 `before_delete` 로 붙습니다. 회원에 자기 필드를
-더하려는 확장은 이 리스너 하나를 읽으면 됩니다.
+**구독은 값 처리가 아니라 그 주변을 잇습니다.** 동의 값의 검증과 저장은 회원 항목 선언과 저장소
+어댑터가 하므로, 리스너(`MarketingConsentListener`)가 구독하는 것은 다음뿐입니다.
 
-레이아웃 조각 5개가 UI 전부입니다 — 가입 폼 · 회원 상세 · 회원 수정 폼 · 마이페이지 프로필
-(보기/수정). 대상 화면이 그 자리(슬롯)를 없애면 조각은 **오류 없이 사라지므로**, 템플릿이나
-코어 회원 화면을 업그레이드한 뒤에는 동의 항목이 여전히 보이는지 눈으로 확인합니다.
+| 훅 | 하는 일 |
+|---|---|
+| `core.field.filter_definitions` | 설정에서 끈 항목 제외, 행이 없는 채널을 요청 시점에 추가, 약관 링크 `ui.link` 부착 |
+| `core.auth.register_validation_rules` | 옛 가입 키(`agree_` 접두)의 규칙 — 정식 키의 규칙이 있을 때만 |
+| `core.user.before_delete` | 회원 삭제 전 동의 기록 정리 |
+| `core.user.filter_resource_data` | 회원 응답에 `{키}` 값, `{키}_at`, `channels`, `consent_histories` |
+| `core.plugin_settings.filter_save_data` | 채널 설정의 저장 형태 정규화 |
+| `core.plugin_settings.after_save` | 설정 저장 뒤 항목 선언 재동기화 |
+
+회원에 자기 값을 더하려는 확장은 `Plugin::getFields()` 와 `src/Fields/` 두 클래스를 읽으면 됩니다.
+
+레이아웃 조각은 관리자 회원 상세의 동의 이력 하나입니다. 대상 화면이 그 자리(슬롯)를 없애면 조각은
+**오류 없이 사라지므로**, 관리자 템플릿을 업그레이드한 뒤에는 동의 이력 탭이 여전히 보이는지 눈으로
+확인합니다. 동의 칸 자체는 템플릿이 항목 계약대로 그리므로, 약관 묶음(`ui.group = agreements`)을
+그리지 않는 템플릿에서는 동의 칸이 보이지 않습니다.
 
 미들웨어·브로드캐스트 채널·스케줄·알림은 0개입니다.
 <!-- @intent END -->
@@ -143,9 +170,12 @@
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 동의 상태를 바꾸는 경로를 추가했다면 이력 적재(`user_marketing_consent_histories`)가 같은 트랜잭션에 있는지 확인
-- [ ] 코어 회원·가입 훅 11종 중 하나라도 이름·페이로드가 바뀌면 이 플러그인이 조용히 끊기므로, 코어 회원 흐름 변경 시 함께 확인
-- [ ] 레이아웃 조각 5개는 대상 화면의 슬롯이 사라지면 오류 없이 빠진다 — 템플릿·코어 회원 화면 업그레이드 후 노출 확인
-- [ ] 약관 페이지 slug 설정은 `sirsoft-page` 모듈의 페이지를 가리킨다 (선택 연동 `integrations` `>=1.0.0`). 페이지 모듈 API(`/api/modules/sirsoft-page/…`)를 부르는 단추·데이터소스를 새로 두면 `if` 에 `(_global.activeModules?.includes('sirsoft-page') ?? true)` 를 함께 단다 — 잠금: `resources/js/__tests__/layouts/marketing-terms-page-guard.test.ts`
+- [ ] 리스너가 구독하는 코어 훅(`core.field.filter_definitions`, `core.auth.register_validation_rules`, `core.user.before_delete`, `core.user.filter_resource_data`, `core.plugin_settings.filter_save_data`, `core.plugin_settings.after_save`)이나 회원 항목 계약(`App\Fields\Contracts\FieldValueHandlerInterface`)의 이름, 인자가 바뀌면 이 플러그인이 조용히 끊기므로, 코어 회원 흐름 변경 시 함께 확인
+- [ ] 동의 값의 검증과 저장은 회원 항목 선언(`Plugin::getFields()` → `src/Fields/MarketingConsentFields.php`)과 저장소 어댑터(`src/Fields/MarketingConsentFieldHandler.php`)가 한다 — 검증 규칙 필터나 저장 액션 훅을 다시 구독하지 않는다(잠금: `tests/Unit/Listeners/MarketingConsentListenerTest.php`, `tests/Feature/MarketingConsentFieldsTest.php`)
+- [ ] 채널 설정을 저장하는 경로를 새로 두면 `core.plugin_settings.after_save` 를 거치게 한다 — 거치지 않으면 회원 항목 표의 행이 따라가지 않는다
+- [ ] 항목 선언의 이름과 안내 문구는 `lang/{ko,en}/fields.php` 에 둔다 (채널 항목의 이름은 채널 설정의 항목명)
+- [ ] 레이아웃 조각은 관리자 회원 상세의 동의 이력 하나다. 대상 화면의 슬롯이 사라지면 오류 없이 빠진다 — 관리자 템플릿 업그레이드 후 노출 확인. 동의 칸은 조각이 아니라 템플릿이 항목 계약대로 그리므로 템플릿 업그레이드 후 가입 화면, 내 정보 수정, 관리자 회원 폼에서도 확인
+- [ ] 약관 페이지 slug 설정은 `sirsoft-page` 모듈의 페이지를 가리킨다 (선택 연동 `integrations` `>=1.0.0`). 약관 「보기」 링크는 조각이 아니라 항목 계약 `ui.link` 로 싣는다(`requires_module` 로 기대는 모듈을 함께 알린다). 페이지 모듈 API(`/api/modules/sirsoft-page/…`)를 부르는 단추를 이 플러그인 레이아웃에 두지 않는다 — 잠금: `resources/js/__tests__/layouts/marketing-terms-page-guard.test.ts`
 - [ ] 동의 항목을 늘릴 때는 설정만 바꾼다 — 마이그레이션이 필요해졌다면 EAV 구조를 벗어난 설계라는 신호
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-marketing --force`
 
@@ -156,8 +186,10 @@
 |---|---|---|
 | 동의 항목을 추가하려고 `user_marketing_consents` 에 컬럼을 더하기 | `channels` 설정에 항목을 추가 (EAV 구조) | 항목마다 컬럼을 만들면 운영자가 채널을 늘릴 때마다 배포가 필요해진다 — 이 플러그인이 존재하는 이유가 사라진다 |
 | 동의 상태만 갱신하고 이력을 남기지 않기 | 상태 갱신과 이력 적재를 같은 트랜잭션에 | 이력이 없는 동의는 법적 근거로 쓸 수 없다. "언제 어느 경로로 동의했는가"가 동의 그 자체다 |
-| 마이페이지 철회 조각을 설정 토글로 감추기 | 동의 이력이 있는 회원에게는 항상 노출 | 동의를 받은 경로와 철회 경로가 대칭이 아니면 그 동의는 무효가 된다 |
-| 코어 `User` 모델·회원 컨트롤러를 고쳐 동의 필드를 넣기 | `core.user.*` 훅 11종 | 코어 수정은 업그레이드마다 충돌하고, 이 플러그인을 비활성화해도 필드가 남는다 |
+| 동의 항목의 수정 범위를 관리자만 수정으로 바꾸거나 내 정보 수정 표면에서 빼기 | 본인 수정 범위(`edit_scope = self`)를 유지 — 내 정보 수정의 동의 칸은 코어 템플릿이 항목 계약대로 그린다 | 동의를 받은 경로와 철회 경로가 대칭이 아니면 그 동의는 무효가 된다 |
+| 코어 `User` 모델이나 회원 컨트롤러를 고쳐 동의 필드를 넣기 | 회원 항목 선언(`Plugin::getFields()`)과 저장소 어댑터(`MarketingConsentFieldHandler`) | 코어 수정은 업그레이드마다 충돌하고, 이 플러그인을 비활성화해도 필드가 남는다 |
+| 검증 규칙 필터(`core.user.*_validation_rules`)나 저장 액션 훅(`core.user.after_create`, `after_update`, `core.auth.after_register`)을 다시 구독해 동의 값을 처리하기 | 선언과 저장소 어댑터에만 맡긴다 | 같은 값이 두 번 검증되고 두 번 저장된다 — 이력과 동의 변경 훅이 두 번 남는다 |
+| 회원 항목 표의 「사용」으로 동의 항목을 켜고 끄게 풀기 | 플러그인 설정(`marketing_consent_enabled`, 채널 사용 여부, `{키}_enabled`)이 기준, 표에서는 잠금(`locks.enabled`) | 켜고 끄는 자리가 둘이면 한쪽만 끈 상태에서 화면과 저장이 어긋난다 |
 | 회원 삭제 시 동의 기록 정리를 DB CASCADE 에 맡기기 | `core.user.before_delete` 구독 | CASCADE 는 훅 발행·이력 처리를 건너뛰고, 아무 오류도 남기지 않는다 |
 | 동의 여부를 근거로 이 플러그인이 직접 메일·SMS 를 보내기 | 발송은 발송 담당 확장이, 이 플러그인은 `user.subscribed`/`unsubscribed` 발행까지 | 동의 관리와 발송이 한 확장에 묶이면 발송 수단을 바꿀 때 동의 이력까지 흔들린다 |
 | 약관 slug 를 코드에 리터럴로 박기 | 설정(`*_terms_slug`)을 읽어 페이지 모듈에서 조회 | 약관 문서는 운영자가 만들고 고치는 콘텐츠다 |
@@ -168,8 +200,8 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 11개 | `plugins/_bundled/sirsoft-marketing/tests` |
-| Vitest | 17개 | `vitest.config.ts` |
+| PHPUnit | 12개 | `plugins/_bundled/sirsoft-marketing/tests` |
+| Vitest | 16개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 23개 | `tests/scenarios` |
 

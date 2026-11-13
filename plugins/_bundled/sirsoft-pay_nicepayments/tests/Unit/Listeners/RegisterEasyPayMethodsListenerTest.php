@@ -216,11 +216,11 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         ]))->keyBy('id');
 
         $this->assertSame(
-            ['text' => 'N', 'class' => 'bg-green-700 text-white'],
+            ['text' => 'N', 'class' => 'paynicepayments:bg-green-700 paynicepayments:text-white'],
             $methods->get('nicepay_naverpay')['brand_mark'] ?? null,
         );
         $this->assertSame(
-            ['text' => 'SSG', 'class' => 'bg-red-700 text-white'],
+            ['text' => 'SSG', 'class' => 'paynicepayments:bg-red-700 paynicepayments:text-white'],
             $methods->get('nicepay_ssgpay')['brand_mark'] ?? null,
         );
     }

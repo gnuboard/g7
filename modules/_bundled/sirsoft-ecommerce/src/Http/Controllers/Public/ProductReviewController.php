@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicReviewListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewResource;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 공개 상품 리뷰 컨트롤러
@@ -48,6 +49,10 @@ class ProductReviewController extends PublicBaseController
             $perPage = (int) ($filters['per_page'] ?? 10);
 
             $result = $this->reviewService->getProductReviews($product->id, $filters, $perPage);
+
+            // 행마다 작성자의 표시 이름(상품 후기 영역)을 계산하기 전에 필요한 값을 한 번에 읽어 둔다.
+            MemberDisplayName::preloadRelations($result['reviews'], ['user'], MemberDisplayName::AREA_REVIEW, $request);
+            MemberDisplayName::preloadRelations($result['reviews'], ['replyAdmin'], MemberDisplayName::AREA_SITE, $request);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',

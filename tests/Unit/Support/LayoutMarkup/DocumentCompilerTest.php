@@ -463,6 +463,51 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * fragment 봉투의 `version-constraint` 가 `version_constraint` 키로 나가는지 검증합니다 (두 형태 모두).
+     *
+     * 템플릿이 다른 확장의 조각을 자기 판본으로 대체할 때 대상 확장의 버전 제약을 적는 자리다 — 서빙이 이 키를 읽어
+     * 맞지 않는 판에서는 원본 조각으로 되돌린다.
+     *
+     * @scenario compile_unit=document,source_health=valid
+     *
+     * @effects fragment_envelope_accepts_version_constraint
+     *
+     * @return void 반환값 없음
+     */
+    public function test_fragment_envelope_accepts_version_constraint(): void
+    {
+        $overlay = $this->compile('<extension target-layout="auth/register" priority="100" version-constraint="^1.0.0"><init><toast message="x"/></init></extension>');
+        $this->assertSame('auth/register', $overlay['target_layout']);
+        $this->assertSame('^1.0.0', $overlay['version_constraint']);
+        // 결정적 키 순서 — version_constraint 는 맨 뒤다.
+        $this->assertSame('version_constraint', array_key_last($overlay));
+
+        $point = $this->compile('<extension extension-point="address_search_slot" version-constraint=">=1.2.0 &lt;2.0.0"><div class="x"/></extension>');
+        $this->assertSame('address_search_slot', $point['extension_point']);
+        $this->assertSame('>=1.2.0 <2.0.0', $point['version_constraint']);
+
+        // 적지 않은 조각에는 키가 생기지 않는다(기존 산출 불변).
+        $this->assertArrayNotHasKey('version_constraint', $this->compile('<extension extension-point="p"><div class="x"/></extension>'));
+    }
+
+    /**
+     * fragment 봉투가 모르는 속성은 여전히 거부하는지 검증합니다.
+     *
+     * @scenario compile_unit=document,source_health=invalid
+     *
+     * @effects unknown_root_attribute_is_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unknown_fragment_attribute_is_still_rejected(): void
+    {
+        $this->assertSame(
+            LayoutMarkupErrorCode::UnknownRootAttribute,
+            $this->compileError('<extension extension-point="p" version="1.0.0"><div class="x"/></extension>')->getErrorCode(),
+        );
+    }
+
+    /**
      * `<inject>` 에 `<props>` 와 컴포넌트를 함께 두면 거부하는지 검증합니다.
      *
      * @scenario compile_unit=document,source_health=invalid

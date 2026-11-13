@@ -644,6 +644,7 @@ return [
                 'permissions' => [
                     ['identifier' => 'core.profile.read', 'type' => 'user', 'name' => ['ko' => '내 정보 조회', 'en' => 'View My Profile'], 'description' => ['ko' => '본인 정보와 활동 기록을 조회할 수 있습니다. 계정이 비활성·차단 등 정상 상태가 아니어도 본인 정보 조회는 이 권한으로 허용됩니다.', 'en' => 'Can view own profile and activity history. Viewing own profile is allowed by this permission even when the account is not active (inactive, blocked, etc.).'], 'order' => 1],
                     ['identifier' => 'core.profile.update', 'type' => 'user', 'name' => ['ko' => '내 정보 수정', 'en' => 'Edit My Profile'], 'description' => ['ko' => '본인 정보를 수정할 수 있습니다.', 'en' => 'Can edit own profile.'], 'order' => 2],
+                    ['identifier' => 'core.profile.display_name.choose', 'type' => 'user', 'name' => ['ko' => '표시 이름 직접 선택', 'en' => 'Choose Display Name'], 'description' => ['ko' => '가입 화면과 내 정보 수정에서 다른 회원에게 보일 이름의 종류를 직접 고를 수 있습니다. 고를 수 있는 종류는 환경설정의 회원 탭에서 정합니다.', 'en' => 'Can choose which kind of name is shown to other members on the sign-up and profile edit screens. The selectable kinds are set in the Members tab of the settings.'], 'order' => 3],
                 ],
             ],
             [
@@ -852,7 +853,7 @@ return [
             'attributes' => ['is_active' => true],
             'permissions' => [
                 'core.user-notifications.read', 'core.user-notifications.update', 'core.user-notifications.delete',
-                'core.profile.read', 'core.profile.update',
+                'core.profile.read', 'core.profile.update', 'core.profile.display_name.choose',
                 'core.identity.request', 'core.identity.verify', 'core.identity.cancel',
             ],
             // verify/cancel 은 본인 challenge(user_id 일치) 만 — PermissionMiddleware 의 scope=self 가드가 자동 검증
@@ -2594,6 +2595,135 @@ return [
             'description' => 'identity.purposes.sensitive_action.description',
             'default_provider' => 'g7:core.mail',
             'allowed_channels' => ['mail', 'sms'],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 항목 집합 (Field Sets)
+    |--------------------------------------------------------------------------
+    | 입력 항목들이 모이는 자리의 선언. 코어는 회원(`core.user`) 하나를 갖고, 확장은
+    | `getFieldSets()` 로 자기 집합(게시판 비회원 작성자, 주문서 등)을 더한다.
+    | App\Fields\FieldSetRegistry 가 읽는다.
+    */
+    'field_sets' => [
+        [
+            'key' => 'core.user',
+            'label' => 'fields.sets.core_user',
+            'owner_types' => ['user'],
+            'surfaces' => ['signup', 'admin_create', 'admin_update', 'self_update', 'required_info'],
+            'read_permission' => 'core.settings.read',
+            'manage_permission' => 'core.settings.update',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 코어 회원 항목 (Fields)
+    |--------------------------------------------------------------------------
+    | users 테이블 컬럼을 회원 항목으로 선언한다. FieldDefinitionSyncHelper 가 field_definitions
+    | 테이블로 동기화하고, 운영자가 환경설정 > 회원 탭에서 고친 사용·필수·순서 등은
+    | user_overrides 로 보존된다.
+    |
+    | 기본값은 종전 동작과 같다: 이름은 사용·필수·가입 표시, 닉네임·휴대폰·전화·언어는
+    | 사용·선택·가입 표시, 나머지는 사용·선택·가입 미표시. 이메일·비밀번호·약관 동의는
+    | 항목이 아니라 고정 규칙이다.
+    |
+    | 다국어 값은 ko/en 을 직접 적고, 다른 로케일은 활성 언어팩이 `core.fields.config`
+    | 필터로 더한다.
+    */
+    'fields' => [
+        [
+            'field_set' => 'core.user', 'key' => 'name', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'name',
+            'name' => ['ko' => '이름', 'en' => 'Name'],
+            'placeholder' => ['ko' => '이름을 입력하세요', 'en' => 'Enter your name'],
+            'constraints' => ['max_length' => 255],
+            'enabled' => true, 'required' => true, 'show_on_signup' => true,
+            'idv_claim' => 'name',
+            'ui' => ['group' => 'basic'], 'sort_order' => 10,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'nickname', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'nickname',
+            'name' => ['ko' => '닉네임', 'en' => 'Nickname'],
+            'placeholder' => ['ko' => '닉네임을 입력하세요', 'en' => 'Enter your nickname'],
+            'constraints' => ['max_length' => 50],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'ui' => ['group' => 'basic'], 'sort_order' => 20,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'mobile', 'type' => 'phone',
+            'storage' => 'column', 'storage_target' => 'mobile',
+            'name' => ['ko' => '휴대폰', 'en' => 'Mobile'],
+            'placeholder' => ['ko' => '휴대폰번호를 입력하세요', 'en' => 'Enter your mobile number'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'idv_claim' => 'mobile',
+            'ui' => ['group' => 'contact'], 'sort_order' => 30,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'phone', 'type' => 'phone',
+            'storage' => 'column', 'storage_target' => 'phone',
+            'name' => ['ko' => '전화번호', 'en' => 'Phone'],
+            'placeholder' => ['ko' => '전화번호를 입력하세요', 'en' => 'Enter your phone number'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'ui' => ['group' => 'contact'], 'sort_order' => 40,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'language', 'type' => 'choice',
+            'storage' => 'column', 'storage_target' => 'language',
+            'name' => ['ko' => '언어', 'en' => 'Language'],
+            'constraints' => ['display' => 'select', 'options_source' => 'supported_locales'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'ui' => ['group' => 'location'], 'sort_order' => 50,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'country', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'country',
+            'name' => ['ko' => '국가', 'en' => 'Country'],
+            'constraints' => ['min_length' => 2, 'max_length' => 2, 'regex' => '/^[\pL\pM]{2}$/u', 'widget' => 'country'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'location'], 'sort_order' => 60,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'timezone', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'timezone',
+            'name' => ['ko' => '시간대', 'en' => 'Timezone'],
+            'constraints' => ['max_length' => 64, 'format' => 'timezone', 'widget' => 'timezone'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'location'], 'sort_order' => 70,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'homepage', 'type' => 'url',
+            'storage' => 'column', 'storage_target' => 'homepage',
+            'name' => ['ko' => '홈페이지', 'en' => 'Homepage'],
+            'constraints' => ['schemes' => '*'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'contact'], 'sort_order' => 80,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'address', 'type' => 'address',
+            'storage' => 'column', 'storage_target' => 'zipcode,address,address_detail',
+            'name' => ['ko' => '주소', 'en' => 'Address'],
+            'constraints' => ['parts' => ['zipcode' => 'zipcode', 'address' => 'address', 'address_detail' => 'address_detail']],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'location'], 'sort_order' => 90,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'signature', 'type' => 'textarea',
+            'storage' => 'column', 'storage_target' => 'signature',
+            'name' => ['ko' => '서명', 'en' => 'Signature'],
+            'constraints' => ['max_length' => 1000],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'profile'], 'sort_order' => 100,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'bio', 'type' => 'textarea',
+            'storage' => 'column', 'storage_target' => 'bio',
+            'name' => ['ko' => '자기소개', 'en' => 'Bio'],
+            'constraints' => ['max_length' => 5000],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'profile'], 'sort_order' => 110,
         ],
     ],
 

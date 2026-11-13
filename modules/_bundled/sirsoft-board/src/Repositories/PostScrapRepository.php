@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Search\KeywordSearch;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Models\PostScrap;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 
@@ -199,10 +201,10 @@ class PostScrapRepository implements PostScrapRepositoryInterface
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
             relations: [
-                'user:id,uuid,name,email,status',
+                'user:'.User::displayColumns(),
                 'board:id,slug,name,is_active,use_scrap',
                 'post' => fn ($p) => $p->withTrashed()->select(['id', 'board_id', 'user_id', 'title', 'status', 'author_name', 'deleted_at']),
-                'post.user:id,name,status',
+                'post.user:'.User::displayColumns(),
             ],
             resultCap: PaginationLimits::resultCap('admin.scraps'),
         );
@@ -243,13 +245,11 @@ class PostScrapRepository implements PostScrapRepositoryInterface
                 'board',
                 fn (Builder $b) => $b->where('name', 'like', "%{$keyword}%")
             ),
-            'member' => $query->whereHas('user', fn (Builder $u) => $u->where(
-                fn (Builder $w) => $w->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('email', 'like', "%{$keyword}%")
-            )),
+            // 스크랩한 회원: 이름, 닉네임, 이메일
+            'member' => $query->whereHas('user', fn (Builder $u) => $this->whereMemberMatches($u, $raw, $keyword)),
+            // 원글 작성자: 비회원은 입력한 이름, 회원은 이름과 닉네임
             'author_name' => $query->whereHas('post', fn (Builder $p) => $p->withTrashed()->where(
-                fn (Builder $w) => $w->where('author_name', 'like', "%{$keyword}%")
-                    ->orWhereHas('user', fn (Builder $u) => $u->where('name', 'like', "%{$keyword}%"))
+                fn (Builder $w) => $this->whereAuthorMatches($w, $raw)
             )),
             default => $query->where(function (Builder $outer) use ($raw, $keyword) {
                 $outer->whereHas('post', fn (Builder $p) => $p->withTrashed()->where(
@@ -258,13 +258,42 @@ class PostScrapRepository implements PostScrapRepositoryInterface
                     }
                 ))
                     ->orWhereHas('board', fn (Builder $b) => $b->where('name', 'like', "%{$keyword}%"))
-                    ->orWhereHas('user', fn (Builder $u) => $u->where(
-                        fn (Builder $w) => $w->where('name', 'like', "%{$keyword}%")
-                            ->orWhere('email', 'like', "%{$keyword}%")
-                    ))
-                    ->orWhereHas('post', fn (Builder $p) => $p->withTrashed()->where('author_name', 'like', "%{$keyword}%"));
+                    ->orWhereHas('user', fn (Builder $u) => $this->whereMemberMatches($u, $raw, $keyword))
+                    ->orWhereHas('post', fn (Builder $p) => $p->withTrashed()->where(
+                        fn (Builder $w) => $this->whereAuthorMatches($w, $raw)
+                    ));
             }),
         };
+    }
+
+    /**
+     * 회원 쿼리에 「이름, 닉네임, 이메일 가운데 하나가 검색어를 포함」 조건을 겁니다 (관리자 목록의 회원 검색).
+     *
+     * @param  Builder  $users  회원 쿼리
+     * @param  string  $raw  원 검색어
+     * @param  string  $keyword  LIKE 이스케이프한 검색어
+     * @return Builder 조건을 건 쿼리
+     */
+    private function whereMemberMatches(Builder $users, string $raw, string $keyword): Builder
+    {
+        return $users->where(function (Builder $w) use ($raw, $keyword) {
+            app(BoardDisplayNames::class)->constrainUsersForAdmin($w, $raw);
+            $w->orWhere('email', 'like', "%{$keyword}%");
+        });
+    }
+
+    /**
+     * 글 쿼리에 「작성자가 검색어를 포함」 조건을 겁니다 (관리자 목록의 원글 작성자 검색).
+     *
+     * 비회원 글은 입력한 이름을, 회원 글은 회원의 이름과 닉네임을 찾는다.
+     *
+     * @param  Builder  $posts  글 쿼리의 조건 묶음
+     * @param  string  $raw  원 검색어
+     * @return Builder 조건을 건 쿼리
+     */
+    private function whereAuthorMatches(Builder $posts, string $raw): Builder
+    {
+        return app(BoardDisplayNames::class)->applyAdminSearch($posts, $raw, ['guest_column' => 'author_name']);
     }
 
     /**

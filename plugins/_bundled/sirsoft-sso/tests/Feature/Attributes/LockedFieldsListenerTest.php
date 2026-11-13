@@ -43,6 +43,30 @@ class LockedFieldsListenerTest extends PluginTestCase
     }
 
     /**
+     * 이 플러그인이 잠근 칸의 사유는 `sso` 다 — 내 정보 응답의 `locked_reasons` 에 실려 화면이 「회사 계정에서 관리하는 항목입니다」 안내를 고른다.
+     *
+     * @scenario links=two_active+one_inactive
+     *
+     * @effects lock_reason_sso
+     *
+     * @return void 반환값 없음
+     */
+    public function test_locked_fields_carry_sso_reason(): void
+    {
+        $user = User::factory()->create();
+        $idp = $this->makeIdp(['attribute_map' => [['field' => 'name', 'source' => 'display_name', 'mode' => 'sync_lock'], ['field' => 'nickname', 'source' => 'n', 'mode' => 'sync']]]);
+        $this->link($user, $idp, 'lk-reason');
+
+        $this->assertSame(['name' => 'sso'], HookManager::applyFilters('core.user.locked_field_reasons', [], $user, 'profile'));
+        $this->assertSame([], HookManager::applyFilters('core.user.locked_field_reasons', [], User::factory()->create(), 'profile'));
+
+        $profile = $this->withHeader('Authorization', 'Bearer '.$user->createToken('lk')->plainTextToken)
+            ->getJson('/api/me')->assertOk()->json('data');
+        $this->assertSame(['name'], $profile['locked_fields']);
+        $this->assertSame(['name' => 'sso'], $profile['locked_reasons']);
+    }
+
+    /**
      * 마이페이지 수정에서 잠긴 칸을 다른 값으로 보내면 422 `user.field_locked`, 같은 값이나 잠기지 않은 칸은 통과.
      *
      * @scenario surface=profile, value=different|same

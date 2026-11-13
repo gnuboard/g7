@@ -4,10 +4,12 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\DisplayName\DisplayNameArea;
+use App\DisplayName\DisplayNameKindRegistry;
 use App\Rules\LocaleRequiredTranslatable;
-use App\Support\ContentMedia\ContentMediaPolicyRules;
 use App\Rules\TranslatableField;
 use App\Services\DriverRegistryService;
+use App\Support\ContentMedia\ContentMediaPolicyRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -31,6 +33,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
 use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
 /**
@@ -359,6 +362,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
 
         return [
             '_tab' => ['sometimes', 'string', 'in:'.implode(',', self::SECTIONS)],
+
+            // 기능별 작성자 표시 이름 — 리뷰 설정 탭(후기)과 기본 정보 탭(문의)이 함께 싣는다.
+            // 이커머스 설정 파일이 아니라 코어의 표시 이름 영역 설정에 저장한다(validatedDisplayName).
+            'display_name' => ['sometimes', 'array'],
+            ...$this->displayNameRules(),
 
             'notifications' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
@@ -1955,6 +1963,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $locale = $this->requiredNameLocale();
 
         return [
+            // 기능별 작성자 표시 이름
+            'display_name.*.mode.required_with' => __('sirsoft-ecommerce::display_name.validation.mode_required'),
+            'display_name.*.mode.in' => __('sirsoft-ecommerce::display_name.validation.mode_invalid'),
+            'display_name.*.kind.required_if' => __('sirsoft-ecommerce::display_name.validation.kind_required'),
+
             // basic_info 섹션
             'basic_info.shop_name.required' => __('sirsoft-ecommerce::validation.custom.basic_info.shop_name.required'),
             'basic_info.shop_name.string' => __('sirsoft-ecommerce::validation.custom.basic_info.shop_name.string'),
@@ -2172,5 +2185,51 @@ class StoreEcommerceSettingsRequest extends FormRequest
             fn ($key) => in_array($key, $validCategories),
             ARRAY_FILTER_USE_KEY
         );
+    }
+
+    /**
+     * 검증된 데이터에서 기능별 작성자 표시 이름만 추출합니다.
+     *
+     * 이 값은 설정 구역이 아니라서 {@see self::validatedSettings()} 에 들어가지 않는다(이커머스 설정 파일에 저장하지 않는다).
+     * 화면이 함께 돌려보내는 읽기 전용 목록(`display_name_options`)은 규칙이 없어 검증된 데이터에 들어오지 않는다.
+     *
+     * @return array<string, array{mode: string, kind?: string|null}> 기능 키(`review`, `inquiry`) => `{mode, kind}`. 요청에 없으면 빈 배열
+     */
+    public function validatedDisplayName(): array
+    {
+        $displayName = $this->validated('display_name');
+
+        return is_array($displayName) ? array_filter($displayName, 'is_array') : [];
+    }
+
+    /**
+     * 기능별 작성자 표시 이름의 검증 규칙을 만듭니다.
+     *
+     * 방식은 「상위 영역 따름 / 특정 종류 고정 / 회원이 고른 값」 셋 중 하나다. 고정이면 지금 등록된 종류가 필요하다.
+     * 고정이 아닐 때 종류 칸에 남아 있는 값은 보지 않는다(저장하지 않는다).
+     *
+     * @return array<string, array<int, mixed>> 규칙
+     */
+    private function displayNameRules(): array
+    {
+        $rules = [];
+
+        foreach (array_keys(MemberDisplayName::FEATURE_AREAS) as $feature) {
+            $rules["display_name.{$feature}"] = ['sometimes', 'array'];
+            $rules["display_name.{$feature}.mode"] = ["required_with:display_name.{$feature}", 'string', Rule::in(DisplayNameArea::MODES)];
+            $rules["display_name.{$feature}.kind"] = [
+                'nullable',
+                'string',
+                "required_if:display_name.{$feature}.mode,".DisplayNameArea::MODE_FIXED,
+                function (string $attribute, mixed $value, \Closure $fail) use ($feature): void {
+                    if ($this->input("display_name.{$feature}.mode") === DisplayNameArea::MODE_FIXED
+                        && ! app(DisplayNameKindRegistry::class)->has(is_string($value) ? $value : null)) {
+                        $fail(__('sirsoft-ecommerce::display_name.validation.kind_invalid'));
+                    }
+                },
+            ];
+        }
+
+        return $rules;
     }
 }

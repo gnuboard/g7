@@ -106,6 +106,12 @@
                                 ],
                                 "onError": [
                                     {
+                                        "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                        "handler": "openModal",
+                                        "target": "required_info_pending_modal",
+                                        "if": "{{error.error_code === 'required_fields_pending'}}"
+                                    },
+                                    {
                                         "comment": "실패하면 선택을 그대로 둔다 — 다시 누르면 되는 상태가 사용자에게 자연스럽다",
                                         "handler": "setState",
                                         "params": {
@@ -115,6 +121,7 @@
                                     },
                                     {
                                         "handler": "toast",
+                                        "if": "{{error.error_code !== 'required_fields_pending'}}",
                                         "params": {
                                             "type": "error",
                                             "message": "{{error.message}}"

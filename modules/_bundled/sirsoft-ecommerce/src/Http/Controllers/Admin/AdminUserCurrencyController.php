@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Services\UserCurrencyService;
  * 로 가드되며, 변경 시 활동 로그 훅을 발화합니다.
  *
  * @deprecated 1.3.0 — 번들 관리자 회원 수정 화면은 코어 회원 저장(PUT /api/admin/users/{user})으로 함께 보낸다
- *             (UserPreferenceCoreSaveListener). 이전 관리자 템플릿과의 호환을 위해 이번 버전까지 남기고 다음 버전에서 제거한다.
+ *             (회원 항목 선언과 `UserPreferenceFieldHandler`). 이전 관리자 템플릿과의 호환을 위해 이번 버전까지 남기고 다음 버전에서 제거한다.
  */
 class AdminUserCurrencyController extends AdminBaseController
 {

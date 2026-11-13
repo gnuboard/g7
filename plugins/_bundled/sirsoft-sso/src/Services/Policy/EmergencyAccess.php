@@ -6,6 +6,7 @@ use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Extension\HookManager;
 use App\Models\User;
 use Plugins\Sirsoft\Sso\Repositories\Policy\Contracts\SitePolicyRepositoryInterface;
+use Plugins\Sirsoft\Sso\Support\MemberName;
 
 /**
  * 비상 계정(D12, W4) — 강제가 켜져 있어도 비밀번호 + 2단계 인증으로 들어올 수 있는 지정 계정.
@@ -68,7 +69,7 @@ class EmergencyAccess
         $this->logActivity('sso.emergency_login', [
             'loggable' => $user,
             'description_key' => 'sirsoft-sso::activity_log.description.sso.emergency_login',
-            'description_params' => ['user_name' => (string) ($user->name ?? '')],
+            'description_params' => ['user_name' => MemberName::forRecord($user)],
             'properties' => ['user_uuid' => (string) ($user->uuid ?? '')],
         ]);
 

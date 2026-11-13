@@ -90,7 +90,8 @@ class NotificationDispatcher extends NotificationSender
             'notifiable_uuid' => $notifiable->uuid ?? null,
             'notification_class' => get_class($notification),
             'recipient_identifier' => $notifiable->email ?? (string) ($notifiable->getKey() ?? ''),
-            'recipient_name' => $notifiable->name ?? null,
+            // 발송 이력에 남는 이름 — 그 시점의 관리자 영역 표시 이름 (회원이 아닌 수신자는 받은 이름 그대로)
+            'recipient_name' => is_object($notifiable) ? app(RecipientDisplayName::class)->forLog($notifiable) : null,
             'recipient_user_id' => $isGuest ? null : ($notifiable->getKey() ?? null),
         ];
 

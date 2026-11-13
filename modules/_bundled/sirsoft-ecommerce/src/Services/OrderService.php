@@ -26,6 +26,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\OrderModificationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderOptionNotConfirmableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderProcessingException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ReactivationCouponConflictException;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
@@ -524,6 +525,9 @@ class OrderService
         $order->refunds()->delete();
 
         $order->options()->delete();
+
+        // 주문서 추가 항목 값은 주문 FK 가 없어(공용 값 테이블) 주문을 지워도 남는다. 주소와 함께 지운다.
+        app(OrderContactFields::class)->purge($order);
 
         return $this->repository->delete($order);
     }

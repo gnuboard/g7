@@ -31,6 +31,8 @@ use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVi
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\ExtensionUpdateJournalRepositoryInterface;
+use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
+use App\Contracts\Repositories\FieldValueRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\JobQueueRepositoryInterface;
@@ -65,6 +67,13 @@ use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameFieldValues;
+use App\DisplayName\DisplayNameKindRegistry;
+use App\DisplayName\DisplayNameResolver;
+use App\DisplayName\DisplayNameSettings;
+use App\DisplayName\MemberNamePresenter;
+use App\DisplayName\NicknameRequirement;
 use App\Extension\Auth\CredentialVerifierManager;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
@@ -87,8 +96,14 @@ use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
+use App\Fields\FieldRegistry;
+use App\Fields\FieldSetRegistry;
+use App\Fields\FieldTypeRegistry;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
+use App\Models\User;
+use App\Notifications\MemberVariables;
+use App\Notifications\RecipientDisplayName;
 use App\Repositories\ActivityLogRepository;
 use App\Repositories\Analytics\ActionNameRepository as AnalyticsActionNameRepository;
 use App\Repositories\Analytics\ActionRepository as AnalyticsActionRepository;
@@ -103,6 +118,8 @@ use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsReposi
 use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
 use App\Repositories\ExtensionUpdateJournalRepository;
+use App\Repositories\FieldDefinitionRepository;
+use App\Repositories\FieldValueRepository;
 use App\Repositories\IdentityPolicyRepository;
 use App\Repositories\IdentityVerificationLogRepository;
 use App\Repositories\JobQueueRepository;
@@ -145,6 +162,7 @@ use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\NotificationRecipientCapability;
 use App\Services\PluginSettingsService;
+use App\Services\RequiredFieldsChecker;
 use App\Services\Schedule\ScheduleSecurityPolicy;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
@@ -381,6 +399,26 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);
         $this->app->bind(IdentityPolicyRepositoryInterface::class, IdentityPolicyRepository::class);
 
+        // 항목 집합 엔진 — 정의 저장소는 요청 안에서 항목 목록을 메모하므로 요청 단위(scoped)로 둔다.
+        // 등록소도 확장 활성 상태를 반영해야 해서 요청 단위다.
+        $this->app->scoped(FieldDefinitionRepositoryInterface::class, FieldDefinitionRepository::class);
+        $this->app->bind(FieldValueRepositoryInterface::class, FieldValueRepository::class);
+        $this->app->scoped(FieldSetRegistry::class);
+        $this->app->scoped(FieldTypeRegistry::class);
+        $this->app->scoped(FieldRegistry::class);
+
+        // 표시 이름 — 종류와 영역 등록소는 확장 활성 상태를, 계산기와 값 메모는 요청 안에서 읽어 둔 값을 가지므로 요청 단위다.
+        $this->app->scoped(DisplayNameKindRegistry::class);
+        $this->app->scoped(DisplayNameAreaRegistry::class);
+        $this->app->scoped(DisplayNameSettings::class);
+        $this->app->scoped(DisplayNameFieldValues::class);
+        $this->app->scoped(DisplayNameResolver::class);
+        $this->app->scoped(MemberNamePresenter::class);
+        // 알림의 받는 사람 이름과 회원 항목 변수 — 읽어 둔 값을 가지므로 요청(큐 작업) 단위다.
+        $this->app->scoped(RecipientDisplayName::class);
+        $this->app->scoped(MemberVariables::class);
+        $this->app->scoped(NicknameRequirement::class);
+
         // IdentityVerification Manager + 기본 MailProvider 등록
         $this->app->singleton(IdentityVerificationManager::class, function ($app) {
             $manager = new IdentityVerificationManager;
@@ -538,6 +576,20 @@ class CoreServiceProvider extends ServiceProvider
 
         // 코어 훅 리스너 자동 발견 및 등록 (환경 무관)
         $this->registerCoreHookListeners();
+
+        // 회원 행이 바뀌면 비어 있는 필수 항목 판정 캐시를 버린다 — 회원 서비스를 거치지 않는 저장(외부 인증의 속성 동기화,
+        // 건너뛴 표시 변경)도 다음 요청에서 다시 판정되게 한다. 판정 캐시가 회원 저장을 막지 않도록 실패는 삼킨다.
+        User::saved(function (User $user): void {
+            if (! $user->wasChanged()) {
+                return;
+            }
+
+            try {
+                $this->app->make(RequiredFieldsChecker::class)->forget($user);
+            } catch (\Throwable) {
+                // 설치 전처럼 항목 정의를 읽을 수 없는 구간 — 캐시가 없으므로 지울 것도 없다
+            }
+        });
 
         // 확장이 선언한 예약 커맨드를 실행 방식과 무관하게 등록 (D42)
         $this->registerExtensionScheduleCommands();

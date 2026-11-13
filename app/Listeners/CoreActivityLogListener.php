@@ -9,13 +9,19 @@ use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\ActivityLogType;
 use App\Enums\PrivacyManualRunStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
+use App\Fields\FieldRegistry;
+use App\Fields\FieldSet;
+use App\Fields\FieldValueService;
 use App\Models\Attachment;
+use App\Models\FieldDefinition;
 use App\Models\IdentityVerificationLog;
 use App\Models\PrivacyManualRun;
 use App\Models\Schedule;
@@ -61,6 +67,7 @@ class CoreActivityLogListener implements HookListenerInterface
             // ─── User ───
             'core.user.after_create' => ['method' => 'handleUserAfterCreate', 'priority' => 20],
             'core.user.after_update' => ['method' => 'handleUserAfterUpdate', 'priority' => 20],
+            'core.user.fields.after_update' => ['method' => 'handleUserFieldsAfterUpdate', 'priority' => 20],
             'core.user.after_delete' => ['method' => 'handleUserAfterDelete', 'priority' => 20],
             'core.user.after_withdraw' => ['method' => 'handleUserAfterWithdraw', 'priority' => 20],
             'core.user.after_show' => ['method' => 'handleUserAfterShow', 'priority' => 20],
@@ -235,7 +242,11 @@ class CoreActivityLogListener implements HookListenerInterface
             'loggable' => $user,
             'description_key' => 'activity_log.description.user_create',
             'description_params' => ['user_id' => $user->uuid],
-            'properties' => ['email' => $user->email, 'name' => $user->name],
+            // 기록에 남기는 이름은 그 시점의 관리자 영역 표시 이름이다(이름을 받지 않는 사이트에서도 비지 않는다).
+            'properties' => [
+                'email' => $user->email,
+                'name' => app(DisplayNameResolver::class)->resolve($user, DisplayNameAreaRegistry::AREA_ADMIN),
+            ],
         ]);
     }
 
@@ -256,6 +267,52 @@ class CoreActivityLogListener implements HookListenerInterface
             'description_key' => 'activity_log.description.user_update',
             'description_params' => ['user_id' => $user->uuid],
             'changes' => $changes,
+        ]);
+    }
+
+    /**
+     * 회원의 추가 항목 값 변경 후 로그 기록 (7.2.0)
+     *
+     * users 컬럼이 아닌 회원 항목(운영자 추가 항목, 확장 핸들러 항목)의 값이 바뀌면 따로 남긴다 — 회원 행 스냅샷에는 그 값이 없다.
+     * 관리자만 열람 항목의 값은 가린다(활동 로그를 볼 수 있는 운영자가 그 항목까지 볼 수 있다고 보지 않는다).
+     *
+     * @param  User  $user  수정된 회원
+     * @param  array<string, array{old: mixed, new: mixed}>  $changes  항목 키 => 이전·새 값
+     * @param  string  $surface  저장한 표면 (self_update|admin_update 등)
+     * @return void 반환값 없음
+     */
+    public function handleUserFieldsAfterUpdate(User $user, array $changes, string $surface = 'admin_update'): void
+    {
+        $registry = app(FieldRegistry::class);
+        $values = app(FieldValueService::class);
+        $rows = [];
+
+        foreach ($changes as $key => $change) {
+            $definition = $registry->find(FieldSet::CORE_USER, (string) $key);
+            if ($definition === null) {
+                continue;
+            }
+
+            $hidden = $definition->edit_scope === FieldDefinition::SCOPE_ADMIN_ONLY;
+            $rows[] = [
+                'field' => 'fields.'.$key,
+                'label' => $definition->localized('name') ?? (string) $key,
+                'old' => $hidden ? '***' : $values->display($definition, $change['old'] ?? null),
+                'new' => $hidden ? '***' : $values->display($definition, $change['new'] ?? null),
+                'type' => 'text',
+            ];
+        }
+
+        if ($rows === []) {
+            return;
+        }
+
+        $this->logActivity('user.fields_update', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_fields_update',
+            'description_params' => ['user_id' => $user->uuid],
+            'changes' => $rows,
+            'properties' => ['surface' => $surface],
         ]);
     }
 

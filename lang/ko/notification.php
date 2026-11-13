@@ -130,6 +130,15 @@ return [
         ],
     ],
     // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수, identity 는 본인인증 알림 공통 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    // 템플릿 편집 창의 회원 공통 변수 설명 ({member.display_name}, {member.<키>}, {member.custom.<키>})
+    'member_variables' => [
+        'display_name' => '받는 회원에게 보이는 이름',
+        'field' => '회원 항목: :name',
+    ],
+    // 템플릿 저장 응답의 경고 (data.warnings)
+    'warnings' => [
+        'unknown_variable' => '지금 없는 변수입니다: :variable (회원 항목이 지워졌거나 꺼져 있으면 빈 글자로 발송됩니다)',
+    ],
     'variables' => [
         'common' => [
             'name' => '수신자 이름',

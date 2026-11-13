@@ -4,6 +4,8 @@ namespace Plugins\Sirsoft\SocialLogin\Listeners;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Models\User;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
 
@@ -190,7 +192,8 @@ class ActivityLogListener implements HookListenerInterface
             'loggable' => $user,
             'description_key' => 'sirsoft-social_login::activity_log.description.'.$type,
             'description_params' => [
-                'user_name' => (string) ($user->name ?? ''),
+                // 활동 로그는 관리자 화면의 기록물이다. 그 시점의 관리자 영역 표시 이름을 남기고, 이미 남은 기록은 바꾸지 않는다.
+                'user_name' => (string) (app(DisplayNameResolver::class)->resolve($user, DisplayNameAreaRegistry::AREA_ADMIN) ?? ''),
                 'provider' => $providerKey,
             ],
             'properties' => ['target_user_id' => (int) $user->getKey(), 'provider_key' => $providerKey] + $properties,

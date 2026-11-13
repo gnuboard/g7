@@ -68,7 +68,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
 | option_snapshot | object | `{"id":1161,"option_code":"B5QOEZ6GZA0W3DWP-002","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
+| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 그 자리의 표시 이름(상품 상세는 상품 후기 영역, 관리자 엔드포인트는 관리자 영역. 설정을 바꾸지 않았으면 회원 이름), 회원과 주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로. `user.name` 도 같은 값이다. 실명은 조건이 맞는 관리자 응답에만 `author_real_name`, `user.real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
 | content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
@@ -337,7 +337,7 @@ _단건 응답: `data` 객체의 필드._
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
 | option_snapshot | object | `{"id":1244,"option_code":"O0AJ9M3LVXOI7XVJ-007","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
+| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 그 자리의 표시 이름(상품 상세는 상품 후기 영역, 관리자 엔드포인트는 관리자 영역. 설정을 바꾸지 않았으면 회원 이름), 회원과 주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로. `user.name` 도 같은 값이다. 실명은 조건이 맞는 관리자 응답에만 `author_real_name`, `user.real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
 | content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
@@ -472,7 +472,7 @@ _단건 응답: `data` 객체의 필드._
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
 | option_snapshot | object | `{"id":1244,"option_code":"O0AJ9M3LVXOI7XVJ-007","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
+| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 그 자리의 표시 이름(상품 상세는 상품 후기 영역, 관리자 엔드포인트는 관리자 영역. 설정을 바꾸지 않았으면 회원 이름), 회원과 주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로. `user.name` 도 같은 값이다. 실명은 조건이 맞는 관리자 응답에만 `author_real_name`, `user.real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
 | content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
@@ -598,7 +598,7 @@ _단건 응답: `data` 객체의 필드._
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
 | option_snapshot | object | `{"id":1244,"option_code":"O0AJ9M3LVXOI7XVJ-007","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
+| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 그 자리의 표시 이름(상품 상세는 상품 후기 영역, 관리자 엔드포인트는 관리자 영역. 설정을 바꾸지 않았으면 회원 이름), 회원과 주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로. `user.name` 도 같은 값이다. 실명은 조건이 맞는 관리자 응답에만 `author_real_name`, `user.real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
 | content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
@@ -723,7 +723,7 @@ _단건 응답: `data` 객체의 필드 (상태가 변경된 리뷰 리소스). 
 | user | object | `{"uuid":"a234c2b1-...","name":"API 문서 샘플 사용자","email":"apidoc-sample-user@example.com"}` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
 | option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용, 주문 옵션에서 복사) |
 | option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다 |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
+| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 그 자리의 표시 이름(상품 상세는 상품 후기 영역, 관리자 엔드포인트는 관리자 영역. 설정을 바꾸지 않았으면 회원 이름), 회원과 주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로. `user.name` 도 같은 값이다. 실명은 조건이 맞는 관리자 응답에만 `author_real_name`, `user.real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
 | content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
@@ -851,7 +851,7 @@ _단건 응답: `data` 객체의 필드 (생성된 리뷰 리소스, HTTP 201). 
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 작성자 UUID (로그인 사용자) |
 | option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (주문 옵션의 `option_snapshot` 을 복사) |
 | option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다 |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
+| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 그 자리의 표시 이름(상품 상세는 상품 후기 영역, 관리자 엔드포인트는 관리자 영역. 설정을 바꾸지 않았으면 회원 이름), 회원과 주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로. `user.name` 도 같은 값이다. 실명은 조건이 맞는 관리자 응답에만 `author_real_name`, `user.real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
 | content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5, 요청값 그대로) |

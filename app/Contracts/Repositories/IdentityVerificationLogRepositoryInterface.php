@@ -59,6 +59,17 @@ interface IdentityVerificationLogRepositoryInterface
     ): ?IdentityVerificationLog;
 
     /**
+     * 회원이 한 수단으로 마친 가장 최근의 본인인증 요청 행을 찾습니다 (목적, 만료와 무관).
+     *
+     * 내 정보 수정의 본인인증 잠금이 지금 값과 인증 값을 비교할 때 쓴다(7.2.0).
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $providerId  수단 식별자
+     * @return IdentityVerificationLog|null 가장 최근의 확인 완료 행 (없으면 null)
+     */
+    public function findLatestVerifiedForUser(int $userId, string $providerId): ?IdentityVerificationLog;
+
+    /**
      * 특정 토큰(verification_token) 으로 verified 상태의 challenge 를 찾습니다.
      * IdvTokenRule 이 register 검증 시 사용합니다.
      *

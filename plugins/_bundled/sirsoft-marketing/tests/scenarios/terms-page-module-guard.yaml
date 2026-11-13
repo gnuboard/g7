@@ -1,26 +1,23 @@
-feature: 페이지 모듈을 선택 연동으로 — 약관 「보기」 단추 가드 (#822)
+feature: 페이지 모듈을 선택 연동으로 — 약관 「보기」 링크 (#822, #490)
 
 description: |
-  마케팅 동의 플러그인은 페이지 모듈(sirsoft-page)을 필수 의존에서 선택 연동(integrations, >=1.0.0)으로 옮겼다(1.1.2).
-  페이지 모듈이 꺼진 사이트에서 약관 「보기」 단추를 누르면 /api/modules/sirsoft-page/pages/{slug} 가 404 로 끝나 빈 창만
-  뜨므로, 회원가입·마이페이지 수정·관리자 회원 수정 조각의 단추 4개씩에 같은 가드 식
-  `(_global.activeModules?.includes('sirsoft-page') ?? true)` 를 단다. 활성 목록이 없는 옛 코어에서는 늘 참(지금처럼 보임).
-  동의 체크박스는 페이지 모듈과 무관하므로 가드하지 않는다.
+  마케팅 동의 플러그인은 페이지 모듈(sirsoft-page)을 필수 의존이 아니라 선택 연동(integrations, >=1.0.0)으로 선언한다(1.1.2).
+  약관 본문은 페이지 모듈이 제공하므로 그 모듈이 꺼진 사이트에서 약관 「보기」를 누르면 본문 API 가 404 로 끝난다.
+  동의 칸을 회원 항목으로 옮긴 뒤에는 약관 「보기」 단추를 이 플러그인의 조각이 아니라 코어 템플릿이 항목 계약(ui.link)대로
+  그린다. 계약이 링크가 기대는 모듈(requires_module)을 함께 알려 주고 템플릿은 그 모듈이 꺼져 있으면 단추를 그리지 않는다.
+  그래서 이 플러그인의 레이아웃에는 페이지 모듈 API 를 부르는 곳이 남아 있지 않아야 한다. 계약 쪽은
+  marketing-consent-fields.yaml 이 잠근다.
 
 axes:
-  # 화면 3종(회원가입·마이페이지 수정·관리자 회원 수정)은 테스트가 describe.each 로 모두 돈다 — 축으로 곱하지 않는다.
-  page_module_state: [active, inactive, unknown_old_core]
+  page_module_state: [inactive]
 
 effects:
   - marketing_manifest_declares_page_as_integration
-  - terms_view_buttons_guarded_by_page_module
-  - terms_view_guard_evaluates_per_page_module_state
-  - consent_checkboxes_not_guarded_by_page_module
-  - terms_view_guard_present_in_markup_source
+  - no_layout_calls_page_module_api
 
 test_files:
   - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/marketing-terms-page-guard.test.ts
 
 notes: |
-  e2e_browser=partial — 레이아웃 JSON 정적 대조와 가드 식 직접 평가로 잠근다. 페이지 모듈을 끈 사이트의 실제 화면
-  (보기 단추 0·체크박스 존재)은 #822 Chrome MCP 매트릭스 C5 에서 확인한다.
+  e2e_browser=partial — 레이아웃 파일 정적 대조로 잠근다. 페이지 모듈을 끈 사이트의 실제 화면(보기 단추 0, 체크박스 존재)은
+  코어 템플릿의 약관 묶음 실측에서 확인한다.

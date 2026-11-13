@@ -118,6 +118,9 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 | email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() 산물, 미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
@@ -279,6 +282,362 @@ HTTP/1.1 200
 **계정 상태와 조회**: 활성(`active`)이 아닌 회원(비활성·차단·탈퇴·가입대기·휴면)이 이미 가진 토큰으로 부르면, 그 회원 역할에 `core.profile.read`(내 정보 조회) 권한이 있을 때만 200 으로 응답한다 — 마이페이지가 `status`·`status_label`·`status_variant` 로 계정 상태 배지와 안내를 그릴 수 있게 하기 위함이다. 권한이 없으면 종전처럼 403 과 상태 사유(`auth.account_blocked` 등)를 돌려준다. 같은 판정이 `GET /api/auth/user` 에도 걸린다. 쓰기(`PUT`·`DELETE /api/me`, 비밀번호·아바타)와 그 밖의 사용자 API 는 권한과 무관하게 상태로 403 이며, 로그인 자체의 상태 거부도 그대로다.
 
 
+### GET /api/me/fields
+<!-- @generated:start:api.me.fields -->
+- **라우트명**: `api.me.fields`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\ProfileController@fields`
+- **인증/권한**: `auth:sanctum`, `check.user_status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| context | query | string | 아니오 | `profile`, `required` | 어느 화면의 항목인지. 생략하면 `profile`. `required` 는 추가 정보 입력 화면(비어 있는 필수 항목만) |
+| preview_name | query | string | 아니오 | 최대 255자 | 표시 이름 종류 미리보기에 쓸 입력 중인 이름 (저장하지 않는다). `context=profile` 에서만 쓰인다 |
+| preview_nickname | query | string | 아니오 | 최대 50자 | 미리보기에 쓸 입력 중인 닉네임 |
+| preview_email | query | string | 아니오 | 최대 255자 | 미리보기에 쓸 입력 중인 이메일 (아이디 가림 종류) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.profile_fields_validation_rules`).
+
+**요청 예시**
+
+```http
+GET /api/me/fields?context=profile HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| fields[] | array | — | 내 정보 수정과 보기 화면이 그릴 항목. 표시 순서대로 옵니다. 항목의 모양은 `GET /api/auth/register/fields` 와 같고 `locked_until` 이 더 있습니다. 아래는 이 화면에서 값이 달라지는 필드입니다 |
+| fields[].readonly | boolean | `true` | 본인이 고칠 수 없는 칸이면 true |
+| fields[].locked_reason | string\|null | `nickname_interval` | 잠긴 사유. `admin_only`(관리자만 수정 항목), `nickname_interval`(닉네임 변경 주기), `identity`(본인인증 값으로 채워져 잠긴 항목. 다른 값을 보내면 422), `sso`, `locked` 등 확장이 잠근 사유 |
+| fields[].locked_until | string\|null | `2026-12-11 17:23` | 닉네임을 다시 바꿀 수 있는 시각(회원 시간대). 주기 잠금이 아니면 null |
+| fields[].display_value | string\|null | `직장인` | 보기 화면용 문자열(선택지는 이름, 파일은 파일 이름) |
+| fields[].files[] | array\|null | `[{"id":812,"name":"biz.pdf"}]` | 파일·이미지 항목에 올라가 있는 파일. 그 밖의 유형은 null |
+| fields[].file_rules | object\|null | `{"extensions":["pdf"],"max_count":1,"max_size_mb":10}` | 파일·이미지 항목의 업로드 제한. 그 밖의 유형은 null |
+| fields_version | string | `55e0c42db93a` | 항목 정의 버전 |
+| pending_required_fields | array | `["job"]` | `context=required` 에서만. 비어 있는 필수 항목의 키. 이때 `display_name` 묶음은 오지 않는다 |
+| display_name.can_choose | boolean | `true` | 종류 선택 칸을 보일지 (권한이 있고 고를 종류가 둘 이상) |
+| display_name.value | string\|null | `nickname` | 회원이 고른 종류. 고르지 않았거나 고른 종류가 허용에서 빠졌으면 null (가입 화면은 항상 null) |
+| display_name.value_unavailable | boolean | `false` | 전에 고른 종류가 허용에서 빠졌는지. true 면 화면이 「종류를 다시 골라 주세요」를 보인다 |
+| display_name.unavailable_kind | object\|null | `{"value":"field:alias","label":"활동명"}` | 허용에서 빠진, 전에 고른 종류와 그 이름 |
+| display_name.default_kind | string | `name` | 고르지 않았을 때 적용되는 회원 기본 종류 |
+| display_name.default_kind_label | string | `이름` | 회원 기본 종류의 이름 |
+| display_name.effective_kind | string | `nickname` | 지금 이 회원에게 적용되는 종류 |
+| display_name.current | string\|null | `길동이` | 지금 다른 회원에게 보이는 이름 (가입 화면은 null) |
+| display_name.options[] | array | — | 고를 수 있는 종류. 고를 수 없으면 빈 배열 |
+| display_name.options[].value | string | `masked_name` | 종류 키. 요청의 `display_name_kind` 로 보낸다 |
+| display_name.options[].label | string | `가린 이름` | 종류 이름 |
+| display_name.options[].preview | string\|null | `홍*동` | 그 종류를 고르면 보일 글자. 가림 규칙이 서버와 같게 서버가 계산한다 |
+| display_name.options[].requires_nickname | boolean | `false` | 닉네임이 필요한 종류인지. 고르면 닉네임이 필수가 된다 |
+| display_name.options[].is_default | boolean | `false` | 회원 기본 종류인지 |
+| display_name.preview_is_sample | boolean | `false` | 미리보기를 표본 회원(홍길동, 길동이)으로 계산했는지 |
+| display_name.nickname_requirement | string | `chosen` | 표시 이름 설정이 닉네임에 거는 요구 (`all` 전원 필수, `chosen` 닉네임 종류로 보이는 회원만 필수, `none`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "fields": [
+            {
+                "key": "nickname",
+                "name": "nickname",
+                "type": "text",
+                "renderer": "builtin",
+                "owner": "core",
+                "owner_type": "core",
+                "source_label": null,
+                "label": "닉네임",
+                "placeholder": "닉네임을 입력하세요",
+                "help": null,
+                "required": false,
+                "readonly": true,
+                "locked_reason": "nickname_interval",
+                "locked_until": "2026-12-11 17:23",
+                "deferred": false,
+                "options": [],
+                "constraints": { "max_length": 50 },
+                "default": null,
+                "ui": { "group": "basic" },
+                "parts": null,
+                "display_value": "길동이",
+                "files": null,
+                "file_rules": null
+            }
+        ],
+        "fields_version": "55e0c42db93a"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 422 | Unprocessable Entity | `context` 가 허용값이 아니거나 미리보기 인자가 길이 제한을 넘은 경우 |
+
+<!-- @generated:end -->
+
+**설명** 본인이 고칠 수 있는 항목(범위가 「본인 수정」)과 볼 수만 있는 항목(범위가 「관리자만 수정」)을 함께 돌려줍니다. 「관리자만 열람」 항목은 오지 않습니다. 값 자체는 `GET /api/me` 가 주고(컬럼 항목은 최상위 키, 운영자 추가 항목은 `custom_fields`), 이 응답은 칸을 그리는 데 필요한 계약입니다. 조회 인자는 필터 `core.user.profile_fields_validation_rules` 로 늘릴 수 있습니다. `display_name` 은 표시 이름 종류 선택 칸의 묶음입니다. 조회 인자 `preview_name`, `preview_nickname`, `preview_email`(모두 선택)로 입력 중인 값을 주면 `options[].preview` 를 그 값으로 계산합니다. 운영자가 회원이 고른 종류를 허용에서 빼면 `value_unavailable` 이 true 가 되고 그동안은 회원 기본 종류로 보입니다.
+
+`context=required` 는 추가 정보 입력 화면용입니다. 그 회원에게 비어 있는 필수 항목만 `fields` 로 오고, 그 키 목록이 `pending_required_fields` 로 함께 옵니다. 미입력이 없으면 `fields` 는 빈 배열입니다. 항목의 모양은 `profile` 과 같되 `locked_until` 이 없고, `display_name` 묶음은 오지 않습니다. 본인인증으로 채워져 잠긴 항목은 `profile` 응답에서 `readonly: true`, `locked_reason: identity` 로 옵니다.
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "fields": [
+            {
+                "key": "job",
+                "name": "custom_fields.job",
+                "type": "text",
+                "renderer": "builtin",
+                "label": "직업",
+                "required": true,
+                "readonly": false,
+                "locked_reason": null,
+                "options": [],
+                "display_value": null
+            }
+        ],
+        "fields_version": "55e0c42db93a",
+        "pending_required_fields": ["job"]
+    }
+}
+```
+
+
+### POST /api/me/fields/{key}/file
+<!-- @generated:start:api.me.fields.file.store -->
+- **라우트명**: `api.me.fields.file.store`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\ProfileFieldFileController@store`
+- **인증/권한**: `auth:sanctum`, `check.user_status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| key | path | string | 예 | 항목 키 | 파일·이미지 항목의 키 |
+| file | body (multipart) | file | 예 | 항목이 정한 확장자와 크기 | 올릴 파일 1개 |
+
+**요청 예시**
+
+```http
+POST /api/me/fields/t490_doc/file HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----g7
+
+------g7
+Content-Disposition: form-data; name="file"; filename="biz.pdf"
+Content-Type: application/pdf
+
+(파일 내용)
+------g7--
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| file.id | integer | `812` | 첨부파일 ID (삭제 요청의 `attachment_id`) |
+| file.hash | string | `a1b2c3d4e5f6` | 내려받기 주소에 쓰는 해시 |
+| file.name | string | `biz.pdf` | 올린 파일 이름 |
+| file.size | integer | `122880` | 크기(바이트) |
+| file.mime_type | string | `application/pdf` | MIME 유형 |
+| file.url | string | `/api/attachment/a1b2c3d4e5f6` | 내려받기 주소 |
+| files[] | array | — | 그 항목에 지금 올라가 있는 파일 전체(같은 모양) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "파일을 올렸습니다.",
+    "data": {
+        "file": {
+            "id": 812,
+            "hash": "a1b2c3d4e5f6",
+            "name": "biz.pdf",
+            "size": 122880,
+            "mime_type": "application/pdf",
+            "url": "/api/attachment/a1b2c3d4e5f6"
+        },
+        "files": [
+            {
+                "id": 812,
+                "hash": "a1b2c3d4e5f6",
+                "name": "biz.pdf",
+                "size": 122880,
+                "mime_type": "application/pdf",
+                "url": "/api/attachment/a1b2c3d4e5f6"
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 404 | Not Found | 그 키의 항목이 없거나, 파일 항목이 아니거나, 꺼져 있거나, 본인 수정 범위가 아닌 경우 |
+| 422 | Unprocessable Entity | 확장자나 크기가 항목의 제한에 맞지 않거나, 이미 최대 개수만큼 올라가 있는 경우(`errors.file`) |
+
+<!-- @generated:end -->
+
+**설명** 내 정보 수정 화면이 파일 항목에 파일을 올릴 때 부릅니다. 파일 항목은 `PUT /api/me` 의 본문으로 오가지 않고 이 API 로 바로 저장됩니다. 한 번에 한 개를 올리며, 허용 확장자, 최대 크기, 최대 개수는 운영자가 그 항목에 정한 값입니다(`GET /api/me/fields` 의 `file_rules`). 실행될 수 있는 확장자는 운영자가 적어도 받지 않습니다. 올린 파일은 본인과 회원 조회 권한이 있는 관리자만 내려받을 수 있고, 공개 프로필에 노출하는 이미지 항목만 누구나 볼 수 있습니다. 업로드 규칙은 필터 `core.user.field_file_upload_validation_rules` 로 조정할 수 있습니다.
+
+
+### DELETE /api/me/fields/{key}/file
+<!-- @generated:start:api.me.fields.file.destroy -->
+- **라우트명**: `api.me.fields.file.destroy`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\ProfileFieldFileController@destroy`
+- **인증/권한**: `auth:sanctum`, `check.user_status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| key | path | string | 예 | 항목 키 | 파일·이미지 항목의 키 |
+| attachment_id | body | integer | 예 | 1 이상 | 지울 첨부파일 ID |
+
+**요청 예시**
+
+```http
+DELETE /api/me/fields/t490_doc/file HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{ "attachment_id": 812 }
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| files[] | array | `[]` | 지운 뒤 그 항목에 남은 파일 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "파일을 삭제했습니다.",
+    "data": {
+        "files": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 404 | Not Found | 항목을 다룰 수 없거나, 그 첨부파일이 본인의 그 항목에 올린 파일이 아닌 경우 |
+| 422 | Unprocessable Entity | `attachment_id` 가 없거나 숫자가 아닌 경우 |
+
+<!-- @generated:end -->
+
+**설명** 본인이 그 항목에 올린 파일만 지울 수 있습니다. 다른 회원의 첨부파일 ID 나 다른 항목의 첨부파일 ID 를 보내면 404 입니다.
+
+
+### PUT /api/me/required-fields
+
+- **라우트명**: `api.me.required-fields.update`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\ProfileController@completeRequiredFields`
+- **인증/권한**: `auth:sanctum`, `check.user_status`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| {항목의 폼 경로} | body | 항목 유형에 따름 | 예 | 항목 설정에 따름 | 비어 있는 필수 항목의 값. 폼 경로는 `GET /api/me/fields?context=required` 응답의 `fields[].name` 입니다(기본 항목은 `mobile` 같은 최상위 키, 운영자 추가 항목은 `custom_fields.{키}`) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.complete_required_fields_validation_rules`).
+
+**요청 예시**
+
+```http
+PUT /api/me/required-fields HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{
+    "mobile": "010-1234-5678",
+    "custom_fields": {
+        "job": "직장인"
+    }
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | — | 저장 뒤의 본인 정보. 모양은 `GET /api/auth/user` 와 같습니다 |
+| pending_required_fields | array | `[]` | 저장 뒤에도 비어 있는 필수 항목 키. 빈 배열이면 화면은 원래 가려던 곳으로 보냅니다. 파일, 이미지 항목처럼 이 요청으로 채우지 못하는 항목이 남으면 그 키가 옵니다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "추가 정보를 저장했습니다.",
+    "data": {
+        "user": {
+            "uuid": "0195f3a2-…",
+            "name": "홍길동",
+            "pending_required_fields": []
+        },
+        "pending_required_fields": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 422 | Unprocessable Entity | 비어 있는 필수 항목을 비워 보냈거나 값이 항목의 형식에 맞지 않는 경우. 오류 키는 항목의 폼 경로입니다 |
+
+**설명** 추가 정보 입력 화면의 저장입니다. 받는 것은 그 회원에게 비어 있는 필수 항목뿐입니다. 이미 값이 있는 항목, 필수가 아닌 항목, 이메일이나 비밀번호 같은 그 밖의 칸은 보내도 저장하지 않습니다. 기존 값을 바꾸지 못하므로 재확인(비밀번호 확인)을 요구하지 않습니다. 필수 항목을 건너뛰고 만들어진 회원(외부 계정으로 만들어진 회원 등)이 이 저장으로 미입력을 모두 채우면 그 뒤로는 보통 회원과 같은 기준(「기존 회원에게도 입력 요구」를 켠 항목만)으로 판정합니다.
+
+비어 있는 필수 항목이 있는 회원의 쓰기 요청(POST, PUT, PATCH, DELETE)은 관리자 API 와 아래 통과 대상을 뺀 모든 API 에서 `403` 으로 거부됩니다.
+
+```json
+{
+    "success": false,
+    "message": "추가 정보를 입력해야 이용할 수 있습니다.",
+    "error_code": "required_fields_pending",
+    "data": {
+        "pending_required_fields": ["job"],
+        "fields": [
+            { "key": "job", "label": "직업" }
+        ]
+    }
+}
+```
+
+통과 대상은 로그아웃, 토큰 갱신, `/api/me` 아래의 모든 요청(내 정보 수정, 이 저장, 파일 항목, 비밀번호, 재확인, 탈퇴, 아바타, 검색 기록), `/api/user/profile` 의 수정과 언어 변경, 알림 읽음과 삭제, 본인인증(`/api/identity/*`), 그리고 확장이 필터 `core.required_fields.filter_exempt_routes` 로 보탠 라우트입니다. 읽기 요청(GET)은 막지 않습니다. 본인 응답(`GET /api/auth/user`, `GET /api/user/auth/user`, `GET /api/admin/auth/user`)의 `pending_required_fields` 와, 로그인을 마친 응답(`POST /api/auth/login`, 2단계 인증 확인, 로그인 인계, 비밀번호 변경 단계 완료와 연기)의 `data.pending_required_fields` 가 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다. 값은 항목 키 배열입니다.
+
 ### PUT /api/me
 <!-- @generated:start:api.me.update -->
 - **라우트명**: `api.me.update`
@@ -289,9 +648,11 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | email | 예 | max 255 | 이메일 주소 |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어, 변경 주기)에 걸리면 422 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 「본인 수정」인 항목만 받는다. 파일, 이미지 항목은 이 본문이 아니라 `POST /api/me/fields/{key}/file` 로 올린다. 폼 경로와 오류 키는 `GET /api/me/fields` 의 `fields[].name` 이다 |
+| display_name_kind | body | string\|null | 아니오 | 운영자가 허용한 종류 | 표시 이름 종류 선택. 보내지 않으면 지금 값 유지, null 이면 고른 종류를 지운다(회원 기본 종류로 보인다). 고를 권한이 없거나 허용하지 않은 종류면 422 |
+| email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
 | current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)이 보내면 그 값은 버린다(보내지 않은 것과 같다, 7.2.0) |
 | language | body | string | 아니오 | — | 언어 코드 |
@@ -314,6 +675,8 @@ HTTP/1.1 200
 | third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 (법적 항목, 마케팅 플러그인 추가) |
 | info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 (법적 항목, 마케팅 플러그인 추가) |
 
+> 이름, 닉네임, 언어, 국가, 시간대, 연락처, 주소, 서명, 자기소개와 운영자 추가 항목은 회원 항목입니다. 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 오고, 이 표의 필수 칸은 기본 설정 기준입니다. 지금 사이트가 받는 항목과 잠긴 칸은 `GET /api/me/fields` 가 알려 줍니다. 이 요청은 `fields_version` 을 받지 않고 409 를 내지 않습니다(낡은 화면 판정은 가입 요청에만 있습니다).
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.update_profile_validation_rules`).
 
 **요청 예시**
@@ -362,6 +725,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | uuid | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `홍길동` | 사용자 이름 |
 | nickname | string\|null | `gildong` | 닉네임 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
 | email | string | `user@example.com` | 이메일 주소 |
 | avatar | string\|null | `null` | 아바타 이미지 URL (`User::getAvatarUrl()` 산물, 미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
@@ -440,7 +804,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지. 오류 키는 항목의 폼 경로다). 잠긴 칸에 현재 값과 다른 값을 보낸 경우도 422 다: 본인인증으로 채워져 잠긴 항목(`fields.validation.locked_identity`), 외부가 관리하는 칸(`user.field_locked`), 변경 주기가 지나지 않은 닉네임. 표시 이름 종류를 고를 권한이 없거나 허용하지 않은 종류를 보낸 경우는 `errors.display_name_kind`, 적용될 종류가 닉네임이 필요한데 닉네임이 비면 `errors.nickname` |
 | 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18). 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
 
 <!-- @generated:end -->
@@ -449,6 +813,6 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 
 **설명**
 
-현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.g7.html`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
+현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`templates/_bundled/sirsoft-basic/layouts/partials/mypage/profile/_edit.g7.html`)이 사용한다. `email` 은 고정 필수이며 본인을 제외한 중복이 허용되지 않는다. `name` 은 회원 항목이라 운영자의 항목 설정을 따른다(기본 설정이 필수이고, 운영자가 필수를 풀거나 사용을 끄면 비워 보낼 수 있다). 닉네임, 연락처, 주소 같은 그 밖의 회원 항목도 항목 설정의 사용 여부와 필수 여부를 따르고, 운영자 추가 항목은 `custom_fields.{키}` 로 보낸다. 받는 것은 범위가 「본인 수정」인 항목뿐이다. `display_name_kind` 는 표시 이름 종류를 고를 권한이 있을 때만 받고, 저장 뒤 적용될 종류가 닉네임이 필요한 종류면 닉네임이 필수가 된다. 본인인증으로 채워져 잠긴 항목(`GET /api/me/fields` 의 `locked_reason: identity`)과 외부가 관리하는 칸은 현재 값과 같은 값만 받고, 다른 값을 보내면 422 다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
 
 

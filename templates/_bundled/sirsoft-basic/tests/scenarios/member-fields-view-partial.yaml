@@ -1,0 +1,20 @@
+feature: 회원 항목 보기 조각은 서버가 준 항목 계약대로 라벨과 보기용 값을 그린다
+
+description: |
+  partials/member/_member_fields_view 조각의 구조 계약. 부르는 화면이 반복 변수 memberFieldGroup 으로 묶음(이름, 항목)을 주고,
+  조각은 항목을 돌며 라벨과 보기용 값(display_value)을 그린다. 값이 없으면 「-」, 여러 줄 글은 줄바꿈을 살리고,
+  파일 항목은 파일 이름 목록(누르면 내려받는다)을 그린다.
+
+axes:
+  part: [root, iteration, branch, value, file, dark]
+
+effects:
+  - view_root_id_follows_group
+  - view_iterates_group_fields_except_agreements
+  - exactly_one_branch_per_field
+  - display_value_or_dash
+  - file_names_listed_as_download_buttons
+  - view_color_classes_have_dark_pair
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/member-fields-view-partial.test.ts

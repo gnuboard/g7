@@ -86,6 +86,29 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     }
 
     /**
+     * 첨부 대상 여럿의 지정한 컬렉션 첨부파일을 한 번에 조회합니다.
+     *
+     * @param  string  $type  attachmentable_type
+     * @param  array<int, int>  $ids  attachmentable_id 목록
+     * @param  array<int, string>  $collections  컬렉션 이름 목록
+     * @return Collection<int, Attachment> 첨부 목록 (대상, 컬렉션, 순서 순)
+     */
+    public function getByAttachmentablesAndCollections(string $type, array $ids, array $collections): Collection
+    {
+        if ($ids === [] || $collections === []) {
+            return new Collection;
+        }
+
+        return Attachment::where('attachmentable_type', $type)
+            ->whereIn('attachmentable_id', $ids)
+            ->whereIn('collection', $collections)
+            ->orderBy('attachmentable_id')
+            ->orderBy('collection')
+            ->ordered()
+            ->get();
+    }
+
+    /**
      * 첨부파일 생성
      *
      * @param  array<string, mixed>  $data  생성 데이터

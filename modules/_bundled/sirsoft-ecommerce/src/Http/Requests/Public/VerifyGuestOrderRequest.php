@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
+use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -29,11 +30,16 @@ class VerifyGuestOrderRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'order_number' => ['required', 'string', 'max:50'],
             'orderer_phone' => ['required', 'string', 'max:20'],
             'guest_lookup_password' => ['required', 'string', 'max:255'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.guest_order.verify_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

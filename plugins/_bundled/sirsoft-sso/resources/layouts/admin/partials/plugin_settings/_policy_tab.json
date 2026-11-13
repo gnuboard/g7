@@ -410,6 +410,19 @@
                                             "text": "{{emergency.name}}"
                                         },
                                         {
+                                            "comment": "실명 보조 줄 — 이름은 관리자 영역 표시 이름이고, 회원 조회 권한이 있으며 실명이 다를 때만 응답에 실린다(#490)",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!emergency.real_name}}",
+                                            "props": {
+                                                "data-testid": "emergency-real-name-sub",
+                                                "role": "note",
+                                                "aria-label": "{{$t('sirsoft-sso.admin.common.real_name_sub', { name: emergency.real_name })}}",
+                                                "className": "sso:block sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                            },
+                                            "text": "{{emergency.real_name}}"
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
@@ -590,6 +603,19 @@
                                             "text": "{{candidate.name}}"
                                         },
                                         {
+                                            "comment": "후보는 코어 회원 목록 응답 — 같은 규칙의 실명 보조 값이 온다",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!candidate.real_name}}",
+                                            "props": {
+                                                "data-testid": "emergency-candidate-real-name-sub",
+                                                "role": "note",
+                                                "aria-label": "{{$t('sirsoft-sso.admin.common.real_name_sub', { name: candidate.real_name })}}",
+                                                "className": "sso:block sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                            },
+                                            "text": "{{candidate.real_name}}"
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
@@ -610,7 +636,7 @@
                                             "params": {
                                                 "target": "local",
                                                 "policyForm.policy.emergency_user_ids": "{{(_local.policyForm?.policy?.emergency_user_ids ?? []).concat([candidate.id])}}",
-                                                "policyForm.emergency_users": "{{(_local.policyForm?.emergency_users ?? []).concat([{ id: candidate.id, name: candidate.name, email: candidate.email, has_password: candidate.has_password !== false }])}}"
+                                                "policyForm.emergency_users": "{{(_local.policyForm?.emergency_users ?? []).concat([{ id: candidate.id, name: candidate.name, real_name: candidate.real_name ?? null, email: candidate.email, has_password: candidate.has_password !== false }])}}"
                                             }
                                         }
                                     ],

@@ -1120,7 +1120,10 @@ final class DocumentCompiler
     }
 
     /**
-     * `<extension>` 의 봉투 속성(target-layout/extension-point/mode/priority)을 방출합니다.
+     * `<extension>` 의 봉투 속성(target-layout/extension-point/mode/priority/version-constraint)을 방출합니다.
+     *
+     * `version-constraint` 는 템플릿이 다른 확장의 조각을 자기 판본으로 대체할 때(템플릿 오버라이드) 적는 대상 확장의
+     * 버전 제약이다 — 설치된 확장 버전이 제약에 맞지 않으면 서빙이 원본 조각으로 되돌린다.
      *
      * @param  MarkupElement  $root  `<extension>` 요소
      * @param  array<string, mixed>  $doc  문서 (참조)
@@ -1140,6 +1143,7 @@ final class DocumentCompiler
                 'extension-point' => $doc['extension_point'] = (string) $attribute->value,
                 'mode' => $doc['mode'] = (string) $attribute->value,
                 'priority' => $doc['priority'] = $this->toInteger($attribute, 'priority', (string) $attribute->value, $path),
+                'version-constraint' => $doc['version_constraint'] = (string) $attribute->value,
                 default => throw $this->attributeError($attribute, LayoutMarkupErrorCode::UnknownRootAttribute, $path, [
                     'attr' => $attribute->name,
                     'tag' => 'extension',

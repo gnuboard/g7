@@ -1,0 +1,23 @@
+feature: 문자와 알림톡 발송 이력의 받는 사람 이름 (#490)
+
+description: |
+  발송 이력(`bizppurio_dispatches.to_name`)은 관리자 화면의 기록물이다. 회원 수신자는 회원 이름 컬럼이 아니라 그 시점의
+  관리자 영역(`core:admin`) 표시 이름으로 남긴다(코어 알림 발송 이력의 받는 사람 이름과 같은 규칙). 비회원 수신자는 넘겨받은
+  이름을 그대로 남긴다. 이미 남은 이력은 바꾸지 않는다. 설정을 바꾸지 않은 사이트는 수정 전과 같은 이름이 남는다.
+
+  축은 하나(`case`)다.
+
+axes:
+  case:
+    - sms_member_nickname_admin_area
+    - alimtalk_member_nickname_admin_area
+    - member_default_site
+    - guest_name_kept
+
+effects:
+  - member_dispatch_to_name_is_admin_area_name
+  - member_dispatch_to_name_unchanged_on_default_site
+  - guest_dispatch_to_name_is_given_name
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/DispatchRecipientNameTest.php

@@ -223,6 +223,140 @@
                     ]
                 }
             ]
+        },
+        {
+            "comment": "후기 작성자 표시 이름(#490). 방식은 「상위 영역 따름 / 특정 종류 고정 / 회원이 고른 값」이고, 종류 칸은 고정일 때만 나온다.\n         값은 폼(`form.display_name.review`)에 담겨 하단 [저장]으로 나간다. 종류 목록과 지금 적용되는 값은 설정 응답의 읽기 전용\n         `display_name_options` 에서 읽는다(저장에 싣지 않는다). 서버가 그 키를 주지 않으면 카드를 그리지 않는다.\n         문의 쪽 같은 칸은 기본 정보 탭의 문의 설정 카드에 있다.",
+            "id": "review_display_name_card",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!_local.form?.display_name_options}}",
+            "props": {
+                "className": "ecommerce-admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "ecommerce-card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.display_name.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.display_name.review_description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce-text-body ecommerce:w-48 ecommerce:shrink-0"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.display_name.mode_label"
+                        },
+                        {
+                            "id": "review_display_name_mode",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "후기 표시 방식. 고정이 아니면 종류를 비운다(고정일 때만 뜻이 있는 값이다). 방식과 종류를 한 객체로 바꿔 담는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.display_name.review": "{{({ mode: $event.target.value, kind: $event.target.value === 'fixed' ? (_local.form?.display_name?.review?.kind ?? null) : null })}}",
+                                        "hasChanges": true
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.display_name.review_mode_aria",
+                                "value": "{{_local.form?.display_name?.review?.mode ?? 'inherit'}}",
+                                "options": "{{[{ value: 'inherit', label: $t('sirsoft-ecommerce.admin.settings.display_name.mode.inherit') }, { value: 'fixed', label: $t('sirsoft-ecommerce.admin.settings.display_name.mode.fixed') }, { value: 'member', label: $t('sirsoft-ecommerce.admin.settings.display_name.mode.member') }]}}",
+                                "className": "ecommerce:w-64",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "id": "review_display_name_kind",
+                            "type": "basic",
+                            "name": "Select",
+                            "if": "{{(_local.form?.display_name?.review?.mode ?? 'inherit') === 'fixed'}}",
+                            "actions": [
+                                {
+                                    "comment": "후기에 고정할 표시 이름 종류. 비워 두면 null 로 담기고 저장할 때 서버가 칸 아래 오류로 알린다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.display_name.review.kind": "{{$event.target.value || null}}",
+                                        "hasChanges": true
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.display_name.review_kind_aria",
+                                "value": "{{_local.form?.display_name?.review?.kind ?? ''}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.display_name.kind_placeholder') }].concat((_local.form?.display_name_options?.kinds ?? []).map(k => ({ value: k.key, label: k.preview ? $t('sirsoft-ecommerce.admin.settings.display_name.kind_option', { label: k.label ?? k.key, preview: k.preview }) : (k.label ?? k.key) })))}}",
+                                "className": "{{_local.errors?.['display_name.review.kind'] ? 'ecommerce:w-64 ecommerce:border-red-500' : 'ecommerce:w-64'}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "id": "review_display_name_effective",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_local.form?.display_name?.review?.mode ?? 'inherit') === 'inherit' && (settings?.data?.display_name?.review?.mode ?? 'inherit') === 'inherit' && !!_local.form?.display_name_options?.effective?.review?.kind_label}}",
+                            "props": {
+                                "className": "ecommerce:w-full ecommerce-form-hint"
+                            },
+                            "text": "{{_local.form?.display_name_options?.effective?.review?.source_label ? $t('sirsoft-ecommerce.admin.settings.display_name.effective_with_source', { kind: _local.form?.display_name_options?.effective?.review?.kind_label, source: _local.form?.display_name_options?.effective?.review?.source_label }) : $t('sirsoft-ecommerce.admin.settings.display_name.effective', { kind: _local.form?.display_name_options?.effective?.review?.kind_label })}}"
+                        },
+                        {
+                            "id": "review_display_name_nickname_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_local.form?.display_name?.review?.mode ?? 'inherit') === 'fixed' && (_local.form?.display_name_options?.kinds ?? []).find(k => k.key === _local.form?.display_name?.review?.kind)?.requires_nickname === true}}",
+                            "props": {
+                                "className": "ecommerce:w-full ecommerce-form-hint"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.display_name.requires_nickname_hint"
+                        },
+                        {
+                            "id": "review_display_name_mode_error",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['display_name.review.mode']}}",
+                            "props": {
+                                "className": "ecommerce-form-error-xs ecommerce:w-full ecommerce:mt-1"
+                            },
+                            "text": "{{_local.errors?.['display_name.review.mode']?.[0] ?? ''}}"
+                        },
+                        {
+                            "id": "review_display_name_kind_error",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['display_name.review.kind']}}",
+                            "props": {
+                                "className": "ecommerce-form-error-xs ecommerce:w-full ecommerce:mt-1"
+                            },
+                            "text": "{{_local.errors?.['display_name.review.kind']?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }

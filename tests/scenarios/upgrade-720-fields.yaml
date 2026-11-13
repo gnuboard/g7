@@ -1,0 +1,44 @@
+feature: upgrade_720_fields
+
+description: |
+  7.2.0 업그레이드 데이터 스텝 07, 08, 09 — 회원 항목 설정과 표시 이름이 들어온 뒤의 기존 사이트 보정.
+  07: 기존 회원의 닉네임 정규화 값(users.nickname_normalized)을 채운다(비어 있는 행만, 수정 시각 불변).
+  08: 코어 회원 항목 행이 하나도 없을 때만 종전 동작과 같은 기본값으로 넣는다. 스텝 00 의 선언 재동기화가 행을 만든 뒤에는 바꿀 것이 없다.
+  09: 저장된 회원 설정의 표시 이름 영역 묶음에 빠진 기본 영역만 채운다. 저장 파일이나 묶음이 없으면 아무것도 쓰지 않는다.
+  운영자가 만든 항목(custom)과 운영자가 고친 값은 어떤 스텝에서도 지워지거나 바뀌지 않는다.
+  업그레이드 뒤 설정을 바꾸지 않은 사이트의 가입 요청과 내 정보 수정 요청은 종전과 같이 통과한다.
+
+coverage_strategy: full
+
+axes:
+  case:
+    - nickname_backfill
+    - seed_after_resync
+    - seed_when_empty
+    - operator_rows_kept
+    - seed_key_collision
+    - settings_backfill
+    - legacy_requests_after_upgrade
+
+effects:
+  - nickname_normalized_filled_for_existing_members
+  - nickname_backfill_matches_runtime_normalizer
+  - nickname_backfill_is_idempotent
+  - resync_creates_new_permission_and_core_fields
+  - seed_step_is_noop_after_resync
+  - seed_step_inserts_legacy_defaults_when_empty
+  - seed_step_matches_declared_sync
+  - seed_step_is_idempotent
+  - custom_fields_survive_every_step
+  - operator_edits_survive_every_step
+  - seed_step_skips_taken_keys
+  - missing_default_areas_filled_only
+  - stored_area_values_kept
+  - settings_untouched_without_stored_areas
+  - settings_backfill_is_idempotent
+  - legacy_signup_passes_after_upgrade
+  - legacy_profile_update_passes_after_upgrade
+  - signup_response_shape_unchanged
+
+test_files:
+  - tests/Feature/Upgrades/Upgrade720FieldsTest.php

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
@@ -122,6 +123,11 @@ class StorePostRequest extends FormRequest
         if (! Auth::check()) {
             $rules['author_name'] = ['required', 'string', 'max:50'];
             $rules['password'] = ['required', 'string', 'min:4'];
+            // 이름과 비밀번호는 위의 고정 규칙이다. 게시판이 켠 그 밖의 비회원 작성자 항목(이메일 등)은
+            // 항목 엔진이 사용, 필수 설정대로 규칙을 만든다(요청 키 `guest_fields.{항목 키}`).
+            if ($board) {
+                $rules += app(GuestAuthorFields::class)->rules($board, GuestAuthorFields::SURFACE_POST);
+            }
             // 비회원은 공지사항 작성 불가 (boolean false 또는 0만 허용)
             $rules['is_notice'] = ['nullable', 'boolean', function ($attribute, $value, $fail) {
                 // boolean true 또는 truthy 값이면 실패
@@ -188,7 +194,7 @@ class StorePostRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        return $this->guestFieldTexts('messages') + [
             'title.required' => __('sirsoft-board::validation.post.title.required'),
             'title.min' => __('sirsoft-board::validation.post.title.min'),
             'title.max' => __('sirsoft-board::validation.post.title.max'),
@@ -219,7 +225,7 @@ class StorePostRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return [
+        return $this->guestFieldTexts('attributes') + [
             'title' => __('sirsoft-board::validation.attributes.post.title'),
             'content' => __('sirsoft-board::validation.attributes.post.content'),
             'content_mode' => __('sirsoft-board::validation.attributes.post.content_mode'),
@@ -233,6 +239,30 @@ class StorePostRequest extends FormRequest
             'files' => __('sirsoft-board::validation.attributes.post.files'),
             'files.*' => __('sirsoft-board::validation.attributes.post.file'),
         ];
+    }
+
+    /**
+     * 비회원 작성자 항목의 검증 문구(속성 이름 또는 형식 오류 문구)를 반환합니다.
+     *
+     * @param  string  $kind  attributes | messages
+     * @return array<string, string> 요청 속성 경로 => 문구 (회원 요청이거나 게시판이 없으면 빈 배열)
+     */
+    private function guestFieldTexts(string $kind): array
+    {
+        if (Auth::check()) {
+            return [];
+        }
+
+        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug'));
+        if (! $board) {
+            return [];
+        }
+
+        $fields = app(GuestAuthorFields::class);
+
+        return $kind === 'messages'
+            ? $fields->messages($board, GuestAuthorFields::SURFACE_POST)
+            : $fields->attributes($board, GuestAuthorFields::SURFACE_POST);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ProductWishlist;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductWishlistRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 상품 찜 Repository 구현체
@@ -146,7 +148,7 @@ class ProductWishlistRepository implements ProductWishlistRepositoryInterface
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
             relations: [
-                'user:id,uuid,name,email,status',
+                'user:'.User::displayColumns(),
                 'product:id,name,display_status,sales_status',
             ],
             resultCap: PaginationLimits::resultCap('admin.wishlists'),
@@ -180,9 +182,8 @@ class ProductWishlistRepository implements ProductWishlistRepositoryInterface
                     }
                 });
             }),
-            default => $query->whereHas('user', fn (Builder $u) => $u->where(
-                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
-            )),
+            // 회원 검색은 이름과 닉네임을 모두 찾는다(화면에 보이는 표시 이름이 어느 쪽이든 찾을 수 있게). 이메일도 종전대로 찾는다.
+            default => $query->whereHas('user', fn (Builder $u) => MemberDisplayName::constrainUsersForAdmin($u, trim($keyword), withEmail: true)),
         };
     }
 
@@ -215,7 +216,7 @@ class ProductWishlistRepository implements ProductWishlistRepositoryInterface
     public function findByIds(array $ids): Collection
     {
         return $this->model
-            ->with(['user:id,uuid,name,email,status', 'product:id,name'])
+            ->with(['user:'.User::displayColumns(), 'product:id,name'])
             ->whereIn('id', $ids)
             ->get();
     }

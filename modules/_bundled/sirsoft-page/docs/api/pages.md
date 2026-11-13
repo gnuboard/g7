@@ -57,7 +57,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | published | boolean | `true` | 발행 여부 (true: 발행, false: 미발행) |
 | published_at | string | `2026-07-06 23:57:18` | published 일시 |
 | current_version | integer | `2` | 현재 버전 번호 |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 파생). `name` 은 관리자 화면 영역 표시 이름 |
 | created_at | string | `2026-07-06 23:57:18` | 생성 일시 |
 | updated_at | string | `2026-07-06 23:57:18` | 최종 수정 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -141,6 +141,8 @@ HTTP/1.1 200
 
 **설명** 관리자 페이지 목록을 조회합니다. `published`, `search`/`search_field`(제목·슬러그), `filters` 로 필터링하고 `sort_by`(created_at, published_at)·`sort_order` 로 정렬하며 `per_page`·`page` 로 페이지네이션합니다. `PageService::getPages()` 가 반환하는 `PageCollection` 으로 래핑되어 목록 항목마다 `is_owner`·`abilities` 권한 메타가 함께 내려갑니다. 관리자 페이지 관리 화면(목록 그리드)의 데이터 소스입니다.
 
+관리자 페이지 응답(목록, 상세, 등록, 수정, 발행 전환, 버전 이력, 버전 상세, 복원)의 `creator.name`, `updater.name` 은 관리자 화면 영역(`core:admin`)의 표시 이름입니다. 보는 관리자에게 회원 조회 권한(`core.users.read`)이 있고 실명이 표시 이름과 다를 때만 같은 묶음에 `real_name` 이 더해지며, 그렇지 않으면 키 자체가 없습니다.
+
 
 ### POST /api/modules/sirsoft-page/admin/pages
 <!-- @generated:start:api.modules.sirsoft-page.admin.pages.store -->
@@ -205,8 +207,8 @@ _단건 응답: `data` 객체의 필드 (`PageResource`, HTTP 201)._
 | published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
 | seo_meta | object\|null | `{"title":"...","description":"...","keywords":"..."}` | SEO 메타 정보 (title, description, keywords) |
 | current_version | integer | `1` | 현재 버전 번호 |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object\|null | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name — updater 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object\|null | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[]` | 페이지에 귀속된 첨부파일 목록 (`temp_key` 로 귀속된 임시 첨부 포함) |
 | created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:51:59` | 최종 수정 일시 |
@@ -499,8 +501,8 @@ _단건 응답: `data` 객체의 필드._
 | published_at | string | `2026-07-06 23:57:18` | published 일시 |
 | seo_meta | object | `{"title":"Et qui sapiente veritatis.","description":"Et m…` | SEO 메타 정보 (title, description, keywords) |
 | current_version | integer | `2` | 현재 버전 번호 |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
-| updater | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 최종 수정자 정보 객체 (uuid/name — updater 관계 파생, 로드된 경우에만 포함) |
+| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 파생). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 최종 수정자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 파생, 로드된 경우에만 포함). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[{"id":9,"hash":"xtfalwomchas","original_filename":"deser…` | 페이지에 귀속된 첨부파일 목록 (PageAttachmentResource 배열 — id/hash/원본파일명/URL 등, 로드된 경우에만 포함) |
 | created_at | string | `2026-07-06 23:57:18` | 생성 일시 |
 | updated_at | string | `2026-07-06 23:57:18` | 최종 수정 일시 |
@@ -649,8 +651,8 @@ _단건 응답: `data` 객체의 필드 (`PageResource` — `show` 와 동일 sh
 | published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
 | seo_meta | object\|null | `{"title":"...","description":"...","keywords":"..."}` | SEO 메타 정보 (title, description, keywords) |
 | current_version | integer | `3` | 현재 버전 번호 (수정 시 이전 상태가 버전 이력으로 적재되며 증가) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name — updater 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[{"id":4,"hash":"ninrdtsmhhta","original_filename":"nesciunt.jpg", ...}]` | 페이지에 귀속된 첨부파일 목록 (`PageAttachmentResource` 배열) |
 | created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
 | updated_at | string | `2026-07-08 15:03:15` | 최종 수정 일시 |
@@ -859,7 +861,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | content_mode | string | `html` | 본문 형식 (html, text) |
 | seo_meta | null | `null` | SEO 메타 정보 (title, description, keywords) |
 | changes_summary | string | `본문 보강` | 이 버전에서 무엇이 바뀌었는지 요약한 변경 설명 (버전 생성 시 기록, 없으면 null) |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 파생). `name` 은 관리자 화면 영역 표시 이름 |
 | created_at | string | `2026-07-06 23:57:18` | 생성 일시 |
 
 **응답 예시**
@@ -968,7 +970,7 @@ _단건 응답: `data` 객체의 필드 (`PageVersionResource` — `versions.ind
 | content_mode | string | `html` | 그 시점의 본문 형식 (`html`, `text` — 미지정 시 `html`) |
 | seo_meta | object\|null | `null` | 그 시점의 SEO 메타 스냅샷 (title, description, keywords) |
 | changes_summary | string\|null | `본문 보강` | 이 버전에서 무엇이 바뀌었는지 요약한 변경 설명 (없으면 null) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 이 버전을 만든 사용자 정보 (uuid/name — creator 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 이 버전을 만든 사용자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | created_at | string | `2026-07-08 10:51:59` | 버전 생성 일시 |
 
 **응답 예시**
@@ -1056,8 +1058,8 @@ _단건 응답: `data` 객체의 필드 (복원된 페이지의 `PageResource` �
 | published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
 | seo_meta | object\|null | `null` | SEO 메타 정보 (title, description, keywords — 대상 버전의 스냅샷) |
 | current_version | integer | `3` | 현재 버전 번호 (복원 자체도 새 버전으로 적재되어 증가) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자(복원 수행자) 정보 (uuid/name — updater 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자(복원 수행자) 정보 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[]` | 페이지에 귀속된 첨부파일 목록 (`PageAttachmentResource` 배열) |
 | created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
 | updated_at | string | `2026-07-08 15:10:02` | 최종 수정 일시 (복원 시각) |

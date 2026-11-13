@@ -12,6 +12,7 @@ use App\Extension\TemplateManager;
 use App\Models\Menu;
 use App\Support\CoreNecessaryStorage;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
+use Plugins\Sirsoft\Gdpr\Listeners\ExemptRequiredFieldsRoutesListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
@@ -945,6 +946,8 @@ class Plugin extends AbstractPlugin
             GdprAuthConsentListener::class,
             RegisterGdprConsentProviderListener::class,
             GdprConsentChangeRelayListener::class,
+            // 추가 정보 미입력 회원에게도 열어 둘 동의 기록 라우트 (core.required_fields.filter_exempt_routes 필터)
+            ExemptRequiredFieldsRoutesListener::class,
         ];
     }
 }

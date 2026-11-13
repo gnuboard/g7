@@ -49,7 +49,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | change_type | string | `material` | 변경 종류. `material`=카테고리 key/설명·처리방침 주소 변경 등 모든 회원 재동의를 트리거하는 중대 변경, `non_material`=도메인/라벨/힌트 정정 등 재동의 미유발, `initial`=최초 발행(시드) |
 | memo | string | `Chrome MCP 정밀 점검 — 마이페이지 정책 갱신 트리거 (P…` | 발행 사유 메모(최대 500자). 수동 발행 시 운영자가 입력하는 감사 추적용 설명으로 자동 감지 밖의 변경 배경을 남깁니다 |
 | created_at | string | `2026-06-18 09:27:39` | 생성 일시 |
-| publisher | object | `{"uuid":"a1e0a91a-fba6-491c-a53e-7285a5686857","name":"관리…` | 이 버전을 발행한 운영자 정보(uuid/name/email). raw FK(created_by)는 노출하지 않고 관계가 로드된 경우에만 포함되며, 발행자가 없으면 null입니다 |
+| publisher | object | `{"uuid":"a1e0a91a-fba6-491c-a53e-7285a5686857","name":"관리…` | 이 버전을 발행한 운영자 정보(uuid/name/email, 실명 보조가 실릴 때 real_name). `name` 은 관리자 화면 영역 표시 이름입니다. raw FK(created_by)는 노출하지 않고 관계가 로드된 경우에만 포함되며, 발행자가 없으면 null입니다 |
 
 **응답 예시**
 
@@ -96,6 +96,8 @@ HTTP/1.1 200
 
 **설명** 관리자 화면에서 발행된 개인정보 처리방침 정책 버전 이력을 version 내림차순 페이지네이션으로 조회합니다. `auth:sanctum`과 `sirsoft-gdpr.privacy.view` 권한이 필요합니다. `per_page`(1~100, 기본 20) 쿼리 파라미터로 페이지 크기를 조절할 수 있습니다. 조회 전용입니다.
 
+발행자 이름(`publisher.name`)은 관리자 화면 영역(`core:admin`)의 표시 이름입니다. 보는 관리자에게 회원 조회 권한(`core.users.read`)이 있고 실명이 표시 이름과 다를 때만 `publisher.real_name` 이 더해지며, 그렇지 않으면 키 자체가 없습니다. 현재 버전(`/current`)과 버전 상세(`/{version}`), 발행 응답도 같은 규칙입니다.
+
 
 ### POST /api/plugins/sirsoft-gdpr/admin/policy-versions
 <!-- @generated:start:api.plugins.sirsoft-gdpr.admin.policy-versions.store -->
@@ -130,7 +132,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | uuid | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
-| name | string | `API 문서 샘플 사용자` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
+| name | string | `API 문서 샘플 사용자` | 발행자 이름. 코어 환경설정 > 회원의 표시 이름 설정에서 관리자 화면 영역의 이름입니다 |
 | email | string | `apidoc-sample-user@example.com` | 이 버전을 발행한 운영자의 이메일. publisher 관계에서 노출되며 감사 화면에서 발행자를 식별하는 용도입니다 |
 
 **응답 예시**
@@ -192,7 +194,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | uuid | string | `a1e0a91a-fba6-491c-a53e-7285a5686857` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
-| name | string | `관리자` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
+| name | string | `관리자` | 발행자 이름. 코어 환경설정 > 회원의 표시 이름 설정에서 관리자 화면 영역의 이름입니다 |
 | email | string | `admin@example.com` | 이 버전을 발행한 운영자의 이메일. publisher 관계에서 노출되며 감사 화면에서 발행자를 식별하는 용도입니다 |
 
 **응답 예시**

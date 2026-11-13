@@ -32,7 +32,7 @@ const providers = [
   { key: 'naver', label: '네이버', brand: 'naver' as const, style: null, start_url: '/plugins/sirsoft-social_login/oauth/naver/start' },
   { key: 'google', label: 'Google', brand: 'google' as const, style: null, start_url: '/plugins/sirsoft-social_login/oauth/google/start' },
   { key: 'facebook', label: 'Facebook', brand: 'facebook' as const, style: null, start_url: '/plugins/sirsoft-social_login/oauth/facebook/start' },
-  { key: 'corp', label: '사내 계정', brand: 'custom' as const, style: { bg: '#112233', fg: '#ffffff', border: '#000000' }, start_url: '/plugins/sirsoft-social_login/oauth/corp/start' },
+  { key: 'corp', label: '사내 인증', brand: 'custom' as const, style: { bg: '#112233', fg: '#ffffff', border: '#000000' }, start_url: '/plugins/sirsoft-social_login/oauth/corp/start' },
 ];
 
 describe('ProviderButtons', () => {
@@ -90,7 +90,7 @@ describe('ProviderButtons', () => {
       return text;
     });
 
-    expect(texts).toEqual(['사내 계정(으)로 로그인', '사내 계정(으)로 가입', '사내 계정 연결', '사내 계정(으)로 다시 확인']);
+    expect(texts).toEqual(['사내 인증 계정으로 로그인', '사내 인증 계정으로 가입', '사내 인증 연결', '사내 인증 계정으로 다시 확인']);
   });
 
   /**

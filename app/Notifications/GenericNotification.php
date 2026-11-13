@@ -322,7 +322,7 @@ class GenericNotification extends BaseNotification
                     'extension_type' => $this->extensionType,
                     'extension_identifier' => $this->extensionIdentifier,
                     'recipient_identifier' => $notifiable->email ?? (string) ($notifiable->getKey() ?? ''),
-                    'recipient_name' => $notifiable->name ?? null,
+                    'recipient_name' => app(RecipientDisplayName::class)->forLog($notifiable),
                     'recipient_user_id' => $recipientUserId,
                     'error_message' => __($skipped['reason'] ?? 'notification.readiness.unknown'),
                     'source' => 'notification',
@@ -358,7 +358,7 @@ class GenericNotification extends BaseNotification
                 templateType: $this->type,
                 extensionType: $ownerType,
                 extensionIdentifier: $this->extensionIdentifier,
-                recipientName: $notifiable->name ?? null,
+                recipientName: app(RecipientDisplayName::class)->forChannel($notifiable, 'mail'),
             );
         }
 
@@ -373,7 +373,8 @@ class GenericNotification extends BaseNotification
             extensionType: $ownerType,
             extensionIdentifier: $this->extensionIdentifier,
             source: 'notification',
-            recipientName: $notifiable->name ?? null,
+            // 메일의 받는 사람 이름은 본문의 받는 사람 이름과 같은 영역(메일 채널)의 표시 이름이다.
+            recipientName: app(RecipientDisplayName::class)->forChannel($notifiable, 'mail'),
         );
     }
 

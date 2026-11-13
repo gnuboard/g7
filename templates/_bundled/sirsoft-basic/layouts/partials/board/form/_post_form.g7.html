@@ -23,6 +23,11 @@
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:board.created_at: {{form_data?.data?.created_at}}</p>
       </div>
     </div>
+    <!-- 새 글을 쓰는 회원에게 이 게시판에서 보이는 이름을 미리 알린다 — 게시판마다 작성자 표시 이름의 종류(닉네임, 가린 이름 등)가 다를 수 있다. 서버가 보이는 이름을 준 경우에만 그린다(비회원, 수정 화면에는 없다). 종류 이름이 없으면 이름만 적는다 -->
+    <div data-if="{{!route.id &amp;&amp; !!_global.currentUser?.uuid &amp;&amp; !!form_meta?.data?.author_display_name}}" data-ref="board_author_display_notice" class="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+      <icon name="user" size="sm" class="mt-0.5 shrink-0 text-gray-500 dark:text-gray-400"/>
+      <span class="min-w-0 wrap-anywhere">{{form_meta?.data?.author_display_kind_label ? $t('board.author_display.notice', { name: form_meta?.data?.author_display_name, kind: form_meta?.data?.author_display_kind_label }) : $t('board.author_display.notice_without_kind', { name: form_meta?.data?.author_display_name })}}</span>
+    </div>
     <!-- 게시글 옵션 (공지사항/비밀글) — 공지는 게시판 관리 또는 공지 등록 권한, 비밀글은 게시판 비밀글 모드가 켜진 경우에만 카드가 생긴다 -->
     <div data-if="{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}">
       <div class="grid grid-cols-1 gap-4">
@@ -69,25 +74,29 @@
         </div>
       </div>
     </div>
-    <!-- 비회원 작성자 정보 입력 (이름/비밀번호) - 신규 작성 시에만 표시 (비로그인 + 수정모드가 아닐 때) -->
-    <div data-if="{{form_meta?.data &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" class="grid grid-cols-1 gap-4">
+    <!-- 비회원 작성자 정보 입력 (이름/비밀번호) - 신규 작성 시에만 표시 (비로그인 + 수정모드가 아닐 때). 필수 표시는 게시판 응답의 guest_fields.fixed 를 따르고, 그 값이 없는 응답(옛 서버)에서는 종전처럼 필수로 그린다 -->
+    <div data-if="{{form_meta?.data &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" data-ref="board_guest_fixed_fields" class="grid grid-cols-1 gap-4">
       <responsive on="640-" class="grid grid-cols-2 gap-4"/>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:board.guest_author_name</span>
-          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
+          <span data-if="{{form_meta?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" data-ref="board_guest_author_name_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
-        <input aria-label="$t:board.guest_author_name" type="text" name="author_name" placeholder="$t:board.guest_author_name_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+        <input data-ref="board_guest_author_name" aria-label="$t:board.guest_author_name" type="text" name="author_name" required="{{form_meta?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" aria-required="{{form_meta?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" placeholder="$t:board.guest_author_name_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
         <p data-if="{{_local.errors?.author_name}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.author_name?.[0] ?? _local.errors?.author_name}}</p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:board.guest_password</span>
-          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
+          <span data-if="{{form_meta?.data?.board?.guest_fields?.fixed?.password?.required ?? true}}" data-ref="board_guest_password_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
-        <input aria-label="$t:board.guest_password" type="password" name="password" placeholder="$t:board.guest_password_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+        <input data-ref="board_guest_password" aria-label="$t:board.guest_password" type="password" name="password" required="{{form_meta?.data?.board?.guest_fields?.fixed?.password?.required ?? true}}" aria-required="{{form_meta?.data?.board?.guest_fields?.fixed?.password?.required ?? true}}" placeholder="$t:board.guest_password_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
         <p data-if="{{_local.errors?.password}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.password?.[0] ?? _local.errors?.password}}</p>
       </div>
+    </div>
+    <!-- 게시판이 켠 비회원 항목(이메일, 추가 항목) — 이름과 비밀번호 아래에 그린다. 값은 폼 상태(_local.form)의 guest_fields.{키} 에 담긴다. 항목이 없으면 묶음 자체를 그리지 않는다(화면이 종전과 같다) -->
+    <div data-each="boardGuestFieldGroup in {{(!!form_meta?.data &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id &amp;&amp; (form_meta?.data?.board?.guest_fields?.post ?? []).length > 0) ? [{ key: 'post', formKey: 'form', fields: form_meta.data.board.guest_fields.post, errors: (_local.errors &amp;&amp; typeof _local.errors === 'object') ? _local.errors : {}, disabled: !!_local.isSaving }] : []}}">
+      <include src="partials/board/_guest_fields.g7.html"/>
     </div>
     <!-- 카테고리 선택 (카테고리가 있는 게시판만) -->
     <div data-if="{{form_meta?.data?.board?.categories?.length > 0}}">
@@ -177,7 +186,7 @@
       </a>
       <button type="button" disabled="{{_local?.isSaving}}" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
-          <!-- 저장. 아직 올라가지 않은 첨부를 먼저 올리라고 알린 뒤 글을 보낸다 — 둘을 잇는 것이 임시 키이고, 주소와 방식은 글 번호 유무로 갈린다 -->
+          <!-- 저장. 아직 올라가지 않은 첨부를 먼저 올리라고 알린 뒤 글을 보낸다 — 둘을 잇는 것이 임시 키이고, 주소와 방식은 글 번호 유무로 갈린다. 비회원의 새 글이면 게시판이 켠 비회원 항목 값을 guest_fields 에 키별로 싣는다(그려진 항목만, 입력하지 않은 칸은 항목의 기본값, 빈 값은 뺀다) -->
           <sequence>
             <set-state target="local" :isSaving="true" :errors="null"/>
             <emit-event event="upload:board_attachments"/>
@@ -185,7 +194,7 @@
             <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다. -->
             <set-state if="{{(_local.uploadFailedCount ?? 0) > 0}}" target="local" :isSaving="false"/>
             <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
-            <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
+            <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey }, (!_global.currentUser?.uuid &amp;&amp; !route.id &amp;&amp; (form_meta?.data?.board?.guest_fields?.post ?? []).length > 0) ? { guest_fields: Object.fromEntries(form_meta.data.board.guest_fields.post.map(function(f) { return [f.key, (_local.form?.guest_fields ?? {})[f.key] ?? f.default ?? null]; }).filter(function(entry) { return entry[1] !== null &amp;&amp; entry[1] !== ''; })) } : {})}}">
               <success>
                 <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
                 <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>
@@ -194,8 +203,10 @@
                 </navigate>
               </success>
               <fail>
+                <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
                 <set-state target="local" :isSaving="false" errors="{{error?.errors ?? null}}"/>
-                <toast type="error" message="{{error?.message ?? '$t:common.error_occurred'}}"/>
+                <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error?.message ?? '$t:common.error_occurred'}}"/>
               </fail>
             </api-call>
           </sequence>

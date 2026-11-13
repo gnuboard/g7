@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Repositories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Page\Models\Page;
@@ -35,7 +36,8 @@ class PageVersionRepository implements PageVersionRepositoryInterface
     public function getVersionsByPage(Page $page): Collection
     {
         return $page->versions()
-            ->with('creator')
+            // 작성자 이름은 관리자 영역 표시 이름이다 — 계산에 필요한 회원 컬럼을 함께 읽는다.
+            ->with('creator:'.User::displayColumns())
             ->orderByDesc('version')
             ->get();
     }

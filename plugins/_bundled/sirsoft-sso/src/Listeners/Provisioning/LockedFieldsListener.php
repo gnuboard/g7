@@ -25,6 +25,8 @@ class LockedFieldsListener implements HookListenerInterface
     {
         return [
             'core.user.locked_fields' => ['method' => 'lockedFields', 'priority' => 20, 'type' => 'filter', 'sync' => true],
+            // 잠근 사유 — 화면이 「회사 계정에서 관리하는 항목입니다」 안내를 고르는 근거(코어 7.2.0)
+            'core.user.locked_field_reasons' => ['method' => 'lockedFieldReasons', 'priority' => 20, 'type' => 'filter', 'sync' => true],
         ];
     }
 
@@ -53,5 +55,29 @@ class LockedFieldsListener implements HookListenerInterface
         $fields = is_array($fields) ? $fields : [];
 
         return array_values(array_unique(array_merge($fields, app(AttributeSyncService::class)->lockedFields($user))));
+    }
+
+    /**
+     * 이 플러그인이 잠근 칸의 사유(`sso`)를 더합니다.
+     *
+     * 앞선 구독자가 같은 칸에 사유를 이미 줬으면 그대로 둔다.
+     *
+     * @param  mixed  $reasons  앞선 필터 결과 (칸 이름 => 사유)
+     * @param  mixed  ...$args  [User, string $surface]
+     * @return mixed 칸 이름 => 사유
+     */
+    public function lockedFieldReasons(mixed $reasons, mixed ...$args): mixed
+    {
+        $user = $args[0] ?? null;
+        if (! $user instanceof User || (int) $user->getKey() <= 0) {
+            return $reasons;
+        }
+
+        $reasons = is_array($reasons) ? $reasons : [];
+        foreach (app(AttributeSyncService::class)->lockedFields($user) as $field) {
+            $reasons[$field] ??= 'sso';
+        }
+
+        return $reasons;
     }
 }

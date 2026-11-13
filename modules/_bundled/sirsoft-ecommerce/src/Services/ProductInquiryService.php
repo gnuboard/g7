@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use App\Support\NameMasker;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
 use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 상품 1:1 문의 서비스
@@ -123,17 +125,23 @@ class ProductInquiryService
             $lastPage = $paginator->lastPage();
         }
 
-        // user_id 일괄 조회 (N+1 방지)
+        // 작성자 회원을 한 번에 읽고(N+1 방지) 상품 문의 영역의 표시 이름을 한 번에 계산한다.
+        // 영역 기본값이 「가린 이름」이라 설정을 바꾸지 않은 사이트는 종전과 같은 가림 글자로 보인다.
         $userIds = $pagePivots->map(fn ($pivot) => $posts[$pivot->inquirable_id]['user_id'] ?? null)
             ->filter()->unique()->values()->all();
-        $userMap = $this->userRepository->getNamesByIds($userIds);
+        $authors = $this->userRepository->findManyByIdsKeyed($userIds);
+        $authorNames = MemberDisplayName::names($authors, MemberDisplayName::AREA_INQUIRY);
 
-        $items = $pagePivots->map(function ($pivot) use ($posts, $currentUserId, $userMap) {
+        $items = $pagePivots->map(function ($pivot) use ($posts, $currentUserId, $authors, $authorNames) {
             $post = $posts[$pivot->inquirable_id] ?? null;
             $isOwner = $currentUserId !== null && $pivot->user_id === $currentUserId;
 
             $userId = $post['user_id'] ?? null;
-            $name = $userId ? ($userMap[$userId] ?? $post['author_name'] ?? null) : ($post['author_name'] ?? null);
+            // 회원이 쓴 글은 그 회원의 표시 이름이다(영역 설정이 정한 값 그대로 — 여기서 다시 가리지 않는다).
+            // 회원 행이 없는 글(회원이 지워진 뒤 남은 글)은 글에 남은 작성 당시 이름을 종전처럼 가려 보인다.
+            $authorName = $userId && $authors->has($userId)
+                ? ($authorNames[$userId] ?? null)
+                : NameMasker::maskName($post['author_name'] ?? null);
 
             // 비밀글 이중 방어(KVE-2026-1914): 게시판 훅(getByIds)이 이미 요청자 신원으로
             // 원문을 마스킹하지만, 훅이 신원 판정만 하고 특정 필드 null 처리를 누락하는 회귀에
@@ -150,7 +158,7 @@ class ProductInquiryService
                 'id' => $pivot->id,
                 'post_id' => $pivot->inquirable_id,
                 'user_id' => $userId,
-                'author_name' => $this->maskAuthorName($name),
+                'author_name' => $authorName,
                 // 비밀글이면 title 도 fail-closed 로 재마스킹한다(KVE-2026-1914 A2b).
                 // 훅이 신원 판정만 하고 title 치환을 누락하는 회귀에 대비 — 플레이스홀더는 이커머스
                 // 자기 문구(inquiries.secret_post_title)다. 게시판의 번역 키를 빌려 쓰지 않는다
@@ -647,36 +655,6 @@ class ProductInquiryService
         }
 
         return $this->repository->forceDeleteByProductId($productId);
-    }
-
-    /**
-     * 작성자 이름 마스킹 처리
-     *
-     * 2자: 첫 글자 + * (예: 김동 → 김*)
-     * 3자 이상: 첫 글자 + 중간 마스킹 + 마지막 글자 (예: 홍길동 → 홍*동, 김민준호 → 김**호)
-     *
-     * @param  string|null  $name  원본 이름 (호출 전 user_id 기반 조회 완료된 값)
-     * @return string|null
-     */
-    private function maskAuthorName(?string $name): ?string
-    {
-        if (empty($name)) {
-            return $name;
-        }
-
-        $chars = mb_str_split($name);
-        $len = count($chars);
-
-        if ($len === 1) {
-            return $name;
-        }
-
-        if ($len === 2) {
-            return $chars[0].'*';
-        }
-
-        // 3자 이상: 첫 글자 + 중간 전체 마스킹 + 마지막 글자
-        return $chars[0].str_repeat('*', $len - 2).$chars[$len - 1];
     }
 
     /**

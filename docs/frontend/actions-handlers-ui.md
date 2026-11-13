@@ -411,9 +411,24 @@
 
 > `closeModal` 은 `target` 을 읽지 않는다 — 모달 id 를 적어도 **모달 스택의 맨 위 모달 하나**를 닫는다. 특정 모달을 골라 닫는 인자는 없다.
 
+**모두 닫기** (engine-v1.94.0+): `params.all` 이 `true` 면 열린 모달을 **모두** 닫는다(`_global.modalStack` 을 비우고 `activeModal` 은 `null`, 모달마다 쌓인 `$parent` 문맥도 비운다). 다른 모달 위에서 뜰 수 있는 안내 모달이 다른 화면으로 보낼 때 쓴다 — 맨 위만 닫으면 밑의 모달이 스택에 남아, 그 화면으로 돌아왔을 때 다시 열린 채 보인다. 값은 엄격 비교라 문자열 `"false"`·숫자 `1` 은 하나만 닫는다.
+
+```html
+<on type="click">
+  <sequence>
+    <close-modal target="required_info_pending_modal" :all="true"/>
+    <navigate path="/mypage/required-info"/>
+  </sequence>
+</on>
+```
+
+```json
+{ "handler": "closeModal", "target": "required_info_pending_modal", "params": { "all": true } }
+```
+
 **작동 원리**:
 - `openModal`: `_global.modalStack`에 모달 ID를 push, `_global.activeModal`도 동시 설정
-- `closeModal`: `_global.modalStack`에서 최상위 모달만 제거, 이전 모달 유지
+- `closeModal`: `_global.modalStack`에서 최상위 모달만 제거, 이전 모달 유지(`params.all: true` 면 전부 제거)
 
 **멀티 모달 지원** (engine-v1.2.0+):
 

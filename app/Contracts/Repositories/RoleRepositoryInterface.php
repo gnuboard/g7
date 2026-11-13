@@ -194,4 +194,15 @@ interface RoleRepositoryInterface
      * @return int 권한 개수
      */
     public function getPermissionCount(Role $role): int;
+
+    /**
+     * 사용 중인 역할이 권한을 가졌는지 반환합니다.
+     *
+     * 로그인하지 않은 화면(가입 등)에서 「이 역할로 가입하면 이 권한을 갖게 되는가」를 판정할 때 쓴다.
+     *
+     * @param  string  $roleIdentifier  역할 식별자 (예: user)
+     * @param  string  $permissionIdentifier  권한 식별자
+     * @return bool 역할이 사용 중이고 그 권한을 가졌으면 true
+     */
+    public function activeRoleHasPermission(string $roleIdentifier, string $permissionIdentifier): bool;
 }

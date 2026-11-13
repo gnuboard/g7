@@ -32,7 +32,6 @@ class GenericCatchStatusCodeContractTest extends TestCase
         'app/Http/Controllers/Api/Admin/TemplateController.php::manifestPreview' => '업로드 파일 해석 실패 = 클라이언트 입력 오류',
         // 카테고리 이미지 서빙은 요청 파라미터 기반 파일 해석(검증성 로직) 비중이 크다.
         'modules/_bundled/sirsoft-ecommerce/src/Http/Controllers/Admin/CategoryController.php::downloadImage' => '검증성 로직(요청 파라미터 기반 파일 해석) 비중이 큼',
-        'modules/_bundled/sirsoft-ecommerce/src/Http/Controllers/Public/CategoryImageController.php::download' => '검증성 로직(요청 파라미터 기반 파일 해석) 비중이 큼',
     ];
 
     /**

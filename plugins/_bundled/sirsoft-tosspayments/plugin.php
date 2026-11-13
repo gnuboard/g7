@@ -249,6 +249,8 @@ class Plugin extends AbstractPlugin
             Listeners\ClaimPaymentRefundListener::class,
             Listeners\ValidateTossSettingsListener::class,
             Listeners\ProvideNecessaryStorageKeysListener::class,
+            // 추가 정보 미입력 회원에게도 열어 둘 라우트 (core.required_fields.filter_exempt_routes 필터)
+            Listeners\ExemptRequiredFieldsRoutesListener::class,
         ];
     }
 

@@ -49,6 +49,7 @@
     "list_description": "Settings related to the board list page",
     "post": "Post Settings",
     "post_description": "Settings related to post writing",
+    "guest_author_fields": "Guest author fields",
     "reply": "Reply Post Settings",
     "reply_description": "Settings related to reply posts",
     "comment": "Comment Settings",
@@ -666,5 +667,9 @@
       "running": "Running",
       "never": "Not run yet"
     }
+  },
+  "guest_author_fields": {
+    "label": "Guest author field defaults",
+    "description": "Copied to a new board as its guest author field settings when the board is created. Existing boards do not change. Name and password are always required."
   }
 }

@@ -10,6 +10,7 @@ import { updateOptionFieldHandler } from './updateOptionField';
 import { calculateCurrencyPricesHandler } from './calculateCurrencyPrices';
 import { initPreferredCurrencyHandler } from './initPreferredCurrency';
 import { initPreferredShippingCountryHandler } from './initPreferredShippingCountry';
+import { watchAccountPreferencesHandler } from './watchAccountPreferences';
 import { setDateRangeHandler } from './setDateRange';
 import { focusElementHandler } from './focusElement';
 import { stopEventPropagationHandler } from './stopEventPropagation';
@@ -366,6 +367,8 @@ export const handlerMap = {
     calculateCurrencyPrices: calculateCurrencyPricesHandler,
     initPreferredCurrency: initPreferredCurrencyHandler,
     initPreferredShippingCountry: initPreferredShippingCountryHandler,
+    // 로그인 사용자 응답이 바뀔 때 계정의 결제 통화와 배송국가를 전역 표시 값에 맞춘다(내 정보 수정 저장 뒤 등)
+    watchAccountPreferences: watchAccountPreferencesHandler,
     setDateRange: setDateRangeHandler,
     // 펼침 목록 Esc 닫기 때 초점을 트리거로 돌려준다(헤더 통화 선택)
     focusElement: focusElementHandler,

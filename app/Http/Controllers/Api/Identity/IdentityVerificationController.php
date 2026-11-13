@@ -15,11 +15,13 @@ use App\Http\Requests\Identity\PurposesIndexRequest;
 use App\Http\Requests\Identity\RequestChallengeRequest;
 use App\Http\Requests\Identity\ResolvePolicyRequest;
 use App\Http\Requests\Identity\ShowChallengeRequest;
+use App\Http\Requests\Identity\VerifiedClaimsRequest;
 use App\Http\Requests\Identity\VerifyChallengeRequest;
 use App\Http\Resources\Identity\ChallengeResource;
 use App\Http\Resources\Identity\ProviderResource;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use App\Services\IdentityClaimsService;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
 use App\Support\LocalizedValue;
@@ -41,11 +43,13 @@ class IdentityVerificationController extends PublicBaseController
      * @param  IdentityVerificationService  $service  본인인증 유스케이스 Service
      * @param  IdentityVerificationManager  $manager  프로바이더 레지스트리 (Service 역할 겸함)
      * @param  IdentityPolicyService  $policyService  정책 해석 Service (프런트 프리페치용)
+     * @param  IdentityClaimsService  $claimsService  본인인증 값 Service (채움값 조회)
      */
     public function __construct(
         protected IdentityVerificationService $service,
         protected IdentityVerificationManager $manager,
         protected IdentityPolicyService $policyService,
+        protected IdentityClaimsService $claimsService,
     ) {
         parent::__construct();
     }
@@ -196,6 +200,37 @@ class IdentityVerificationController extends PublicBaseController
             'provider_id' => $result->providerId,
             'verified_at' => $result->verifiedAt?->toIso8601String(),
             'verification_token' => $result->claims['verification_token'] ?? null,
+        ]);
+    }
+
+    /**
+     * 본인인증 토큰이 가리키는 인증 값과 그 값으로 채울 회원 항목을 조회합니다. POST /api/identity/claims
+     *
+     * 가입 화면이 본인인증을 마친 뒤 이름, 휴대폰 같은 칸을 인증 값으로 채울 때 부른다. 인증 값을 주지 않는 수단(메일 인증번호 등)이면
+     * `status: no_claims` 와 빈 값이 온다(200). 만료됐거나 알 수 없는 토큰은 422 이고 `errors.status` 로 `expired`, `invalid` 를 알린다.
+     *
+     * @param  VerifiedClaimsRequest  $request  검증된 요청 (verification_token, purpose)
+     * @return JsonResponse 토큰 상태, 인증 값, 항목 키별 채움값, 잠글 항목 키
+     */
+    public function claims(VerifiedClaimsRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $user = $request->user();
+
+        $result = $this->claimsService->describeForToken(
+            (string) $validated['verification_token'],
+            (string) ($validated['purpose'] ?? 'signup'),
+            $user instanceof User ? $user : null,
+        );
+
+        if (in_array($result['status'], [IdentityClaimsService::STATUS_INVALID, IdentityClaimsService::STATUS_EXPIRED], true)) {
+            return $this->error('identity.errors.invalid_verification_token', 422, ['status' => $result['status']]);
+        }
+
+        return $this->success('common.success', [
+            ...$result,
+            'claims' => (object) $result['claims'],
+            'fields' => (object) $result['fields'],
         ]);
     }
 

@@ -91,7 +91,8 @@ class SitePolicyRepository implements SitePolicyRepositoryInterface
         }
 
         // audit:allow query-unbounded-get reason: 비상 계정은 요청 검증이 20명으로 묶는다(PolicyUpdateRequest emergency_user_ids max:20)
-        return User::query()->whereIn('id', $ids)->get(['id', 'uuid', 'name', 'email', 'is_super', 'password']);
+        // 표시 이름 계산에 필요한 열(닉네임, 종류 등)을 함께 싣는다 — 정책 화면이 관리자 영역 표시 이름을 보인다
+        return User::query()->whereIn('id', $ids)->get(explode(',', User::displayColumns('email', 'is_super', 'password')));
     }
 
     /**

@@ -4,8 +4,8 @@ use App\Broadcasting\BroadcastChannelRegistrar;
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
-// Admin Controllers
 use App\Http\Controllers\Api\Admin\AdminTemplateLayoutAttachmentController;
+// Admin Controllers
 use App\Http\Controllers\Api\Admin\Analytics\ArchiveRunController as AdminAnalyticsArchiveRunController;
 use App\Http\Controllers\Api\Admin\Analytics\CloudRangeController as AdminAnalyticsCloudRangeController;
 use App\Http\Controllers\Api\Admin\Analytics\DataController as AdminAnalyticsDataController;
@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
 use App\Http\Controllers\Api\Admin\CoreUpdateController as AdminCoreUpdateController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\ExtensionRecoveryController as AdminExtensionRecoveryController;
+use App\Http\Controllers\Api\Admin\FieldDefinitionController as AdminFieldDefinitionController;
 use App\Http\Controllers\Api\Admin\FrontendConfigController as AdminFrontendConfigController;
 use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController;
@@ -33,21 +34,21 @@ use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackCo
 use App\Http\Controllers\Api\Admin\LayoutController as AdminLayoutController;
 use App\Http\Controllers\Api\Admin\LayoutExtensionController as AdminLayoutExtensionController;
 use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
+use App\Http\Controllers\Api\Admin\MemberFieldController as AdminMemberFieldController;
 use App\Http\Controllers\Api\Admin\MemberNotificationController as AdminMemberNotificationController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
-// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
+// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
-// Identity Verification
 use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
+// Identity Verification
 use App\Http\Controllers\Api\Admin\NotificationDefinitionController as AdminNotificationDefinitionController;
 use App\Http\Controllers\Api\Admin\NotificationLogController as AdminNotificationLogController;
 use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotificationTemplateController;
-// Public Controllers
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
+// Public Controllers
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
-use App\Http\Controllers\Api\Admin\TemplateSettingsController as AdminTemplateSettingsController;
 use App\Http\Controllers\Api\Admin\PrivacyManualRunController as AdminPrivacyManualRunController;
 use App\Http\Controllers\Api\Admin\PrivacyTargetController as AdminPrivacyTargetController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
@@ -60,12 +61,15 @@ use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController
 use App\Http\Controllers\Api\Admin\SystemExecutionController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
+use App\Http\Controllers\Api\Admin\TemplateSettingsController as AdminTemplateSettingsController;
 use App\Http\Controllers\Api\Admin\ThumbnailController as AdminThumbnailController;
 use App\Http\Controllers\Api\Admin\UnplacedBundledNoticeController as AdminUnplacedBundledNoticeController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\Admin\UserFieldFileController as AdminUserFieldFileController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
+use App\Http\Controllers\Api\Auth\ProfileFieldFileController as UserProfileFieldFileController;
 use App\Http\Controllers\Api\Auth\SearchHistoryController;
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
 use App\Http\Controllers\Api\Public\AnalyticsCollectController;
@@ -73,10 +77,10 @@ use App\Http\Controllers\Api\Public\AnalyticsSummaryController;
 use App\Http\Controllers\Api\Public\AssetProbeController;
 use App\Http\Controllers\Api\Public\ConsentController;
 use App\Http\Controllers\Api\Public\CspReportController;
+use App\Http\Controllers\Api\Public\FaviconController as PublicFaviconController;
 use App\Http\Controllers\Api\Public\FrontendConfigController as PublicFrontendConfigController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
-use App\Http\Controllers\Api\Public\FaviconController as PublicFaviconController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
 use App\Http\Controllers\Api\Public\PublicExtensionIconController;
 use App\Http\Controllers\Api\Public\PublicLayoutController;
@@ -119,13 +123,13 @@ Route::group([], function () use ($publicDataThrottle) {
     // optional.sanctum 을 두는 이유: 토큰이 있으면 회원·관리자 방문으로 가르고, 없으면
     // 비회원으로 센다. 응답은 언제나 204 이므로 스로틀에 걸려도 화면에 영향이 없다.
     Route::post('analytics/collect', [AnalyticsCollectController::class, 'store'])
-        ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum'])
+        ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum', 'allow.pending_required_fields'])
         ->name('api.public.analytics.collect');
 
     // 코어 CSP 위반 보고 (#158) — 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때 정책의
     // `report-uri` 가 이 경로를 가리킨다. 비콘과 같이 잘못된 본문도 204(기록만 생략), 16KB 초과 413.
     Route::post('csp-report', [CspReportController::class, 'store'])
-        ->middleware('throttle:60,1,csp_report')
+        ->middleware(['throttle:60,1,csp_report', 'allow.pending_required_fields'])
         ->name('api.public.csp_report');
 
     // 방문자 동의 스냅샷 — 코어 동의 런타임이 `_global.consent` 를 채운다. 운영자가 고른 동의 제공자에게
@@ -301,7 +305,8 @@ Route::group([], function () use ($publicDataThrottle) {
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
-Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request $request) {
+// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 채널 인증은 사용자 콘텐츠 쓰기가 아닌 기술 요청이다 (#490)
+Route::middleware(['auth:sanctum', 'allow.pending_required_fields'])->post('broadcasting/auth', function (Request $request) {
     // 웹소켓 사용 OFF 시 채널 인증 거부 (전 계층 SSoT — 공개#50).
     // 변경 1(reverb.key 무력화)을 우회한 직접 연결 시도까지 차단한다.
     // broadcasting.default 는 applyWebsocketConfig 와 동일 SSoT.
@@ -319,7 +324,8 @@ Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request
 // challenge 라우트 파라미터를 IdentityVerificationLog 모델로 자동 resolve — PermissionMiddleware 의 owner_key='user_id' scope 매칭 표준 메커니즘 활용
 Route::model('challenge', IdentityVerificationLog::class);
 // allow.inactive_user: 공통 회원 상태 관문(EnsureActiveUser) 통과 표식 — 가입 후 인증 대기 회원이 본인인증을 마쳐 활성화하는 경로다
-Route::prefix('identity')->middleware('allow.inactive_user')->group(function () {
+// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 추가 정보 입력 중에도 본인인증은 열어 둔다 (#490)
+Route::prefix('identity')->middleware(['allow.inactive_user', 'allow.pending_required_fields'])->group(function () {
     Route::get('providers', [IdentityVerificationController::class, 'providers'])
         ->name('api.identity.providers.index');
 
@@ -355,6 +361,11 @@ Route::prefix('identity')->middleware('allow.inactive_user')->group(function () 
     Route::middleware(['throttle:30,1,identity_cancel', 'optional.sanctum', 'permission:user,core.identity.cancel'])
         ->post('challenges/{challenge}/cancel', [IdentityVerificationController::class, 'cancel'])
         ->name('api.identity.challenges.cancel');
+
+    // 본인인증 채움값 — 확인을 마친 토큰이 가리키는 인증 값(이름, 휴대폰, 생년월일, 성별)과 그 값으로 채울 회원 항목 (#490)
+    Route::middleware(['throttle:30,1,identity_claims', 'optional.sanctum'])
+        ->post('claims', [IdentityVerificationController::class, 'claims'])
+        ->name('api.identity.claims');
 
     // 비동기 검증 인프라 (engine-v1.46.0+) — Stripe Identity / 토스인증 push / 외부 redirect 콜백 지원
     // 폴링 엔드포인트는 권한 가드 없음 (공개 안전 필드만 노출 — Service::getStatus 참조)
@@ -406,6 +417,8 @@ Route::prefix('auth')->group(function () {
     // 정책 DB 토글만으로 즉시 효과 — 라우트 코드 수정 불필요. 외부 모듈/플러그인이 자기 정책 키를
     // 강제하고 싶을 때만 ->middleware('identity.policy:KEY') 를 명시 사용.
     // 가입도 세션을 연다 — 가입 직후 개발자 화면(custom)에서 로그인으로 보이도록 세션에 로그인·토큰 짝을 남긴다(#792 D20)
+    // 가입 화면이 그릴 회원 항목(운영자 설정 반영)과 정의 버전 — 비로그인 화면이 부른다 (#490)
+    Route::get('register/fields', [UserAuthController::class, 'registerFields'])->name('api.auth.register.fields');
     Route::post('register', [UserAuthController::class, 'register'])
         ->middleware('start.api.session')
         ->name('api.auth.register');
@@ -421,7 +434,7 @@ Route::prefix('auth')->group(function () {
         ->middleware(['auth:sanctum', 'check.user_status:core.profile.read'])
         ->name('api.auth.user');
     Route::middleware(['auth:sanctum', 'check.user_status'])->group(function () {
-        Route::post('logout', [UserAuthController::class, 'logout'])->middleware('start.api.session')->name('api.auth.logout');
+        Route::post('logout', [UserAuthController::class, 'logout'])->middleware(['start.api.session', 'allow.pending_required_fields'])->name('api.auth.logout');
     });
 
     // 관리자 인증 (로그인: 세션 생성 필요 + per-IP throttle)
@@ -460,22 +473,22 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
     // 사용자 인증
     Route::prefix('auth')->group(function () {
         Route::post('logout', [UserAuthController::class, 'logout'])
-            ->middleware(['start.api.session', 'permission:user,core.auth.logout'])
+            ->middleware(['start.api.session', 'permission:user,core.auth.logout', 'allow.pending_required_fields'])
             ->name('api.user.auth.logout');
         Route::post('logout-all-devices', [UserAuthController::class, 'logoutFromAllDevices'])
-            ->middleware('permission:user,core.auth.logout')
+            ->middleware(['permission:user,core.auth.logout', 'allow.pending_required_fields'])
             ->name('api.user.auth.logout-all-devices');
         Route::get('user', [UserAuthController::class, 'user'])
             ->middleware('permission:user,core.auth.user')
             ->name('api.user.auth.user');
         // 갱신도 세션을 연다 — 세션의 개발자 화면 짝 토큰을 새 토큰으로 바꾼다(#792 F6-2)
         Route::post('refresh', [UserAuthController::class, 'refresh'])
-            ->middleware(['start.api.session', 'permission:user,core.auth.refresh'])
+            ->middleware(['start.api.session', 'permission:user,core.auth.refresh', 'allow.pending_required_fields'])
             ->name('api.user.auth.refresh');
     });
 
-    // 사용자 알림
-    Route::prefix('notifications')->group(function () {
+    // 사용자 알림 — 읽음, 삭제는 자기 알림 상태만 바꾸므로 추가 정보 입력 요구 관문을 통과시킨다 (#490)
+    Route::prefix('notifications')->middleware('allow.pending_required_fields')->group(function () {
         Route::get('/', [UserNotificationController::class, 'index'])
             ->middleware('permission:user,core.user-notifications.read')
             ->name('api.user.notifications.index');
@@ -505,9 +518,10 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
             ->middleware('permission:user,core.profile.read')
             ->name('api.user.profile.show');
         Route::put('/', [UserProfileController::class, 'update'])
-            ->middleware('permission:user,core.profile.update')
+            ->middleware(['permission:user,core.profile.update', 'allow.pending_required_fields'])
             ->name('api.user.profile.update');
         Route::post('update-language', [UserProfileController::class, 'updateLanguage'])
+            ->middleware('allow.pending_required_fields')
             ->name('api.user.profile.update-language');
         Route::get('activity-log', [UserProfileController::class, 'activityLog'])
             ->middleware('permission:user,core.profile.read')
@@ -521,8 +535,16 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
 Route::get('me', [UserProfileController::class, 'show'])
     ->middleware(['auth:sanctum', 'check.user_status:core.profile.read', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])
     ->name('api.me.show');
-Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])->group(function () {
+// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 내 정보, 추가 정보 저장, 비밀번호, 재확인, 탈퇴는 미입력 회원에게도 연다 (#490)
+Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class, 'allow.pending_required_fields'])->group(function () {
+    // 내 정보 수정·보기 화면이 그릴 회원 항목(운영자 설정, 잠금 반영) (#490)
+    Route::get('fields', [UserProfileController::class, 'fields'])->name('api.me.fields');
+    // 본인의 파일·이미지 항목 — 폼 저장과 따로 바로 올리고 지운다 (#490)
+    Route::post('fields/{key}/file', [UserProfileFieldFileController::class, 'store'])->where('key', '[a-z][a-z0-9_]{1,49}')->name('api.me.fields.file.store');
+    Route::delete('fields/{key}/file', [UserProfileFieldFileController::class, 'destroy'])->where('key', '[a-z][a-z0-9_]{1,49}')->name('api.me.fields.file.destroy');
     Route::put('/', [UserProfileController::class, 'update'])->name('api.me.update');
+    // 추가 정보 입력 화면의 저장 — 비어 있던 필수 항목만 받는다. 재확인을 요구하지 않는다 (#490)
+    Route::put('required-fields', [UserProfileController::class, 'completeRequiredFields'])->name('api.me.required-fields.update');
     Route::delete('/', [UserProfileController::class, 'destroy'])->name('api.me.destroy');
     Route::post('avatar', [UserProfileController::class, 'uploadAvatar'])->name('api.me.avatar.upload');
     Route::delete('avatar', [UserProfileController::class, 'deleteAvatar'])->name('api.me.avatar.delete');
@@ -839,6 +861,30 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('manual-runs/{target}', [AdminPrivacyManualRunController::class, 'store'])->where('target', '[A-Za-z0-9:._-]+')->name('api.admin.privacy.manual-runs.store');
     });
 
+    // 항목 집합(회원 가입 항목 등)의 항목 관리 (#490)
+    // 권한은 집합마다 다르다(회원 집합은 환경설정 권한, 확장 집합은 그 확장의 권한) — `field_set.permission`
+    // 미들웨어가 `{set}` 으로 집합을 찾아 그 집합의 조회·수정 권한을 확인한다(집합이 없으면 404).
+    // `{set}` 은 `core.user`, `sirsoft-board.guest_author` 같은 식별자다.
+    Route::prefix('field-sets/{set}/fields')->where(['set' => '[A-Za-z0-9._-]+', 'field' => '[0-9]+'])->group(function () {
+        Route::get('/', [AdminFieldDefinitionController::class, 'index'])->middleware('field_set.permission:read')->name('api.admin.field-sets.fields.index');
+        Route::post('/', [AdminFieldDefinitionController::class, 'store'])->middleware('field_set.permission:manage')->name('api.admin.field-sets.fields.store');
+        // `{field}` 와일드카드보다 먼저 등록한다.
+        Route::put('order', [AdminFieldDefinitionController::class, 'reorder'])->middleware('field_set.permission:manage')->name('api.admin.field-sets.fields.reorder');
+        Route::get('{field}', [AdminFieldDefinitionController::class, 'show'])->middleware('field_set.permission:read')->name('api.admin.field-sets.fields.show');
+        Route::put('{field}', [AdminFieldDefinitionController::class, 'update'])->middleware('field_set.permission:manage')->name('api.admin.field-sets.fields.update');
+        Route::delete('{field}', [AdminFieldDefinitionController::class, 'destroy'])->middleware('field_set.permission:manage')->name('api.admin.field-sets.fields.destroy');
+        Route::get('{field}/missing-count', [AdminFieldDefinitionController::class, 'missingCount'])->middleware('field_set.permission:read')->name('api.admin.field-sets.fields.missing-count');
+    });
+
+    // 환경설정 회원 탭의 안내 값 (#490) — 닉네임 중복 금지를 켜기 전의 겹침 수, 켠 뒤 도는 중복 검사 준비의 진행 상태
+    Route::prefix('member-fields')->middleware('permission:admin,core.settings.read')->group(function () {
+        Route::get('nickname-duplicates', [AdminMemberFieldController::class, 'nicknameDuplicates'])->name('api.admin.member-fields.nickname-duplicates');
+        Route::get('nickname-recompute-status', [AdminMemberFieldController::class, 'nicknameRecomputeStatus'])->name('api.admin.member-fields.nickname-recompute-status');
+        // 표시 이름 구획 — 닉네임 종류를 고르기 전 안내(닉네임이 빈 회원 수)와 종류, 영역 목록
+        Route::get('nickname-empty-count', [AdminMemberFieldController::class, 'nicknameEmptyCount'])->name('api.admin.member-fields.nickname-empty-count');
+        Route::get('display-name-options', [AdminMemberFieldController::class, 'displayNameOptions'])->name('api.admin.member-fields.display-name-options');
+    });
+
     // 환경설정 관리
     Route::prefix('settings')->group(function () {
         Route::get('/', [AdminSettingsController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.index');
@@ -991,6 +1037,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('check-email', [AdminUserController::class, 'checkEmail'])->middleware('permission:admin,core.users.read')->name('api.admin.users.check-email');
         Route::patch('bulk-status', [AdminUserController::class, 'bulkUpdateStatus'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-status');
         Route::patch('bulk-roles', [AdminUserController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-roles');
+        // 회원 폼·상세가 그릴 회원 항목 — 추가 화면용(회원 없음)은 회원 추가 권한, 수정·상세용은 그 회원에 대한 조회 범위 (#490)
+        Route::get('form-fields', [AdminUserController::class, 'formFields'])->middleware('permission:admin,core.users.create')->name('api.admin.users.form-fields');
+        Route::get('{user}/form-fields', [AdminUserController::class, 'formFields'])->middleware('permission:admin,core.users.read')->name('api.admin.users.form-fields.show');
         Route::get('{user}', [AdminUserController::class, 'show'])->middleware('permission:admin,core.users.read')->name('api.admin.users.show');
         Route::put('{user}', [AdminUserController::class, 'update'])->middleware('permission:admin,core.users.update')->name('api.admin.users.update');
         Route::delete('{user}', [AdminUserController::class, 'destroy'])->middleware('permission:admin,core.users.delete')->name('api.admin.users.destroy');
@@ -998,6 +1047,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('{user}/unlock', [AdminUserController::class, 'unlock'])->middleware('permission:admin,core.users.update')->name('api.admin.users.unlock');
         // 모든 기기에서 로그아웃(강제) — 그 회원의 토큰을 전부 지운다. 하위 관리자는 최고관리자를 대상으로 하지 못한다(등급 가드)
         Route::post('{user}/sessions/revoke', [AdminUserController::class, 'revokeSessions'])->middleware('permission:admin,core.users.update')->name('api.admin.users.sessions.revoke');
+        // 회원의 파일·이미지 항목 — 관리자 회원 폼이 바로 올리고 지운다 (#490)
+        Route::post('{user}/fields/{key}/file', [AdminUserFieldFileController::class, 'store'])->where('key', '[a-z][a-z0-9_]{1,49}')->middleware('permission:admin,core.users.update')->name('api.admin.users.fields.file.store');
+        Route::delete('{user}/fields/{key}/file', [AdminUserFieldFileController::class, 'destroy'])->where('key', '[a-z][a-z0-9_]{1,49}')->middleware('permission:admin,core.users.update')->name('api.admin.users.fields.file.destroy');
     });
 
     // 스케줄 관리

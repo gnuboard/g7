@@ -65,7 +65,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | policy_key | string\|null | `admin.withdraw_confirm` | 본인인증 정책별 문구(`identity.policy.*`)가 붙은 정책 키. 100자를 넘어 type 이 해시(`identity.policy.~…`)로 줄어도 원래 키를 싣는다 — 화면의 「이미 문구가 있는 정책」 판정용. 그 밖의 정의는 null |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 다국어 이름 ({"ko": "회원가입 환영", "en": "Welcome"}) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 다국어 설명 |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]). 본인인증 정의는 훅으로 발송하지 않으므로 빈 배열 |
 | is_active | boolean | `true` | active 여부 |
@@ -230,7 +230,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 확장 식별자: core, sirsoft-board 등 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 다국어 이름 ({"ko": "회원가입 환영", "en": "Welcome"}) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 다국어 설명 |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -447,7 +447,7 @@ _단건 응답: `data` 객체의 필드. 수정된 알림 정의를 `templates` 
 | extension_identifier | string | `` | 이 정의를 소유한 확장의 식별자 (코어는 빈 문자열) |
 | name | object | `{"ko":"API 문서 샘플 알림","en":"API Doc Sample Notification"}` | 다국어 이름 (로케일별 값 객체) |
 | description | object | `{"ko":"문서 실측용 알림 정의","en":"Sample notification"}` | 다국어 설명 (로케일별 값 객체) |
-| variables | array | `[]` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[]` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["database","mail"]` | 수정 후의 활성 채널 (["mail", "database"]) |
 | hooks | array | `[]` | 수정 후의 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -617,7 +617,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 이 리소스를 소유한 확장의 식별자 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 설명 (다국어 필드는 로케일별 값 객체) |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -818,7 +818,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 이 리소스를 소유한 확장의 식별자 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 설명 (다국어 필드는 로케일별 값 객체) |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `false` | active 여부 |
