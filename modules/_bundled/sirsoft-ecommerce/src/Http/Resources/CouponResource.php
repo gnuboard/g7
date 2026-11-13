@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 쿠폰 API 리소스
@@ -13,6 +14,21 @@ use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 class CouponResource extends BaseApiResource
 {
     use HasMultiCurrencyPrices;
+
+    /**
+     * 등록자 이름 칸(`created_by_name`)과 실명 보조 칸을 만듭니다.
+     *
+     * @param  Request  $request  요청
+     * @return array<string, string> `created_by_name` (없으면 `-`) 과, 실을 수 있을 때만 `created_by_real_name`
+     */
+    private function creatorNameFields($request): array
+    {
+        $creator = $this->created_by && $this->resource->relationLoaded('creator') ? $this->resource->creator : null;
+        $fields = MemberDisplayName::staffFields($creator, $request, 'created_by_name');
+        $fields['created_by_name'] ??= '-';
+
+        return $fields;
+    }
 
     /**
      * Transform the resource into an array.
@@ -101,14 +117,16 @@ class CouponResource extends BaseApiResource
 
             // 등록자 정보 (플랫 필드 — 레이아웃에서 등록자 컬럼 표시용)
             'created_by' => $this->created_by ? $this->whenLoaded('creator', fn () => $this->creator->uuid) : null,
-            'created_by_name' => $this->created_by ? $this->whenLoaded('creator', fn () => $this->creator->name, '-') : '-',
+            // 등록자 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역). 실명은 회원 조회 권한이 있는 관리자에게만
+            // `created_by_real_name` 으로 더해진다. 등록자가 없거나 보일 이름이 없으면 종전처럼 `-` 다.
+            ...$this->creatorNameFields($request),
             'created_by_email' => $this->created_by ? $this->whenLoaded('creator', fn () => $this->creator->email) : null,
 
             // 관계
-            'creator' => $this->whenLoaded('creator', function () {
+            'creator' => $this->whenLoaded('creator', function () use ($request) {
                 return [
                     'uuid' => $this->creator->uuid,
-                    'name' => $this->creator->name,
+                    ...MemberDisplayName::staffFields($this->creator, $request),
                 ];
             }),
 

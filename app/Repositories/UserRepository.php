@@ -3,9 +3,11 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameQuery;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Helpers\PermissionHelper;
+use App\Models\FieldValue;
 use App\Models\Permission;
 use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
@@ -33,6 +35,11 @@ class UserRepository implements UserRepositoryInterface
      * `contact`·`identifier` 는 실제 컬럼이 아니라 묶음이다 — {@see applySearchField()} 가 푼다.
      */
     private const SEARCHABLE_FIELDS = ['name', 'nickname', 'email', 'contact', 'identifier', 'admin_memo'];
+
+    /**
+     * 검색 대상에서 운영자 추가 항목을 가리키는 접두 (UserService::CUSTOM_SEARCH_PREFIX 와 같은 값)
+     */
+    private const CUSTOM_SEARCH_PREFIX = 'custom:';
 
     /**
      * 검색 대상 「전체」가 LIKE 로 훑는 컬럼
@@ -203,7 +210,7 @@ class UserRepository implements UserRepositoryInterface
     {
         // 다중 검색 조건 적용
         if (! empty($filters['filters']) && is_array($filters['filters'])) {
-            $this->applyKeywordSearch($query, $filters['filters']);
+            $this->applyKeywordSearch($query, $filters['filters'], (array) ($filters['custom_search_definitions'] ?? []));
         }
 
         // 날짜 필터
@@ -216,6 +223,7 @@ class UserRepository implements UserRepositoryInterface
         $this->applyActivityDateFilters($query, $filters);
         $this->applyProfileFilters($query, $filters);
         $this->applyVerificationFilters($query, $filters);
+        $this->applyMemberFieldFilters($query, $filters);
 
         foreach ($extensions as $extension) {
             if (is_callable($extension)) {
@@ -225,20 +233,125 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
+     * 회원 항목 필터를 적용합니다 — 닉네임이 다른 회원과 겹치는 회원, 필수 항목이 비어 있는 회원.
+     *
+     * 「필수 항목 미입력」의 대상 항목은 Service 가 `required_missing_spec` 으로 넘긴다
+     * (`existing` 은 모든 회원에게 요구하는 항목, `deferred` 는 필수 항목을 건너뛰고 만들어진 회원에게만 요구하는 항목).
+     * 요구하는 항목이 하나도 없으면 결과는 0건이다.
+     *
+     * @param  Builder  $query  Eloquent 쿼리 빌더
+     * @param  array  $filters  필터 조건 배열
+     * @return void 없음
+     */
+    private function applyMemberFieldFilters(Builder $query, array $filters): void
+    {
+        if (filter_var($filters['nickname_duplicate'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $table = (new User)->getTable();
+            $query->whereIn('nickname_normalized', function ($sub) use ($table) {
+                $sub->select('duplicated.nickname_normalized')
+                    ->from($table.' as duplicated')
+                    ->whereNotNull('duplicated.nickname_normalized')
+                    ->where('duplicated.nickname_normalized', '!=', '')
+                    ->groupBy('duplicated.nickname_normalized')
+                    ->havingRaw('COUNT(*) > 1');
+            });
+        }
+
+        if (! filter_var($filters['required_missing'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
+        $spec = is_array($filters['required_missing_spec'] ?? null) ? $filters['required_missing_spec'] : [];
+        $existing = $this->normalizeMissingSpec($spec['existing'] ?? null);
+        $deferred = $this->normalizeMissingSpec($spec['deferred'] ?? null);
+
+        if ($existing === null && $deferred === null) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->where(function (Builder $outer) use ($existing, $deferred) {
+            if ($existing !== null) {
+                $outer->where(fn (Builder $inner) => $this->whereAnyMemberFieldEmpty($inner, $existing));
+            }
+            if ($deferred !== null) {
+                $outer->orWhere(function (Builder $inner) use ($deferred) {
+                    $inner->whereNotNull('required_fields_deferred_at')
+                        ->where(fn (Builder $any) => $this->whereAnyMemberFieldEmpty($any, $deferred));
+                });
+            }
+        });
+    }
+
+    /**
+     * 미입력 필터의 대상 묶음을 정리합니다.
+     *
+     * @param  mixed  $group  `{columns, definition_ids}` 묶음
+     * @return array{columns: array<int, string>, definition_ids: array<int, int>}|null 대상이 없으면 null
+     */
+    private function normalizeMissingSpec(mixed $group): ?array
+    {
+        if (! is_array($group)) {
+            return null;
+        }
+
+        $columns = array_values(array_filter((array) ($group['columns'] ?? []), fn ($column) => is_string($column) && preg_match('/^[a-z_][a-z0-9_]*$/', $column) === 1));
+        $ids = array_values(array_filter(array_map('intval', (array) ($group['definition_ids'] ?? [])), fn (int $id) => $id > 0));
+
+        return $columns === [] && $ids === [] ? null : ['columns' => $columns, 'definition_ids' => $ids];
+    }
+
+    /**
+     * 대상 항목 가운데 하나라도 비어 있는 회원 조건을 겁니다 (컬럼 항목은 null 또는 빈 글자, 값 테이블 항목은 행 없음).
+     *
+     * @param  Builder  $query  조건을 걸 쿼리 (OR 로 묶는다)
+     * @param  array{columns: array<int, string>, definition_ids: array<int, int>}  $group  대상 묶음
+     * @return void 없음
+     */
+    private function whereAnyMemberFieldEmpty(Builder $query, array $group): void
+    {
+        foreach ($group['columns'] as $column) {
+            $query->orWhereNull('users.'.$column)->orWhere('users.'.$column, '');
+        }
+
+        foreach ($group['definition_ids'] as $definitionId) {
+            $query->orWhereNotExists(function ($sub) use ($definitionId) {
+                $sub->selectRaw('1')
+                    ->from('field_values')
+                    ->whereColumn('field_values.owner_id', 'users.id')
+                    ->where('field_values.owner_type', FieldValue::OWNER_USER)
+                    ->where('field_values.field_definition_id', $definitionId);
+            });
+        }
+    }
+
+    /**
      * 검색어 조건(`filters[*]`)을 적용합니다. 조건끼리는 AND 로 묶는다.
      *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  array  $searchFilters  [['field' => ..., 'value' => ..., 'operator' => ...], ...]
+     * @param  array<string, int>  $customDefinitions  검색할 수 있는 운영자 추가 항목 (항목 키 => 항목 ID)
      * @return void 없음
      */
-    private function applyKeywordSearch(Builder $query, array $searchFilters): void
+    private function applyKeywordSearch(Builder $query, array $searchFilters, array $customDefinitions = []): void
     {
-        $query->where(function (Builder $outer) use ($searchFilters) {
+        $query->where(function (Builder $outer) use ($searchFilters, $customDefinitions) {
             foreach ($searchFilters as $filter) {
                 $field = $filter['field'] ?? null;
                 $value = trim((string) ($filter['value'] ?? ''));
 
                 if (! is_string($field) || $value === '') {
+                    continue;
+                }
+
+                // 운영자 추가 항목(`custom:{키}`) — 그 항목의 값 행에서 찾는다.
+                if (str_starts_with($field, self::CUSTOM_SEARCH_PREFIX)) {
+                    $definitionId = $customDefinitions[substr($field, strlen(self::CUSTOM_SEARCH_PREFIX))] ?? null;
+                    if ($definitionId !== null) {
+                        $outer->where(fn (Builder $q) => $this->whereCustomFieldValue($q, (int) $definitionId, $value));
+                    }
+
                     continue;
                 }
 
@@ -282,6 +395,31 @@ class UserRepository implements UserRepositoryInterface
             // 이름·닉네임·이메일은 연산자를 받는다. LIKE 계열은 검색어를 이스케이프한다.
             default => $this->whereTextColumn($query, $field, $value, $operator),
         };
+    }
+
+    /**
+     * 운영자 추가 항목의 값에 검색어가 들어 있는 회원 조건을 붙입니다.
+     *
+     * 색인 칸(선택 값, 글의 정규화 앞부분)과 글 칸을 함께 본다. 색인은 소문자로 저장되므로 검색어도 소문자로 맞춘다.
+     *
+     * @param  Builder  $query  조건을 붙일 빌더
+     * @param  int  $definitionId  항목 ID
+     * @param  string  $value  검색어(빈 문자열이 아님)
+     * @return void 없음
+     */
+    private function whereCustomFieldValue(Builder $query, int $definitionId, string $value): void
+    {
+        $contains = '%'.KeywordSearch::escapeLikeWildcards($value).'%';
+        $containsLower = '%'.KeywordSearch::escapeLikeWildcards(mb_strtolower($value)).'%';
+
+        $query->whereExists(function ($sub) use ($definitionId, $contains, $containsLower) {
+            $sub->selectRaw('1')
+                ->from('field_values')
+                ->whereColumn('field_values.owner_id', 'users.id')
+                ->where('field_values.owner_type', FieldValue::OWNER_USER)
+                ->where('field_values.field_definition_id', $definitionId)
+                ->where(fn ($w) => $w->where('field_values.value_index', 'like', $containsLower)->orWhere('field_values.value_text', 'like', $contains));
+        });
     }
 
     /**
@@ -610,10 +748,10 @@ class UserRepository implements UserRepositoryInterface
         // 목록 검색과 같이 `%`·`_` 는 글자 그대로 찾는다 — 그대로 두면 `%` 한 글자가 범위 안 전체 회원을 돌려준다.
         $contains = '%'.KeywordSearch::escapeLikeWildcards($keyword).'%';
 
+        // 이름과 닉네임 조건은 관리자 화면 작성자 검색과 같은 한 곳(DisplayNameQuery)이 만든다.
         return $this->scopedUserQuery()
-            ->where(function ($q) use ($contains) {
-                $q->where('name', 'like', $contains)
-                    ->orWhere('nickname', 'like', $contains)
+            ->where(function (Builder $q) use ($contains, $keyword) {
+                app(DisplayNameQuery::class)->constrainUsersForAdmin($q, $keyword)
                     ->orWhere('email', 'like', $contains);
             })
             // 탈퇴 판정은 User::scopeActive()(「탈퇴 아님」 — 차단·비활성·휴면은 통과)와 같다.
@@ -661,7 +799,8 @@ class UserRepository implements UserRepositoryInterface
      * 사용자 번호 목록으로 사용자들을 조회하고 번호 키 맵으로 반환합니다.
      *
      * 화면에 필요한 칸만 읽는다 — 회원 목록을 통째로 들고 오면 응답에 실을 일이 없는
-     * 값까지 메모리에 앉는다.
+     * 값까지 메모리에 앉는다. 읽는 칸은 표시 이름 계산에 필요한 `User::DISPLAY_COLUMNS` 다
+     * (이름, 닉네임, 이메일, 상태, 회원이 고른 종류) — 이름을 응답에 실을 때는 `DisplayNameResolver` 로 계산한다.
      *
      * @param  array<int, int>  $ids  사용자 번호 목록
      * @return Collection<int, User> id => User 매핑
@@ -672,7 +811,7 @@ class UserRepository implements UserRepositoryInterface
             return new Collection;
         }
 
-        return User::whereIn('id', $ids)->get(['id', 'uuid', 'name', 'email'])->keyBy('id');
+        return User::whereIn('id', $ids)->get(User::DISPLAY_COLUMNS)->keyBy('id');
     }
 
     /**
@@ -915,13 +1054,13 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
-     * 사용자 ID 목록에 해당하는 이름을 ID 로 색인해 반환합니다.
+     * 사용자 ID 목록에 해당하는 이름(원본 실명)을 ID 로 색인해 반환합니다.
      *
-     * 목록 화면이 작성자 이름을 행마다 조회하면 N+1 이 되므로, 표시에 필요한
-     * 이름만 한 번에 모아 옵니다.
+     * 화면에 보일 이름을 만드는 용도가 아니다. 응답에 이름을 실을 때는 `findManyByIdsKeyed()` 로 회원을 읽어
+     * `DisplayNameResolver::resolveMany()` 로 표시 이름을 계산한다. 이름을 받지 않는 사이트의 회원은 빈 문자열이다.
      *
      * @param  array  $ids  사용자 ID 배열
-     * @return array<int, string> 사용자 ID => 이름
+     * @return array<int, string> 사용자 ID => 이름 (이름이 없으면 빈 문자열)
      */
     public function getNamesByIds(array $ids): array
     {
@@ -929,7 +1068,9 @@ class UserRepository implements UserRepositoryInterface
             return [];
         }
 
-        return User::whereIn('id', $ids)->pluck('name', 'id')->all();
+        return User::whereIn('id', $ids)->pluck('name', 'id')
+            ->map(static fn ($name): string => (string) ($name ?? ''))
+            ->all();
     }
 
     /**
@@ -1039,5 +1180,162 @@ class UserRepository implements UserRepositoryInterface
     public function queryByIds(array $ids): Builder
     {
         return User::query()->whereKey($ids);
+    }
+
+    /**
+     * 주어진 컬럼 가운데 하나라도 빈 회원 수를 반환합니다 (탈퇴 회원 제외).
+     *
+     * @param  array<int, string>  $columns  users 컬럼명 목록
+     * @return int 회원 수
+     */
+    public function countMembersWithEmptyColumns(array $columns): int
+    {
+        if ($columns === []) {
+            return 0;
+        }
+
+        return User::query()
+            ->where('status', '!=', UserStatus::Withdrawn->value)
+            ->where(function (Builder $query) use ($columns) {
+                foreach ($columns as $column) {
+                    $query->orWhereNull($column)->orWhere($column, '');
+                }
+            })
+            ->count();
+    }
+
+    /**
+     * 값 테이블 저장 항목에 값이 없는 회원 수를 반환합니다 (탈퇴 회원 제외).
+     *
+     * @param  int  $definitionId  항목 ID
+     * @return int 회원 수
+     */
+    public function countMembersWithoutFieldValue(int $definitionId): int
+    {
+        return User::query()
+            ->where('status', '!=', UserStatus::Withdrawn->value)
+            ->whereNotExists(function ($query) use ($definitionId) {
+                $query->selectRaw('1')
+                    ->from('field_values')
+                    ->whereColumn('field_values.owner_id', 'users.id')
+                    ->where('field_values.owner_type', FieldValue::OWNER_USER)
+                    ->where('field_values.field_definition_id', $definitionId);
+            })
+            ->count();
+    }
+
+    /**
+     * 같은 정규화 닉네임을 쓰는 다른 회원이 있는지 반환합니다.
+     *
+     * @param  string  $normalized  정규화 닉네임
+     * @param  int|null  $exceptUserId  비교에서 뺄 회원 ID
+     * @return bool 있으면 true
+     */
+    public function nicknameNormalizedTaken(string $normalized, ?int $exceptUserId = null): bool
+    {
+        return User::query()
+            ->where('nickname_normalized', $normalized)
+            ->when($exceptUserId !== null, fn (Builder $query) => $query->where('id', '!=', $exceptUserId))
+            ->exists();
+    }
+
+    /**
+     * 닉네임이 있는 회원 수를 반환합니다.
+     *
+     * @return int 회원 수
+     */
+    public function countMembersWithNickname(): int
+    {
+        return User::query()->whereNotNull('nickname')->where('nickname', '!=', '')->count();
+    }
+
+    /**
+     * 닉네임이 있는 회원을 ID 순으로 한 묶음 읽습니다.
+     *
+     * @param  int  $afterId  이 ID 다음부터
+     * @param  int  $limit  묶음 크기
+     * @return Collection<int, User> 회원 묶음
+     */
+    public function nicknameRowsAfter(int $afterId, int $limit): Collection
+    {
+        return User::query()
+            ->select(['id', 'nickname', 'nickname_normalized', 'nickname_unique_key'])
+            ->whereNotNull('nickname')
+            ->where('nickname', '!=', '')
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * 주어진 정규화 닉네임 가운데 두 회원 이상이 쓰는 값을 반환합니다.
+     *
+     * @param  array<int, string>  $normalizedValues  정규화 닉네임 목록
+     * @return array<int, string> 겹치는 값
+     */
+    public function duplicatedNicknameNormalized(array $normalizedValues): array
+    {
+        $normalizedValues = array_values(array_unique(array_filter($normalizedValues, fn ($value) => is_string($value) && $value !== '')));
+        if ($normalizedValues === []) {
+            return [];
+        }
+
+        return User::query()
+            ->whereIn('nickname_normalized', $normalizedValues)
+            ->groupBy('nickname_normalized')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('nickname_normalized')
+            ->all();
+    }
+
+    /**
+     * 지금 겹치는 닉네임의 종 수와 그 닉네임을 쓰는 회원 수를 반환합니다.
+     *
+     * @return array{nicknames: int, members: int} 겹치는 닉네임 종 수, 회원 수
+     */
+    public function nicknameDuplicateSummary(): array
+    {
+        $groups = User::query()
+            ->selectRaw('COUNT(*) as member_count')
+            ->whereNotNull('nickname_normalized')
+            ->where('nickname_normalized', '!=', '')
+            ->groupBy('nickname_normalized')
+            ->havingRaw('COUNT(*) > 1');
+
+        $summary = $groups->getConnection()->query()
+            ->fromSub($groups->toBase(), 'duplicated')
+            ->selectRaw('COUNT(*) as nicknames, COALESCE(SUM(member_count), 0) as members')
+            ->first();
+
+        return ['nicknames' => (int) ($summary->nicknames ?? 0), 'members' => (int) ($summary->members ?? 0)];
+    }
+
+    /**
+     * 회원의 닉네임 비교 컬럼을 고칩니다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array{nickname_normalized?: string|null, nickname_unique_key?: string|null}  $columns  고칠 컬럼
+     * @return void
+     */
+    public function updateNicknameKeys(int $userId, array $columns): void
+    {
+        $columns = array_intersect_key($columns, ['nickname_normalized' => true, 'nickname_unique_key' => true]);
+        if ($columns === []) {
+            return;
+        }
+
+        // 쿼리 빌더로 고친다 — 수정 시각과 모델 이벤트(활동 로그 등)를 건드리지 않는 내부 보정이다.
+        User::query()->toBase()->where('id', $userId)->update($columns);
+    }
+
+    /**
+     * 모든 회원의 닉네임 중복 키를 비웁니다.
+     *
+     * @return int 비운 행 수
+     */
+    public function clearNicknameUniqueKeys(): int
+    {
+        return User::query()->toBase()->whereNotNull('nickname_unique_key')->update(['nickname_unique_key' => null]);
     }
 }

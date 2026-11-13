@@ -3539,6 +3539,54 @@
         "published_at": "2026-03-15 10:05:00"
       }
     },
+    "registerFields": {
+      "data": {
+        "fields": [
+          { "key": "name", "name": "name", "type": "text", "renderer": "builtin", "owner": "core", "label": "이름", "placeholder": null, "help": null, "required": true, "readonly": false, "locked_reason": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {}, "parts": null, "display_value": null },
+          { "key": "nickname", "name": "nickname", "type": "text", "renderer": "builtin", "owner": "core", "label": "닉네임", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {}, "parts": null, "display_value": null },
+          { "key": "mobile", "name": "mobile", "type": "phone", "renderer": "builtin", "owner": "core", "label": "휴대폰", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {}, "parts": null, "display_value": null },
+          { "key": "phone", "name": "phone", "type": "phone", "renderer": "builtin", "owner": "core", "label": "전화번호", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {}, "parts": null, "display_value": null },
+          { "key": "language", "name": "language", "type": "choice", "renderer": "builtin", "owner": "core", "label": "언어", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "deferred": false, "options": [{ "value": "ko", "label": "한국어" }, { "value": "en", "label": "English" }], "constraints": {}, "default": "ko", "ui": {}, "parts": null, "display_value": null }
+        ],
+        "fields_version": "sample",
+        "display_name": {
+          "can_choose": true, "value": null, "value_unavailable": false, "unavailable_kind": null,
+          "default_kind": "name", "default_kind_label": "이름", "effective_kind": "name", "current": null,
+          "options": [
+            { "value": "name", "label": "이름", "preview": "홍길동", "requires_nickname": false, "is_default": true },
+            { "value": "nickname", "label": "닉네임", "preview": "길동이", "requires_nickname": true, "is_default": false }
+          ],
+          "preview_is_sample": true, "nickname_requirement": "chosen"
+        }
+      }
+    },
+    "profileFields": {
+      "data": {
+        "fields": [
+          {"key": "name", "name": "name", "type": "text", "renderer": "builtin", "owner": "core", "label": "이름", "placeholder": null, "help": null, "required": true, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {"group": "basic"}, "parts": null, "display_value": "김민준", "files": null, "file_rules": null},
+          {"key": "nickname", "name": "nickname", "type": "text", "renderer": "builtin", "owner": "core", "label": "닉네임", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {"group": "basic"}, "parts": null, "display_value": "민준이", "files": null, "file_rules": null},
+          {"key": "mobile", "name": "mobile", "type": "phone", "renderer": "builtin", "owner": "core", "label": "휴대폰", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {"group": "contact"}, "parts": null, "display_value": "010-2345-6789", "files": null, "file_rules": null},
+          {"key": "phone", "name": "phone", "type": "phone", "renderer": "builtin", "owner": "core", "label": "전화번호", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {"group": "contact"}, "parts": null, "display_value": "02-555-1234", "files": null, "file_rules": null},
+          {"key": "homepage", "name": "homepage", "type": "url", "renderer": "builtin", "owner": "core", "label": "홈페이지", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {"group": "contact"}, "parts": null, "display_value": "https://minjun.blog.example.com", "files": null, "file_rules": null},
+          {"key": "language", "name": "language", "type": "choice", "renderer": "builtin", "owner": "core", "label": "언어", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [{"value": "ko", "label": "한국어"}, {"value": "en", "label": "English"}], "constraints": {}, "default": "ko", "ui": {"group": "location"}, "parts": null, "display_value": "한국어", "files": null, "file_rules": null},
+          {"key": "country", "name": "country", "type": "text", "renderer": "builtin", "owner": "core", "label": "국가", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {"widget": "country"}, "default": null, "ui": {"group": "location"}, "parts": null, "display_value": "대한민국", "files": null, "file_rules": null},
+          {"key": "timezone", "name": "timezone", "type": "text", "renderer": "builtin", "owner": "core", "label": "시간대", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {"widget": "timezone"}, "default": null, "ui": {"group": "location"}, "parts": null, "display_value": "Asia/Seoul", "files": null, "file_rules": null},
+          {"key": "address", "name": "address", "type": "address", "renderer": "address", "owner": "core", "label": "주소", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {}, "default": null, "ui": {"group": "location"}, "parts": {"zipcode": "zipcode", "address": "address", "address_detail": "address_detail"}, "display_value": "(06236) 서울특별시 강남구 테헤란로 152 강남파이낸스센터 10층", "files": null, "file_rules": null},
+          {"key": "signature", "name": "signature", "type": "textarea", "renderer": "builtin", "owner": "core", "label": "서명", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {"rows": 3}, "default": null, "ui": {"group": "profile"}, "parts": null, "display_value": "오늘도 좋은 하루 되세요 :)", "files": null, "file_rules": null},
+          {"key": "bio", "name": "bio", "type": "textarea", "renderer": "builtin", "owner": "core", "label": "자기소개", "placeholder": null, "help": null, "required": false, "readonly": false, "locked_reason": null, "locked_until": null, "deferred": false, "options": [], "constraints": {"rows": 5}, "default": null, "ui": {"group": "profile"}, "parts": null, "display_value": "프론트엔드 개발과 사진을 좋아하는 평범한 회원입니다.", "files": null, "file_rules": null}
+        ],
+        "fields_version": "sample",
+        "display_name": {
+          "can_choose": true, "value": "nickname", "value_unavailable": false, "unavailable_kind": null,
+          "default_kind": "name", "default_kind_label": "이름", "effective_kind": "nickname", "current": "민준이",
+          "options": [
+            { "value": "name", "label": "이름", "preview": "김민준", "requires_nickname": false, "is_default": true },
+            { "value": "nickname", "label": "닉네임", "preview": "민준이", "requires_nickname": true, "is_default": false }
+          ],
+          "preview_is_sample": false, "nickname_requirement": "chosen"
+        }
+      }
+    },
     "termsContent": {
       "data": {
         "content": "<h3>제1조 (목적)</h3><p>본 약관은 시르소프트가 제공하는 서비스의 이용 조건 및 절차, 회원과 회사의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.</p><h3>제2조 (정의)</h3><p>“회원”이란 본 약관에 동의하고 서비스 이용 계약을 체결한 자를 말합니다.</p><h3>제3조 (약관의 효력 및 변경)</h3><p>본 약관은 서비스 화면에 게시함으로써 효력이 발생하며, 회사는 필요 시 관련 법령을 위배하지 않는 범위에서 약관을 개정할 수 있습니다.</p>",

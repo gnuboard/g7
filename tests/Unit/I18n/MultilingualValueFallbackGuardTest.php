@@ -28,6 +28,7 @@ class MultilingualValueFallbackGuardTest extends TestCase
         'app/Helpers/locale_helpers.php' => [1, 'K: 번역 키(__()) 대체 언어 — 값 표시가 아님'],
         'app/Enums/Analytics/ArchiveSkipReason.php' => [1, 'K: 번역 문구 사유 라벨의 대체 언어'],
         'app/Services/LanguagePack/LanguagePackSeedInjector.php' => [1, 'K: 언어팩 시드 번역의 대체 언어'],
+        'app/Services/TemplateSettingsService.php' => [1, 'K: 템플릿 언어 파일의 $t: 번역 키 대체 언어 — 값 표시가 아님'],
         'app/Listeners/LanguagePack/MergeCustomTranslations.php' => [1, 'K: 사용자 정의 번역 병합의 대체 언어'],
         'modules/_bundled/sirsoft-board/src/Http/Controllers/Admin/BoardController.php' => [1, 'D: 새 게시판 기본값 생성 로케일'],
         'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/StoreShippingPolicyRequest.php' => [1, 'R: 필수 언어 검증'],

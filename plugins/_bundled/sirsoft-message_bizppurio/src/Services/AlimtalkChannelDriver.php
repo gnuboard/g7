@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
 use App\Models\User;
 use App\Notifications\BaseNotification;
 use App\Notifications\GenericNotification;
+use App\Notifications\RecipientDisplayName;
 use App\Services\NotificationDefinitionService;
 use App\Services\PluginSettingsService;
 use Illuminate\Notifications\Notification;
@@ -159,7 +160,8 @@ class AlimtalkChannelDriver
             'refkey' => $refkey,
             'channel' => DispatchChannel::Alimtalk->value,
             'to_number' => $to,
-            'to_name' => $notifiable->name ?? null,
+            // 발송 이력은 관리자 화면의 기록물이다. 회원은 그 시점의 관리자 영역 표시 이름, 비회원은 받은 이름 그대로 남긴다.
+            'to_name' => app(RecipientDisplayName::class)->forLog($notifiable),
             'to_user_id' => $this->resolveUserId($notifiable),
             'content' => $message,
             'request_payload' => $this->payloadBuilder->forHistory($payload),

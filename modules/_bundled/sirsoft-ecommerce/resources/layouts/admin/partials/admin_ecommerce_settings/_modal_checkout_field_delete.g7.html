@@ -1,0 +1,62 @@
+<!-- 쇼핑몰 설정 — 주문서 항목 삭제 확인 창(#490). 주문서 항목 표에서 운영자가 추가한 항목의 [삭제]가 연다
+  (이커머스가 선언한 항목과 다른 확장이 기여한 항목은 지울 수 없고 사용을 끌 수 있을 뿐이다).
+  항목을 지우면 그 항목에 입력된 값도 함께 지워지고 되돌릴 수 없으므로 되묻는다. 지울 대상(id, 이름)과 정의 버전은
+  여는 쪽이 전역 `checkout_field_delete_modal` 한 객체에 담아 준다(창은 별도 문맥이라 표의 행을 보지 못한다). -->
+<partial description="쇼핑몰 설정 > 주문 설정 탭 주문서 항목 삭제 확인 모달" editor_label="$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.editor_label">
+  <modal data-type="composite" data-ref="checkout_field_delete_modal" title="$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.title" size="sm" :closeOnOverlayClick="false">
+    <div class="ecommerce-row-stack">
+      <div data-ref="checkout_field_delete_message">
+        <p data-ref="checkout_field_delete_target" class="ecommerce-text-primary ecommerce:font-medium ecommerce-break-all">{{_global.checkout_field_delete_modal?.label ?? ''}}</p>
+        <p class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.message</p>
+      </div>
+      <div data-ref="checkout_field_delete_warning" role="alert" class="ecommerce-alert-danger">
+        <div class="ecommerce:flex ecommerce:gap-2">
+          <icon name="triangle-exclamation" class="ecommerce:text-xl ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+          <p class="ecommerce-tone-error-soft ecommerce:text-sm">$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.warning</p>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button data-ref="checkout_field_delete_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.checkout_field_delete_modal?.isDeleting === true}}">
+        <on type="click">
+          <close-modal target="checkout_field_delete_modal"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button data-ref="checkout_field_delete_submit" type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.checkout_field_delete_modal?.isDeleting === true || checkoutFieldDefs?.data?.abilities?.can_update !== true}}">
+        <on type="click">
+          <!-- 삭제 실행. 대상 id 와 정의 버전은 여는 쪽이 전역에 담아 준 값이다(버전은 쿼리로 싣는다). 성공하면 창을 닫고 표를 다시 받는다.
+               다른 관리자가 먼저 바꿨으면(409 fields_changed) 지우지 않고 알린 뒤 창을 닫고 표를 다시 받는다.
+               그 밖의 실패(다른 설정이 이 항목을 쓰는 경우 등)는 서버 문구를 알리고 창을 그대로 둔다. -->
+          <sequence>
+            <set-state target="global" :checkout_field_delete_modal.isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields/{{_global.checkout_field_delete_modal?.id}}?fields_version={{_global.checkout_field_delete_modal?.fieldsVersion ?? ''}}" method="DELETE">
+              <success>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.success"/>
+                <close-modal target="checkout_field_delete_modal"/>
+                <refetch-data-source dataSourceId="checkoutFieldDefs"/>
+                <set-state target="global" :checkout_field_delete_modal="null"/>
+              </success>
+              <fail>
+                <conditions>
+                  <when if="{{error.error_code === 'fields_changed'}}">
+                    <toast type="error" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other"/>
+                    <close-modal target="checkout_field_delete_modal"/>
+                    <refetch-data-source dataSourceId="checkoutFieldDefs"/>
+                    <set-state target="global" :checkout_field_delete_modal="null"/>
+                  </when>
+                  <else>
+                    <set-state target="global" :checkout_field_delete_modal.isDeleting="false"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.failed'}}"/>
+                  </else>
+                </conditions>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.checkout_field_delete_modal?.isDeleting === true}}" name="spinner" class="ecommerce-spinner-sm"/>
+        <span>{{_global.checkout_field_delete_modal?.isDeleting === true ? '$t:common.deleting' : '$t:common.delete'}}</span>
+      </button>
+    </footer>
+  </modal>
+</partial>

@@ -578,6 +578,143 @@
             "comment": "애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다."
         },
         {
+            "id": "memberFieldDefs",
+            "label_key": "$t:editor.data_source.memberFieldDefs",
+            "type": "api",
+            "endpoint": "/api/admin/field-sets/core.user/fields",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "set": {},
+                    "fields": [],
+                    "fields_version": null,
+                    "types": [],
+                    "abilities": {
+                        "can_update": false
+                    },
+                    "notices": {
+                        "signup_layout_modified": false
+                    }
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "memberFieldBusy": null,
+                        "memberFieldOrder": null
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "memberFieldBusy": null,
+                        "memberFieldOrder": null
+                    }
+                }
+            ],
+            "comment": "회원 항목 정의(#490) — 회원 탭에서만 받는다. 가입 항목 표의 행(`fields`), 낡은 표 판정용 정의 버전(`fields_version`),\n       「항목 추가」에서 고를 유형(`types`), 이 집합을 바꿀 권한(`abilities.can_update`), 표 위 경고(`notices`)를 한 번에 준다.\n       표의 스위치·순서·추가·수정·삭제는 저장하자마자 이 소스만 다시 받는다(설정 폼 `settings` 는 건드리지 않는다).\n       응답이 도착하면(성공이든 실패든) 표의 「저장 중」 표식과 끌어 놓은 순서의 임시 값을 지운다 — 표식을 요청 쪽이 아니라\n       여기서 지우는 까닭: 새 정의 버전이 도착하기 전에 다음 조작이 나가면 낡은 버전을 실어 409 로 거부된다."
+        },
+        {
+            "id": "memberNicknameRecompute",
+            "label_key": "$t:editor.data_source.memberNicknameRecompute",
+            "type": "api",
+            "endpoint": "/api/admin/member-fields/nickname-recompute-status",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "status": "idle",
+                    "processed": 0,
+                    "total": 0
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.status === 'running'}}",
+                    "params": {
+                        "id": "member_nickname_recompute_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "memberNicknameRecompute"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.status !== 'running'}}",
+                    "params": {
+                        "id": "member_nickname_recompute_poll"
+                    }
+                }
+            ],
+            "comment": "닉네임 중복 검사 준비 작업의 진행 상태(#490 U14) — 회원 탭에서만 받는다. 「중복 금지」를 켜고 저장하면 서버가 기존 회원의\n       닉네임 비교 키를 다시 계산하는데, 그 작업이 도는 동안(`status === 'running'`) 3초마다 다시 받아 진행 막대를 그리고 끝나면 멈춘다\n       (사이트맵 진행 상태와 같은 방식). 판정은 응답값으로만 한다. 탭 전환 덮개는 이 응답을 기다리지 않는다(background)."
+        },
+        {
+            "id": "memberDisplayNameOptions",
+            "label_key": "$t:admin.settings.member.display_name.data_source.options",
+            "type": "api",
+            "endpoint": "/api/admin/member-fields/display-name-options",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "kinds": [],
+                    "areas": [],
+                    "selectable_kinds": [],
+                    "member_default_kind": null,
+                    "nickname_requirement": "none"
+                }
+            },
+            "comment": "표시 이름 구획이 그릴 종류와 자리 목록(#490) — 회원 탭에서만 받는다. 종류(`kinds`)는 미리보기 글자와 닉네임 필요 여부를,\n       자리(`areas`)는 나무 순서와 깊이(`depth`), 지금 저장된 방식과 종류, 상속을 다 따라간 결과(`effective`)를 싣는다.\n       `nickname_requirement` 는 지금 저장된 설정이 닉네임에 거는 요구 수준이다(none, chosen, all). 회원 탭을 저장하면 다시 받는다."
+        },
+        {
+            "id": "memberNicknameEmptyCount",
+            "label_key": "$t:admin.settings.member.display_name.data_source.nickname_empty_count",
+            "type": "api",
+            "endpoint": "/api/admin/member-fields/nickname-empty-count",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'member'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "nickname_empty_count": 0,
+                    "nickname_requirement": "none"
+                }
+            },
+            "comment": "닉네임이 비어 있는 회원 수와 닉네임 항목의 지금 상태(#490 U12) — 회원 탭에서만 받는다. 표시 이름 설정을 닉네임이 필요한 쪽으로 고치면\n       저장하기 전에 이 숫자를 안내에 보인다. 안내용이라 탭 전환 덮개가 기다리지 않고(background), 받지 못해도 화면을 막지 않는다."
+        },
+        {
             "id": "notificationDefinitions",
             "label_key": "$t:editor.data_source.notificationDefinitions",
             "type": "api",
@@ -807,6 +944,10 @@
         "canReadSchedules": "{{current_user?.data ? (current_user.data.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.schedules.read') : null}}",
         "isReadOnly": "{{_global.settingsAbilities?.can_update !== true}}",
         "envLocked": "{{_local.form?._meta?.env_locked ?? null}}",
+        "memberFields": "{{(function() { const f = memberFieldDefs?.data?.fields ?? []; const o = _global.memberFieldOrder; if (!Array.isArray(o)) return f; return [...f].sort((a, b) => o.indexOf(a.id) - o.indexOf(b.id)); })()}}",
+        "memberFieldsReadOnly": "{{memberFieldDefs?.data?.abilities?.can_update !== true}}",
+        "memberFieldsVersion": "{{memberFieldDefs?.data?.fields_version ?? null}}",
+        "memberDisplayNamePending": "{{(function(areas, kinds, form, saved) { return (function(req, setting) { return (function(level) { return { level: level, saved: saved, raised: ['none', 'chosen', 'all'].indexOf(level) > ['none', 'chosen', 'all'].indexOf(saved) }; })(areas.some(function(a) { return setting(a).mode === 'fixed' && req(setting(a).kind); }) ? 'all' : (areas.some(function(a) { return setting(a).mode === 'member'; }) && [].concat(form.display_name_selectable_kinds ?? [], [form.display_name_member_default_kind]).some(req) ? 'chosen' : 'none')); })(function(k) { return kinds.some(function(x) { return x.key === k && x.requires_nickname === true; }); }, function(a) { return (form.display_name_areas ?? {})[a.key] ?? { mode: a.mode, kind: a.kind }; }); })(memberDisplayNameOptions?.data?.areas ?? [], memberDisplayNameOptions?.data?.kinds ?? [], _local.form?.member ?? {}, memberDisplayNameOptions?.data?.nickname_requirement ?? 'none')}}",
         "queueConnectionList": "{{(function() { const d = _local.form?.drivers ?? {}; const list = Array.isArray(d.queue_connections) ? d.queue_connections.filter(c => typeof c === 'string') : []; if (list.length > 0) return list; return d.queue_driver && d.queue_driver !== 'sync' ? [d.queue_driver] : []; })()}}",
         "queueErrors": "{{(function() { const e = _local.errors; const empty = { connections: [], namesRoot: [], names: {} }; if (!e || typeof e !== 'object') return empty; return Object.entries(e).reduce((out, [k, v]) => { const msgs = Array.isArray(v) ? v : [v]; if (k === 'drivers.queue_connections' || k.startsWith('drivers.queue_connections.')) return { ...out, connections: [...out.connections, ...msgs] }; if (k === 'drivers.queue_names') return { ...out, namesRoot: [...out.namesRoot, ...msgs] }; if (k.startsWith('drivers.queue_names.')) { const conn = k.slice('drivers.queue_names.'.length).split('.')[0]; return { ...out, names: { ...out.names, [conn]: [...(out.names[conn] ?? []), ...msgs] } }; } return out; }, empty); })()}}",
         "errorsWithoutIpRules": "{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) => !k.startsWith('security.ip_restriction_rules')); return rest.length > 0 ? Object.fromEntries(rest) : null; })()}}",
@@ -853,7 +994,9 @@
             "privacyManualRuns",
             "passwordExpiryPreview",
             "passwordExpiryManualRuns",
-            "unplaced_bundled_notice"
+            "unplaced_bundled_notice",
+            "memberFieldDefs",
+            "memberDisplayNameOptions"
         ]
     },
     "named_actions": {
@@ -1150,7 +1293,7 @@
         {
             "comment": "주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두\n         거짓이라 본문이 통째로 빈다. 기본 탭으로 바꿔 연다 — 목록은 탭 바와 같아야 한다(회귀 테스트가 대조한다).",
             "handler": "setState",
-            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'content', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'content', 'seo', 'security', 'member', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}",
             "params": {
                 "target": "global",
                 "activeSettingsTab": "general"
@@ -1159,7 +1302,7 @@
         {
             "comment": "audit:allow layout-list-context-navigate-merge-query 알 수 없는 탭 키 정정 — 그 탭의 목록 쿼리는 의미가 없어 물려받지 않는다(탭 전환과 같은 규칙).",
             "handler": "navigate",
-            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'content', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'content', 'seo', 'security', 'member', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}",
             "params": {
                 "path": "/admin/settings",
                 "replace": true,
@@ -1465,6 +1608,11 @@
                                             "label": "$t:admin.settings.tabs.security"
                                         },
                                         {
+                                            "id": "member",
+                                            "href": "/admin/settings?tab=member",
+                                            "label": "$t:admin.settings.tabs.member"
+                                        },
+                                        {
                                             "id": "drivers",
                                             "href": "/admin/settings?tab=drivers",
                                             "label": "$t:admin.settings.tabs.drivers"
@@ -1554,6 +1702,47 @@
                                         {
                                             "id": "messages",
                                             "label": "$t:admin.settings.identity.sub_tabs.messages"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "comment": "회원 탭의 하위 탭 막대(#490) — 본인인증 탭과 같은 스크롤 추적형이다. 탭 id 에 `member_section_` 을 붙인 구획으로 스크롤한다.",
+                                "id": "member_sub_tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "if": "{{(_global.activeSettingsTab || query.tab) === 'member'}}",
+                                "responsive": {
+                                    "640-1023": {
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-8"
+                                        }
+                                    },
+                                    "1024-": {
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 flex gap-1 px-10"
+                                        }
+                                    }
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 flex gap-1 px-6",
+                                    "sectionIdPrefix": "member_section_",
+                                    "enableScrollSpy": true,
+                                    "scrollContainerId": "right_content_area",
+                                    "scrollSpyOffset": 180,
+                                    "scrollOffset": 180,
+                                    "tabs": [
+                                        {
+                                            "id": "fields",
+                                            "label": "$t:admin.settings.member.sub_tabs.fields"
+                                        },
+                                        {
+                                            "id": "display_name",
+                                            "label": "$t:admin.settings.member.display_name.sub_tab"
+                                        },
+                                        {
+                                            "id": "nickname",
+                                            "label": "$t:admin.settings.member.sub_tabs.nickname"
                                         }
                                     ]
                                 }
@@ -1660,6 +1849,9 @@
                                 "partial": "partials/admin_settings/_tab_security.json"
                             },
                             {
+                                "partial": "partials/admin_settings/_tab_member.json"
+                            },
+                            {
                                 "partial": "partials/admin_settings/_tab_drivers.json"
                             },
                             {
@@ -1742,7 +1934,7 @@
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트들은 아직 올라가지 않은 파일을 먼저 올리라는 신호다(일반 탭 로고·파비콘, SEO 탭 기본 공유 이미지) —\n                 각 업로더가 받아 처리하므로 여기서 파일을 다루지 않는다. 「저장할 때 올리는」 업로더(autoUpload=false)를\n                 새로 붙이면 그 신호를 여기 함께 보내야 한다 — 빠뜨리면 새 파일을 골라 저장해도 업로드 요청이 0건이고\n                 오류 표시도 없다(#639 ⑨, 기본 공유 이미지가 그랬다).\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 전역 설정은 응답의 공개 설정(`frontend_settings` — 계산 필드 site_logo_url 포함)으로 바꾼다. 관리자 형태(`settings`)로\n                 바꾸면 계산 필드가 없어 상단 로고가 새로고침 전까지 사라졌다(#434 S-3). 옛 서버 응답은 `settings` 로 대체한다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).\n                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —\n                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).\n                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.\n                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).\n                 업로드 탭은 썸네일 규격 표(화면용 행 `thumbnail_presets_rows`, 행마다 kind·defaults)를 저장 키 `thumbnail_presets` 로 바꿔 보낸다 —\n                 표시용 칸은 빼고 og 행도 뺀다(크기를 SEO 탭이 소유하고 서버도 저장하지 않는다). 고정 슬롯 보충은 서버(mergeForSave) 몫이다.\n                 저장 뒤 썸네일 사용량도 다시 받는다 — 저장 위치를 바꿨다면 새 디스크 기준으로 세고 그 줄의 비우기 잠금이 풀린다(#869).",
+                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트들은 아직 올라가지 않은 파일을 먼저 올리라는 신호다(일반 탭 로고·파비콘, SEO 탭 기본 공유 이미지) —\n                 각 업로더가 받아 처리하므로 여기서 파일을 다루지 않는다. 「저장할 때 올리는」 업로더(autoUpload=false)를\n                 새로 붙이면 그 신호를 여기 함께 보내야 한다 — 빠뜨리면 새 파일을 골라 저장해도 업로드 요청이 0건이고\n                 오류 표시도 없다(#639 ⑨, 기본 공유 이미지가 그랬다).\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 전역 설정은 응답의 공개 설정(`frontend_settings` — 계산 필드 site_logo_url 포함)으로 바꾼다. 관리자 형태(`settings`)로\n                 바꾸면 계산 필드가 없어 상단 로고가 새로고침 전까지 사라졌다(#434 S-3). 옛 서버 응답은 `settings` 로 대체한다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).\n                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —\n                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).\n                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.\n                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).\n                 업로드 탭은 썸네일 규격 표(화면용 행 `thumbnail_presets_rows`, 행마다 kind·defaults)를 저장 키 `thumbnail_presets` 로 바꿔 보낸다 —\n                 표시용 칸은 빼고 og 행도 뺀다(크기를 SEO 탭이 소유하고 서버도 저장하지 않는다). 고정 슬롯 보충은 서버(mergeForSave) 몫이다.\n                 저장 뒤 썸네일 사용량도 다시 받는다 — 저장 위치를 바꿨다면 새 디스크 기준으로 세고 그 줄의 비우기 잠금이 풀린다(#869).\n                 회원 탭이면 항목 정의(닉네임 잠금 반영)와 닉네임 중복 검사 준비 상태를 다시 받는다 — 중복 금지를 켜고 저장하면 준비 작업이 시작된다(#490).\n                 표시 이름의 종류와 자리 목록, 닉네임이 빈 회원 수도 다시 받는다 — 저장된 요구 수준이 바뀌어야 닉네임 안내가 거둬진다.\n                 회원 탭 본문에서 「로그인 시 닉네임 입력 요구」 지시 값(`nickname_require_existing_members`)은 닉네임 안내가 보이고 전원 필수가 되는 저장에만 싣는다\n                 (체크해 둔 뒤 설정을 되돌렸으면 싣지 않는다).",
                                         "type": "click",
                                         "handler": "switch",
                                         "params": {
@@ -1836,7 +2028,7 @@
                                                         "auth_required": true,
                                                         "params": {
                                                             "method": "POST",
-                                                            "body": "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; const locked = form._meta?.env_locked || {}; const unlocked = (t, o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => locked[t + '.' + k] !== true)); if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'upload') { const upload = Object.fromEntries(Object.entries(unlocked('upload', form.upload)).filter(([k]) => k !== 'thumbnail_presets_rows')); const rows = form.upload?.thumbnail_presets_rows; return { _tab: 'upload', upload: Array.isArray(rows) ? { ...upload, thumbnail_presets: rows.filter(r => r?.kind !== 'og').map(r => ({ name: r.name, source: r.source, width: r.width, height: r.height, fit: r.fit, anchor: r.anchor, quality: r.quality, format: r.format, upscale: r.upscale === true, pregenerate: r.pregenerate === true, numeric: r.numeric === true, enabled: r.enabled !== false })) } : upload }; } return { _tab: tab, [tab]: unlocked(tab, form[tab]) }; })()}}"
+                                                            "body": "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; const locked = form._meta?.env_locked || {}; const unlocked = (t, o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => locked[t + '.' + k] !== true)); if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } if (tab === 'upload') { const upload = Object.fromEntries(Object.entries(unlocked('upload', form.upload)).filter(([k]) => k !== 'thumbnail_presets_rows')); const rows = form.upload?.thumbnail_presets_rows; return { _tab: 'upload', upload: Array.isArray(rows) ? { ...upload, thumbnail_presets: rows.filter(r => r?.kind !== 'og').map(r => ({ name: r.name, source: r.source, width: r.width, height: r.height, fit: r.fit, anchor: r.anchor, quality: r.quality, format: r.format, upscale: r.upscale === true, pregenerate: r.pregenerate === true, numeric: r.numeric === true, enabled: r.enabled !== false })) } : upload }; } if (tab === 'member') { const member = Object.fromEntries(Object.entries(unlocked('member', form.member)).filter(([k]) => k !== 'nickname_require_existing_members')); return { _tab: 'member', member: form.member?.nickname_require_existing_members === true && _computed.memberDisplayNamePending?.raised === true && _computed.memberDisplayNamePending?.level === 'all' ? { ...member, nickname_require_existing_members: true } : member }; } return { _tab: tab, [tab]: unlocked(tab, form[tab]) }; })()}}"
                                                         },
                                                         "onSuccess": [
                                                             {
@@ -1894,6 +2086,34 @@
                                                                 "if": "{{(_global.activeSettingsTab || query.tab) === 'upload'}}",
                                                                 "params": {
                                                                     "dataSourceId": "thumbnailStats"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'member'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "memberFieldDefs"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'member'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "memberNicknameRecompute"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'member'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "memberDisplayNameOptions"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'member'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "memberNicknameEmptyCount"
                                                                 }
                                                             }
                                                         ],
@@ -2055,6 +2275,18 @@
         {
             "comment": "인증 정책 삭제 확인 창.",
             "partial": "partials/admin_settings/_modal_identity_policy_delete.json"
+        },
+        {
+            "comment": "회원 항목 추가·수정·보기 겸용 창(회원 탭, #490) — 「항목 추가」와 각 행의 [설정]·[수정]·[보기]가 연다.",
+            "partial": "partials/admin_settings/_modal_member_field_form.json"
+        },
+        {
+            "comment": "회원 항목 삭제 확인 창(회원 탭) — 운영자가 추가한 항목의 [삭제]가 연다. 입력된 값 수를 보이고 확인 체크 뒤에만 지운다.",
+            "partial": "partials/admin_settings/_modal_member_field_delete.json"
+        },
+        {
+            "comment": "회원 항목을 필수로 바꿀 때의 확인 창(회원 탭, U1) — 그 항목이 빈 기존 회원이 있을 때만 「필수」 스위치가 연다.",
+            "partial": "partials/admin_settings/_modal_member_field_required.json"
         },
         {
             "comment": "개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",

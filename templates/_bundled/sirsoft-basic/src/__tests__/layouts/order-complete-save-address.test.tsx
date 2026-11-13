@@ -159,7 +159,12 @@ describe('주문완료 [이 배송지를 저장하기] (B6)', () => {
     // engine-v1.80.0 부터 단일 <fail> 안의 conditions 가 그대로 실행된다(#753) — 처음 설계대로 409 / 그 밖 을 한 곳에서 가른다
     expect(call?.errorHandling).toBeUndefined();
     expect(call?.onError?.handler).toBe('conditions');
-    const [when409, otherwise] = call?.onError?.conditions ?? [];
+    // 7.2.0: 추가 정보가 비어 거부된 요청(403, error_code 가 required_fields_pending)을 가르는 갈래가 맨 앞에 선다.
+    // 그 요청은 오류 토스트 대신 「추가 정보 필요」 안내 창을 연다. 409 와 그 밖의 갈래는 그 뒤에서 종전대로 가른다.
+    expect(call?.onError?.conditions).toHaveLength(3);
+    const [whenPending, when409, otherwise] = call?.onError?.conditions ?? [];
+    expect(whenPending?.if).toBe("{{error.error_code === 'required_fields_pending'}}");
+    expect(whenPending?.then).toEqual({ handler: 'openModal', target: 'required_info_pending_modal' });
     expect(when409?.if).toBe('{{error.status === 409}}');
     expect(when409?.then).toEqual({ handler: 'toast', params: { type: 'info', message: '$t:shop.order_complete.address_name_exists' } });
     expect(otherwise?.if).toBeUndefined();

@@ -568,6 +568,19 @@
                                                             "text": "{{' · ' + (post?.created_at ?? '')}}"
                                                         }
                                                     ]
+                                                },
+                                                {
+                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                    "id": "latest_post_real_name_{{i}}",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{!!post?.real_name}}",
+                                                    "props": {
+                                                        "data-testid": "author-real-name",
+                                                        "className": "board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate",
+                                                        "aria-label": "{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}"
+                                                    },
+                                                    "text": "{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}"
                                                 }
                                             ]
                                         }
@@ -725,6 +738,19 @@
                                                         "className": "board:text-xs board:text-slate-600 board:dark:text-slate-400"
                                                     },
                                                     "text": "{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? $t('sirsoft-board.admin.dashboard.community.anonymous')) + ' · ' + (report?.last_reported_at ?? '')}}"
+                                                },
+                                                {
+                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                    "id": "report_real_name_{{i}}",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{!!report?.real_name}}",
+                                                    "props": {
+                                                        "data-testid": "author-real-name",
+                                                        "className": "board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate",
+                                                        "aria-label": "{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}"
+                                                    },
+                                                    "text": "{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}"
                                                 }
                                             ]
                                         }

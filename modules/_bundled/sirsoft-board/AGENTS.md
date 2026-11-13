@@ -122,6 +122,16 @@
 코어 `App\Seo\SeoRenderRequest::matches()` 로 걸러 세지 않습니다 — 세면 글을 쓰자마자 조회수가
 1 이 되고 서버 IP 키가 같은 IP 의 비로그인 방문을 「이미 봄」으로 막습니다.
 
+**회원의 알림 수신 설정**: 알림 수신 여부 4칸(`notify_post_complete`, `notify_post_reply`, `notify_comment`,
+`notify_reply_comment`)은 `module.php` 의 `getFields()` 가 회원 항목 집합(`core.user`)에 선언한 항목입니다
+(예/아니오, `storage = handler`, `ui.group = notifications`, 가입 화면 표시는 기본 꺼짐). 코어가 가입, 관리자 추가,
+관리자 수정, 내 정보 수정의 검증 규칙을 만들고, 회원 저장과 같은 트랜잭션에서 바뀐 칸만
+`Fields\UserNotificationFieldHandler::write()` 로 넘깁니다. 값은 종전과 같이 `board_user_notification_settings` 의
+회원별 한 행입니다. 요청에 실리지 않은 칸은 건드리지 않습니다. `UserNotificationSettingsListener` 는
+`core.user.filter_resource_data` 만 구독해 회원 응답의 최상위 키에 값을 싣습니다. 화면은 템플릿의 회원 항목 공용
+조각이 그리며 이 모듈은 회원 폼에 조각을 넣지 않습니다. 항목 이름과 안내 문구는 `src/lang/{언어}/fields.php` 에 있고
+선언이 그 파일을 직접 읽습니다.
+
 **신고 접수 → 처리**: `User\ReportController` → `StoreReportRequest` → `ReportService::create()`
 (`before_create`→`filter_create_data`→`after_create`) → 신고 접수 관리자 알림 발송. 관리자가
 `Admin\ReportController` 에서 처리(블라인드/삭제/복원)하면 `ReportService` 가 대상 게시글/댓글
@@ -136,9 +146,9 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 169개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 106개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 23개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 8개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 구독 훅 | 103개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 25개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 6개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 2개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -168,6 +178,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-board` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`board:` 유틸리티·`board-*`)를 쓰면 `module:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 회원 항목 선언(`getFields()`)을 바꿀 때는 `src/lang/{ko,en}/fields.php` 의 이름과 안내 문구, 값 핸들러(`Fields\UserNotificationFieldHandler::FIELD_KEYS`), 응답 리스너가 같은 키를 쓰는지 함께 확인한다. 알림 칸의 검증이나 저장을 `core.user.*` 훅 리스너에 다시 넣지 않는다(항목 엔진과 겹쳐 두 번 검증하고 두 번 저장한다)
 - [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 한국어 문구에 「이(가)」「(으)로」처럼 조사를 괄호로 남기거나 자리표시 바로 뒤에 조사를 붙이지 않는다(값의 받침에 따라 틀린 문장이 된다) — 「값이」「상태로」「에 대해」처럼 받침과 무관한 말로 잇는다. 새 FormRequest 에 `in`·`exists`·`required_with` 같은 규칙을 두면 칸별 문구를 주거나 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다(코어 기본 문구는 조사 자리표시를 남긴다). 잠금: `tests/Unit/Lang/KoreanParticlePlaceholderTest.php`
@@ -180,6 +191,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 게시판 개인정보 조치 창이 미등재·미주석으로 들어왔다).
 - [ ] 게시판 이름·글 제목처럼 입력값을 그리는 관리자 화면 글은 넘침을 막는다 — 단추·배지와 같은 flex 줄의 글은 감싼 칸 `board:min-w-0` + 글 `board:min-w-0 board:wrap-anywhere`, 카드의 한 줄 요약(게시판 · 작성자 · 시각)은 `board:truncate`. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 `#right_content_area` 초과분으로 잰다 (#143)
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_board_form`·`admin_board_post_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고, 생성 모드에서도 폼을 채우는 데이터소스(`boards` form-data·`form_data`)의 `initLocal` 은 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형 `initLocal` 은 엔진이 기존 form 과 깊은 병합해 직전 글의 id·게시판 다국어 이름이 등록 폼에 남는다(트러블슈팅 state-global 사례 7)
+- [ ] 금지 키워드 판정은 코어 `App\Rules\ForbiddenWords::firstMatch()` 가 한다(`BlockedKeywordsRule` 은 게시판 문구만 입힌다, 코어 7.2.0) — 막는 기준을 바꾸려면 코어 규칙의 다른 호출처(회원 닉네임 금지어)까지 함께 본다. 게시판만 다르게 막아야 하면 이 규칙 안에서 따로 구현하지 말고 코어 규칙에 선택 인자를 더한다
 
 ## 6. 금지 패턴
 
@@ -211,10 +223,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 293개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 107개 | `vitest.config.ts` |
-| Playwright | 40개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 208개 | `tests/scenarios` |
+| PHPUnit | 296개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 109개 | `vitest.config.ts` |
+| Playwright | 41개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 214개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -99,12 +99,35 @@
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.publisher_label"
                                 },
                                 {
+                                    "comment": "값 칸 하나에 이름과 실명 보조 줄을 함께 담는다(행이 display:contents 라 자식 하나가 격자 칸 하나다)",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "gdpr:text-gray-900 gdpr:dark:text-gray-100"
+                                        "className": "gdpr:min-w-0"
                                     },
-                                    "text": "{{gdprPolicyVersionSnapshot?.data?.data?.publisher?.name ? (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ? gdprPolicyVersionSnapshot.data.data.publisher.name + ' (' + gdprPolicyVersionSnapshot.data.data.publisher.email + ')' : gdprPolicyVersionSnapshot.data.data.publisher.name) : (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "gdpr:text-gray-900 gdpr:dark:text-gray-100"
+                                            },
+                                            "text": "{{gdprPolicyVersionSnapshot?.data?.data?.publisher?.name ? (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ? gdprPolicyVersionSnapshot.data.data.publisher.name + ' (' + gdprPolicyVersionSnapshot.data.data.publisher.email + ')' : gdprPolicyVersionSnapshot.data.data.publisher.name) : (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
+                                        },
+                                        {
+                                            "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!gdprPolicyVersionSnapshot?.data?.data?.publisher?.real_name}}",
+                                            "props": {
+                                                "data-testid": "real-name-sub",
+                                                "role": "note",
+                                                "aria-label": "{{$t('sirsoft-gdpr.common.real_name_sub', { name: gdprPolicyVersionSnapshot.data.data.publisher.real_name })}}",
+                                                "className": "gdpr:block gdpr-text-tertiary"
+                                            },
+                                            "text": "{{gdprPolicyVersionSnapshot.data.data.publisher.real_name}}"
+                                        }
+                                    ]
                                 }
                             ]
                         },

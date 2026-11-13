@@ -3,7 +3,9 @@
 namespace Plugins\Sirsoft\Sso\Bootstrap\Listeners;
 
 use Plugins\Sirsoft\Sso\Listeners\CleanSsoAccountsOnUserLeave;
+use Plugins\Sirsoft\Sso\Listeners\ExemptRequiredFieldsRoutesListener;
 use Plugins\Sirsoft\Sso\Listeners\ProvideNecessaryStorageKeysListener;
+use Plugins\Sirsoft\Sso\Listeners\RecordNicknameRejectionListener;
 use Plugins\Sirsoft\Sso\Listeners\RegisterSsoReauthProviderListener;
 
 /**
@@ -26,6 +28,8 @@ final class CoreFlow
             CleanSsoAccountsOnUserLeave::class,
             RegisterSsoReauthProviderListener::class,
             ProvideNecessaryStorageKeysListener::class,
+            RecordNicknameRejectionListener::class,
+            ExemptRequiredFieldsRoutesListener::class,
         ];
     }
 }

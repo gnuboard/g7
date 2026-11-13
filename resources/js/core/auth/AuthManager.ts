@@ -138,10 +138,18 @@ export type TwoFactorSession = Exclude<LoginResult, { status: 'two_factor_requir
 
 /**
  * 인증된 사용자 정보
+ *
+ * 화면에 보일 이름은 `display_name` 을 먼저 쓴다(`user.display_name ?? user.name ?? ''`).
+ * `name` 은 실명 원본이고 이름 항목을 쓰지 않는 사이트에서는 null 이다.
  */
 export interface AuthUser {
   uuid: string;
-  name: string;
+  /** 실명 원본. 이름 항목을 쓰지 않는 사이트에서는 null */
+  name: string | null;
+  /** 닉네임 원본. 닉네임 항목을 쓰지 않거나 비어 있으면 null */
+  nickname?: string | null;
+  /** 표시 이름 — 서버가 그 화면의 영역 설정과 회원이 고른 종류로 계산한 값(옛 응답에는 없다) */
+  display_name?: string;
   email: string;
   [key: string]: any;
 }
@@ -1236,7 +1244,7 @@ export class AuthManager {
   getLoginRedirectUrl(type: AuthType, returnUrl: string, reason?: string): string {
     // 이 값의 소비처는 전부 `window.location.href` — 즉 **브라우저가 그대로 여는
     // 주소**다. 접두사를 붙이지 않으면 하위 폴더 배치에서 로그인 페이지가 사이트
-    // 밖(`https://host/login`)을 가리켜 세션 만료가 곧 이탈이 된다 (12차 G3).
+    // 밖(`https://host/login`)을 가리켜 세션 만료가 곧 이탈이 된다.
     //
     // `returnUrl` 은 호출부가 `location.pathname` 에서 만들어 이미 접두사를 갖고 있고,
     // `withBasePrefix()` 는 멱등이라 어느 형태로 들어와도 이중 접두가 되지 않는다.

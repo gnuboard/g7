@@ -34,11 +34,12 @@ class AttachmentResource extends BaseApiResource
             'source_identifier' => $this->getValue('source_identifier'),
 
             // 업로더 정보 (로드된 경우)
-            'creator' => $this->whenLoaded('creator', function () {
-                return [
+            'creator' => $this->whenLoaded('creator', function () use ($request) {
+                // 업로더가 지워진 회원이면 관계가 null 이다.
+                return $this->creator ? [
                     'uuid' => $this->creator->uuid,
-                    'name' => $this->creator->name,
-                ];
+                    ...$this->memberNameFields($this->creator, $request),
+                ] : null;
             }),
 
             ...$this->formatTimestamps(),

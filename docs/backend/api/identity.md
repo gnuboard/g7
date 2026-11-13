@@ -1455,6 +1455,78 @@ HTTP/1.1 200
 **설명** challenge 를 검증(인증 완료) 합니다. **로그인 2단계 인증 challenge(`purpose = login`)는 이 경로로 검증할 수 없습니다** — 여기서 검증되면 바로 뒤의 `POST /api/auth/login/two-factor` 가 「이미 처리된 요청」으로 거절해 그 challenge 로는 영영 로그인할 수 없게 됩니다. 게이트는 상태를 전혀 바꾸지 않으므로, 거부된 뒤에도 로그인 경로로 정상 완료할 수 있습니다. `auth:sanctum` + `core.identity.verify` 권한이 필요합니다. 라우트 모델 바인딩 + PermissionMiddleware 의 scope=self 가드로 로그인 사용자는 본인 challenge 만 검증하며, 비로그인 게스트는 guest 역할 권한으로 진입합니다(Mode B 가입 흐름). `code`(text_code 흐름) 또는 `token`(link/redirect 흐름) 을 전달하고 `IdentityVerificationService::verify` 가 처리합니다. 실패 시 422 로 `failure_code` 와 서버 기준 `attempts`/`max_attempts` 를 함께 내려 클라이언트의 "남은 시도 횟수" UI 를 서버와 동기화하며, 성공 시 후속 민감 작업에 제출할 `verification_token` 을 반환합니다. 확장은 `core.identity.verify_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다.
 
 
+### POST /api/identity/claims
+
+- **라우트명**: `api.identity.claims`
+- **컨트롤러**: `\App\Http\Controllers\Api\Identity\IdentityVerificationController@claims`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근). 요청 제한은 분당 30회
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| verification_token | body | string | 예 | max 255 | 본인인증을 마치고 받은 토큰 |
+| purpose | body | string | 아니오 | max 64 | 토큰을 발급받은 본인인증 목적. 생략하면 `signup` |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.verified_claims_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/identity/claims HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "verification_token": "8636271c15d7320a9b37625baca5337a38c9f8ef3db11275901edce2f33d49d4"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| status | string | `applied` | `applied`(인증 값을 받음) 또는 `no_claims`(토큰은 유효하지만 이 수단은 인증 값을 주지 않음) |
+| provider_id | string\|null | `nhnkcp` | 토큰을 발급한 본인인증 수단 |
+| claims | object | `{"name":"홍길동","mobile":"01012345678"}` | 인증 값. 키는 `name`, `mobile`, `birth_date`, `gender` 와 수단이 더한 키. 값이 없는 키는 오지 않습니다 |
+| fields | object | `{"name":"홍길동","mobile":"01012345678"}` | 회원 항목 키별 채움값. 항목의 「본인인증 연결」로 매핑하고 항목 유형의 모양으로 맞춘 값입니다 |
+| locked | array | `["name"]` | 「인증 값으로 채우고 잠금」을 켠 항목의 키. 화면은 이 칸을 읽기 전용으로 그립니다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "status": "applied",
+        "provider_id": "nhnkcp",
+        "claims": {
+            "name": "홍길동",
+            "mobile": "01012345678",
+            "birth_date": "1990-05-17",
+            "gender": "female"
+        },
+        "fields": {
+            "name": "홍길동",
+            "mobile": "01012345678"
+        },
+        "locked": ["name"]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | `verification_token` 이 없는 경우. 또는 만료됐거나 이미 쓴 토큰(`errors.status = expired`), 알 수 없는 토큰이거나 다른 회원에게 묶인 토큰(`errors.status = invalid`) — `identity.errors.invalid_verification_token` |
+| 429 | Too Many Requests | 요청 제한을 넘은 경우 |
+
+**설명** 본인인증을 마친 화면이 인증 값으로 회원 항목 칸을 채울 때 부릅니다. 자격은 토큰입니다. 회원에게 묶인 토큰(로그인 상태에서 시작한 본인인증)은 그 회원으로 로그인한 요청만 값을 받습니다. 가입 화면은 이 엔드포인트 대신 `GET /api/auth/register/fields?verification_token=…` 를 다시 불러도 같은 값을 항목의 `default`, `readonly`, `locked_reason` 으로 받습니다. 가입 요청에서 잠금 항목은 서버가 인증 값으로 덮어쓰므로 화면이 값을 고쳐 보내도 반영되지 않습니다. 본인인증 수단이 인증 값을 주는 방법은 [본인인증 정책](../identity-policies.md#53-본인인증-값을-회원-항목에-채우기-720) 문서에 있습니다.
+
+
 ### GET /api/identity/policies/resolve
 <!-- @generated:start:api.identity.policies.resolve -->
 - **라우트명**: `api.identity.policies.resolve`

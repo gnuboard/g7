@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\User;
 
+use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -39,7 +40,7 @@ class ClaimPreviewRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'type' => ['required', 'string', Rule::in([ClaimTypeEnum::EXCHANGE->value, ClaimTypeEnum::RETURN->value, ClaimTypeEnum::REFUND->value])],
             'items' => ['required', 'array', 'min:1', 'max:200'],
             'items.*.order_option_id' => ['required', 'integer'],
@@ -64,6 +65,11 @@ class ClaimPreviewRequest extends FormRequest
             // 수정 화면의 미리보기 — 자기 신청서가 잡아 둔 수량을 잠금 집계에서 뺀다
             'claim_number' => ['nullable', 'string', 'max:50'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.claim.preview_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

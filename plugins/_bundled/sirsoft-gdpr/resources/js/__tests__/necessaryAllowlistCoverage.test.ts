@@ -39,8 +39,8 @@
  *
  * @module sirsoft-gdpr/__tests__/necessaryAllowlistCoverage
  *
- * @scenario scope=cookie, notation=wildcard, locked=locked_item, settings_state=unreachable, request=valid_item
- * @effects ts_fallback_matches_php_locked_set, ts_fallback_is_not_a_catalog_copy, wildcard_rule_is_isomorphic_across_php_and_ts, scope_vocabulary_matches_across_php_and_ts, server_cookie_gate_reads_settings_not_hardcoded_list, locked_set_absent_from_shipped_catalog, shipped_catalog_items_pass_save_validation, shipped_catalog_items_survive_unconsented_write_and_cleanup
+ * 각 축이 재는 효과와 조합은 그 축의 시험 바로 앞에 적었다(잠금 폴백, 카탈로그 사본 금지, 와일드카드 동형,
+ * 스코프 어휘, 서버 쿠키 게이트, 카탈로그의 잠금 항목 배제, 저장 검증 통과, 미동의 쓰기와 회수).
  */
 
 import { afterEach, beforeEach, describe, it, expect } from 'vitest';
@@ -501,6 +501,35 @@ const PHP_LOCKED = parsePhpScopeMap(
 const PROVIDER_LISTENERS = discoverProviderListeners();
 
 /**
+ * 코어가 선언한 필수 저장 키(`App\Support\CoreNecessaryStorage::keys()`)를 읽습니다.
+ *
+ * 코어 엔진은 동의 플러그인을 모르므로 자기 키를 그 클래스에 선언하고, 이 플러그인의 `plugin.php` 가
+ * 제공 목록에 합쳐 읽는다. 시험이 이 선언을 모르면 코어 엔진이 쓰는 키(`g7_search_history`)가
+ * 「어디에도 등재되지 않은 키」로 붉어진다. 선언은 클래스 상수(`self::NAME`)를 쓰므로 상수 값을 풀어 읽는다.
+ * 코어 7.1.5 미만처럼 파일이 없으면 빈 목록이다(`plugin.php` 의 `class_exists` 분기와 같은 뜻).
+ *
+ * @return 저장소 종류 → 키 목록
+ */
+function readCoreNecessaryKeys(): Record<string, string[]> {
+    const file = path.join(REPO_ROOT, 'app', 'Support', 'CoreNecessaryStorage.php');
+    if (!fs.existsSync(file)) {
+        return {};
+    }
+    const source = fs.readFileSync(file, 'utf-8');
+    const constants = new Map(
+        [...source.matchAll(/const\s+([A-Z_]+)\s*=\s*'((?:[^'\\]|\\.)*)'\s*;/g)].map((m) => [m[1], m[2]]),
+    );
+    const block = sliceBracketBlock(source, 'public static function keys(): array')
+        .replace(/self::([A-Z_]+)/g, (whole, name: string) => (
+            constants.has(name) ? `'${constants.get(name)}'` : whole
+        ));
+
+    return parsePhpScopeMap(block);
+}
+
+const CORE_NECESSARY_KEYS = readCoreNecessaryKeys();
+
+/**
  * 키가 실행 시점에 정해져 **정적으로 해석할 수 없는** 쓰기 지점.
  *
  * 이 목록은 사각을 지우는 것이 아니라 드러내 고정한다. 정렬된 문자열로 비교하므로
@@ -514,8 +543,8 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
     // 「파기돼도 된다」는 판단이 아니라 **스캐너가 못 읽는 지점의 기록**이다.
     // 정렬된 문자열로 비교하므로 순서는 도출 결과(사전순)를 따른다.
     {
-        site: 'MEMORY_KEY + position ← plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroSlider.tsx',
-        reason: '히어로섹션 위치별 직전 모양(`sirsoft-hero_section:slot:<위치>` = 배너 유무·표시 폭) — 받는 동안의 스켈레톤 폭을 맞추는 보조 기억이다. functional 미동의 파기로 지워져도 다음 방문에 스켈레톤이 기본 폭으로 잡힐 뿐이라 허용목록에 넣지 않는다.',
+        site: 'MEMORY_KEY + slot ← plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroSlider.tsx',
+        reason: '히어로섹션 자리별 직전 모양(`sirsoft-hero_section:slot:<위치>`, 동적 위치는 `<위치>:<대상>` = 배너 유무·표시 폭) — 받는 동안의 스켈레톤 폭을 맞추는 보조 기억이다. functional 미동의 파기로 지워져도 다음 방문에 스켈레톤이 기본 폭으로 잡힐 뿐이라 허용목록에 넣지 않는다.',
     },
     {
         site: '`${namespace}${FONT_SIZE_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
@@ -540,6 +569,10 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
     {
         site: 'key ← templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         reason: '`setLocalStorage` 핸들러 — 위와 같은 이유 (레이아웃이 키를 정한다).',
+    },
+    {
+        site: 'knownDynamicStorageKey ← templates/_bundled/sirsoft-admin_basic/src/components/composite/ColumnSelector.tsx',
+        reason: '표 열 선택기가 「이미 본 동적 열」을 `<열 저장 키>::dynamic` 에 기억한다(7.2.0 — 운영자가 추가 항목을 목록 열로 켜면 처음 한 번만 자동으로 켠다). 열 저장 키와 같은 성격의 보조 기억이라, functional 미동의 파기로 지워져도 새 동적 열이 한 번 더 켜질 뿐이다.',
     },
     {
         site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTree.tsx',
@@ -590,6 +623,13 @@ function isInShippedCatalog(discovered: DiscoveredKey): boolean {
  * @return 제공 여부
  */
 function isProvidedByExtension(discovered: DiscoveredKey): boolean {
+    const coreDeclared = Object.values(CORE_NECESSARY_KEYS).some((patterns) =>
+        patterns.some((pattern) => matchesAllowlistPattern(discovered.key, pattern)),
+    );
+    if (coreDeclared) {
+        return true;
+    }
+
     return PROVIDER_LISTENERS.some((listener) => Object.values(listener.keys).some((patterns) =>
         patterns.some((pattern) => (
             matchesAllowlistPattern(discovered.key, pattern)
@@ -684,7 +724,12 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         expect(locked.match(/'laravel_session'/g)?.length ?? 0).toBe(1);
     });
 
-    /** @effects ts_fallback_matches_php_locked_set */
+    /**
+     * 설정이 도달하지 못한 상태(settings_state=unreachable)에서 판정은 TS 잠금 폴백에 기댄다.
+     *
+     * @scenario scope=cookie, notation=wildcard, locked=locked_item, settings_state=unreachable, request=valid_item
+     * @effects ts_fallback_matches_php_locked_set
+     */
 
     it('TS 폴백이 PHP 잠금 집합과 정확히 일치한다 (런타임 세션 쿠키 제외)', () => {
         // 세션 쿠키 이름은 파서가 이미 걷어냈다 — TS 폴백에 담을 수 없는 런타임 값이라

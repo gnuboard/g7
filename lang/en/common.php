@@ -35,7 +35,7 @@ return [
         'github_download_failed' => 'Failed to download from GitHub.',
         'github_archive_download_failed' => 'Failed to download archive. (:url)',
         'zip_file_not_found' => 'ZIP file not found.',
-        'archive_php_extension_missing' => 'Extracting this archive requires the PHP extension(s) :extensions on the server. Ask your server administrator to install them.',
+        'archive_php_extension_missing' => 'Extracting this archive requires these PHP extensions on the server: :extensions. Ask your server administrator to install them.',
         'zip_open_failed' => 'Failed to open ZIP file.',
     ],
 
@@ -441,6 +441,13 @@ return [
                 'manager_role_missing' => 'Manager role (manager) not found; skipping the dashboard menu permission grant.',
                 'dashboard_menu_missing' => 'Dashboard menu (admin-dashboard) not found; skipping the manager menu permission grant.',
                 'manager_dashboard_granted' => 'Granted the dashboard menu permission to the manager role.',
+            ],
+            'core_field_definition' => [
+                'start' => 'Seeding core member fields...',
+                'no_definitions' => 'No fields are declared in config/core.php.',
+                'skipped' => '  - Skipped :field: :reason',
+                'stale_removed' => 'Removed :count core field no longer declared|Removed :count core fields no longer declared',
+                'done' => 'Core member fields seeded (:count)',
             ],
             'core_schedule' => [
                 'start' => 'Seeding core schedules...',

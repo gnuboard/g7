@@ -54,6 +54,7 @@ class LayoutVersionResource extends BaseApiResource
             // 저장자 이름만 노출 (버전 히스토리 표시용) — created_by ID 는 보안상 제외 유지.
             // creator 관계 미로딩(eager load 누락)/탈퇴 사용자 시 null.
             'created_by_name' => $this->resolveCreatorName(),
+            ...$this->creatorRealName($request),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
@@ -92,6 +93,7 @@ class LayoutVersionResource extends BaseApiResource
             'version' => $this->getValue('version'),
             'changes_summary' => $this->formatChangesSummary($this->getValue('changes_summary', [])),
             'created_by_name' => $this->resolveCreatorName(),
+            ...$this->creatorRealName($request),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
@@ -111,7 +113,27 @@ class LayoutVersionResource extends BaseApiResource
         $creator = $this->whenLoaded('creator');
 
         // whenLoaded 미로딩 시 MissingValue 반환 → 삼항으로 null 처리 (MissingValue 누출 방지).
-        return $creator instanceof User ? $creator->name : null;
+        return $creator instanceof User ? $this->memberDisplayName($creator) : null;
+    }
+
+    /**
+     * 저장자의 실명 보조를 반환합니다.
+     *
+     * 회원 조회 권한이 있는 관리자에게만, 실명이 표시 이름과 다를 때만 `created_by_real_name` 을 싣는다.
+     *
+     * @param  Request  $request  현재 요청
+     * @return array<string, string> `['created_by_real_name' => 실명]` 또는 빈 배열
+     */
+    private function creatorRealName(Request $request): array
+    {
+        $creator = $this->whenLoaded('creator');
+        if (! $creator instanceof User) {
+            return [];
+        }
+
+        $fields = $this->memberNameFields($creator, $request);
+
+        return isset($fields['real_name']) ? ['created_by_real_name' => $fields['real_name']] : [];
     }
 
     /**

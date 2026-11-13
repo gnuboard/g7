@@ -78,8 +78,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 208개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 제공 컴포넌트 | 135개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 레이아웃 | 218개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 29개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -196,9 +196,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 545개 | `vitest.config.ts` |
+| Vitest | 558개 | `vitest.config.ts` |
 | Playwright | 36개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 192개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 203개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

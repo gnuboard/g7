@@ -16,6 +16,11 @@ use Exception;
  */
 class PostHasRepliesException extends Exception
 {
+    /**
+     * 답글 보유 글 삭제 차단 예외 생성자
+     *
+     * 메시지는 답글 보유 삭제 차단 다국어 키를 번역한 문구로 채운다.
+     */
     public function __construct()
     {
         parent::__construct(__('sirsoft-board::validation.post.delete.has_replies'));

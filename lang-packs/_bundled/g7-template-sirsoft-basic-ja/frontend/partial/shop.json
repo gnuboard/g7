@@ -502,6 +502,10 @@
     "refund_bank_partial_notice": "3つのいずれかを入力すると、残りも入力する必要があります。",
     "no_payment_methods": "現在選択できる決済方法がありません。ショップにお問い合わせください。"
   },
+  "checkout_fields": {
+    "orderer_extra": "注文者の追加情報",
+    "shipping_extra": "配送の追加情報"
+  },
   "order_complete": {
     "page_title": "注文完了",
     "title": "注文完了",

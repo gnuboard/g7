@@ -38,6 +38,11 @@ class ExtensionAutoloadCacheGuardTest extends TestCase
      */
     private string $tmpCachePath;
 
+    /**
+     * 실제 캐시 경로와 임시 캐시 경로를 정하고, 실제 캐시 파일이 있으면 내용을 백업한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -53,6 +58,11 @@ class ExtensionAutoloadCacheGuardTest extends TestCase
         }
     }
 
+    /**
+     * 백업한 실제 캐시 내용을 되돌리고 임시 캐시 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->realCacheBackup !== null) {
@@ -71,6 +81,12 @@ class ExtensionAutoloadCacheGuardTest extends TestCase
      *
      * DB 쪽이 신뢰 불가한 상태(테이블 부재 · 설치 중간 · 다른 DB)에서 산출된 공집합을
      * 그대로 기록하면 정상 매핑이 소실된다. 이 경우 기존 파일을 보존해야 한다.
+     *
+     * @scenario guard_case=db_empty_with_active_dirs
+     *
+     * @effects generate_autoload_file_keeps_existing_map_when_db_empty_but_active_dirs_exist
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_autoload_file_preserves_existing_map_when_db_reports_none_but_directories_exist(): void
     {
@@ -103,6 +119,12 @@ class ExtensionAutoloadCacheGuardTest extends TestCase
      *
      * testing DB 는 활성 확장 구성이 개발 DB 와 다르므로, 어떤 경로로든 실 캐시가
      * 재생성되면 개발 환경 매핑이 testing 기준으로 교체되어 사이트가 깨진다.
+     *
+     * @scenario guard_case=testing_env_real_cache_path
+     *
+     * @effects generate_autoload_file_leaves_real_cache_untouched_in_testing_env
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_autoload_file_does_not_touch_real_cache_path_in_testing_env(): void
     {
@@ -126,13 +148,26 @@ class ExtensionAutoloadCacheGuardTest extends TestCase
      * 미재등록 시 현재 프로세스의 ClassLoader 는 (방금 교체된) 이전 매핑을 들고 있어
      * ModuleManager/PluginManager 가 확장 클래스를 로드하지 못하고, 훅 캐시가
      * modules/plugins 0건으로 생성된다 — 모든 확장 훅이 조용히 사라진다.
+     *
+     * @scenario guard_case=update_autoload_command_order
+     *
+     * @effects update_autoload_reregisters_runtime_autoload_before_hook_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_update_autoload_command_reregisters_runtime_autoload_before_hook_cache(): void
     {
         $body = File::get(app_path('Console/Commands/Extension/UpdateAutoloadCommand.php'));
 
         $reregisterPos = strpos($body, 'reregisterRuntimeAutoload(');
-        $hookCachePos = strpos($body, '->generate($moduleManager, $pluginManager)');
+        // 훅 캐시 재생성은 정적 캐시 목록의 단일 지점(ExtensionManager::regenerateExtensionStaticCaches)을 거친다
+        $hookCachePos = strpos($body, '->regenerateExtensionStaticCaches($moduleManager, $pluginManager)');
+
+        $this->assertStringContainsString(
+            'app(HookCacheManager::class)->generate($moduleManager, $pluginManager)',
+            File::get(app_path('Extension/ExtensionManager.php')),
+            'regenerateExtensionStaticCaches() 가 훅 캐시를 재생성해야 합니다.'
+        );
 
         $this->assertNotFalse(
             $reregisterPos,
@@ -158,6 +193,13 @@ class ExtensionAutoloadCacheGuardTest extends TestCase
     {
         return new class(app(ModuleRepositoryInterface::class), app(PluginRepositoryInterface::class), $path) extends ExtensionManager
         {
+            /**
+             * 부모 생성자를 부른 뒤 오토로드 캐시 경로를 지정 경로로 바꾼다.
+             *
+             * @param  ModuleRepositoryInterface  $moduleRepository  모듈 저장소
+             * @param  PluginRepositoryInterface  $pluginRepository  플러그인 저장소
+             * @param  string  $path  기록할 오토로드 캐시 파일 경로
+             */
             public function __construct(
                 ModuleRepositoryInterface $moduleRepository,
                 PluginRepositoryInterface $pluginRepository,

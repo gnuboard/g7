@@ -103,7 +103,8 @@ describe('관리자 긴 사이트 이름', () => {
    */
   it('A4 프로필 드롭다운 이름·이메일 truncate', () => {
     const src = read('src/components/composite/UserProfile.tsx');
-    expect(src).toMatch(/<Div className="[^"]*\btruncate\b[^"]*">\{user\.name\}<\/Div>/);
+    // 이름 줄은 표시 이름(없으면 실명)을 담은 userShownName 을 그린다(#490 8단계)
+    expect(src).toMatch(/<Div className="[^"]*\btruncate\b[^"]*">\{userShownName\}<\/Div>/);
     expect(src).toMatch(/<Div className="[^"]*\btruncate\b[^"]*">\{user\.email\}<\/Div>/);
   });
 

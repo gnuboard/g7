@@ -39,7 +39,8 @@ class ActivityLogResource extends BaseApiResource
             'actor_name' => $this->actor_name,
             'user' => $this->user ? [
                 'uuid' => $this->user->uuid,
-                'name' => $this->user->name,
+                // 관리자 영역의 표시 이름. 실명은 회원 조회 권한이 있는 관리자에게만 real_name 으로 더해진다.
+                ...$this->memberNameFields($this->user, $request),
                 'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : [
                 // 행위자 회원이 없는 로그(시스템·CLI·탈퇴 회원). uuid 를 null 로 명시해 화면이

@@ -17,6 +17,7 @@ use Plugins\Sirsoft\Sso\Repositories\Contracts\SsoAccountRepositoryInterface;
 use Plugins\Sirsoft\Sso\Repositories\Contracts\SsoUserAttributeRepositoryInterface;
 use Plugins\Sirsoft\Sso\Services\AccountResolver;
 use Plugins\Sirsoft\Sso\Services\AttributeSyncService;
+use Plugins\Sirsoft\Sso\Services\NicknameRejectionLedger;
 use Plugins\Sirsoft\Sso\Services\RoleSyncService;
 
 /**
@@ -55,6 +56,7 @@ class ScimUserService
      * @param  DeprovisionService  $deprovision  퇴사 처리
      * @param  AttributeSyncService  $attributeSync  이메일 동기화 규칙
      * @param  RoleSyncService  $roles  역할 매핑
+     * @param  NicknameRejectionLedger  $nicknameRejections  코어가 닉네임 정책으로 버린 닉네임의 사유 장부
      */
     public function __construct(
         private readonly ProvisioningAccountRepositoryInterface $accounts,
@@ -65,6 +67,7 @@ class ScimUserService
         private readonly DeprovisionService $deprovision,
         private readonly AttributeSyncService $attributeSync,
         private readonly RoleSyncService $roles,
+        private readonly NicknameRejectionLedger $nicknameRejections,
     ) {}
 
     /**
@@ -316,6 +319,10 @@ class ScimUserService
             'identity_policy' => 'skip',
             'identity_policy_reason' => 'external:sirsoft-sso:scim:'.$idp->key,
             'record_consents' => false,
+            // 사람이 화면을 보지 않는 생성 — 운영자가 필수로 둔 회원 항목을 받지 않고 만든다. 첫 로그인 뒤 추가 정보 입력으로 받는다.
+            'required_fields' => 'defer',
+            // 닉네임이 닉네임 정책(중복 금지, 금지어)에 걸리면 닉네임만 비우고 만든다 — 화면 없는 생성이 닉네임 때문에 실패하지 않게 한다.
+            'nickname_policy' => 'skip_field',
         ])['user'];
     }
 
@@ -371,7 +378,9 @@ class ScimUserService
             }
             $core = array_filter($core, static fn ($v, $k) => (string) ($user->{$k} ?? '') !== (string) ($v ?? ''), ARRAY_FILTER_USE_BOTH);
             if ($core !== []) {
-                $this->users->updateUser($user, $core);
+                // 요청을 거치지 않는 수정 — 닉네임이 실려 와 닉네임 정책에 걸려도 나머지 칸은 반영한다.
+                $this->users->updateUser($user, $core, ['nickname_policy' => 'skip_field']);
+                $this->nicknameRejections->pull((int) $user->getKey());
                 $user->refresh();
             }
 

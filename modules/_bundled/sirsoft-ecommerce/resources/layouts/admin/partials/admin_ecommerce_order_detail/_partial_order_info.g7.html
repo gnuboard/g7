@@ -317,6 +317,8 @@
                   <icon name="fa-regular fa-user" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
                   <div class="ecommerce:min-w-0 ecommerce:flex-1">
                     <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block">{{order.data?.orderer_name}} ({{order.data?.orderer_email ?? order.data?.user_login_id ?? ''}})</span>
+                    <!-- 실명 보조 줄(#490) — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 주문서에 적힌 주문자 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다. -->
+                    <span data-ref="orderer_real_name_sub" data-if="{{!!order.data?.user?.real_name &amp;&amp; order.data?.user?.real_name !== order.data?.orderer_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: order.data?.user?.real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate ecommerce:block">{{order.data?.user?.real_name}}</span>
                   </div>
                 </div>
               </action-menu>
@@ -480,6 +482,17 @@
             <span data-if="{{order?.data?.shipping_address?.delivery_memo_label}}" class="ecommerce:block ecommerce:mb-1 ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{order?.data?.shipping_address?.delivery_memo_label ?? ''}}</span>
             <textarea class="ecommerce-input ecommerce:w-full ecommerce-textarea-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed {{_local.errors?.delivery_memo ? 'ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-500' : ''}}" value="{{_local.form.delivery_memo}}" name="delivery_memo" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.delivery_message" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.delivery_memo}}" class="ecommerce-form-error-xs ecommerce:mt-1 ecommerce:block">{{_local.errors?.delivery_memo?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 주문서 추가 항목(#490) — 운영자가 주문서에 더한 항목과 다른 확장이 기여한 항목 가운데 값이 있는 것만 서버가 준다(`order.data.extra_fields`). 없으면 구획을 그리지 않는다. 읽기 전용이다. -->
+      <div data-ref="admin_order_extra_fields" data-if="{{(order.data?.extra_fields ?? []).length > 0}}" class="ecommerce:mt-8 ecommerce:pt-8">
+        <h3 class="ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:mb-4">$t:sirsoft-ecommerce.admin.order.detail.order_info.extra_fields.title</h3>
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
+          <div data-each="extraField in {{order.data?.extra_fields ?? []}}" data-ref="admin_order_extra_field_{{extraField.key}}" class="ecommerce:min-w-0">
+            <span class="ecommerce-text-label-subtle ecommerce:block ecommerce:mb-1 ecommerce:break-words">{{extraField.label}} ({{$t(extraField.section === 'orderer' ? 'sirsoft-ecommerce.admin.order.detail.order_info.extra_fields.section_orderer' : 'sirsoft-ecommerce.admin.order.detail.order_info.extra_fields.section_shipping')}})</span>
+            <div class="ecommerce:bg-gray-100 ecommerce:dark:bg-gray-800 ecommerce:rounded ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:break-words">{{extraField.display_value}}</div>
           </div>
         </div>
       </div>

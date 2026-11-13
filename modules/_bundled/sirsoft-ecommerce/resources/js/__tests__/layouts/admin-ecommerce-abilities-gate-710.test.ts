@@ -547,21 +547,6 @@ describe('미연결 시안 주문 화면의 [일괄 변경]은 잠겨 있다', (
     });
 });
 
-describe('회원 상세 결제 통화·배송국가 칸은 변경 권한으로 잠긴다', () => {
-    const ext = (file: string): string => fs.readFileSync(path.join(moduleRoot(), 'resources/extensions', file), 'utf-8');
-
-    /**
-     * @scenario surface=admin, permission=missing
-     * @effects admin_user_preference_fields_locked
-     */
-    it.each([
-        ['admin-user-currency-field.json', 'user?.data?.ecommerce_currency_can_manage !== true'],
-        ['admin-user-shipping-country-field.json', 'user?.data?.ecommerce_shipping_country_can_manage !== true'],
-    ])('%s', (file, expr) => {
-        expect(ext(file)).toContain(expr);
-    });
-});
-
 describe('모달의 부모 읽기 전용 값은 알 수 없으면 잠긴 쪽이다', () => {
     /**
      * `{{ ... }}` 식을 `$parent` 하나로 평가한다.

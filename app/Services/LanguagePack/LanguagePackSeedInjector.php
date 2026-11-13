@@ -136,6 +136,48 @@ class LanguagePackSeedInjector
     }
 
     /**
+     * core.fields.config 필터 — config('core.fields') 회원 항목 선언의 이름·안내 문구·예시 글에 locale 키 병합.
+     *
+     * seed/fields.json 형식: `{ "<집합 식별자>": { "<항목 키>": { "name": "…", "description": "…", "placeholder": "…" } } }`.
+     * 선언은 순서 있는 목록이며 각 항목이 `field_set`·`key` 를 가진다. 선언에 없는 항목은 무시한다.
+     *
+     * @param  array<int, mixed>  $fields  항목 선언 목록
+     * @return array<int, mixed> locale 키가 보강된 선언 목록
+     *
+     * @since 7.2.0
+     */
+    public function injectCoreFields(array $fields): array
+    {
+        foreach ($this->extraCoreLocales() as $locale) {
+            $seed = $this->loadCoreSeed($locale, 'fields');
+            if (! $seed) {
+                continue;
+            }
+            foreach ($fields as $index => $declaration) {
+                if (! is_array($declaration)) {
+                    continue;
+                }
+                $entry = $seed[$declaration['field_set'] ?? ''][$declaration['key'] ?? ''] ?? null;
+                if (! is_array($entry)) {
+                    continue;
+                }
+                foreach (['name', 'description', 'placeholder'] as $attribute) {
+                    $value = $entry[$attribute] ?? null;
+                    if (! is_string($value) || $value === '') {
+                        continue;
+                    }
+                    if (! is_array($fields[$index][$attribute] ?? null)) {
+                        $fields[$index][$attribute] = [];
+                    }
+                    $fields[$index][$attribute][$locale] = $value;
+                }
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
      * seed.notifications.translations 필터 — Definition × Template 3-tier 병합.
      *
      * @param  array<int, mixed>  $definitions  알림 정의 배열

@@ -1,0 +1,140 @@
+feature: 이커머스의 회원 표시 이름 (#490)
+
+description: |
+  이커머스가 회원 이름을 응답과 기록에 실을 때 회원 이름 컬럼을 직접 읽지 않고 코어 표시 이름 계산기를 거친다.
+  영역은 셋이다. 사용자 화면의 상품 후기(`sirsoft-ecommerce:review`, 사이트 기본을 따름), 사용자 화면의 상품 문의
+  (`sirsoft-ecommerce:inquiry`, 가린 이름 고정), 이커머스 관리자 화면(`sirsoft-ecommerce:admin`, 관리자 화면을 따름).
+
+  설정을 바꾸지 않은 사이트의 응답은 수정 전과 같다. 상품 문의 작성자는 종전과 같은 가림 글자이고(영역 기본값이 종전
+  가림을 대신하므로 두 번 가려지지 않는다), 상품 후기 작성자는 회원 이름이다. 주문의 주문자 이름과 수령인, 내보낸 파일의
+  회원 칸은 표시 이름과 무관하게 적힌 그대로다.
+
+  실명은 이름 키에 싣지 않는다. 관리자 컨트롤러에 도달한 요청이고 보는 사람에게 회원 조회 권한이 있으며, 탈퇴 회원이 아니고
+  실명이 표시 이름과 다를 때만 별도 키(`real_name`, `author_real_name`, `user_real_name`, `granted_by_real_name`,
+  `created_by_real_name`)로 싣는다. 사용자 화면 응답에는 어떤 경우에도 실명 키가 없다.
+
+  기능별 설정(후기, 문의)은 쇼핑몰 환경설정에서 바꾸지만 값은 코어 설정의 영역 묶음에 저장된다. 그래서 환경설정의 회원 탭과
+  값이 하나이고, 닉네임으로 고정하면 코어가 닉네임 항목을 잠근다.
+
+  축은 하나(`case`)다. 영역, 화면, 권한을 축으로 나누면 곱이 미커버로 남으므로 잠그는 사실 하나를 한 사례로 편다.
+
+axes:
+  case:
+    # 설정을 바꾸지 않은 사이트
+    - default_inquiry_author_is_masked_as_before
+    - default_review_author_is_member_name
+    - order_names_stay_as_entered
+    # 영역 설정
+    - review_area_setting_applies
+    - inquiry_area_setting_applies
+    - withdrawn_member_phrase
+    - ecommerce_areas_are_registered
+    # 관리자 화면
+    - admin_lists_show_admin_area_name_with_real_name
+    - real_name_omitted_when_same_or_empty
+    - admin_member_search_matches_name_and_nickname
+    # 쿼리 수, 캐시
+    - list_query_count_is_stable_with_field_kind
+    - display_name_change_invalidates_product_detail_cache
+    # 데이터 내보내기
+    - export_new_snapshot_is_admin_area_display_name
+    - export_past_snapshot_is_immutable
+    - export_requester_search_matches_name_and_nickname
+    - export_file_member_columns_are_real_names
+    # 쇼핑몰 환경설정
+    - settings_response_carries_display_name
+    - settings_save_writes_core_area_settings
+    - settings_save_without_display_name_keeps_areas
+    - settings_save_validates_display_name
+    - nickname_kind_locks_nickname_field
+    # 알림
+    - notification_member_names
+
+effects:
+  # 설정을 바꾸지 않은 사이트
+  - default_inquiry_author_equals_legacy_mask
+  - inquiry_author_is_not_masked_twice
+  - default_review_author_is_member_name
+  - imported_review_author_is_stored_name
+  - user_response_has_no_real_name
+  - order_orderer_and_recipient_stay_as_entered
+  - order_member_block_follows_admin_area
+  - checkout_default_name_source_stays_real_name
+  # 영역 설정
+  - review_author_follows_review_area
+  - review_author_follows_member_choice
+  - review_area_does_not_change_inquiry
+  - inquiry_author_follows_inquiry_area
+  - inquiry_author_follows_member_choice
+  - withdrawn_member_shows_phrase_in_reviews_and_inquiries
+  - withdrawn_member_shows_phrase_in_admin_lists
+  - real_name_omitted_for_withdrawn_member
+  - ecommerce_areas_registered_with_declared_defaults
+  - ecommerce_admin_area_overrides_core_admin_area
+  # 관리자 화면
+  - admin_member_name_follows_admin_area
+  - admin_real_name_added_for_member_readers
+  - admin_real_name_hidden_without_member_read_permission
+  - real_name_omitted_when_same_as_display_name
+  - real_name_omitted_when_empty
+  - admin_member_search_matches_name
+  - admin_member_search_matches_nickname
+  - admin_member_search_keeps_email
+  # 쿼리 수, 캐시
+  - admin_list_reads_field_values_once
+  - public_review_list_reads_field_values_once
+  - public_inquiry_list_reads_field_values_once
+  - product_detail_seo_cache_invalidated_on_member_display_name_change
+  # 데이터 내보내기
+  - export_requester_snapshot_is_admin_area_display_name
+  - export_download_snapshot_is_admin_area_display_name
+  - export_snapshot_keeps_length_limit
+  - export_history_requester_is_stored_snapshot
+  - export_download_history_user_is_stored_snapshot
+  - export_past_snapshot_unchanged_by_setting_or_rename
+  - export_requester_search_matches_snapshot
+  - export_requester_search_matches_nickname
+  - export_requester_search_keeps_email
+  - export_file_mileage_member_is_real_name
+  - export_file_mileage_granter_is_real_name
+  - export_file_order_orderer_is_entered_name
+  - export_file_null_name_is_blank
+  # 쇼핑몰 환경설정
+  - settings_response_carries_area_settings
+  - settings_response_carries_kind_options_with_preview
+  - settings_response_carries_effective_rule_with_source_label
+  - display_name_saved_to_core_area_settings
+  - other_area_settings_preserved
+  - kind_dropped_unless_fixed
+  - display_name_not_written_to_module_settings
+  - display_name_options_ignored_on_save
+  - core_member_tab_shows_same_area_value
+  - seo_cache_cleared_after_save
+  - area_settings_untouched_when_display_name_absent
+  - display_name_mode_validated
+  - display_name_kind_required_when_fixed
+  - display_name_kind_must_be_registered
+  - invalid_display_name_saves_nothing
+  - nickname_fixed_area_locks_nickname_field
+  - reverting_area_unlocks_nickname_field
+  # 알림
+  - notification_recipient_name_is_placeholder_for_member
+  - notification_customer_name_follows_notification_area
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AuthorDisplayNameTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ExportDisplayNameTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Settings/DisplayNameSettingsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceNotificationDataListenerTest.php
+
+notes:
+  - |
+    사용자 화면에는 작성자 이름으로 후기나 문의를 찾는 검색이 없다(상품 상세의 후기 목록은 별점과 옵션으로만 거른다).
+    그래서 「사용자 화면 검색은 그 영역에서 보이는 종류만 찾는다」 사례는 이 매니페스트에 없다. 그 규칙 자체는 코어의
+    검색 헬퍼 테스트가 잠근다.
+  - |
+    알림의 받는 사람 이름은 이커머스가 자리표시(`{recipient_name}`)만 싣고 코어가 받는 사람과 채널마다 푼다. 채널별로 풀린
+    값은 코어 알림 테스트가 잠근다. 교환, 반품, 환불 알림의 받는 사람 이름 자리표시는 기존 클레임 알림 테스트가 잠근다.
+  - |
+    `EcommerceNotificationDataListenerTest` 는 주문 알림 매니페스트(`order-status-notification.yaml`)에도 올라 있다.
+    이 매니페스트에는 표시 이름 사례 하나(`notification_member_names`)만 귀속한다.

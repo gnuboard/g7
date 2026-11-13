@@ -7,7 +7,10 @@ interface Board {
 }
 interface User {
     id: number;
-    name: string;
+    /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+    name: string | null;
+    /** 사이트 기본 영역에서 보이는 이름(표시 이름). 드로어는 이 값을 먼저 쓴다 */
+    display_name?: string | null;
     avatar?: string;
 }
 interface MobileNavProps {

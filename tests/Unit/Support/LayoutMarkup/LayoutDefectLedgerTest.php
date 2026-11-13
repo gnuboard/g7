@@ -86,6 +86,7 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @param  array<mixed>  $value  값
      * @param  callable(array<mixed>): void  $visit  방문자
      * @param  bool  $inNodePosition  노드 자리(children/components 원소)인지
+     * @return void 반환값 없음(판정한 노드는 방문자가 처리)
      */
     private function walkNodes(array $value, callable $visit, bool $inNodePosition = true): void
     {
@@ -96,6 +97,13 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
         foreach ($value as $key => $child) {
             if (! is_array($child)) {
                 continue;
+            }
+
+            // 액션의 `params.body` 는 서버로 보내는 요청 본문이라 렌더되지 않는다 — 항목 API 처럼 본문 필드가
+            // `key`·`type`·`name` 이면 구조 판정이 노드로 오인한다(#490 비회원 작성자 항목 추가 창). 본문만 빼고
+            // params 의 나머지는 그대로 훑는다.
+            if ($key === 'params' && isset($value['handler']) && array_key_exists('body', $child)) {
+                $child = array_diff_key($child, ['body' => true]);
             }
 
             $childIsNodeList = in_array($key, self::NODE_POSITION_LISTS, true) && array_is_list($child);
@@ -133,6 +141,7 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @param  mixed  $actions  액션 배열/객체
      * @param  callable(array<mixed>, int): void  $visit  방문자
      * @param  int  $depth  중첩 깊이
+     * @return void 반환값 없음(찾은 액션은 방문자가 처리)
      */
     private function walkActions(mixed $actions, callable $visit, int $depth = 0): void
     {
@@ -187,6 +196,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects bare_string_node_condition_is_eliminated
+     *
+     * @return void 반환값 없음
      */
     public function test_f1_no_bare_string_node_condition(): void
     {
@@ -213,6 +224,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=defective
      *
      * @effects switch_branch_value_lives_in_params
+     *
+     * @return void 반환값 없음
      */
     public function test_f2_no_switch_top_level_value(): void
     {
@@ -235,6 +248,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=defective
      *
      * @effects action_condition_alias_is_normalized_to_if
+     *
+     * @return void 반환값 없음
      */
     public function test_f3_no_action_condition_key(): void
     {
@@ -259,6 +274,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=defective
      *
      * @effects dead_action_keys_are_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_f4_no_dead_action_keys(): void
     {
@@ -294,6 +311,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects modal_footer_moves_to_props
+     *
+     * @return void 반환값 없음
      */
     public function test_f5_no_node_level_footer(): void
     {
@@ -316,6 +335,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=defective
      *
      * @effects state_and_initlocal_do_not_coexist
+     *
+     * @return void 반환값 없음
      */
     public function test_f6_no_state_and_initlocal_coexistence(): void
     {
@@ -336,6 +357,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=defective
      *
      * @effects lifecycle_actions_carry_no_dom_event_type
+     *
+     * @return void 반환값 없음
      */
     public function test_f7_no_dead_lifecycle_event_type(): void
     {
@@ -371,6 +394,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects dead_node_keys_and_comment_aliases_are_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_f8_no_dead_node_keys(): void
     {
@@ -406,6 +431,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects nested_interpolation_is_eliminated
+     *
+     * @return void 반환값 없음
      */
     public function test_f9_no_nested_interpolation(): void
     {
@@ -432,6 +459,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects bindlocal_node_key_is_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_f10_no_bindlocal_node_key(): void
     {
@@ -454,6 +483,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects unregistered_components_are_replaced
+     *
+     * @return void 반환값 없음
      */
     public function test_f11_and_f21_no_unregistered_components(): void
     {
@@ -477,6 +508,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=document,source_health=defective
      *
      * @effects bare_node_partials_declare_is_partial
+     *
+     * @return void 반환값 없음
      */
     public function test_f12_bare_node_partials_declare_is_partial(): void
     {
@@ -504,6 +537,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects partial_nodes_carry_no_sibling_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_f13_and_f16_no_partial_sibling_keys(): void
     {
@@ -532,6 +567,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects dollar_partial_node_is_eliminated
+     *
+     * @return void 반환값 없음
      */
     public function test_f14_no_dollar_partial_node(): void
     {
@@ -554,6 +591,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=defective
      *
      * @effects if_is_not_used_as_a_handler_name
+     *
+     * @return void 반환값 없음
      */
     public function test_f15_no_if_handler(): void
     {
@@ -576,6 +615,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects iteration_is_an_object_with_a_source_key
+     *
+     * @return void 반환값 없음
      */
     public function test_f17_and_f20_iteration_shape(): void
     {
@@ -609,6 +650,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=defective
      *
      * @effects confirm_only_appears_on_entry_actions
+     *
+     * @return void 반환값 없음
      */
     public function test_f18_no_nested_confirm(): void
     {
@@ -631,6 +674,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects node_level_key_is_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_f19_no_node_level_key(): void
     {
@@ -653,6 +698,8 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=node,source_health=defective
      *
      * @effects every_node_declares_a_component_name
+     *
+     * @return void 반환값 없음
      */
     public function test_f22_no_anonymous_nodes(): void
     {
@@ -711,6 +758,7 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      * @param  array<mixed>  $value  값
      * @param  string  $file  파일 경로
      * @param  list<string>  $findings  발견 목록 (참조)
+     * @return void 반환값 없음(발견 항목은 참조로 받은 목록에 쌓음)
      */
     private function assertNoCommentAlias(array $value, string $file, array &$findings): void
     {
@@ -730,6 +778,7 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
      *
      * @param  array<mixed>  $layout  레이아웃
      * @param  callable(array<mixed>, int): void  $visit  방문자
+     * @return void 반환값 없음(찾은 액션은 방문자가 처리)
      */
     private function eachAction(array $layout, callable $visit): void
     {

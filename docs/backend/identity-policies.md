@@ -207,6 +207,83 @@ class CleanInicisMappingOnCancel implements HookListenerInterface
 }
 ```
 
+## 5.3 본인인증 값을 회원 항목에 채우기 (7.2.0)
+
+휴대폰 본인인증처럼 이름, 휴대폰 번호, 생년월일, 성별을 확인해 주는 수단은 그 값을 코어에 내줄 수 있습니다. 코어는 수단이 무엇인지 모르고, 선택 계약 `App\Contracts\Extension\ProvidesVerifiedClaimsInterface` 만 봅니다. 본인인증 프로바이더 클래스가 `IdentityVerificationInterface` 와 함께 이 계약을 구현하면 됩니다. 구현하지 않은 수단(메일 인증번호 등)은 인증 값이 없는 것으로 다뤄져 아래 동작이 일어나지 않습니다.
+
+```php
+use App\Contracts\Extension\IdentityVerificationInterface;
+use App\Contracts\Extension\ProvidesVerifiedClaimsInterface;
+use App\Extension\IdentityVerification\DTO\VerifiedClaims;
+use App\Models\IdentityVerificationLog;
+use App\Models\User;
+
+class MyIdentityProvider implements IdentityVerificationInterface, ProvidesVerifiedClaimsInterface
+{
+    public function supportedClaims(): array
+    {
+        return [VerifiedClaims::CLAIM_NAME, VerifiedClaims::CLAIM_MOBILE, VerifiedClaims::CLAIM_BIRTH_DATE, VerifiedClaims::CLAIM_GENDER];
+    }
+
+    public function verifiedClaims(IdentityVerificationLog $log, ?User $user): ?VerifiedClaims
+    {
+        // 확인을 마친 요청 행($log)에 대해 자기가 보관한 인증 결과를 찾아 돌려준다. 찾을 수 없으면 null.
+        $record = $this->records->findForLog($log, $user);
+
+        return $record === null ? null : new VerifiedClaims(
+            name: $record->name,
+            mobile: $record->phone,              // 숫자만 또는 하이픈 포함
+            birthDate: $record->birthDate,       // YYYY-MM-DD
+            gender: $record->isFemale ? VerifiedClaims::GENDER_FEMALE : VerifiedClaims::GENDER_MALE,
+        );
+    }
+}
+```
+
+| 인증 값 키 | `VerifiedClaims` 속성 | 형식 |
+| --- | --- | --- |
+| `name` | `name` | 문자열 |
+| `mobile` | `mobile` | 숫자만 또는 하이픈 포함 |
+| `birth_date` | `birthDate` | `YYYY-MM-DD` |
+| `gender` | `gender` | `male` 또는 `female` |
+| 그 밖 | `extra[키]` | 확장이 정한 키와 문자열 값 |
+
+`verifiedClaims()` 는 가입 전(회원이 없는 상태, `$user` 가 null)에도 불립니다. 가입 화면이 항목을 그릴 때와 가입 요청을 검증할 때이므로, 가입 전 인증 결과를 임시로 보관하는 수단은 그 보관소에서도 값을 찾아야 합니다. 코어는 받은 값을 요청 행이나 로그에 다시 저장하지 않고 회원 항목 값으로만 씁니다.
+
+어느 회원 항목에 넣을지는 항목 정의가 정합니다. 운영자가 환경설정의 회원 항목에서 「본인인증 연결」(`idv_claim`)로 인증 값 키를 고르고, 「인증 값으로 채우고 잠금」(`idv_lock`)을 켭니다. 코어 기본 항목은 이름이 `name`, 휴대폰이 `mobile` 에 연결돼 있습니다.
+
+| 자리 | 동작 |
+| --- | --- |
+| 가입 화면 항목 조회 (`GET /api/auth/register/fields?verification_token=…`) | 연결된 항목의 `default` 를 인증 값으로 채운다. 잠금을 켠 항목은 `readonly: true`, `locked_reason: identity`. 결과는 `verified_claims` (`status`, `filled`, `locked`) |
+| 채움값 조회 (`POST /api/identity/claims`) | 토큰의 인증 값과 항목 키별 채움값, 잠글 항목 키 |
+| 가입 요청 (`POST /api/auth/register`) | 잠금을 켠 항목의 입력을 인증 값으로 덮어쓴다. 입력이 인증 값과 달라도 오류가 아니다 |
+| 가입 직후 | 인증 값을 주는 수단으로 인증했으면 회원에게 그 인증을 기록한다 (`identity_verified_at`, `identity_verified_provider`) |
+| 내 정보 수정 | 잠금을 켠 항목 가운데 값이 들어 있는 것을 「현재 값과 같아야 함」으로 잠근다. 화면 계약은 `locked_reason: identity`, 다른 값을 보내면 422 |
+| 로그인 회원의 재인증 | 잠금을 켠 항목을 새 인증 값으로 다시 맞춘다 |
+
+- 잠금은 내 정보 화면에만 걸립니다. 관리자 화면에서는 잠그지 않습니다.
+- 값이 비어 있는 항목은 잠그지 않습니다. 인증 값이 오지 않은 칸(수단이 생년월일을 주지 않은 경우 등)을 회원이 채울 수 있어야 하기 때문입니다.
+- 항목 유형의 규칙에 맞지 않는 인증 값은 넣지 않습니다. 성별을 「하나 선택」 항목에 연결하려면 선택지 값을 `male`, `female` 로 만들고, 생년월일은 「날짜」 항목에 연결합니다.
+- 수단이 `supportedClaims()` 에 넣지 않은 키에 연결된 항목은 그 수단으로 인증한 회원에게 잠기지 않습니다.
+- 필터 `core.identity.filter_verified_claims(?VerifiedClaims $claims, IdentityVerificationLog $log, ?User $user)` 로 인증 값을 고치거나, 계약을 구현하지 않은 수단의 값을 대신 줄 수 있습니다. `VerifiedClaims` 가 아닌 값을 돌려주거나 값이 하나도 없으면 인증 값이 없는 것으로 봅니다.
+- 필터로만 값을 준 수단(계약을 구현하지 않은 수단)은 가입 화면 채움, 가입 요청 덮어쓰기, 재인증 동기화까지만 됩니다. 가입 직후의 인증 기록과 내 정보 수정의 잠금은 수단이 계약을 구현했을 때만 일어납니다(잠금은 회원에게 기록된 수단의 `supportedClaims()` 를 읽습니다).
+- 인증 값을 읽는 토큰은 확인을 마쳤고 만료되지 않았으며 아직 쓰지 않은 토큰입니다. 만료됐거나 이미 쓴 토큰은 `expired`, 알 수 없는 토큰은 `invalid` 로 답하고 어느 쪽도 항목을 채우거나 잠그지 않습니다. 회원에게 묶인 요청 행(로그인 상태에서 시작한 본인인증)의 값은 그 회원만 읽을 수 있고, 다른 요청에는 `invalid` 로 답합니다.
+- 잠금을 켜지 않은 연결 항목은 화면 초기값으로만 채워집니다. 서버가 덮어쓰지 않으므로 화면이 그 값을 폼 값으로 넣어 보내야 저장되고, 회원이 고쳐 보낼 수 있습니다.
+- 기본 칸(이름, 휴대폰 등)의 잠금은 필터 `core.user.locked_fields` 와 `core.user.locked_field_reasons`(사유 `identity`)로 나가므로, 회원 응답의 `locked_fields`, `locked_reasons` 에도 실립니다. 다른 확장(회사 계정 연동 등)이 같은 칸을 잠갔으면 그쪽 사유가 유지됩니다.
+
+### 5.3.1 번들 본인인증 플러그인이 주는 값
+
+번들 본인인증 플러그인 2종이 이 계약을 구현합니다. 둘 다 가입 전에는 인증 직후 임시로 보관한 값에서, 회원이 있으면 그 회원의 기록에서 값을 꺼냅니다. 회원 기록은 다시 인증하면 덮어쓰므로, 기록이 그 요청 행의 것일 때만 값을 줍니다.
+
+| 인증 값 키 | KG이니시스 (`inicis`) | NHN KCP (`nhnkcp`) |
+| --- | --- | --- |
+| `name` | 준다 | 준다 |
+| `mobile` | 준다 (숫자만) | 준다 (숫자만) |
+| `birth_date` | 준다 (`YYYY-MM-DD`) | 운영 모드에서 준다 (`YYYY-MM-DD`). 테스트 모드에서는 없다 |
+| `gender` | 응답 값이 `M`, `F` 일 때 준다 | 운영 모드에서 준다. 테스트 모드에서는 없다 |
+
+NHN KCP 는 테스트 모드에서 `supportedClaims()` 가 `name`, `mobile` 만 돌려줍니다(테스트 서버가 생년월일과 성별을 주지 않습니다).
+
 ## 6. 시드 정책 (코어 기본 9종, 모두 `core.*` namespace)
 
 `config/core.php` `identity_policies` 블록에 선언. `IdentityPolicySeeder` 가 동기화하며 `HasUserOverrides` 트레이트가 운영자 수정값을 보존합니다.

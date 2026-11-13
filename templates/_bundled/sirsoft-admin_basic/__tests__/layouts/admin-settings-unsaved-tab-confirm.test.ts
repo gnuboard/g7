@@ -13,6 +13,9 @@ import { describe, it, expect } from 'vitest';
 import layout from '../../layouts/admin_settings.json';
 import modal from '../../layouts/partials/admin_settings/_modal_unsaved_tab_switch.json';
 import identityTab from '../../layouts/partials/admin_settings/_tab_identity_policies.json';
+import memberFieldsTable from '../../layouts/partials/admin_settings/_tab_member_fields.json';
+import memberFieldsCards from '../../layouts/partials/admin_settings/_tab_member_fields_cards.json';
+import memberNickname from '../../layouts/partials/admin_settings/_tab_member_nickname.json';
 
 /** 노드 트리를 돌며 조건에 맞는 노드를 모은다. */
 function collect(node: any, match: (n: any) => boolean, out: any[] = []): any[] {
@@ -186,5 +189,30 @@ describe('코어 환경설정 — 미저장 변경이 있을 때 탭 전환 확�
     expect((layout as any).transition_overlay?.wait_for).toContain('policies');
     // 목록 소스는 이 레이아웃에 있는 데이터 소스여야 한다(오타면 아무것도 다시 받지 않는다)
     expect(((layout as any).data_sources ?? []).some((d: any) => d.id === 'policies')).toBe(true);
+  });
+  // @scenario case=member_fields_table_not_form_state
+  // @effects member_fields_table_keeps_settings_form_clean
+  it('회원 탭 가입 항목 표의 스위치, 순서, 행 단추는 설정 폼과 「변경 있음」을 건드리지 않는다(즉시 저장이라 확인 창이 오탐으로 뜨지 않게)', () => {
+    // 표의 조작은 누르는 즉시 항목 API 로 저장한다(#490 D1). 설정 폼에 묶이면 하단 「저장」과 탭 전환 확인 창이 이 표 때문에 켜진다
+    for (const partial of [memberFieldsTable, memberFieldsCards]) {
+      // 자동 바인딩되는 칸(name)이 없다 — 스위치는 name 없이 명시 요청으로 저장한다
+      expect(collect(partial, (n) => typeof n.name === 'string' && n.name !== 'Icon' && typeof n.props?.name === 'string')).toEqual([]);
+
+      const writes = collect(partial, (n) => n.handler === 'setState');
+      expect(writes.length).toBeGreaterThan(0);
+      for (const w of writes) {
+        expect(w.params.target).toBe('global');
+        expect(Object.keys(w.params).some((k) => k === 'hasChanges' || k.startsWith('form') || k.startsWith('_local'))).toBe(false);
+      }
+      // 저장 뒤에는 항목 정의만 다시 받는다 — 설정(`settings`)을 다시 받으면 같은 탭 닉네임 정책 칸에서 고친 값이 덮인다
+      const refetched = new Set(collect(partial, (n) => n.handler === 'refetchDataSource').map((n) => n.params.dataSourceId));
+      expect([...refetched]).toEqual(['memberFieldDefs']);
+    }
+    expect(((layout as any).data_sources ?? []).some((d: any) => d.id === 'memberFieldDefs')).toBe(true);
+
+    // 같은 탭의 닉네임 정책은 반대로 설정 폼에 담는다 — 중복 금지 스위치는 명시 배선이라 폼에 담을 때 「변경 있음」을 함께 세운다
+    const formWrites = collect(memberNickname, (n) => n.handler === 'setState' && 'form.member.nickname_unique' in (n.params ?? {}));
+    expect(formWrites.length).toBe(3);
+    for (const w of formWrites) expect(w.params).toMatchObject({ target: 'local', hasChanges: true });
   });
 });

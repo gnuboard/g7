@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
 use App\Helpers\TimezoneHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -19,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 쿠폰 Repository 구현체
@@ -75,10 +77,8 @@ class CouponRepository implements CouponRepositoryInterface
                     // 쿠폰 테이블도 컬럼별 단일 FULLTEXT 인덱스다 — 복합 MATCH 는 쓸 수 없다.
                     KeywordSearch::applyAny($group, ['name', 'description'], $keyword);
 
-                    $group->orWhereHas('creator', function ($creatorQuery) use ($keyword) {
-                        $creatorQuery->where('name', 'like', "%{$keyword}%")
-                            ->orWhere('email', 'like', "%{$keyword}%");
-                    });
+                    // 등록자는 이름과 닉네임을 모두 찾는다(관리자 화면의 회원 검색 공통 규칙). 이메일도 종전대로 찾는다.
+                    $group->orWhereHas('creator', fn ($creatorQuery) => MemberDisplayName::constrainUsersForAdmin($creatorQuery, (string) $keyword, withEmail: true));
                 });
             } elseif ($searchField === 'name') {
                 // 컬럼 한정 검색 — Scout(FULLTEXT)는 컬럼 한정 미지원이므로 단일컬럼 LIKE
@@ -86,10 +86,7 @@ class CouponRepository implements CouponRepositoryInterface
             } elseif ($searchField === 'description') {
                 $query->where('description', 'like', "%{$keyword}%");
             } elseif ($searchField === 'created_by') {
-                $query->whereHas('creator', function ($creatorQuery) use ($keyword) {
-                    $creatorQuery->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
-                });
+                $query->whereHas('creator', fn ($creatorQuery) => MemberDisplayName::constrainUsersForAdmin($creatorQuery, (string) $keyword, withEmail: true));
             }
         }
 
@@ -119,7 +116,7 @@ class CouponRepository implements CouponRepositoryInterface
         }
 
         // 기본 관계 로드
-        $query->with(['creator:id,uuid,name,email']);
+        $query->with(['creator:'.User::displayColumns()]);
 
         // audit:allow repository-paginate-column-pruning reason: 쿠폰 "정의" 목록 —
         // 행 수가 운영자가 만든 쿠폰 수에 묶인다(발급 이력은 별도 테이블). description 외에 넓은 컬럼이 없다
@@ -217,7 +214,7 @@ class CouponRepository implements CouponRepositoryInterface
             ],
             perPage: $perPage,
             // 관계 로드 (사용처 주문번호 표시를 위해 order 도 로드)
-            relations: ['user:id,uuid,name', 'order:id,order_number'],
+            relations: ['user:'.User::displayColumns(), 'order:id,order_number'],
             resultCap: PaginationLimits::resultCap('ecommerce.coupon_issues'),
         );
     }

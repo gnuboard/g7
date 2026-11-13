@@ -56,16 +56,17 @@
         <span data-if="{{_local.errors?.['orderer.phone']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['orderer.phone']?.[0] ?? ''}}</span>
       </div>
     </div>
-    <!-- 이메일 -->
-    <div>
+    <!-- 이메일 — 사용과 필수 여부는 운영자 설정(계산값 checkoutFields.orderer_email)을 따른다. 설정이 없는 응답에서는 종전대로 늘 그리고 비회원만 필수다.
+         비회원은 이메일이 주문 확인 수단이라 서버가 늘 사용과 필수로 준다. -->
+    <div data-if="{{_computed.checkoutFields?.orderer_email?.enabled !== false}}" data-ref="checkout_field_orderer_email">
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:shop.checkout.orderer_email</span>
-        <span data-if="{{!_global.currentUser?.uuid}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
+        <span data-if="{{!!_computed.checkoutFields?.orderer_email?.required}}" data-ref="checkout_field_orderer_email_required" class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
-      <input aria-label="$t:shop.checkout.orderer_email" type="email" name="orderer_email" value="{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}" placeholder="$t:shop.checkout.orderer_email_placeholder" class="{{_local.errors?.['orderer.email'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+      <input aria-label="$t:shop.checkout.orderer_email" aria-required="{{!!_computed.checkoutFields?.orderer_email?.required}}" required="{{!!_computed.checkoutFields?.orderer_email?.required}}" type="email" name="orderer_email" value="{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}" placeholder="$t:shop.checkout.orderer_email_placeholder" class="{{_local.errors?.['orderer.email'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
         <responsive on="portable" class="{{_local.errors?.['orderer.email'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
         <on type="change">
-          <!-- 주문 확인 메일이 가는 주소. 비회원에게는 필수라 별표가 조건부로 붙는다 -->
+          <!-- 주문 확인 메일이 가는 주소. 필수 여부는 운영자 설정을 따르고 비회원에게는 늘 필수다 -->
           <set-state target="local" orderer.email="{{$event.target.value}}"/>
         </on>
       </input>
@@ -115,6 +116,10 @@
           </password-input>
         </div>
       </div>
+    </div>
+    <!-- 주문자 구획의 추가 항목 — 운영자가 더한 항목과 다른 확장이 보탠 항목. 항목이 없으면 묶음 자체를 그리지 않는다 -->
+    <div data-each="checkoutFieldGroup in {{(_computed.checkoutFields?.orderer ?? []).length > 0 ? [{ key: 'orderer', label: $t('shop.checkout_fields.orderer_extra'), fields: _computed.checkoutFields.orderer }] : []}}">
+      <include src="partials/shop/_checkout_extra_fields.g7.html"/>
     </div>
   </div>
 </partial>

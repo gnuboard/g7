@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Modules\Sirsoft\Board\Traits\PresentsMemberName;
 
 /**
  * 신고 케이스 상세 API 리소스
@@ -19,6 +20,7 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 class ReportDetailResource extends BaseApiResource
 {
     use ChecksBoardPermission;
+    use PresentsMemberName;
 
     /**
      * 리소스를 배열로 변환합니다.
@@ -250,6 +252,8 @@ class ReportDetailResource extends BaseApiResource
         return [
             'uuid' => $reportable['author_uuid'] ?? null,
             'name' => $isMember ? $name : ($name ?? __('sirsoft-board::messages.common.guest')),
+            // 실명 보조 — 서비스가 회원 조회 권한과 표시 이름과의 차이를 이미 판정했다(없으면 키를 싣지 않는다)
+            ...(! empty($reportable['author_real_name']) ? ['real_name' => $reportable['author_real_name']] : []),
             'email' => $this->canExposeMemberEmail(null, $authorId !== null ? (int) $authorId : null)
                 ? ($reportable['author_email'] ?? null)
                 : null,
@@ -272,9 +276,8 @@ class ReportDetailResource extends BaseApiResource
         return [
             'id' => $log->id,
             'reporter' => $log->reporter
-                ? [
+                ? $this->boardMemberNameFields($log->reporter) + [
                     'uuid' => $log->reporter->uuid,
-                    'name' => $log->reporter->name,
                     'email' => $this->canExposeMemberEmail(null, $log->reporter->id) ? $log->reporter->email : null,
                 ]
                 : null,
@@ -311,7 +314,7 @@ class ReportDetailResource extends BaseApiResource
             $isReportEvent = in_array($type, ['reported', 're_reported', 'report_cancelled']);
             $processorName = $isReportEvent
                 ? null
-                : ($processor?->name ?? __('sirsoft-board::messages.common.system'));
+                : ($this->boardMemberDisplayName($processor) ?? __('sirsoft-board::messages.common.system'));
             $processorEmail = $isReportEvent ? '' : ($processor?->email ?? '');
 
             $createdAtRaw = $history['created_at'] ?? null;

@@ -1,0 +1,1944 @@
+{
+    "comment": "소셜 가입 모달 2개의 사용자 템플릿 판본 — 소셜 로그인 플러그인의 같은 조각(resources/extensions/auth_register_social_modals)을 대체한다(템플릿 오버라이드, 대상 auth/register).\n     원본과 다른 점은 하나다: ① 가입 완료 창이 이름, 닉네임 두 칸 대신 코어 가입 화면과 같은 회원 항목(환경설정 > 회원 > 가입 항목)을 그린다.\n     항목은 가입 화면과 같은 API(/api/auth/register/fields)에서 받되 가입 대기 토큰을 함께 넘겨 제공자가 준 이름, 닉네임을 초기값으로 받고, 받은 정의 버전(fields_version)을 가입 요청에 싣는다.\n     항목을 받지 못하면(옛 코어 등) 원본처럼 이름, 닉네임 칸을 그리고 버전 없이 보낸다 — 그 회원의 빠진 필수 항목은 첫 로그인 뒤 추가 정보 입력 화면이 받는다.\n     그 밖(만료 안내, 이메일 인증번호, 약관 동의, ② 이미 가입된 이메일 창, 로그인 인계)은 원본과 같다. 원본을 고치면 이 파일도 함께 고친다 — 플러그인 버전이 version-constraint 를 벗어나면 코어가 원본으로 되돌린다.\n     확장 조각은 include 를 풀지 않으므로 공용 조각 partials/member/_member_fields 의 항목 반복 구획을 이 파일 안에 옮겨 적었다(두 번: 항목 묶음, 약관 묶음). 화면 문맥(computed memberFieldCtx)은 창의 전역 상태로 바꿨고, 노드 id 는 가입 화면 본문의 같은 칸과 겹치지 않게 social_ 접두를 붙였다.\n     주소 검색 단추와 파일 갈래는 옮기지 않았다(구획 주석 참고). 구획이 공용 조각과 어긋나면 __tests__/layouts/member-fields-markup-parity 가 알린다.\n     상태는 원본과 같이 _global 에 둔다 — 모달은 페이지 _local 의 낡은 값을 본다. 더한 상태: socialLoginFields(항목 계약), socialLoginFieldsVersion(정의 버전), socialLoginFieldsState(loading, ready, failed), socialLoginFieldForm(항목 값, 폼 자동 바인딩), socialLoginErrors(칸별 검증 오류).",
+    "target_layout": "auth/register",
+    "priority": 100,
+    "init_actions": [
+        {
+            "comment": "가입 대기 받기 — 소셜 가입으로 온 경우에만. 단계에 따라 모달을 연다.",
+            "handler": "setState",
+            "if": "{{!!query.social_pending}}",
+            "params": {
+                "target": "global",
+                "socialLoginSignup": null,
+                "socialLoginSignupExpired": false,
+                "socialLoginSignupError": null,
+                "socialLoginErrors": null,
+                "socialLoginEmailChallengeId": null,
+                "socialLoginEmailVerified": false,
+                "socialLoginEmailExpiresAt": null,
+                "socialLoginEmailRemaining": 0,
+                "socialLoginExistingChallengeId": null,
+                "socialLoginBusy": false,
+                "socialLoginFields": null,
+                "socialLoginFieldsVersion": null,
+                "socialLoginFieldForm": null,
+                "socialLoginFieldsState": "loading"
+            }
+        },
+        {
+            "handler": "apiCall",
+            "target": "/api/plugins/sirsoft-social_login/signup/pending?pending_token={{query.social_pending}}",
+            "if": "{{!!query.social_pending}}",
+            "auth_mode": "optional",
+            "params": {
+                "method": "GET"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "socialLoginSignup": "{{response.data}}",
+                        "socialLoginForm.name": "{{response.data?.name ?? ''}}",
+                        "socialLoginForm.nickname": "{{response.data?.nickname ?? ''}}",
+                        "socialLoginForm.email": "{{response.data?.email?.value ?? ''}}",
+                        "socialLoginForm.agree_terms": false,
+                        "socialLoginForm.agree_privacy": false
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "social_existing_account",
+                    "if": "{{response.data?.step === 'existing'}}"
+                },
+                {
+                    "handler": "openModal",
+                    "target": "social_signup_complete",
+                    "if": "{{response.data?.step !== 'existing'}}"
+                },
+                {
+                    "comment": "회원 항목 받기 — 코어 가입 화면과 같은 항목 계약을 받는다. 가입 대기 토큰을 넘기면 서버가 제공자가 준 이름, 닉네임을 항목의 초기값(default)으로 채워 준다.\n             글 칸의 초기값은 폼 값으로 옮겨 적는다(입력 부품은 글 칸의 default 를 그리지 않는다). 고르는 칸(선택, 예/아니오, 국가, 시간대)은 입력 부품이 default 를 직접 보여 주므로 옮기지 않는다.\n             받지 못하면(옛 코어 등) failed 로 두어 창이 원본처럼 이름, 닉네임 칸을 그리게 한다.",
+                    "handler": "apiCall",
+                    "target": "/api/auth/register/fields?pending_source=sirsoft-social_login&pending_token={{query.social_pending}}",
+                    "auth_mode": "optional",
+                    "params": {
+                        "method": "GET"
+                    },
+                    "onSuccess": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "merge": "shallow",
+                            "socialLoginFields": "{{response.data?.fields ?? []}}",
+                            "socialLoginFieldsVersion": "{{response.data?.fields_version ?? null}}",
+                            "socialLoginFieldForm": "{{Object.fromEntries((response.data?.fields ?? []).filter(function(f) { return !f.deferred && f.default !== null && f.default !== undefined && f.name.indexOf('.') === -1 && ['choice', 'multi_choice', 'boolean'].indexOf(f.type) === -1 && !f.constraints?.widget; }).map(function(f) { return [f.name, f.default]; }))}}",
+                            "socialLoginFieldsState": "{{response.data?.fields_version ? 'ready' : 'failed'}}"
+                        }
+                    },
+                    "onError": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "socialLoginFieldsState": "failed"
+                        }
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "socialLoginSignupExpired": true
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "social_signup_complete"
+                }
+            ]
+        },
+        {
+            "comment": "인증번호 남은 시간 — 1초마다 유효 시각까지 남은 초를 다시 센다(소셜 가입으로 온 경우에만)",
+            "handler": "startInterval",
+            "if": "{{!!query.social_pending}}",
+            "params": {
+                "id": "social_signup_code_tick",
+                "intervalMs": 1000,
+                "actions": [
+                    {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "socialLoginEmailRemaining": "{{_global.socialLoginEmailExpiresAt ? Math.max(0, Math.floor((new Date(_global.socialLoginEmailExpiresAt).getTime() - Date.now()) / 1000)) : 0}}"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "modals": [
+        {
+            "comment": "① 가입 완료",
+            "id": "social_signup_complete",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-social_login.signup.title|provider={{_global.socialLoginSignup?.provider?.label ?? $t('sirsoft-social_login.signup.provider_generic')}}",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sl:space-y-5"
+                    },
+                    "children": [
+                        {
+                            "comment": "만료 — 가입 대기 시간이 지났거나 이미 가입을 마쳤다",
+                            "id": "social_signup_expired",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.socialLoginSignupExpired === true}}",
+                            "props": {
+                                "className": "sl:space-y-4 sl:text-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.expired"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "만료 안내에서 닫고 로그인 화면으로 — 가입 대기 정보가 사라졌으므로 처음부터 다시 시작하게 한다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sl:w-full sl:px-4 sl:py-2.5 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:font-medium sl:cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.retry_login"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "social_signup_form",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.socialLoginSignupExpired !== true && !!_global.socialLoginSignup}}",
+                            "props": {
+                                "className": "sl:space-y-5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "sl:text-sm sl:text-gray-600 sl:dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.intro"
+                                },
+                                {
+                                    "comment": "회원 항목을 받는 동안의 안내 줄",
+                                    "id": "social_signup_fields_loading",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.socialLoginFieldsState === 'loading'}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:common.loading"
+                                },
+                                {
+                                    "comment": "회원 항목 — 이름, 닉네임, 연락처, 언어와 운영자가 추가한 항목. 어떤 칸을 어떤 순서로 받고 무엇이 필수인지는 환경설정 > 회원 > 가입 항목이 정한다(코어 가입 화면과 같은 항목). 값은 전역 폼 socialLoginFieldForm 에 자동 바인딩된다. 아래 묶음 노드는 공용 조각 partials/member/_member_fields 를 옮겨 적은 것이다",
+                                    "id": "social_signup_member_fields",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginFieldsState === 'ready'}}",
+                                    "dataKey": "_global.socialLoginFieldForm",
+                                    "children": [
+                                        {
+                                            "id": "social_member_fields_each_{{memberFieldGroup.key}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{[{ key: 'signup', fields: _global.socialLoginFields ?? [] }]}}",
+                                                "item_var": "memberFieldGroup"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "social_member_fields_group_{{memberFieldGroup.key}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "{{memberFieldGroup?.portableClassName ?? memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "{{memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "social_field_{{field.key}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "{{(memberFieldGroup?.fields ?? []).filter(function(f) { return !!memberFieldGroup?.includeAgreements || (f.ui?.group ?? '') !== 'agreements'; })}}",
+                                                                "item_var": "field"
+                                                            },
+                                                            "props": {
+                                                                "className": "{{field.ui?.parent ? 'ml-6' : ''}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다.",
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
+                                                                    "props": {
+                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.label}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{field.required}}",
+                                                                            "props": {
+                                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                            },
+                                                                            "text": "*"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "가입 화면에서 받지 않는 유형(파일, 이미지) — 안내 줄만 둔다. 가입 뒤 내 정보에서 올린다.",
+                                                                    "id": "social_mf_deferred_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.deferred}}",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.upload_after_signup"
+                                                                },
+                                                                {
+                                                                    "comment": "주소 — 우편번호, 기본 주소, 상세 주소 세 칸. 이 창에는 주소 검색 단추가 없어 세 칸 모두 직접 적는다(검색 단추는 고른 주소를 화면 지역 상태에 쓰는데 이 창의 폼 값은 전역 상태다). 잠긴 항목이면 세 칸 모두 읽기 전용(회색)이다.",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{!field.deferred && field.renderer === 'address'}}",
+                                                                    "props": {
+                                                                        "className": "space-y-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "flex flex-wrap gap-2"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Input",
+                                                                                    "props": {
+                                                                                        "type": "text",
+                                                                                        "name": "{{field.parts?.zipcode}}",
+                                                                                        "aria-label": "$t:member.fields.zipcode_label|label={{field.label}}",
+                                                                                        "placeholder": "$t:member.fields.zipcode",
+                                                                                        "className": "{{field.readonly ? 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                        "readOnly": "{{!!field.readonly}}",
+                                                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address}}",
+                                                                                "aria-label": "$t:member.fields.address_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.socialLoginBusy}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address_detail}}",
+                                                                                "aria-label": "$t:member.fields.address_detail_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address_detail",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.socialLoginBusy}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "확장이 제공한 유형 — 그 확장의 조각이 이 자리에 자기 입력칸을 그린다(조각은 루트에서 자기 유형일 때만 그린다).",
+                                                                    "id": "social_member_field_input_slot_{{field.key}}",
+                                                                    "type": "extension_point",
+                                                                    "name": "member_field_input",
+                                                                    "if": "{{!field.deferred && field.renderer === 'extension'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "error": "{{_global.socialLoginErrors?.[field.name]?.[0] ?? ''}}",
+                                                                        "disabled": "{{!!_global.socialLoginBusy}}",
+                                                                        "formKey": "{{'_global.socialLoginFieldForm'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "그 밖의 유형 — 항목 1개짜리 입력 컴포넌트가 유형과 제한 값을 보고 입력칸을 고른다. 값은 폼 자동 바인딩(name)으로 오간다. 잠긴 항목(field.readonly)은 컴포넌트가 읽기 전용 회색으로 그린다.",
+                                                                    "type": "composite",
+                                                                    "name": "MemberFieldInput",
+                                                                    "if": "{{!field.deferred && field.renderer !== 'address' && field.renderer !== 'extension' && field.renderer !== 'file'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "name": "{{field.name}}",
+                                                                        "disabled": "{{!!_global.socialLoginBusy}}",
+                                                                        "error": "{{Object.entries(_global.socialLoginErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}",
+                                                                        "errorId": "social_mf_error_{{field.key}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "동의 항목(약관 묶음)의 필수 여부와 약관 보기 링크 — 체크박스 옆 문구에는 별표가 없으므로 「(필수)」「(선택)」을 글자로 알린다.\n                       약관 문서 링크는 그 문서를 서빙하는 모듈이 켜져 있을 때만 그린다(새 창). 하위 동의(ui.parent)는 들여 쓴다.",
+                                                                    "id": "social_mf_agreement_meta_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
+                                                                    "props": {
+                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.required ? $t('member.fields.agreement_required') : $t('member.fields.agreement_optional')}}"
+                                                                        },
+                                                                        {
+                                                                            "id": "social_mf_agreement_link_{{field.key}}",
+                                                                            "type": "basic",
+                                                                            "name": "A",
+                                                                            "if": "{{!!field.ui?.link?.url && (!field.ui?.link?.requires_module || (_global.activeModules?.includes(field.ui?.link?.requires_module) ?? true))}}",
+                                                                            "props": {
+                                                                                "href": "{{field.ui?.link?.url}}",
+                                                                                "target": "_blank",
+                                                                                "rel": "noopener noreferrer",
+                                                                                "aria-label": "{{field.ui?.link?.title ?? field.label}}",
+                                                                                "className": "ml-2 text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            },
+                                                                            "text": "{{field.ui?.link?.label ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "잠긴 항목의 사유 안내 — 사유마다 문구가 다르고 한 번에 하나만 보인다. 회사 계정이 잠근 칸의 문구와 모양은 예전 내 정보 수정 화면 그대로다.",
+                                                                    "id": "social_mf_locked_sso_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:mypage.profile.locked_by_company"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_identity_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_identity"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_admin_only_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_admin_only"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_nickname_interval_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_other_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_generic"
+                                                                },
+                                                                {
+                                                                    "comment": "운영자가 적은 안내 문구",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.help}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                    },
+                                                                    "text": "{{field.help}}"
+                                                                },
+                                                                {
+                                                                    "comment": "이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다.",
+                                                                    "id": "social_mf_error_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{Object.keys(_global.socialLoginErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
+                                                                    "props": {
+                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                    },
+                                                                    "text": "{{Object.entries(_global.socialLoginErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "이름·닉네임 — 회원 항목을 받지 못했을 때만 원본처럼 그린다(제공자가 이름을 주지 않았거나 운영자가 늘 묻게 했을 때)",
+                                    "id": "social_signup_profile_fallback",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginFieldsState === 'failed' && _global.socialLoginSignup?.show_profile_fields === true}}",
+                                    "props": {
+                                        "className": "sl:space-y-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "htmlFor": "social_signup_name",
+                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.name"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "입력한 이름을 가입 폼 전역 상태에 담는다 — 가입 요청 본문이 이 값을 읽는다",
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.name": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "id": "social_signup_name",
+                                                        "name": "social_name",
+                                                        "value": "{{_global.socialLoginForm?.name ?? ''}}",
+                                                        "maxLength": "255",
+                                                        "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "htmlFor": "social_signup_nickname",
+                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.nickname"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "입력한 닉네임을 가입 폼 전역 상태에 담는다",
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.nickname": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "id": "social_signup_nickname",
+                                                        "name": "social_nickname",
+                                                        "value": "{{_global.socialLoginForm?.nickname ?? ''}}",
+                                                        "maxLength": "50",
+                                                        "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "이메일 — 제공자가 검증한 이메일이면 보여 주기만, 없거나 미검증이면 입력 + 인증번호, 대체 이메일이면 안내",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginSignup?.email?.mode === 'locked'}}",
+                                    "props": {
+                                        "className": "sl:min-w-0 sl:break-all sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "sl:font-medium"
+                                            },
+                                            "text": "$t:sirsoft-social_login.signup.email"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": " {{_global.socialLoginSignup?.email?.value ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "social_signup_placeholder_notice",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.socialLoginSignup?.email?.mode === 'placeholder'}}",
+                                    "props": {
+                                        "className": "sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.placeholder_notice"
+                                },
+                                {
+                                    "id": "social_signup_email_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginSignup?.email?.mode === 'input'}}",
+                                    "props": {
+                                        "className": "sl:space-y-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "htmlFor": "social_signup_email",
+                                                "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-social_login.signup.email"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sl:flex sl:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "이메일을 바꾸면 앞서 확인한 인증 상태를 무효로 돌린다 — 다른 주소로 확인 없이 가입하지 못하게",
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.email": "{{$event.target.value}}",
+                                                                "socialLoginEmailVerified": false
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "email",
+                                                        "id": "social_signup_email",
+                                                        "name": "social_email",
+                                                        "value": "{{_global.socialLoginForm?.email ?? ''}}",
+                                                        "maxLength": "255",
+                                                        "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "social_signup_request_code",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                            }
+                                                        }
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "comment": "인증번호 받기 — 진행 표시를 켜고 입력 이메일로 코어 본인인증 메일을 보낸다(이미 가입된 이메일이면 서버가 거절)",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": true,
+                                                                        "socialLoginSignupError": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-social_login/signup/email/request",
+                                                                    "auth_mode": "optional",
+                                                                    "params": {
+                                                                        "method": "POST",
+                                                                        "body": {
+                                                                            "pending_token": "{{query.social_pending}}",
+                                                                            "email": "{{_global.socialLoginForm?.email}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "socialLoginBusy": false,
+                                                                                "socialLoginEmailChallengeId": "{{response.data?.challenge_id}}",
+                                                                                "socialLoginEmailExpiresAt": "{{response.data?.expires_at}}",
+                                                                                "socialLoginEmailRemaining": "{{response.data?.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : 0}}",
+                                                                                "socialLoginForm.code": ""
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "info",
+                                                                                "message": "$t:sirsoft-social_login.signup.code_sent"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "socialLoginBusy": false,
+                                                                            "socialLoginSignupError": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                        "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified || !_global.socialLoginForm?.email}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!_global.socialLoginEmailChallengeId}}",
+                                                            "text": "$t:sirsoft-social_login.signup.request_code"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.socialLoginEmailChallengeId}}",
+                                                            "text": "$t:sirsoft-social_login.signup.resend_code"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_global.socialLoginEmailChallengeId && !_global.socialLoginEmailVerified}}",
+                                            "props": {
+                                                "className": "sl:flex sl:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "입력한 인증번호를 담는다 — [확인] 이 이 값으로 인증을 요청한다",
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.code": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "name": "social_email_code",
+                                                        "value": "{{_global.socialLoginForm?.code ?? ''}}",
+                                                        "inputMode": "numeric",
+                                                        "autoComplete": "one-time-code",
+                                                        "maxLength": "10",
+                                                        "placeholder": "$t:sirsoft-social_login.signup.code_placeholder",
+                                                        "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:text-center sl:tracking-widest sl:font-mono sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "social_signup_verify_code",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                            }
+                                                        }
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "comment": "인증번호 확인 — 맞으면 이 이메일로만 가입할 수 있다",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": true,
+                                                                        "socialLoginSignupError": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-social_login/signup/email/verify",
+                                                                    "auth_mode": "optional",
+                                                                    "params": {
+                                                                        "method": "POST",
+                                                                        "body": {
+                                                                            "pending_token": "{{query.social_pending}}",
+                                                                            "challenge_id": "{{_global.socialLoginEmailChallengeId}}",
+                                                                            "code": "{{_global.socialLoginForm?.code}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "socialLoginBusy": false,
+                                                                            "socialLoginEmailVerified": true
+                                                                        }
+                                                                    },
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "socialLoginBusy": false,
+                                                                            "socialLoginSignupError": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                        "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.code}}"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.verify_code"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "social_signup_code_timer",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_global.socialLoginEmailChallengeId && !_global.socialLoginEmailVerified}}",
+                                            "props": {
+                                                "className": "sl:text-xs"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(_global.socialLoginEmailRemaining ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "sl:text-gray-600 sl:dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.code_remaining|minutes={{Math.floor((_global.socialLoginEmailRemaining ?? 0) / 60)}}|seconds={{String((_global.socialLoginEmailRemaining ?? 0) % 60).padStart(2, '0')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(_global.socialLoginEmailRemaining ?? 0) <= 0 && !!_global.socialLoginEmailExpiresAt}}",
+                                                    "props": {
+                                                        "className": "sl:text-red-600 sl:dark:text-red-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.code_expired"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "social_signup_email_verified",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_global.socialLoginEmailVerified === true}}",
+                                            "props": {
+                                                "className": "sl:text-sm sl:text-green-700 sl:dark:text-green-400"
+                                            },
+                                            "text": "$t:sirsoft-social_login.signup.email_verified"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "약관·방침 동의 — 전문은 가입 화면의 약관·방침 창을 그대로 연다",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "sl:space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sl:flex sl:items-center sl:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "이용약관 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다)",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.agree_terms": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "social_agree_terms",
+                                                        "checked": "{{!!_global.socialLoginForm?.agree_terms}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:auth.agree_terms_label",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "약관 본문을 다시 받아 열람 창을 연다 — 운영자가 약관을 바꿨으면 최신 본문을 보여 준다",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "termsContent"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "termsModal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "sl:text-sm sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline sl:cursor-pointer"
+                                                    },
+                                                    "text": "$t:auth.terms"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:auth.agree_required"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sl:flex sl:items-center sl:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "개인정보 처리방침 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다)",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.agree_privacy": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "social_agree_privacy",
+                                                        "checked": "{{!!_global.socialLoginForm?.agree_privacy}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:auth.agree_privacy_label",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "처리방침 본문을 다시 받아 열람 창을 연다",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "privacyContent"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "privacyModal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "sl:text-sm sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline sl:cursor-pointer"
+                                                    },
+                                                    "text": "$t:auth.privacy"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:auth.agree_required"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "약관 묶음 회원 항목(ui.group = agreements — 마케팅 수신 동의 등) — 약관, 방침 동의 줄 아래에 그린다. 묶음이 includeAgreements 를 켜야 공용 구획이 이 항목들을 그린다",
+                                    "id": "social_signup_member_agreements",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginFieldsState === 'ready' && (_global.socialLoginFields ?? []).some(function(f) { return (f.ui?.group ?? '') === 'agreements'; })}}",
+                                    "dataKey": "_global.socialLoginFieldForm",
+                                    "children": [
+                                        {
+                                            "id": "social_member_fields_each_{{memberFieldGroup.key}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{[{ key: 'agreements', includeAgreements: true, fields: (_global.socialLoginFields ?? []).filter(function(f) { return (f.ui?.group ?? '') === 'agreements'; }) }]}}",
+                                                "item_var": "memberFieldGroup"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "social_member_fields_group_{{memberFieldGroup.key}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "{{memberFieldGroup?.portableClassName ?? memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "{{memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "social_field_{{field.key}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "{{(memberFieldGroup?.fields ?? []).filter(function(f) { return !!memberFieldGroup?.includeAgreements || (f.ui?.group ?? '') !== 'agreements'; })}}",
+                                                                "item_var": "field"
+                                                            },
+                                                            "props": {
+                                                                "className": "{{field.ui?.parent ? 'ml-6' : ''}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다.",
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
+                                                                    "props": {
+                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.label}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{field.required}}",
+                                                                            "props": {
+                                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                            },
+                                                                            "text": "*"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "가입 화면에서 받지 않는 유형(파일, 이미지) — 안내 줄만 둔다. 가입 뒤 내 정보에서 올린다.",
+                                                                    "id": "social_mf_deferred_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.deferred}}",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.upload_after_signup"
+                                                                },
+                                                                {
+                                                                    "comment": "주소 — 우편번호, 기본 주소, 상세 주소 세 칸. 이 창에는 주소 검색 단추가 없어 세 칸 모두 직접 적는다(검색 단추는 고른 주소를 화면 지역 상태에 쓰는데 이 창의 폼 값은 전역 상태다). 잠긴 항목이면 세 칸 모두 읽기 전용(회색)이다.",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{!field.deferred && field.renderer === 'address'}}",
+                                                                    "props": {
+                                                                        "className": "space-y-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "flex flex-wrap gap-2"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Input",
+                                                                                    "props": {
+                                                                                        "type": "text",
+                                                                                        "name": "{{field.parts?.zipcode}}",
+                                                                                        "aria-label": "$t:member.fields.zipcode_label|label={{field.label}}",
+                                                                                        "placeholder": "$t:member.fields.zipcode",
+                                                                                        "className": "{{field.readonly ? 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                        "readOnly": "{{!!field.readonly}}",
+                                                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address}}",
+                                                                                "aria-label": "$t:member.fields.address_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.socialLoginBusy}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address_detail}}",
+                                                                                "aria-label": "$t:member.fields.address_detail_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address_detail",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.socialLoginBusy}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "확장이 제공한 유형 — 그 확장의 조각이 이 자리에 자기 입력칸을 그린다(조각은 루트에서 자기 유형일 때만 그린다).",
+                                                                    "id": "social_member_field_input_slot_{{field.key}}",
+                                                                    "type": "extension_point",
+                                                                    "name": "member_field_input",
+                                                                    "if": "{{!field.deferred && field.renderer === 'extension'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "error": "{{_global.socialLoginErrors?.[field.name]?.[0] ?? ''}}",
+                                                                        "disabled": "{{!!_global.socialLoginBusy}}",
+                                                                        "formKey": "{{'_global.socialLoginFieldForm'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "그 밖의 유형 — 항목 1개짜리 입력 컴포넌트가 유형과 제한 값을 보고 입력칸을 고른다. 값은 폼 자동 바인딩(name)으로 오간다. 잠긴 항목(field.readonly)은 컴포넌트가 읽기 전용 회색으로 그린다.",
+                                                                    "type": "composite",
+                                                                    "name": "MemberFieldInput",
+                                                                    "if": "{{!field.deferred && field.renderer !== 'address' && field.renderer !== 'extension' && field.renderer !== 'file'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "name": "{{field.name}}",
+                                                                        "disabled": "{{!!_global.socialLoginBusy}}",
+                                                                        "error": "{{Object.entries(_global.socialLoginErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}",
+                                                                        "errorId": "social_mf_error_{{field.key}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "동의 항목(약관 묶음)의 필수 여부와 약관 보기 링크 — 체크박스 옆 문구에는 별표가 없으므로 「(필수)」「(선택)」을 글자로 알린다.\n                       약관 문서 링크는 그 문서를 서빙하는 모듈이 켜져 있을 때만 그린다(새 창). 하위 동의(ui.parent)는 들여 쓴다.",
+                                                                    "id": "social_mf_agreement_meta_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
+                                                                    "props": {
+                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.required ? $t('member.fields.agreement_required') : $t('member.fields.agreement_optional')}}"
+                                                                        },
+                                                                        {
+                                                                            "id": "social_mf_agreement_link_{{field.key}}",
+                                                                            "type": "basic",
+                                                                            "name": "A",
+                                                                            "if": "{{!!field.ui?.link?.url && (!field.ui?.link?.requires_module || (_global.activeModules?.includes(field.ui?.link?.requires_module) ?? true))}}",
+                                                                            "props": {
+                                                                                "href": "{{field.ui?.link?.url}}",
+                                                                                "target": "_blank",
+                                                                                "rel": "noopener noreferrer",
+                                                                                "aria-label": "{{field.ui?.link?.title ?? field.label}}",
+                                                                                "className": "ml-2 text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            },
+                                                                            "text": "{{field.ui?.link?.label ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "잠긴 항목의 사유 안내 — 사유마다 문구가 다르고 한 번에 하나만 보인다. 회사 계정이 잠근 칸의 문구와 모양은 예전 내 정보 수정 화면 그대로다.",
+                                                                    "id": "social_mf_locked_sso_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:mypage.profile.locked_by_company"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_identity_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_identity"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_admin_only_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_admin_only"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_nickname_interval_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
+                                                                },
+                                                                {
+                                                                    "id": "social_mf_locked_other_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_generic"
+                                                                },
+                                                                {
+                                                                    "comment": "운영자가 적은 안내 문구",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.help}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                    },
+                                                                    "text": "{{field.help}}"
+                                                                },
+                                                                {
+                                                                    "comment": "이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다.",
+                                                                    "id": "social_mf_error_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{Object.keys(_global.socialLoginErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
+                                                                    "props": {
+                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                    },
+                                                                    "text": "{{Object.entries(_global.socialLoginErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "social_signup_error",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_global.socialLoginSignupError}}",
+                                    "props": {
+                                        "className": "sl:text-sm sl:text-red-600 sl:dark:text-red-400",
+                                        "role": "alert"
+                                    },
+                                    "text": "{{_global.socialLoginSignupError ?? ''}}"
+                                },
+                                {
+                                    "id": "social_signup_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "가입하고 시작 — 성공하면 로그인 인계 주소(본인인증 대기 회원은 안내 주소)로 간다. 본인인증 가입 정책이 켜졌으면 코어가 428 로 본인인증 창을 띄우고 다시 보낸다.\n                   본문은 「원본의 키 + 회원 항목 값 + 받은 항목의 정의 버전(fields_version)」이다. 회원 항목을 받지 못한 창은 원본처럼 이름, 닉네임만 싣고 버전을 싣지 않는다.\n                   실패하면 칸별 검증 오류를 socialLoginErrors 에 담아 각 칸 아래에 붙이고, 응답 문구는 아래 오류 줄에 보인다.\n                   그 사이 운영자가 가입 항목을 바꿨으면 서버가 409(fields_changed)로 알린다 — 안내만 띄우고 항목을 다시 받는다(입력한 값과 가입 대기는 그대로다).",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginBusy": true,
+                                                        "socialLoginSignupError": null,
+                                                        "socialLoginErrors": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-social_login/signup/complete",
+                                                    "auth_mode": "optional",
+                                                    "identity_target": {
+                                                        "email": "{{_global.socialLoginSignup?.email?.mode === 'input' ? _global.socialLoginForm?.email : _global.socialLoginSignup?.email?.value}}"
+                                                    },
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": "{{Object.assign({}, _global.socialLoginFieldsState === 'ready' ? (_global.socialLoginFieldForm ?? {}) : { name: _global.socialLoginForm?.name ?? '', nickname: _global.socialLoginForm?.nickname ?? '' }, { pending_token: query.social_pending, email: (_global.socialLoginSignup?.email?.mode === 'input' ? _global.socialLoginForm?.email : _global.socialLoginSignup?.email?.value), agree_terms: !!_global.socialLoginForm?.agree_terms, agree_privacy: !!_global.socialLoginForm?.agree_privacy }, _global.socialLoginFieldsState === 'ready' && _global.socialLoginFieldsVersion ? { fields_version: _global.socialLoginFieldsVersion } : {})}}"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "{{response.data?.handoff_url ?? response.data?.redirect_url ?? '/login'}}",
+                                                                "fallbackPath": "/login"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "merge": "shallow",
+                                                                "socialLoginBusy": false,
+                                                                "socialLoginErrors": "{{(error.response?.error_code ?? error.error_code) === 'fields_changed' ? null : (error.response?.errors ?? error.errors ?? null)}}",
+                                                                "socialLoginSignupError": "{{(error.response?.error_code ?? error.error_code) === 'fields_changed' ? $t('member.fields.signup_fields_changed') : (error.response?.message ?? error.message)}}",
+                                                                "socialLoginSignupExpired": "{{(error.response?.errors ?? error.errors)?.code === 'expired'}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "가입 항목이 바뀌었으면 항목과 정의 버전만 다시 받는다(입력한 값은 건드리지 않는다)",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/auth/register/fields?pending_source=sirsoft-social_login&pending_token={{query.social_pending}}",
+                                                            "if": "{{(error.response?.error_code ?? error.error_code) === 'fields_changed'}}",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "GET"
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "merge": "shallow",
+                                                                    "socialLoginFields": "{{response.data?.fields ?? []}}",
+                                                                    "socialLoginFieldsVersion": "{{response.data?.fields_version ?? null}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sl:w-full sl:px-4 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:font-medium sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.socialLoginBusy || _global.socialLoginFieldsState === 'loading' || !_global.socialLoginForm?.agree_terms || !_global.socialLoginForm?.agree_privacy || (_global.socialLoginSignup?.email?.mode === 'input' && !_global.socialLoginEmailVerified)}}"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "② 이미 가입된 이메일",
+            "id": "social_existing_account",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-social_login.existing.title",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sl:space-y-5"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-social_login.existing.message|email={{_global.socialLoginSignup?.existing_account?.email_masked ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-social_login.existing.hint"
+                        },
+                        {
+                            "comment": "기존 계정 비밀번호로 확인 — 비밀번호 없는 계정이면 숨긴다",
+                            "id": "social_existing_password",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.socialLoginSignup?.existing_account?.has_password !== false}}",
+                            "props": {
+                                "className": "sl:space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "htmlFor": "social_existing_password_input",
+                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.existing.by_password"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "sl:flex sl:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "PasswordInput",
+                                            "actions": [
+                                                {
+                                                    "comment": "기존 계정 연결용 비밀번호를 담는다 — 연결 요청 본문이 이 값을 읽고, 요청 뒤에는 지운다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginForm.password": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "id": "social_existing_password_input",
+                                                "name": "social_existing_password",
+                                                "value": "{{_global.socialLoginForm?.password ?? ''}}",
+                                                "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
+                                                "showToggle": true,
+                                                "disabled": "{{_global.socialLoginBusy}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "social_existing_password_submit",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "비밀번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": true,
+                                                                "socialLoginSignupError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-social_login/signup/link-existing/request",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "pending_token": "{{query.social_pending}}",
+                                                                    "method": "password",
+                                                                    "password": "{{_global.socialLoginForm?.password}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "closeModal"
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}",
+                                                                        "fallbackPath": "/login"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "socialLoginBusy": false,
+                                                                    "socialLoginSignupError": "{{error.message}}",
+                                                                    "socialLoginForm.password": ""
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.password}}"
+                                            },
+                                            "text": "$t:sirsoft-social_login.existing.confirm"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "기존 계정 이메일 인증번호로 확인",
+                            "id": "social_existing_email",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sl:space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.existing.by_email"
+                                },
+                                {
+                                    "id": "social_existing_request_code",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "인증번호 받기 — 기존 계정 이메일로 보낸다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginBusy": true,
+                                                        "socialLoginSignupError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-social_login/signup/link-existing/request",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "pending_token": "{{query.social_pending}}",
+                                                            "method": "email"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": false,
+                                                                "socialLoginExistingChallengeId": "{{response.data?.challenge_id}}",
+                                                                "socialLoginForm.existing_code": ""
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "info",
+                                                                "message": "$t:sirsoft-social_login.signup.code_sent"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "socialLoginBusy": false,
+                                                            "socialLoginSignupError": "{{error.message}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sl:w-full sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.socialLoginBusy}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!_global.socialLoginExistingChallengeId}}",
+                                            "text": "$t:sirsoft-social_login.signup.request_code"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.socialLoginExistingChallengeId}}",
+                                            "text": "$t:sirsoft-social_login.signup.resend_code"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_global.socialLoginExistingChallengeId}}",
+                                    "props": {
+                                        "className": "sl:flex sl:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "기존 계정 연결용 인증번호를 담는다",
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginForm.existing_code": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "name": "social_existing_code",
+                                                "value": "{{_global.socialLoginForm?.existing_code ?? ''}}",
+                                                "inputMode": "numeric",
+                                                "autoComplete": "one-time-code",
+                                                "maxLength": "10",
+                                                "placeholder": "$t:sirsoft-social_login.signup.code_placeholder",
+                                                "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:text-center sl:tracking-widest sl:font-mono sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
+                                                "disabled": "{{_global.socialLoginBusy}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "social_existing_verify_code",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "인증번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": true,
+                                                                "socialLoginSignupError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-social_login/signup/link-existing/verify",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "pending_token": "{{query.social_pending}}",
+                                                                    "challenge_id": "{{_global.socialLoginExistingChallengeId}}",
+                                                                    "code": "{{_global.socialLoginForm?.existing_code}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "closeModal"
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}",
+                                                                        "fallbackPath": "/login"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "socialLoginBusy": false,
+                                                                    "socialLoginSignupError": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.existing_code}}"
+                                            },
+                                            "text": "$t:sirsoft-social_login.existing.confirm"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "social_existing_error",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.socialLoginSignupError}}",
+                            "props": {
+                                "className": "sl:text-sm sl:text-red-600 sl:dark:text-red-400",
+                                "role": "alert"
+                            },
+                            "text": "{{_global.socialLoginSignupError ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sl:flex sl:flex-row sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "sl:flex sl:flex-col sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "id": "social_existing_new_account",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "새 계정으로 가입 — 이 이메일은 쓸 수 없으니 다른 이메일을 받는 가입 모달로 바꾼다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginBusy": true,
+                                                        "socialLoginSignupError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-social_login/signup/discard-existing",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "pending_token": "{{query.social_pending}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": false,
+                                                                "socialLoginSignup": "{{response.data}}",
+                                                                "socialLoginForm.email": "",
+                                                                "socialLoginEmailChallengeId": null,
+                                                                "socialLoginEmailVerified": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "social_signup_complete"
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "socialLoginBusy": false,
+                                                            "socialLoginSignupError": "{{error.message}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50",
+                                        "disabled": "{{_global.socialLoginBusy}}"
+                                    },
+                                    "text": "$t:sirsoft-social_login.existing.new_account"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sl:flex-1 sl:px-3 sl:py-2 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "연결을 그만두고 로그인 화면으로 — 가입 창과 연결 창을 모두 닫는다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
+                                    },
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "version_constraint": "~1.0.0"
+}

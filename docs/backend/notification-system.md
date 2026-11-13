@@ -318,7 +318,75 @@ return [
 
 ### {recipient_name} 플레이스홀더
 
-복수 수신자 알림에서 `data.name`에 `{recipient_name}`을 설정하면, 발송 시 각 수신자의 이름으로 자동 치환됩니다.
+자료 추출 리스너는 받는 사람의 이름을 직접 읽어 넣지 않습니다. `data` 의 이름 칸에 `{recipient_name}`(`NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER`)을 넣어 두면 발송 직전에 받는 사람마다, 채널마다 그 사람의 표시 이름으로 바뀝니다.
+
+```php
+'data' => [
+    'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
+    'app_name' => config('app.name'),
+],
+```
+
+- 값이 `{recipient_name}` 인 칸은 키 이름과 무관하게 모두 바뀝니다(`name` 이 아닌 키에 넣어도 됩니다).
+- 이름은 표시 이름 영역 `core:notification:{채널}` 로 계산합니다(7.2.0). 운영자가 환경설정의 회원 탭에서 메일과 사이트 알림을 다르게 정하면 같은 사람에게 채널마다 다른 이름이 나갑니다. 채널 설정이 없으면 알림 공통(`core:notification`), 그것도 없으면 사이트 기본을 따릅니다. 채널 목록에 없는 채널은 알림 공통 영역으로 계산합니다.
+- 설정을 바꾸지 않은 사이트는 모든 영역이 「이름」이라 종전처럼 회원 이름이 나갑니다. 이름을 받지 않는 사이트의 회원은 닉네임, 아이디 가림 순서의 값이 나갑니다.
+- 회원이 아닌 수신자(비회원 주문 알림 등)는 수신자가 가진 이름이 그대로 나갑니다.
+- 수신자가 묶음 크기를 넘어 자식 잡으로 나뉘어도 같은 규칙으로 계산합니다.
+- 뒤따르는 필터 `{hook_prefix}.notification.personalize_data` 의 인자(`$data, $notifiable, $type, $context, $args`)는 그대로입니다. 구독자는 이름이 이미 바뀐 `$data` 를 받습니다.
+- 메일의 받는 사람 이름(To)도 메일 채널의 표시 이름입니다. 발송 이력에 남는 `recipient_name` 은 그 시점의 관리자 화면 영역(`core:admin`) 표시 이름입니다.
+
+받는 사람이 아닌 다른 회원의 이름(글쓴이, 댓글 작성자 등)을 `data` 에 실을 때는 알림 공통 영역으로 계산합니다.
+
+```php
+use App\Notifications\RecipientDisplayName;
+
+'data' => [
+    'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
+    'comment_author' => app(RecipientDisplayName::class)->ofMember($comment->user, $comment->author_name),
+],
+```
+
+| 메서드 | 쓰임 |
+| --- | --- |
+| `forChannel(object $notifiable, ?string $channel)` | 받는 사람의 그 채널 표시 이름 |
+| `ofMember(?User $user, ?string $guestName = null)` | 받는 사람이 아닌 회원의 이름. 회원이 없으면 넘겨준 이름 |
+| `forLog(object $notifiable)` | 발송 이력에 남길 이름 |
+| `areaForChannel(?string $channel)` | 채널의 표시 이름 영역 키 |
+
+### 회원 항목 변수 (7.2.0)
+
+템플릿의 제목, 본문, 이동 주소에서 받는 회원의 항목 값을 변수로 쓸 수 있습니다.
+
+| 변수 | 값 |
+| --- | --- |
+| `{member.display_name}` | 받는 사람의 그 채널 표시 이름 (`{recipient_name}` 자리표시자가 바뀐 값과 같습니다) |
+| `{member.<키>}` | 코어와 확장이 선언한 회원 항목의 값 (예: `{member.nickname}`, `{member.mobile}`) |
+| `{member.custom.<키>}` | 운영자가 환경설정의 회원 탭에서 추가한 항목의 값 |
+
+- 템플릿이 실제로 참조한 변수만 채웁니다. 참조가 없으면 항목 값을 읽지 않습니다.
+- 값은 수신자 묶음마다 한 번에 읽습니다(수신자 수만큼 조회하지 않습니다).
+- 「관리자만 열람」 항목과 파일, 이미지 항목은 변수가 되지 않습니다. 템플릿에 적어도 빈 글자로 나갑니다.
+- 지워졌거나 꺼진 항목의 변수도 빈 글자로 나갑니다(자리표시자가 글자 그대로 나가지 않습니다).
+- 회원이 아닌 수신자는 `{member.display_name}` 에 수신자가 가진 이름이 들어가고 나머지는 빈 글자입니다.
+- 값은 받는 사람의 언어로 만든 보기용 글자입니다(선택 항목은 선택지 이름).
+- 알림 `data` 가 같은 키(`member.…`)를 이미 실었으면 그 값을 그대로 둡니다.
+- 본인인증 알림(`identity.` 로 시작하는 종류)은 받는 사람이 회원으로 정해지기 전에 나가므로 회원 항목 변수를 쓰지 않습니다.
+
+필터:
+
+| 필터 | 인자 | 쓰임 |
+| --- | --- | --- |
+| `core.notification.filter_member_variable_keys` | `array $keys, string $type, string $channel` | 채울 변수 이름 목록(예: `member.custom.job`). 자기 문구를 바깥 서비스에 등록해 두어 코어가 템플릿을 읽지 못하는 확장 채널이 이름을 보탭니다. `member.` 로 시작하지 않는 이름은 버립니다 |
+| `core.notification.filter_template_variables` | `array $variables, NotificationDefinition $definition` | 템플릿 편집 화면의 변수 목록(`[{key, description, group?}]`). 코어가 정의의 선언 변수 뒤에 회원 공통 변수(`group: member`)를 덧붙인 다음 이 필터를 태웁니다 |
+
+```php
+// 확장 채널: 이 채널의 문구가 쓰는 회원 변수를 알려 준다
+HookManager::addFilter('core.notification.filter_member_variable_keys', function (array $keys, string $type, string $channel) {
+    return $channel === 'vendor_push' ? [...$keys, 'member.nickname'] : $keys;
+});
+```
+
+**없는 변수 경고**: 템플릿 저장(`PUT /api/admin/notification-templates/{template}`) 응답의 `data.warnings` 에 지금 없는 회원 항목 변수가 실립니다. 저장은 그대로 됩니다. 항목은 `{step: "template_variable", target: "member.custom.job", message, level: "warning"}` 모양이고 없으면 빈 배열입니다. 확장이 `core.notification.filter_template_variables` 로 더한 `member.…` 변수는 있는 것으로 봅니다.
 
 ### 언어별 변수 값 (7.2.0)
 

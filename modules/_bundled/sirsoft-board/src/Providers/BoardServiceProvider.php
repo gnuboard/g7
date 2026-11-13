@@ -15,6 +15,8 @@ use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardReaction;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardRetention;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardScrap;
 use Modules\Sirsoft\Board\Console\Commands\PruneAttachmentsCommand;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
 use Modules\Sirsoft\Board\Repositories\BoardRepository;
 use Modules\Sirsoft\Board\Repositories\BoardStatRepository;
@@ -121,6 +123,20 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         PlaywrightSeedBoardScrap::class,
         PruneAttachmentsCommand::class,
     ];
+
+    /**
+     * 서비스 등록
+     *
+     * @return void 반환값 없음
+     */
+    public function register(): void
+    {
+        parent::register();
+
+        // 게시판별 표시 이름 설정과 비회원 작성자 항목 설정을 요청 안에서 한 번만 읽는다(요청 단위).
+        $this->app->scoped(BoardDisplayNames::class);
+        $this->app->scoped(GuestAuthorFields::class);
+    }
 
     /**
      * 서비스 부트스트랩

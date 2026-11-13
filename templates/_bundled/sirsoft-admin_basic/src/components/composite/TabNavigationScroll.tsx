@@ -50,7 +50,20 @@ export interface Tab {
    * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
    */
   href?: string;
+  /**
+   * 탭 이름 옆에 빨간 점을 붙일지 — 그 탭이 가리키는 구획에 확인할 것(검증 오류가 난 칸 등)이 있음을 알린다.
+   * 레이아웃의 `errorDot="{{...}}"` 가 평가된 값이다. 점의 읽기 이름은 컴포넌트의 `errorDotLabel` 이 준다.
+   */
+  errorDot?: boolean | string;
 }
+
+/**
+ * 탭에 빨간 점을 붙일지 판정합니다 (레이아웃 식이 글자로 풀려 와도 받는다).
+ *
+ * @param tab 탭
+ * @returns 붙이면 true
+ */
+const hasErrorDot = (tab: Tab): boolean => tab.errorDot === true || tab.errorDot === 'true';
 
 /**
  * 항목 조건(if)을 통과한 탭만 남깁니다.
@@ -102,7 +115,12 @@ export interface TabNavigationScrollProps {
    * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
    */
   'aria-label'?: string;
+  /** 탭의 빨간 점(`errorDot`)을 보조기기가 읽을 이름 (예: 「오류가 있는 칸이 있습니다」). 없으면 공용 문구 */
+  errorDotLabel?: string;
 }
+
+/** 탭 이름 옆 빨간 점 — 그 구획에 확인할 것이 있음을 알린다 */
+const ERROR_DOT_CLASS = 'inline-block w-2 h-2 ml-1.5 shrink-0 rounded-full bg-red-500 dark:bg-red-400';
 
 /**
  * 탭 네비게이션 컴포넌트 (자동 스크롤 기능 내장)
@@ -149,7 +167,9 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   id,
   editorAttrs,
   'aria-label': ariaLabel,
+  errorDotLabel,
 }) => {
+  const dotLabel = errorDotLabel || tOr('common.error_occurred', 'Error');
   // 항목 조건(if)이 거짓인 탭은 버튼·모바일 선택지·화살표 이동·Scroll Spy 모두에서 뺀다.
   const tabs = useMemo(() => filterVisibleTabs(rawTabs), [rawTabs]);
 
@@ -474,7 +494,8 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
           onChange={handleSelectChange}
           options={tabs.map((tab) => ({
             value: String(tab.id),
-            label: tab.label,
+            // 선택 상자에는 점을 그릴 수 없어 이름 뒤에 표식을 붙인다
+            label: hasErrorDot(tab) ? `${tab.label} ●` : tab.label,
             disabled: tab.disabled,
           }))}
           className="w-full"
@@ -519,6 +540,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
                 <Icon name={tab.iconName} size="sm" />
               )}
               <Span>{tab.label}</Span>
+              {hasErrorDot(tab) && <Span className={ERROR_DOT_CLASS} role="img" aria-label={dotLabel} data-tab-error-dot="true" />}
             </a>
           );
         }
@@ -541,6 +563,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
             <Icon name={tab.iconName} size="sm" />
           )}
           <Span>{tab.label}</Span>
+          {hasErrorDot(tab) && <Span className={ERROR_DOT_CLASS} role="img" aria-label={dotLabel} data-tab-error-dot="true" />}
         </Button>
         );
       })}

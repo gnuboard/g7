@@ -118,6 +118,9 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 | email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() 산물, 미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
@@ -289,9 +292,11 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | email | 예 | max 255 | 이메일 주소 |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어, 변경 주기)에 걸리면 422 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 「본인 수정」인 항목만 받는다. 파일, 이미지 항목은 이 본문이 아니라 `POST /api/me/fields/{key}/file` 로 올린다. 폼 경로와 오류 키는 `GET /api/me/fields` 의 `fields[].name` 이다 |
+| display_name_kind | body | string\|null | 아니오 | 운영자가 허용한 종류 | 표시 이름 종류 선택. 보내지 않으면 지금 값 유지, null 이면 고른 종류를 지운다(회원 기본 종류로 보인다). 고를 권한이 없거나 허용하지 않은 종류면 422 |
+| email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
 | current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)이 보내면 그 값은 버린다(보내지 않은 것과 같다, 7.2.0) |
 | language | body | string | 아니오 | — | 언어 코드 |
@@ -314,6 +319,8 @@ HTTP/1.1 200
 | third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 (법적 항목, 마케팅 플러그인 추가) |
 | info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 (법적 항목, 마케팅 플러그인 추가) |
 
+> 이름, 닉네임, 언어, 국가, 시간대, 연락처, 주소, 서명, 자기소개와 운영자 추가 항목은 회원 항목입니다. 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 오고, 이 표의 필수 칸은 기본 설정 기준입니다. 지금 사이트가 받는 항목과 잠긴 칸은 `GET /api/me/fields` 가 알려 줍니다. 이 요청은 `fields_version` 을 받지 않고 409 를 내지 않습니다(낡은 화면 판정은 가입 요청에만 있습니다).
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.update_profile_validation_rules`).
 
 **요청 예시**
@@ -362,6 +369,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | uuid | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `홍길동` | 사용자 이름 |
 | nickname | string\|null | `gildong` | 닉네임 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
 | email | string | `user@example.com` | 이메일 주소 |
 | avatar | string\|null | `null` | 아바타 이미지 URL (`User::getAvatarUrl()` 산물, 미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
@@ -440,7 +448,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지. 오류 키는 항목의 폼 경로다). 잠긴 칸에 현재 값과 다른 값을 보낸 경우도 422 다: 본인인증으로 채워져 잠긴 항목(`fields.validation.locked_identity`), 외부가 관리하는 칸(`user.field_locked`), 변경 주기가 지나지 않은 닉네임. 표시 이름 종류를 고를 권한이 없거나 허용하지 않은 종류를 보낸 경우는 `errors.display_name_kind`, 적용될 종류가 닉네임이 필요한데 닉네임이 비면 `errors.nickname` |
 | 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18). 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
 
 <!-- @generated:end -->
@@ -449,6 +457,6 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 
 **설명**
 
-현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`partials/mypage/profile/_edit.g7.html`)이 사용한다. `name`·`email` 은 필수이며 `email` 은 본인을 제외한 중복이 허용되지 않는다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
+현재 로그인한 사용자가 자신의 프로필을 수정한다. 프론트의 프로필 수정 화면(`templates/_bundled/sirsoft-basic/layouts/partials/mypage/profile/_edit.g7.html`)이 사용한다. `email` 은 고정 필수이며 본인을 제외한 중복이 허용되지 않는다. `name` 은 회원 항목이라 운영자의 항목 설정을 따른다(기본 설정이 필수이고, 운영자가 필수를 풀거나 사용을 끄면 비워 보낼 수 있다). 닉네임, 연락처, 주소 같은 그 밖의 회원 항목도 항목 설정의 사용 여부와 필수 여부를 따르고, 운영자 추가 항목은 `custom_fields.{키}` 로 보낸다. 받는 것은 범위가 「본인 수정」인 항목뿐이다. `display_name_kind` 는 표시 이름 종류를 고를 권한이 있을 때만 받고, 저장 뒤 적용될 종류가 닉네임이 필요한 종류면 닉네임이 필수가 된다. 본인인증으로 채워져 잠긴 항목(`GET /api/me/fields` 의 `locked_reason: identity`)과 외부가 관리하는 칸은 현재 값과 같은 값만 받고, 다른 값을 보내면 422 다. 비밀번호를 함께 변경하려면 `password`(+ `password_confirmation`)와 현재 비밀번호(`current_password`)를 함께 보내야 하며, `password` 가 빈 문자열이면 비밀번호 미변경으로 처리된다. `notify_*`·`marketing_consent`·`email_subscription` 등 확장 소유 파라미터는 게시판 모듈·마케팅 플러그인이, `ecommerce_preferred_currency`·`ecommerce_preferred_shipping_country`(결제 통화·배송국가)는 이커머스 모듈이 `core.user.update_profile_validation_rules` 훅으로 추가하며, 해당 확장이 비활성인 환경에서는 수용되지 않는다. 이커머스 두 필드는 이 요청 안에서 함께 저장되므로 프로필 수정 화면은 별도 저장 호출을 하지 않는다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
 
 

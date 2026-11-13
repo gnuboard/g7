@@ -1,22 +1,19 @@
 feature: 마케팅 동의 확장 레이아웃 구조 계약
 
 description: |
-  sirsoft-marketing 이 사용자 화면(회원가입·프로필·프로필 보기)과 관리자 화면(동의 폼·상세·플러그인 설정)에 꽂는
-  확장 레이아웃 JSON 의 구조를 잠근다 — 켜짐 조건 if, 약관 보기 버튼 조건, apiCall 성공 뒤 상태 저장 경로,
-  채널 반복(item_var), Object.assign setState, 약관 모달, 다국어 키 이름공간, 다크 모드 클래스,
-  플러그인 설정 화면 진입 권한(core.plugins.read — 보기 권한 관리자도 읽기 전용으로 연다, #434 W18).
+  sirsoft-marketing 에 남은 화면 둘의 레이아웃 JSON 구조를 잠근다. 관리자 회원 상세의 동의 이력 조각은 동의 값을 그리지 않고
+  (값은 회원 항목으로 선언되어 코어 회원 화면이 그린다) 이력 표만 보인다. 플러그인 설정 화면은 채널 편집, 저장 순서,
+  다국어 키 이름공간, 다크 모드 클래스, 진입 권한(core.plugins.read — 보기 권한 관리자도 읽기 전용으로 연다, #434 W18)을 잠근다.
+  가입, 내 정보 수정과 보기, 관리자 회원 폼의 동의 조각은 회원 항목 편입(#490)으로 지웠다.
 
 axes:
   layout:
-    - register         # user-marketing-register.g7.html
-    - profile          # user-marketing-profile.g7.html
-    - profile_view     # user-marketing-profile-view.g7.html
-    - form             # user-marketing-form.g7.html
     - detail           # user-marketing-detail.g7.html
     - plugin_settings  # plugin_settings.g7.html
 
 effects:
-  - extension_layout_contract_holds   # 레이아웃별 구조 계약이 성립한다
+  - extension_layout_contract_holds             # 레이아웃별 구조 계약이 성립한다
+  - consent_value_inputs_left_to_member_fields  # 동의 값을 그리는 체크박스와 사용 여부 조건이 조각에 없다
 
 test_files:
   - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/marketing-extension-layouts.test.ts

@@ -12,6 +12,12 @@
   같은 순서)와 국가(`countryList`, 회원 등록·수정 폼 admin_user_form 의 목록과 **같아야** 한다 — 갈리면
   폼에서 넣은 나라를 필터로 찾지 못한다).
 
+  운영자가 환경설정에서 「회원 목록 열」로 켠 추가 항목은 응답 `member_fields.columns` 로 오고, computed
+  `memberFieldColumns` 하나가 표와 열 선택기 양쪽의 `dynamicColumns` 가 된다(닉네임 열 뒤). 두 곳이 같은 값을
+  읽어야 열 집합과 순서가 갈리지 않는다. 「회원 검색」으로 켠 항목(`member_fields.search_fields`)은 검색 대상
+  선택지 뒤에 붙는다. 회원 항목 조건 둘(필수 항목 미입력 `required_missing`, 닉네임 중복 `nickname_duplicate`)은
+  값이 `1` 인 평면 키다. 닉네임 정책 화면의 「겹치는 회원 보기」가 `?nickname_duplicate=1` 로 들어온다.
+
   권한은 서버가 응답에 실어 준 `abilities` 로만 판정한다 — 역할 이름을 프론트에서 보지 않는다.
   일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다. -->
 <layout name="admin_user_list" version="1.0.0" extends="_admin_base">
@@ -26,7 +32,7 @@
         <show-error-page target="content"/>
       </on-code>
     </error-handling>
-    <params page="{{query.page}}" per_page="{{query.per_page || '10'}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}" sort_by="{{query.sort_by}}" sort_order="{{query.sort_order}}" status="{{query['status[]'] || []}}" role_ids="{{query['role_ids[]'] || []}}" admin_scope="{{query.admin_scope}}" lock_state="{{query.lock_state}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" last_login_start="{{query.last_login_start}}" last_login_end="{{query.last_login_end}}" never_logged_in="{{query.never_logged_in}}" dormant_start="{{query.dormant_start}}" dormant_end="{{query.dormant_end}}" status_changed_type="{{query.status_changed_type}}" status_changed_start="{{query.status_changed_start}}" status_changed_end="{{query.status_changed_end}}" language="{{query.language}}" country="{{query.country}}" email_verified="{{query.email_verified}}" identity_verified="{{query.identity_verified}}" ext_filters="{{query['ext_filters[]'] || []}}"/>
+    <params page="{{query.page}}" per_page="{{query.per_page || '10'}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}" sort_by="{{query.sort_by}}" sort_order="{{query.sort_order}}" status="{{query['status[]'] || []}}" role_ids="{{query['role_ids[]'] || []}}" admin_scope="{{query.admin_scope}}" lock_state="{{query.lock_state}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" last_login_start="{{query.last_login_start}}" last_login_end="{{query.last_login_end}}" never_logged_in="{{query.never_logged_in}}" dormant_start="{{query.dormant_start}}" dormant_end="{{query.dormant_end}}" status_changed_type="{{query.status_changed_type}}" status_changed_start="{{query.status_changed_start}}" status_changed_end="{{query.status_changed_end}}" language="{{query.language}}" country="{{query.country}}" email_verified="{{query.email_verified}}" identity_verified="{{query.identity_verified}}" required_missing="{{query.required_missing}}" nickname_duplicate="{{query.nickname_duplicate}}" ext_filters="{{query['ext_filters[]'] || []}}"/>
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
@@ -79,6 +85,8 @@
       <field name="country" value=""/>
       <field name="emailVerified" value="all"/>
       <field name="identityVerified" value="all"/>
+      <field name="requiredMissing" :value="false"/>
+      <field name="nicknameDuplicate" :value="false"/>
     </field>
     <field name="userFilterExtraQuery" :value="[]"/>
   </init-local>
@@ -147,6 +155,7 @@
   </defines>
   <computed name="userStatusOptions">{{(_defines?.userStatusList ?? []).map(d => ({ code: d.code, name: d.name }))}}</computed>
   <computed name="countryOptions">{{(_defines?.countryList ?? []).map(c => ({ value: c.code, label: c.name }))}}</computed>
+  <computed name="memberFieldColumns">{{(users?.data?.member_fields?.columns ?? []).map(c => ({ field: c.field, header: c.header, sortable: false, emptyText: '-' }))}}</computed>
   <transition-overlay>
     <wait-for>users</wait-for>
     <wait-for>roles</wait-for>
@@ -154,7 +163,7 @@
   <!-- 검색 실행 — 필터 조각의 검색 버튼·Enter 가 이 액션 하나를 공유한다. 열거한 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고(빈 값·빈 배열은 엔진이 URL 에서 키를 지운다), 조건이 바뀌었으니 쪽수는 `page=""` 로 떨궈 첫 쪽으로 되돌린다 — list-context.md 「페이지 되돌림은 빈 값」, 회귀 테스트 admin-list-context-round-trip (#75). 검색도 표를 다시 그리므로 페이지 이동과 동일하게 표 본문에 전환 오버레이를 건다 (#245). transition_overlay_target 은 replace:true 인 navigate 에서만 읽히므로 함께 둔다. 빠른 기간 표시(`*DateQuick`)는 URL 에 싣지 않는다 — 참조 목록들과 같이 새로고침하면 버튼 하이라이트만 꺼진다. -->
   <action name="searchUsers">
     <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">
-      <query page="" filters[0][field]="{{_local.filter.searchField || 'all'}}" filters[0][value]="{{_local.filter.searchKeyword || undefined}}" filters[0][operator]="like" status[]="{{_local.filter.status || []}}" role_ids[]="{{_local.filter.role || []}}" admin_scope="{{_local.filter.adminScope !== 'all' ? _local.filter.adminScope : ''}}" lock_state="{{_local.filter.lockState !== 'all' ? _local.filter.lockState : ''}}" start_date="{{_local.filter.createdStartDate}}" end_date="{{_local.filter.createdEndDate}}" last_login_start="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginStartDate}}" last_login_end="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginEndDate}}" never_logged_in="{{_local.filter.neverLoggedIn ? 'true' : ''}}" dormant_start="{{_local.filter.dormantStartDate}}" dormant_end="{{_local.filter.dormantEndDate}}" status_changed_type="{{_local.filter.statusChangedType}}" status_changed_start="{{_local.filter.statusChangedType ? _local.filter.statusChangedStart : ''}}" status_changed_end="{{_local.filter.statusChangedType ? _local.filter.statusChangedEnd : ''}}" language="{{_local.filter.language}}" country="{{_local.filter.country}}" email_verified="{{_local.filter.emailVerified !== 'all' ? _local.filter.emailVerified : ''}}" identity_verified="{{_local.filter.identityVerified !== 'all' ? _local.filter.identityVerified : ''}}" ext_filters="{{_local.userFilterExtraQuery || []}}"/>
+      <query page="" filters[0][field]="{{_local.filter.searchField || 'all'}}" filters[0][value]="{{_local.filter.searchKeyword || undefined}}" filters[0][operator]="like" status[]="{{_local.filter.status || []}}" role_ids[]="{{_local.filter.role || []}}" admin_scope="{{_local.filter.adminScope !== 'all' ? _local.filter.adminScope : ''}}" lock_state="{{_local.filter.lockState !== 'all' ? _local.filter.lockState : ''}}" start_date="{{_local.filter.createdStartDate}}" end_date="{{_local.filter.createdEndDate}}" last_login_start="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginStartDate}}" last_login_end="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginEndDate}}" never_logged_in="{{_local.filter.neverLoggedIn ? 'true' : ''}}" dormant_start="{{_local.filter.dormantStartDate}}" dormant_end="{{_local.filter.dormantEndDate}}" status_changed_type="{{_local.filter.statusChangedType}}" status_changed_start="{{_local.filter.statusChangedType ? _local.filter.statusChangedStart : ''}}" status_changed_end="{{_local.filter.statusChangedType ? _local.filter.statusChangedEnd : ''}}" language="{{_local.filter.language}}" country="{{_local.filter.country}}" email_verified="{{_local.filter.emailVerified !== 'all' ? _local.filter.emailVerified : ''}}" identity_verified="{{_local.filter.identityVerified !== 'all' ? _local.filter.identityVerified : ''}}" required_missing="{{_local.filter.requiredMissing ? '1' : ''}}" nickname_duplicate="{{_local.filter.nicknameDuplicate ? '1' : ''}}" ext_filters="{{_local.userFilterExtraQuery || []}}"/>
     </navigate>
   </action>
   <init>
@@ -173,7 +182,7 @@
     </action>
     <set-state target="global">
       <field name="_local">
-        <field name="showDetailFilter" value="{{!!(query.admin_scope || query.lock_state || query.last_login_start || query.last_login_end || query.never_logged_in || query.dormant_start || query.dormant_end || query.status_changed_type || query.language || query.country || query.email_verified || query.identity_verified || (query['ext_filters[]'] || []).length > 0)}}"/>
+        <field name="showDetailFilter" value="{{!!(query.admin_scope || query.lock_state || query.last_login_start || query.last_login_end || query.never_logged_in || query.dormant_start || query.dormant_end || query.status_changed_type || query.language || query.country || query.email_verified || query.identity_verified || query.required_missing || query.nickname_duplicate || (query['ext_filters[]'] || []).length > 0)}}"/>
         <field name="userFilterExtraQuery" value="{{query['ext_filters[]'] || []}}"/>
         <field name="filter">
           <field name="searchField" value="{{query['filters[0][field]'] || 'all'}}"/>
@@ -196,6 +205,8 @@
           <field name="country" value="{{query.country || ''}}"/>
           <field name="emailVerified" value="{{query.email_verified || 'all'}}"/>
           <field name="identityVerified" value="{{query.identity_verified || 'all'}}"/>
+          <field name="requiredMissing" value="{{['1', 'true'].includes(query.required_missing)}}"/>
+          <field name="nicknameDuplicate" value="{{['1', 'true'].includes(query.nickname_duplicate)}}"/>
         </field>
       </field>
     </set-state>
@@ -376,7 +387,7 @@
           </select>
         </div>
       </div>
-      <data-grid pageHref="/admin/users?page={page}" :pageHrefMergeQuery="true" data-type="composite" selectedCountText="" data-ref="users_data_grid" rowLabelField="name" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" emptyMessage="{{users === undefined ? '' : $t('common.no_data')}}" actionsColumnHeader="$t:common.actions">
+      <data-grid pageHref="/admin/users?page={page}" :pageHrefMergeQuery="true" data-type="composite" selectedCountText="" data-ref="users_data_grid" rowLabelField="name" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" dynamicColumns="{{_computed.memberFieldColumns ?? []}}" dynamicColumnsInsertAfter="nickname" :responsiveBreakpoint="768" emptyMessage="{{users === undefined ? '' : $t('common.no_data')}}" actionsColumnHeader="$t:common.actions">
         <column field="name" header="$t:admin.users.columns.name" :sortable="true" :required="true">
           <cell>
             <div>
@@ -393,9 +404,22 @@
           </cell>
         </column>
         <column field="email" header="$t:admin.users.columns.email" :sortable="true" :required="true"/>
+        <column field="display_name" header="$t:admin.users.list_member_fields.display_name_column" :sortable="false">
+          <cell>
+            <!-- 「보이는 이름」 — 이 회원이 사이트 기본 자리에서 다른 회원에게 보이는 이름(표시 이름 설정과 회원이 고른 종류를 따른 값). 이름 열은 가리지 않은 실명 그대로다. 기본은 꺼진 열이다. -->
+            <span class="display-name-cell break-words">{{row.display_name ?? '-'}}</span>
+          </cell>
+        </column>
         <column field="nickname" header="$t:admin.users.columns.nickname" :sortable="false">
           <cell>
             <span>{{row.nickname ?? ''}}</span>
+          </cell>
+        </column>
+        <column field="pending_required_fields" header="$t:admin.users.list_member_fields.pending_column" :sortable="false">
+          <cell>
+            <!-- 「미입력」 배지. 비어 있는 필수 항목 개수를 보이고, 올리면 항목 이름이 나온다. 없으면 다른 빈 값처럼 「-」. 운영자가 켠 추가 항목 열(dynamicColumns)은 이 열 앞(닉네임 열 뒤)에 끼어든다. -->
+            <span data-if="{{(row.pending_required_fields ?? []).length > 0}}" title="{{(row.pending_required_fields ?? []).map(f => f.label).join(', ')}}" class="pending-required-badge inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 cursor-help">{{$t('admin.users.list_member_fields.pending_count', { count: (row.pending_required_fields ?? []).length })}}</span>
+            <span data-if="{{(row.pending_required_fields ?? []).length === 0}}">-</span>
           </cell>
         </column>
         <column field="country" header="$t:admin.users.columns.country" :sortable="true">

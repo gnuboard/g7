@@ -7,6 +7,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
 use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Models\SsoAccount;
+use Plugins\Sirsoft\Sso\Support\MemberName;
 
 /**
  * 이 플러그인의 발행 훅을 활동 로그로 남깁니다 (§6.19 — 감사 로그는 코어 활동 로그, D23).
@@ -214,7 +215,8 @@ class ActivityLogListener implements HookListenerInterface
             'loggable' => $user,
             'description_key' => 'sirsoft-sso::activity_log.description.'.($descriptionAction ?? $action),
             'description_params' => [
-                'user_name' => (string) ($user->name ?? ''),
+                // 기록에 남기는 이름은 그 시점의 관리자 영역 표시 이름이다(이미 남은 기록은 바꾸지 않는다)
+                'user_name' => MemberName::forRecord($user),
                 'idp' => $idp instanceof IdentityProvider ? $idp->localizedLabel() : '',
             ] + $params,
             'properties' => [

@@ -21,9 +21,7 @@
  * `asset_url_mode_detect_status`)은 3 의 대상이 아니다 — 되돌리는 코드가 레이아웃이
  * 아니라 그 핸들러 안에 있고, 거기는 그 핸들러의 단위 테스트가 잰다.
  *
- * @scenario caller=panel
- * @axes caller=panel
- * @effects in_flight_controls_are_blocked_until_the_call_returns
+ * 시나리오 조합(caller=panel)과 효과(왕복 중 조작 차단)는 아래 시험마다 주석으로 붙어 있다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -40,13 +38,15 @@ const PARTIAL_DIR = path.join(LAYOUT_DIR, 'partials', 'admin_settings');
  * 데이터소스 계층(`blur_until_loaded` · 전환 오버레이)이 소유한다. 목록이 통째로
  * 흐려지는 화면에서 버튼까지 따로 돌면 같은 사실을 두 번 말하는 것이다.
  *
+ * `scrollIntoView` 는 같은 화면의 구획으로 스크롤할 뿐 서버를 부르지 않는다(회원 탭의 「표시 이름 설정 보기」 단추들, #490).
+ *
  * 목록에 없는 핸들러는 모두 왕복으로 본다 — 새 등록 핸들러가 생기면 이 테스트가
  * 먼저 빨개져서 "그 버튼에 진행 표시가 필요한가" 를 묻게 된다.
  */
 const INSTANT_HANDLERS = new Set([
     'navigate', 'navigateBack', 'openWindow', 'refresh',
     'openModal', 'closeModal', 'toast', 'confirm',
-    'setState', 'setError', 'clearError', 'submitForm', 'remount', 'scrollTo',
+    'setState', 'setError', 'clearError', 'submitForm', 'remount', 'scrollTo', 'scrollIntoView',
     'copyToClipboard', 'emitEvent', 'sequence',
     'refetchDataSource', 'updateDataSource', 'appendDataSource',
 ]);

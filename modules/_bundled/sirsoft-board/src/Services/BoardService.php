@@ -26,8 +26,10 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Exceptions\BulkApplyAbortedException;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkApplySettingsRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Models\Board;
@@ -454,18 +456,19 @@ class BoardService
 
         HookManager::doAction('sirsoft-board.post.before_recent_list', $context);
 
-        // 키의 v2 는 항목에 작성자 ID(읽기 스코프 판정용)를 담기 전의 캐시를 다시 읽지 않기 위한 것이다.
+        // 키의 v3 는 항목에 작성자 표식(`_author` — 표시 이름을 꺼낸 뒤 계산하기 위한 값)을 담기 전의 캐시를 다시 읽지 않기 위한 것이다.
         // 확장이 최근 게시글을 사람·언어마다 좁히면 그 축(filter_list_cache_variant)이 키 끝에 붙는다 — 없으면 키는 그대로
         $posts = $this->cache->remember(
-            "recent_posts_v2_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('recent'),
-            fn () => $this->getRecentPosts($limit),
+            "recent_posts_v3_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('recent'),
+            fn () => $this->rawRecentPosts($limit),
             $ttl,
             tags: ['board-posts']
         );
 
-        $posts = $this->refreshCachedPostTimes(
+        // 작성자 이름은 캐시에 담지 않는다. 꺼낸 뒤 지금의 표시 이름 설정과 회원 값으로 계산한다.
+        $posts = $this->fillAuthorNames($this->refreshCachedPostTimes(
             $this->filterItemsByBoardReadPermission($posts, 'board_slug', fn (array $item) => $item['_owner_id'] ?? null)
-        );
+        ));
 
         // 결과 훅은 캐시 뒤·호출자 권한 필터 뒤에 발행한다 — 리스너는 이미 걸러진 목록을 받는다
         $posts = HookManager::applyFilters('sirsoft-board.post.filter_recent_list_result', $posts, $context);
@@ -498,16 +501,18 @@ class BoardService
 
         HookManager::doAction('sirsoft-board.post.before_popular_list', $context);
 
+        // 키의 v3 는 회원 이름을 담던 이전 캐시를 다시 읽지 않기 위한 것이다(이름은 꺼낸 뒤 계산한다).
         $posts = $this->cache->remember(
-            "popular_posts_v2_{$period}_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('popular'),
-            fn () => $this->getPopularPosts($period, $limit),
+            "popular_posts_v3_{$period}_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('popular'),
+            fn () => $this->rawPopularPosts($period, $limit),
             $ttl,
             tags: ['board-posts']
         );
 
-        $posts = $this->refreshCachedPostTimes(
+        // 작성자 이름은 캐시에 담지 않는다. 꺼낸 뒤 지금의 표시 이름 설정과 회원 값으로 계산한다.
+        $posts = $this->fillAuthorNames($this->refreshCachedPostTimes(
             $this->filterItemsByBoardReadPermission($posts, 'board_slug', fn (array $item) => $item['author']['id'] ?? null)
-        );
+        ));
 
         $posts = HookManager::applyFilters('sirsoft-board.post.filter_popular_list_result', $posts, $context);
 
@@ -612,6 +617,16 @@ class BoardService
 
         // 필터 훅 - 데이터 변형
         $data = HookManager::applyFilters('sirsoft-board.board.filter_create_data', $data);
+
+        // 작성자 표시 이름과 비회원 작성자 항목 설정을 저장할 모양으로 정리
+        $data = $this->normalizeMemberFieldSettings($data);
+
+        // 비회원 작성자 항목 설정을 보내지 않은 생성 요청은 모듈 기본값(「게시판 기본 설정」의 표)을 그대로 물려받는다.
+        // 비워 두면 기본값을 그때그때 읽게 되어, 나중에 기본값을 바꾸면 이미 만든 게시판까지 따라 바뀐다.
+        if (($data['guest_author_fields'] ?? null) === null) {
+            $defaults = app(GuestAuthorFields::class)->defaultSettings();
+            $data['guest_author_fields'] = $defaults === [] ? null : $defaults;
+        }
 
         // name이 문자열이면 다국어 형식으로 변환
         if (isset($data['name']) && is_string($data['name'])) {
@@ -755,6 +770,9 @@ class BoardService
         // 필터 훅 - 데이터 변형
         $data = HookManager::applyFilters('sirsoft-board.board.filter_update_data', $data, $board);
 
+        // 작성자 표시 이름과 비회원 작성자 항목 설정을 저장할 모양으로 정리 (보내지 않은 칸은 바꾸지 않는다)
+        $data = $this->normalizeMemberFieldSettings($data);
+
         // 관리자 메뉴 토글 분리 (DB 컬럼 아님). null = 미전송(변경 없음)
         $addToMenu = array_key_exists('add_to_menu', $data) ? (bool) $data['add_to_menu'] : null;
         unset($data['add_to_menu']);
@@ -855,6 +873,14 @@ class BoardService
             // 게시판을 영구 삭제하므로 하위 게시글·댓글·첨부 DB 레코드도 함께 영구 삭제한다
             // (소프트 삭제 시 게시판이 사라진 뒤 접근 불가한 고아 데이터로 잔존)
             $this->attachmentRepository->forceDeleteByBoardId($board->id);
+
+            // 비회원 댓글에 딸린 작성자 항목 값(이메일 등)을 댓글보다 먼저 파기한다 — 값 테이블에는 게시판 ID 가 없어
+            // 댓글을 지운 뒤에는 어느 값이 이 게시판 것인지 찾을 수 없다
+            $guestFields = app(GuestAuthorFields::class);
+            $this->commentRepository->eachGuestIdChunkByBoardId($board->id, 1000, function (array $commentIds) use ($guestFields) {
+                $guestFields->purgeMany(GuestAuthorFields::OWNER_COMMENT, $commentIds);
+            });
+
             $this->commentRepository->forceDeleteByBoardId($board->id);
 
             // 2-1. 훅: 삭제될 글 ID 목록을 연동 확장에 통지 (이커머스 문의 피벗 정리 등)
@@ -863,8 +889,11 @@ class BoardService
             // 재사용하지 않는 이유: 글마다 모델 로드 N회 + 소프트/하드 삭제 의미 불일치.
             // 셋째 인자는 글 모델 타입(다형 참조 type) — 구독 확장이 게시판 클래스 이름을
             // 스스로 적지 않고 이 값으로 자기 다형 참조를 가려 지운다.
-            $this->postRepository->eachIdChunkByBoardId($board->id, 1000, function (array $postIds) use ($board) {
+            $this->postRepository->eachIdChunkByBoardId($board->id, 1000, function (array $postIds) use ($board, $guestFields) {
                 HookManager::doAction('sirsoft-board.board.posts.before_force_delete', $board, $postIds, Post::class);
+
+                // 비회원 글에 딸린 작성자 항목 값도 글과 함께 파기한다
+                $guestFields->purgeMany(GuestAuthorFields::OWNER_POST, $postIds);
             });
 
             $this->postRepository->forceDeleteByBoardId($board->id);
@@ -1386,6 +1415,120 @@ class BoardService
     }
 
     /**
+     * 게시판 저장 데이터의 작성자 표시 이름 설정과 비회원 작성자 항목 설정을 저장할 모양으로 정리합니다.
+     *
+     * - 표시 이름: 「따름」은 null, 고정은 `{mode: fixed, kind}`, 회원이 고른 값은 `{mode: member}`
+     * - 비회원 작성자 항목: 이 집합에 있는 항목만 남기고, 필수는 사용이 켜져 있을 때만 켠다. 기여한 확장이 잠근 속성은 선언 값으로 되돌린다
+     *
+     * 데이터에 키가 없으면 건드리지 않는다(수정 요청이 보내지 않은 칸은 바뀌지 않는다).
+     *
+     * @param  array<string, mixed>  $data  저장 데이터
+     * @return array<string, mixed> 정리한 저장 데이터
+     */
+    private function normalizeMemberFieldSettings(array $data): array
+    {
+        if (array_key_exists('display_name_setting', $data)) {
+            $data['display_name_setting'] = BoardDisplayNames::normalize($data['display_name_setting']);
+        }
+        if (array_key_exists('guest_author_fields', $data)) {
+            $data['guest_author_fields'] = app(GuestAuthorFields::class)->normalizeSettings($data['guest_author_fields']);
+        }
+
+        return $data;
+    }
+
+    /**
+     * 게시판 설정 폼 데이터에 작성자 표시 이름 칸과 비회원 작성자 항목 표의 값을 채웁니다.
+     *
+     * | 키 | 값 |
+     * | --- | --- |
+     * | `display_name_setting` | `{mode: inherit 또는 fixed 또는 member, kind}` |
+     * | `display_name_options` | `{kinds: [{value, label, requires_nickname}], inherited: {mode, kind, kind_label}}` |
+     * | `guest_author_fields` | `{항목 키: {post: {enabled, required}, comment: {enabled, required}}}` (폼이 그대로 다시 보낸다) |
+     * | `guest_author_field_rows` | 표의 행. 고정 항목(이름, 비밀번호)과 잠금, 출처를 포함한다 |
+     *
+     * @param  array<string, mixed>  $data  폼 데이터 (수정 모드는 게시판 응답, 복사 모드는 원본 게시판의 컬럼, 생성 모드는 기본값)
+     * @param  Board|null  $board  수정 중인 게시판 (생성, 복사 모드는 null)
+     * @return array<string, mixed> 값을 채운 폼 데이터
+     */
+    public function appendMemberFieldFormData(array $data, ?Board $board = null): array
+    {
+        $displayNames = app(BoardDisplayNames::class);
+        $guestFields = app(GuestAuthorFields::class);
+
+        // 복사 모드는 원본 게시판의 컬럼 값이 데이터에 실려 있다. 그 값으로 임시 게시판을 만들어 같은 계산을 쓴다.
+        $source = $board ?? new Board([
+            'display_name_setting' => is_array($data['display_name_setting'] ?? null) ? $data['display_name_setting'] : null,
+            'guest_author_fields' => is_array($data['guest_author_fields'] ?? null) ? $data['guest_author_fields'] : null,
+        ]);
+
+        $rows = $guestFields->settingsRows($source);
+        $values = [];
+        foreach ($rows as $row) {
+            if ($row['fixed']) {
+                continue;
+            }
+            $values[$row['key']] = [
+                'post' => ['enabled' => $row['post']['enabled'], 'required' => $row['post']['required']],
+                'comment' => ['enabled' => $row['comment']['enabled'], 'required' => $row['comment']['required']],
+            ];
+        }
+
+        $data['display_name_setting'] = $displayNames->formValue($source);
+        $data['display_name_options'] = $displayNames->formOptions();
+        // 항목이 하나도 없으면 빈 객체로 내보낸다(빈 배열이면 폼이 목록으로 읽는다)
+        $data['guest_author_fields'] = $values === [] ? new \stdClass : $values;
+        $data['guest_author_field_rows'] = $rows;
+
+        return $data;
+    }
+
+    /**
+     * 사용자 화면이 비회원 칸을 그릴 때 쓰는 값을 반환합니다 (게시판 응답의 `guest_fields`).
+     *
+     * @param  Board  $board  게시판
+     * @return array{fixed: array<string, array{required: bool}>, post: array<int, array<string, mixed>>, comment: array<int, array<string, mixed>>} 고정 항목의 필수 여부와 글, 댓글별 항목 계약
+     */
+    public function guestFieldsFor(Board $board): array
+    {
+        return app(GuestAuthorFields::class)->formPayload($board);
+    }
+
+    /**
+     * 회원이 게시판 관리자 화면에서 보이는 이름을 반환합니다.
+     *
+     * @param  User|null  $user  회원
+     * @return string|null 관리자 화면의 표시 이름
+     */
+    public function adminDisplayNameOf(?User $user): ?string
+    {
+        return app(BoardDisplayNames::class)->name($user, null, BoardDisplayNames::AREA_ADMIN);
+    }
+
+    /**
+     * 회원이 이 게시판에 글을 쓰면 어떤 이름으로 보이는지 반환합니다 (글쓰기 화면의 안내 줄).
+     *
+     * @param  Board  $board  게시판
+     * @param  User|null  $user  글을 쓰는 회원 (비회원이면 null)
+     * @return array{author_display_name: string|null, author_display_kind: string|null, author_display_kind_label: string|null} 보이는 이름, 종류 키, 종류 이름 (비회원이면 모두 null)
+     */
+    public function authorDisplayFor(Board $board, ?User $user): array
+    {
+        if ($user === null) {
+            return ['author_display_name' => null, 'author_display_kind' => null, 'author_display_kind_label' => null];
+        }
+
+        $displayNames = app(BoardDisplayNames::class);
+        $kind = $displayNames->effectiveKind($user, $board);
+
+        return [
+            'author_display_name' => $displayNames->name($user, null, BoardDisplayNames::AREA_POSTS, $board),
+            'author_display_kind' => $kind,
+            'author_display_kind_label' => $displayNames->kindLabel($kind),
+        ];
+    }
+
+    /**
      * 최근 게시글을 조회합니다. (UNION)
      *
      * @param  int  $limit  조회 개수
@@ -1393,10 +1536,74 @@ class BoardService
      */
     public function getRecentPosts(int $limit): array
     {
+        return $this->fillAuthorNames($this->rawRecentPosts($limit));
+    }
+
+    /**
+     * 최근 게시글을 작성자 이름을 채우지 않은 채 조회합니다 (캐시에 담는 모양).
+     *
+     * @param  int  $limit  조회 개수
+     * @return array<int, array<string, mixed>> 결과 배열 (항목마다 작성자 표식 `_author`)
+     */
+    private function rawRecentPosts(int $limit): array
+    {
         return $this->boardRepository->getRecentPosts(
             $limit,
             PostQueryExtensions::collect(['recent'], ['audience' => 'user'])
         );
+    }
+
+    /**
+     * 최근글, 인기글 항목에 작성자 표시 이름을 채우고 계산용 표식(`_author`)을 뺍니다.
+     *
+     * 회원 글은 그 글이 속한 게시판의 표시 이름 설정으로, 비회원 글은 입력한 이름으로 채운다.
+     * 회원은 목록 전체에서 한 번만 읽는다.
+     *
+     * @param  array<int, array<string, mixed>>  $items  항목 목록 (작성자 표식 포함)
+     * @param  Board|null  $board  한 게시판의 목록이면 그 게시판 (여러 게시판이 섞였으면 null)
+     * @return array<int, array<string, mixed>> 작성자 이름을 채운 항목 목록
+     */
+    private function fillAuthorNames(array $items, ?Board $board = null): array
+    {
+        $userIds = [];
+        foreach ($items as $item) {
+            $userId = $item['_author']['user_id'] ?? null;
+            if ($userId !== null) {
+                $userIds[(int) $userId] = true;
+            }
+        }
+
+        $users = $userIds === []
+            ? collect()
+            : $this->userRepository->queryByIds(array_keys($userIds))->get(User::DISPLAY_COLUMNS)->keyBy('id');
+
+        $displayNames = app(BoardDisplayNames::class);
+        $displayNames->preload($users, BoardDisplayNames::AREA_POSTS, $board);
+
+        return array_map(function (array $item) use ($users, $displayNames, $board) {
+            if (! array_key_exists('_author', $item)) {
+                return $item;
+            }
+
+            $marker = (array) $item['_author'];
+            unset($item['_author']);
+
+            $userId = $marker['user_id'] ?? null;
+            $name = $displayNames->name(
+                $userId !== null ? $users->get((int) $userId) : null,
+                $marker['guest_name'] ?? null,
+                BoardDisplayNames::AREA_POSTS,
+                $board ?? ($marker['board_id'] ?? null),
+            );
+
+            if (is_array($item['author'] ?? null)) {
+                $item['author']['name'] = $name;
+            } else {
+                $item['author_name'] = $name;
+            }
+
+            return $item;
+        }, $items);
     }
 
     /**
@@ -1407,6 +1614,18 @@ class BoardService
      * @return array 인기글 목록
      */
     public function getPopularPosts(string $period = 'week', int $limit = 20): array
+    {
+        return $this->fillAuthorNames($this->rawPopularPosts($period, $limit));
+    }
+
+    /**
+     * 인기 게시글을 작성자 이름을 채우지 않은 채 조회합니다 (캐시에 담는 모양).
+     *
+     * @param  string  $period  기간 (today, week, month, all)
+     * @param  int  $limit  조회 개수
+     * @return array<int, array<string, mixed>> 인기글 목록 (항목마다 작성자 표식 `_author`)
+     */
+    private function rawPopularPosts(string $period, int $limit): array
     {
         return $this->boardRepository->getPopularPosts(
             $period,
@@ -1426,14 +1645,14 @@ class BoardService
      */
     public function getBoardRecentPosts(string $slug, int $limit): array
     {
-        return $this->boardRepository->getBoardRecentPosts(
+        return $this->fillAuthorNames($this->boardRepository->getBoardRecentPosts(
             $slug,
             $limit,
             PostQueryExtensions::collect(['board_recent'], [
                 'audience' => 'user',
                 'board' => fn () => $this->boardRepository->findBySlug($slug),
             ])
-        );
+        ));
     }
 
     /**
@@ -1446,14 +1665,15 @@ class BoardService
      */
     public function getBoardRecentPostsById(int $boardId, int $limit, ?Board $board = null): array
     {
-        return $this->boardRepository->getBoardRecentPostsById(
+        // 게시판 모델을 받았으면 그 게시판의 표시 이름 설정을 바로 쓰고, 아니면 표식의 게시판 ID 로 찾는다
+        return $this->fillAuthorNames($this->boardRepository->getBoardRecentPostsById(
             $boardId,
             $limit,
             PostQueryExtensions::collect(['board_recent'], [
                 'audience' => 'user',
                 'board' => $board ?? fn () => $this->boardRepository->find($boardId),
             ])
-        );
+        ), $board);
     }
 
     /**

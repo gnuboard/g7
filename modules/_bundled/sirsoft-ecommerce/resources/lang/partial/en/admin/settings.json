@@ -842,5 +842,86 @@
       "running": "Running",
       "never": "Not run yet"
     }
+  },
+  "checkout_fields": {
+    "title": "Checkout fields",
+    "description": "Choose which orderer and shipping address fields the checkout form asks for, and which are required.",
+    "instant_save_notice": "Changes in this table are saved immediately.",
+    "no_read_permission": "You do not have permission to view checkout fields.",
+    "add_button": "Add field",
+    "empty": "There are no fields.",
+    "col": {
+      "group": "Section",
+      "name": "Field",
+      "source": "Source",
+      "enabled": "Enabled",
+      "required": "Required"
+    },
+    "group": {
+      "orderer": "Orderer",
+      "shipping": "Shipping address"
+    },
+    "source": {
+      "custom": "Added",
+      "extension": "Extension"
+    },
+    "unavailable": "Unavailable",
+    "unavailable_desc": "The extension that provides this field type is turned off.",
+    "saved": "Saved.",
+    "save_failed": "Could not save.",
+    "changed_by_other": "Another administrator changed the fields. The list has been reloaded.",
+    "form": {
+      "editor_label": "Shop checkout field add/edit",
+      "title": {
+        "create": "Add checkout field",
+        "edit": "Edit checkout field"
+      },
+      "group": "Section",
+      "type": "Type",
+      "type_placeholder": "Choose a type",
+      "type_locked": "The type cannot be changed after the field is created.",
+      "key": "Key",
+      "key_hint": "Start with a lowercase letter and use only lowercase letters, numbers and underscores (2 to 50 characters). It cannot be changed after the field is created.",
+      "name": "Name",
+      "description": "Help text",
+      "options": {
+        "title": "Options",
+        "add_button": "Add option",
+        "hint": "If you remove an option and save, values entered with that option are cleared as well.",
+        "empty": "There are no options. Add at least one.",
+        "value": "Value",
+        "value_placeholder": "Value in English (e.g. door)",
+        "label": "Label",
+        "label_placeholder": "Label shown on the checkout form"
+      }
+    },
+    "delete": {
+      "editor_label": "Shop checkout field delete confirmation",
+      "title": "Delete checkout field",
+      "message": "Delete this field?",
+      "warning": "Values entered for this field are deleted as well and cannot be restored.",
+      "success": "Deleted.",
+      "failed": "Could not delete."
+    }
+  },
+  "display_name": {
+    "title": "Author display name",
+    "review_description": "Choose the author name shown on product reviews.",
+    "inquiry_description": "Choose the author name shown on product inquiries.",
+    "mode_label": "Display method",
+    "review_mode_aria": "Review author display method",
+    "review_kind_aria": "Review author display name kind",
+    "inquiry_mode_aria": "Inquiry author display method",
+    "inquiry_kind_aria": "Inquiry author display name kind",
+    "mode": {
+      "inherit": "Follow the parent area",
+      "fixed": "Fix to one kind",
+      "member": "Use the member's choice"
+    },
+    "kind_placeholder": "Choose a kind",
+    "kind_option": "{{label}} (e.g. {{preview}})",
+    "effective": "Currently shown as {{kind}}.",
+    "effective_with_source": "Currently shown as {{kind}}. (Set by {{source}})",
+    "requires_nickname_hint": "This kind needs a nickname. After saving, the nickname member field may be fixed to enabled and required."
   }
 }

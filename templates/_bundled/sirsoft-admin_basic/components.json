@@ -1275,7 +1275,17 @@
           "columns": {
             "type": "array",
             "required": true,
-            "description": "컬럼 정의 배열 (DataGridColumn[])"
+            "description": "컬럼 정의 배열 (DataGridColumn[]). field 가 점 경로(예: custom_fields.job)이고 행에 그 이름의 키가 없으면 경로를 따라 값을 읽는다. emptyText 를 주면 cellChildren 이 없는 열에서 값이 비었을 때(null, 빈 문자열) 그 글자를 그린다"
+          },
+          "dynamicColumns": {
+            "type": "array",
+            "required": false,
+            "description": "동적으로 병합될 컬럼 배열 (DataGridColumn[]). 응답이 정하는 열(회원 추가 항목 등)에 쓴다. 바깥 열 선택기(ColumnSelector)를 쓰는 화면은 선택기에도 같은 배열과 같은 삽입 위치를 주어 두 곳의 열 집합과 순서를 맞춘다"
+          },
+          "dynamicColumnsInsertAfter": {
+            "type": "string",
+            "required": false,
+            "description": "동적 컬럼 삽입 위치 (해당 필드 뒤에 삽입, 없으면 끝)"
           },
           "data": {
             "type": "array",
@@ -2035,7 +2045,12 @@
           "tabs": {
             "type": "array",
             "required": true,
-            "description": "탭 목록 (Tab[]): {id, label, disabled?, actions?, if?} — if 키가 있고 값이 거짓이면 탭 목록에서 뺀다 탭 항목에 href 를 주면 <a role=\"tab\" href> 로 그린다(보통 클릭은 종전 스크롤 이동)."
+            "description": "탭 목록 (Tab[]): {id, label, disabled?, actions?, if?, errorDot?} — if 키가 있고 값이 거짓이면 탭 목록에서 뺀다 탭 항목에 href 를 주면 <a role=\"tab\" href> 로 그린다(보통 클릭은 종전 스크롤 이동). errorDot 이 참이면 탭 이름 옆에 빨간 점을 붙인다."
+          },
+          "errorDotLabel": {
+            "type": "string",
+            "required": false,
+            "description": "탭의 빨간 점(errorDot)을 보조기기가 읽을 이름"
           },
           "activeTabId": {
             "type": "string|number",
@@ -3702,7 +3717,7 @@
           "dynamicColumns": {
             "type": "array",
             "required": false,
-            "description": "동적으로 병합될 컬럼 배열 (ColumnItem[])"
+            "description": "동적으로 병합될 컬럼 배열 (ColumnItem[]). 처음 보는 동적 컬럼은 스스로 켜지고(visible: false 는 꺼진 채 선택지에만), 이미 본 동적 컬럼 목록을 저장 키 옆(`{저장 키}::dynamic`)에 남겨 표시 컬럼 저장값이 있는 사용자에게도 새 컬럼이 켜지며 사용자가 끈 컬럼은 다시 켜지지 않는다"
           },
           "dynamicColumnsInsertAfter": {
             "type": "string",
@@ -3832,6 +3847,60 @@
         }
       },
       {
+        "name": "MemberFieldInput",
+        "type": "composite",
+        "description": "회원 항목 1개의 입력칸 (서버 항목 계약의 유형과 제한 값으로 입력칸을 고른다)",
+        "path": "src/components/composite/MemberFieldInput.tsx",
+        "props": {
+          "field": {
+            "type": "object",
+            "required": true,
+            "description": "서버가 준 항목 계약 (key, name, type, label, required, readonly, options, constraints 등)"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "폼 경로 (자동 바인딩의 필드 이름)"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "이 칸의 검증 오류 문구"
+          },
+          "errorId": {
+            "type": "string",
+            "required": false,
+            "description": "오류 문구 노드의 id (aria-describedby)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성 여부"
+          },
+          "timezones": {
+            "type": "array",
+            "required": false,
+            "description": "시간대 선택지 (생략하면 전역 appConfig.supportedTimezones 를 읽는다. 항목의 constraints.widget 이 timezone 일 때만 쓴다)"
+          },
+          "inputClassName": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸에 붙일 클래스"
+          },
+          "errorClassName": {
+            "type": "string",
+            "required": false,
+            "description": "오류가 있을 때 입력칸에 붙일 클래스 (기본 input-error)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
         "name": "Toggle",
         "type": "composite",
         "description": "Toggle switch component with Flowbite styling and light/dark mode support",
@@ -3946,14 +4015,14 @@
           "placeholder": {
             "type": "string",
             "required": false,
-            "default": "검색 또는 입력...",
-            "description": "입력창 placeholder"
+            "default": "$t:common.tag_input.placeholder",
+            "description": "입력창 placeholder (생략하면 화면 언어의 「검색 또는 입력...」)"
           },
           "noOptionsMessage": {
             "type": "string",
             "required": false,
-            "default": "검색 결과가 없습니다",
-            "description": "검색 결과 없을 때 메시지"
+            "default": "$t:common.tag_input.no_options",
+            "description": "검색 결과 없을 때 메시지 (생략하면 화면 언어의 「검색 결과가 없습니다」)"
           },
           "formatCreateLabel": {
             "type": "string|function",
@@ -3963,8 +4032,7 @@
           "createLabelSuffix": {
             "type": "string",
             "required": false,
-            "default": "추가",
-            "description": "새 항목 추가 접미사"
+            "description": "새 항목 추가 접미사 — 넘기면 값 뒤에 붙인다 (생략하면 화면 언어의 문장 common.tag_input.create_label 이 어순을 정한다: 「Add 값」, 「값 추가」)"
           },
           "maxItems": {
             "type": "number",

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 
@@ -60,9 +61,13 @@ trait PaginatesBoardTargets
         $rows = collect($result->items());
         $boards = Board::query()->whereIn('id', $rows->pluck('board_id')->unique()->all())->get(['id', 'slug', 'name'])->keyBy('id');
         $postTitles = $this->commentPostTitles($rows);
-        $members = User::query()->whereIn('id', $rows->pluck('user_id')->filter()->unique()->all())->get(['id', 'name', 'nickname'])->keyBy('id');
+        $members = User::query()->whereIn('id', $rows->pluck('user_id')->filter()->unique()->all())->get(User::DISPLAY_COLUMNS)->keyBy('id');
 
-        return $result->through(function (object $row) use ($boards, $postTitles, $members) {
+        // 관리자 화면(개인정보 처리 대상 미리보기)에 보이는 이름이다 — 게시판 관리자 영역의 표시 이름으로 낸다
+        $displayNames = app(BoardDisplayNames::class);
+        $displayNames->preload($members, BoardDisplayNames::AREA_ADMIN);
+
+        return $result->through(function (object $row) use ($boards, $postTitles, $members, $displayNames) {
             $board = $boards->get($row->board_id);
             $isPost = $row->kind === 'post';
             $member = $row->user_id !== null ? $members->get($row->user_id) : null;
@@ -71,7 +76,7 @@ trait PaginatesBoardTargets
             return new PrivacyRetentionTarget(
                 id: $row->kind.'-'.$row->id,
                 title: (string) ($isPost ? $row->title : ($postTitles[$row->post_id] ?? '')),
-                subtitle: $member !== null ? ($member->nickname ?: $member->name) : $row->author_name,
+                subtitle: $displayNames->name($member, $row->author_name, BoardDisplayNames::AREA_ADMIN),
                 context: $board !== null ? $board->getLocalizedName().' · '.$kind : $kind,
                 date: $row->created_at !== null ? Carbon::parse($row->created_at) : null,
                 url: $board !== null ? '/admin/board/'.$board->slug.'/post/'.$row->post_id : null,

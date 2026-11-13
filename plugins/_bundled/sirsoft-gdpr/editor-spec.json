@@ -1140,7 +1140,8 @@
                   "preview": {
                     "subject": "",
                     "body": ""
-                  }
+                  },
+                  "warnings": []
                 }
               }
             }
@@ -1198,7 +1199,8 @@
                   "preview": {
                     "subject": "",
                     "body": ""
-                  }
+                  },
+                  "warnings": []
                 }
               }
             }

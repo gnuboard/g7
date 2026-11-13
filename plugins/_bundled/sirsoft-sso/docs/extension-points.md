@@ -5,11 +5,12 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 1종 / 호출 지점 31곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 30곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 2종 / 호출 지점 32곳. 이 중 2종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 30곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `core.auth.login_failed` | action | — | `src/Services/LinkVerificationService.php:140` |
+| `core.auth.login_failed` | action | — | `src/Services/LinkVerificationService.php:168` |
+| `core.auth.register_validation_rules` | filter | — | `src/Http/Requests/ConsentCompleteRequest.php:76` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -57,8 +58,10 @@
 | `core.auth.password_auth_decision` | filter | `EnforcePasswordPolicyListener` | `decide` | 20 |
 | `core.auth.password_reset_blocked` | action (미선언) | `PasswordResetBlockedNotifyListener` | `onBlocked` | 20 |
 | `core.auth.self_registration_open` | filter | `SelfRegistrationListener` | `open` | 20 |
+| `core.field.filter_definitions` | filter | `PrefillConsentFieldsListener` | `prefill` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterSsoReauthProviderListener` | `register` | 25 |
 | `core.notification.filter_default_definitions` | filter | `NotificationDataListener` | `defaults` | 20 |
+| `core.required_fields.filter_exempt_routes` | filter | `ExemptRequiredFieldsRoutesListener` | `exemptRoutes` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanSsoAccountsOnUserLeave` | `onWithdraw` | - |
 | `core.user.after_withdraw` | action (미선언) | `CleanProvisioningDataOnUserLeave` | `handle` | - |
 | `core.user.before_delete` | action (미선언) | `CleanSsoAccountsOnUserLeave` | `onDelete` | - |
@@ -68,7 +71,9 @@
 | `core.user.list_query_extensions` | filter | `MemberListSsoListener` | `addQueryExtension` | 30 |
 | `core.user.list_validation_attributes` | filter | `MemberListSsoListener` | `addValidationAttributes` | 30 |
 | `core.user.list_validation_rules` | filter | `MemberListSsoListener` | `addValidationRules` | 30 |
+| `core.user.locked_field_reasons` | filter | `LockedFieldsListener` | `lockedFieldReasons` | 20 |
 | `core.user.locked_fields` | filter | `LockedFieldsListener` | `lockedFields` | 20 |
+| `core.user.nickname_rejected` | action (미선언) | `RecordNicknameRejectionListener` | `onRejected` | 20 |
 | `sirsoft-gdpr.necessary_storage.filter_provided_keys` | filter | `ProvideNecessaryStorageKeysListener` | `provide` | 10 |
 | `sirsoft-sso.account.after_deprovision` | action (미선언) | `ActivityLogListener` | `onDeprovisioned` | 50 |
 | `sirsoft-sso.account.after_link` | action (미선언) | `ActivityLogListener` | `onLinked` | 50 |
@@ -110,13 +115,16 @@
 | `DiscoveryListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Policy/DiscoveryListener.php` |
 | `EmergencyLoginListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Policy/EmergencyLoginListener.php` |
 | `EnforcePasswordPolicyListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Policy/EnforcePasswordPolicyListener.php` |
+| `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `IdpFailureMonitorListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Admin/IdpFailureMonitorListener.php` |
-| `LockedFieldsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Provisioning/LockedFieldsListener.php` |
+| `LockedFieldsListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/Provisioning/LockedFieldsListener.php` |
 | `MemberDetailSsoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Admin/MemberDetailSsoListener.php` |
 | `MemberListSsoListener` | 4개 | 명시 등록 | ✅ | `src/Listeners/Admin/MemberListSsoListener.php` |
 | `NotificationDataListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/Admin/NotificationDataListener.php` |
 | `PasswordResetBlockedNotifyListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Policy/PasswordResetBlockedNotifyListener.php` |
+| `PrefillConsentFieldsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Provisioning/PrefillConsentFieldsListener.php` |
 | `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
+| `RecordNicknameRejectionListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RecordNicknameRejectionListener.php` |
 | `RegisterIpRestrictionExemptPathsListener` | 0개 | 명시 등록 | ✅ | `src/Listeners/RegisterIpRestrictionExemptPathsListener.php` |
 | `RegisterSsoReauthProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterSsoReauthProviderListener.php` |
 | `SelfRegistrationListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/Policy/SelfRegistrationListener.php` |

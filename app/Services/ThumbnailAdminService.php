@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Support\ExecutionEnvironment;
+use App\Support\LocalizedValue;
 use App\Thumbnails\DTO\ThumbnailSpec;
 use App\Thumbnails\ThumbnailPregenerator;
 use App\Thumbnails\ThumbnailPresetRegistry;
@@ -241,7 +242,7 @@ class ThumbnailAdminService
             $label = $driver['label'] ?? null;
 
             if (is_array($label)) {
-                $label = $label[app()->getLocale()] ?? $label[config('app.fallback_locale', 'ko')] ?? reset($label);
+                $label = LocalizedValue::pick($label);
             }
 
             if (is_string($label) && $label !== '') {

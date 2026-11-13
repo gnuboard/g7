@@ -3,7 +3,7 @@
  * @description 관리자 로그인 수단 판정·자동 이동·외부 인증 안내 회귀 테스트 (sirsoft-admin_basic, 7.2.0 A1t ③)
  *
  * - 이메일 칸을 벗어날 때(값이 바뀐 경우만) `POST /api/auth/admin/login/discover` 로 수단을 묻고, `external` 이면
- *   `_local.discovery` 로 비밀번호 칸·로그인 버튼을 숨기고 「…(으)로 계속」 버튼을 보인다.
+ *   `_local.discovery` 로 비밀번호 칸·로그인 버튼을 숨기고 「… 계정으로 계속」 버튼을 보인다.
  * - 사이트가 관리자 자동 이동(`_global.appConfig.auth.auto_redirect.admin`)을 켰으면 init 이 그리로 보낸다. 다만 `local`·`login_handoff`·
  *   `sso_error`·`sso_pending`·`sso_link` 쿼리로 돌아온 화면은 보내지 않는다(무한 왕복 방지). 그 사이트에는 `?local=1` 링크가 있다.
  * - 로그인 실패 403 `auth.password_auth_disabled` 는 그 수단으로 가는 버튼, 409 `auth.external_step_required` 는 이동.
@@ -118,7 +118,7 @@ describe('sirsoft-admin_basic 관리자 로그인 수단 판정 (A1t)', () => {
   it.each([
     ['external', { data: { method: 'external', label: { ko: '사내 계정', en: 'Corp' }, redirect_url: '/sso/start/corp' } }, true],
     ['password', { data: { method: 'password', label: null, redirect_url: null } }, false],
-  ])('판정 %s — 비밀번호 칸과 「…(으)로 계속」 이 맞바뀐다', (_kind, response, external) => {
+  ])('판정 %s — 비밀번호 칸과 「… 계정으로 계속」 이 맞바뀐다', (_kind, response, external) => {
     const stored = evaluate(asArray<Json>(discover?.onSuccess)[0]?.params?.adminLoginDiscovery, { response });
     expect(stored).toEqual(external ? response.data : null);
 
@@ -136,7 +136,7 @@ describe('sirsoft-admin_basic 관리자 로그인 수단 판정 (A1t)', () => {
    * @scenario action=continue_click, redirect=with|without
    * @effects external_discovery_hides_password_and_offers_continue
    */
-  it('「…(으)로 계속」 은 판정이 준 주소로 가며 가려던 곳(redirect)을 넘기고, 「다른 이메일로 로그인」 은 판정을 지운다', () => {
+  it('「… 계정으로 계속」 은 판정이 준 주소로 가며 가려던 곳(redirect)을 넘기고, 「다른 이메일로 로그인」 은 판정을 지운다', () => {
     const go = asArray<Json>(byId('login_discovery_continue')?.actions)[0];
     const discovery = { method: 'external', label: { ko: '사내 계정' }, redirect_url: '/sso/start/corp' };
 

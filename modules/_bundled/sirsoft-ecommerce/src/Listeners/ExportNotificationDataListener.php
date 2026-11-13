@@ -87,7 +87,8 @@ class ExportNotificationDataListener implements HookListenerInterface
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
-                'name' => $requester->name ?? '',
+                // 받는 사람 이름 — 코어가 받는 사람과 채널마다 그 채널의 표시 이름으로 바꾼다
+                'name' => '{recipient_name}',
                 'app_name' => config('app.name'),
                 'type_label' => $exportType ? __($exportType->labelKey()) : $export->type,
                 'file_name' => (string) ($export->file_name ?? ''),

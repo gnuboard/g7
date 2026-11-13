@@ -349,7 +349,8 @@
     "common": {
         "loading": "Loading...",
         "refresh": "Refresh",
-        "list_load_failed": "Could not load the list. Please try again in a moment."
+        "list_load_failed": "Could not load the list. Please try again in a moment.",
+        "real_name_sub": "Real name {{name}}"
     },
     "banner": {
         "re_appear_reason": "The cookie policy has been updated to version {version}. Please review your consent.",

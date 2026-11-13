@@ -43,6 +43,7 @@
 | `core.auth.console_password_reset_notices` | filter | `ConsolePasswordResetNoticeListener` | `appendResetNotice` | 20 |
 | `core.identity.purposes` | filter | `ExtendLoginPurposeChannels` | `extend` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterTotpProviderListener` | `register` | 20 |
+| `core.required_fields.filter_exempt_routes` | filter | `ExemptRequiredFieldsRoutesListener` | `exemptRoutes` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanTotpCredentialOnUserWithdraw` | `handle` | 50 |
 | `core.user.before_delete` | action (미선언) | `CleanTotpCredentialOnUserDelete` | `handle` | 50 |
 | `core.user.filter_resource_data` | filter | `UserTotpEnrollmentInfoListener` | `injectEnrollmentStatus` | 40 |
@@ -89,6 +90,7 @@
 | `CleanTotpCredentialOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanTotpCredentialOnUserDelete.php` |
 | `CleanTotpCredentialOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanTotpCredentialOnUserWithdraw.php` |
 | `ConsolePasswordResetNoticeListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ConsolePasswordResetNoticeListener.php` |
+| `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `ExtendLoginPurposeChannels` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExtendLoginPurposeChannels.php` |
 | `RegisterTotpProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterTotpProviderListener.php` |
 | `TotpAdminResetActivityLogListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/TotpAdminResetActivityLogListener.php` |

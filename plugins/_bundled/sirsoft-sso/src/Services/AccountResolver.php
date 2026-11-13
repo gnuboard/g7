@@ -10,6 +10,7 @@ use App\Services\AuthService;
 use App\Services\UserService;
 use App\Support\Auth\SystemOperation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\Sso\DTO\ExternalIdentity;
 use Plugins\Sirsoft\Sso\DTO\LoginIntent;
@@ -42,6 +43,12 @@ class AccountResolver
 
     /** 자동 생성 이메일의 대체 도메인 (받을 수 없는 주소 — `UndeliverableEmail` 이 받는다) */
     public const FALLBACK_EMAIL_DOMAIN = 'sso.invalid';
+
+    /** @var array<int, string> 동의 창 입력에서 회원 항목 값으로 넘기지 않는 키 (약관, 정의 버전, 이메일, 비밀번호, 권한, 상태) */
+    private const NON_FIELD_INPUT_KEYS = [
+        'agree_terms', 'agree_privacy', 'fields_version', 'verification_token',
+        'email', 'password', 'password_confirmation', 'is_super', 'status',
+    ];
 
     /**
      * @param  SsoAccountRepositoryInterface  $accounts  연결 저장소
@@ -79,15 +86,35 @@ class AccountResolver
      *
      * @param  IdentityProvider  $idp  IdP
      * @param  ExternalIdentity  $identity  신원
+     * @param  array<string, mixed>|null  $fieldInput  동의 창이 받은 회원 항목 값 (검증된 입력). 항목을 받지 않는 창이면 null
      * @return ResolveResult JIT 결과 또는 거절
      */
-    public function completeConsent(IdentityProvider $idp, ExternalIdentity $identity): ResolveResult
+    public function completeConsent(IdentityProvider $idp, ExternalIdentity $identity, ?array $fieldInput = null): ResolveResult
     {
         if ($this->accounts->findByIdpSubject((int) $idp->getKey(), $identity->subject) !== null) {
             return ResolveResult::rejected('already_linked');
         }
 
-        return $this->register($idp, $identity, recordConsents: true);
+        return $this->register($idp, $identity, recordConsents: true, fieldInput: $fieldInput);
+    }
+
+    /**
+     * 동의 창의 회원 항목에 채울 값과 잠글 칸을 돌려줍니다.
+     *
+     * 값은 IdP 속성 규칙이 처음 만드는 회원에게 채울 코어 칸 값이고, 이름 규칙이 없으면 자동 생성 이름(표시 이름, 이메일 앞부분)이
+     * 이름 칸의 초기값이 된다(이 초기값은 고칠 수 있다). 잠긴 칸은 IdP 속성 규칙이 값을 준 칸이다 — 창은 읽기 전용으로 보이고,
+     * 값을 보내도 생성은 IdP 값을 쓴다.
+     *
+     * @param  IdentityProvider  $idp  IdP
+     * @param  ExternalIdentity  $identity  신원
+     * @return array{values: array<string, string>, locked: array<int, string>} 항목 키 => 초기값, 잠긴 항목 키
+     */
+    public function consentFieldValues(IdentityProvider $idp, ExternalIdentity $identity): array
+    {
+        $initial = app(AttributeSyncService::class)->initialCoreValues($idp, $identity);
+        $initial['values']['name'] ??= $this->registrationName($idp, $identity);
+
+        return $initial;
     }
 
     /**
@@ -345,20 +372,41 @@ class AccountResolver
      * @param  IdentityProvider  $idp  IdP
      * @param  ExternalIdentity  $identity  신원
      * @param  bool  $recordConsents  동의 화면을 거쳤는지 (거짓이면 동의 기록을 남기지 않는다)
+     * @param  array<string, mixed>|null  $fieldInput  동의 창이 받은 회원 항목 값 (검증된 입력). null 이면 항목을 받지 않은 생성
      * @return ResolveResult JIT 결과 또는 거절
      */
-    private function register(IdentityProvider $idp, ExternalIdentity $identity, bool $recordConsents): ResolveResult
+    private function register(IdentityProvider $idp, ExternalIdentity $identity, bool $recordConsents, ?array $fieldInput = null): ResolveResult
     {
         $email = self::registrationEmail($idp, $identity);
         if ($this->accounts->findUserByEmail($email) !== null) {
             return ResolveResult::rejected('email_in_use');
         }
 
-        $data = HookManager::applyFilters(self::FILTER_JIT_DATA, [
+        $registration = [
             'name' => $this->registrationName($idp, $identity),
             'email' => $email, // audit:allow resource-member-email-ungated 가입 저장 데이터(응답 아님)
             'language' => app()->getLocale(),
-        ], $identity, $idp);
+        ];
+
+        if ($fieldInput !== null) {
+            // 동의 창이 받은 회원 항목 값(이름, 닉네임, 연락처, 운영자 추가 항목 `custom_fields.*`, 확장이 선언한 항목)을 싣는다.
+            // 어떤 키를 저장할지는 코어 가입이 가입 항목 정의로 고른다. IdP 가 잠근 칸은 창이 무엇을 보냈든 IdP 값을 쓴다.
+            $initial = $this->consentFieldValues($idp, $identity);
+            $input = Arr::except($fieldInput, self::NON_FIELD_INPUT_KEYS);
+            foreach ($initial['locked'] as $key) {
+                $input[$key] = $initial['values'][$key];
+            }
+
+            $registration = [
+                ...$input,
+                // 창이 이름 칸을 보냈으면(비워 보낸 것 포함) 그 값이 원본이다. 이름이 가입 항목에서 빠져 요청에 없을 때만 자동 생성 이름을 쓴다.
+                'name' => array_key_exists('name', $input) ? (trim((string) ($input['name'] ?? '')) ?: null) : $registration['name'],
+                'email' => $email, // audit:allow resource-member-email-ungated 가입 저장 데이터(응답 아님)
+                'language' => is_string($input['language'] ?? null) && $input['language'] !== '' ? $input['language'] : $registration['language'],
+            ];
+        }
+
+        $data = HookManager::applyFilters(self::FILTER_JIT_DATA, $registration, $identity, $idp);
         $data = is_array($data) ? $data : [];
         $data['email'] = $email;
 
@@ -366,7 +414,15 @@ class AccountResolver
             'issue_token' => false,
             'identity_policy_reason' => 'external:sirsoft-sso:'.$idp->key,
             'record_consents' => $recordConsents,
+            // 닉네임이 닉네임 정책(중복 금지, 금지어)에 걸리면 닉네임만 비우고 만든다 — 화면 없는 생성이 닉네임 때문에 실패하지 않게 한다.
+            // 항목을 받는 동의 창의 닉네임은 요청 규칙이 먼저 판정해 칸 아래 오류로 돌려보내므로, 여기 닿는 것은 판정과 저장 사이의 경합뿐이다.
+            'nickname_policy' => 'skip_field',
         ];
+        if ($fieldInput === null) {
+            // 회원 항목을 받지 않는 생성(동의 창 없는 자동 생성, 항목을 그리지 않는 동의 창, 관리자 로그인 화면의 동의 창)은
+            // 운영자가 필수로 둔 항목을 건너뛴다. 빠진 항목은 첫 로그인 뒤 추가 정보 입력 화면이 받는다.
+            $options['required_fields'] = 'defer';
+        }
         if ($idp->identity_policy === 'skip') {
             $options['identity_policy'] = 'skip';
         }

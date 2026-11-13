@@ -934,6 +934,65 @@
                                         ]
                                     },
                                     {
+                                        "comment": "주문자 추가 정보 — 운영자가 주문서에 더한 항목 가운데 주문자 구획에서 받은 값(값이 있는 것만 서버가 준다). 없으면 구획을 그리지 않는다",
+                                        "id": "order_complete_extra_fields_orderer",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{(orderData?.data?.extra_fields ?? []).some(function(f) { return f.section === 'orderer'; })}}",
+                                        "props": {
+                                            "className": "py-4 border-b border-gray-200 dark:border-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "font-semibold text-gray-900 dark:text-white mb-3"
+                                                },
+                                                "text": "$t:shop.checkout_fields.orderer_extra"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-1 text-sm"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "order_complete_extra_field_{{extraField.key}}",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "iteration": {
+                                                            "source": "{{(orderData?.data?.extra_fields ?? []).filter(function(f) { return f.section === 'orderer'; })}}",
+                                                            "item_var": "extraField"
+                                                        },
+                                                        "props": {
+                                                            "className": "flex gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "shrink-0 text-gray-600 dark:text-gray-400 break-words"
+                                                                },
+                                                                "text": "{{extraField.label}}:"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "min-w-0 text-gray-900 dark:text-white break-words"
+                                                                },
+                                                                "text": "{{extraField.display_value}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "comment": "배송지 정보",
                                         "type": "basic",
                                         "name": "Div",
@@ -994,6 +1053,48 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "배송 추가 정보 — 운영자가 주문서에 더한 항목 가운데 배송지 구획에서 받은 값",
+                                                "id": "order_complete_extra_fields_shipping",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{(orderData?.data?.extra_fields ?? []).some(function(f) { return f.section === 'shipping'; })}}",
+                                                "props": {
+                                                    "className": "mt-2 space-y-1 text-sm"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "order_complete_extra_field_{{extraField.key}}",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "iteration": {
+                                                            "source": "{{(orderData?.data?.extra_fields ?? []).filter(function(f) { return f.section === 'shipping'; })}}",
+                                                            "item_var": "extraField"
+                                                        },
+                                                        "props": {
+                                                            "className": "flex gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "shrink-0 text-gray-600 dark:text-gray-400 break-words"
+                                                                },
+                                                                "text": "{{extraField.label}}:"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "min-w-0 text-gray-900 dark:text-white break-words"
+                                                                },
+                                                                "text": "{{extraField.display_value}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
                                                 "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).\n                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측, 제품 결정).",
                                                 "id": "save_shipping_address_button",
                                                 "type": "basic",
@@ -1043,9 +1144,16 @@
                                                             ]
                                                         },
                                                         "onError": {
-                                                            "comment": "409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다",
+                                                            "comment": "409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다.\n                         추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
                                                             "handler": "conditions",
                                                             "conditions": [
+                                                                {
+                                                                    "if": "{{error.error_code === 'required_fields_pending'}}",
+                                                                    "then": {
+                                                                        "handler": "openModal",
+                                                                        "target": "required_info_pending_modal"
+                                                                    }
+                                                                },
                                                                 {
                                                                     "if": "{{error.status === 409}}",
                                                                     "then": {

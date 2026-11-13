@@ -35,6 +35,9 @@ class ScheduleCollection extends BaseApiCollection
     {
         $ownerNames = $this->collection->isEmpty() ? [] : ScheduleResource::buildOwnerNameMap();
 
+        // 등록자 이름은 표시 이름으로 나간다. 추가 항목 값이 필요한 설정이면 여기서 한 번에 읽는다.
+        $this->preloadMemberDisplayNames($this->collection, ['creator']);
+
         return $this->collection->map(function ($schedule) use ($ownerNames) {
             return (new ScheduleResource($schedule))->withOwnerNames($ownerNames)->toListArray(request());
         });

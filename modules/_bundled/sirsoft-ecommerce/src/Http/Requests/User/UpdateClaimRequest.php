@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\User;
 
+use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -66,7 +67,7 @@ class UpdateClaimRequest extends FormRequest
         $isExchange = $claim instanceof OrderExchange;
         $hasChargeAxis = $claim instanceof OrderExchange || $claim instanceof OrderReturn;
 
-        return [
+        $rules = [
             // 사유는 접수와 같은 카탈로그 게이트 — 그 신청서 유형의 활성·고객 선택 가능 사유만.
             'reason_code' => [
                 'nullable',
@@ -111,6 +112,11 @@ class UpdateClaimRequest extends FormRequest
             'refund_bank.account_number' => ['nullable', 'string', 'max:50'],
             'refund_bank.holder' => ['nullable', 'string', 'max:50'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.claim.update_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

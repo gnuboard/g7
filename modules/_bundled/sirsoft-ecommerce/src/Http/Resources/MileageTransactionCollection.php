@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 마일리지 거래 컬렉션 리소스
@@ -59,6 +60,9 @@ class MileageTransactionCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
+        // 행마다 회원과 처리 관리자의 표시 이름을 계산하기 전에 필요한 값을 한 번에 읽어 둔다.
+        MemberDisplayName::preloadStaffRelations($this->collection, ['user', 'grantedByUser'], $request);
+
         $result = [
             'data' => $this->mapWithRowNumber(function ($transaction) {
                 return (new MileageTransactionResource($transaction))->toArray(request());

@@ -3,7 +3,7 @@
  * @description 비밀번호 로그인 거절·외부 추가 단계 회귀 테스트 (sirsoft-basic, 7.2.0 B1③④)
  *
  * - 회사 계정 로그인이 강제된 계정은 로그인이 403 `errors.code=auth.password_auth_disabled` 로 거절된다. 로그인 칸 위 오류 자리에
- *   서버 안내를 싣고, `errors.redirect_url` 이 있으면 「{method_label}(으)로 로그인」 버튼(이름이 없으면 「회사 계정으로 로그인」)을
+ *   서버 안내를 싣고, `errors.redirect_url` 이 있으면 「{method_label} 계정으로 로그인」 버튼(이름이 없으면 「회사 계정으로 로그인」)을
  *   보인다. 버튼은 redirect 쿼리를 실어 그 수단으로 같은 탭 이동한다.
  * - 동의·연결 확인 같은 화면이 더 필요하면 409 `errors.code=auth.external_step_required` 이고 `errors.redirect_url` 로 바로 이동한다.
  *
@@ -195,7 +195,7 @@ describe('sirsoft-basic 비밀번호 로그인 거절·외부 추가 단계 (7.2
    * @scenario response=password_auth_disabled, method_link=labeled
    * @effects password_disabled_shows_inline_notice, password_disabled_offers_method_button
    */
-  it('403 auth.password_auth_disabled 면 안내를 싣고 「{method_label}(으)로 로그인」 버튼이 redirect 쿼리를 실어 그 수단으로 보낸다', async () => {
+  it('403 auth.password_auth_disabled 면 안내를 싣고 「{method_label} 계정으로 로그인」 버튼이 redirect 쿼리를 실어 그 수단으로 보낸다', async () => {
     apiPost.mockRejectedValue(apiFailure(403, '이 계정은 사내 SSO(으)로만 로그인할 수 있습니다.', {
       code: 'auth.password_auth_disabled',
       method_label: { ko: '사내 SSO', en: 'Corp SSO' },
@@ -205,11 +205,11 @@ describe('sirsoft-basic 비밀번호 로그인 거절·외부 추가 단계 (7.2
     await settleFailure(t);
 
     await waitFor(() => expect(document.body.textContent).toContain('이 계정은 사내 SSO(으)로만 로그인할 수 있습니다.'));
-    await waitFor(() => expect(buttonByText('사내 SSO(으)로 로그인')).toBeDefined());
+    await waitFor(() => expect(buttonByText('사내 SSO 계정으로 로그인')).toBeDefined());
     expect(buttonByText(koAuth.external.login_with_company)).toBeUndefined();
     expect(locationAssign).not.toHaveBeenCalled();
 
-    fireEvent.click(buttonByText('사내 SSO(으)로 로그인')!);
+    fireEvent.click(buttonByText('사내 SSO 계정으로 로그인')!);
     await waitFor(() => expect(locationAssign).toHaveBeenCalledTimes(1));
     expect(locationAssign).toHaveBeenCalledWith('/plugins/sirsoft-sso/start/corp?redirect=%2Fmypage');
 
@@ -252,7 +252,7 @@ describe('sirsoft-basic 비밀번호 로그인 거절·외부 추가 단계 (7.2
 
     await waitFor(() => expect(document.body.textContent).toContain('이 계정은 회사 계정으로만 로그인할 수 있습니다.'));
     expect(buttonByText(koAuth.external.login_with_company)).toBeUndefined();
-    expect(Array.from(document.querySelectorAll('button')).some((b) => (b.textContent ?? '').endsWith('(으)로 로그인'))).toBe(false);
+    expect(Array.from(document.querySelectorAll('button')).some((b) => (b.textContent ?? '').endsWith('계정으로 로그인'))).toBe(false);
 
     t.cleanup();
   });

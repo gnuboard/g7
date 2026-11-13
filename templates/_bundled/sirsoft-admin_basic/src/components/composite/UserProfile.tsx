@@ -44,7 +44,10 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:UserProfile')) ?? {
 export interface User {
   id: number | string;
   uuid?: string;
-  name: string;
+  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+  name: string | null;
+  /** 관리자 화면 영역에서 보이는 이름(표시 이름). 이 값을 먼저 쓴다 */
+  display_name?: string | null;
   email: string;
   avatar?: string;
   role?: string;
@@ -125,6 +128,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const profileText = profileTextProp ?? tOr('admin.profile_settings', 'Profile Settings');
   const logoutText = logoutTextProp ?? tOr('admin.logout', 'Logout');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  // 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
+  const userShownName = user?.display_name ?? user?.name ?? '';
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   // 메뉴를 여는 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
@@ -263,7 +268,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             {user.avatar ? (
               <Img
                 src={user.avatar}
-                alt={user.name}
+                alt={userShownName}
                 className="w-8 h-8 rounded-full object-cover"
                 thumbPreset="xs"
               />
@@ -273,7 +278,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               </Div>
             )}
             <Div className="flex-1 min-w-0 text-left">
-              <Div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{user.name}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{userShownName}</Div>
               {user.role && (
                 <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>
               )}
@@ -296,7 +301,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               onClick={(event) => handleLinkClick(event, openUserDetail)}
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
-              <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white truncate">{userShownName}</Div>
               <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </a>
           ) : (
@@ -307,7 +312,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               {...keyboardActivationProps(openUserDetail)}
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
-              <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white truncate">{userShownName}</Div>
               <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </Div>
           )}

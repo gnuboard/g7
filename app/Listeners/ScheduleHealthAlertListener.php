@@ -78,17 +78,16 @@ class ScheduleHealthAlertListener implements HookListenerInterface
             }
 
             $lastExecuted = $this->service->lastExecutedAt();
+            $days = $lastExecuted === null
+                ? $this->service->staleAfterDays()
+                : (int) $lastExecuted->diffInDays(now());
 
             $alerts[] = [
                 'id' => 'schedule_not_running',
                 'type' => 'warning',
                 'subtype' => self::ALERT_SUBTYPE,
                 'icon' => 'clock',
-                'title' => __('schedule.alerts.not_running_title', [
-                    'days' => $lastExecuted === null
-                        ? $this->service->staleAfterDays()
-                        : (int) $lastExecuted->diffInDays(now()),
-                ]),
+                'title' => trans_choice('schedule.alerts.not_running_title', $days, ['days' => $days]),
                 'message' => $this->guidance(),
                 // 화면 주소 필터를 거친다 — 개발자가 관리자 화면 주소를 바꾼 사이트에서 이 링크만
                 // 옛 주소로 남지 않게 한다(형제 통계 보존일 경고와 같은 방식). 화면이 href 로 바로

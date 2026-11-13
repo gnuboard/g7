@@ -15,6 +15,8 @@ use App\Models\User;
 use App\Notifications\DeliveryReport;
 use App\Notifications\GenericNotification;
 use App\Notifications\GuestNotifiable;
+use App\Notifications\MemberVariables;
+use App\Notifications\RecipientDisplayName;
 use App\Services\NotificationDefinitionService;
 use App\Services\NotificationDeliveryGuard;
 use App\Services\NotificationLogService;
@@ -39,6 +41,14 @@ class NotificationHookListener implements HookListenerInterface
      * @var array<string, mixed>
      */
     public const QUEUE_OPTIONS = ['tries' => 5];
+
+    /**
+     * 받는 사람 이름 자리표시자.
+     *
+     * 자료 추출 리스너가 알림 데이터의 이름 칸에 이 값을 넣어 두면 발송 직전에 받는 사람마다,
+     * 채널마다 그 채널의 표시 이름으로 바뀐다. 받는 사람의 이름을 리스너가 직접 읽어 넣지 않는다.
+     */
+    public const RECIPIENT_NAME_PLACEHOLDER = '{recipient_name}';
 
     /**
      * 필요한 서비스를 주입합니다.
@@ -241,6 +251,7 @@ class NotificationHookListener implements HookListenerInterface
                 $context,
                 $args,
                 $eventId,
+                app(MemberVariables::class)->referencedKeys($template, $definition->type, $template->channel),
             );
         }
     }
@@ -275,6 +286,7 @@ class NotificationHookListener implements HookListenerInterface
             return;
         }
 
+        // 회원 변수는 묶음 잡이 지금의 템플릿에서 다시 뽑는다 — 부모 잡과 같은 규칙이라 분할 발송에서도 같은 값이 나간다.
         $this->sendToRecipients(
             $definition,
             $template->channel,
@@ -283,6 +295,7 @@ class NotificationHookListener implements HookListenerInterface
             $context,
             $hookArgs,
             $eventId,
+            app(MemberVariables::class)->referencedKeys($template, $definition->type, $template->channel),
         );
     }
 
@@ -345,6 +358,7 @@ class NotificationHookListener implements HookListenerInterface
      * @param  array  $context  extract_data 컨텍스트
      * @param  array  $args  원래 훅 인자
      * @param  string  $eventId  이벤트 ID
+     * @param  array<int, string>  $memberKeys  이 템플릿이 참조하는 회원 변수 이름 (예: `member.custom.job`)
      * @return void 반환값 없음
      *
      * @throws RetryHookListenerLaterException 다른 사본이 아직 보내는 수신자가 남았을 때
@@ -357,9 +371,25 @@ class NotificationHookListener implements HookListenerInterface
         array $context,
         array $args,
         string $eventId,
+        array $memberKeys = [],
     ): void {
         $guard = app(NotificationDeliveryGuard::class);
         $deferred = [];
+
+        // 받는 사람 이름과 회원 변수에 쓸 값은 이 묶음 분량을 한 번에 읽는다(수신자마다 쿼리하지 않는다).
+        // 값을 읽지 못해도 발송은 계속한다 — 그때는 수신자마다 읽는다.
+        try {
+            app(RecipientDisplayName::class)->preload($recipients, $channel);
+            if ($memberKeys !== []) {
+                app(MemberVariables::class)->preload($recipients, $memberKeys);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('NotificationHookListener: 수신자 이름 값 선적재 실패', [
+                'type' => $definition->type,
+                'channel' => $channel,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // 발송 건수 관측 (D6-a) — 큐 연결이 `sync` 인 사이트에서는 수신자마다의
         // 발송이 **이 요청 안에서** 순차 실행된다. 실행 시간 상한에 걸리면 그 지점
@@ -377,7 +407,7 @@ class NotificationHookListener implements HookListenerInterface
         ]);
 
         foreach ($recipients as $notifiable) {
-            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId, $tally) === NotificationDeliveryClaim::InFlight) {
+            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId, $tally, $memberKeys) === NotificationDeliveryClaim::InFlight) {
                 $deferred[] = $notifiable;
             }
         }
@@ -385,7 +415,7 @@ class NotificationHookListener implements HookListenerInterface
         // 다른 사본이 끝냈으면 Done, 죽어서 리스가 지났으면 넘겨받아 보낸다(누락 방지).
         $stillInFlight = 0;
         foreach ($deferred as $notifiable) {
-            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId, $tally) === NotificationDeliveryClaim::InFlight) {
+            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId, $tally, $memberKeys) === NotificationDeliveryClaim::InFlight) {
                 $stillInFlight++;
             }
         }
@@ -419,6 +449,7 @@ class NotificationHookListener implements HookListenerInterface
      * @param  array  $args  원래 훅 인자
      * @param  string  $eventId  이벤트 ID
      * @param  array{sent: int, failed: int}  $tally  발송 건수 집계 (보낸 수·실패 수를 여기에 더한다)
+     * @param  array<int, string>  $memberKeys  이 템플릿이 참조하는 회원 변수 이름
      * @return NotificationDeliveryClaim|null 선점 결과 (중복 방지 대상이 아니면 null)
      */
     private function sendToRecipient(
@@ -431,6 +462,7 @@ class NotificationHookListener implements HookListenerInterface
         array $args,
         string $eventId,
         array &$tally,
+        array $memberKeys = [],
     ): ?NotificationDeliveryClaim {
         // 키를 못 만드는 수신자(모델이 아닌 임시 객체)는 종전처럼 중복 방지 없이 보낸다.
         $recipientKey = $guard->recipientKey($notifiable);
@@ -454,7 +486,7 @@ class NotificationHookListener implements HookListenerInterface
         }
 
         try {
-            $notifiableData = $this->personalize($data, $notifiable, $definition, $context, $args);
+            $notifiableData = $this->personalize($data, $notifiable, $definition, $context, $args, $channel, $memberKeys);
 
             $report = new DeliveryReport;
             $notification = (new GenericNotification(
@@ -509,9 +541,15 @@ class NotificationHookListener implements HookListenerInterface
     /**
      * 수신자별로 알림 데이터를 개인화합니다.
      *
-     * 코어는 `{recipient_name}` 치환 하나만 소유하고, 그 밖의 수신자별 값
-     * (예: 수신자가 운영자면 관리자 화면 링크)은 확장이
-     * `{hook_prefix}.notification.personalize_data` 필터로 채웁니다.
+     * 코어는 두 가지를 채웁니다.
+     *
+     * 1. 값이 `{recipient_name}` 인 데이터 칸을 받는 사람의 **이 채널 표시 이름**으로 바꿉니다
+     *    (영역 `core:notification:{채널}`). 메일과 사이트 알림의 설정이 다르면 같은 사람에게 다른 이름이 나갑니다.
+     * 2. 템플릿이 참조한 회원 항목 변수(`member.…`)를 받는 사람의 값으로 넣습니다.
+     *
+     * 그 밖의 수신자별 값(예: 수신자가 운영자면 관리자 화면 링크)은 확장이
+     * `{hook_prefix}.notification.personalize_data` 필터로 채웁니다. 이 필터의 인자는 그대로입니다
+     * (채널을 넘기지 않습니다 — 인자를 늘리면 기존 구독자의 계약이 바뀝니다).
      *
      * **구독자가 없으면 비용이 0 입니다** — `applyFilters` 가 즉시 원본을 돌려줍니다.
      *
@@ -523,6 +561,8 @@ class NotificationHookListener implements HookListenerInterface
      * @param  NotificationDefinition  $definition  알림 정의
      * @param  array  $context  extract_data 가 실은 컨텍스트
      * @param  array  $args  원래 훅 인자
+     * @param  string|null  $channel  보내는 채널 (받는 사람 이름의 표시 이름 영역을 정한다)
+     * @param  array<int, string>  $memberKeys  템플릿이 참조하는 회원 변수 이름
      * @return array 수신자별로 치환된 알림 데이터
      */
     private function personalize(
@@ -531,9 +571,27 @@ class NotificationHookListener implements HookListenerInterface
         NotificationDefinition $definition,
         array $context,
         array $args,
+        ?string $channel = null,
+        array $memberKeys = [],
     ): array {
-        if (isset($data['name']) && $data['name'] === '{recipient_name}') {
-            $data['name'] = $notifiable->name ?? '';
+        // 자리표시자를 값으로 가진 칸을 모두 바꾼다(`name` 뿐 아니라 확장이 다른 키에 실은 것도). 이름은 한 번만 계산한다.
+        $recipientName = null;
+        foreach ($data as $key => $value) {
+            if ($value === self::RECIPIENT_NAME_PLACEHOLDER) {
+                $recipientName ??= $this->recipientName($notifiable, $channel);
+                $data[$key] = $recipientName;
+            }
+        }
+
+        if ($memberKeys !== []) {
+            try {
+                // 알림 데이터가 이미 같은 키를 실었으면 그 값을 둔다(확장이 직접 채운 값이 우선).
+                $data += app(MemberVariables::class)->valuesFor($notifiable, $memberKeys, $channel);
+            } catch (\Throwable $e) {
+                // 변수 값 때문에 알림이 막히면 안 된다 — 빈 글자로 채워 자리표시자가 그대로 나가지 않게 한다.
+                Log::warning('NotificationHookListener: 회원 변수 값 계산 실패', ['type' => $definition->type, 'error' => $e->getMessage()]);
+                $data += array_fill_keys($memberKeys, '');
+            }
         }
 
         $personalized = HookManager::applyFilters(
@@ -546,6 +604,26 @@ class NotificationHookListener implements HookListenerInterface
         );
 
         return is_array($personalized) ? $personalized : $data;
+    }
+
+    /**
+     * 받는 사람의 이 채널 표시 이름을 반환합니다.
+     *
+     * 계산이 실패해도 알림은 보낸다. 그때 실명으로 대신하지 않는다(닉네임으로 보이는 사이트에서 실명이 나가지 않게 빈 글자).
+     *
+     * @param  object  $notifiable  수신자
+     * @param  string|null  $channel  보내는 채널
+     * @return string 표시 이름 (없거나 계산하지 못하면 빈 글자)
+     */
+    private function recipientName(object $notifiable, ?string $channel): string
+    {
+        try {
+            return (string) (app(RecipientDisplayName::class)->forChannel($notifiable, $channel) ?? '');
+        } catch (\Throwable $e) {
+            Log::warning('NotificationHookListener: 받는 사람 표시 이름 계산 실패', ['channel' => $channel, 'error' => $e->getMessage()]);
+
+            return '';
+        }
     }
 
     /**

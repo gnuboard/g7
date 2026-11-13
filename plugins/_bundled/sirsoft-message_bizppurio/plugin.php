@@ -255,8 +255,40 @@ class Plugin extends AbstractPlugin
 
             $definition = NotificationDefinition::find($definitionId);
             if ($definition) {
-                $definition->channels = $keep;
-                $definition->save();
+                $this->saveWithoutUserOverrideTracking(function () use ($definition, $keep) {
+                    $definition->channels = $keep;
+                    $definition->save();
+                });
+            }
+        }
+    }
+
+    /**
+     * 운영자 수정 기록(user_overrides) 없이 저장 작업을 실행합니다.
+     *
+     * 제거가 지우는 sms·alimtalk 채널은 운영자가 고친 값이 아니다. 코어 알림 정의는 `channels` 를 운영자 수정 추적
+     * 대상으로 삼으므로, 그냥 저장하면 「운영자가 채널을 고쳤다」로 기록되고 재설치 때 activate() 의 재시딩이 그 칸을
+     * 운영자 값으로 보존해 채널이 다시 붙지 않는다. 코어 시더 문맥 플래그(`user_overrides.seeding`)를 켠 채 저장하고,
+     * 끝나면 원래 상태로 돌린다.
+     *
+     * @param  \Closure  $callback  저장 작업
+     * @return void 반환값 없음
+     */
+    private function saveWithoutUserOverrideTracking(\Closure $callback): void
+    {
+        $app = app();
+        $previouslyBound = $app->bound('user_overrides.seeding');
+        $previousValue = $previouslyBound ? $app->make('user_overrides.seeding') : null;
+
+        $app->instance('user_overrides.seeding', true);
+
+        try {
+            $callback();
+        } finally {
+            if ($previouslyBound) {
+                $app->instance('user_overrides.seeding', $previousValue);
+            } else {
+                $app->forgetInstance('user_overrides.seeding');
             }
         }
     }

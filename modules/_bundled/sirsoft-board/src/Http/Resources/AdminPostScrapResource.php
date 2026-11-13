@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use App\Http\Resources\Traits\ExposesMemberContact;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
@@ -44,6 +45,8 @@ class AdminPostScrapResource extends BaseApiResource
         $status = $post?->status instanceof PostStatus
             ? $post->status
             : PostStatus::tryFrom((string) ($post->status ?? ''));
+        $authorName = $post !== null ? $this->resolveAuthorName($post) : null;
+        $authorRealName = $post !== null ? $this->resolveAuthorRealName($post, $authorName, $request) : null;
 
         return [
             'id' => $this->id,
@@ -61,7 +64,9 @@ class AdminPostScrapResource extends BaseApiResource
             'post_status' => $isDeleted ? PostStatus::Deleted->value : ($status?->value ?? PostStatus::Published->value),
             'post_status_label' => $isDeleted ? PostStatus::Deleted->label() : ($status?->label() ?? PostStatus::Published->label()),
             'is_deleted' => $isDeleted,
-            'author_name' => $post !== null ? $this->resolveAuthorName($post) : null,
+            'author_name' => $authorName,
+            // 실명 보조 — 회원 조회 권한이 있고 표시 이름과 다를 때만 싣는다
+            ...($authorRealName !== null ? ['author_real_name' => $authorRealName] : []),
             'scrapped_at' => $this->created_at ? $this->formatCreatedAtFormat(
                 $this->created_at,
                 g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
@@ -91,11 +96,15 @@ class AdminPostScrapResource extends BaseApiResource
     {
         $isWithdrawn = UserStatus::tryFrom((string) $member->status) === UserStatus::Withdrawn;
 
-        return [
+        // 이름 키에는 관리자 화면의 표시 이름만 싣는다. 실명은 회원 조회 권한이 있고 표시 이름과 다를 때만 `real_name` 으로 더한다.
+        $displayNames = app(BoardDisplayNames::class);
+        $displayName = $displayNames->name($member, null, BoardDisplayNames::AREA_ADMIN);
+
+        return $displayNames->withRealName([
             'uuid' => $member->uuid,
-            'name' => $isWithdrawn ? __('user.withdrawn_user') : $member->name,
+            'name' => $displayName,
             'email' => $this->canExposeMemberEmail($request, (int) $member->id) ? $member->email : null,
             'is_withdrawn' => $isWithdrawn,
-        ];
+        ], $member, $displayName, $request);
     }
 }

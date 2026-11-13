@@ -131,7 +131,11 @@
           <responsive on="768-" class="page:grid page:grid-cols-2 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700"/>
           <div class="page:flex page:items-baseline page:gap-3">
             <span class="page-text-table-header page:shrink-0 page:w-20">$t:sirsoft-page.admin.page.detail.info.creator</span>
-            <p class="page-text-primary page:text-sm">{{page?.data?.creator?.name ?? '-'}}</p>
+            <div class="page:min-w-0">
+              <p class="page-text-primary page:text-sm">{{page?.data?.creator?.name ?? '-'}}</p>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-if="{{!!page?.data?.creator?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-page.admin.page.detail.real_name_sub', { name: page.data.creator.real_name })}}" class="page:block page:mt-0.5 page-text-tertiary">{{page.data.creator.real_name}}</span>
+            </div>
           </div>
           <div class="page:flex page:items-baseline page:gap-3">
             <span class="page-text-table-header page:shrink-0 page:w-20">$t:sirsoft-page.admin.page.detail.info.published_at</span>
@@ -236,7 +240,11 @@
           </column>
           <column field="creator" header="$t:sirsoft-page.admin.page.detail.versions.creator" width="120px">
             <cell>
-              <span class="page-text-body">{{row.creator?.name ?? '-'}}</span>
+              <div>
+                <span class="page:block page-text-body">{{row.creator?.name ?? '-'}}</span>
+                <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+                <span data-if="{{!!row.creator?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-page.admin.page.detail.real_name_sub', { name: row.creator.real_name })}}" class="page:block page-text-tertiary">{{row.creator.real_name}}</span>
+              </div>
             </cell>
           </column>
           <column field="created_at" header="$t:sirsoft-page.admin.page.detail.versions.created_at" width="180px">

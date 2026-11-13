@@ -304,10 +304,12 @@ class PostSearchSecretPreviewTest extends BoardTestCase
         // 작성자명 검색(LIKE 기반)으로 비밀글을 검색 결과에 포함시킨다.
         // (FULLTEXT 인덱스는 트랜잭션 격리 테스트에서 신규 행 매칭이 불안정하므로
         //  검색 매칭 자체가 아니라 "검색 경유 응답의 마스킹"을 안정적으로 검증)
+        // 회원 글의 작성자 검색은 화면에 보이는 이름(회원 이름)을 찾는다 — 글에 저장된 작성자 이름 컬럼은 비회원 글에만 쓰인다.
         $authorKeyword = 'secretwriter37';
+        $this->postAuthor->forceFill(['name' => $authorKeyword])->save();
         $postId = $this->createTestPost([
             'user_id' => $this->postAuthor->id,
-            'author_name' => $authorKeyword,
+            'author_name' => null,
             'title' => '검색 경유 비밀 글',
             'content' => '비밀글 본문 미리보기 새면 안 됨',
             'is_secret' => true,

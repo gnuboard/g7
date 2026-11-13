@@ -116,6 +116,12 @@ class SeoBoardCacheListener implements HookListenerInterface
                 'priority' => 20,
                 'sync' => true,
             ],
+            // 회원의 이름, 닉네임, 표시 이름 종류, 표시용 항목 값이 바뀌면 그 회원의 글과 댓글이 실린 화면의 작성자가 달라진다
+            'core.user.display_name_changed' => [
+                'method' => 'onUserDisplayNameChanged',
+                'priority' => 20,
+                'sync' => true,
+            ],
         ];
     }
 
@@ -290,6 +296,38 @@ class SeoBoardCacheListener implements HookListenerInterface
                 Log::debug('[SEO] Board cache invalidated on board reorder');
             } catch (\Throwable $e) {
                 Log::warning('[SEO] Board cache invalidation on board reorder failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+    }
+
+    /**
+     * 회원의 표시 이름이 바뀌면 게시판 화면의 SEO 캐시를 무효화합니다.
+     *
+     * 표시 이름은 저장하지 않고 볼 때마다 계산하지만, 검색 엔진용으로 미리 그려 둔 화면에는 그린 시점의 이름이 구워져 있다.
+     * 그 회원의 글과 댓글이 어느 게시판의 어느 쪽에 실렸는지 찾으려면 글과 댓글 전체를 훑어야 하므로, 게시판 화면
+     * (글 목록, 글 상세, 게시판 목록)과 홈, 검색 화면을 통째로 비운다. 회원 한 명의 이름 변경은 드문 일이다.
+     *
+     * @param  mixed  ...$args  훅 인자 (첫 번째: 회원, 두 번째: 바뀐 값의 키 목록)
+     * @return void 반환값 없음
+     */
+    public function onUserDisplayNameChanged(...$args): void
+    {
+        DB::afterCommit(function () {
+            try {
+                $cache = app(SeoCacheManagerInterface::class);
+
+                // `*` 는 슬래시를 포함한 모든 글자에 걸린다. 글 목록과 글 상세, 쿼리 변종까지 한 번에 지운다.
+                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => '*']));
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX);
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX.'?*');
+                $cache->invalidateByLayout('home');
+                $cache->invalidateByLayout('search/index');
+
+                Log::debug('[SEO] Board cache invalidated on member display name change');
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Board cache invalidation on member display name change failed', [
                     'error' => $e->getMessage(),
                 ]);
             }

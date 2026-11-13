@@ -1,0 +1,808 @@
+{
+    "comment": "쇼핑몰 설정 — 주문서 항목 추가와 수정 창(#490). 주문서 항목 표의 「항목 추가」와 운영자 추가 항목의 [수정]이 연다.\n  상태는 전역 한 객체(`_global.checkout_field_form_modal`)에 모은다. 창은 별도 문맥이라 표의 행을 보지 못하므로,\n  여는 쪽이 매번 통째로 만들어 넣고(`isNew`, `form`, `fieldsVersion`) 저장 성공과 닫기에서 통째로 비운다.\n\n  코어 회원 항목 창을 줄인 것이다. 주문서에는 가입 화면 표시, 범위, 공개 프로필, 본인인증 같은 회원 전용 옵션이 없으므로\n  구획(주문자 또는 배송지), 유형, 키, 이름, 안내, 사용, 필수와 선택 유형의 선택지만 다룬다.\n  유형과 키는 추가할 때만 정하고 수정에서는 잠긴다(입력된 값이 그 유형과 키로 이어져 있다).\n  저장된 선택지의 값(영문)도 같은 이유로 잠기고, 새로 더한 줄만 고친다.\n\n  추가는 POST, 수정은 PUT 으로 코어 항목 API 를 부른다. 요청은 창을 연 순간의 정의 버전을 싣는다. 다른 관리자가 먼저 바꿔\n  409 `fields_changed` 가 오면 저장하지 않고 알린 뒤 표를 다시 받고, 창이 쥔 버전을 비운다(다음 저장은 다시 받은 버전을 싣는다).\n  검증 실패(422)는 오류 응답을 통째로 담아 각 칸 아래에 그린다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 > 주문 설정 탭 주문서 항목 추가·수정 모달. _global.checkout_field_form_modal 단일 진실 — 표가 여는 순간 통째 set, 저장 성공과 닫기에서 통째로 비운다",
+        "editor_label": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.editor_label"
+    },
+    "id": "checkout_field_form_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{_global.checkout_field_form_modal?.isNew === true ? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.title.create' : '$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.title.edit'}}",
+        "size": "lg",
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "id": "checkout_field_form_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소. 창을 닫고 창 상태를 통째로 비운다(적은 내용은 버린다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "checkout_field_form_modal"
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "checkout_field_form_modal": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "checkout_field_form_save",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "저장. 추가는 POST, 수정은 PUT 으로 주소와 메서드가 함께 갈린다. 본문은 이름, 안내, 사용, 필수, 구획과 정의 버전이고,\n               추가일 때만 키와 유형을, 선택 유형일 때만 선택지를 더 싣는다(새 줄 표식은 뺀다). 성공하면 창을 닫고 표를 다시 받은 뒤\n               창 상태를 비운다. 다른 관리자가 먼저 바꿨으면(409) 저장하지 않고 알린 뒤 표를 다시 받고 창의 버전을 비운다.\n               그 밖의 실패는 오류 응답을 통째로 담아 상단 상자와 각 칸 아래가 같은 값에서 읽는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "checkout_field_form_modal.isSaving": true,
+                                    "checkout_field_form_modal.errors": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{_global.checkout_field_form_modal?.isNew === true ? '/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields' : '/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields/' + _global.checkout_field_form_modal?.form?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "{{_global.checkout_field_form_modal?.isNew === true ? 'POST' : 'PUT'}}",
+                                    "body": "{{({ name: _global.checkout_field_form_modal?.form?.name ?? {}, description: _global.checkout_field_form_modal?.form?.description ?? {}, enabled: _global.checkout_field_form_modal?.form?.enabled !== false, required: _global.checkout_field_form_modal?.form?.required === true, ui: { group: _global.checkout_field_form_modal?.form?.group ?? 'shipping' }, ...((_global.checkout_field_form_modal?.fieldsVersion ?? checkoutFieldDefs?.data?.fields_version) ? { fields_version: _global.checkout_field_form_modal?.fieldsVersion ?? checkoutFieldDefs?.data?.fields_version } : {}), ...(_global.checkout_field_form_modal?.isNew === true ? { key: String(_global.checkout_field_form_modal?.form?.key ?? '').trim(), type: _global.checkout_field_form_modal?.form?.type ?? '' } : {}), ...(['choice', 'multi_choice'].includes(_global.checkout_field_form_modal?.form?.type ?? '') ? { options: (_global.checkout_field_form_modal?.form?.options ?? []).map(o => ({ value: o.value, label: o.label ?? {} })) } : {}) })}}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "checkout_field_form_modal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "checkoutFieldDefs"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "checkout_field_form_modal": null
+                                        }
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{error.error_code === 'fields_changed'}}",
+                                            "then": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "checkoutFieldDefs"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_form_modal.isSaving": false,
+                                                        "checkout_field_form_modal.fieldsVersion": null
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "checkout_field_form_modal.isSaving": false,
+                                                    "checkout_field_form_modal.errors": "{{error}}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.checkout_field_form_modal?.isSaving === true || checkoutFieldDefs?.data?.abilities?.can_update !== true}}",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:dark:bg-indigo-500 ecommerce:hover:bg-indigo-700 ecommerce:dark:hover:bg-indigo-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:text-white ecommerce:rounded-lg"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.checkout_field_form_modal?.isSaving === true}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.checkout_field_form_modal?.isSaving === true ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce:flex ecommerce:flex-col ecommerce:max-h-[calc(90vh-140px)] ecommerce:-my-4"
+            },
+            "children": [
+                {
+                    "id": "checkout_field_form_body",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce:flex-1 ecommerce:overflow-y-auto ecommerce:space-y-4 ecommerce:px-4 ecommerce:py-4 ecommerce:pr-2"
+                    },
+                    "children": [
+                        {
+                            "id": "checkout_field_form_error",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.checkout_field_form_modal?.errors}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "ecommerce-alert-danger"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "ecommerce:text-xl ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "ecommerce-tone-error-strong ecommerce:text-sm ecommerce:font-medium"
+                                            },
+                                            "text": "{{_global.checkout_field_form_modal?.errors?.message ?? '$t:common.validation_error'}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "ecommerce-form-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.group"
+                                        },
+                                        {
+                                            "id": "checkout_field_form_group",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "comment": "구획. 주문서의 주문자 묶음에 둘지 배송지 묶음에 둘지 정한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_form_modal.form.group": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.group",
+                                                "value": "{{_global.checkout_field_form_modal?.form?.group ?? 'shipping'}}",
+                                                "options": "{{[{ value: 'orderer', label: $t('sirsoft-ecommerce.admin.settings.checkout_fields.group.orderer') }, { value: 'shipping', label: $t('sirsoft-ecommerce.admin.settings.checkout_fields.group.shipping') }]}}",
+                                                "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}",
+                                                "className": "ecommerce:w-full"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(_global.checkout_field_form_modal?.errors?.errors?.['ui.group']?.[0] ?? '') !== ''}}",
+                                            "props": {
+                                                "className": "ecommerce-form-error"
+                                            },
+                                            "text": "{{_global.checkout_field_form_modal?.errors?.errors?.['ui.group']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "ecommerce-form-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.type"
+                                        },
+                                        {
+                                            "id": "checkout_field_form_type",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "if": "{{_global.checkout_field_form_modal?.isNew === true}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "유형(추가할 때만 고른다). 유형이 바뀌면 선택지를 비운다. 선택 유형이 아닌 항목에 선택지가 남아 저장 본문에 실리지 않게.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_form_modal.form.type": "{{$event.target.value}}",
+                                                        "checkout_field_form_modal.form.options": "{{[]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.type",
+                                                "value": "{{_global.checkout_field_form_modal?.form?.type ?? ''}}",
+                                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.settings.checkout_fields.form.type_placeholder') }].concat((checkoutFieldDefs?.data?.types ?? []).filter(t => t.available !== false).map(t => ({ value: t.key, label: t.label ?? t.key })))}}",
+                                                "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}",
+                                                "className": "{{(_global.checkout_field_form_modal?.errors?.errors?.type?.[0] ?? '') !== '' ? 'ecommerce:w-full ecommerce:border-red-500' : 'ecommerce:w-full'}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "checkout_field_form_type_locked",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.checkout_field_form_modal?.isNew !== true}}",
+                                            "props": {
+                                                "className": "ecommerce:bg-gray-100 ecommerce:dark:bg-gray-800 ecommerce:rounded ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
+                                            },
+                                            "text": "{{_global.checkout_field_form_modal?.form?.type_label ?? _global.checkout_field_form_modal?.form?.type ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_global.checkout_field_form_modal?.isNew !== true}}",
+                                            "props": {
+                                                "className": "ecommerce-form-hint"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.type_locked"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(_global.checkout_field_form_modal?.errors?.errors?.type?.[0] ?? '') !== ''}}",
+                                            "props": {
+                                                "className": "ecommerce-form-error"
+                                            },
+                                            "text": "{{_global.checkout_field_form_modal?.errors?.errors?.type?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "ecommerce-form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.key"
+                                },
+                                {
+                                    "id": "checkout_field_form_key",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "항목 키. 소문자로 맞춰 담는다. 만든 뒤에는 바꿀 수 없다(주문서 값과 요청 키가 이 글자로 이어진다).",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "checkout_field_form_modal.form.key": "{{($event.target.value ?? '').trim().toLowerCase()}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.key",
+                                        "value": "{{_global.checkout_field_form_modal?.form?.key ?? ''}}",
+                                        "placeholder": "door_code",
+                                        "maxLength": 50,
+                                        "disabled": "{{_global.checkout_field_form_modal?.isSaving === true || _global.checkout_field_form_modal?.isNew !== true}}",
+                                        "className": "{{(_global.checkout_field_form_modal?.errors?.errors?.key?.[0] ?? '') !== '' ? 'ecommerce-input-error ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : 'ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "ecommerce-form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.key_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(_global.checkout_field_form_modal?.errors?.errors?.key?.[0] ?? '') !== ''}}",
+                                    "props": {
+                                        "className": "ecommerce-form-error"
+                                    },
+                                    "text": "{{_global.checkout_field_form_modal?.errors?.errors?.key?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce-form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.name"
+                                },
+                                {
+                                    "id": "checkout_field_form_name",
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "actions": [
+                                        {
+                                            "comment": "항목 이름(언어별). 사이트 기본 언어 칸이 필수다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "checkout_field_form_modal.form.name": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_global.checkout_field_form_modal?.form?.name ?? {}}}",
+                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.name",
+                                        "layout": "compact",
+                                        "error": "{{((Object.entries(_global.checkout_field_form_modal?.errors?.errors ?? {}).find(([k]) => k === 'name' || k.startsWith('name.')) ?? [])[1]?.[0] ?? '')}}",
+                                        "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce-form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.description"
+                                },
+                                {
+                                    "id": "checkout_field_form_description",
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "actions": [
+                                        {
+                                            "comment": "안내 문구(언어별). 주문서의 칸 아래에 작은 글씨로 보인다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "checkout_field_form_modal.form.description": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_global.checkout_field_form_modal?.form?.description ?? {}}}",
+                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.description",
+                                        "layout": "compact",
+                                        "error": "{{((Object.entries(_global.checkout_field_form_modal?.errors?.errors ?? {}).find(([k]) => k === 'description' || k.startsWith('description.')) ?? [])[1]?.[0] ?? '')}}",
+                                        "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce-flex-center ecommerce:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce-text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.enabled"
+                                        },
+                                        {
+                                            "id": "checkout_field_form_enabled",
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "사용. 끄면 주문서에 나오지 않는다. 창의 [저장]을 눌러야 반영된다(표의 스위치와 달리 즉시 저장이 아니다).",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_form_modal.form.enabled": "{{$event.target.checked}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{_global.checkout_field_form_modal?.form?.enabled !== false}}",
+                                                "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.enabled",
+                                                "size": "sm",
+                                                "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce-flex-center ecommerce:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce-text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.required"
+                                        },
+                                        {
+                                            "id": "checkout_field_form_required",
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "필수. 켜면 주문서가 이 항목을 비운 채로 넘어가지 못한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_form_modal.form.required": "{{$event.target.checked}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{_global.checkout_field_form_modal?.form?.required === true}}",
+                                                "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.col.required",
+                                                "size": "sm",
+                                                "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "checkout_field_form_options",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['choice', 'multi_choice'].includes(_global.checkout_field_form_modal?.form?.type ?? '')}}",
+                            "props": {
+                                "className": "ecommerce:space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce-flex-between ecommerce:gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce-form-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.options.title"
+                                        },
+                                        {
+                                            "id": "checkout_field_form_option_add",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "선택지 한 줄 더하기. 새 줄에는 표식(`_new`)을 달아 값(영문) 칸을 열어 둔다. 저장 본문에는 표식을 싣지 않는다.",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_form_modal.form.options": "{{[...(_global.checkout_field_form_modal?.form?.options ?? []), { value: '', label: {}, _new: true }]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.checkout_field_form_modal?.isSaving === true || (_global.checkout_field_form_modal?.form?.options ?? []).length >= 50}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.options.add_button"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "ecommerce-form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.options.hint"
+                                },
+                                {
+                                    "id": "checkout_field_form_options_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.checkout_field_form_modal?.form?.options ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "ecommerce-text-label-subtle"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.options.empty"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{(_global.checkout_field_form_modal?.form?.options ?? [])}}",
+                                        "item_var": "opt",
+                                        "index_var": "oi"
+                                    },
+                                    "props": {
+                                        "data-testid": "{{'checkout-field-form-option-' + oi}}",
+                                        "className": "ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "ecommerce:w-40 ecommerce:flex-shrink-0"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "ecommerce:w-full"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "선택지 값(영문). 저장된 선택지는 입력된 값이 이 글자로 이어져 있어 잠긴다. 새 줄만 고친다.",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "checkout_field_form_modal.form.options": "{{(_global.checkout_field_form_modal?.form?.options ?? []).map((o, i) => i === oi ? { ...o, value: ($event.target.value ?? '').trim().toLowerCase() } : o)}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "text",
+                                                                "data-testid": "{{'checkout-field-form-option-value-' + oi}}",
+                                                                "aria-label": "$t:common.row_cell|row={{oi + 1}}|column={{$t('sirsoft-ecommerce.admin.settings.checkout_fields.form.options.value')}}",
+                                                                "value": "{{opt.value ?? ''}}",
+                                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.options.value_placeholder",
+                                                                "maxLength": 50,
+                                                                "disabled": "{{_global.checkout_field_form_modal?.isSaving === true || opt._new !== true}}",
+                                                                "className": "ecommerce:w-full ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{((Object.entries(_global.checkout_field_form_modal?.errors?.errors ?? {}).find(([k]) => k === 'options.' + oi + '.value' || k.startsWith('options.' + oi + '.value.')) ?? [])[1]?.[0] ?? '') !== ''}}",
+                                                            "props": {
+                                                                "className": "ecommerce-form-error"
+                                                            },
+                                                            "text": "{{((Object.entries(_global.checkout_field_form_modal?.errors?.errors ?? {}).find(([k]) => k === 'options.' + oi + '.value' || k.startsWith('options.' + oi + '.value.')) ?? [])[1]?.[0] ?? '')}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "ecommerce:flex-1 ecommerce:min-w-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "MultilingualInput",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "선택지 이름(언어별). 주문서에 보이는 글이다.",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "checkout_field_form_modal.form.options": "{{(_global.checkout_field_form_modal?.form?.options ?? []).map((o, i) => i === oi ? { ...o, label: $event.target.value } : o)}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "data-testid": "{{'checkout-field-form-option-label-' + oi}}",
+                                                                "value": "{{opt.label ?? {}}}",
+                                                                "ariaLabel": "$t:common.row_cell|row={{oi + 1}}|column={{$t('sirsoft-ecommerce.admin.settings.checkout_fields.form.options.label')}}",
+                                                                "layout": "compact",
+                                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.form.options.label_placeholder",
+                                                                "error": "{{((Object.entries(_global.checkout_field_form_modal?.errors?.errors ?? {}).find(([k]) => k === 'options.' + oi + '.label' || k.startsWith('options.' + oi + '.label.')) ?? [])[1]?.[0] ?? '')}}",
+                                                                "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "선택지 지우기. 목록에서 빼고, 창을 저장할 때 서버가 그 값으로 입력된 내용을 함께 비운다.",
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "checkout_field_form_modal.form.options": "{{(_global.checkout_field_form_modal?.form?.options ?? []).filter((o, i) => i !== oi)}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "data-testid": "{{'checkout-field-form-option-remove-' + oi}}",
+                                                        "type": "button",
+                                                        "aria-label": "$t:common.row_cell|row={{oi + 1}}|column={{$t('common.delete')}}",
+                                                        "className": "ecommerce-btn-icon ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                                        "disabled": "{{_global.checkout_field_form_modal?.isSaving === true}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "trash",
+                                                                "className": "ecommerce:text-sm"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "checkout_field_form_options_error",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(_global.checkout_field_form_modal?.errors?.errors?.options?.[0] ?? '') !== ''}}",
+                                    "props": {
+                                        "className": "ecommerce-form-error"
+                                    },
+                                    "text": "{{_global.checkout_field_form_modal?.errors?.errors?.options?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\SocialLogin\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Listeners\NotificationHookListener;
 use App\Models\User;
 use App\Support\ScreenUrl;
 use Plugins\Sirsoft\SocialLogin\Plugin;
@@ -118,7 +119,8 @@ class NotificationDataListener implements HookListenerInterface
         return array_merge($default, [
             'data' => [
                 'app_name' => (string) config('app.name'),
-                'name' => (string) ($user->name ?? ''),
+                // 받는 사람이 이 회원 본인이다. 자리표시를 실으면 코어가 받는 사람과 채널마다 표시 이름으로 푼다.
+                'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'provider_label' => $this->label($args[1] ?? null),
             ] + $extra,
             'context' => ['trigger_user_id' => (int) $user->getKey(), 'trigger_user' => $user],
@@ -134,7 +136,7 @@ class NotificationDataListener implements HookListenerInterface
      */
     private function forAdmins(array $default, array $data): array
     {
-        return array_merge($default, ['data' => ['app_name' => (string) config('app.name'), 'name' => '{recipient_name}'] + $data]);
+        return array_merge($default, ['data' => ['app_name' => (string) config('app.name'), 'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER] + $data]);
     }
 
     /**

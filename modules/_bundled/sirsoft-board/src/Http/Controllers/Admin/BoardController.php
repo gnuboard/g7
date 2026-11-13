@@ -343,6 +343,12 @@ class BoardController extends AdminBaseController
                 $this->boardTypeService->getBoardTypes()
             );
 
+            // 작성자 표시 이름 칸(방식, 종류 선택지)과 비회원 작성자 항목 표 — 세 모드 모두 같은 모양으로 싣는다
+            $data = $this->boardService->appendMemberFieldFormData(
+                $data,
+                isset($board) && $board instanceof Board ? $board : null
+            );
+
             $data['_meta'] = [
                 'limits' => config('sirsoft-board.limits', []),
                 // false 면 화면이 담당자 칸을 잠그고 이유를 보여 준다(생성·복사 모드), 수정 모드는 null
@@ -403,7 +409,8 @@ class BoardController extends AdminBaseController
             'board_manager_ids' => [$currentUser->uuid],
             'board_managers' => [[
                 'uuid' => $currentUser->uuid,
-                'name' => $currentUser->name,
+                // 다른 관리 인원(BoardResource::getBoardRoleData)과 같이 관리자 화면의 표시 이름으로 싣는다
+                'name' => $this->boardService->adminDisplayNameOf($currentUser),
                 'email' => $currentUser->email,
             ]],
         ];

@@ -49,6 +49,7 @@ class StoreReportRequest extends FormRequest
      * 신고 남발 방지: 일일 횟수 제한, 반려 누적 제한, 연속 신고 쿨타임
      *
      * @param  Validator  $validator  검증기 인스턴스
+     * @return void 반환값 없음 (비로그인 요청은 추가 규칙 없이 종료)
      */
     public function withValidator(Validator $validator): void
     {

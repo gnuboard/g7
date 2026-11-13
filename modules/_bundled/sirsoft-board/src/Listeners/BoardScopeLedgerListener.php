@@ -182,12 +182,12 @@ class BoardScopeLedgerListener implements HookListenerInterface
             'sirsoft-board.{slug}.attachments.download' => [
                 'mode' => ScopedPermissionEnforcement::MODE_SERVICE,
                 'routes' => ["{$r}boards.attachment.download"],
-                'paths' => ["{$svc}AttachmentService::download"],
+                'paths' => ["{$svc}AttachmentService::getDownloadInfo"],
             ],
             'sirsoft-board.{slug}.admin.attachments.download' => [
                 'mode' => ScopedPermissionEnforcement::MODE_SERVICE,
                 'routes' => ["{$r}admin.board.attachments.download"],
-                'paths' => ["{$svc}AttachmentService::download"],
+                'paths' => ["{$svc}AttachmentService::getDownloadInfo"],
             ],
             'sirsoft-board.{slug}.attachments.upload' => [
                 'mode' => ScopedPermissionEnforcement::MODE_SERVICE,

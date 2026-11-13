@@ -8,6 +8,14 @@
       "mail": {
         "subject": "[{app_name}] {provider_label} の連携が解除されました",
         "body": "<p>{name}様、{provider_label} 側でこのサイトとの連携が解除されたため、現在ログインする手段がありません。</p><p>以下からメールでパスワードを設定すると、再度ログインできます。</p><p><a href=\"{reset_url}\">パスワードを設定する</a></p><p>{site_url}</p>"
+      },
+      "sms": {
+        "subject": "[{app_name}] {provider_label} の連携が解除されました",
+        "body": "{name}様、{provider_label} 側でこのサイトとの連携が解除されたため、現在ログインする手段がありません。 以下からメールでパスワードを設定すると、再度ログインできます。 パスワードを設定する {site_url}"
+      },
+      "alimtalk": {
+        "subject": "[{app_name}] {provider_label} の連携が解除されました",
+        "body": "{name}様、{provider_label} 側でこのサイトとの連携が解除されたため、現在ログインする手段がありません。 以下からメールでパスワードを設定すると、再度ログインできます。 パスワードを設定する {site_url}"
       }
     }
   },
@@ -24,6 +32,14 @@
       "mail": {
         "subject": "[{app_name}] {provider_label} の連携が解除されました",
         "body": "<p>{name}様、管理者が {provider_label} アカウントの連携を解除しました。ご不明な点はサイトにお問い合わせください。</p><p>{site_url}</p>"
+      },
+      "sms": {
+        "subject": "{provider_label} の連携が解除されました",
+        "body": "管理者が {provider_label} アカウントの連携を解除しました。"
+      },
+      "alimtalk": {
+        "subject": "{provider_label} の連携が解除されました",
+        "body": "管理者が {provider_label} アカウントの連携を解除しました。"
       }
     }
   },

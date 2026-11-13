@@ -145,6 +145,9 @@ return [
     ],
     'board' => [
         'not_found' => '掲示板が見つかりません。',
+        'display_name_setting' => [
+            'kind_unavailable' => '現在使用できない表示名の種類です。選び直してください。',
+        ],
         'name' => [
             'required' => '掲示板名は必須です。',
             'string' => '掲示板名は文字列である必要があります。',
@@ -410,6 +413,17 @@ return [
         ],
         'board' => [
             'name' => '掲示板名',
+            'display_name_setting' => '投稿者の表示名',
+            'display_name_mode' => '投稿者の表示名の方式',
+            'display_name_kind' => '投稿者の表示名の種類',
+            'guest_author_fields' => '非会員投稿者項目',
+            'guest_author_field' => '非会員投稿者項目の設定',
+            'guest_author_field_post' => '非会員投稿者項目の投稿設定',
+            'guest_author_field_post_enabled' => '非会員投稿者項目の投稿での使用',
+            'guest_author_field_post_required' => '非会員投稿者項目の投稿での必須',
+            'guest_author_field_comment' => '非会員投稿者項目のコメント設定',
+            'guest_author_field_comment_enabled' => '非会員投稿者項目のコメントでの使用',
+            'guest_author_field_comment_required' => '非会員投稿者項目のコメントでの必須',
             'description' => '掲示板の説明',
             'add_to_menu' => '管理者メニューに表示',
             'blocked_keywords' => '禁止ワード',

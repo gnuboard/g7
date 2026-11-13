@@ -68,7 +68,10 @@ interface Board {
 
 interface User {
   uuid: string;
-  name: string;
+  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+  name: string | null;
+  /** 사이트 기본 영역에서 보이는 이름(표시 이름). 헤더는 이 값을 먼저 쓴다 */
+  display_name?: string | null;
   avatar?: string;
   is_admin?: boolean;
 }
@@ -291,6 +294,8 @@ const Header: React.FC<HeaderProps> = ({
   onNotificationUnreadOnlyToggle,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  // 헤더에 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
+  const userShownName = user?.display_name ?? user?.name ?? '';
   const [showMoreBoards, setShowMoreBoards] = useState(false);
   // 하위 메뉴가 열린 상위 항목 id 와 그 펼침 위치 — 탭 줄이 가로 스크롤이라 펼침은 fixed 로 띄운다(더보기와 같은 방식)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -805,7 +810,7 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   <Avatar
                     avatar={user.avatar}
-                    name={user.name}
+                    name={userShownName}
                     size="sm"
                   />
                   {/* 이름은 한 줄 … (최대 8rem). truncate(nowrap)는 최소 폭이 이름 전체라 묶음이 줄지 못한다 — 줄바꿈을 허용하고(break-all)
@@ -816,8 +821,9 @@ const Header: React.FC<HeaderProps> = ({
                         ? 'line-clamp-1 break-all text-sm font-medium max-w-32 min-w-12'
                         : 'hidden break-all text-sm font-medium max-w-32 min-w-12'
                     }
-                    title={user.name}
-                  >{user.name}</Span>
+                    title={userShownName}
+                    data-testid="header-user-name"
+                  >{userShownName}</Span>
                   <Icon name="chevron-down" className="w-4 h-4" />
                 </Button>
 
@@ -829,11 +835,11 @@ const Header: React.FC<HeaderProps> = ({
                       <Div className="flex items-center gap-3">
                         <Avatar
                           avatar={user.avatar}
-                          name={user.name}
+                          name={userShownName}
                           size="md"
                         />
                         <Div className="min-w-0">
-                          <Div className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</Div>
+                          <Div className="text-sm font-medium text-gray-900 dark:text-white truncate">{userShownName}</Div>
                           <Div className="text-xs text-gray-500 dark:text-gray-400">{t('common.member')}</Div>
                         </Div>
                       </Div>

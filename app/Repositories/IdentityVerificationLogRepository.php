@@ -90,6 +90,19 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function findLatestVerifiedForUser(int $userId, string $providerId): ?IdentityVerificationLog
+    {
+        return IdentityVerificationLog::query()
+            ->where('user_id', $userId)
+            ->where('provider_id', $providerId)
+            ->where('status', IdentityVerificationStatus::Verified->value)
+            ->orderByDesc('verified_at')
+            ->first();
+    }
+
+    /**
      * 미소비·미만료 검증 토큰으로 로그를 조회합니다.
      *
      * 만료 술어(expires_at > now)는 이 지점이 단일 관문이다. 정책 미들웨어·정책 서비스·

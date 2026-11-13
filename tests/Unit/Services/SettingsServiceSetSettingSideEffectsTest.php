@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\SettingsService;
@@ -43,6 +44,11 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
         $this->mock(AttachmentRepositoryInterface::class)->shouldIgnoreMissing();
         $this->mock(CacheInterface::class)->shouldIgnoreMissing();
 
+        // 서비스 자신의 부수효과만 잰다 — 단건 저장 훅(after_set)을 구독한 SeoSettingsCacheListener 는 general 카테고리
+        // 저장마다 SEO 캐시를 비운다(#434, 봇 화면에 사이트 이름 등이 실린다). 그 계약은 리스너 테스트가 맡으므로 여기서는
+        // 구독을 떼어 clearAll 횟수에 섞이지 않게 한다(훅 상태는 TestCase 가 테스트마다 초기화한다).
+        HookManager::clearAction('core.settings.after_set');
+
         return app(SettingsService::class);
     }
 
@@ -50,6 +56,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 자산 URL 방식을 단건으로 바꾸면 SEO 프리렌더 캐시가 삭제된다. (실패-먼저)
      *
      * @effects seo_prerender_cache_cleared_on_asset_url_mode_change
+     *
+     * @return void 반환값 없음
      */
     public function test_asset_url_mode_change_clears_seo_cache(): void
     {
@@ -66,6 +74,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 값이 그대로면 SEO 캐시를 건드리지 않는다.
      *
      * @effects seo_prerender_cache_untouched_when_value_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_same_asset_url_mode_does_not_clear_seo_cache(): void
     {
@@ -82,6 +92,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 다른 키 저장은 SEO 프리렌더 캐시를 건드리지 않는다.
      *
      * @effects seo_prerender_cache_untouched_when_value_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_unrelated_key_does_not_clear_seo_cache(): void
     {
@@ -98,6 +110,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * drivers 카테고리 단건 저장은 큐 워커 재시작 신호를 보낸다. (실패-먼저)
      *
      * @effects queue_workers_restarted_on_driver_change
+     *
+     * @return void 반환값 없음
      */
     public function test_driver_setting_restarts_queue_workers(): void
     {
@@ -114,6 +128,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * drivers 외 카테고리는 큐 워커를 재시작하지 않는다.
      *
      * @effects queue_workers_not_restarted_for_other_categories
+     *
+     * @return void 반환값 없음
      */
     public function test_non_driver_setting_does_not_restart_queue_workers(): void
     {
@@ -130,6 +146,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 저장 실패 시에는 부수효과가 실행되지 않는다.
      *
      * @effects side_effects_skipped_when_save_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_save_skips_side_effects(): void
     {
@@ -154,6 +172,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * `url()` 이 남아 글꼴·이미지가 404 가 된다.
      *
      * @effects asset_url_mode_change_bumps_extension_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_asset_url_mode_change_bumps_extension_cache_version(): void
     {
@@ -177,6 +197,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 값이 그대로면 확장 캐시 버전도 그대로다.
      *
      * @effects asset_url_mode_change_bumps_extension_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_same_asset_url_mode_keeps_extension_cache_version(): void
     {
@@ -196,6 +218,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 벌크 저장(saveSettings) 경로도 같은 부수효과를 갖는다 — 화면 [저장] 버튼이 타는 경로다.
      *
      * @effects asset_url_mode_change_bumps_extension_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_save_asset_url_mode_change_bumps_extension_cache_version(): void
     {
@@ -233,6 +257,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 종전에는 변경 감지 자체가 없었다.
      *
      * @effects asset_url_mode_change_bumps_extension_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_asset_url_mode_change_bumps_extension_cache_version(): void
     {
@@ -259,6 +285,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 복원 전후 값이 같으면 두 부수효과 모두 없다.
      *
      * @effects asset_url_mode_change_bumps_extension_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_with_same_asset_url_mode_has_no_side_effects(): void
     {
@@ -295,6 +323,8 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
      * 이 테스트는 위임·키 분해·역변환 중 어느 것이 끼어도 실패한다.
      *
      * @effects single_key_save_uses_storage_key_verbatim
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_passes_the_storage_key_verbatim(): void
     {

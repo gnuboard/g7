@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Models\User;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
 use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
@@ -75,7 +76,7 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
         // 않는 `content`(버전마다 확장 본문 사본)도 조회하지 않는다 — 본문은 버전 비교 diff
         // 전용이며 단건 조회가 공급한다. (레이아웃 본체와 동일 정책)
         return $this->model
-            ->with('creator:id,name')
+            ->with('creator:'.User::displayColumns())
             ->where('extension_id', $extensionId)
             ->orderBy('version', 'desc')
             ->limit($limit)
@@ -99,7 +100,7 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
         // creator eager load — 단건 버전 조회도 저장자 이름을 목록과 일관 노출.
         return $this->model
             ->newQuery()
-            ->with('creator:id,name')
+            ->with('creator:'.User::displayColumns())
             ->where('extension_id', $extensionId)
             ->where('version', $version)
             ->first();

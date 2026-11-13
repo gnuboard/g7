@@ -95,7 +95,8 @@ class GdprPrivacyNoticeRepository implements GdprPrivacyNoticeRepositoryInterfac
     {
         return $this->dueQuery($channels)
             ->orderBy('id')
-            ->paginate($perPage, ['id', 'uuid', 'name', 'email', 'created_at'], 'page', $page);
+            // 명단의 회원 칸은 관리자 영역 표시 이름이다 — 계산에 필요한 회원 컬럼을 함께 읽는다.
+            ->paginate($perPage, [...User::DISPLAY_COLUMNS, 'created_at'], 'page', $page);
     }
 
     /**

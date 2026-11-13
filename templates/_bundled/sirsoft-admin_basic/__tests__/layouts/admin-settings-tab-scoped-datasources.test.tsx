@@ -33,6 +33,9 @@ const TAB_SCOPED: Record<string, string[]> = {
   policies: ['identity'],
   sitemap_status: ['seo'],
   staticCacheStatus: ['general'],
+  // 회원 탭(#490) — 항목 정의(가입 항목 표)와 닉네임 중복 검사 준비 상태는 회원 탭에서만 받는다.
+  memberFieldDefs: ['member'],
+  memberNicknameRecompute: ['member'],
 };
 
 const sources: AnyJson[] = layout.data_sources;

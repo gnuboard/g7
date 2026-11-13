@@ -2,7 +2,7 @@
 
 return [
     'link_url' => [
-        'unsafe' => 'Links must be a site path starting with / or an http(s) address. Addresses starting with // and schemes such as javascript: are not allowed.',
+        'unsafe' => 'Links must be a site path starting with / or an http or https address. Addresses starting with // and schemes such as javascript: are not allowed.',
     ],
     'routes' => [
         'invalid' => '":route" is not a valid path. Enter a path that starts with / and has no ?, #, *, spaces, // or ..',

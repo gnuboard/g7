@@ -100,13 +100,13 @@ function buttonText(intent: ProviderButtonsIntent, brand: ProviderBrand, label: 
 
   switch (intent) {
     case 'register':
-      return t(`buttons.register_with.${builtin}`, '{{provider}}(으)로 가입', params);
+      return t(`buttons.register_with.${builtin}`, '{{provider}} 계정으로 가입', params);
     case 'link':
       return t('buttons.link_with', '{{provider}} 연결', params);
     case 'reauth':
-      return t('buttons.reauth_with', '{{provider}}(으)로 다시 확인', params);
+      return t('buttons.reauth_with', '{{provider}} 계정으로 다시 확인', params);
     default:
-      return t(`buttons.login_with.${builtin}`, '{{provider}}(으)로 로그인', params);
+      return t(`buttons.login_with.${builtin}`, '{{provider}} 계정으로 로그인', params);
   }
 }
 

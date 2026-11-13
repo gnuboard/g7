@@ -187,6 +187,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | recipient_detail_address | string\|null | `101호` | 배송지 상세 주소 |
 | delivery_memo | string\|null | `부재 시 경비실에 맡겨주세요` | 배송 메모 |
 | delivery_memo_label | string\|null | `부재 시 경비실` | 배송 메모 프리셋 라벨 |
+| extra_fields[] | array | `[]` | 주문서 추가 항목의 값. 값이 있는 것만 `{ key, label, section, display_value }` 로 싣는다(`section` 은 `orderer` 또는 `shipping`) |
 | options | array | — | 주문 옵션(품목) 목록 (`OrderOptionResource`, 관계 로드 시에만 포함) |
 | shipping_address | object\|null | — | 배송지 상세 (`OrderAddressResource`) |
 | payment | object\|null | — | 결제 정보 (`OrderPaymentResource`, 관계 로드 시에만 포함) |

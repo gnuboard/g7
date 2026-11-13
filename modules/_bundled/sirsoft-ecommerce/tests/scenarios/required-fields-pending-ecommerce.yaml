@@ -1,0 +1,37 @@
+feature: 추가 정보를 입력하지 않은 회원과 이커머스 (#490 11단계, 7단계 잔여)
+
+description: |
+  코어는 비어 있는 필수 회원 항목이 있는 회원의 쓰기 요청을 403 required_fields_pending 으로 거부한다. 이커머스의 주문 요청도
+  막히고, 결제 결과 처리(결제 취소 기록, 클레임 추가 결제 승인)와 화면 표시 설정(결제 통화, 배송국가 전환)은 필터
+  core.required_fields.filter_exempt_routes 로 열어 둔다. 결제 시작은 열지 않는다.
+
+  이커머스가 회원 항목으로 선언한 배송국가는 해외배송을 끈 사이트에서 어떤 화면에도 나오지 않는다. 운영자가 그 항목을
+  필수(+ 기존 회원에게도 입력 요구)로 바꾸면 값이 없는 회원이 채울 칸이 없는 추가 정보 화면에 갇히므로, 해외배송을 끈 동안에는
+  필수를 적용하지 않고 운영자 표에 잠금 사유로 알린다(저장된 값은 남아 해외배송을 다시 켜면 돌아온다).
+  결제 통화는 통화가 하나뿐이어도 추가 정보 화면에 칸이 나와 채울 수 있다.
+
+  저장된 배송국가가 지금 배송할 수 없는 국가면 내 정보 수정의 배송국가 안내에 「적용되지 않는다」는 문장과 지금 적용 중인
+  국가를 싣는다(종전 사용자 템플릿이 그리던 안내를 항목 계약의 help 로 옮김).
+
+# 축은 하나(case)로 편다.
+axes:
+  case: [order_blocked, exempt_routes, hidden_shipping_country_required, single_currency_required, saved_country_not_applied_notice]
+
+effects:
+  - pending_member_order_rejected_with_error_code
+  - order_passes_after_fields_completed
+  - payment_result_and_preference_routes_exempt_for_pending_member
+  - claim_payment_start_not_exempt
+  - hidden_shipping_country_not_pending_when_international_shipping_off
+  - required_lock_shown_on_admin_table_while_off
+  - shipping_country_pending_and_fillable_when_international_shipping_on
+  - single_currency_field_fillable_on_required_info_screen
+  - saved_unavailable_country_notice_in_profile_field_help
+  - default_help_when_saved_country_available
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/RequiredFieldsPendingEcommerceTest.php
+
+notes: |
+  E2E: 쓰기 차단과 허용 라우트, 미입력 판정, 항목 계약은 PHPUnit(실제 HTTP 요청과 미들웨어)이 잰다.
+  추가 정보 화면으로의 유도와 안내 창은 코어 사용자 템플릿 쪽 테스트가 잰다.

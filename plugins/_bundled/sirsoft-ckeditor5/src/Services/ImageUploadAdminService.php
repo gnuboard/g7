@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\Ckeditor5\Services;
 
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
 use Plugins\Sirsoft\Ckeditor5\Repositories\Contracts\ImageUploadRepositoryInterface;
@@ -56,6 +58,7 @@ class ImageUploadAdminService
         /** @var Collection<int, Ckeditor5ImageUpload> $items */
         $items = collect($paginator->items());
         $this->attachReferenceState($items);
+        $this->preloadUploaderNames($items);
 
         return [
             'items' => $items,
@@ -147,6 +150,7 @@ class ImageUploadAdminService
         $lastPage = max(1, (int) ceil($total / max(1, $perPage)));
         $currentPage = max(1, min($page, $lastPage));
         $items = $matched->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        $this->preloadUploaderNames($items);
 
         return [
             'items' => $items,
@@ -166,12 +170,27 @@ class ImageUploadAdminService
     }
 
     /**
+     * 목록에 실을 올린 사람 이름(관리자 영역 표시 이름)의 계산 재료를 한 번에 읽어 둡니다.
+     *
+     * 추가 항목을 표시 이름으로 쓰는 사이트에서 행마다 항목 값을 읽지 않게 한다(그 밖에는 쿼리가 나가지 않는다).
+     * 이미 읽어 둔 `uploader` 관계만 모으고 지연 로딩을 일으키지 않는다.
+     *
+     * @param  Collection<int, Ckeditor5ImageUpload>  $uploads  응답에 실을 업로드 목록
+     * @return void 반환값 없음
+     */
+    private function preloadUploaderNames(Collection $uploads): void
+    {
+        app(MemberNamePresenter::class)->preloadRelations($uploads, ['uploader'], null, DisplayNameAreaRegistry::AREA_ADMIN);
+    }
+
+    /**
      * 업로드 목록에 참조 여부를 임시 속성으로 부착합니다.
      *
      * 저장 컬럼이 아니라 응답 전용 값이라 모델에 setAttribute 로만 실어 보냅니다
      * (저장 호출 없음).
      *
      * @param  Collection<int, Ckeditor5ImageUpload>  $uploads  업로드 목록
+     * @return void 반환값 없음
      */
     private function attachReferenceState(Collection $uploads): void
     {

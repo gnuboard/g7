@@ -3499,7 +3499,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| items | array | `[{"id":60,"post_id":284,"user_id":1116,"author_name":null…` | 상품문의 항목 배열 (각 항목: id·작성자·작성일·답변 여부·게시판 연동 시 제목/내용/비밀글 여부/답변/첨부) |
+| items | array | `[{"id":60,"post_id":284,"user_id":1116,"author_name":null…` | 상품문의 항목 배열 (각 항목: id·작성자·작성일·답변 여부·게시판 연동 시 제목/내용/비밀글 여부/답변/첨부). 작성자 이름 `author_name` 은 상품 문의 영역의 표시 이름이다(기본은 가린 이름. 홍길동 → 홍*동). 이 응답에는 실명 키가 없다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | meta | object | `{"board_settings":{"secret_mode":"always","categories":[]…` | 문의 목록 메타 (board_settings 게시판 설정, inquiry_available 문의 게시판 연동 여부, current_page/per_page/total/last_page 페이지네이션, abilities 답변·삭제 권한) |
 
 **응답 예시**

@@ -2,6 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameChoicePolicy;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\ConsentType;
 use App\Enums\IdentityVerificationPurpose;
 use App\Enums\PermissionType;
@@ -9,11 +12,16 @@ use App\Enums\UserStatus;
 use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Fields\FieldRegistry;
+use App\Fields\FieldSet;
+use App\Fields\FieldValueService;
 use App\Helpers\TimezoneHelper;
+use App\Models\FieldDefinition;
 use App\Models\User;
 use App\Services\Auth\PasswordAuthPolicyService;
 use App\Services\MemberNotificationService;
 use App\Services\PasswordExpiryService;
+use App\Services\RequiredFieldsChecker;
 use App\Services\SearchHistoryService;
 use App\Services\UserLockedFieldsService;
 use App\Support\UndeliverableEmail;
@@ -39,6 +47,8 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
+            // 다른 회원에게 보이는 이름(사이트 기본 영역) — 이름, 닉네임 원본은 그대로 두고 더한다(7.2.0)
+            'display_name' => $this->displayName(),
             'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
@@ -208,7 +218,11 @@ class UserResource extends BaseApiResource
         // JSON 에 `{}` 로 나갔다(modules_count·consents·terms_consent 등 9개, #703).
         $data = $this->resolve($request ?? request());
         $data['locked_fields'] = app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE);
+        $data['locked_reasons'] = (object) app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE);
         $data['can_edit_layouts'] = $this->canEditLayouts();
+        // 비어 있는 필수 항목 키 — 값이 있으면 화면이 추가 정보 입력 화면으로 보낸다(7.2.0)
+        $data['pending_required_fields'] = $this->pendingRequiredFields();
+        $data = [...$data, ...$this->displayNameChoiceFields()];
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합 (toProfileArray 와 동일)
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
@@ -230,8 +244,76 @@ class UserResource extends BaseApiResource
         return array_merge($this->resolve($request ?? request()), [
             'is_super' => $this->resource->isSuperAdmin(),
             'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN),
+            'locked_reasons' => (object) app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN),
             'can_edit_layouts' => $this->canEditLayouts(),
+            // 비어 있는 필수 항목 키 — 관리자 화면은 유도하지 않지만 본인 응답의 모양을 사용자 화면과 맞춘다(7.2.0)
+            'pending_required_fields' => $this->pendingRequiredFields(),
+            // 관리자 화면의 머리글에 보이는 본인 이름은 관리자 영역의 표시 이름이다(7.2.0)
+            'display_name' => $this->displayName(DisplayNameAreaRegistry::AREA_ADMIN),
+            ...$this->displayNameChoiceFields(),
         ]);
+    }
+
+    /**
+     * 이 회원의 표시 이름을 반환합니다 (7.2.0).
+     *
+     * 목록처럼 회원 여럿을 그리는 응답은 호출 전에 `DisplayNameResolver::preload()` 로 추가 항목 값을 한 번에 읽어 둔다.
+     *
+     * @param  string  $area  표시 이름 영역 키 (기본: 사이트 기본)
+     * @return string|null 표시 이름 (회원 모델이 아니거나 보일 값이 없으면 null)
+     */
+    private function displayName(string $area = DisplayNameAreaRegistry::AREA_SITE): ?string
+    {
+        $user = $this->displayNameSubject();
+
+        return $user !== null ? app(DisplayNameResolver::class)->resolve($user, $area) : null;
+    }
+
+    /**
+     * 표시 이름을 계산할 회원 모델을 반환합니다.
+     *
+     * 목록(UserCollection)은 이미 UserResource 로 감싼 항목을 다시 감싸므로 모델까지 벗긴다.
+     *
+     * @return User|null 회원 모델 (회원이 아니면 null)
+     */
+    private function displayNameSubject(): ?User
+    {
+        $target = $this->resource;
+        while ($target instanceof JsonResource) {
+            $target = $target->resource;
+        }
+
+        return $target instanceof User ? $target : null;
+    }
+
+    /**
+     * 회원이 고른 표시 이름 종류와, 종류를 직접 고를 수 있는지를 반환합니다 (7.2.0).
+     *
+     * @return array{display_name_kind: string|null, can_choose_display_name: bool} 고른 종류 키(고르지 않았으면 null)와 선택 가능 여부
+     */
+    private function displayNameChoiceFields(): array
+    {
+        $user = $this->displayNameSubject();
+        $kind = $user?->getAttribute('display_name_kind');
+
+        return [
+            'display_name_kind' => is_string($kind) && $kind !== '' ? $kind : null,
+            'can_choose_display_name' => $user !== null && app(DisplayNameChoicePolicy::class)->allowedFor($user),
+        ];
+    }
+
+    /**
+     * 본인에게 비어 있는 필수 항목의 키를 반환합니다 (본인 응답과 로그인 완료 응답이 쓴다).
+     *
+     * 판정은 캐시를 쓴다 — 본인 응답은 화면을 열 때마다 불린다.
+     *
+     * @return array<int, string> 항목 키 목록 (없으면 빈 배열)
+     */
+    public function pendingRequiredFields(): array
+    {
+        return $this->resource instanceof User
+            ? app(RequiredFieldsChecker::class)->pendingKeys($this->resource)
+            : [];
     }
 
     /**
@@ -366,6 +448,8 @@ class UserResource extends BaseApiResource
             // 비밀번호 만료 개별 설정(따름·적용·제외) — 회원 수정 폼의 선택칸이 읽는다(#736). 판정 결과(`password_status`)는
             // 역할 판정이 회원마다 들어 목록(UserCollection 이 이 메서드를 행마다 부른다)에서 N+1 이 되므로 상세에서만 덧붙인다.
             'password_expiry_policy' => $this->passwordExpiryPolicyValue(),
+            // 회원이 고른 표시 이름 종류(읽기 전용 — 관리자는 바꾸지 못한다)와 선택 가능 여부(7.2.0)
+            ...$this->displayNameChoiceFields(),
         ]);
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합
@@ -394,6 +478,8 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
+            // 다른 회원에게 보이는 이름(사이트 기본 영역) — 이름, 닉네임 원본은 그대로 두고 더한다(7.2.0)
+            'display_name' => $this->displayName(),
             'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
             'language' => $language,
             'language_label' => $this->languageLabel($language),
@@ -465,6 +551,8 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
+            // 다른 회원에게 보이는 이름(사이트 기본 영역) — 이름, 닉네임 원본은 그대로 두고 더한다(7.2.0)
+            'display_name' => $this->displayName(),
             'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
@@ -489,6 +577,8 @@ class UserResource extends BaseApiResource
             'has_password' => $this->resource->hasPassword(),
             // 외부(회사 계정)가 관리해 화면에서 바꿀 수 없는 칸 — 마이페이지가 읽기 전용으로 그린다(7.2.0)
             'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE),
+            // 잠긴 칸마다의 사유(sso, identity, locked 등) — 화면이 사유별 안내 문구를 고른다(7.2.0)
+            'locked_reasons' => (object) app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE),
             'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
             // 비밀번호를 만들 수 있는지(7.2.0) — 비밀번호 인증 정책(회사 계정 로그인 강제 등)이 막으면 false 와 저장 때와 같은 안내 문구.
             // 비밀번호 변경 화면이 칸과 본인 확인 대신 안내를 미리 보인다.
@@ -510,10 +600,44 @@ class UserResource extends BaseApiResource
             'is_owner' => request()->user()?->uuid === $this->resource->uuid,
             // 비밀번호 변경일·만료 예정 (#736) — 마이페이지 비밀번호 변경 화면이 읽는다. 만료가 적용되지 않으면 예정일은 null.
             ...$this->profilePasswordFields(),
+            // 운영자 추가 항목의 값 — 본인 응답에는 관리자만 열람 항목을 싣지 않는다(7.2.0)
+            'custom_fields' => (object) $this->customFieldsArray(includeAdminOnly: false),
+            // 회원이 고른 표시 이름 종류와 선택 가능 여부(7.2.0)
+            ...$this->displayNameChoiceFields(),
         ];
 
         // Filter 훅: 모듈이 자신의 데이터를 프로필 응답에 병합
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
+    }
+
+    /**
+     * 운영자 추가 항목의 값을 반환합니다 (7.2.0).
+     *
+     * 키는 항목 키이고 값은 유형이 되살린 값이다(선택은 선택지 값, 주소는 하위 값 객체, 기간은 `{start, end}`).
+     * 요청 키 `custom_fields.{키}` 와 같은 모양이라 폼이 응답을 그대로 초기값으로 쓴다.
+     * 값 조회가 회원마다 쿼리 1회라 목록 응답에는 싣지 않는다 — 단건 응답(내 정보, 관리자 상세)에서만 부른다.
+     *
+     * @param  bool  $includeAdminOnly  관리자만 열람 항목을 포함할지 (본인 응답은 false)
+     * @return array<string, mixed> 항목 키 => 값 (추가 항목이 없으면 빈 배열)
+     */
+    public function customFieldsArray(bool $includeAdminOnly): array
+    {
+        $definitions = app(FieldRegistry::class)->active(FieldSet::CORE_USER)
+            ->filter(fn (FieldDefinition $definition) => $definition->isCustom()
+                && ($includeAdminOnly || $definition->edit_scope !== FieldDefinition::SCOPE_ADMIN_ONLY))
+            ->values();
+
+        if ($definitions->isEmpty()) {
+            return [];
+        }
+
+        $values = app(FieldValueService::class)->read($this->resource, FieldSet::CORE_USER, $definitions);
+        $result = [];
+        foreach ($definitions as $definition) {
+            $result[$definition->key] = $values[$definition->key] ?? null;
+        }
+
+        return $result;
     }
 
     /**
@@ -527,6 +651,16 @@ class UserResource extends BaseApiResource
     public function adminLockedFields(): array
     {
         return app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN);
+    }
+
+    /**
+     * 관리자 회원 상세의 잠긴 칸마다의 사유를 반환합니다 (7.2.0 — 상세 응답에만 `locked_reasons` 로 싣는다).
+     *
+     * @return array<string, string> 잠긴 칸 이름 => 사유
+     */
+    public function adminLockedReasons(): array
+    {
+        return app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN);
     }
 
     /**
@@ -686,6 +820,8 @@ class UserResource extends BaseApiResource
         return [
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
+            // 다른 회원에게 보이는 이름(사이트 기본 영역, 7.2.0)
+            'display_name' => $this->displayName(),
             'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
             'modules_count' => $this->getValue('modules_count', 0),
             'plugins_count' => $this->getValue('plugins_count', 0),

@@ -1,0 +1,22 @@
+feature: 회원가입 폼의 연락처(휴대폰, 전화번호) 칸은 항목 설정대로 그려지고 오류가 두 번 뜨지 않는다
+
+description: |
+  가입 폼의 연락처 칸은 7.2.0 부터 운영자 설정을 따르는 공용 항목 조각이 그린다. 폼에 칸이 박혀 있지 않아야 설정과 화면이
+  어긋나지 않고, 칸의 오류는 그 칸 아래에만 떠야 한다(위쪽 상자에 다시 뜨지 않는다). 코어 가입 폼에는 마케팅 수신 동의
+  문구가 들어가지 않는다(확장이 붙인다).
+
+# axis 의미:
+#   part — 칸이 그려지는 경로(path) / 오류 표시(error) / 코어 중립성(neutrality)
+axes:
+  part: [path, error, neutrality]
+
+effects:
+  - contact_fields_drawn_by_member_fields_partial
+  - contact_inputs_not_hardcoded_in_form
+  - contact_required_follows_contract
+  - contact_error_shown_under_field
+  - contact_error_not_repeated_in_top_box
+  - core_form_has_no_marketing_text
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/auth-register-contact-fields.test.tsx

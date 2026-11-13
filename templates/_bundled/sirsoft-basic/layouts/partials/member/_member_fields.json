@@ -1,0 +1,530 @@
+{
+    "comment": "회원 항목 반복 조각 — 서버가 준 항목 계약(사용, 필수, 순서, 유형은 운영자가 환경설정에서 정한다)을 돌며 라벨, 필수 별표, 입력칸, 잠금 안내, 안내, 오류 줄을 그린다.\n     가입 화면, 내 정보 수정, 추가 정보 입력이 함께 쓴다. 한 화면이 카드마다 여러 번 부를 수 있게 항목은 반복 변수로 받는다:\n     부르는 화면이 `data-each=\"memberFieldGroup in …\"` 안에 이 조각을 include 하고(include 에는 인자가 없지만 반복 변수는 보인다),\n     memberFieldGroup = { key(묶음 이름), fields(항목 계약 배열), className(칸을 늘어놓는 클래스, 생략하면 세로 한 줄), portableClassName(좁은 화면용) }.\n     묶음과 무관한 문맥은 화면의 computed `memberFieldCtx` 가 준다: { formKey(폼 상태 이름), errors(검증 오류), disabled(제출 중) }.\n     약관 묶음(ui.group = agreements)은 묶음이 includeAgreements 를 켰을 때만 그린다 — 가입 화면은 동의 줄 자리에 따로 묶어 부르고, 내 정보는 확장별 카드에서 함께 그린다.\n     파일 갈래는 내 정보 API(/api/me/fields/{키}/file)로 바로 올리고 지운 뒤 데이터소스 `profileFields` 를 다시 받는다 — 그 데이터소스를 가진 화면에서만 열린다(가입 화면의 파일 항목은 deferred 라 안내 줄만 나온다).",
+    "meta": {
+        "is_partial": true,
+        "description": "회원 항목 반복"
+    },
+    "id": "member_fields_group_{{memberFieldGroup.key}}",
+    "type": "basic",
+    "name": "Div",
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "{{memberFieldGroup?.portableClassName ?? memberFieldGroup?.className ?? 'space-y-4'}}"
+            }
+        }
+    },
+    "props": {
+        "className": "{{memberFieldGroup?.className ?? 'space-y-4'}}"
+    },
+    "children": [
+        {
+            "id": "field_{{field.key}}",
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "{{(memberFieldGroup?.fields ?? []).filter(function(f) { return !!memberFieldGroup?.includeAgreements || (f.ui?.group ?? '') !== 'agreements'; })}}",
+                "item_var": "field"
+            },
+            "props": {
+                "className": "{{field.ui?.parent ? 'ml-6' : ''}}"
+            },
+            "children": [
+                {
+                    "comment": "라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다.",
+                    "type": "basic",
+                    "name": "Label",
+                    "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
+                    "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{field.label}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{field.required}}",
+                            "props": {
+                                "className": "text-red-600 dark:text-red-400 ml-1"
+                            },
+                            "text": "*"
+                        }
+                    ]
+                },
+                {
+                    "comment": "가입 화면에서 받지 않는 유형(파일, 이미지) — 안내 줄만 둔다. 가입 뒤 내 정보에서 올린다.",
+                    "id": "mf_deferred_{{field.key}}",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{field.deferred}}",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:member.fields.upload_after_signup"
+                },
+                {
+                    "comment": "주소 — 우편번호, 기본 주소, 상세 주소 세 칸. 우편번호 검색 플러그인이 켜져 있으면 검색 단추가 붙고 앞의 두 칸은 검색으로만 채운다. 잠긴 항목이면 세 칸 모두 읽기 전용(회색)이다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!field.deferred && field.renderer === 'address'}}",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "{{field.parts?.zipcode}}",
+                                        "aria-label": "$t:member.fields.zipcode_label|label={{field.label}}",
+                                        "placeholder": "$t:member.fields.zipcode",
+                                        "className": "{{field.readonly ? 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                        "readOnly": "{{!!field.readonly || (_global.activePlugins?.includes('sirsoft-daum_postcode') ?? false)}}",
+                                        "disabled": "{{$computed.memberFieldCtx?.disabled}}"
+                                    }
+                                },
+                                {
+                                    "comment": "주소 검색 단추 자리 — 고른 주소를 폼의 어느 경로에 쓸지 넘긴다(시도, 시군구는 폼 최상위 region, city). 잠긴 항목에서는 그리지 않는다.",
+                                    "id": "member_field_address_search_slot_{{field.key}}",
+                                    "type": "extension_point",
+                                    "name": "address_search_slot",
+                                    "if": "{{!field.readonly}}",
+                                    "props": {
+                                        "readOnlyFields": [
+                                            "zipcode",
+                                            "address"
+                                        ],
+                                        "targetFields": {
+                                            "zipcode": "{{($computed.memberFieldCtx?.formKey ?? 'form') + '.' + field.parts?.zipcode}}",
+                                            "address": "{{($computed.memberFieldCtx?.formKey ?? 'form') + '.' + field.parts?.address}}",
+                                            "region": "{{($computed.memberFieldCtx?.formKey ?? 'form') + '.region'}}",
+                                            "city": "{{($computed.memberFieldCtx?.formKey ?? 'form') + '.city'}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "name": "{{field.parts?.address}}",
+                                "aria-label": "$t:member.fields.address_label|label={{field.label}}",
+                                "placeholder": "$t:member.fields.address",
+                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                "readOnly": "{{!!field.readonly || (_global.activePlugins?.includes('sirsoft-daum_postcode') ?? false)}}",
+                                "disabled": "{{$computed.memberFieldCtx?.disabled}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "name": "{{field.parts?.address_detail}}",
+                                "aria-label": "$t:member.fields.address_detail_label|label={{field.label}}",
+                                "placeholder": "$t:member.fields.address_detail",
+                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                "readOnly": "{{!!field.readonly}}",
+                                "disabled": "{{$computed.memberFieldCtx?.disabled}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "파일, 이미지 — 폼 저장과 따로 바로 올리고 지운다. 올라가 있는 파일 목록(이름을 누르면 내려받는다)과 삭제 단추, 그리고 개수가 남았을 때 「파일 추가」. 잠긴 항목(관리자만 수정)은 목록만 보인다.",
+                    "id": "mf_files_{{field.key}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!field.deferred && field.renderer === 'file'}}",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "if": "{{(field.files ?? []).length > 0}}",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "id": "mf_file_{{field.key}}_{{fieldFile.id}}",
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "{{field.files ?? []}}",
+                                        "item_var": "fieldFile"
+                                    },
+                                    "props": {
+                                        "className": "flex items-center gap-2 min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "paperclip",
+                                                "size": "sm",
+                                                "className": "shrink-0 text-gray-500 dark:text-gray-400"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "내려받기 — 본인만 받을 수 있는 파일이라 로그인 토큰이 실리는 경로로 받는다.",
+                                                    "type": "click",
+                                                    "handler": "downloadAttachment",
+                                                    "params": {
+                                                        "url": "{{fieldFile.url}}",
+                                                        "filename": "{{fieldFile.name}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "min-w-0 justify-start text-left text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block truncate"
+                                                    },
+                                                    "text": "{{fieldFile.name}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{!field.readonly}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "파일 삭제 — 바로 지우고 항목을 다시 받는다. 지우는 동안에는 이 항목의 삭제 단추를 잠가 같은 파일을 두 번 지우지 않게 한다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "memberFieldFileBusy": "{{field.key}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/me/fields/{{field.key}}/file",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "DELETE",
+                                                                "body": {
+                                                                    "attachment_id": "{{fieldFile.id}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "memberFieldFileBusy": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "profileFields"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{response.message}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "memberFieldFileBusy": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "aria-label": "$t:member.fields.file_remove|name={{fieldFile.name}}",
+                                                "disabled": "{{_local.memberFieldFileBusy === field.key}}",
+                                                "className": "shrink-0 p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "x",
+                                                        "size": "sm"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!field.readonly && (field.files ?? []).length === 0}}",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "-"
+                        },
+                        {
+                            "comment": "「파일 추가」 단추 — 숨긴 파일 입력칸을 감싼 라벨이다(누르거나 Tab 으로 닿아 Enter/Space 로 파일 고르기 창이 열린다). 올릴 수 있는 개수가 남았을 때만 보인다.",
+                            "id": "mf_file_add_{{field.key}}",
+                            "type": "basic",
+                            "name": "Label",
+                            "if": "{{!field.readonly && (field.files ?? []).length < (field.file_rules?.max_count ?? 1)}}",
+                            "props": {
+                                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 focus-within:ring-2 focus-within:ring-blue-500 transition-colors cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "plus",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:member.fields.file_add"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "파일 올리기 — 고르자마자 한 개를 올리고 항목을 다시 받는다. 확장자, 크기, 개수 제한은 서버가 판정하고 거절 문구를 그대로 알린다.",
+                                            "type": "change",
+                                            "handler": "apiCall",
+                                            "target": "/api/me/fields/{{field.key}}/file",
+                                            "if": "{{!!$event.target.files?.[0]}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "contentType": "multipart/form-data",
+                                                "body": "{{ ({ file: $event.target.files?.[0] }) }}"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "profileFields"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{response.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.errors?.file?.[0] ?? error.message}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "file",
+                                        "aria-label": "$t:member.fields.file_add_label|label={{field.label}}",
+                                        "accept": "{{(field.file_rules?.extensions ?? []).length > 0 ? '.' + field.file_rules.extensions.join(',.') : ''}}",
+                                        "disabled": "{{!!$computed.memberFieldCtx?.disabled}}",
+                                        "className": "sr-only"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!field.readonly && !!field.file_rules}}",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400 break-words"
+                            },
+                            "text": "$t:member.fields.file_rules|extensions={{(field.file_rules?.extensions ?? []).join(', ')}}|size={{field.file_rules?.max_size_mb ?? ''}}|count={{field.file_rules?.max_count ?? 1}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "확장이 제공한 유형 — 그 확장의 조각이 이 자리에 자기 입력칸을 그린다(조각은 루트에서 자기 유형일 때만 그린다).",
+                    "id": "member_field_input_slot_{{field.key}}",
+                    "type": "extension_point",
+                    "name": "member_field_input",
+                    "if": "{{!field.deferred && field.renderer === 'extension'}}",
+                    "props": {
+                        "field": "{{field}}",
+                        "error": "{{$computed.memberFieldCtx?.errors?.[field.name]?.[0] ?? ''}}",
+                        "disabled": "{{!!$computed.memberFieldCtx?.disabled}}",
+                        "formKey": "{{$computed.memberFieldCtx?.formKey ?? 'form'}}"
+                    }
+                },
+                {
+                    "comment": "그 밖의 유형 — 항목 1개짜리 입력 컴포넌트가 유형과 제한 값을 보고 입력칸을 고른다. 값은 폼 자동 바인딩(name)으로 오간다. 잠긴 항목(field.readonly)은 컴포넌트가 읽기 전용 회색으로 그린다.",
+                    "type": "composite",
+                    "name": "MemberFieldInput",
+                    "if": "{{!field.deferred && field.renderer !== 'address' && field.renderer !== 'extension' && field.renderer !== 'file'}}",
+                    "props": {
+                        "field": "{{field}}",
+                        "name": "{{field.name}}",
+                        "disabled": "{{!!$computed.memberFieldCtx?.disabled}}",
+                        "error": "{{Object.entries($computed.memberFieldCtx?.errors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}",
+                        "errorId": "mf_error_{{field.key}}"
+                    }
+                },
+                {
+                    "comment": "동의 항목(약관 묶음)의 필수 여부와 약관 보기 링크 — 체크박스 옆 문구에는 별표가 없으므로 「(필수)」「(선택)」을 글자로 알린다.\n           약관 문서 링크는 그 문서를 서빙하는 모듈이 켜져 있을 때만 그린다(새 창). 하위 동의(ui.parent)는 들여 쓴다.",
+                    "id": "mf_agreement_meta_{{field.key}}",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
+                    "props": {
+                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{field.required ? $t('member.fields.agreement_required') : $t('member.fields.agreement_optional')}}"
+                        },
+                        {
+                            "id": "mf_agreement_link_{{field.key}}",
+                            "type": "basic",
+                            "name": "A",
+                            "if": "{{!!field.ui?.link?.url && (!field.ui?.link?.requires_module || (_global.activeModules?.includes(field.ui?.link?.requires_module) ?? true))}}",
+                            "props": {
+                                "href": "{{field.ui?.link?.url}}",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "aria-label": "{{field.ui?.link?.title ?? field.label}}",
+                                "className": "ml-2 text-blue-600 dark:text-blue-400 hover:underline"
+                            },
+                            "text": "{{field.ui?.link?.label ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "잠긴 항목의 사유 안내 — 사유마다 문구가 다르고 한 번에 하나만 보인다. 회사 계정이 잠근 칸의 문구와 모양은 예전 내 정보 수정 화면 그대로다.",
+                    "id": "mf_locked_sso_{{field.key}}",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.profile.locked_by_company"
+                },
+                {
+                    "id": "mf_locked_identity_{{field.key}}",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:member.fields.locked_identity"
+                },
+                {
+                    "id": "mf_locked_admin_only_{{field.key}}",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:member.fields.locked_admin_only"
+                },
+                {
+                    "id": "mf_locked_nickname_interval_{{field.key}}",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
+                },
+                {
+                    "id": "mf_locked_other_{{field.key}}",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:member.fields.locked_generic"
+                },
+                {
+                    "comment": "운영자가 적은 안내 문구",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{field.help}}",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                    },
+                    "text": "{{field.help}}"
+                },
+                {
+                    "comment": "이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다.",
+                    "id": "mf_error_{{field.key}}",
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{Object.keys($computed.memberFieldCtx?.errors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
+                    "props": {
+                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                    },
+                    "text": "{{Object.entries($computed.memberFieldCtx?.errors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
+                }
+            ]
+        }
+    ]
+}

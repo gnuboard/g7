@@ -1001,7 +1001,7 @@
                                                                 "src": "{{current_user.data?.avatar}}",
                                                                 "thumbPreset": "xs",
                                                                 "loading": "eager",
-                                                                "alt": "{{current_user.data?.name ?? $t('admin.default_user_name')}}",
+                                                                "alt": "{{current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name')}}",
                                                                 "className": "user_avatar_img"
                                                             }
                                                         },
@@ -1040,7 +1040,7 @@
                                                             "props": {
                                                                 "className": "text-primary text-sm font-bold leading-none truncate max-w-xs"
                                                             },
-                                                            "text": "{{current_user.data?.name ?? $t('admin.default_user_name')}}"
+                                                            "text": "{{current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name')}}"
                                                         },
                                                         {
                                                             "id": "user_email",

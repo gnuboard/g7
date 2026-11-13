@@ -2,8 +2,10 @@
 
 namespace Plugins\Sirsoft\Sso\Repositories\Policy;
 
+use App\DisplayName\DisplayNameQuery;
 use App\Models\Role;
 use App\Models\User;
+use App\Search\KeywordSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -42,15 +44,19 @@ class AdminAccountRepository implements AdminAccountRepositoryInterface
     {
         $q = trim((string) ($filters['q'] ?? ''));
 
+        // 회원 이름은 관리자 영역 표시 이름으로 계산한다 — 닉네임, 상태, 회원이 고른 종류까지 읽고,
+        // 행의 「비밀번호 있음」「관리자 계정」 판정에 쓰는 두 컬럼을 더한다.
         return SsoAccount::query()
-            ->with(['idp:id,key,protocol,label', 'user:id,uuid,name,email,is_super,password,status'])
+            ->with(['idp:id,key,protocol,label', 'user:'.User::displayColumns('is_super', 'password')])
             ->when(! empty($filters['idp_id']), fn (Builder $query) => $query->where('idp_id', (int) $filters['idp_id']))
             ->when(($filters['status'] ?? null) === 'active', fn (Builder $query) => $query->where('active', true))
             ->when(($filters['status'] ?? null) === 'inactive', fn (Builder $query) => $query->where('active', false))
             ->when(! empty($filters['via']), fn (Builder $query) => $query->where('linked_via', $filters['via']))
-            ->when($q !== '', fn (Builder $query) => $query->whereHas('user', fn (Builder $user) => $user
-                ->where('name', 'like', '%'.$q.'%')
-                ->orWhereRaw('LOWER(email) LIKE ?', ['%'.mb_strtolower($q).'%'])))
+            // 관리자 화면의 회원 검색 규칙 — 이름 또는 닉네임(코어 DisplayNameQuery), 종전처럼 이메일도 찾는다
+            ->when($q !== '', fn (Builder $query) => $query->whereHas('user', fn (Builder $user) => $user->where(function (Builder $where) use ($q) {
+                app(DisplayNameQuery::class)->constrainUsersForAdmin($where, $q);
+                $where->orWhereRaw('LOWER(email) LIKE ?', ['%'.KeywordSearch::escapeLikeWildcards(mb_strtolower($q)).'%']);
+            })))
             ->orderByDesc('linked_at')->orderByDesc('id')
             ->paginate((int) ($filters['per_page'] ?? self::PER_PAGE), self::COLUMNS);
     }

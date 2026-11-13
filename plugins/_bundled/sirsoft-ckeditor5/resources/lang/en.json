@@ -22,6 +22,7 @@
             "scan_limited_notice": "The reference status filter evaluates the most recent {{count}} uploads. Older images are not shown in this list.",
             "scan_limited_notice_one": "The reference status filter evaluates only the most recent upload. Older images are not shown in this list.",
             "empty": "No uploaded images.",
+            "real_name_sub": "Real name {{name}}",
             "col": {
                 "thumbnail": "Preview",
                 "original_name": "Original name",

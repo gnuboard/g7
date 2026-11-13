@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Auth\DTO\PasswordChangeRequirement;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\PasswordChangeReason;
 use App\Enums\PasswordExpiryAction;
 use App\Enums\PasswordExpiryPolicy;
@@ -526,17 +528,20 @@ class PasswordExpiryService
     {
         $startedAt = $this->startedAt();
         $query = $this->stageQuery($stage, $startedAt)
-            ->select(['id', 'uuid', 'name', 'email', 'is_super', 'password_changed_at'])
+            // 명단의 회원 칸은 관리자 영역의 표시 이름이다 — 계산에 필요한 컬럼을 함께 읽는다.
+            ->select([...User::DISPLAY_COLUMNS, 'is_super', 'password_changed_at'])
             ->withExists(['roles as has_admin_role' => fn ($roles) => $roles->whereHas(
                 'permissions',
                 fn ($permissions) => $permissions->where('permissions.type', PermissionType::Admin->value)
             )]);
 
-        return $this->orderByExpiry($query, $startedAt)
-            ->paginate($perPage, ['*'], 'page', $page)
+        $targets = $this->orderByExpiry($query, $startedAt)->paginate($perPage, ['*'], 'page', $page);
+        $names = app(DisplayNameResolver::class)->resolveMany($targets->getCollection(), DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $targets
             ->through(fn (User $user) => new PrivacyRetentionTarget(
                 id: $user->id,
-                title: (string) $user->name,
+                title: (string) ($names[$user->id] ?? ''),
                 subtitle: $user->email,
                 context: ($user->has_admin_role || $user->is_super)
                     ? __('user.password_expiry_target.admin')

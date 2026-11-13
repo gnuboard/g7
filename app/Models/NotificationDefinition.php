@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Extension\HookManager;
 use App\Models\Concerns\HasUserOverrides;
 use App\Notifications\Identity\IdentityNotificationType;
+use App\Notifications\MemberVariables;
 use App\Services\NotificationDefinitionService;
 use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
@@ -282,16 +284,22 @@ class NotificationDefinition extends Model
     }
 
     /**
-     * 변수 목록의 설명을 지금 언어로 바꿔 돌려줍니다(키·순서·다른 칸은 그대로).
+     * 템플릿 편집 화면에 보일 변수 목록을 돌려줍니다.
+     *
+     * 이 정의가 선언한 변수의 설명을 지금 언어로 바꾸고(키, 순서, 다른 칸은 그대로), 뒤에 회원 공통 변수 묶음
+     * (`member.display_name`, `member.<키>`, `member.custom.<키>` — 항목마다 `group: member`)을 덧붙인 다음
+     * 필터 `core.notification.filter_template_variables` 를 태운다. 확장은 이 필터로 자기 변수를 더하거나 뺀다.
+     *
+     * 본인인증 알림은 받는 사람이 회원으로 정해지기 전에 나가므로 회원 공통 변수를 덧붙이지 않는다.
      *
      * @param  array<int, mixed>|null  $variables  변수 목록(생략하면 이 정의의 variables)
-     * @return array<int, mixed> 설명을 번역한 변수 목록
+     * @return array<int, mixed> 편집 화면용 변수 목록
      */
     public function localizedVariables(?array $variables = null): array
     {
         $variables ??= (array) ($this->variables ?? []);
 
-        return array_map(function ($variable) {
+        $localized = array_map(function ($variable) {
             if (! is_array($variable) || ! is_string($variable['key'] ?? null)) {
                 return $variable;
             }
@@ -299,5 +307,33 @@ class NotificationDefinition extends Model
 
             return $variable;
         }, $variables);
+
+        if ($this->supportsMemberVariables()) {
+            $declared = [];
+            foreach ($localized as $variable) {
+                if (is_array($variable) && is_string($variable['key'] ?? null)) {
+                    $declared[$variable['key']] = true;
+                }
+            }
+            foreach (app(MemberVariables::class)->catalog() as $variable) {
+                if (! isset($declared[$variable['key']])) {
+                    $localized[] = $variable;
+                }
+            }
+        }
+
+        $filtered = HookManager::applyFilters('core.notification.filter_template_variables', $localized, $this);
+
+        return is_array($filtered) ? array_values($filtered) : $localized;
+    }
+
+    /**
+     * 이 알림의 템플릿이 회원 항목 변수(`member.…`)를 쓸 수 있는지 반환합니다.
+     *
+     * @return bool 본인인증 알림이 아니면 true
+     */
+    public function supportsMemberVariables(): bool
+    {
+        return ! str_starts_with((string) ($this->type ?? ''), IdentityNotificationType::PREFIX);
     }
 }

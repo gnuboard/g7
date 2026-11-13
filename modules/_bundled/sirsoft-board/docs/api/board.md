@@ -31,6 +31,69 @@
 
 ---
 
+## 작성자 이름과 비회원 작성자 항목 (1.3.0)
+
+**작성자 이름**
+
+- 응답의 작성자 이름 키(`author.name`, `author_name`, 관리자 화면의 `member.name`, `reporter.name`, `processor.name`)에는 그 화면의 표시 이름이 실립니다. 사용자 화면은 게시판의 「작성자 표시 이름」 설정을, 관리자 화면은 관리자 화면 영역의 설정을 따릅니다. 설정을 바꾸지 않은 사이트는 회원 이름이 그대로 실립니다.
+- 비회원 글과 댓글은 입력한 이름이, 탈퇴한 회원은 「탈퇴한 사용자」 문구가 실립니다. 계정이 남지 않은 회원의 글은 이름이 `null` 일 수 있습니다.
+- 관리자 화면 응답에는 실명 보조 값이 더해집니다. 요청한 관리자에게 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 `real_name`(평평한 `author_name` 옆에는 `author_real_name`) 키가 실리고, 그 밖에는 키 자체가 없습니다. 사용자 화면 응답에는 실리지 않습니다.
+- 글 목록의 `sort_by=author` 는 화면에 보이는 이름 순서입니다. `search_field=author` 는 사용자 화면에서는 그 게시판에서 보이는 종류의 값만, 관리자 화면에서는 이름과 닉네임(과 이메일)을 찾습니다.
+
+**글쓰기 화면용 값** — `GET /api/modules/sirsoft-board/boards/{slug}/posts/form-meta`
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `data.author_display_name` | string 또는 null | 로그인한 회원이 이 게시판에서 보이는 이름. 비회원이면 null |
+| `data.author_display_kind` | string 또는 null | 그 이름의 종류 키(`name`, `nickname`, `masked_name`, `masked_id`, `name_nickname`, `field:{항목 키}`) |
+| `data.author_display_kind_label` | string 또는 null | 종류의 화면용 이름 |
+| `data.board.guest_fields.fixed` | object | 고정 항목의 필수 여부. `{author_name: {required}, password: {required}}` |
+| `data.board.guest_fields.post` | array | 비회원 글쓰기에서 받을 항목 계약 목록(게시판이 켠 것만) |
+| `data.board.guest_fields.comment` | array | 비회원 댓글 쓰기에서 받을 항목 계약 목록 |
+
+- 항목 계약은 회원 항목과 같은 모양입니다(`key`, `name`, `type`, `label`, `placeholder`, `help`, `required`, `options`, `constraints`, `default` 등). `name` 이 폼 경로이자 검증 오류 키입니다(예: `guest_fields.email`).
+- 글 상세(`GET boards/{slug}/posts/{id}`)의 `data.board.guest_fields` 는 비회원 요청에만 같은 모양으로 실립니다. 로그인한 요청에는 `null` 입니다.
+
+**비회원 작성 요청** — `POST boards/{slug}/posts`, `POST boards/{slug}/posts/{postId}/comments`
+
+| 이름 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| `guest_fields` | object | 아니오 | 비회원 작성자 항목 값. `{항목 키: 값}` |
+| `guest_fields.{항목 키}` | 항목 유형에 따름 | 게시판 설정에 따름 | 게시판이 그 표면(글 또는 댓글)에서 켠 항목만 받습니다. 필수로 정한 항목이 비면 `422`(오류 키 `guest_fields.{항목 키}`) |
+
+- 꺼진 항목의 값과 회원 요청이 보낸 값은 조용히 무시됩니다. 이름(`author_name`)과 비밀번호(`password`)의 규칙은 종전과 같습니다.
+- 로그인한 회원에게 비어 있는 필수 회원 항목이 있으면 글, 댓글, 신고, 반응, 스크랩 쓰기는 `403`(`error_code: required_fields_pending`)입니다. 비밀번호 확인 요청 4종(`…/verify-password`, `…/verify-password-for-modify`, `…/verify-thread-password`, 댓글의 `…/verify-password`)은 거부하지 않습니다.
+
+**게시판 설정** — `GET admin/boards/form-data`, `POST admin/boards`, `PUT admin/boards/{board}`
+
+| 키 | 방향 | 모양 |
+| --- | --- | --- |
+| `display_name_setting` | 응답, 요청 | `{mode: inherit 또는 fixed 또는 member, kind}`. `fixed` 면 `kind` 필수이고 지금 쓸 수 있는 종류여야 합니다(아니면 `422`, 오류 키 `display_name_setting.kind`) |
+| `display_name_options` | 응답 | `{kinds: [{value, label, requires_nickname}], inherited: {mode, kind, kind_label}}`. `inherited` 는 「따름」일 때 적용되는 값 |
+| `guest_author_fields` | 응답, 요청 | `{항목 키: {post: {enabled, required}, comment: {enabled, required}}}`. 값은 불리언. 사용이 꺼진 표면의 필수는 저장되지 않습니다 |
+| `guest_author_field_rows` | 응답 | 표의 행. `key`, `label`, `type`, `fixed`, `available`, `source_type`, `source_label`, 표면별 `enabled`, `required`, `enabled_locked`, `required_locked`, `lock_reason`. 항목 엔진의 행은 `id` 와 `is_custom`(운영자가 만든 항목이면 true. 그 행만 지울 수 있다)도 싣는다 |
+
+- 생성 요청(`POST admin/boards`)에 `guest_author_fields` 가 없으면 모듈 기본값(아래 「게시판 기본 설정」)을 그대로 컬럼에 담습니다. 나중에 기본값을 바꿔도 이미 만든 게시판은 따라가지 않습니다.
+- 운영자 항목은 코어 공용 항목 API 로 만들고 지웁니다: `POST /api/admin/field-sets/sirsoft-board.guest_author/fields`, `DELETE /api/admin/field-sets/sirsoft-board.guest_author/fields/{id}`(권한 `sirsoft-board.boards.update`). 항목은 집합 전체(모든 게시판)에 생기고 지워지며, 지우면 받은 값도 함께 지워집니다. 관리자 게시판 수정 화면은 새 항목을 꺼진 채(`enabled: false`)로 만듭니다.
+
+**게시판 기본 설정** — `GET admin/settings`, `GET admin/settings/basic_defaults`, `PUT admin/settings`
+
+| 키 | 방향 | 모양 |
+| --- | --- | --- |
+| `basic_defaults.guest_author_fields` | 응답, 요청 | 새 게시판이 물려받는 비회원 작성자 항목 설정. 모양은 게시판별 설정과 같습니다. 저장하지 않았으면 응답은 항목 선언의 값입니다. 이 집합에 없는 항목은 버리고, 사용이 꺼진 표면의 필수는 저장되지 않습니다 |
+| `basic_defaults.guest_author_field_rows` | 응답 | 기본값 표의 행(게시판 설정의 `guest_author_field_rows` 와 같은 모양). 요청에 실려 와도 저장하지 않습니다 |
+
+**관리자 글 상세** — `GET admin/board/{slug}/posts/{id}`
+
+| 키 | 모양 |
+| --- | --- |
+| `data.guest_field_values` | 비회원 글의 작성자가 낸 항목 값. `[{key, label, value, display_value}]`(값이 있는 항목만). 게시판 관리 권한(`sirsoft-board.{slug}.admin.manage`)이 없으면 `null`(IP 주소와 같은 기준). 회원 글은 빈 배열 |
+| `data.comments[].guest_field_values` | 비회원 댓글의 같은 값. 같은 권한 기준 |
+
+사용자 화면의 글 상세(`GET boards/{slug}/posts/{id}`)에는 이 키가 `null` 입니다.
+
+---
+
 ## 목록·검색의 총 건수와 답변·댓글 상한
 
 게시판 목록에 `search` 를 얹으면 내부 검색이 수행됩니다. 매칭이 아주 많을 수 있으므로 총

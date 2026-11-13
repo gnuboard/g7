@@ -20,11 +20,15 @@
               </on>
             </action-menu>
             <span data-if="{{comment?.author?.is_guest || !comment?.author?.uuid}}" class="board-text-primary board:text-sm board:font-semibold">{{comment?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
+            <!-- 실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <span data-testid="author-real-name" data-if="{{!!comment?.author?.real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: comment?.author?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: comment?.author?.real_name })}}</span>
             <span data-if="{{comment?.author?.email}}" class="board-text-tertiary">({{comment?.author?.email}})</span>
             <span data-if="{{comment?.author.is_guest}}" class="board:inline-flex board:items-center board:px-1.5 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-600 board:dark:bg-gray-700 board:dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
             <span data-if="{{comment?.author.is_admin}}" class="board:inline-flex board:items-center board:px-1.5 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-blue-100 board:text-blue-700 board:dark:bg-blue-900/30 board:dark:text-blue-400">$t:sirsoft-board.admin.posts.detail.admin_badge</span>
             <span class="board-text-tertiary">· {{comment?.created_at}}</span>
             <span data-if="{{comment?.ip_address}}" class="board-text-tertiary">· IP: {{comment?.ip_address}}</span>
+            <!-- 비회원 댓글 작성자가 낸 항목 값(이메일 등, #490) — 게시판 관리 권한(admin.manage)이 있을 때만 응답에 실린다 -->
+            <span data-ref="comment_guest_field_{{comment.id}}_{{gv.key}}" data-each="gv in {{comment?.guest_field_values ?? []}}" class="board-text-tertiary board:min-w-0 board:wrap-anywhere">· {{gv.label}}: {{gv.display_value ?? gv.value ?? ''}}</span>
           </div>
         </div>
       </div>

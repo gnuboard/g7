@@ -63,7 +63,7 @@ class MarketingConsentAdminUpdateQueuedTest extends PluginTestCase
     }
 
     /**
-     * 생성·수정·삭제 전 동의 액션이 sync 다. (실패-먼저)
+     * 동의 저장을 큐로 갈 수 있는 액션에 맡기지 않고, 삭제 전 정리는 sync 다.
      *
      * @scenario case=sync_contract
      *
@@ -75,9 +75,11 @@ class MarketingConsentAdminUpdateQueuedTest extends PluginTestCase
     {
         $hooks = MarketingConsentListener::getSubscribedHooks();
 
-        foreach (['core.user.after_create', 'core.user.after_update', 'core.user.before_delete'] as $hook) {
-            $this->assertTrue(($hooks[$hook]['sync'] ?? false) === true, "{$hook} 가 sync 가 아닙니다.");
+        // 동의 저장은 회원 저장과 같은 트랜잭션에서 저장소 어댑터가 한다 — 큐로 갈 수 있는 저장 액션을 구독하지 않는다.
+        foreach (['core.user.after_create', 'core.user.after_update', 'core.auth.after_register'] as $hook) {
+            $this->assertArrayNotHasKey($hook, $hooks, "{$hook} 구독이 남아 있습니다.");
         }
+        $this->assertTrue(($hooks['core.user.before_delete']['sync'] ?? false) === true, 'core.user.before_delete 가 sync 가 아닙니다.');
     }
 
     /**

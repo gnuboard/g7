@@ -1089,6 +1089,157 @@
       ]
     },
     {
+      "comment": "항목 추가·수정 창이 읽는 전역 상태(member_field_form_modal) — 표의 「항목 추가」나 행 단추가 담는 값이라, 편집기에서는 이 상태로 담아야 내용 입력 단계가 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "member_field_form_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "member_field_form_modal": {
+                "step": "form",
+                "isNew": true,
+                "readOnly": false,
+                "loading": false,
+                "isSaving": false,
+                "dirty": false,
+                "confirmClose": false,
+                "pasteOpen": false,
+                "pasteText": "",
+                "dateMode": {},
+                "errors": null,
+                "fieldsVersion": "sample",
+                "form": {
+                  "id": null,
+                  "key": "job",
+                  "type": "choice",
+                  "name": {
+                    "ko": "직업",
+                    "en": "Job"
+                  },
+                  "description": {},
+                  "placeholder": {},
+                  "options": [
+                    {
+                      "value": "student",
+                      "label": {
+                        "ko": "학생",
+                        "en": "Student"
+                      }
+                    },
+                    {
+                      "value": "worker",
+                      "label": {
+                        "ko": "직장인",
+                        "en": "Worker"
+                      }
+                    }
+                  ],
+                  "constraints": {
+                    "display": "radio"
+                  },
+                  "enabled": true,
+                  "required": false,
+                  "show_on_signup": true,
+                  "edit_scope": "self",
+                  "require_existing_members": false,
+                  "public_profile": false,
+                  "admin_list_column": false,
+                  "admin_searchable": false,
+                  "display_name_usable": false,
+                  "idv_claim": "",
+                  "idv_lock": false
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "항목 삭제 창이 읽는 전역 상태(member_field_delete_modal) — 행의 「삭제」가 담는 항목 이름과 입력된 값 수라, 편집기에서는 이 상태로 담아야 안내 문구가 자리표시 원문으로 열리지 않는다. 기본(delete_confirm)은 삭제 확인 모습이고, 「채움」(modal_filled)은 표시 이름 종류로 쓰여 서버가 막은 모습(409 field_in_use 의 usages 목록, 확인 칸 대신 사용처 안내)이다.",
+      "scope": {
+        "kind": "modal",
+        "match": "member_field_delete_modal"
+      },
+      "items": [
+        {
+          "id": "delete_confirm",
+          "label": "$t:editor.state.delete_confirm",
+          "default": true,
+          "initialState": {
+            "global": {
+              "member_field_delete_modal": {
+                "id": 1,
+                "label": "직업",
+                "values_count": 128,
+                "confirmed": false,
+                "isDeleting": false,
+                "loading": false,
+                "fieldsVersion": "sample"
+              }
+            }
+          }
+        },
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "initialState": {
+            "global": {
+              "member_field_delete_modal": {
+                "id": 1,
+                "label": "직업",
+                "values_count": 128,
+                "confirmed": false,
+                "isDeleting": false,
+                "loading": false,
+                "fieldsVersion": "sample",
+                "usages": [
+                  {
+                    "label": "회원이 고를 수 있는 표시 이름 종류"
+                  },
+                  {
+                    "label": "게시판 영역의 표시 이름"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "필수로 바꾸기 확인 창이 읽는 전역 상태(member_field_required_modal) — 필수 스위치가 담는 항목 이름과 비어 있는 회원 수라, 편집기에서는 이 상태로 담아야 「0명」으로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "member_field_required_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "member_field_required_modal": {
+                "id": 1,
+                "label": "휴대폰",
+                "missing_count": 367,
+                "mode": "on_edit",
+                "fieldsVersion": "sample",
+                "isSaving": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(identityPolicyDeleteId, identityPolicyDeleting) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -1530,6 +1681,7 @@
           "initialState": {
             "global": {
               "notification_template_form_modal": {
+                "warnings": [],
                 "isSaving": false,
                 "errors": null,
                 "editLang": "ko",

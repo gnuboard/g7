@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 사용자 배송지 Repository 구현체
@@ -182,7 +184,7 @@ class UserAddressRepository implements UserAddressRepositoryInterface
             columns: ["{$table}.*"],
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
-            relations: ['user:id,uuid,name,email,status'],
+            relations: ['user:'.User::displayColumns()],
             resultCap: PaginationLimits::resultCap('admin.user_addresses'),
         );
     }
@@ -213,9 +215,7 @@ class UserAddressRepository implements UserAddressRepositoryInterface
                 ->orWhere("{$table}.address", 'like', $needle)
                 ->orWhere("{$table}.address_line_1", 'like', $needle)
                 ->orWhere("{$table}.city", 'like', $needle)
-                ->orWhereHas('user', fn (Builder $u) => $u->where(
-                    fn (Builder $uw) => $uw->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
-                ))),
+                ->orWhereHas('user', fn (Builder $u) => MemberDisplayName::constrainUsersForAdmin($u, trim($keyword), withEmail: true))),
             'member_id' => $query->whereHas('user', fn (Builder $u) => $u->where('uuid', trim($keyword))),
             'email' => $query->whereHas('user', fn (Builder $u) => $u->where('email', 'like', $needle)),
             'recipient' => $query->where(fn (Builder $w) => $w
@@ -226,9 +226,8 @@ class UserAddressRepository implements UserAddressRepositoryInterface
                 ->where("{$table}.address", 'like', $needle)
                 ->orWhere("{$table}.address_line_1", 'like', $needle)
                 ->orWhere("{$table}.city", 'like', $needle)),
-            default => $query->whereHas('user', fn (Builder $u) => $u->where(
-                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
-            )),
+            // 회원 검색은 이름과 닉네임을 모두 찾는다(화면에 보이는 표시 이름이 어느 쪽이든 찾을 수 있게). 이메일도 종전대로 찾는다.
+            default => $query->whereHas('user', fn (Builder $u) => MemberDisplayName::constrainUsersForAdmin($u, trim($keyword), withEmail: true)),
         };
     }
 
@@ -246,7 +245,7 @@ class UserAddressRepository implements UserAddressRepositoryInterface
     public function findByIds(array $ids): Collection
     {
         return $this->model
-            ->with(['user:id,uuid,name,email,status'])
+            ->with(['user:'.User::displayColumns()])
             ->whereIn('id', $ids)
             ->get();
     }

@@ -3,7 +3,10 @@
 namespace App\Http\Requests\User;
 
 use App\Extension\HookManager;
+use App\Fields\FieldContext;
 use App\Http\Requests\Concerns\ChecksPasswordReuse;
+use App\Http\Requests\Concerns\UsesMemberFields;
+use App\Http\Requests\Concerns\ValidatesDisplayNameChoice;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
 use App\Services\UserLockedFieldsService;
@@ -23,6 +26,11 @@ use Illuminate\Validation\Rules\Password;
 class UpdateProfileRequest extends FormRequest
 {
     use ChecksPasswordReuse;
+    use UsesMemberFields;
+    use ValidatesDisplayNameChoice;
+
+    /** 종전 규칙의 키 순서 — 오류가 여럿일 때 응답에 실리는 첫 문구가 달라지지 않게 유지한다 */
+    private const LEGACY_RULE_ORDER = ['name', 'nickname', 'email', 'password', 'current_password', 'language', 'country', 'timezone', 'homepage', 'mobile', 'phone', 'zipcode', 'address', 'address_detail', 'signature', 'bio'];
 
     /**
      * Determine if the user is authorized to make this request.
@@ -42,12 +50,10 @@ class UpdateProfileRequest extends FormRequest
     public function rules(): array
     {
         $userId = Auth::id();
-        $supportedLocales = config('app.supported_locales', ['ko', 'en']);
 
-        $rules = [
+        // 회원 항목 가운데 본인이 고칠 수 있는 항목의 규칙은 운영자 설정에서 온다 — 아래는 항목이 아닌 고정 규칙이다.
+        $rules = $this->withMemberFieldRules([
             // 기본 정보
-            'name' => ['required', 'string', 'max:255'],
-            'nickname' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($userId)],
             'password' => ['nullable', 'confirmed', ...PasswordPolicy::rules($this->user()?->email)],
             // 비밀번호가 없는 회원(외부 인증 전용)은 처음 정하는 것이라 확인할 현재 비밀번호가 없다(보낸 값은
@@ -55,27 +61,14 @@ class UpdateProfileRequest extends FormRequest
             'current_password' => $this->userHasPassword()
                 ? ['required_with:password', 'current_password']
                 : ['prohibited'],
-            'language' => ['nullable', 'string', Rule::in($supportedLocales)],
-            'country' => ['nullable', 'string', 'size:2', 'alpha'],
-            'timezone' => ['nullable', 'string', 'timezone'],
-
-            // 연락처 정보
-            'homepage' => ['nullable', 'url', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\-\+\(\)\s]+$/'],
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\-\+\(\)\s]+$/'],
-
-            // 주소 정보
-            'zipcode' => ['nullable', 'string', 'max:10'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'address_detail' => ['nullable', 'string', 'max:255'],
-
-            // 추가 정보
-            'signature' => ['nullable', 'string', 'max:1000'],
-            'bio' => ['nullable', 'string', 'max:5000'],
-        ];
+        ], self::LEGACY_RULE_ORDER);
 
         // 외부(회사 계정)가 관리하는 칸은 현재 값과 같아야 한다 — 요청에 그 칸이 없으면 통과(7.2.0)
         $user = $this->user();
+
+        // 표시 이름 종류 선택(선택 칸) — 권한이 없거나 허용하지 않은 종류면 검증 오류. 닉네임이 필요한 종류로 보이게 되면 닉네임이 필수가 된다.
+        $rules = $this->withDisplayNameChoiceRules($rules, $user instanceof User ? $user : null);
+
         $rules = app(UserLockedFieldsService::class)->applyRules($rules, $user instanceof User ? $user : null, UserLockedFieldsService::SURFACE_PROFILE);
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -127,6 +120,29 @@ class UpdateProfileRequest extends FormRequest
             'signature.max' => __('user.validation.signature_max'),
             'bio.max' => __('user.validation.bio_max'),
         ];
+    }
+
+    /**
+     * 내 정보 수정 표면의 회원 항목 문맥을 반환합니다.
+     *
+     * @return FieldContext 문맥
+     */
+    protected function memberFieldContext(): FieldContext
+    {
+        $user = $this->user();
+        $user = $user instanceof User ? $user : null;
+
+        return FieldContext::for(FieldContext::SURFACE_SELF_UPDATE, $user, $user);
+    }
+
+    /**
+     * 검증 속성명 — 운영자 추가 항목과 확장 항목의 이름을 요청 로케일로 싣는다.
+     *
+     * @return array<string, string> 속성 => 이름
+     */
+    public function attributes(): array
+    {
+        return $this->withMemberFieldAttributes(['display_name_kind' => __('validation.attributes.display_name_kind')]);
     }
 
     /**

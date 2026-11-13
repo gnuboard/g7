@@ -229,6 +229,56 @@ FormRequest → `CheckoutDataService`(주문서에 필요한 배송지·쿠폰·
 바꾸면 이 값이 비워지는데, 무조건 `required` 였을 때는 해외 배송지 주문이 「상세 주소를 입력해주세요.」로
 결제에서 막혔습니다. 국내 필드를 새로 더할 때도 같은 짝을 따릅니다.
 
+**회원의 결제 통화와 배송국가**: 두 값(`ecommerce_preferred_currency`, `ecommerce_preferred_shipping_country`)은
+`module.php` 의 `getFields()` 가 회원 항목 집합(`core.user`)에 선언한 항목입니다(선택 유형, `storage = handler`,
+`ui.group = shop`, 가입 요청의 옛 키 `preferred_currency`, `preferred_shipping_country` 수용). 코어가 가입, 관리자 수정,
+내 정보 수정의 검증 규칙을 만들고 회원 저장과 같은 트랜잭션에서 바뀐 칸만 `Fields\UserPreferenceFieldHandler::write()` 로
+넘깁니다. 값은 종전과 같이 `ecommerce_user_profiles` 의 회원별 한 행입니다. 관리자 회원 추가는 받지 않습니다
+(`ui.surfaces` 에 `admin_create` 없음). 추가와 가입 직후의 기본값은 `AssignDefault*OnRegisterListener` 가 정하고,
+이미 값이 있으면 건드리지 않습니다. 선택지는 선언에 두지 않고 `UserPreferenceFieldDefinitionListener` 가 요청마다
+사이트 설정에서 채웁니다(통화는 기본 통화이거나 환율이 잡힌 통화, 국가는 활성 국가). 같은 리스너가 고를 통화가
+하나뿐인 사이트의 가입 화면에서 통화를, 해외배송을 끈 사이트에서 배송국가를 빼고, 이커머스 권한이 없는 관리자에게는
+칸을 읽기 전용으로 냅니다. 관리자가 다른 회원의 값을 바꾸는 저장은 핸들러의 `extraRules()` 가 권한을 확인합니다.
+`UserCurrencyInfoListener`, `UserShippingCountryInfoListener` 는 `core.user.filter_resource_data` 만 구독해 회원 응답의
+최상위 키에 값을 싣습니다. 화면은 템플릿의 회원 항목 공용 조각이 그리며 이 모듈은 회원 폼에 칸을 넣지 않습니다.
+화면 전역 값(`_global.preferredCurrency`, `_global.preferredShippingCountry`)은 `_user_base` 대상 조각
+`user-account-preference-sync` 가 부르는 핸들러 `watchAccountPreferences` 가 로그인 회원 응답이 바뀔 때마다 맞춥니다.
+항목 이름과 안내 문구는 `src/lang/{언어}/fields.php` 에 있고 선언이 그 파일을 직접 읽습니다.
+해외배송을 끈 동안에는 배송국가의 「필수」를 적용하지 않습니다(운영자 표에는 잠금 사유로 보이고 저장된 값은 남습니다).
+어떤 화면에도 없는 칸이 미입력으로 판정되면 회원이 채울 칸이 없는 추가 정보 화면에 갇히기 때문입니다. 저장된 배송국가가
+지금 배송할 수 없는 국가면 같은 리스너가 내 정보 수정의 항목 안내에 「적용되지 않는다」는 문장을 싣습니다.
+
+**주문서 항목**: 주문서에서 받는 주문자와 배송지 항목은 항목 집합 `sirsoft-ecommerce.order_contact`(`getFieldSets()`)에
+모이고 창구는 `Fields\OrderContactFields` 한 곳입니다. 잠긴 항목(주문자 이름과 연락처, 수령인 이름과 연락처, 배송 주소)은
+`CreateOrderRequest` 의 고정 규칙이라 표에 잠긴 행으로만 보입니다. 설정 가능한 기본 항목(주문자 이메일, 상세 주소, 배송 메모)은
+기존 요청 키와 기존 컬럼을 그대로 쓰고, 사용과 필수만 항목 엔진에서 받아 `OrderContactFields::REQUEST_PATHS` 의 요청 경로에
+겁니다(꺼진 항목은 규칙에서 빠지고 요청에 실려 와도 저장하지 않습니다. 비회원의 주문자 이메일은 늘 필수입니다). 추가 항목
+(운영자가 추가한 항목, 다른 확장이 기여한 항목)의 요청 키는 `extra_fields.{키}` 이고 값은 `OrderProcessingService::createFromTempOrder()`
+의 주문 트랜잭션 안에서 공용 값 테이블(소유자 종류 `ecommerce_order`)에 저장합니다. 주문서 조회와 다시 계산 응답은
+`order_fields`, 주문 한 건의 응답(`OrderResource`, `GuestOrderResource`)은 `extra_fields` 를 싣고, 보유기간 처리와 주문 삭제가
+값을 함께 지웁니다. 설정을 바꾸지 않은 사이트의 주문 생성 규칙은 종전과 글자까지 같아야 합니다(테스트가 잠급니다).
+
+**회원 이름과 표시 이름**: 회원 이름을 응답이나 기록에 실을 때 `$user->name` 을 직접 읽지 않고 `Support\MemberDisplayName` 을
+거칩니다(코어 표시 이름 계산기의 얇은 창구). 영역은 `module.php` 의 `getDisplayNameAreas()` 가 선언한 셋입니다.
+`sirsoft-ecommerce:review`(사용자 화면의 상품 후기, 사이트 기본을 따름), `sirsoft-ecommerce:inquiry`(사용자 화면의 상품 문의,
+기본 「가린 이름」 고정. 종전 가림 함수를 대신하므로 문의 서비스는 회원 이름을 다시 가리지 않습니다), `sirsoft-ecommerce:admin`
+(관리자 화면과 새로 남기는 기록, 관리자 화면을 따름). 같은 Resource 를 사용자 화면과 관리자 화면이 함께 쓰면 요청이 관리자
+컨트롤러에 도달했는지로 영역을 가릅니다(`areaFor()`, `staffFields()`). 실명은 이름 키에 싣지 않고 `fields()` 가 조건이 맞을 때만
+별도 키(`real_name`, `author_real_name`, `user_real_name`, `granted_by_real_name`, `created_by_real_name`)로 더합니다. 조건은
+관리자 컨트롤러에 도달한 요청, 회원 조회 권한(`core.users.read`), 탈퇴 회원 아님, 표시 이름과 다른 비어 있지 않은 실명입니다.
+목록은 행을 만들기 전에 `preloadRelations()` 를 한 번 부르고(추가 항목을 표시 이름으로 쓰는 사이트에서 행 수만큼 쿼리가 늘지 않게),
+회원 관계의 컬럼 제한은 `'user:'.User::displayColumns()` 로 씁니다(`user:id,name` 꼴은 닉네임과 상태가 없어 계산할 수 없습니다).
+관리자 화면의 회원 검색은 `constrainUsersForAdmin()` 으로 이름과 닉네임을 함께 찾습니다. 표시 이름을 쓰지 않는 자리는 셋입니다.
+주문의 주문자 이름과 수령인(주문서에 적힌 값), 내보내기 이력의 요청자와 받은 사람(남긴 스냅샷 그대로. 새 기록만 그 시점의
+관리자 영역 표시 이름), 내보낸 파일의 회원 칸(실명. 이름이 없으면 빈 칸). 알림의 받는 사람 이름은 `'{recipient_name}'` 자리표시만
+싣고 코어가 받는 사람과 채널마다 풉니다. 받는 사람이 아닌 회원의 이름(`customer_name`, `requester_name`)은 `core:notification`
+영역으로 계산하고, 비회원은 주문서에 적힌 주문자 이름입니다. 후기와 문의의 기능별 설정은 쇼핑몰 환경설정(리뷰 설정 탭, 기본 정보 탭)의
+칸이지만 값은 이커머스 설정 파일이 아니라 코어 설정 `member.display_name_areas` 의 두 영역 키에 저장합니다
+(`EcommerceDisplayNameSettingsService` 가 저장된 묶음 전체에 두 영역만 덮어써 넘깁니다. 다른 영역이 지워지면 안 됩니다).
+그래서 인스턴스 판정(`instance_resolver`)과 사용처 목록(`used_kinds_provider`)을 두지 않고, 닉네임 항목 잠금과 추가 항목 삭제
+차단은 코어가 영역 설정을 직접 보고 판정합니다. 회원의 표시 이름이 바뀌면(`core.user.display_name_changed`)
+`SeoMemberDisplayNameCacheListener` 가 후기와 문의가 구워진 상품 상세 SEO 캐시(`shop/show`)를 비웁니다.
+
 **비회원 주문의 리뷰 플래그**: 리뷰는 회원만 씁니다(리뷰 저장 API 는 로그인 필요, 비회원 주문 상세에는
 리뷰 작성 창이 없음). 그래서 `OrderOptionResource::calculateCanWriteReview()` 는 비회원 주문의 품목이면
 guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 — 비회원 주문 응답
@@ -284,10 +334,10 @@ null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview:
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 625개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 238개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 52개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 18개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 633개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 235개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 54개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 16개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 13개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -310,6 +360,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 새 PG·결제수단 추가 | 결제수단 카탈로그에 능력 선언(`needs_pg`·`pg_locked`·`refund_method`·`auto_approve_refund` 등) + `payment.*` 6종 (이 모듈 수정 불필요) |
 | 그 수단의 환불을 운영자 승인 없이 자동 완료 | 카탈로그 `auto_approve_refund: true` 선언 — 운영자가 클레임 정책 탭에서 최종 결정 (`modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "결제수단 능력 선언") |
 | 결제 직전/취소/입금확인에 본인인증 강제 | `getIdentityPolicies()` 가 선언한 4개 정책의 target 훅 (`checkout.before_payment` · `payment.before_cancel` · `payment.before_approve` · `payment.before_confirm_deposit`) — 기본 `enabled: false` |
+| 주문서에 항목 더하기 | 자기 `getFields()` 에 `field_set: 'sirsoft-ecommerce.order_contact'` 로 선언 (요청 키 `extra_fields.{키}`, 운영자 표와 주문서 화면과 저장은 이 모듈이 맡는다. `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md` "주문서 항목 집합") |
 | 상품 문의를 다른 저장소로 | `inquiry.store_validation_rules` · `inquiry.update_validation_rules` + 게시판 측 `sirsoft-board.post.after_*` (`ProductInquiryBoardListener` 가 선례) |
 | 재고 차감/복원 시점 개입 | `stock.*` 4종 |
 | 클레임 신청서의 접수·전이·완료·철회·금액 수정에 개입 | `claim.exchange.*` · `claim.return.*` · `claim.refund.*` · `claim.cancel.*` (전이는 `status_changed` 한 축 + 승인·반려·철회·완료의 구체 훅이 함께 발화. `claim.refund.status_changed` 는 4번째 인수로 컨텍스트를 받아 자동 전이의 중간 알림만 억제한다) |
@@ -346,6 +397,9 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
 - [ ] 통화가 관여하는 표시·기록을 추가할 때 다국어 문구는 `:amount` 로 중립, 과거 거래 표기는 `currency_snapshot` 경유
+- [ ] 회원 항목 선언(`getFields()`)을 바꿀 때는 `src/lang/{ko,en}/fields.php` 의 이름과 안내 문구, 값 핸들러(`Fields\UserPreferenceFieldHandler`), 선택지 리스너(`UserPreferenceFieldDefinitionListener`), 응답 리스너가 같은 키를 쓰는지 함께 확인한다. 두 칸의 검증이나 저장을 `core.user.*` 훅 리스너로 다시 만들지 않는다(이중 검증, 이중 저장)
+- [ ] 주문서에 칸을 더하거나 주문자, 배송지 칸의 필수 여부를 바꿀 때는 `CreateOrderRequest` 에 규칙을 직접 적지 말고 주문서 항목 집합(`Fields\OrderContactFields`, `module.php` 의 `orderContactFields()`)을 거친다. 잠긴 항목을 풀거나 새 항목을 잠글 때는 `OrderContactFields::LOCKED_FIELDS`, 선언의 `locks`, 요청의 고정 규칙을 함께 고친다
+- [ ] 로그인 회원이 부르는 쓰기 라우트를 더할 때는 「추가 정보를 채우기 전에도 반드시 돼야 하는가」를 판단한다. 돼야 하면 `Listeners\ExemptRequiredFieldsRoutesListener::ROUTES` 에 라우트 이름을 보탠다(결제 결과 처리, 화면 표시 설정). 새 거래를 만드는 요청은 보태지 않는다
 - [ ] 금전이 움직이는 훅(쿠폰·마일리지 차감/복원)을 구독·발행할 때 `'sync' => true` 확인
 - [ ] 마일리지 원장에 기록하는 경로를 추가하면 같은 트랜잭션 마지막에 잔액 캐시 재계산 동반
 - [ ] 목록 응답에 하위 컬렉션(옵션·이미지)을 실을 때 화면이 실제로 그리는 것만 — Repository 의 `relations:` 와 Resource 의 `whenLoaded` 를 함께 본다
@@ -419,10 +473,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 776개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 312개 | `vitest.config.ts` |
+| PHPUnit | 782개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 317개 | `vitest.config.ts` |
 | Playwright | 84개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 480개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 489개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

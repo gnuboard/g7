@@ -390,7 +390,7 @@
                                             "props": {
                                                 "className": "text-gray-500 dark:text-gray-400"
                                             },
-                                            "text": "{{post?.data?.parent?.author?.name ?? ''}}"
+                                            "text": "{{post?.data?.parent?.author?.name || $t('board.unknown_author')}}"
                                         },
                                         {
                                             "type": "basic",
@@ -1230,6 +1230,12 @@
                                                                     },
                                                                     "onError": [
                                                                         {
+                                                                            "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                                                            "handler": "openModal",
+                                                                            "target": "required_info_pending_modal",
+                                                                            "if": "{{error.error_code === 'required_fields_pending'}}"
+                                                                        },
+                                                                        {
                                                                             "comment": "실패 롤백 — override 를 서버 초기값(post.data)으로 되돌리고 로딩 해제",
                                                                             "handler": "setState",
                                                                             "params": {
@@ -1242,6 +1248,7 @@
                                                                         },
                                                                         {
                                                                             "handler": "toast",
+                                                                            "if": "{{error.error_code !== 'required_fields_pending'}}",
                                                                             "params": {
                                                                                 "type": "error",
                                                                                 "message": "$t:board.reaction.failed"
@@ -1542,6 +1549,12 @@
                                                             ],
                                                             "onError": [
                                                                 {
+                                                                    "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                                                    "handler": "openModal",
+                                                                    "target": "required_info_pending_modal",
+                                                                    "if": "{{error.error_code === 'required_fields_pending'}}"
+                                                                },
+                                                                {
                                                                     "comment": "실패 시 원래 상태로 복원",
                                                                     "handler": "setState",
                                                                     "params": {
@@ -1552,6 +1565,7 @@
                                                                 },
                                                                 {
                                                                     "handler": "toast",
+                                                                    "if": "{{error.error_code !== 'required_fields_pending'}}",
                                                                     "params": {
                                                                         "type": "error",
                                                                         "message": "{{error.message}}"

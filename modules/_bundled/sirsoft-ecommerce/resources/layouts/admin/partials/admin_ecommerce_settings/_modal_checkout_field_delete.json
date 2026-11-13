@@ -1,0 +1,235 @@
+{
+    "comment": "쇼핑몰 설정 — 주문서 항목 삭제 확인 창(#490). 주문서 항목 표에서 운영자가 추가한 항목의 [삭제]가 연다\n  (이커머스가 선언한 항목과 다른 확장이 기여한 항목은 지울 수 없고 사용을 끌 수 있을 뿐이다).\n  항목을 지우면 그 항목에 입력된 값도 함께 지워지고 되돌릴 수 없으므로 되묻는다. 지울 대상(id, 이름)과 정의 버전은\n  여는 쪽이 전역 `checkout_field_delete_modal` 한 객체에 담아 준다(창은 별도 문맥이라 표의 행을 보지 못한다).",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 > 주문 설정 탭 주문서 항목 삭제 확인 모달",
+        "editor_label": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.editor_label"
+    },
+    "id": "checkout_field_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.title",
+        "size": "sm",
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "id": "checkout_field_delete_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "checkout_field_delete_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.checkout_field_delete_modal?.isDeleting === true}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "id": "checkout_field_delete_submit",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "삭제 실행. 대상 id 와 정의 버전은 여는 쪽이 전역에 담아 준 값이다(버전은 쿼리로 싣는다). 성공하면 창을 닫고 표를 다시 받는다.\n               다른 관리자가 먼저 바꿨으면(409 fields_changed) 지우지 않고 알린 뒤 창을 닫고 표를 다시 받는다.\n               그 밖의 실패(다른 설정이 이 항목을 쓰는 경우 등)는 서버 문구를 알리고 창을 그대로 둔다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "checkout_field_delete_modal.isDeleting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields/{{_global.checkout_field_delete_modal?.id}}?fields_version={{_global.checkout_field_delete_modal?.fieldsVersion ?? ''}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "checkout_field_delete_modal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "checkoutFieldDefs"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "checkout_field_delete_modal": null
+                                        }
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{error.error_code === 'fields_changed'}}",
+                                            "then": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "checkout_field_delete_modal"
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "checkoutFieldDefs"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_delete_modal": null
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "then": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "checkout_field_delete_modal.isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.failed'}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.checkout_field_delete_modal?.isDeleting === true || checkoutFieldDefs?.data?.abilities?.can_update !== true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.checkout_field_delete_modal?.isDeleting === true}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.checkout_field_delete_modal?.isDeleting === true ? '$t:common.deleting' : '$t:common.delete'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce-row-stack"
+            },
+            "children": [
+                {
+                    "id": "checkout_field_delete_message",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "id": "checkout_field_delete_target",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "ecommerce-text-primary ecommerce:font-medium ecommerce-break-all"
+                            },
+                            "text": "{{_global.checkout_field_delete_modal?.label ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.message"
+                        }
+                    ]
+                },
+                {
+                    "id": "checkout_field_delete_warning",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "role": "alert",
+                        "className": "ecommerce-alert-danger"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "ecommerce:text-xl ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "ecommerce-tone-error-soft ecommerce:text-sm"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.warning"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

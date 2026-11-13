@@ -481,6 +481,106 @@ public static function getSubscribedHooks(): array
 `after_purge` 의 `public_url_prefix` 는 썸네일 디스크가 직접 URL 을 내는 공개 자산 디스크일 때만 값이 있고,
 `original_public_url` 은 원본이 공개 자산 디스크에 있을 때만 값이 있습니다(그 밖에는 `null`).
 
+### 회원 항목 훅 (7.2.0)
+
+회원이 가입, 내 정보 수정, 관리자 회원 폼에서 채우는 칸은 코어의 항목 등록소가 관리합니다. 항목의 사용 여부, 필수 여부, 가입 화면 표시는
+운영자가 환경설정의 회원 탭에서 정하고, 요청 검증 규칙과 화면 계약이 모두 그 설정에서 만들어집니다. 확장은 보통 확장 게터
+(`getFieldSets()`, `getFields()`, `getFieldTypes()`)로 집합, 항목, 유형을 선언하고, 요청 시점에만 정할 수 있는 것(선택지, 초기값,
+요청 한 번의 잠금)을 아래 필터로 조정합니다. 선언 방법은 [회원 항목과 항목 집합](field-sets.md)을 봅니다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.field.filter_sets` | filter | `(array $sets)` — `집합 키 => FieldSet` | 코어와 확장이 선언한 항목 집합을 모은 뒤 한 번. 집합을 더하거나 뺀다. `FieldSet` 이 아닌 값은 버려지고, 배열이 아닌 값을 돌려주면 원래 목록을 쓴다 |
+| `core.field.filter_types` | filter | `(array $types)` — `유형 키 => FieldTypeInterface` | 항목 유형을 모은 뒤 한 번. 유형을 더하거나 뺀다. 계약을 구현하지 않은 값은 버려진다 |
+| `core.fields.config` | filter | `(array $declarations)` | 코어 기본 항목의 선언 배열(`field_set`, `key`, `type`, `name` 등). 저장된 코어 항목이 아직 없는 집합에서 선언으로 항목을 만들 때 읽는다. 확장의 항목은 이 필터가 아니라 `getFields()` 로 선언한다 |
+| `core.field.filter_definitions` | filter | `(Collection $definitions, string $set, ?string $scopeKey, array $context)` — `$context` = `surface`, `owner`, `actor`, `scope_key`, `only_keys`, `extra` | 집합의 항목 목록을 만들 때마다(화면 계약, 요청 검증, 저장이 모두 이 목록을 쓴다). 넘어오는 항목은 요청 한 번만 쓰는 사본이라 고쳐도 저장되지 않는다. 선택지(`options`), 초기값(`constraints.default`), 요청 한정 잠금(`ui.readonly`, `ui.locked_reason`)을 채우거나 항목을 뺀다. `Collection` 을 돌려줘야 하고 `FieldDefinition` 이 아닌 원소는 버려진다. 문맥 없이 불리는 경우(운영자 항목 표 등)는 `$context` 가 빈 배열이다 |
+| `core.field.filter_rules` | filter | `(array $rules, string $set, string $surface, array $context)` | 항목 설정에서 만든 검증 규칙(`폼 경로 => 규칙 배열`)을 조정한다. 요청 클래스의 고정 규칙과 합쳐지기 전에 돈다. 배열이 아닌 값을 돌려주면 원래 규칙을 쓴다 |
+| `core.auth.register_validation_rules` | filter | `(array $rules, FormRequest $request)` | 가입 요청의 최종 검증 규칙. 고정 규칙(이메일, 비밀번호, 약관 동의, `fields_version`, `verification_token`)과 회원 항목 규칙, 표시 이름 종류 선택 규칙을 합친 뒤에 돈다. 호출 지점은 아래 표를 본다 |
+| `core.auth.register_fields_validation_rules` | filter | `(array $rules, RegisterFieldsRequest $request)` | 가입 화면 항목 조회(`GET /api/auth/register/fields`)의 조회 인자 규칙. 여기서 받은 인자는 미리보기 인자를 빼고 `core.field.filter_definitions` 의 `$context['extra']` 로 넘어간다 |
+| `core.user.profile_fields_validation_rules` | filter | `(array $rules, ProfileFieldsRequest $request)` | 내 정보 항목 조회(`GET /api/me/fields`)의 조회 인자 규칙 |
+| `core.user.admin_form_fields_validation_rules` | filter | `(array $rules = [], AdminUserFormFieldsRequest $request)` | 관리자 회원 폼 항목 조회(`GET /api/admin/users/form-fields`, `GET /api/admin/users/{user}/form-fields`)의 조회 인자 규칙 |
+| `core.auth.filter_register_data` | filter | `(array $userData, array $data, array $options)` — `$data` 는 가입 요청 데이터, `$options` 는 `AuthService::register()` 의 옵션 | 가입으로 만들 회원 행의 컬럼 값을 조정한다. 이메일, 비밀번호, 상태, 접속 IP 는 필터가 돌려준 값과 상관없이 코어 값으로 덮인다. 컬럼이 아닌 항목 값(운영자 추가 항목, 확장 핸들러 항목)은 여기에 없다. 배열이 아닌 값을 돌려주면 원래 값을 쓴다 |
+| `core.user.locked_field_reasons` | filter | `(array $reasons = [], User $user, string $surface)` — `$surface` = `profile`, `admin` | `core.user.locked_fields` 로 잠근 칸의 사유를 `칸 이름 => 사유` 로 준다(회사 계정 연동은 `sso`, 본인인증은 `identity`). 화면 계약의 `locked_reason` 과 회원 응답의 `locked_reasons` 로 나가 화면이 안내 문구를 고른다. 사유를 주지 않은 잠긴 칸은 `locked`, 잠기지 않은 칸의 사유는 버려진다. 먼저 준 사유를 덮지 않으려면 `??=` 로 넣는다 |
+| `core.field_definition.after_create` | action | `(FieldDefinition $definition)` | 운영자가 추가 항목을 만든 뒤 |
+| `core.field_definition.after_update` | action | `(FieldDefinition $definition, array $attributes)` — `$attributes` 는 실제로 저장한 속성(잠긴 속성은 빠져 있다) | 운영자가 항목 설정을 고친 뒤. 선언 항목의 사용, 필수 변경도 여기로 온다 |
+| `core.field_definition.after_delete` | action | `(FieldDefinition $snapshot)` — 삭제 직전의 사본 | 운영자가 추가 항목과 그 값을 지운 뒤 |
+| `core.user.fields.after_update` | action | `(User $user, array $changes, string $surface)` — `$changes` = `항목 키 => ['old' => 값, 'new' => 값]` | 회원 수정으로 컬럼이 아닌 항목 값(운영자 추가 항목, 확장 핸들러 항목)이 실제로 바뀐 뒤. `core.user.after_update` 뒤에 발화하고 바뀐 것이 없으면 발화하지 않는다. 회원 행의 스냅샷에는 이 값이 없으므로 항목 값 변경을 기록하려면 이 액션을 구독한다 |
+| `core.user.nickname_rejected` | action | `(User $user, string $nickname, string $reason, array $context)` — `$reason` = `duplicate`, `forbidden_word`, `change_interval`, `$context` = `surface`, `operation`(`register`, `update`) | 닉네임이 닉네임 정책에 걸렸는데 호출 쪽이 옵션 `nickname_policy => 'skip_field'` 로 닉네임만 버리고 저장하게 한 경우(화면 없는 외부 인증 가입과 동기화). 옵션이 없는 요청은 이 액션 없이 422 로 끝난다 |
+| `core.user.field_file.after_upload` | action | `(User $owner, FieldDefinition $definition, Attachment $attachment)` | 회원의 파일, 이미지 항목에 파일을 올린 뒤 |
+| `core.user.field_file.after_delete` | action | `(User $owner, FieldDefinition $definition, int $attachmentId)` | 회원의 파일, 이미지 항목에서 파일을 지운 뒤 |
+
+`core.auth.register_validation_rules` 는 코어 가입 요청만이 아니라 가입 창을 따로 가진 번들 플러그인도 태웁니다. 구독자는 두 번째 인자가
+`RegisterRequest` 가 아닐 수 있다는 점을 알고 써야 합니다(공통 부모인 `FormRequest` 로 받습니다).
+
+| 호출 지점 | 조건 | 차이 |
+| --- | --- | --- |
+| 코어 가입 (`POST /api/auth/register`) | 항상 | 없음 |
+| sirsoft-social_login 의 소셜 가입 완료 요청 | 가입 창이 `fields_version` 을 실어 보낸 요청(코어 가입 화면과 같은 회원 항목을 그린 창)일 때만 | 비밀번호 규칙이 없다. 이 라우트는 코어 가입과 같은 본인인증 미들웨어를 가지므로 필터 결과를 그대로 쓴다 |
+| sirsoft-sso 의 처음 로그인 동의 완료 요청 | 동의 창이 `fields_version` 을 실어 보낸 요청일 때만 | 필터 결과에서 `verification_token` 규칙을 뺀다(이 라우트에는 본인인증 미들웨어가 없고 본인 확인은 IdP 가 했다). IdP 가 값을 주는 칸의 규칙도 뺀다 |
+
+코어는 이 필터로 가입 전 본인인증 정책이 켜진 사이트에서 `verification_token` 을 필수 규칙으로 바꿉니다. 번들 마케팅 플러그인은
+동의 항목의 옛 요청 키(`agree_*`)를 받는 규칙을 이 필터로 더합니다. 새 확장이 가입에서 값을 받으려면 이 필터에 규칙을 더하기보다
+`getFields()` 로 회원 항목을 선언하는 쪽을 씁니다. 선언한 항목은 가입, 내 정보, 관리자 폼, 추가 정보 입력 화면에 함께 나타나고
+운영자가 사용과 필수를 정할 수 있습니다.
+
+세 요청 모두 `fields_version` 이 지금 항목 정의 버전과 다르면 검증보다 먼저 409 `fields_changed` 로 답하므로, 그 경우에는 이 필터가
+불리지 않습니다.
+
+### 기존 회원 입력 요구와 본인인증 값 훅 (7.2.0)
+
+운영자가 회원 항목에 「기존 회원에게도 입력 요구」를 켜면, 그 필수 항목이 비어 있는 회원의 쓰기 요청(POST, PUT, PATCH, DELETE)을
+코어가 `api` 미들웨어 그룹 전체에서 `403` + `error_code: required_fields_pending` 으로 거부합니다. 모듈과 플러그인의 API 도
+`api` 그룹을 받으므로 따로 할 일 없이 같은 판정을 받습니다. 필수 항목을 건너뛰고 만들어진 회원(`AuthService::register()` 의
+`required_fields => 'defer'`)은 요구를 켜지 않은 필수 항목까지 대상입니다.
+
+거부하지 않는 요청은 다음과 같습니다.
+
+| 조건 | 설명 |
+| --- | --- |
+| 인증된 회원이 없음 | 비회원 요청과 인증 미들웨어(`auth:sanctum`, `optional.sanctum`)가 없는 라우트 |
+| 읽기 요청 | GET, HEAD, OPTIONS |
+| 관리자 API | URI 에 `admin` 구간이 있거나 `admin` 미들웨어가 붙은 라우트 |
+| 통과 표식 | 라우트에 미들웨어 별칭 `allow.pending_required_fields` 를 붙인 경우 |
+| 확장 필터 | 필터 `core.required_fields.filter_exempt_routes` 가 돌려준 라우트 이름 |
+
+확장은 회원이 추가 정보를 입력하는 동안에도 열려 있어야 하는 자기 라우트를 둘 중 하나로 통과시킵니다. 대상은 결제 결과 처리,
+외부 계정 연결과 해제, 2단계 인증 등록처럼 「막으면 회원이 빠져나갈 길이 없거나 진행 중인 거래가 끊기는」 요청입니다.
+글쓰기, 주문처럼 사용자 콘텐츠를 만드는 요청은 통과시키지 않습니다.
+
+```php
+// 1) 라우트에 표식을 붙인다
+Route::post('payment/close-report', [PaymentController::class, 'closeReport'])
+    ->middleware(['optional.sanctum', 'allow.pending_required_fields'])
+    ->name('payment.close-report');
+
+// 2) 또는 리스너에서 라우트 이름을 보탠다 (이름 끝의 * 는 접두가 같은 라우트 전부)
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.required_fields.filter_exempt_routes' => ['method' => 'exemptRoutes', 'priority' => 10, 'type' => 'filter'],
+    ];
+}
+
+public function exemptRoutes(array $routes, Request $request): array
+{
+    return [...$routes, 'api.plugins.vendor-plugin.me.accounts.*'];
+}
+```
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.required_fields.filter_exempt_routes` | filter | `(array $routeNames = [], Request $request)` | 미입력 회원의 쓰기 요청을 막지 않을 라우트 이름 목록. 미입력 회원의 쓰기 요청에서만 불린다 |
+| `core.user.complete_required_fields_validation_rules` | filter | `(array $rules, CompleteRequiredFieldsRequest $request)` | 추가 정보 저장(`PUT /api/me/required-fields`) 요청 검증 규칙 |
+| `core.identity.filter_verified_claims` | filter | `(?VerifiedClaims $claims, IdentityVerificationLog $log, ?User $user)` | 본인인증 수단이 준 인증 값(이름, 휴대폰, 생년월일, 성별)을 고치거나, 선택 계약을 구현하지 않은 수단의 값을 대신 준다. `VerifiedClaims` 가 아닌 값을 돌려주면 인증 값이 없는 것으로 본다 |
+| `core.identity.verified_claims_validation_rules` | filter | `(array $rules, VerifiedClaimsRequest $request)` | 본인인증 채움값 조회(`POST /api/identity/claims`) 요청 검증 규칙 |
+
+비어 있는 필수 항목 판정은 회원과 항목 정의 버전별로 캐시됩니다. 확장이 회원 항목 값을 저장할 때 `UserService::updateUser()` 나
+항목 값 서비스(`FieldValueService::write()`)를 거치면 캐시가 자동으로 지워집니다. 자기 저장소(핸들러 저장 항목)에 값을 직접 쓰는
+확장은 저장 뒤 `app(\App\Services\RequiredFieldsChecker::class)->forget($user)` 를 부르십시오. 부르지 않아도 쓰기 요청을 거부하기
+직전에는 항상 다시 판정하므로 회원이 낡은 판정으로 막히지는 않지만, 화면의 추가 정보 유도가 최대 10분 늦게 풀립니다.
+
+본인인증 값을 회원 항목에 채우는 계약(`ProvidesVerifiedClaimsInterface`)은 [본인인증 정책](../backend/identity-policies.md#53-본인인증-값을-회원-항목에-채우기-720) 문서에 있습니다.
+
 ### 1. Action Hooks (액션 훅)
 
 **목적**: 특정 시점에 부가 작업 실행
@@ -636,6 +736,17 @@ sirsoft-ckeditor5.image.filter_reference_sources        # 에디터 이미지 �
 core.user.create_validation_rules
 core.user.update_validation_rules
 core.user.update_profile_validation_rules          # 본인 프로필 수정 (PUT /api/me)
+core.auth.register_validation_rules                # 가입 (POST /api/auth/register). 소셜 가입 완료, SSO 동의 완료 요청도 탄다
+core.auth.register_fields_validation_rules         # 가입 화면 항목 조회 (GET /api/auth/register/fields)
+core.user.profile_fields_validation_rules          # 내 정보 항목 조회 (GET /api/me/fields)
+core.user.complete_required_fields_validation_rules # 추가 정보 저장 (PUT /api/me/required-fields)
+core.user.admin_form_fields_validation_rules       # 관리자 회원 폼 항목 조회
+core.user.field_file_upload_validation_rules       # 회원 항목 파일 올리기
+core.user.field_file_delete_validation_rules       # 회원 항목 파일 지우기
+core.field_definition.show_validation_rules        # 회원 항목 설정 조회와 삭제
+core.field_definition.store_validation_rules       # 회원 항목 추가
+core.field_definition.update_validation_rules      # 회원 항목 설정 수정
+core.field_definition.reorder_validation_rules     # 회원 항목 순서 변경
 core.role.store_validation_rules
 core.role.update_validation_rules
 core.permission.store_validation_rules
@@ -1756,6 +1867,17 @@ HookManager::applyFilters("{$prefix}.notification.personalize_data", $data, $not
 
 **링크 승격은 역할 이름이 아니라 권한으로 가른다.** "이 사람에게 관리자 주소를 줘도 되는가" 는 그 사람이 실제로 그 화면을 열 수 있는지(`NotificationRecipientCapability::can()`)로 판정한다. 역할 이름을 리스너에 박으면 상점이 새 역할을 만들 때마다 리스너를 고쳐야 하고, 권한 없는 사람에게 관리자 주소가 간다.
 
+**받는 사람 이름과 회원 항목 변수는 이 필터 앞에서 채워진다(7.2.0).** 값이 `{recipient_name}` 인 칸은 받는 사람의 그 채널 표시 이름으로 바뀌고, 템플릿이 참조한 회원 항목 변수(`member.…`)가 `$data` 에 들어간 뒤에 이 필터가 돈다. 필터의 인자는 그대로다(채널은 넘어오지 않는다).
+
+### 알림의 회원 항목 변수 훅
+
+템플릿은 받는 회원의 항목 값을 `{member.<키>}`, `{member.custom.<키>}`, `{member.display_name}` 으로 쓸 수 있다. 자세한 규칙은 [알림 시스템](../backend/notification-system.md)의 「회원 항목 변수」를 본다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.notification.filter_member_variable_keys` | 필터 | `array $keys, string $type, string $channel` | 이번 발송에서 채울 회원 변수 이름 목록. 코어는 템플릿의 제목, 본문, 이동 주소에서 뽑는다. 자기 문구를 코어가 읽지 못하는 확장 채널이 이름을 보탠다. `member.` 로 시작하지 않는 이름은 버려진다 |
+| `core.notification.filter_template_variables` | 필터 | `array $variables, NotificationDefinition $definition` | 템플릿 편집 화면의 변수 목록(`[{key, description, group?}]`). 코어가 회원 공통 변수(`group: member`)를 덧붙인 뒤에 돈다. 여기서 더한 `member.…` 변수는 저장 응답의 없는 변수 경고에서 빠진다 |
+
 ---
 
 ## 필터 훅 리스너 예시
@@ -1903,6 +2025,18 @@ class UserNotificationSettingsListener implements HookListenerInterface
     }
 }
 ```
+
+### 표시 이름 훅
+
+회원을 어떤 이름으로 보일지는 코어의 표시 이름 계산기가 정한다. 확장은 아래 훅으로 종류와 영역을 더하고 결과를 조정한다. 구조와 등록 방법은 [표시 이름](display-name.md)을 본다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.display_name.filter_kinds` | 필터 | `array $kinds` | 표시 이름 종류를 더하거나 뺀다. 보통은 확장 게터 `getDisplayNameKinds()` 를 쓴다 |
+| `core.display_name.filter_areas` | 필터 | `array $areas` | 표시 이름 영역을 더하거나 뺀다. 보통은 확장 게터 `getDisplayNameAreas()` 를 쓴다 |
+| `core.display_name.filter_resolved` | 필터 | `?string $name, ?User $user, string $area, array $context` | 계산된 표시 이름을 바꾼다. 목록에서는 회원마다 불리므로 쿼리를 하지 않는다 |
+| `core.user.display_name_changed` | 액션 | `User $user, array $changed` | 회원의 이름, 닉네임, 이메일, 고른 종류, 표시 이름으로 쓰는 추가 항목 값이 바뀐 뒤. 이름이 구워진 캐시를 무효화할 때 구독한다 |
+| `core.field_definition.filter_usages` | 필터 | `array $usages, FieldDefinition $definition` | 항목 삭제 전에 그 항목을 쓰는 곳을 보탠다. 하나라도 있으면 삭제가 409 로 막힌다 |
 
 ### 회원 수정 화면에 확장 필드를 싣는 계약
 

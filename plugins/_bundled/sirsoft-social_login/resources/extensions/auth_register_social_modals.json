@@ -264,7 +264,7 @@
                                     "name": "Div",
                                     "if": "{{_global.socialLoginSignup?.email?.mode === 'locked'}}",
                                     "props": {
-                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                                        "className": "sl:min-w-0 sl:break-all sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
                                     },
                                     "children": [
                                         {

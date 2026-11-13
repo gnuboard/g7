@@ -105,7 +105,8 @@ class MemberNotificationResource extends BaseApiResource
 
         return [
             'uuid' => $member->uuid,
-            'name' => $isWithdrawn ? __('user.withdrawn_user') : $member->name,
+            // 탈퇴 회원은 계산기가 「탈퇴한 사용자」 문구로 돌려준다. 실명은 회원 조회 권한이 있는 관리자에게만 real_name 으로 더해진다.
+            ...$this->memberNameFields($member, $request),
             'email' => $this->canExposeMemberEmail($request, (int) $member->id) ? $member->email : null,
             'is_withdrawn' => $isWithdrawn,
         ];

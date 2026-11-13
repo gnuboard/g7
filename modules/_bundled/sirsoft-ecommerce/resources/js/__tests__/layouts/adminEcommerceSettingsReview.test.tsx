@@ -124,8 +124,9 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
          * @scenario setting=tab_structure
          * @effects review_tab_structure_and_card_locked
          */
-        it('1개 카드 섹션을 포함해야 한다', () => {
-            expect(tab.children).toHaveLength(1);
+        it('리뷰 설정 카드와 작성자 표시 이름 카드, 두 카드 섹션을 순서대로 포함해야 한다', () => {
+            // 작성자 표시 이름(#490)은 리뷰 설정 카드 본문에 넣지 않고 별도 카드로 둔다(본문은 설정 3개만 — row-stack 구분선 계약)
+            expect(tab.children.map((c: any) => c.id)).toEqual(['review_settings_card', 'review_display_name_card']);
         });
     });
 
@@ -460,10 +461,18 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
          * @effects review_setting_texts_use_review_namespace_keys
          */
         it('모든 다국어 키가 review_settings 네임스페이스를 사용해야 한다', () => {
-            const keys = collectI18nKeys(tab);
+            // 리뷰 설정 카드의 글자는 전부 review_settings 묶음이다. 작성자 표시 이름 카드(#490)는 문의 칸과 함께 쓰는
+            // display_name 묶음을 쓰므로 카드별로 본다.
+            const keys = collectI18nKeys(tab.children[0]);
             expect(keys.length).toBeGreaterThan(0);
             for (const key of keys) {
                 expect(key).toMatch(new RegExp(`^${prefix.replace(/\./g, '\\.')}`));
+            }
+
+            const displayNameKeys = collectI18nKeys(tab.children[1]);
+            expect(displayNameKeys.length).toBeGreaterThan(0);
+            for (const key of displayNameKeys) {
+                expect(key).toMatch(/^sirsoft-ecommerce\.admin\.settings\.display_name\./);
             }
         });
 

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 마일리지 거래 리소스
@@ -30,6 +31,37 @@ class MileageTransactionResource extends BaseApiResource
     {
         return [
             'can_manage' => 'sirsoft-ecommerce.mileage.manage',
+        ];
+    }
+
+    /**
+     * 읽어 둔 회원 관계의 이름 칸과 UUID 칸을 만듭니다.
+     *
+     * 이름은 표시 이름이고(관리자 화면은 이커머스 관리자 영역), 실명을 실을 수 있을 때만 실명 보조 칸이 더해진다.
+     * 관계를 읽어 두지 않았으면 아무 칸도 만들지 않는다(여기서 지연 로딩을 일으키지 않는다).
+     *
+     * @param  string  $relation  회원 관계 이름 (`user`, `grantedByUser`)
+     * @param  string  $nameKey  이름 칸 키
+     * @param  string  $uuidKey  UUID 칸 키
+     * @param  Request  $request  요청
+     * @param  bool  $expose  값을 실어도 되는지 (false 면 두 칸을 null 로 싣는다)
+     * @return array<string, string|null> 이름 칸, (조건이 맞으면) 실명 보조 칸, UUID 칸
+     */
+    private function memberFields(string $relation, string $nameKey, string $uuidKey, Request $request, bool $expose = true): array
+    {
+        if (! $this->resource->relationLoaded($relation)) {
+            return [];
+        }
+
+        if (! $expose) {
+            return [$nameKey => null, $uuidKey => null];
+        }
+
+        $member = $this->resource->getRelation($relation);
+
+        return [
+            ...MemberDisplayName::staffFields($member, $request, $nameKey),
+            $uuidKey => $member?->uuid,
         ];
     }
 
@@ -90,10 +122,11 @@ class MileageTransactionResource extends BaseApiResource
             // 처리 관리자·내부 메모는 관리자 응답에만 싣는다(회원 마일리지 내역도 이 Resource 를 쓴다).
             // whenLoaded 는 로딩 게이트일 뿐이라, 회원 경로에 with() 가 추가되는 순간 새지 않도록 권한 게이트를 함께 건다.
             'granted_by' => $canExposeAdminNote ? $this->resource->granted_by : null,
-            'granted_by_name' => $this->whenLoaded('grantedByUser', fn () => $canExposeAdminNote ? $this->resource->grantedByUser?->name : null),
-            'granted_by_uuid' => $this->whenLoaded('grantedByUser', fn () => $canExposeAdminNote ? $this->resource->grantedByUser?->uuid : null),
-            'user_name' => $this->whenLoaded('user', fn () => $this->resource->user?->name),
-            'user_uuid' => $this->whenLoaded('user', fn () => $this->resource->user?->uuid),
+            // 처리 관리자와 회원의 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역). 실명은 회원 조회 권한이 있는
+            // 관리자에게만 `granted_by_real_name`, `user_real_name` 으로 더해진다(조건에 맞지 않으면 키가 없다).
+            // 관계를 읽어 두지 않은 응답에는 종전처럼 이 키들이 없다.
+            ...$this->memberFields('grantedByUser', 'granted_by_name', 'granted_by_uuid', $request, $canExposeAdminNote),
+            ...$this->memberFields('user', 'user_name', 'user_uuid', $request),
             'order_number' => $this->whenLoaded('order', fn () => $this->resource->order?->order_number),
             'description' => $this->resource->description,
             'memo' => $canExposeAdminNote ? $this->resource->memo : null,

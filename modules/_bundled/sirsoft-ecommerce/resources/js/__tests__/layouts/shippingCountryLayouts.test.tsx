@@ -5,7 +5,7 @@ import path from 'node:path';
 /**
  * 유저별 배송국가(preferred_shipping_country) — 레이아웃 구조 잠금 테스트 (MP08 후속)
  *
- * 헤더 공용 셀렉터(2섹션)·설정 카드·가입/관리자 필드·체크아웃 Select·주소록 분기(D10)·
+ * 헤더 공용 셀렉터(2섹션)·체크아웃 Select·주소록 분기(D10)·
  * B3 매핑·shippability 경고(3계층)·B8 상품상세를 JSON 구조 기준으로 회귀 차단한다.
  */
 
@@ -35,53 +35,6 @@ const walkAll = (node: any, pred: (n: any) => boolean, acc: any[] = []): any[] =
 
 const serialize = (rel: string, base = moduleRoot) =>
   fs.readFileSync(path.resolve(base, rel), 'utf-8');
-
-describe('register-shipping-country-field.json — 가입폼 배송국가 필드 (D6)', () => {
-  const json = read('resources/extensions/register-shipping-country-field.json');
-  const components = json.injections.flatMap((i: any) => i.components ?? []);
-  const select = components.map((c: any) =>
-    walk(c, (n) => n.name === 'Select' && n.props?.name === 'preferred_shipping_country')).find(Boolean);
-
-  /** @effects register_field_prefill_and_persist */
-  it('가입폼(auth/register) register_extension_fields 앵커에 주입', () => {
-    expect(json.target_layout).toBe('auth/register');
-    expect(json.injections[0].target_id).toBe('register_extension_fields');
-  });
-
-  /** @effects register_field_prefill_and_persist */
-  it('preferred_shipping_country Select + 우선순위 prefill', () => {
-    expect(select).toBeTruthy();
-    expect(select.props.value).toContain('preferredShippingCountry');
-    expect(select.props.value).toContain('default_country');
-  });
-
-  /** @effects setting_ui_injected_when_intl_on */
-  it('해외배송 활성 게이트(if)', () => {
-    expect(components[0].if).toContain('international_shipping_enabled');
-  });
-});
-
-describe('admin-user-shipping-country-field.json — 관리자 회원 배송국가 필드', () => {
-  const json = read('resources/extensions/admin-user-shipping-country-field.json');
-  const components = json.injections.flatMap((i: any) => i.components ?? []);
-  const select = components.map((c: any) =>
-    walk(c, (n) => n.name === 'Select' && n.props?.name === 'ecommerce_preferred_shipping_country')).find(Boolean);
-
-  /** @effects form_calls_only_core_save_api */
-  it('admin_user_form 대상 + 저장버튼 없음(폼 자동 포함)', () => {
-    expect(json.target_layout).toBe('admin_user_form');
-    expect(select).toBeTruthy();
-    // 별도 PUT 버튼이 없어야 한다(회원정보 저장 시 함께 저장)
-    const buttons = components.map((c: any) => walk(c, (n) => n.name === 'Button')).filter(Boolean);
-    expect(buttons.length).toBe(0);
-  });
-
-  /** @effects setting_ui_injected_when_intl_on */
-  it('편집 모드 + 해외배송 활성 게이트', () => {
-    expect(components[0].if).toContain('route?.id');
-    expect(components[0].if).toContain('international_shipping_enabled');
-  });
-});
 
 describe('header-currency-selector-user.json — 헤더 공용 셀렉터 2섹션 (D4)', () => {
   const json = read('resources/extensions/header-currency-selector-user.json');
@@ -371,36 +324,6 @@ describe('_user_base.json — 글로벌 배선 (init/headers/onSuccess)', () => 
   });
 });
 
-describe('마이페이지 설정/표시 카드', () => {
-  const editRaw = serialize('layouts/partials/mypage/profile/_edit.json', templateRoot);
-  const viewRaw = serialize('layouts/partials/mypage/profile/_view.json', templateRoot);
-
-  /**
-   * 배송국가는 회원정보 저장(PUT /api/me) 본문에 실려 함께 저장된다 — 별도 PUT 이 없고,
-   * 그 요청의 검증 오류가 칸 아래에 뜬다 (코어 저장 통합, 결정 2026-09-28).
-   *
-   * @scenario entry_point=profile_update, field=shipping_country
-   * @effects form_calls_only_core_save_api, field_error_shown_under_field
-   */
-  it('_edit: 배송국가 카드 + 회원정보 저장 본문으로 함께 저장(별도 PUT 없음)', () => {
-    expect(editRaw).toContain('shipping_country_settings.title');
-    expect(editRaw).toContain('ecommerce_preferred_shipping_country');
-    expect(editRaw).not.toContain('user/shipping-country');
-    expect(editRaw).toContain('_local.profileErrors?.ecommerce_preferred_shipping_country');
-  });
-
-  /** @effects mypage_view_shows_saved_country */
-  it('_view: 읽기전용 배송국가 카드', () => {
-    expect(viewRaw).toContain('shipping_country_settings.title');
-  });
-
-  /** @effects setting_ui_hidden_when_intl_off */
-  it('두 카드 모두 해외배송 활성 게이트', () => {
-    expect(editRaw).toContain('international_shipping_enabled');
-    expect(viewRaw).toContain('international_shipping_enabled');
-  });
-});
-
 describe('체크아웃 국가 Select 데이터소스 경로 회귀', () => {
   const raw = serialize('layouts/partials/shop/_checkout_shipping.json', templateRoot);
 
@@ -555,7 +478,7 @@ describe('D-admin — 관리자 회원폼 저장은 코어 회원 저장 한 번
 
   /**
    * 종전에는 코어 저장 성공 뒤 배송국가·통화를 모듈 전용 PATCH 로 따로 보냈다. 이제 두 값은 코어
-   * 회원 저장 요청 본문에 실려 가고 이커머스가 코어 훅으로 저장하므로 전용 호출이 남아 있으면 안 된다.
+   * 회원 저장 요청 본문에 실려 가고 코어가 회원 항목 선언대로 이커머스 핸들러로 저장하므로 전용 호출이 남아 있으면 안 된다.
    *
    * @scenario entry_point=admin_update, field=shipping_country
    * @effects form_calls_only_core_save_api
@@ -563,15 +486,6 @@ describe('D-admin — 관리자 회원폼 저장은 코어 회원 저장 한 번
   it('회원폼 저장 흐름에 배송국가·통화 전용 PATCH 가 없다', () => {
     expect(raw).not.toContain('/shipping-country');
     expect(raw).not.toContain('/api/modules/sirsoft-ecommerce/admin/users/');
-  });
-
-  /**
-   * @scenario entry_point=admin_update, field=shipping_country
-   * @effects field_error_shown_under_field
-   */
-  it('주입된 배송국가 칸이 코어 저장 요청의 검증 오류를 칸 아래에 띄운다', () => {
-    const field = serialize('resources/extensions/admin-user-shipping-country-field.json');
-    expect(field).toContain('_local.errors?.ecommerce_preferred_shipping_country');
   });
 });
 
@@ -622,12 +536,15 @@ describe('#459 — 배송국가명 다국어 표시 ($localized + fallbackKey)',
   /** 국가 lang key 접두사 — 저장본에 로케일 키가 없을 때 언어팩으로 보강되는 경로 */
   const COUNTRY_LANG_PREFIX = 'sirsoft-ecommerce::settings.countries.';
 
-  /** [설명 라벨, 파일 경로, base] */
+  /**
+   * [설명 라벨, 파일 경로, base]
+   *
+   * 회원가입과 관리자 회원 폼의 배송국가 칸은 여기 없다. 두 칸은 회원 항목으로 선언돼 선택지 글자를 서버가 만든다
+   * (`ShippingCountryResolver::countryLabel()` — 저장된 이름, 없으면 언어 파일의 국가명. PHPUnit 이 잰다).
+   */
   const surfaces: Array<[string, string, string]> = [
     ['사용자 헤더 셀렉터', 'layouts/_user_base.json', templateRoot],
     ['관리자 헤더 셀렉터', 'resources/extensions/header-currency-selector-admin.json', moduleRoot],
-    ['회원가입 배송국가 필드', 'resources/extensions/register-shipping-country-field.json', moduleRoot],
-    ['관리자 회원 배송국가 필드', 'resources/extensions/admin-user-shipping-country-field.json', moduleRoot],
     [
       '관리자 주문상세 배송국가',
       'resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_order_info.json',
@@ -655,18 +572,6 @@ describe('#459 — 배송국가명 다국어 표시 ($localized + fallbackKey)',
       'resources/extensions/header-currency-selector-admin.json',
       moduleRoot,
       '"availableShippingCountries"',
-    ],
-    [
-      '회원가입 Select options',
-      'resources/extensions/register-shipping-country-field.json',
-      moduleRoot,
-      '"options"',
-    ],
-    [
-      '관리자 회원폼 Select options',
-      'resources/extensions/admin-user-shipping-country-field.json',
-      moduleRoot,
-      '"options"',
     ],
     [
       '배송설정 기본국가 Select options',

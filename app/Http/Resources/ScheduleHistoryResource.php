@@ -42,12 +42,12 @@ class ScheduleHistoryResource extends BaseApiResource
             'trigger_type_label' => $this->getTriggerTypeLabel(),
 
             // 관계형 데이터
-            'triggered_by' => $this->whenLoaded('triggeredBy', function () {
+            'triggered_by' => $this->whenLoaded('triggeredBy', function () use ($request) {
                 $user = $this->getValue('triggeredBy');
 
                 return $user ? [
                     'uuid' => $user->uuid,
-                    'name' => $user->name,
+                    ...$this->memberNameFields($user, $request),
                 ] : null;
             }),
 
@@ -89,7 +89,7 @@ class ScheduleHistoryResource extends BaseApiResource
             'triggered_by' => $this->resource->relationLoaded('triggeredBy') && $this->resource->triggeredBy
                 ? [
                     'uuid' => $this->resource->triggeredBy->uuid,
-                    'name' => $this->resource->triggeredBy->name,
+                    ...$this->memberNameFields($this->resource->triggeredBy),
                 ]
                 : null,
         ];

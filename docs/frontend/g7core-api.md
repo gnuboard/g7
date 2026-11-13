@@ -538,13 +538,13 @@ G7Core.dispatch({
 |--------|------|----------|
 | `open(modalId)` | 모달 열기 | modalId: string |
 | `close(modalId?)` | 맨 위 모달 닫기 | modalId?: string — 전달되지만 `closeModal` 핸들러가 읽지 않는다(아래 「알려진 제약」) |
-| `closeAll()` | **동작하지 않음** — 쓰지 않는다 | - |
+| `closeAll()` | 열린 모달 모두 닫기(engine-v1.94.0+, `closeModal` 의 `params.all`) | - |
 | `isOpen(modalId)` | 모달 열림 확인 | modalId: string |
 | `getStack()` | 모달 스택 반환 | - |
 
 #### 알려진 제약 (engine-v1.75.2 기준)
 
-- `closeAll()` 은 엔진에 없는 `closeAllModals` 액션을 보낸다. 창은 하나도 닫히지 않고, 반환값은 `{ success: false }`, 콘솔에는 `Unknown action handler: closeAllModals` 오류가 남는다. 여러 창을 닫으려면 열린 창 수만큼 `closeModal` 을 `sequence` 로 보낸다 — engine-v1.75.2 부터 같은 sequence 안의 `closeModal` 은 매번 최신 스택을 읽는다.
+- `closeAll()` 은 engine-v1.93 까지 엔진에 없는 `closeAllModals` 액션을 보내 아무 창도 닫지 못했다(`Unknown action handler` 오류). engine-v1.94.0 부터 `closeModal` 의 `params.all: true` 로 보내 열린 창을 모두 닫는다. 레이아웃 액션에서는 `<close-modal :all="true"/>` 를 쓴다.
 - `close(modalId)` 의 `modalId` 는 무시된다. 인자와 상관없이 스택 맨 위 창이 닫힌다.
 - 액션 실행 밖(타이머, 외부 SDK 콜백처럼 `__g7ActionContext` 가 없는 곳)에서 `close()` 를 부르면 문맥에 전역 사본이 없어 빈 스택에서 계산한다. 그 결과 **열린 창 전체가 닫힌다**. 같은 자리에서 `open(id)` 를 부르면 스택이 `[id]` 로 바뀌어 아래 창이 사라진다. 종전부터의 동작이며 engine-v1.75.2 도 이 경로는 바꾸지 않았다(`ActionDispatcher.modalStack.test.ts` 가 고정). 부모 창 위에 띄워야 하면 `G7Core.dispatch(action, { componentContext })` 로 문맥을 넘긴다.
 

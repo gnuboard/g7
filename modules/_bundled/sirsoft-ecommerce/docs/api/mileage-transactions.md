@@ -70,9 +70,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | order_cancel_id | null | `null` | order cancel 식별자 (연관 리소스 참조) |
 | source_transaction_id | integer | `802` | source transaction 식별자 (연관 리소스 참조) |
 | granted_by | integer | `1209` | 부여 주체 식별자 (NULL=시스템 자동, user ID=관리자 수동 부여) — 관리자 응답에서만 값이 실리고 회원 마일리지 내역에서는 `null`(`granted_by_name`·`granted_by_uuid` 도 같다) |
-| granted_by_name | string | `최고관리자` | 부여 관리자 이름 (grantedByUser 관계 eager load 시에만 노출) |
+| granted_by_name | string | `최고관리자` | 부여 관리자의 표시 이름 (grantedByUser 관계 eager load 시에만 노출). 실명은 조건이 맞는 관리자 응답에만 `granted_by_real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 | granted_by_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 부여 관리자 UUID (grantedByUser 관계 eager load 시에만 노출) |
-| user_name | string | `최고관리자` | 거래 대상 회원 이름 (user 관계 eager load 시에만 노출) |
+| user_name | string | `최고관리자` | 거래 대상 회원의 표시 이름 (user 관계 eager load 시에만 노출). 실명은 조건이 맞는 관리자 응답에만 `user_real_name` 으로 더해진다 |
 | user_uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 거래 대상 회원 UUID (user 관계 eager load 시에만 노출) |
 | order_number | null | `null` | 연관 주문번호 (order 관계 eager load 시에만 노출) |
 | description | string | `관리자 마일리지 차감 (300원)` | 설명 (다국어 필드는 로케일별 값 객체) |

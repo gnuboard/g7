@@ -205,7 +205,7 @@
           <label data-ref="login_email_label" for="email" class="form-label">{{_global.appConfig?.auth?.login_identifier?.admin === 'email_or_username' ? $t('auth.login.external.identifier') : $t('auth.login.email')}}</label>
           <input data-ref="login_email_input" id="email" type="{{_global.appConfig?.auth?.login_identifier?.admin === 'email_or_username' ? 'text' : 'email'}}" name="email" placeholder="{{_global.appConfig?.auth?.login_identifier?.admin === 'email_or_username' ? $t('auth.login.external.identifier') : $t('auth.login.email')}}" class="input py-3 {{_local.loginErrors?.email ? 'input-error' : ''}}" :required="true" disabled="{{_local.isLoggingIn}}">
             <on event="onBlur">
-              <!-- 이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신 「…(으)로 계속」.
+              <!-- 이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신 「… 계정으로 계속」.
                    판정 상태는 _global 에 둔다: 응답이 오기 전에 비밀번호를 입력하면, 응답의 _local 쓰기가 요청 때의 스냅숏으로
                    폼(data-key loginForm) 저장소를 덮어 화면의 비밀번호 칸이 비었다. -->
               <sequence if="{{!!$event.target.value &amp;&amp; $event.target.value !== _global.adminLoginDiscoveryFor}}">

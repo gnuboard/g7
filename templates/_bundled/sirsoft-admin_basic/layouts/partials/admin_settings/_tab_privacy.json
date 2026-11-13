@@ -687,6 +687,17 @@
                                                                 "className": "text-error-soft"
                                                             },
                                                             "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.error ?? ''}}"
+                                                        },
+                                                        {
+                                                            "comment": "요청자 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 requester_real_name 을 싣는다.",
+                                                            "id": "withdrawn_manual_run_real_name",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_real_name}}",
+                                                            "props": {
+                                                                "className": "block text-tertiary"
+                                                            },
+                                                            "text": "$t:admin.common.real_name.with_label|name={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_real_name}}"
                                                         }
                                                     ]
                                                 }
@@ -1056,6 +1067,16 @@
                                                                 "className": "text-error-soft"
                                                             },
                                                             "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.error ?? ''}}"
+                                                        },
+                                                        {
+                                                            "id": "dormant_manual_run_real_name_{{stage}}",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_real_name}}",
+                                                            "props": {
+                                                                "className": "block text-tertiary"
+                                                            },
+                                                            "text": "$t:admin.common.real_name.with_label|name={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_real_name}}"
                                                         }
                                                     ]
                                                 }
@@ -1846,6 +1867,16 @@
                                                                 "className": "text-error-soft"
                                                             },
                                                             "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.error ?? ''}}"
+                                                        },
+                                                        {
+                                                            "id": "search_history_manual_run_real_name",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_real_name}}",
+                                                            "props": {
+                                                                "className": "block text-tertiary"
+                                                            },
+                                                            "text": "$t:admin.common.real_name.with_label|name={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_real_name}}"
                                                         }
                                                     ]
                                                 }

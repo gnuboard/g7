@@ -5946,6 +5946,445 @@
         "data": {
           "count": 128
         }
+      },
+      "checkoutFieldDefs": {
+        "data": {
+          "set": {
+            "key": "sirsoft-ecommerce.order_contact",
+            "label": "주문서 항목",
+            "owner_type": "module",
+            "owner": "sirsoft-ecommerce",
+            "allows_custom": true,
+            "surfaces": [
+              "checkout"
+            ]
+          },
+          "fields": [
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {
+                "max_length": 50
+              },
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 46,
+              "key": "orderer_name",
+              "attribute": "orderer_name",
+              "type": "text",
+              "type_label": "한 줄 글",
+              "name": {
+                "ko": "주문자 이름",
+                "en": "Orderer Name",
+                "ja": "注文者名"
+              },
+              "label": "주문자 이름",
+              "ui": {
+                "group": "orderer"
+              },
+              "sort_order": 10,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": true,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {},
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 47,
+              "key": "orderer_phone",
+              "attribute": "orderer_phone",
+              "type": "phone",
+              "type_label": "전화번호",
+              "name": {
+                "ko": "주문자 연락처",
+                "en": "Orderer Phone",
+                "ja": "注文者連絡先"
+              },
+              "label": "주문자 연락처",
+              "ui": {
+                "group": "orderer"
+              },
+              "sort_order": 20,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": {
+                "ko": "비회원 주문은 늘 필수입니다.",
+                "en": "Always required for guest orders.",
+                "ja": "非会員の注文では常に必須です。"
+              },
+              "placeholder": [],
+              "options": [],
+              "constraints": {},
+              "enabled": true,
+              "required": false,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {},
+              "lock_reasons": {},
+              "user_overrides": [],
+              "id": 48,
+              "key": "orderer_email",
+              "attribute": "orderer_email",
+              "type": "email",
+              "type_label": "이메일",
+              "name": {
+                "ko": "주문자 이메일",
+                "en": "Orderer Email",
+                "ja": "注文者メール"
+              },
+              "label": "주문자 이메일",
+              "ui": {
+                "group": "orderer"
+              },
+              "sort_order": 30,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {
+                "max_length": 50
+              },
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 49,
+              "key": "recipient_name",
+              "attribute": "recipient_name",
+              "type": "text",
+              "type_label": "한 줄 글",
+              "name": {
+                "ko": "수령인 이름",
+                "en": "Recipient Name",
+                "ja": "受取人名"
+              },
+              "label": "수령인 이름",
+              "ui": {
+                "group": "shipping"
+              },
+              "sort_order": 40,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": true,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {},
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 51,
+              "key": "address",
+              "attribute": "address",
+              "type": "address",
+              "type_label": "주소",
+              "name": {
+                "ko": "배송 주소",
+                "en": "Shipping Address",
+                "ja": "配送先住所"
+              },
+              "label": "배송 주소",
+              "ui": {
+                "group": "shipping"
+              },
+              "sort_order": 60,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {
+                "max_length": 500
+              },
+              "enabled": true,
+              "required": false,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {},
+              "lock_reasons": {},
+              "user_overrides": [],
+              "id": 53,
+              "key": "shipping_memo",
+              "attribute": "shipping_memo",
+              "type": "textarea",
+              "type_label": "여러 줄 글",
+              "name": {
+                "ko": "배송 메모",
+                "en": "Delivery Memo",
+                "ja": "配送メモ"
+              },
+              "label": "배송 메모",
+              "ui": {
+                "group": "shipping"
+              },
+              "sort_order": 80,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            }
+          ],
+          "fields_version": "b9dd2042a584",
+          "types": [
+            {
+              "key": "text",
+              "label": "한 줄 글",
+              "category": "text",
+              "renderer": "builtin",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": true,
+                "search": true,
+                "list_column": true,
+                "display_name": true,
+                "options": false
+              }
+            },
+            {
+              "key": "textarea",
+              "label": "여러 줄 글",
+              "category": "text",
+              "renderer": "builtin",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "key": "choice",
+              "label": "하나 선택",
+              "category": "choice",
+              "renderer": "builtin",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": false,
+                "options": true
+              }
+            },
+            {
+              "key": "address",
+              "label": "주소",
+              "category": "address",
+              "renderer": "address",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            }
+          ],
+          "abilities": {
+            "can_update": true
+          },
+          "notices": {
+            "signup_layout_modified": false
+          }
+        }
       }
     },
     "byEndpointPattern": {
@@ -11602,7 +12041,8 @@
                   "preview": {
                     "subject": "[샘플 사이트] 새 소식 알림",
                     "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
-                  }
+                  },
+                  "warnings": []
                 }
               }
             }

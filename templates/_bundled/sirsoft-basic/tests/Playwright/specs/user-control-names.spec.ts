@@ -144,6 +144,9 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
   /**
    * 회원정보 수정 — 보이는 제목(국가·언어·시간대)이 목록형 단추 이름의 앞부분이 된다.
    *
+   * 칸 제목은 회원 항목의 이름이라 운영자가 환경설정 > 회원에서 바꿀 수 있다(#490 — 종전의 고정 문구 「휴대폰 번호」는 이제
+   * 항목 이름 「휴대폰」이다). 그래서 제목을 박지 않고 그 회원의 항목 계약(`GET /api/me/fields`)에서 읽어 대조한다.
+   *
    * @scenario surface=user_layout
    * @effects controls_have_accessible_name, listbox_reads_name_and_value
    */
@@ -165,12 +168,23 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
     ]);
     expect(verified.status(), '비밀번호 확인 응답').toBe(200);
 
+    // 칸 제목 = 항목 이름(요청 언어 ko). 사용을 끈 항목은 화면에 없으므로 계약에 있는 것만 잰다.
+    const contract = await page.request.get('/api/me/fields', {
+      headers: { Authorization: `Bearer ${account.otherDeviceToken}`, Accept: 'application/json', 'Accept-Language': 'ko' },
+    });
+    expect(contract.status(), '내 정보 항목 계약').toBe(200);
+    const labels = new Map<string, string>(
+      ((await contract.json())?.data?.fields ?? []).map((field: { key: string; label: string }) => [field.key, field.label]),
+    );
+    const titlesOf = (keys: string[]) => keys.filter((key) => labels.has(key)).map((key) => labels.get(key) as string);
+    expect(titlesOf(['name', 'nickname', 'mobile']).length, '이름·닉네임·휴대폰 중 하나 이상은 쓰는 사이트다').toBeGreaterThan(0);
+
     // placeholder 로만 읽히던 칸이 보이는 제목으로 읽힌다
-    for (const title of ['이름', '닉네임', '휴대폰 번호']) {
+    for (const title of titlesOf(['name', 'nickname', 'mobile'])) {
       await expect(page.getByRole('textbox', { name: title, exact: true }).first(), `「${title}」 칸의 읽기 이름`).toBeVisible({ timeout: 30_000 });
     }
 
-    for (const title of ['국가', '언어', '시간대']) {
+    for (const title of titlesOf(['country', 'language', 'timezone'])) {
       // 값은 회원마다 다르므로 「제목 + 공백」으로 시작하는지만 본다
       await expect(
         page.getByRole('button', { name: new RegExp(`^${title}( |$)`) }).first(),

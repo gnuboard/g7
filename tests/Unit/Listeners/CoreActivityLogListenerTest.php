@@ -179,7 +179,8 @@ class CoreActivityLogListenerTest extends TestCase
         // after_sessions_revoked) +3 → 88.
         // #609 코어 업데이트 웹 단계 실행(core.core_update.started·completed·failed) +3 → 91.
         // #434 템플릿 환경설정 저장·기본값 되돌리기(core.template_settings.after_save·after_reset) +2 → 93.
-        $this->assertCount(93, $hooks);
+        // #490 회원 추가 항목 값 변경(core.user.fields.after_update) +1 → 94.
+        $this->assertCount(94, $hooks);
         $this->assertSame(
             ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
             $hooks['core.user.after_update_roles'] ?? null,

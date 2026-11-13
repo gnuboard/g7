@@ -113,6 +113,26 @@ IP 는 신뢰 프록시 해석 뒤의 값이다 — 리버스 프록시 뒤에�
 막는 규칙) 저장하지 않고 422 를 돌려줍니다. 그래도 잠긴 경우의 구제는 서버 셸의
 `php artisan security:ip-restriction --disable` 입니다(목록·규칙은 지우지 않고 토글만 끈다).
 
+## 회원 (`member` 탭) — 닉네임 정책과 표시 이름
+
+`POST /api/admin/settings` 에 `_tab: "member"` 로 저장합니다. 고를 수 있는 종류와 영역은 `GET /api/admin/member-fields/display-name-options` 가, 닉네임이 빈 회원 수는 `GET /api/admin/member-fields/nickname-empty-count` 가 줍니다(두 API 는 [회원 항목 API](field-sets.md) 문서에 있습니다). 회원 항목 자체(사용, 필수, 가입 화면 표시, 추가 항목)는 이 저장이 아니라 회원 항목 API 가 항목마다 바로 저장합니다.
+
+| 키 | 타입 | 기본값 | 설명 |
+| --- | --- | --- | --- |
+| member.nickname_unique | boolean | `false` | 닉네임 중복 금지. 전각과 반각, 대문자와 소문자, 공백 차이는 같은 닉네임으로 본다. 값이 바뀌면 회원의 중복 검사용 키를 다시 계산하는 작업이 큐에 들어간다 |
+| member.nickname_banned_words | array | `[]` | 닉네임 금지어. 최대 500개, 원소는 50자 이하 문자열이고 서로 달라야 한다 |
+| member.nickname_change_interval_days | integer | `0` | 닉네임 변경 주기(일). 0 이상 3650 이하. 0 이면 제한이 없다. 본인 수정에만 걸리고 관리자 수정은 제한을 받지 않는다 |
+| member.display_name_selectable_kinds | array | `["name"]` | 회원이 고를 수 있는 표시 이름 종류 키. 1개 이상, 지금 등록된 종류여야 한다 |
+| member.display_name_member_default_kind | string | `name` | 회원이 고르지 않았을 때의 종류. 함께 보낸 고를 수 있는 종류 가운데 하나여야 한다 |
+| member.display_name_areas | object | 사이트 기본과 관리자 화면이 `name` 고정 | `{영역 키: {mode, kind}}`. `mode` 는 `inherit`, `fixed`, `member`. `fixed` 면 `kind` 가 필수이고 사이트 기본 영역(`core:site`)은 `inherit` 일 수 없다 |
+| member.nickname_require_existing_members | boolean | — | 저장하지 않는 지시 값. true 로 보내면 닉네임 항목의 「기존 회원에게도 입력 요구」를 함께 켠다 |
+
+- 422 조건: 금지어가 500개를 넘거나 원소가 50자를 넘거나 겹침, 변경 주기가 0 미만이거나 3650 초과, 고를 수 있는 종류가 빈 배열이거나 등록되지 않은 종류, 회원 기본 종류가 등록되지 않았거나 함께 보낸 고를 수 있는 종류에 없음, 등록되지 않은 영역 키, 영역의 `mode` 가 세 값 밖, `fixed` 인데 `kind` 가 없거나 등록되지 않은 종류, 사이트 기본 영역(`core:site`)의 `mode` 가 `inherit`.
+- 화면이 보내지 않은 영역(꺼진 확장의 영역)의 기존 값은 보존됩니다.
+- 어떤 영역이 닉네임이 필요한 종류(`nickname`, `name_nickname`)로 고정이면 닉네임 항목의 「사용」「필수」가 잠기고, 「회원이 고른 값」 영역이 있으면서 고를 수 있는 종류에 그런 종류가 있으면 「사용」만 잠깁니다. 잠금은 항목 목록 응답의 `lock_reasons` 에 `nickname_display` 로 나갑니다.
+- 저장하면 검색 엔진용 미리 그린 화면을 전부 비웁니다(작성자 이름이 구워져 있다).
+- 공개 설정(`GET /api/frontend-config`)에는 `display_name_selectable_kinds` 와 `display_name_member_default_kind` 만 나가고 영역별 설정은 나가지 않습니다.
+
 ## TL;DR (5초 요약)
 
 ```text
@@ -275,7 +295,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| _tab | body | string | 아니오 | — | 활성 탭 식별자 (general/mail/upload/seo/security/drivers/advanced/notifications/identity/privacy). 지정 시 해당 탭 필드만 필수 검증되고 나머지 탭은 nullable 처리되어 탭 단위 부분 저장을 가능케 함 |
+| _tab | body | string | 아니오 | — | 활성 탭 식별자 (general/mail/upload/seo/security/drivers/advanced/notifications/identity/analytics/privacy/system/content/member). 지정 시 해당 탭 필드만 필수 검증되고 나머지 탭은 nullable 처리되어 탭 단위 부분 저장을 가능케 함 |
 | general | body | array | 아니오 | — | 일반 탭 설정 묶음 (사이트명·URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고) |
 | mail | body | array | 아니오 | — | 메일 탭 설정 묶음 (메일러 종류·SMTP 호스트/포트/인증·암호화·발신자 정보·Mailgun/SES 자격 정보) |
 | upload | body | array | 아니오 | — | 업로드 탭 설정 묶음 (최대 파일 크기·허용 확장자·이미지 최대 크기 및 품질) |
@@ -286,6 +306,7 @@ HTTP/1.1 200
 | notifications | body | array | 아니오 | — | 알림 탭 설정 묶음. channels 배열로 각 알림 채널의 id·is_active(활성 여부)·sort_order(표시 순서)를 저장 |
 | identity | body | array | 아니오 | — | 본인인증(IDV) 탭 설정 묶음 (기본 provider·목적별 provider 매핑·챌린지 유효시간·최대 시도 횟수) |
 | system | body | array | 아니오 | — | 시스템 탭 컨테이너 — 실행 방식·예약 작업 설정을 담는다 |
+| member | body | array | 아니오 | — | 회원 탭 설정 묶음 (닉네임 중복 금지, 금지어, 변경 주기, 표시 이름의 고를 수 있는 종류, 회원 기본 종류, 영역별 설정). 키별 규칙은 위 「회원 (`member` 탭)」 절 |
 | privacy | body | array | 아니오 | — | 개인정보 탭 설정 묶음 (탈퇴 회원 잔여정보 파기·휴면 전환·휴면 후 자동 탈퇴의 사용 여부와 기간) |
 | notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 각 원소는 `id`(채널 식별자, 필수·최대 50자)·`is_active`(활성 여부, 필수 boolean)·`sort_order`(표시 순서, 0 이상 정수) 로 구성 |
 | general.site_name | body | string | 예 | max 100 | general.site 이름 (식별자) |

@@ -16,7 +16,10 @@ const t = (key: string, params?: Record<string, string | number>) =>
  * 사용자 정보 인터페이스
  */
 export interface AdminUser {
-  name: string;
+  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+  name: string | null;
+  /** 관리자 화면 영역에서 보이는 이름(표시 이름). 이 값을 먼저 쓴다 */
+  display_name?: string | null;
   email: string;
   avatar?: string;
   role?: string;
@@ -79,6 +82,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   const renderWidth = useRenderWidth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  // 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
+  const userShownName = user?.display_name ?? user?.name ?? '';
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -193,7 +198,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           {user.avatar ? (
             <Img
               src={user.avatar}
-              alt={user.name}
+              alt={userShownName}
               className="w-8 h-8 rounded-full object-cover"
               thumbPreset="xs"
             />
@@ -203,7 +208,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             </Div>
           )}
           <Div className={`${classAtWidth(renderWidth, 'md', 'block', 'hidden')} text-left`}>
-            <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
+            <Div className="font-semibold text-gray-900 dark:text-white text-sm">{userShownName}</Div>
             {user.role && (
               <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>
             )}
@@ -215,7 +220,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         {showProfileMenu && (
           <Div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
             <Div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <Div className="font-semibold text-gray-900 dark:text-white">{user.name}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white">{userShownName}</Div>
               <Div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</Div>
             </Div>
             <Div className="py-2">

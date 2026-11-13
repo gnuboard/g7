@@ -24,7 +24,7 @@ return [
         'hero_banner_delete' => 'Deleted hero banner ":banner_title".:target_note',
         'hero_banner_bulk_show' => 'Set hero banner ":banner_title" to visible.:target_note',
         'hero_banner_bulk_hide' => 'Set hero banner ":banner_title" to hidden.:target_note',
-        'hero_banner_reorder' => 'Reordered :count hero banner(s) in position :position.:target_note',
+        'hero_banner_reorder' => 'Reordered :count hero banner in position :position.:target_note|Reordered :count hero banners in position :position.:target_note',
         'hero_banner_image_update' => 'Replaced the :device image of hero banner ":banner_title".',
         'hero_banner_image_remove' => 'Removed the :device image of hero banner ":banner_title".',
         'hero_banner_video_update' => 'Replaced the :device video of hero banner ":banner_title".',

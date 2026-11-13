@@ -415,10 +415,19 @@ class SeoGlobalActiveExtensionsTest extends TestCase
         $mapper->setRenderModes($config['render_modes']);
 
         $nodes = $this->bundleNodes(['Header', 'Footer']);
-        $render = function (array $global) use ($mapper, $nodes): string {
+        // 헤더 링크는 사이트 메뉴(computed siteMenu)에서 나온다 — 봇 렌더(SeoRenderer::resolveComputed)처럼 번들 식을 먼저 푼다
+        $layout = json_decode((string) file_get_contents(base_path('templates/_bundled/sirsoft-basic/layouts/_user_base.json')), true);
+        $siteMenu = $layout['computed']['siteMenu'] ?? null;
+        $this->assertIsString($siteMenu, '번들 _user_base 에 computed siteMenu 가 없다');
+        $render = function (array $global) use ($mapper, $nodes, $siteMenu): string {
             $global += ['settings' => ['general' => ['site_name' => 'Site']]];
+            $evaluator = new ExpressionEvaluator;
+            // 메뉴 링크 라벨은 `$t('user.nav.…')` 다 — 봇 렌더는 템플릿 번역 사전을 싣는다. 라벨이 빈 링크는 매퍼가 빼므로 사전을 준다.
+            $evaluator->setTranslations(['user' => ['nav' => ['home' => 'Home', 'popular' => 'Popular', 'shop' => 'Shop']]]);
+            $context = ['_global' => $global];
+            $context['_computed'] = ['siteMenu' => $evaluator->evaluateRaw($siteMenu, $context)];
 
-            return $mapper->render(array_values($nodes), ['_global' => $global], new ExpressionEvaluator);
+            return $mapper->render(array_values($nodes), $context, $evaluator);
         };
 
         // 게시판만 켜짐 — 인기글 있음, 쇼핑·정보정책 없음

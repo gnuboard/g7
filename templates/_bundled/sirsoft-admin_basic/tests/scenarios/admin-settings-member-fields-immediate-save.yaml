@@ -1,0 +1,64 @@
+feature: 환경설정 「회원」 탭 가입 항목 표의 즉시 저장 (#490 D1, U1, U5, U6)
+
+description: |
+  가입 항목 표의 스위치(사용, 필수, 가입 표시)와 순서는 누르자마자 항목 API 로 저장하고 `memberFieldDefs` 만 다시 받는다.
+  설정 폼(`_local.form`)과 「변경 있음」(`hasChanges`)은 건드리지 않는다. 건드리면 화면 하단 「저장」과 탭 전환 확인 창이
+  이 표 때문에 켜진다. 좁은 화면 카드도 같은 배선이다.
+
+  요청마다 정의 버전(`fields_version`)을 싣는다. 다른 관리자가 먼저 바꿔 409 `fields_changed` 가 오면 저장하지 않고
+  「다른 관리자가 항목을 바꿨습니다. 다시 불러왔습니다」를 알린 뒤 다시 받는다(U6). 저장이 도는 동안에는 다른 스위치와 손잡이를
+  잠그고, 항목 정의가 도착하면(성공이든 실패든) 푼다. 새 버전이 오기 전에 다음 조작이 나가면 자기 앞선 저장 때문에 거부된다.
+
+  「필수」를 켤 때는 그 항목이 빈 기존 회원 수를 먼저 받는다(U1). 0 보다 크면 확인 창에서 「내 정보 수정 때만 / 로그인하면 바로」를
+  고르게 하고 `required` 와 `require_existing_members` 를 한 요청으로 보낸다. 0 이거나, 끄는 것이거나, 본인 수정 범위가 아니면
+  바로 저장한다.
+
+  순서는 끌어 놓자마자 `PUT …/fields/order` 로 보낸다. 놓은 순서를 임시 값으로 먼저 그리고, 항목 정의가 도착하면 그 값을 버려
+  서버 순서를 따른다(실패하면 서버 순서로 돌아간다). 카드의 「위로」「아래로」 단추는 이웃과 자리를 바꾼 순서를 같은 API 로 보낸다(U5).
+
+axes:
+  case:
+    - switch_saves_once
+    - switch_structure
+    - switch_failure
+    - switch_conflict
+    - busy_lock
+    - card_switch
+    - required_on_no_missing
+    - required_on_with_missing
+    - required_confirm_on_login
+    - required_confirm_on_edit
+    - required_confirm_cancel
+    - required_confirm_conflict
+    - required_off
+    - required_on_admin_scope
+    - required_card
+    - sort_saves
+    - sort_optimistic
+    - sort_failure
+    - sort_conflict
+    - sort_refetch_failure
+    - card_sort
+    - card_move_buttons
+
+effects:
+  - switch_click_sends_one_put_and_keeps_settings_form
+  - table_switches_not_bound_to_settings_form
+  - switch_failure_toasts_and_refetches
+  - stale_table_conflict_toasts_changed_by_other_and_refetches
+  - busy_locks_other_controls_until_definitions_arrive
+  - card_switch_uses_same_wiring
+  - required_on_without_missing_members_saves_directly
+  - required_on_with_missing_members_opens_confirm_before_saving
+  - required_confirm_sends_required_and_existing_members_in_one_request
+  - required_confirm_cancel_saves_nothing
+  - required_off_saves_directly
+  - required_on_admin_scope_saves_directly
+  - sort_end_sends_order_put_with_version
+  - sort_shows_dropped_order_until_definitions_arrive
+  - sort_failure_refetches_and_returns_to_server_order
+  - definitions_fetch_failure_also_clears_busy_and_order
+  - card_sort_and_move_buttons_use_order_api
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-member-fields-immediate-save.test.tsx

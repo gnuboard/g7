@@ -31,7 +31,7 @@
         "directory_unavailable": "사내 계정 서버에 연결할 수 없습니다."
     },
     "consent": {
-        "title": "{{idp}}(으)로 처음 로그인합니다",
+        "title": "{{idp}} 계정으로 처음 로그인합니다",
         "intro": "이 사이트를 처음 이용합니다. 약관에 동의하면 회사 계정 정보로 회원이 만들어지고 바로 로그인합니다.",
         "expired": "가입 확인 시간이 지났습니다. 회사 계정으로 다시 로그인해 주세요.",
         "name": "이름",
@@ -55,7 +55,7 @@
     },
     "buttons": {
         "company_account": "회사 계정으로 로그인",
-        "login_with": "{{idp}}(으)로 로그인"
+        "login_with": "{{idp}} 계정으로 로그인"
     },
     "editor": {
         "data_source": {
@@ -104,7 +104,8 @@
             "copied": "복사했습니다.",
             "copy_failed": "복사하지 못했습니다. 직접 선택해 복사해 주세요.",
             "remove_row": "행 삭제",
-            "search": "검색"
+            "search": "검색",
+            "real_name_sub": "실명 {{name}}"
         },
         "protocols": {
             "oidc": "OpenID Connect",
@@ -337,7 +338,7 @@
                 "emergency_no_password": "비밀번호가 없어 비상 계정으로 쓸 수 없습니다.",
                 "emergency_search_placeholder": "이름 또는 이메일로 회원 검색",
                 "add_emergency": "비상 계정에 추가",
-                "remove_emergency": "{{name}} 을(를) 비상 계정에서 빼기",
+                "remove_emergency": "비상 계정에서 {{name}} 빼기",
                 "session": "세션과 진입",
                 "preview_impact": "영향 미리보기",
                 "impact_users": "이 설정을 켜면 비밀번호로만 로그인하던 회원 {{count}}명이 비밀번호 로그인을 못 합니다.",
@@ -429,7 +430,7 @@
                 "all_idps": "모든 IdP",
                 "all_status": "모든 상태",
                 "all_via": "모든 방식",
-                "search": "회원 이름, 이메일"
+                "search": "회원 이름, 닉네임, 이메일"
             },
             "unlink": "연결 해제",
             "unlink_named": "{{name}} 연결 해제",
@@ -540,7 +541,7 @@
             "title": "회사 계정",
             "forbidden": "회원 연결 열람 권한이 있어야 볼 수 있습니다.",
             "empty": "연결된 회사 계정이 없습니다.",
-            "email_differs": "IdP 이메일과 다름 — IdP 는 {{email}} 을(를) 알려 왔습니다.",
+            "email_differs": "IdP 이메일과 다름 — IdP 가 알려 온 이메일은 {{email}} 입니다.",
             "attributes": "추가 속성",
             "attribute_key": "항목",
             "attribute_value": "값",

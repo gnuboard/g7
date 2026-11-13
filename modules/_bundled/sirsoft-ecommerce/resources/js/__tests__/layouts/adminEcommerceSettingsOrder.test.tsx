@@ -160,7 +160,8 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
          */
         it('카드 섹션이 정해진 순서로 배치된다', () => {
             // 개수가 아니라 id 를 고정한다 — 카드가 추가·제거되면 어느 카드인지 바로 드러난다.
-            expect(tab.children.map((c: any) => c.id)).toEqual([
+            // 맨 아래 주문서 항목 구획(#490)은 조각 참조라 id 대신 조각 이름으로 적는다(즉시 저장 구획이라 폼 카드들 뒤에 둔다).
+            expect(tab.children.map((c: any) => c.id ?? c.partial)).toEqual([
                 'default_pg_card',
                 'cash_receipt_card',
                 'payment_methods_card',
@@ -170,6 +171,7 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
                 'confirmable_statuses_card',
                 'cart_expiry_card',
                 'stock_management_card',
+                '_checkout_fields_table.json',
             ]);
         });
     });

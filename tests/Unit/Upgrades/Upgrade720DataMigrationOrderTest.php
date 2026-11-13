@@ -36,11 +36,16 @@ class Upgrade720DataMigrationOrderTest extends TestCase
             '04_MovePublicStorageBrokenBackupsOutOfDocroot',
             '05_SeedDeployFragmentLedger',
             '06_RegisterTemplateSettingsLayouts',
+            '07_BackfillNicknameNormalized',
+            '08_SeedCoreFieldDefinitions',
+            '09_BackfillMemberSettingsAreas',
         ], $names, '7.2.0 데이터 스텝 목록·순서가 바뀌었다 — 출시 뒤 동결 디렉토리다');
 
         $at = array_flip($names);
         $this->assertSame(0, $at['00_ResyncCoreDeclarations'], '코어 선언 재동기화(스케줄 카탈로그 행 생성)는 맨 앞이어야 한다');
         $this->assertLessThan($at['02_MigrateSitemapScheduleSetting'], $at['00_ResyncCoreDeclarations']);
         $this->assertLessThan($at['03_MigrateGeoipScheduleEnv'], $at['00_ResyncCoreDeclarations']);
+        // 08(코어 회원 항목 보정)은 00 의 재동기화가 행을 만들지 못했을 때만 넣는다 — 00 보다 뒤여야 한다.
+        $this->assertLessThan($at['08_SeedCoreFieldDefinitions'], $at['00_ResyncCoreDeclarations']);
     }
 }

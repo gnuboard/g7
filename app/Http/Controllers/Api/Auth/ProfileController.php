@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api\Auth;
 use App\Enums\AttachmentSourceType;
 use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\CannotDeleteSuperAdminException;
+use App\Exceptions\IdentityVerificationRequiredException;
+use App\Fields\FieldContext;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Requests\Auth\VerifyPasswordRequest;
 use App\Http\Requests\User\ChangePasswordRequest;
+use App\Http\Requests\User\CompleteRequiredFieldsRequest;
+use App\Http\Requests\User\ProfileFieldsRequest;
 use App\Http\Requests\User\UpdateProfileRequest;
 use App\Http\Requests\User\UploadAvatarRequest;
 use App\Http\Resources\UserResource;
@@ -15,12 +19,12 @@ use App\Models\User;
 use App\Services\AttachmentService;
 use App\Services\Auth\ReauthenticationService;
 use App\Services\IdentityPolicyService;
+use App\Services\MemberFieldSchemaService;
 use App\Services\UserLockedFieldsService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -39,6 +43,7 @@ class ProfileController extends AuthBaseController
      * @param  IdentityPolicyService  $identityPolicyService  본인인증 정책 서비스 (정보수정 API 의 비밀번호 변경)
      * @param  ReauthenticationService  $reauthenticationService  민감 작업 재확인 서비스 (비밀번호 또는 이메일 인증번호)
      * @param  UserLockedFieldsService  $lockedFields  회원 칸 수정 잠금 (언어 변경 경로)
+     * @param  MemberFieldSchemaService  $memberFieldSchema  회원 항목 화면 계약 서비스
      */
     public function __construct(
         private UserService $userService,
@@ -46,8 +51,67 @@ class ProfileController extends AuthBaseController
         private IdentityPolicyService $identityPolicyService,
         private ReauthenticationService $reauthenticationService,
         private UserLockedFieldsService $lockedFields,
+        private MemberFieldSchemaService $memberFieldSchema,
     ) {
         parent::__construct();
+    }
+
+    /**
+     * 내 정보 수정·보기 화면이 그릴 회원 항목과 정의 버전을 조회합니다.
+     *
+     * @param  ProfileFieldsRequest  $request  검증된 요청
+     * @return JsonResponse 항목 계약 목록과 정의 버전
+     */
+    public function fields(ProfileFieldsRequest $request): JsonResponse
+    {
+        $user = $this->getCurrentUser();
+        if (! $user) {
+            return $this->unauthorized('auth.unauthenticated');
+        }
+
+        // 추가 정보 입력 화면 — 비어 있는 필수 항목만 준다
+        if ($request->validated('context') === ProfileFieldsRequest::CONTEXT_REQUIRED) {
+            return $this->success('common.success', $this->memberFieldSchema->forRequiredInfo($user));
+        }
+
+        return $this->success('common.success', $this->memberFieldSchema->forProfile($user, $request->validated()));
+    }
+
+    /**
+     * 추가 정보 입력 화면의 값을 저장합니다 (비어 있던 필수 항목만).
+     *
+     * 받는 것이 비어 있던 필수 칸뿐이라 기존 값을 바꾸지 못한다 — 재확인을 요구하지 않는다.
+     * 응답의 `pending_required_fields` 가 빈 배열이면 화면은 원래 가려던 곳으로 보낸다.
+     * 파일 항목처럼 이 요청으로 채우지 못하는 항목이 남아 있으면 그 키가 그대로 온다.
+     *
+     * @param  CompleteRequiredFieldsRequest  $request  검증된 요청
+     * @return JsonResponse 본인 정보와 남은 미입력 항목 키
+     */
+    public function completeRequiredFields(CompleteRequiredFieldsRequest $request): JsonResponse
+    {
+        try {
+            $user = $this->getCurrentUser();
+
+            if (! $user) {
+                return $this->unauthorized('auth.unauthenticated');
+            }
+
+            $validated = $request->validated();
+            $updatedUser = $this->userService->completeRequiredFields($user, $validated);
+
+            $this->logUserActivity('profile.complete_required_fields', ['keys' => array_keys($validated)]);
+
+            $data = (new UserResource($updatedUser))->toAuthArray($request);
+
+            return $this->success('user.required_fields_saved', [
+                'user' => $data,
+                'pending_required_fields' => $data['pending_required_fields'] ?? [],
+            ]);
+        } catch (ValidationException $e) {
+            return $this->validationError($e->errors(), 'user.required_fields_save_failed');
+        } catch (\Exception $e) {
+            return $this->error('user.required_fields_save_failed', 500, $e->getMessage());
+        }
     }
 
     /**
@@ -99,7 +163,8 @@ class ProfileController extends AuthBaseController
                 $this->identityPolicyService->enforceForRequest('core.profile.password_change', $request);
             }
 
-            $updatedUser = $this->userService->updateUser($user, $validated);
+            // 회원 항목은 본인이 고칠 수 있는 항목만 저장한다(관리자만 수정·열람 항목은 보내도 버린다).
+            $updatedUser = $this->userService->updateUser($user, $validated, ['field_surface' => FieldContext::SURFACE_SELF_UPDATE]);
 
             // 비밀번호 3종(새 값·확인·현재 값)은 원문이라 로그에 남기지 않는다.
             $this->logUserActivity('profile.update', Arr::except($validated, ['password', 'password_confirmation', 'current_password']));
@@ -272,7 +337,7 @@ class ProfileController extends AuthBaseController
      * @param  Request  $request  비밀번호 확인 요청 데이터
      * @return JsonResponse 확인 결과를 포함한 JSON 응답
      *
-     * @throws \App\Exceptions\IdentityVerificationRequiredException 비밀번호 없는 회원이 비밀번호로 확인하려 할 때 (428)
+     * @throws IdentityVerificationRequiredException 비밀번호 없는 회원이 비밀번호로 확인하려 할 때 (428)
      */
     public function verifyPassword(VerifyPasswordRequest $request): JsonResponse
     {

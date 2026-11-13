@@ -48,7 +48,8 @@
             <!-- 2단계 인증 사이트도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에 따라
                  해제 사실이 보이기도 하고 안 보이기도 한다. -->
             <toast if="{{!response.password_change_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-            <navigate if="{{!response.password_change_required}}" path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
+            <!-- 필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — 로그인 화면의 applyLoginResult 최종 이동과 같은 식이다(이 성공 지점은 그 액션을 거치지 않는다). -->
+            <navigate if="{{!response.password_change_required}}" path="{{((response.pending_required_fields ?? []).length > 0 &amp;&amp; (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}" fallbackPath="/"/>
           </success>
           <fail>
             <!-- 423 잠금은 1단계와 같은 문구 규칙을 따르도록 loginErrors 도 함께 싣는다. -->
@@ -65,7 +66,8 @@
             <action handler="clearGuestOrderToken"/>
             <toast type="success" message="$t:auth.password_change.changed_toast"/>
             <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-            <navigate path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
+            <!-- 필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — applyLoginResult 최종 이동과 같은 식. -->
+            <navigate path="{{((response.pending_required_fields ?? []).length > 0 &amp;&amp; (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}" fallbackPath="/"/>
           </success>
           <fail>
             <set-state if="{{error.errors?.challenge_id}}" target="global" :isLoggingIn="false" :passwordChange="null" loginError="{{$t('auth.password_change.restart_required')}}" :loginErrors="null"/>
@@ -99,7 +101,7 @@
       <input aria-label="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier') : $t('auth.email')}}" type="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? 'text' : 'email'}}" name="email" placeholder="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier_placeholder') : $t('auth.email_placeholder')}}" class="{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}" :required="true" disabled="{{_global.isLoggingIn}}">
         <on event="onBlur">
           <!-- 이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 그 식별자의 로그인 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신
-               「…(으)로 계속」 버튼을 보인다. 판정은 도메인으로만 하므로 회원 유무가 드러나지 않는다. 실패하면 지금 화면 그대로다. -->
+               「… 계정으로 계속」 버튼을 보인다. 판정은 도메인으로만 하므로 회원 유무가 드러나지 않는다. 실패하면 지금 화면 그대로다. -->
           <sequence if="{{!!$event.target.value &amp;&amp; $event.target.value !== _local.discoveryFor}}">
             <set-state target="local" discoveryFor="{{$event.target.value}}"/>
             <api-call target="/api/auth/login/discover" method="POST">
@@ -293,7 +295,8 @@
                   <action handler="clearGuestOrderToken"/>
                   <toast type="info" message="$t:auth.password_change.postponed_toast|date={{response.postponed_until | date}}"/>
                   <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-                  <navigate path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
+                  <!-- 필수 항목이 비어 있는 회원은 추가 정보 입력 화면으로 — applyLoginResult 최종 이동과 같은 식. -->
+                  <navigate path="{{((response.pending_required_fields ?? []).length > 0 &amp;&amp; (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}" fallbackPath="/"/>
                 </success>
                 <fail>
                   <set-state if="{{error.errors?.challenge_id}}" target="global" :isLoggingIn="false" :passwordChange="null" loginError="{{$t('auth.password_change.restart_required')}}" :loginErrors="null"/>

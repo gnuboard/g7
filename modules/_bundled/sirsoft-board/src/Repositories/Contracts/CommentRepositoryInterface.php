@@ -193,6 +193,18 @@ interface CommentRepositoryInterface
     public function forceDeleteByBoardId(int $boardId): int;
 
     /**
+     * 게시판의 비회원 댓글 ID(휴지통 포함)를 청크 단위로 순회하며 콜백에 전달합니다.
+     *
+     * 게시판을 영구 삭제하기 전에 비회원 댓글에 딸린 항목 값(이메일 등)을 파기할 때 씁니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $size  청크 크기
+     * @param  callable  $callback  청크마다 호출될 콜백 (int[] $commentIds)
+     * @return void 반환값 없음
+     */
+    public function eachGuestIdChunkByBoardId(int $boardId, int $size, callable $callback): void;
+
+    /**
      * 게시글 ID 기준으로 살아있는 댓글을 cascade 로 일괄 소프트 삭제합니다.
      *
      * 게시글 삭제 연쇄로 지워졌음을 trigger_type='cascade' 로 마킹합니다.

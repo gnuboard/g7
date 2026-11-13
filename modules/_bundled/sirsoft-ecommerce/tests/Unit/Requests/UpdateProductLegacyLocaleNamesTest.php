@@ -109,9 +109,18 @@ class UpdateProductLegacyLocaleNamesTest extends ModuleTestCase
      */
     private function requiresSiteLocale(\Illuminate\Validation\Validator $v, string $key): bool
     {
-        $expected = __('validation.translatable.current_locale_required', ['locale' => 'ko']);
+        // 규칙은 칸 이름이 있으면 「칸의 언어(코드) 값」, 없으면 「언어(코드) 값」 문구를 고른다(LocaleRequiredTranslatable).
+        $params = ['locale' => 'ko', 'language' => ((array) config('app.locale_names', []))['ko'] ?? 'ko'];
+        $unnamed = __('validation.translatable.current_locale_required_unnamed', $params);
+        $named = '/^'.str_replace(preg_quote(':attribute', '/'), '.+', preg_quote(__('validation.translatable.current_locale_required', $params), '/')).'$/u';
 
-        return in_array($expected, $v->errors()->get($key), true);
+        foreach ($v->errors()->get($key) as $message) {
+            if ($message === $unnamed || preg_match($named, $message) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

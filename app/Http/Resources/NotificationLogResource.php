@@ -24,21 +24,21 @@ class NotificationLogResource extends BaseApiResource
             'recipient_identifier' => $this->getValue('recipient_identifier'),
             'recipient_name' => $this->getValue('recipient_name'),
             'sender_user_id' => $this->getValue('sender_user_id'),
-            'sender' => $this->whenLoaded('senderUser', function () {
+            'sender' => $this->whenLoaded('senderUser', function () use ($request) {
                 $user = $this->resource->senderUser;
 
                 return $user ? [
                     'uuid' => $user->uuid,
-                    'name' => $user->name,
+                    ...$this->memberNameFields($user, $request),
                     'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
                 ] : null;
             }),
-            'recipient' => $this->whenLoaded('recipientUser', function () {
+            'recipient' => $this->whenLoaded('recipientUser', function () use ($request) {
                 $user = $this->resource->recipientUser;
 
                 return $user ? [
                     'uuid' => $user->uuid,
-                    'name' => $user->name,
+                    ...$this->memberNameFields($user, $request),
                     'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
                 ] : null;
             }),

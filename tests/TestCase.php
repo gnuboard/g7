@@ -224,6 +224,19 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.ip_restriction_enabled' => false,
             'g7_settings.core.security.admin_allowed_ips' => [],
             'g7_settings.core.security.ip_restriction_rules' => [],
+            // 닉네임 정책(#490)도 꺼 둔다. 개발 사이트에서 중복 금지나 금지어를 켜 두면 회원을 만드는 테스트가
+            // 그 환경에서만 닉네임 검증 오류로 깨진다. 정책을 검증하는 테스트는 이 세 키를 자기 테스트에서 명시한다.
+            'g7_settings.core.member.nickname_unique' => false,
+            'g7_settings.core.member.nickname_banned_words' => [],
+            'g7_settings.core.member.nickname_change_interval_days' => 0,
+            // 표시 이름 설정(#490)도 기본값으로 고정한다. 개발 사이트에서 영역을 닉네임으로 바꿔 두면 닉네임 항목이 필수로 잠겨
+            // 회원을 만드는 테스트가 그 환경에서만 깨지고, 응답의 `display_name` 값도 달라진다. 표시 이름을 검증하는 테스트는 자기 테스트에서 명시한다.
+            'g7_settings.core.member.display_name_selectable_kinds' => ['name'],
+            'g7_settings.core.member.display_name_member_default_kind' => 'name',
+            'g7_settings.core.member.display_name_areas' => [
+                'core:site' => ['mode' => 'fixed', 'kind' => 'name'],
+                'core:admin' => ['mode' => 'fixed', 'kind' => 'name'],
+            ],
             // 사이트 주소도 고정한다. 부팅 시 개발 사이트의 `general.site_url` 이 `app.url` 을 덮어쓰는데,
             // 리다이렉트·콜백·링크·사이트맵 주소는 요청 Host 가 아니라 이 값으로 만들어지므로(SiteUrl)
             // 테스트 요청(http://localhost)과 다른 개발 사이트 주소가 결과에 섞인다. 다른 주소를 검증하는

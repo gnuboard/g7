@@ -987,7 +987,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 (`CouponIssueResource`) + 
 | is_expired | boolean | `false` | 만료 여부 |
 | is_usable | boolean | `true` | 현재 사용 가능 여부 |
 | is_cancellable | boolean | `true` | 관리자 취소 가능 여부 (available 이면서 미만료일 때만 true) |
-| user_name | string | `홍길동` | 발급 대상 회원 이름 (user 관계 로드 시) |
+| user_name | string | `홍길동` | 발급 대상 회원의 표시 이름 (user 관계 로드 시). 실명은 조건이 맞는 관리자 응답에만 `user_real_name` 으로 더해진다([회원 이름과 표시 이름](README.md#회원-이름과-표시-이름)) |
 
 `data.pagination` 은 `current_page`, `last_page`, `per_page`, `total`, `from`, `to`, `has_more_pages` 를 포함합니다.
 

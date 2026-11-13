@@ -37,6 +37,7 @@ use Modules\Sirsoft\Ecommerce\Models\Export;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportDownloadRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ExportAccess;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -401,7 +402,8 @@ class ExportService
                 'format' => $data['format'],
                 'status' => ExportStatusEnum::PENDING->value,
                 'requested_by' => $user->id,
-                'requester_name_snapshot' => Str::limit((string) $user->name, 97),
+                // 요청 시점의 이커머스 관리자 영역 표시 이름을 남긴다(기록물 — 그 뒤 설정이나 회원 이름이 바뀌어도 이 값은 그대로다)
+                'requester_name_snapshot' => Str::limit((string) MemberDisplayName::name($user, MemberDisplayName::AREA_ADMIN), 97),
                 'options' => [
                     'column_mode' => $data['column_mode'],
                     'screen_columns' => array_values($data['screen_columns'] ?? []),
@@ -1042,7 +1044,8 @@ class ExportService
             $this->downloads->create([
                 'export_id' => $export->id,
                 'user_id' => $user->id,
-                'user_name_snapshot' => Str::limit((string) $user->name, 97),
+                // 받는 시점의 이커머스 관리자 영역 표시 이름을 남긴다(기록물)
+                'user_name_snapshot' => Str::limit((string) MemberDisplayName::name($user, MemberDisplayName::AREA_ADMIN), 97),
                 'ip_address' => $ip,
                 'user_agent' => $userAgent !== null ? Str::limit($userAgent, 497) : null,
                 'downloaded_at' => CarbonImmutable::now(),
@@ -1260,7 +1263,8 @@ class ExportService
      */
     private function fallbackLocale(): string
     {
-        $fallback = (string) config('app.fallback_locale', 'ko');
+        // 다국어 값의 대체 언어는 사이트 기본 언어다(#148 D7 — app.fallback_locale 은 번역 문구 대체용 env 고정값)
+        $fallback = (string) config('app.site_locale', config('app.locale'));
         $locales = $this->dataLocales();
 
         return in_array($fallback, $locales, true) ? $fallback : $locales[0];

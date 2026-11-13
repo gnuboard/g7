@@ -12,6 +12,9 @@
      값은 각 확장이 자기 네임스페이스로 등록한 핸들러로 `_local.userFilterExtraQuery` 배열에 모으고,
      이 영역의 검색이 그 배열을 `ext_filters[]` 로 보낸다 — 확장 조각은 이 템플릿의 핸들러에 기대지 않는다.
 
+  ⓔ 회원 항목 조건 둘(필수 항목 미입력, 닉네임 중복)은 켜고 끄는 값이라 행마다 체크박스 하나다.
+     운영자가 「회원 검색」으로 켠 추가 항목은 검색 대상 선택지 뒤에, 「회원 목록 열」로 켠 항목은 열 선택기에 붙는다.
+
   날짜 축이 **넷**이다 — 가입일(`created*`), 최근 로그인(`lastLogin*`), 휴면 전환일(`dormant*`),
   상태 변경일(`statusChanged*`, 탈퇴/차단 중 고른 쪽). 빠른 기간 버튼은 가입일·최근 로그인에만 있다.
   날짜 칸은 `<input type="date">` 라 빠른 기간 핸들러를 `format="date"` 로 부른다. -->
@@ -525,24 +528,57 @@
           </label>
         </div>
       </div>
+      <div data-ref="required_missing_filter_row" data-slot="{{(_local.visibleFilters || []).includes('requiredMissing') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="13" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('requiredMissing')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.list_member_fields.filter_required_missing">
+          <on type="change">
+            <!-- 필수 항목 미입력 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('requiredMissing') ? (_local.visibleFilters || []).filter(f => f !== 'requiredMissing') : [...(_local.visibleFilters || []), 'requiredMissing']}}"/>
+          </on>
+        </input>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.list_member_fields.filter_required_missing</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="checkbox" name="requiredMissing" class="checkbox" checked="{{!!_local.filter.requiredMissing}}">
+              <on type="change">
+                <!-- 필수 항목 미입력. 켜면 운영자가 필수로 둔 항목 중 하나라도 비어 있는 회원만 남는다(주소 인자 required_missing=1). 어떤 항목이 비었는지는 표의 「미입력」 열이 보인다. -->
+                <set-state target="_local" filter.requiredMissing="{{!_local.filter.requiredMissing}}"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.list_member_fields.filter_required_missing_only</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="nickname_duplicate_filter_row" data-slot="{{(_local.visibleFilters || []).includes('nicknameDuplicate') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="14" class="flex flex-row gap-2 items-center">
+        <responsive on="portable" class="flex gap-2 flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('nicknameDuplicate')}}" aria-label="$t:admin.users.filter.show_in_basic|label=$t:admin.users.list_member_fields.filter_nickname_duplicate">
+          <on type="change">
+            <!-- 닉네임 중복 필터 노출 스위치. -->
+            <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('nicknameDuplicate') ? (_local.visibleFilters || []).filter(f => f !== 'nicknameDuplicate') : [...(_local.visibleFilters || []), 'nicknameDuplicate']}}"/>
+          </on>
+        </input>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.users.list_member_fields.filter_nickname_duplicate</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="flex-center gap-1 cursor-pointer">
+            <input type="checkbox" name="nicknameDuplicate" class="checkbox" checked="{{!!_local.filter.nicknameDuplicate}}">
+              <on type="change">
+                <!-- 닉네임 중복. 켜면 닉네임이 다른 회원과 겹치는 회원만 남는다(주소 인자 nickname_duplicate=1). 닉네임 정책 화면의 「겹치는 회원 보기」가 이 조건을 켠 채 들어온다. -->
+                <set-state target="_local" filter.nicknameDuplicate="{{!_local.filter.nicknameDuplicate}}"/>
+              </on>
+            </input>
+            <span class="text-body">$t:admin.users.list_member_fields.filter_nickname_duplicate_only</span>
+          </label>
+        </div>
+      </div>
     </div>
     <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-4">
       <responsive on="portable" class="row-stack mb-4"/>
       <div data-ref="search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
         <responsive on="portable" class="flex gap-2 w-full"/>
-        <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.filter.searchField || 'all'}}">
+        <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.filter.searchField || 'all'}}" options="{{[{ value: 'all', label: '$t:admin.users.search_fields.all' }, { value: 'name', label: '$t:admin.users.search_fields.name' }, { value: 'nickname', label: '$t:admin.users.search_fields.nickname' }, { value: 'email', label: '$t:admin.users.search_fields.email' }, { value: 'contact', label: '$t:admin.users.search_fields.contact' }, { value: 'identifier', label: '$t:admin.users.search_fields.identifier' }, { value: 'admin_memo', label: '$t:admin.users.search_fields.admin_memo' }, ...(users?.data?.member_fields?.search_fields ?? [])]}}">
           <responsive on="portable" class="w-24"/>
-          <options>
-            <option value="all">$t:admin.users.search_fields.all</option>
-            <option value="name">$t:admin.users.search_fields.name</option>
-            <option value="nickname">$t:admin.users.search_fields.nickname</option>
-            <option value="email">$t:admin.users.search_fields.email</option>
-            <option value="contact">$t:admin.users.search_fields.contact</option>
-            <option value="identifier">$t:admin.users.search_fields.identifier</option>
-            <option value="admin_memo">$t:admin.users.search_fields.admin_memo</option>
-          </options>
           <on type="change">
-            <!-- 검색어를 어느 칸에서 찾을지. 회원번호/고유ID 는 LIKE 가 아니라 정확 일치다(숫자면 번호, UUID 면 고유ID). -->
+            <!-- 검색어를 어느 칸에서 찾을지. 회원번호/고유ID 는 LIKE 가 아니라 정확 일치다(숫자면 번호, UUID 면 고유ID). 고정 선택지 일곱 뒤에 운영자가 「회원 검색」으로 켠 추가 항목이 붙는다(값은 custom:{항목 키}, 같은 filters[0][field] 로 나간다). -->
             <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
           </on>
         </select>
@@ -559,14 +595,17 @@
       </div>
       <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
         <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
-        <!-- 보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다 -->
-        <column-selector data-type="composite" data-ref="column_selector" id="admin_user_list_columns" visibleColumns="{{_global.visibleColumns_admin_users}}" triggerLabel="$t:common.column_selector" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+        <!-- 보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다.
+             운영자가 켠 추가 항목 열은 표와 같은 computed(memberFieldColumns)를 같은 자리(닉네임 뒤)에 받는다. 처음 보는 항목 열은 선택기가 스스로 켠다 -->
+        <column-selector data-type="composite" data-ref="column_selector" id="admin_user_list_columns" visibleColumns="{{_global.visibleColumns_admin_users}}" dynamicColumns="{{_computed.memberFieldColumns ?? []}}" dynamicColumnsInsertAfter="nickname" triggerLabel="$t:common.column_selector" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
           <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
           <prop name="columns">
             <item field="name" header="$t:admin.users.columns.name" :required="true"/>
             <item field="role" header="$t:admin.users.columns.role" :required="true"/>
             <item field="email" header="$t:admin.users.columns.email" :required="true"/>
+            <item field="display_name" header="$t:admin.users.list_member_fields.display_name_column"/>
             <item field="nickname" header="$t:admin.users.columns.nickname"/>
+            <item field="pending_required_fields" header="$t:admin.users.list_member_fields.pending_column"/>
             <item field="country" header="$t:admin.users.columns.country"/>
             <item field="language" header="$t:admin.users.columns.language"/>
             <item field="status" header="$t:admin.users.columns.status"/>
@@ -654,6 +693,8 @@
                   <field name="country" value=""/>
                   <field name="emailVerified" value="all"/>
                   <field name="identityVerified" value="all"/>
+                  <field name="requiredMissing" :value="false"/>
+                  <field name="nicknameDuplicate" :value="false"/>
                 </field>
               </set-state>
               <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
@@ -705,6 +746,8 @@
                 <field name="country" value=""/>
                 <field name="emailVerified" value="all"/>
                 <field name="identityVerified" value="all"/>
+                <field name="requiredMissing" :value="false"/>
+                <field name="nicknameDuplicate" :value="false"/>
               </field>
             </set-state>
             <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->

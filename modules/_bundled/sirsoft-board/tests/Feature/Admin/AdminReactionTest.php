@@ -228,7 +228,8 @@ class AdminReactionTest extends BoardTestCase
         $search('target_content', '베타본문')->assertOk()->assertJsonCount(1, 'data.data');
         $search('target_content', '감마댓글')->assertOk()->assertJsonCount(1, 'data.data');
         $search('member', '반응회원을')->assertOk()->assertJsonCount(2, 'data.data');
-        $search('author_name', '작성자갑')->assertOk()->assertJsonCount(1, 'data.data');
+        // 작성자 검색은 회원이 쓴 글과 댓글도 찾는다 — 글과 그 회원이 쓴 댓글의 반응이 함께 나온다
+        $search('author_name', '작성자갑')->assertOk()->assertJsonCount(2, 'data.data');
         $search('all', '알파제목')->assertOk()->assertJsonCount(1, 'data.data');
         $search('target_title', '없는키워드')->assertOk()->assertJsonCount(0, 'data.data');
     }

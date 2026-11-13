@@ -56,9 +56,9 @@
           <p class="sso:text-sm sso:text-gray-600 sso:dark:text-gray-400">$t:sirsoft-sso.consent.intro</p>
           <div class="sso:grid sso:grid-cols-3 sso:gap-x-4 sso:gap-y-1 sso:text-sm">
             <span data-if="{{!!_global.ssoPending?.name}}" class="sso:font-medium sso:text-gray-700 sso:dark:text-gray-300">$t:sirsoft-sso.consent.name</span>
-            <span data-if="{{!!_global.ssoPending?.name}}" class="sso:col-span-2 sso:text-gray-900 sso:dark:text-white">{{_global.ssoPending?.name}}</span>
+            <span data-if="{{!!_global.ssoPending?.name}}" class="sso:col-span-2 sso:min-w-0 sso:break-all sso:text-gray-900 sso:dark:text-white">{{_global.ssoPending?.name}}</span>
             <span data-if="{{!!_global.ssoPending?.email}}" class="sso:font-medium sso:text-gray-700 sso:dark:text-gray-300">$t:sirsoft-sso.consent.email</span>
-            <span data-if="{{!!_global.ssoPending?.email}}" class="sso:col-span-2 sso:text-gray-900 sso:dark:text-white">{{_global.ssoPending?.email}}</span>
+            <span data-if="{{!!_global.ssoPending?.email}}" class="sso:col-span-2 sso:min-w-0 sso:break-all sso:text-gray-900 sso:dark:text-white">{{_global.ssoPending?.email}}</span>
           </div>
           <div class="sso:space-y-2">
             <div class="sso:flex sso:items-center sso:gap-2">

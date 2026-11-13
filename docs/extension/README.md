@@ -86,6 +86,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 |------|------|
 | [sample-extensions.md](sample-extensions.md) | 학습용 최소 샘플 확장 4종 (gnuboard7-hello_*) — 계층 1:1 비교 레퍼런스 |
 | [admin-template-contract.md](admin-template-contract.md) | 관리자 템플릿 교체 계약 — 번들 확장 관리자 화면이 기대는 컴포넌트·공용 문구 키·조각 앵커, 선택 계약 확장 CSS 덮기 |
+| [user-template-contract.md](user-template-contract.md) | 사용자 템플릿 계약: 가입, 내 정보 화면의 앵커 5종, 회원 항목 확장점, 항목 그리기(공용 조각, 동의 구획, 추가 정보 입력 유도) |
 
 ### 템플릿 시스템
 
@@ -103,6 +104,8 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [permissions.md](permissions.md) | Role, Permission, 자동 관리 |
+| [display-name.md](display-name.md) | 표시 이름: 종류, 영역, 계산기, 검색과 정렬, 확장 등록 |
+| [field-sets.md](field-sets.md) | 항목 집합과 항목 선언: 집합, 항목, 유형, 핸들러 저장, 동기화, 기존 회원 입력 요구, 본인인증 값 연결 |
 | [menus.md](menus.md) | 메뉴 권한, 시더 |
 
 ### 확장 문서화

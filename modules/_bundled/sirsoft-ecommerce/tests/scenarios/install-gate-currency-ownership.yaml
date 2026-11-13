@@ -5,14 +5,14 @@ description: |
   모듈 소유이면, 모듈 미설치(비활성) 시 코어 회원 화면·가입 흐름·권한 목록에서 통화가
   저절로 사라진다 — 코어를 따로 분기할 필요가 없다.
 
-  기존 회귀 테스트(InstallGateCurrencyTest)를 사후 등재한 매니페스트다. 관리자 통화 필드
-  판정은 주입 순서가 아니라 코어 확장 슬롯(extension_form_content) 주입 존재로 본다 —
-  같은 확장 파일이 탭 목록(user_form_tabs)에도 props 를 얹기 때문이다.
+  기존 회귀 테스트(InstallGateCurrencyTest)를 사후 등재한 매니페스트다. 관리자 통화 필드는
+  모듈이 회원 항목(core.user)으로 선언한다(#490) — 코어 폼에 박힌 칸도, 따로 주입하는 조각도 없고
+  모듈이 꺼지면 항목 등록소가 그 선언을 걸러 낸다.
 
 axis_notes:
   asset: |
     hook_listeners = 가입 시 기본 통화 부여·회원 응답 통화 주입 리스너.
-    admin_form_extension = 관리자 회원 폼의 통화 필드(layout_extension JSON).
+    admin_form_extension = 관리자 회원 폼의 통화 필드(모듈의 회원 항목 선언).
     user_profile_migration = 회원별 통화를 담는 ecommerce_user_profiles 테이블.
     permission = 회원 통화 관리 권한 카테고리(user-currency).
 
@@ -21,7 +21,7 @@ axes:
 
 effects:
   - currency_listeners_registered_by_module
-  - admin_currency_field_injected_via_extension_slot
+  - admin_currency_field_declared_as_module_member_field
   - user_profile_table_created_by_module_migration
   - user_currency_permission_defined_by_module
 

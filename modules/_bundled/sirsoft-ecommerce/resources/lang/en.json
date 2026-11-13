@@ -17,6 +17,7 @@
             "availableChannels": "Available Channels",
             "brands": "Brands",
             "carriers": "Carriers",
+            "checkoutFieldDefs": "Checkout field definitions",
             "categories": "Categories",
             "commonInfos": "Common Infos",
             "common_infos": "Common Infos",
@@ -136,6 +137,9 @@
         "mileage_transactions": {
             "$partial": "partial/en/admin/mileage_transactions.json"
         },
+        "common": {
+            "real_name_sub": "Real name {{name}}"
+        },
         "user_mileage": {
             "tab_label": "Mileage",
             "title": "Mileage",
@@ -145,20 +149,6 @@
             "expiring_soon": "Expiring Soon",
             "view_history": "View this member's history",
             "disabled_notice": "Mileage is disabled. You can enable it in settings."
-        },
-        "user_currency": {
-            "title": "Payment Currency",
-            "description": "Set the currency used for this member's orders and payments.",
-            "save_button": "Save",
-            "saved": "Member payment currency updated.",
-            "save_failed": "Failed to update member payment currency."
-        },
-        "user_shipping_country": {
-            "title": "Shipping Country",
-            "description": "Set this member's default shipping country.",
-            "save_button": "Save",
-            "saved": "Member shipping country updated.",
-            "save_failed": "Failed to update member shipping country."
         },
         "user_filter": {
             "title": "Shop conditions",
@@ -481,16 +471,6 @@
     },
     "user": {
         "$partial": "partial/en/user.json"
-    },
-    "auth": {
-        "register_currency": {
-            "label": "Payment currency",
-            "hint": "Currency used for orders and payments. You can change it later in your profile."
-        },
-        "register_shipping_country": {
-            "label": "Shipping country",
-            "hint": "Your default shipping country. You can change it later in your profile."
-        }
     },
     "user_mileage": {
         "title": "My Mileage",

@@ -1,0 +1,20 @@
+feature: member_profile_field_schema
+
+description: |
+  내 정보 화면 항목 조회(GET /api/me/fields)가 본인에게 맞는 항목 계약을 주는지. 고칠 수 있는 항목, 볼 수만 있는 항목,
+  잠긴 칸과 그 사유(확장 잠금, 관리자만 수정, 닉네임 변경 주기), 보기용 문자열이 계약이다.
+
+coverage_strategy: full
+
+axes:
+  case: [defaults, edit_scope, extension_lock, nickname_interval, disabled]
+
+effects:
+  - profile_schema_lists_self_editable_core_fields
+  - profile_schema_marks_admin_edit_readonly_and_hides_admin_only
+  - profile_schema_carries_lock_reasons
+  - profile_schema_locks_nickname_within_change_interval
+  - profile_schema_omits_disabled_fields
+
+test_files:
+  - tests/Feature/User/ProfileFieldsApiTest.php

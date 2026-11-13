@@ -137,6 +137,10 @@
       "label": "トグル",
       "default_label": "トグル"
     },
+    "member_field_input": {
+      "label": "会員項目入力欄",
+      "default_label": "項目"
+    },
     "form_field": {
       "label": "フォームフィールド",
       "default_label": "フィールド名"

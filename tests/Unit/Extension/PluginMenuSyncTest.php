@@ -4,6 +4,7 @@ namespace Tests\Unit\Extension;
 
 use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractPlugin;
+use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\Menu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,11 +20,15 @@ use Tests\TestCase;
 class MenuSyncProbePlugin extends AbstractPlugin
 {
     /**
+     * 선언할 관리자 메뉴를 받아 스텁을 만듭니다.
+     *
      * @param  array<int, array<string, mixed>>  $menus  선언할 관리자 메뉴
      */
     public function __construct(private array $menus = []) {}
 
     /**
+     * 식별자를 고정하는 가상 경로를 반환합니다.
+     *
      * @return string 식별자를 결정하는 가상 경로
      */
     protected function getPluginPath(): string
@@ -32,6 +37,8 @@ class MenuSyncProbePlugin extends AbstractPlugin
     }
 
     /**
+     * 생성자로 받은 관리자 메뉴 선언을 반환합니다.
+     *
      * @return array<int, array<string, mixed>> 관리자 메뉴 선언
      */
     public function getAdminMenus(): array
@@ -58,6 +65,7 @@ class PluginMenuSyncTest extends TestCase
      * 파일 무접촉으로 메뉴 동기화 메서드만 호출합니다.
      *
      * @param  object  $plugin  대상 플러그인 스텁
+     * @return void 반환값 없음
      */
     private function syncMenus(object $plugin): void
     {
@@ -70,6 +78,7 @@ class PluginMenuSyncTest extends TestCase
      * getAdminMenus 를 선언한 플러그인 스텁을 만듭니다.
      *
      * @param  array<int, array<string, mixed>>  $menus  선언할 메뉴 목록
+     * @return object 플러그인 스텁
      */
     private function makePlugin(array $menus): object
     {
@@ -83,11 +92,12 @@ class PluginMenuSyncTest extends TestCase
      * 반영되지 않으므로, 두 경로 모두 소스에서 도출해 비교한다.
      *
      * @param  string  $method  대상 메서드명
+     * @param  class-string  $manager  메서드를 가진 매니저 클래스
      * @return array<int, string> 호출된 메서드명 목록 (중복 제거)
      */
-    private function selfCallsIn(string $method): array
+    private function selfCallsIn(string $method, string $manager = PluginManager::class): array
     {
-        $reflection = new ReflectionMethod(PluginManager::class, $method);
+        $reflection = new ReflectionMethod($manager, $method);
 
         $source = implode('', array_slice(
             file($reflection->getFileName()),
@@ -113,6 +123,8 @@ class PluginMenuSyncTest extends TestCase
      * 추가될 때 설치 경로에 반영하지 않으면 그 사실이 여기서 드러난다.
      *
      * @effects plugin_install_path_syncs_declared_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_install_path_covers_every_declarative_sync_step(): void
     {
@@ -129,9 +141,40 @@ class PluginMenuSyncTest extends TestCase
     }
 
     /**
+     * 모듈 설치 경로도 선언형 산출물 동기화 단계를 빠짐없이 지나는지 (회귀)
+     *
+     * 항목 선언 동기화가 syncDeclarativeArtifacts 에만 있으면 새로 설치한 모듈의 회원 항목
+     * (게시판 알림 칸, 이커머스 통화와 배송 국가)은 다음 업데이트 전까지 만들어지지 않는다.
+     * 가입 화면과 내 정보에 그 칸이 없고 예외도 경고도 남지 않는다.
+     *
+     * @effects module_install_path_syncs_every_declared_artifact
+     *
+     * @return void 반환값 없음
+     */
+    public function test_module_install_path_covers_every_declarative_sync_step(): void
+    {
+        $required = array_diff(
+            $this->selfCallsIn('syncDeclarativeArtifacts', ModuleManager::class),
+            ['cleanupStaleModuleEntries'],
+        );
+
+        $missing = array_values(array_diff($required, $this->selfCallsIn('installModule', ModuleManager::class)));
+
+        $this->assertSame(
+            [],
+            $missing,
+            'installModule() 이 선언형 산출물 동기화 단계를 건너뛰었다: '.implode(', ', $missing),
+        );
+    }
+
+    /**
+     * 선언한 관리자 메뉴가 첫 동기화에서 만들어진다.
+     *
      * @scenario declaration=declared, run=first_run
      *
      * @effects plugin_admin_menu_synced_on_declarative_sync
+     *
+     * @return void 반환값 없음
      */
     public function test_declared_admin_menu_is_created(): void
     {
@@ -159,6 +202,8 @@ class PluginMenuSyncTest extends TestCase
      * @scenario declaration=declared, run=repeated_run
      *
      * @effects plugin_admin_menu_sync_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_repeated_sync_does_not_duplicate_menu(): void
     {
@@ -181,6 +226,8 @@ class PluginMenuSyncTest extends TestCase
      * @scenario declaration=not_declared, run=first_run
      *
      * @effects plugin_without_menu_declaration_creates_nothing
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_without_menus_creates_nothing(): void
     {

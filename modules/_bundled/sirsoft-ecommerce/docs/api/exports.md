@@ -431,7 +431,7 @@ _단건 응답: 만든 작업 (`ExportResource`) 에 지금의 설치 경고 `wa
 | format | string | `csv` | 파일 형식 키 |
 | status | string | `pending` | 진행 상황 (`pending` 대기, `processing` 진행중, `completed` 완료, `failed` 실패, `expired` 만료). 새 작업은 `pending` |
 | status_label | string | `대기` | 진행 상황 라벨 |
-| requester | object | `{"name":"관리자","email":"admin@example.com","uuid":"…"}` | 요청자 `{name, email, uuid}`. 계정이 지워졌으면 요청 때 이름을 쓰고 `uuid` 는 `null`. 이메일은 노출 게이트를 통과할 때만 |
+| requester | object | `{"name":"관리자","email":"admin@example.com","uuid":"…"}` | 요청자 `{name, email, uuid}`. `name` 은 요청 때 남긴 이름 그대로다(그 시점의 관리자 영역 표시 이름. 회원의 지금 이름이나 표시 이름 설정을 따라 바뀌지 않는다). 계정이 지워졌으면 `uuid` 는 `null`. 이메일은 노출 게이트를 통과할 때만 |
 | file_name | string\|null | `null` | 완성 파일명 (완료 전 `null`) |
 | file_size | integer\|null | `null` | 파일 크기(바이트, 완료 전 `null`) |
 | file_size_label | string\|null | `null` | 파일 크기 표기 (완료 전 `null`) |
@@ -874,7 +874,7 @@ _단건 응답: `data` 객체의 필드._
 | format | string | `csv` | 파일 형식 키 (csv, 확장 형식 키) |
 | status | string | `completed` | 상태 값 (도메인별 상태 집합 — 사람이 읽는 라벨은 status_label, UI 변형은 status_variant 참조) |
 | status_label | string | `완료` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
-| requester | object | `{"name":"관리자","email":"admin@example.com","uuid":"a3171880…` | 요청자 `{name, email, uuid}`. 계정이 지워졌으면 요청 때 이름을 쓰고 `uuid` 는 `null`. 이메일은 노출 게이트를 통과할 때만 |
+| requester | object | `{"name":"관리자","email":"admin@example.com","uuid":"a3171880…` | 요청자 `{name, email, uuid}`. `name` 은 요청 때 남긴 이름 그대로다(그 시점의 관리자 영역 표시 이름. 회원의 지금 이름이나 표시 이름 설정을 따라 바뀌지 않는다). 계정이 지워졌으면 `uuid` 는 `null`. 이메일은 노출 게이트를 통과할 때만 |
 | file_name | string | `주문내역_20261028_230249.csv` | 내려받을 때의 파일명 |
 | file_size | integer | `33484` | 파일 크기 (바이트) |
 | file_size_label | string | `32.7 KB` | `file_size` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
@@ -1320,7 +1320,7 @@ _단건 응답: 새로 만든 작업 (`ExportResource`). 필드는 `POST /admin/
 | format | string | `csv` | 파일 형식 키 |
 | status | string | `pending` | 진행 상황 (`pending` 대기, `processing` 진행중, `completed` 완료, `failed` 실패, `expired` 만료). 새 작업은 `pending` |
 | status_label | string | `대기` | 진행 상황 라벨 |
-| requester | object | `{"name":"관리자","email":"admin@example.com","uuid":"…"}` | 요청자 `{name, email, uuid}`. 계정이 지워졌으면 요청 때 이름을 쓰고 `uuid` 는 `null`. 이메일은 노출 게이트를 통과할 때만 |
+| requester | object | `{"name":"관리자","email":"admin@example.com","uuid":"…"}` | 요청자 `{name, email, uuid}`. `name` 은 요청 때 남긴 이름 그대로다(그 시점의 관리자 영역 표시 이름. 회원의 지금 이름이나 표시 이름 설정을 따라 바뀌지 않는다). 계정이 지워졌으면 `uuid` 는 `null`. 이메일은 노출 게이트를 통과할 때만 |
 | file_name | string\|null | `null` | 완성 파일명 (완료 전 `null`) |
 | file_size | integer\|null | `null` | 파일 크기(바이트, 완료 전 `null`) |
 | file_size_label | string\|null | `null` | 파일 크기 표기 (완료 전 `null`) |

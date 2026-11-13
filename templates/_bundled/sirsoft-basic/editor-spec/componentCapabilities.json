@@ -727,6 +727,23 @@
       }
     ]
   },
+  "MemberFieldInput": {
+    "label": "$t:editor.component.member_field_input",
+    "styleControls": [
+      "marginAll",
+      "width"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      }
+    ]
+  },
   "ProductImageViewer": {
     "label": "$t:editor.component.product_image_viewer",
     "styleControls": [

@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateReviewStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewResource;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -42,6 +43,9 @@ class ProductReviewController extends AdminBaseController
             $filters = $request->validated();
             $perPage = (int) ($filters['per_page'] ?? 20);
             $reviews = $this->reviewService->getAdminList($filters, $perPage);
+
+            // 행마다 작성자와 답변 관리자의 표시 이름을 계산하기 전에 필요한 값을 한 번에 읽어 둔다.
+            MemberDisplayName::preloadRelations($reviews, ['user', 'replyAdmin'], MemberDisplayName::AREA_ADMIN, $request);
 
             // 목록 수준 능력 키 — 일괄 상태 변경·행 선택을 잠그는 근거다(행이 0 건이어도 정해야 한다).
             // 식별자는 행 Resource 의 abilityMap 과 같다(일괄 상태 변경 = reviews.update, 삭제 = reviews.delete).

@@ -60,6 +60,16 @@ async function fakeServer(url: string): Promise<any> {
     return { success: true, data: { has_password: true, accounts: [{ provider_key: 'kakao', label: '카카오' }], abilities: { can_unlink: true } } };
   }
 
+  // 회원 상세의 회원 항목 계약(7.2.0) — 회원 조회와 같은 규칙. 403, 404 는 화면이 조용히 넘긴다(회원 조회가 오류 페이지를 보인다)
+  const fields = url.match(/^\/admin\/users\/([^/]+)\/form-fields$/);
+  if (fields) {
+    if (fields[1] !== KNOWN_UUID) {
+      return notFound('사용자를 찾을 수 없습니다.');
+    }
+
+    return { success: true, data: { fields: [], member: {} } };
+  }
+
   const user = url.match(/^\/admin\/users\/([^/]+)$/);
   if (user) {
     if (user[1] !== KNOWN_UUID) {

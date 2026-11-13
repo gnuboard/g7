@@ -106,6 +106,41 @@ class PendingStore
     }
 
     /**
+     * 대기 값을 조용히 읽습니다 — 없거나 만료됐거나 다른 브라우저면 null 이고, 토큰을 폐기하지 않는다.
+     *
+     * 대기 흐름 밖의 곁가지 조회(동의 창이 그릴 회원 항목의 초기값)가 쓴다. 곁가지 요청이 묶음 쿠키 없이 왔다고 대기를 폐기하면
+     * 본 흐름(동의 완료)이 끊기므로 여기서는 지우지 않는다 — 묶음이 맞지 않으면 값을 주지 않는 것으로 충분하다.
+     *
+     * @param  string  $token  토큰
+     * @param  string  $type  기대 종류
+     * @param  Request  $request  요청 (묶음 쿠키 대조)
+     * @return array<string, mixed>|null 대기 값
+     */
+    public function peek(string $token, string $type, Request $request): ?array
+    {
+        if (preg_match(self::TOKEN_PATTERN, $token) !== 1) {
+            return null;
+        }
+
+        $payload = $this->cache->get($this->key($token));
+        if (! is_string($payload)) {
+            return null;
+        }
+
+        try {
+            $data = json_decode(Crypt::decryptString($payload), true);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! is_array($data) || ($data['type'] ?? null) !== $type || ! $this->states->matchesBind($data['bind_hash'] ?? null, $request)) {
+            return null;
+        }
+
+        return $data;
+    }
+
+    /**
      * 대기 값을 고쳐 다시 저장합니다 (남은 수명 유지).
      *
      * @param  string  $token  토큰

@@ -27,6 +27,9 @@ class NotificationLogCollection extends BaseApiCollection
         $sortOrder = $request->input('sort_order', 'desc');
         $abilities = $this->resolveCollectionAbilities($request);
 
+        // 발신자와 수신자 이름은 표시 이름으로 나간다. 추가 항목 값이 필요한 설정이면 여기서 한 번에 읽는다.
+        $this->preloadMemberDisplayNames($this->collection, ['senderUser', 'recipientUser'], $request);
+
         return [
             'data' => $this->mapWithRowNumber(function ($log) use ($request) {
                 return (new NotificationLogResource($log))->toArray($request);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\DisplayName\MemberNamePresenter;
 use App\Enums\ActivityLogType;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
@@ -255,12 +256,15 @@ class ActivityLog extends Model
      * properties.via 로 구분해 "시스템(CLI)" 로 표기한다. 'console' 은 via 를 먼저 도입한
      * 커맨드(security:ip-restriction)의 표기라 같은 뜻으로 받는다.
      *
-     * @return string 회원 이름, 또는 시스템 / 시스템(CLI) 라벨
+     * 회원은 그 자리의 표시 이름으로 낸다(관리자 화면이면 관리자 영역). 이름을 직접 읽지 않으므로
+     * 이름이 빈 회원도 대체 순서(닉네임, 아이디 가림)의 값이 나온다.
+     *
+     * @return string 회원 표시 이름, 또는 시스템 / 시스템(CLI) 라벨
      */
     public function getActorNameAttribute(): string
     {
         if ($this->user) {
-            return (string) $this->user->name;
+            return (string) (app(MemberNamePresenter::class)->name($this->user) ?? '');
         }
 
         return $this->isCliOrigin() ? __('common.system_cli') : __('common.system');

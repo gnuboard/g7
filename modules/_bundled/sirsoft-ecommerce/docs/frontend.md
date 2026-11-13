@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 261개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 265개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 261개 |
+| `admin` | 265개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -211,6 +211,8 @@
 | `_bank_accounts_cards` | `admin` | partial | - |
 | `_bank_accounts_table` | `admin` | partial | - |
 | `_bank_management_modal` | `admin` | partial | - |
+| `_checkout_fields_cards` | `admin` | partial | - |
+| `_checkout_fields_table` | `admin` | partial | - |
 | `_claim_policy_section` | `admin` | partial | - |
 | `_content_media_policy` | `admin` | partial | - |
 | `_currency_exchange_cards` | `admin` | partial | - |
@@ -218,6 +220,8 @@
 | `_disable_international_shipping_modal` | `admin` | partial | - |
 | `_exchange_reason_cards` | `admin` | partial | - |
 | `_exchange_reason_section` | `admin` | partial | - |
+| `_modal_checkout_field_delete` | `admin` | partial | - |
+| `_modal_checkout_field_form` | `admin` | partial | - |
 | `_modal_clear_seo_cache` | `admin` | partial | - |
 | `_modal_identity_policy_delete` | `admin` | partial | - |
 | `_modal_identity_policy_form` | `admin` | partial | - |
@@ -387,7 +391,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 229개 (정의: `resources/js/handlers/index.ts`).
+핸들러 230개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -396,6 +400,7 @@
 | `calculateCurrencyPrices` | `sirsoft-ecommerce.calculateCurrencyPrices` |
 | `initPreferredCurrency` | `sirsoft-ecommerce.initPreferredCurrency` |
 | `initPreferredShippingCountry` | `sirsoft-ecommerce.initPreferredShippingCountry` |
+| `watchAccountPreferences` | `sirsoft-ecommerce.watchAccountPreferences` |
 | `setDateRange` | `sirsoft-ecommerce.setDateRange` |
 | `focusElement` | `sirsoft-ecommerce.focusElement` |
 | `stopEventPropagation` | `sirsoft-ecommerce.stopEventPropagation` |

@@ -301,6 +301,8 @@
                 <span data-if="{{row.author.is_guest || !row.author.uuid}}" class="board:font-medium board:text-gray-900 board:dark:text-white">{{row.author.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
                 <span data-if="{{row.author.is_guest}}" class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200">$t:sirsoft-board.admin.posts.guest</span>
               </div>
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <span data-testid="author-real-name" data-if="{{!!row.author.real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: row.author.real_name })}}">{{row.author.real_name}}</span>
               <span data-if="{{!row.author.is_guest &amp;&amp; row.author.email}}" class="board-text-tertiary">({{row.author.email}})</span>
             </div>
           </cell>

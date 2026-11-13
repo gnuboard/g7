@@ -2,7 +2,7 @@
 feature: sso_reset_link_blocked_e2e
 description: |
   비밀번호 재설정 링크를 받은 뒤 회사 계정 로그인이 강제된 회원(소유 도메인 강제)이 그 링크를 열 때의 종단. 관리자 재설정 화면은
-  링크 검증 422 `auth.password_auth_disabled` 뒤에 서버 안내 문구와 「…(으)로 로그인」 버튼을 보이고(화면 init 뒤에도 남는다) 비밀번호 칸은 없다.
+  링크 검증 422 `auth.password_auth_disabled` 뒤에 서버 안내 문구와 「… 계정으로 로그인」 버튼을 보이고(화면 init 뒤에도 남는다) 비밀번호 칸은 없다.
   관리자 화면 요청은 redirect_prefix=admin 을 실어 버튼이 관리자 쪽 회사 계정 로그인(guard=admin)으로 간다. 사용자 재설정 화면은 같은 안내와
   사용자 쪽(guard=user) 버튼이다. 강제를 끄면 같은 링크가 새 비밀번호 입력 폼이다. 상태 키 분리·요청 값은 Vitest(admin_basic
   admin-reset-password-blocked-render), 판정 경로는 PHPUnit(코어 auth-password-policy)이 덮는다.

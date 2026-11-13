@@ -56,6 +56,8 @@
             <span class="board-text-heading">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}</span>
             <badge data-type="composite" color="yellow" size="sm">$t:sirsoft-board.admin.reports.guest_badge</badge>
           </div>
+          <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+          <span data-testid="author-real-name" data-if="{{!!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.real_name : report_detail?.data?.comment?.author?.real_name)}}" class="board-form-hint" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.real_name : report_detail?.data?.comment?.author?.real_name })}}">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.real_name : report_detail?.data?.comment?.author?.real_name}}</span>
           <span data-if="{{(report_detail?.data?.target_type === 'post' &amp;&amp; report_detail?.data?.post?.author?.email) || (report_detail?.data?.target_type === 'comment' &amp;&amp; report_detail?.data?.comment?.author?.email)}}" class="board-form-hint">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.email : report_detail?.data?.comment?.author?.email}}</span>
         </div>
         <div data-ref="field_board">
@@ -139,6 +141,8 @@
                   </on>
                 </action-menu>
                 <span data-if="{{!reporter.reporter?.uuid}}" class="board-text-label-subtle">$t:sirsoft-board.admin.reports.detail.deleted_user</span>
+                <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+                <span data-testid="author-real-name" data-if="{{!!reporter.reporter?.real_name}}" class="board-form-hint" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: reporter.reporter?.real_name })}}">{{reporter.reporter?.real_name}}</span>
                 <span data-if="{{reporter.reporter?.email}}" class="board-form-hint">{{reporter.reporter?.email}}</span>
               </div>
               <div data-ref="reported_at_field_{{reporterIdx}}">

@@ -225,6 +225,9 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         }
 
         // 2. challenge 발급 + verify
+        // 시각을 초 단위로 고정한다. grace=0 정책의 「직후」 판정은 verified_at(초 단위 저장) >= 지금 이라,
+        // verify 와 enforce 사이에 초 경계를 넘으면(부하가 큰 묶음 실행에서 실제로 넘었다) 같은 직후인데도 throw 한다.
+        Carbon::setTestNow(Carbon::now()->startOfSecond());
         $logRepository = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
         $provider = new TestIdentityProvider($logRepository);
         $challenge = $provider->requestChallenge($user, ['purpose' => $purpose]);
@@ -234,6 +237,7 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         // 3. verified 직후 enforce 는 통과
         $this->service->enforce($policy, $user->fresh(), $context);
         $this->assertTrue(true, "정책 '{$policyKey}' verified 직후 enforce 통과");
+        Carbon::setTestNow();
 
         // 4~5. grace > 0 정책만 grace 윈도우 만료 후 다시 throw
         if ($graceMinutes > 0) {

@@ -1,0 +1,16 @@
+feature: 번들 확장 시험 기반 클래스의 독립 적재 (Bundled Test Base Standalone Load)
+
+description: |
+  번들 확장의 시험 기반 클래스(`modules/_bundled/*/tests/ModuleTestCase.php`, `plugins/_bundled/*/tests/PluginTestCase.php`)는 PHPUnit 밖의 개발 환경
+  PHP 프로세스가 Composer 오토로더만 둔 채 읽기도 한다. 그 프로세스에는 확장 `Tests` 네임스페이스가 등록되지 않아,
+  기반 클래스가 같은 네임스페이스의 트레이트를 `use` 하면 잡을 수 없는 Fatal 이 나고 개발 로그에 쌓였다
+  (게시판 `RestoresBoardSettingsStorage`). 기반 클래스는 자기 트레이트를 직접 읽어 그 경로에서도 Fatal 이 나지 않아야 한다.
+
+axes:
+  base: [bundled_test_base_case]
+
+effects:
+  - standalone_include_has_no_fatal
+
+test_files:
+  - tests/Unit/Extension/BundledTestBaseStandaloneLoadTest.php

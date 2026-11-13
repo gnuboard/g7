@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Search\KeywordSearch;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 상품 1:1 문의 Repository 구현체
@@ -303,7 +305,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             // inquirable 은 쿼리 단계에서 eager load 하지 않는다 — 문의 본문은 게시판 모듈의 글에
             // morph 로 걸려 있고, 그 모듈이 없거나 morph 별칭이 등록되지 않은 환경에서는 관계를
             // 푸는 순간 "Class not found" 로 목록 전체가 죽는다. 아래에서 풀리는 행만 골라 싣는다.
-            relations: ['user:id,uuid,name,email,status', 'product:id,name,display_status,sales_status'],
+            relations: ['user:'.User::displayColumns(), 'product:id,name,display_status,sales_status'],
             resultCap: PaginationLimits::resultCap('admin.product_inquiries'),
         );
 
@@ -369,9 +371,8 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             // 본문은 morph 로 연결된 글에 있다. 해석 가능한 타입만 골라 건네지 않으면
             // 미등록 별칭 하나가 쿼리 전체를 죽인다 — 해석 가능한 타입이 없으면 결과를 비운다.
             'content' => $this->applyContentSearch($query, $needle),
-            default => $query->whereHas('user', fn (Builder $u) => $u->where(
-                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
-            )),
+            // 회원 검색은 이름과 닉네임을 모두 찾는다(화면에 보이는 표시 이름이 어느 쪽이든 찾을 수 있게). 이메일도 종전대로 찾는다.
+            default => $query->whereHas('user', fn (Builder $u) => MemberDisplayName::constrainUsersForAdmin($u, trim($keyword), withEmail: true)),
         };
     }
 

@@ -78,7 +78,7 @@ class CoreNotificationDataListener implements HookListenerInterface
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
-                'name' => $user->name ?? '',
+                'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => ScreenUrl::absolute('auth.login', '/login'),
                 'site_url' => ScreenUrl::userBase(),
@@ -113,7 +113,7 @@ class CoreNotificationDataListener implements HookListenerInterface
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
-                'name' => $user->name ?? '',
+                'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $extra['reset_url'] ?? ($isAdmin
                     ? ScreenUrl::absolute('admin.reset_password', '/admin/reset-password', [], ScreenUrl::SCOPE_ADMIN)
@@ -150,7 +150,7 @@ class CoreNotificationDataListener implements HookListenerInterface
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
-                'name' => $user->name ?? '',
+                'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $isAdmin
                     ? ScreenUrl::absolute('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)
@@ -187,7 +187,7 @@ class CoreNotificationDataListener implements HookListenerInterface
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
-                'name' => $user->name ?? '',
+                'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $isAdmin
                     ? ScreenUrl::absolute('admin.user.edit', '/admin/users/{uuid}/edit', ['uuid' => $user->uuid], ScreenUrl::SCOPE_ADMIN)
@@ -225,7 +225,7 @@ class CoreNotificationDataListener implements HookListenerInterface
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
-                'name' => $user->name ?? '',
+                'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $isAdmin
                     ? ScreenUrl::absolute('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)

@@ -14,6 +14,7 @@ use App\Support\Query\BoundedPaginator;
 use App\Support\Query\KeysetPaginator;
 use App\Support\Query\PaginationLimits;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -21,6 +22,7 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Attachment;
@@ -116,9 +118,10 @@ class PostRepository implements PostRepositoryInterface
             $searchAuthorEmail = ! empty($filters['search_author_email']);
 
             $replyRootIds = $filters['reply_match_root_ids'] ?? [];
+            $authorBoard = $filters['author_board'] ?? null;
 
-            $query->where(function ($q) use ($rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail, $replyRootIds) {
-                $this->applyKeywordCondition($q, $rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail);
+            $query->where(function ($q) use ($rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail, $replyRootIds, $authorBoard) {
+                $this->applyKeywordCondition($q, $rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail, $authorBoard);
 
                 // 관리자 목록 — 답글이 걸린 원글도 결과로 센다(목록은 원글 아래 답글 줄을 이어 그린다)
                 if ($replyRootIds !== []) {
@@ -182,9 +185,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $likeKeyword  LIKE 이스케이프한 검색어
      * @param  string  $searchField  검색 대상 (all|title_content|title|content|author|author_name)
      * @param  bool  $searchAuthorEmail  작성자 검색이 회원 이메일까지 찾는지 (관리자 목록만)
+     * @param  Board|int|null  $board  게시판 (사용자 화면의 작성자 검색이 이 게시판의 표시 이름 설정을 따른다)
      * @return void 반환값 없음
      */
-    private function applyKeywordCondition($q, string $rawKeyword, string $likeKeyword, string $searchField, bool $searchAuthorEmail): void
+    private function applyKeywordCondition($q, string $rawKeyword, string $likeKeyword, string $searchField, bool $searchAuthorEmail, Board|int|null $board = null): void
     {
         // 제목+내용 검색: FULLTEXT 활용 (all, title_content)
         // 코어 헬퍼를 거쳐야 BOOLEAN MODE 연산자(+ - * " 등) 입력이 500 이 되지 않는다.
@@ -203,16 +207,66 @@ class PostRepository implements PostRepositoryInterface
             $q->orWhere('content', 'like', "%{$likeKeyword}%");
         }
 
-        // 작성자 검색
+        // 작성자 검색 — 화면에 보이는 이름으로 찾는다
         if ($searchField === 'all' || $searchField === 'author' || $searchField === 'author_name') {
-            $q->orWhere('author_name', 'like', "%{$likeKeyword}%")
-                ->orWhereHas('user', function ($uq) use ($likeKeyword, $searchAuthorEmail) {
-                    $uq->where('name', 'like', "%{$likeKeyword}%");
-                    if ($searchAuthorEmail) {
-                        $uq->orWhere('email', 'like', "%{$likeKeyword}%");
-                    }
-                });
+            $displayNames = app(BoardDisplayNames::class);
+
+            if ($searchAuthorEmail) {
+                // 관리자 목록: 회원은 이름과 닉네임을 모두, 비회원은 입력한 이름을 찾는다. 회원 이메일로도 찾는다.
+                $displayNames->applyAdminSearch($q, $rawKeyword, ['guest_column' => 'author_name', 'boolean' => 'or']);
+                $q->orWhereHas('user', fn ($uq) => $uq->where('email', 'like', "%{$likeKeyword}%"));
+            } else {
+                // 사용자 화면: 회원은 그 게시판에서 보이는 종류의 값만 찾는다(닉네임 게시판에서 실명으로 찾지 못한다).
+                // 비회원 글(회원 번호가 없는 글)은 입력한 이름을 찾는다.
+                $displayNames->applySearch($q, $rawKeyword, $board, [
+                    'guest_column' => 'author_name',
+                    'user_key' => 'user_id',
+                    'boolean' => 'or',
+                ]);
+            }
         }
+    }
+
+    /**
+     * 작성자순 정렬과 이전 글, 다음 글 조회가 쓰는 표시 이름 영역을 반환합니다.
+     *
+     * 서비스가 `author_area` 를 주면 그 값, 없으면 관리자 목록 표식(`search_author_email`)으로 가른다.
+     *
+     * @param  array<string, mixed>  $filters  필터
+     * @return string 영역 키
+     */
+    private function authorArea(array $filters): string
+    {
+        $area = $filters['author_area'] ?? null;
+        if (is_string($area) && $area !== '') {
+            return $area;
+        }
+
+        return ! empty($filters['search_author_email']) ? BoardDisplayNames::AREA_ADMIN : BoardDisplayNames::AREA_POSTS;
+    }
+
+    /**
+     * 작성자순 정렬 식을 반환합니다 (화면에 보이는 이름 순서).
+     *
+     * 회원 글은 그 영역에서 보이는 종류의 값(없으면 대체 종류의 값), 비회원 글은 입력한 이름으로 자리를 잡는다.
+     * 인덱스를 타지 못하는 정렬이라 그 게시판의 원글 전체를 훑는다.
+     *
+     * @param  Builder  $query  글 쿼리
+     * @param  array<string, mixed>  $filters  필터 (`author_area`, `search_author_email`)
+     * @param  Board|int|null  $board  게시판
+     * @return Expression 정렬 식
+     */
+    private function authorSortExpression(Builder $query, array $filters, Board|int|null $board): Expression
+    {
+        $table = (new Post)->getTable();
+
+        return app(BoardDisplayNames::class)->sortExpression(
+            $query,
+            $this->authorArea($filters),
+            $board,
+            $table.'.user_id',
+            $table.'.author_name',
+        );
     }
 
     /**
@@ -240,8 +294,8 @@ class PostRepository implements PostRepositoryInterface
         $replyQuery = Post::query()
             ->where('board_id', $boardId)
             ->whereNotNull('parent_id')
-            ->where(function ($q) use ($rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail) {
-                $this->applyKeywordCondition($q, $rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail);
+            ->where(function ($q) use ($rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail, $boardId) {
+                $this->applyKeywordCondition($q, $rawKeyword, $likeKeyword, $searchField, $searchAuthorEmail, $boardId);
             });
 
         if ($withTrashed) {
@@ -728,6 +782,9 @@ class PostRepository implements PostRepositoryInterface
             $query->withTrashed();
         }
 
+        // 작성자 검색이 이 게시판의 표시 이름 설정을 따르게 한다 (목록과 같은 조건이어야 건수가 맞는다)
+        $filters['author_board'] = $board;
+
         // 관리자 목록은 답글에 걸린 검색어도 그 원글로 센다 — 목록(buildSortedPostList)과 같은 ID 를 쓴다
         if (! empty($filters['search_replies']) && ! empty($filters['search'])) {
             $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($board?->id, $filters, $withTrashed, $extensions);
@@ -800,12 +857,26 @@ class PostRepository implements PostRepositoryInterface
         }
         $orderDirection = in_array(strtolower($orderDirection), ['asc', 'desc']) ? strtolower($orderDirection) : 'desc';
 
-        $currentPost = Post::find($id, [$orderBy, 'id']);
-        if ($currentPost === null) {
-            return ['prev' => null, 'next' => null];
-        }
+        if ($orderBy === 'author_name') {
+            // 작성자순은 목록과 같은 표시 이름 식으로 비교한다 (식 자체를 비교해야 목록 순서와 맞는다)
+            $probe = Post::query()->whereKey($id);
+            $orderBy = $this->authorSortExpression($probe, $filters, $boardId);
+            $currentPost = $probe->toBase()
+                ->selectRaw($orderBy->getValue($probe->getQuery()->getGrammar()).' as author_sort_value')
+                ->first();
+            if ($currentPost === null) {
+                return ['prev' => null, 'next' => null];
+            }
 
-        $currentValue = $currentPost->{$orderBy};
+            $currentValue = $currentPost->author_sort_value;
+        } else {
+            $currentPost = Post::find($id, [$orderBy, 'id']);
+            if ($currentPost === null) {
+                return ['prev' => null, 'next' => null];
+            }
+
+            $currentValue = $currentPost->{$orderBy};
+        }
 
         // 기본 조건: 공지 제외, 원글만, 게시 상태. 확장 조건은 이 팩토리 **안**에서 건다 — 이전/다음을 찾는
         // 모든 쿼리(동률 비교·created_at 의 MAX/MIN 서브쿼리 포함)가 이 팩토리를 거치므로 한 곳으로 다 덮인다.
@@ -841,14 +912,14 @@ class PostRepository implements PostRepositoryInterface
      * strict 비교를 먼저 시도하고 결과가 없으면 동일 값 tie-breaking 쿼리를 실행합니다.
      *
      * @param  \Closure  $baseQuery  기본 쿼리 팩토리
-     * @param  string  $orderBy  정렬 컬럼
+     * @param  string|Expression  $orderBy  정렬 컬럼 (작성자순이면 표시 이름 식)
      * @param  string  $orderDirection  정렬 방향 (asc/desc)
      * @param  mixed  $currentValue  현재 게시글의 정렬 값
      * @param  int  $id  현재 게시글 ID
      * @param  string  $direction  조회 방향 (prev/next)
      * @return Post|null 이전/다음 게시글
      */
-    private function findAdjacentPost(\Closure $baseQuery, string $orderBy, string $orderDirection, mixed $currentValue, int $id, string $direction): ?Post
+    private function findAdjacentPost(\Closure $baseQuery, string|Expression $orderBy, string $orderDirection, mixed $currentValue, int $id, string $direction): ?Post
     {
         $isPrev = $direction === 'prev';
 
@@ -1006,6 +1077,9 @@ class PostRepository implements PostRepositoryInterface
             $parentQuery->whereNull('deleted_at');
         }
 
+        // 작성자 검색이 이 게시판의 표시 이름 설정을 따르게 한다
+        $filters['author_board'] = $board;
+
         // 관리자 목록은 답글에 걸린 검색어도 그 원글로 찾는다 — 총 건수(countNormalPosts)와 같은 ID 를 쓴다
         if (! empty($filters['search_replies']) && ! empty($filters['search'])) {
             $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($boardId, $filters, $withTrashed, $extensions);
@@ -1048,6 +1122,12 @@ class PostRepository implements PostRepositoryInterface
         $orderDirection = strtolower($orderDirection);
         if (! in_array($orderDirection, ['asc', 'desc'])) {
             $orderDirection = 'desc'; // 기본값으로 폴백
+        }
+
+        // 작성자순은 저장된 작성자 이름 컬럼이 아니라 화면에 보이는 이름의 순서다. 회원 글은 그 컬럼이 비어 있어
+        // 컬럼으로 정렬하면 회원 글이 이름과 무관하게 한쪽에 몰린다. 표시 이름 식으로 바꿔 정렬한다.
+        if ($orderBy === 'author_name') {
+            $orderBy = $this->authorSortExpression($parentQuery, $filters, $board);
         }
 
         // 정렬 스펙 (id를 2차 정렬로 추가 — 동일 값 내 순서를 결정론적으로 보장)

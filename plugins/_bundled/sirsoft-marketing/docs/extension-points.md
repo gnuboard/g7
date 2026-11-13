@@ -9,8 +9,8 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-marketing.filter_consent_data` | filter | 동의 항목을 일괄 저장하기 전에 동의 데이터를 가공하는 필터 훅 | `src/Services/MarketingConsentService.php:359` |
-| `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:341` |
+| `sirsoft-marketing.filter_consent_data` | filter | 동의 항목을 일괄 저장하기 전에 동의 데이터를 가공하는 필터 훅 | `src/Services/MarketingConsentService.php:382` |
+| `sirsoft-marketing.user.consent_changed` | action | 사용자 마케팅 동의 변경 시 실행되는 액션 훅 | `src/Services/MarketingConsentService.php:364` |
 | `sirsoft-marketing.user.subscribed` | action | 사용자 마케팅 동의 필드가 동의(granted)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
 | `sirsoft-marketing.user.unsubscribed` | action | 사용자 마케팅 동의 필드가 철회(revoked)로 변경될 때 실행되는 액션 훅 | 선언 (호출 위치 미확인) |
 <!-- @generated:hooks-published END -->
@@ -39,38 +39,36 @@
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
-| `core.auth.after_register` | action (미선언) | `MarketingConsentListener` | `afterRegister` | 10 |
-| `core.auth.register_validation_rules` | filter | `MarketingConsentListener` | `addRegisterValidationRules` | 10 |
+| `core.auth.register_validation_rules` | filter | `MarketingConsentListener` | `addLegacyRegisterRules` | 10 |
+| `core.field.filter_definitions` | filter | `MarketingConsentListener` | `filterFieldDefinitions` | 10 |
+| `core.plugin_settings.after_save` | action (미선언) | `MarketingConsentListener` | `syncFieldDeclarations` | 10 |
 | `core.plugin_settings.filter_save_data` | filter | `MarketingConsentListener` | `normalizeChannelsSaveData` | 10 |
-| `core.user.after_create` | action (미선언) | `MarketingConsentListener` | `afterCreate` | 10 |
-| `core.user.after_update` | action (미선언) | `MarketingConsentListener` | `afterUpdate` | 10 |
 | `core.user.before_delete` | action (미선언) | `MarketingConsentListener` | `beforeDelete` | 10 |
-| `core.user.create_validation_rules` | filter | `MarketingConsentListener` | `addValidationRules` | 10 |
 | `core.user.filter_resource_data` | filter | `MarketingConsentListener` | `filterResourceData` | 10 |
-| `core.user.filter_update_data` | filter | `MarketingConsentListener` | `filterUpdateData` | 10 |
-| `core.user.update_profile_validation_rules` | filter | `MarketingConsentListener` | `addValidationRules` | 10 |
-| `core.user.update_validation_rules` | filter | `MarketingConsentListener` | `addValidationRules` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
-11개 전부 코어 것이며, 이 목록 자체가 **"코어를 고치지 않고 회원 도메인에 필드를 더하는 법"의
-완결된 선례**입니다. 회원에 자기 필드를 붙이려는 확장은 이 표를 그대로 따라 하면 됩니다.
+전부 코어 훅입니다. 동의 값의 검증과 저장은 회원 항목 선언(`Plugin::getFields()`)과 저장소 어댑터
+(`Fields\MarketingConsentFieldHandler`)가 맡으므로, 구독은 그 주변만 잇습니다.
 
 | 코어 훅 | 이 플러그인이 하는 일 |
 |---|---|
-| `auth.register_validation_rules` · `user.{create,update,update_profile}_validation_rules` | 동의 필드의 검증 규칙을 각 폼 흐름에 주입 |
-| `auth.register` | 가입 완료 후 동의 값을 기록. `AuthService::register()` 에는 `filter_create_data` 가 없어 이 액션에서 요청을 직접 읽습니다 |
-| `user.after_create` · `user.after_update` | 회원 생성·수정 시 동의 상태 반영 + 이력 적재 |
-| `user.filter_update_data` | 저장 데이터에서 동의 필드를 분리 (코어 `User` 의 `$fillable` 로 새지 않도록) |
-| `user.filter_resource_data` | 회원 API 응답에 동의 상태 병합 — 화면이 조건부 렌더링할 수 있도록 활성 키 목록도 함께 |
+| `field.filter_definitions` | 회원 항목 목록을 지금 설정에 맞춘다 — 설정에서 끈 항목 제외, 지금 받는 항목인데 행이 없는 채널을 요청 시점에 추가, 약관 페이지를 정한 항목에 약관 링크(`ui.link`) 부착, 내 정보 화면에서 본인이 동의한 항목에 동의일(`ui.notice`) 부착 |
+| `auth.register_validation_rules` | 가입 경로의 옛 요청 키(`agree_` + 항목 키)에 규칙을 준다. 정식 키의 규칙이 있을 때만 주며, 그래서 가입 데이터(`registration_data`)에 정식 키와 옛 키가 함께 실린다 |
+| `user.filter_resource_data` | 회원 API 응답에 지금 받는 동의 항목의 값과 동의 시각, 채널 목록, 동의 이력을 병합 |
 | `user.before_delete` | 회원 삭제 시 동의 기록 정리 (**CASCADE 에 맡기지 않는다**) |
 | `plugin_settings.filter_save_data` | 채널 목록 저장 형태 정규화 |
+| `plugin_settings.after_save` | 이 플러그인의 설정이 저장되면 항목 선언을 다시 동기화 — 채널을 더하고 지우고 이름을 바꾸면 회원 항목 표의 행이 따라간다 |
 
-`before_delete` 구독이 빠지면 회원을 지워도 동의 행이 남습니다. 코어 회원 삭제는 이 플러그인의
-테이블을 알지 못하므로 아무 오류도 나지 않고, 고아 행만 조용히 쌓입니다.
+회원 생성과 수정의 검증 규칙 필터(`user.{create,update,update_profile}_validation_rules`), 수정 데이터 필터
+(`user.filter_update_data`), 저장 액션(`user.after_create`, `user.after_update`, `auth.after_register`)은
+구독하지 않습니다. 다시 구독하면 같은 값이 두 번 검증되고 두 번 저장됩니다.
 
-코어 회원·가입 흐름의 훅 이름이나 페이로드가 바뀌면 이 플러그인이 예외 없이 조용히 끊깁니다 —
-증상은 "가입 폼에서 동의를 체크했는데 저장되지 않는다" 로만 나타납니다.
+`before_delete` 구독이 빠지면 회원을 지워도 동의 행이 남을 수 있습니다. 코어의 회원 파기는 사용 중인 항목의
+저장소 어댑터(`purge`)를 부르지만, 설정에서 동의 항목을 모두 꺼 둔 사이트에서는 불릴 항목이 없기 때문입니다.
+
+코어 회원 항목 엔진의 계약이나 위 훅의 이름, 인자가 바뀌면 이 플러그인이 예외 없이 조용히 끊깁니다 —
+증상은 "가입 화면에서 동의를 체크했는데 저장되지 않는다" 로만 나타납니다.
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -78,20 +76,19 @@
 <!-- @generated:listeners START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
-| `MarketingConsentListener` | 11개 | 명시 등록 | ✅ | `src/Listeners/MarketingConsentListener.php` |
+| `MarketingConsentListener` | 6개 | 명시 등록 | ✅ | `src/Listeners/MarketingConsentListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-`MarketingConsentListener` 하나가 11개 훅을 전부 받습니다. 훅마다 리스너를 나누지 않은 것은
-의도적입니다 — 나누면 "회원 도메인에 필드를 더하려면 어디를 봐야 하는가" 의 답이 흩어집니다.
+리스너는 `MarketingConsentListener` 하나입니다. 판정과 기록을 직접 하지 않고 `MarketingConsentService` 와
+`Fields\MarketingConsentFields`(항목 선언, 지금 받는 항목, 약관 링크)에 위임합니다. 데이터 접근은
+Repository 인터페이스 주입으로만 하며, `Model::query()`, `DB::table()`, `$row->save()` 를 직접 부르지 않습니다.
 
-리스너는 판정과 기록을 직접 하지 않고 `MarketingConsentService` 에 위임합니다. 데이터 접근은
-Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::table()` · `$row->save()` 를
-직접 부르지 않습니다.
-
-`detectSource()` 가 현재 라우트로 출처(`admin` / `profile`)를 판정해 이력에 남깁니다. 새 변경
-경로(예: 일괄 처리·외부 연동)를 추가하면 그 출처도 여기서 구분해야 합니다 — 모든 변경이
-`profile` 로 기록되면 이력이 "누가 바꿨는가" 를 답하지 못합니다.
+동의 이력의 출처(`register` / `admin` / `profile`)는 리스너가 아니라 저장소 어댑터가 회원 항목의 표면에서
+정합니다(`signup` → `register`, `admin_create`와 `admin_update` → `admin`, `self_update`와 `required_info` →
+`profile`). 요청 경로를 읽지 않으므로 화면 없는 경로에서도 출처가 맞습니다. 새 표면에서 동의를 받게 되면
+그 표면의 출처를 어댑터에서 구분해야 합니다 — 구분하지 않은 표면은 요청한 사람이 본인이면 `profile`,
+아니면 `admin` 으로 기록됩니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장
@@ -100,34 +97,30 @@ Repository 인터페이스 주입으로만 하며, `Model::query()` · `DB::tabl
 | 대상 | 설명 |
 |---|---|
 | `resources/extensions/user-marketing-detail.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
-| `resources/extensions/user-marketing-form.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_form` |
-| `resources/extensions/user-marketing-profile-view.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile` |
-| `resources/extensions/user-marketing-profile.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `mypage/profile-edit` |
-| `resources/extensions/user-marketing-register.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `auth/register` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->
-조각 5개가 이 플러그인의 **UI 전부**입니다. 관리자 설정 화면 하나를 빼면 자기 레이아웃이
-없습니다.
+조각은 관리자 회원 상세의 동의 이력(`user-marketing-detail.g7.html`) 하나입니다. 탭 하나를 더하고 그 안에
+동의 이력 표를 보입니다. 지금의 동의 값은 그리지 않습니다 — 값은 회원 항목으로 선언되어 있어 코어 회원
+화면이 그리고, 조각이 또 그리면 같은 값이 두 번 보입니다.
 
-| 조각 | 들어가는 자리 |
+가입 화면, 내 정보 수정과 보기, 관리자 회원 폼의 동의 칸은 이 플러그인의 조각이 아니라 코어 템플릿이
+항목 계약대로 그립니다. 계약에서 이 플러그인이 싣는 표시 정보는 다음과 같습니다.
+
+| 키 | 값 |
 |---|---|
-| `user-marketing-register.g7.html` | 회원가입 폼 |
-| `user-marketing-form.g7.html` | 관리자 회원 수정 폼 |
-| `user-marketing-detail.g7.html` | 관리자 회원 상세 |
-| `user-marketing-profile.g7.html` · `user-marketing-profile-view.g7.html` | 마이페이지 (수정·보기) |
+| `ui.group` | `agreements` — 약관 동의 묶음 |
+| `ui.role` | `master`(전체 동의) / `channel`(수신 채널) / `legal`(제3자 제공, 정보 공개) |
+| `ui.parent` | 채널 항목만 `marketing_consent` — 전체 동의 아래에 들여 그리거나 함께 켜고 끌 때 쓴다 |
+| `ui.link` | 약관 페이지를 정한 항목만. `label`, `title`, `url`, `content_api`, `requires_module` |
+| `ui.notice` | 내 정보 화면(표면 `self_update`)에서 본인이 동의한 항목만. 「2026-11-12 동의」처럼 사용자 시간대 날짜가 든 요청 언어 문구이며, 내 정보 보기가 값 아래 알림 줄로 그린다. 동의하지 않았거나 다른 화면이면 키가 없다 |
 
-대상 화면을 소유한 쪽(템플릿·코어)이 그 자리(슬롯)를 없애면 조각은 **오류 없이 사라집니다.**
-증상은 "가입 폼에 동의 항목이 안 보인다" 뿐이고 로그에는 아무것도 남지 않으므로, 템플릿이나
-코어 회원 화면을 업그레이드한 뒤에는 다섯 자리를 눈으로 확인합니다.
+대상 화면을 소유한 쪽(관리자 템플릿)이 그 자리(슬롯)를 없애면 조각은 **오류 없이 사라집니다.** 로그에는
+아무것도 남지 않으므로, 템플릿을 업그레이드한 뒤에는 관리자 회원 상세의 동의 이력 탭과 세 화면의 동의 칸을
+눈으로 확인합니다.
 
-마이페이지 조각은 **동의 이력이 있는 회원에게 항상 노출**되어야 합니다. 동의를 받은 경로와
-철회 경로가 대칭이 아니면 그 동의는 법적 근거로 쓸 수 없습니다.
-
-조각 안의 채널 라벨은 `$localized(channel.label_i18n) || channel.label` 로 읽습니다. 예전의
-`$get(channel.label_i18n, _global.locale, channel.label)` 은 `_global.locale` 이 어디서도 세워지지 않아 어떤
-언어에서도 폴백 라벨만 냈습니다 — 오류도 로그도 없이 번역이 빠지는 형태라, 다국어 값은 엔진의 `$localized()`
-로만 읽습니다.
+내 정보 수정의 동의 칸은 **항상 나타나야** 합니다. 동의 항목의 수정 범위는 본인 수정(`edit_scope = self`)이며,
+동의를 받은 경로와 철회 경로가 대칭이 아니면 그 동의는 법적 근거로 쓸 수 없습니다.
 <!-- @intent END -->
 
 ## 미들웨어

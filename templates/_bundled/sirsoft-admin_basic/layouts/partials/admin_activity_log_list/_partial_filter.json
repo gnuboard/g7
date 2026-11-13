@@ -369,7 +369,7 @@
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "local",
-                                                    "actorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                                    "actorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.display_name ?? u.name, description: u.email }))}}"
                                                 }
                                             },
                                             "onError": {

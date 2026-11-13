@@ -140,6 +140,7 @@
       "view_page": "View Page",
       "publish_changed": "Publish status has been changed.",
       "attachments": "Attachments ({{count}})",
+      "real_name_sub": "Real name {{name}}",
       "info": {
         "published_at": "Published Date/Time",
         "created_at": "Created At",

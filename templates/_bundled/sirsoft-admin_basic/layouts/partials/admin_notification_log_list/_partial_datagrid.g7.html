@@ -63,6 +63,8 @@
             <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
             <div class="min-w-0 flex-1">
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate block text-sm">{{row.recipient.name}}</span>
+              <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->
+              <span data-ref="notification_log_recipient_real_name_{{$rowNumber}}" data-if="{{!!row.recipient?.real_name}}" title="$t:admin.common.real_name.label" class="text-tertiary truncate block">{{row.recipient.real_name}}</span>
               <span data-if="{{!!row.recipient.email}}" class="text-tertiary truncate block">({{row.recipient.email}})</span>
             </div>
           </div>
@@ -91,6 +93,7 @@
             <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
             <div class="min-w-0 flex-1">
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate block text-sm">{{row.sender.name}}</span>
+              <span data-ref="notification_log_sender_real_name_{{$rowNumber}}" data-if="{{!!row.sender?.real_name}}" title="$t:admin.common.real_name.label" class="text-tertiary truncate block">{{row.sender.real_name}}</span>
               <span data-if="{{!!row.sender.email}}" class="text-tertiary truncate block">({{row.sender.email}})</span>
             </div>
           </div>

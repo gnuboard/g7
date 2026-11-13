@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 |
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 부재로 검출되지 않는다(다른 번들 동일).
 #   가입 통화 부여 axis 는 PHPUnit(AssignDefaultCurrencyOnRegisterListener/StoreEcommerceSettingsRequest
 #   locales 검증)·Vitest(통화별 언어 Tag UI)가 커버하며 green 이다.
@@ -27,8 +27,8 @@ axes:
     - installed
     - uninstalled
   selectable_currencies:   # 가입 폼 통화 칸 (2026-11-03)
-    - one                  # 기본 통화 하나뿐(원화만) — 칸을 그리지 않는다
-    - many                 # 고를 수 있는 통화 둘 이상 — 칸을 그린다
+    - one                  # 기본 통화 하나뿐(원화만) — 칸을 그리지 않고 초기값도 심지 않는다
+    - many                 # 고를 수 있는 통화 둘 이상 — 칸을 그리고 세션 통화를 심는다
     - unset                # 이커머스 설정 없음
 
 effects:
@@ -37,8 +37,8 @@ effects:
   - is_default_priority_on_multi_match           # 중복 매칭 시 is_default 통화 우선
   - default_currency_fallback_on_no_match        # 미매칭 시 default_currency 폴백
   - admin_create_assigns_or_explicit             # 관리자 회원생성 부여/폴백 또는 명시 지정
-  - signup_form_default_is_session_currency      # 가입 폼 기본값=비회원 세션 통화
-  - signup_currency_field_only_when_choosable    # 고를 통화가 둘 이상일 때만 가입 폼 통화 칸 (Vitest)
+  - signup_form_default_is_session_currency      # 가입 폼 기본값=비회원 세션 통화(초기값 조각이 회원 항목 키에 심는다)
+  - signup_currency_field_only_when_choosable    # 고를 통화가 둘 이상일 때만 가입 폼 통화 칸과 초기값 (Vitest, 칸 자체는 회원 항목 계약)
   # 통화별 언어 Tag (PHPUnit + Vitest)
   - currencies_locales_multi_validated           # currencies.*.locales 배열 검증(supported_locales 외 거부)
   - locale_tag_input_renders_candidates          # 환율 카드 TagInput 후보=supported_locales
@@ -50,4 +50,4 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/AssignDefaultCurrencyOnRegisterListenerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Requests/CurrencyLocalesValidationTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/currencyLocaleTagInput.test.tsx
-  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/registerCurrencyField.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/registerPreferenceDefaults.test.ts

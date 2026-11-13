@@ -91,12 +91,13 @@ trait HandlesOrderCreation
                 shippingInfo: $request->getShippingInfo(),
                 paymentMethod: $request->input('payment_method'),
                 expectedTotalAmount: (float) $request->input('expected_total_amount'),
-                shippingMemo: $request->input('shipping_memo'),
+                shippingMemo: $request->getShippingMemo(),
                 depositorName: $request->input('depositor_name'),
                 dbankInfo: $request->getDbankInfo(),
                 guestLookupPassword: $request->getGuestLookupPassword(),
                 cashReceiptInfo: $request->getCashReceiptInfo(),
-                refundBankInfo: $request->getRefundBankInfo()
+                refundBankInfo: $request->getRefundBankInfo(),
+                extraFields: $request->getExtraFields()
             );
 
             $order->load(['options', 'payment', 'shippingAddress']);

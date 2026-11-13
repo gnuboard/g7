@@ -1,0 +1,20 @@
+feature: member_settings_tab_info
+
+description: |
+  환경설정 회원 탭의 안내 값 API. 닉네임 중복 금지를 켜기 전의 겹침 수, 켠 뒤 도는 중복 검사 준비의 진행 상태,
+  가입 화면이 운영자 수정본이라 항목 설정이 보이지 않을 수 있을 때의 경고.
+
+coverage_strategy: full
+
+axes:
+  info: [nickname_duplicates, nickname_recompute_status, permission, signup_layout_notice]
+
+effects:
+  - duplicates_zero_when_all_distinct
+  - duplicates_counts_kinds_and_members_by_normalized_value
+  - recompute_status_reads_job_progress
+  - info_requires_settings_read_permission
+  - notice_only_when_modified_layout_lacks_member_fields
+
+test_files:
+  - tests/Feature/Api/Admin/MemberFieldControllerTest.php

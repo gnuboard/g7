@@ -27,6 +27,11 @@ export interface Tab {
      * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
      */
     href?: string;
+    /**
+     * 탭 이름 옆에 빨간 점을 붙일지 — 그 탭이 가리키는 구획에 확인할 것(검증 오류가 난 칸 등)이 있음을 알린다.
+     * 레이아웃의 `errorDot="{{...}}"` 가 평가된 값이다. 점의 읽기 이름은 컴포넌트의 `errorDotLabel` 이 준다.
+     */
+    errorDot?: boolean | string;
 }
 /**
  * TabNavigationScroll Props
@@ -69,5 +74,7 @@ export interface TabNavigationScrollProps {
      * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
      */
     'aria-label'?: string;
+    /** 탭의 빨간 점(`errorDot`)을 보조기기가 읽을 이름 (예: 「오류가 있는 칸이 있습니다」). 없으면 공용 문구 */
+    errorDotLabel?: string;
 }
 export declare const TabNavigationScroll: React.FC<TabNavigationScrollProps>;

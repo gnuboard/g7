@@ -7,11 +7,14 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\LanguagePackScope;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\ExtensionProviderRegistrar;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
 use App\Providers\LanguagePackServiceProvider;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
+use Database\Seeders\CoreFieldDefinitionSeeder;
 use Database\Seeders\CoreScheduleSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
@@ -45,6 +48,7 @@ class RunSeedersOnLanguagePackLifecycle
         NotificationDefinitionSeeder::class,
         IdentityPolicySeeder::class,
         CoreScheduleSeeder::class,
+        CoreFieldDefinitionSeeder::class,
     ];
 
     /**
@@ -233,11 +237,38 @@ class RunSeedersOnLanguagePackLifecycle
         if ($type === 'module') {
             if (in_array($targetIdentifier, $this->moduleRepository->getActiveModuleIdentifiers(), true)) {
                 $this->runModuleSeeder($targetIdentifier);
+                $this->resyncFieldDefinitions('module', $targetIdentifier);
             }
         } elseif ($type === 'plugin') {
             if (in_array($targetIdentifier, $this->pluginRepository->getActivePluginIdentifiers(), true)) {
                 $this->runPluginSeeder($targetIdentifier);
+                $this->resyncFieldDefinitions('plugin', $targetIdentifier);
             }
+        }
+    }
+
+    /**
+     * 대상 확장의 회원 항목 선언을 다시 동기화합니다 (7.2.0).
+     *
+     * 확장이 선언한 항목의 이름은 선언 동기화 때 확장 언어 파일과 활성 언어팩 파일에서 읽어 DB 행에 저장된다
+     * (`ExtensionLangTexts`). 시더 명령은 선언을 다시 맞추지 않으므로, 팩을 켜도 항목 이름에 그 언어가 들어가지 않고
+     * 끈 뒤에도 남는다. 활성 디렉터리에 파일이 없는 확장은 건너뛴다(시더와 같은 기준).
+     *
+     * @param  string  $type  module 또는 plugin
+     * @param  string  $identifier  확장 식별자
+     * @return void 반환값 없음
+     */
+    private function resyncFieldDefinitions(string $type, string $identifier): void
+    {
+        if (! $this->hasActiveFiles($type === 'module' ? 'modules' : 'plugins', $identifier)) {
+            return;
+        }
+
+        try {
+            $manager = $this->app->make($type === 'module' ? ModuleManager::class : PluginManager::class);
+            $manager->resyncFieldDefinitions($identifier);
+        } catch (Throwable $e) {
+            $this->warn('field_definitions', $identifier, $e->getMessage());
         }
     }
 

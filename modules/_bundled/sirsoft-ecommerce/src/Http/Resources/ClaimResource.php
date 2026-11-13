@@ -28,6 +28,7 @@ use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Support\CalculationSnapshotPresenter;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\RefundBreakdown;
 
 /**
@@ -251,6 +252,7 @@ class ClaimResource extends BaseApiResource
      *
      * 관리자 상세 조회(`AdminClaimService::findForDetail()`)가 두 관계를 함께 싣는다. 여기서 지연 로드하지
      * 않는다 — 같은 관리자 확장 필드를 쓰는 주문상세 클레임 내역은 행마다 쿼리가 하나씩 붙는다.
+     * 이름은 이커머스 관리자 영역의 표시 이름이다(회원 이름을 직접 읽지 않는다). 이 값은 관리자 응답에만 실린다.
      *
      * @param  OrderExchange|OrderReturn  $claim  교환·반품 신청서
      * @param  string  $relation  운영자 관계명 (`requestedByAdminUser` / `withdrawnByAdminUser`)
@@ -262,7 +264,7 @@ class ClaimResource extends BaseApiResource
             return null;
         }
 
-        return $claim->getRelation($relation)?->name;
+        return MemberDisplayName::name($claim->getRelation($relation));
     }
 
     /**

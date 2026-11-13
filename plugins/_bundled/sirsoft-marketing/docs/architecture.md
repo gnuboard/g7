@@ -11,11 +11,13 @@
   필요합니다. `user_marketing_consents` 에 `consent_key` 별 행을 두어, 채널 추가가 **설정
   변경만으로** 끝나게 했습니다. 그 대가로 "회원의 이메일 동의 여부"를 SQL 한 줄로 얻기가
   덜 직관적이지만, 항목이 데이터인 이상 그 편이 맞습니다.
-- **자기 화면을 갖지 않는다.** 관리자 설정 화면 하나를 빼면 UI 는 전부 다른 화면에 끼워 넣는
-  조각 5개입니다. 코어 회원 화면을 고치지 않고 필드를 더하려면 이 방법뿐입니다.
-- **코어에 훅으로만 붙는다.** 구독 11종이 전부 코어 회원·가입 흐름이며, 코어 `User` 모델이나
-  회원 컨트롤러는 한 줄도 건드리지 않습니다. 이 플러그인을 비활성화하면 동의 항목이 화면과
-  응답에서 함께 사라집니다.
+- **동의 칸을 직접 그리지 않는다.** 동의 값은 코어 회원 항목 집합 `core.user` 의 예/아니오 항목으로
+  선언하고, 가입 화면, 내 정보 수정과 보기, 관리자 회원 폼의 동의 칸은 코어 템플릿이 항목 계약대로
+  그립니다. 이 플러그인의 화면은 관리자 설정 화면 하나와 관리자 회원 상세의 동의 이력 조각 하나입니다.
+- **값은 자기 테이블에, 검증과 저장은 회원 항목 엔진에.** 네 경로(가입, 관리자 회원 추가와 수정,
+  내 정보 수정)의 검증과 저장은 코어 회원 항목 엔진이 하고, 저장소 어댑터가 값을 동의 테이블로
+  넘깁니다. 코어 `User` 모델이나 회원 컨트롤러는 한 줄도 건드리지 않습니다. 이 플러그인을 비활성화하면
+  동의 항목이 화면과 응답에서 함께 사라집니다.
 - **상태와 이력을 분리한다.** `user_marketing_consents` 는 "지금 어떤가", `user_marketing_
   consent_histories` 는 "어떻게 여기까지 왔는가" 입니다. 동의 여부만 남기면 나중에 "동의를
   받았다" 는 사실을 증명할 수 없습니다. 회원 응답에 싣는 이력 시각은 보는 사람(관리자) 시간대
@@ -30,15 +32,15 @@
 
 <!-- @intent START -->
 ```
-[주입]  레이아웃 조각 5개 (가입 폼 / 회원 상세 / 회원 수정 / 마이페이지 보기·수정)
+[화면]  코어 템플릿이 항목 계약대로 그리는 동의 칸 (가입 / 내 정보 수정, 보기 / 관리자 회원 폼)
+        + 이 플러그인의 조각 하나 (관리자 회원 상세의 동의 이력)
             │
-[진입]  코어 회원·가입 흐름
-            │  core.auth.after_register(+register_validation_rules)
-            │  core.user.{after_create, after_update, before_delete}
-            │  core.user.{create,update,update_profile}_validation_rules
-            │  core.user.{filter_update_data, filter_resource_data}
+[진입]  코어 회원 항목 엔진 (집합 core.user)
+            │  선언:  Plugin::getFields() → Fields\MarketingConsentFields
+            │  검증:  코어가 선언으로 규칙을 만든다 (예/아니오)
+            │  저장:  회원 저장과 같은 트랜잭션에서 저장소 어댑터를 부른다
             ▼
-        MarketingConsentListener  (구독 11종을 한 클래스가 모두 받는다)
+        Fields\MarketingConsentFieldHandler  (read / write / purge)
             │
             ▼
         MarketingConsentService
@@ -49,14 +51,22 @@
             │
             ▼
         MarketingConsent / MarketingConsentHistory
+
+[주변]  MarketingConsentListener
+            core.field.filter_definitions        항목 목록을 지금 설정에 맞춘다 (끈 항목 제외, 행 없는 채널 추가, 약관 링크)
+            core.auth.register_validation_rules  옛 가입 키(agree_ 접두)의 규칙
+            core.user.filter_resource_data       회원 응답에 동의 값, 동의 시각, 채널 목록, 이력
+            core.user.before_delete              회원 삭제 전 정리
+            core.plugin_settings.filter_save_data / after_save   채널 저장 형태 정규화, 항목 선언 재동기화
 ```
 
-컨트롤러가 둘뿐입니다(`MarketingSettingsController` · `MarketingAdminController`) — 동의
+컨트롤러가 둘뿐입니다(`MarketingSettingsController`, `MarketingAdminController`) — 동의
 읽기·쓰기가 자기 엔드포인트가 아니라 **코어 회원 API 를 타고** 이루어지기 때문입니다. 이
-플러그인의 라우트는 프론트가 설정을 조회하는 경로와 운영자가 채널을 저장하는 경로뿐입니다.
+플러그인의 라우트는 공개 설정을 조회하는 경로와 운영자가 채널을 저장하는 경로뿐입니다.
 
-`MarketingConsentListener` 하나가 11개 훅을 전부 받는 구조는 의도적입니다. 훅마다 리스너를
-나누면 "회원 도메인에 필드를 더하려면 어디를 봐야 하는가" 의 답이 흩어집니다.
+리스너는 값의 검증과 저장을 하지 않습니다. 검증 규칙 필터나 저장 액션 훅을 다시 구독하면 같은 값이
+두 번 검증되고 두 번 저장되어 이력이 두 번 남습니다. 리스너가 하는 일은 항목 목록을 요청 시점의 설정에
+맞추는 것, 응답에 값을 싣는 것, 삭제 때 정리하는 것, 설정 저장 뒤 선언을 다시 동기화하는 것입니다.
 <!-- @intent END -->
 
 ## 디렉토리

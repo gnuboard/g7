@@ -44,6 +44,8 @@
           <span data-if="{{item.duration_formatted}}">$t:admin.schedules.history.duration|duration={{item.duration_formatted}}</span>
           <span data-if="{{item.memory_usage_formatted}}">$t:admin.schedules.history.memory|memory={{item.memory_usage_formatted}}</span>
           <span data-if="{{item.triggered_by?.name}}">$t:admin.schedules.history.triggered_by|user={{item.triggered_by?.name}}</span>
+          <!-- 실명 보조. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->
+          <span data-ref="history_triggered_by_real_name_{{$idx}}" data-if="{{!!item.triggered_by?.real_name}}" class="text-tertiary">$t:admin.common.real_name.with_label|name={{item.triggered_by?.real_name}}</span>
         </div>
         <p data-ref="history_reject_reason_{{$idx}}" data-if="{{item.status === 'rejected' &amp;&amp; item.reject_reason_label}}" class="mt-2 text-label break-words">{{item.reject_reason_label}}</p>
         <div data-if="{{item.output}}" class="mt-2">

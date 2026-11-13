@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 
 /**
  * 댓글 모델
@@ -141,6 +142,16 @@ class Comment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * 항목 값 테이블에서 이 모델을 가리키는 소유자 종류를 반환합니다 (비회원 작성자 항목의 값).
+     *
+     * @return string 소유자 종류
+     */
+    public function fieldOwnerType(): string
+    {
+        return GuestAuthorFields::OWNER_COMMENT;
     }
 
     /**

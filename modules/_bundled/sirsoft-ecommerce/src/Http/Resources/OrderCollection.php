@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 주문 컬렉션 리소스
@@ -32,6 +33,17 @@ class OrderCollection extends BaseApiCollection
     }
 
     /**
+     * 행마다 주문 회원의 표시 이름을 계산하기 전에 필요한 값을 한 번에 읽어 둡니다.
+     *
+     * @param  Request  $request  HTTP 요청 객체
+     * @return void 반환값 없음
+     */
+    private function preloadMemberNames(Request $request): void
+    {
+        MemberDisplayName::preloadStaffRelations($this->collection, ['user'], $request);
+    }
+
+    /**
      * 주문 컬렉션을 배열로 변환합니다.
      *
      * @param  Request  $request  HTTP 요청 객체
@@ -39,6 +51,8 @@ class OrderCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
+        $this->preloadMemberNames($request);
+
         $result = [
             'data' => $this->mapWithRowNumber(function ($order) {
                 return (new OrderListResource($order))->toArray(request());
@@ -69,6 +83,8 @@ class OrderCollection extends BaseApiCollection
      */
     public function withStatistics(array $statistics = []): array
     {
+        $this->preloadMemberNames(request());
+
         $result = [
             'data' => $this->mapWithRowNumber(function ($order) {
                 return (new OrderListResource($order))->toArray(request());

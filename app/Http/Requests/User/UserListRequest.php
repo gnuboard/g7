@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\Role;
+use App\Services\UserService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -27,6 +28,19 @@ class UserListRequest extends FormRequest
     public const EXT_FILTER_PATTERN = '/^[a-z0-9_.\-]+=[^&]{0,255}$/';
 
     /**
+     * 검색 대상으로 고를 수 있는 운영자 추가 항목을 `custom:{키}` 목록으로 반환합니다.
+     *
+     * @return array<int, string> 검색 대상 값 목록
+     */
+    private function customSearchFields(): array
+    {
+        return array_map(
+            fn (string $key) => UserService::CUSTOM_SEARCH_PREFIX.$key,
+            array_keys(app(UserService::class)->searchableCustomFields()),
+        );
+    }
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool 항상 true — 권한은 라우트 미들웨어(core.users.read)가 판정한다
@@ -44,7 +58,8 @@ class UserListRequest extends FormRequest
     public function rules(): array
     {
         // 'all'은 전체 필드 검색을 의미하는 특수 값
-        $searchableFields = implode(',', array_merge(['all'], self::SEARCHABLE_FIELDS));
+        // 운영자가 「회원 검색」을 켠 추가 항목은 `custom:{키}` 로 고른다(7.2.0).
+        $searchableFields = implode(',', array_merge(['all'], self::SEARCHABLE_FIELDS, $this->customSearchFields()));
         $supportedLocales = implode(',', config('app.supported_locales', ['ko', 'en']));
 
         $rules = [
@@ -83,6 +98,10 @@ class UserListRequest extends FormRequest
             'country' => 'nullable|string|size:2|alpha',
             'email_verified' => 'nullable|string|in:all,verified,unverified',
             'identity_verified' => 'nullable|string|in:all,verified,unverified',
+
+            // 회원 항목 — 닉네임이 다른 회원과 겹치는 회원, 필수 항목이 비어 있는 회원 (7.2.0)
+            'nickname_duplicate' => 'nullable|boolean',
+            'required_missing' => 'nullable|boolean',
 
             // 확장 필터 채널 — 원소는 1차 방어만 하고, 키별 규칙은 확장이 `ext.{확장id}.{키}` 에 건다
             'ext_filters' => 'nullable|array|max:20',
@@ -189,6 +208,8 @@ class UserListRequest extends FormRequest
             'country' => __('user.list_filter_attributes.country'),
             'email_verified' => __('user.list_filter_attributes.email_verified'),
             'identity_verified' => __('user.list_filter_attributes.identity_verified'),
+            'nickname_duplicate' => __('user.list_filter_attributes.nickname_duplicate'),
+            'required_missing' => __('user.list_filter_attributes.required_missing'),
             'ext_filters' => __('user.list_filter_attributes.ext_filters'),
             'ext_filters.*' => __('user.list_filter_attributes.ext_filters'),
             'ext' => __('user.list_filter_attributes.ext_filters'),

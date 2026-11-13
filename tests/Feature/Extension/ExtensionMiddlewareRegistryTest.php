@@ -17,16 +17,45 @@ use Tests\TestCase;
  */
 class ExtensionMiddlewareRegistryTest extends TestCase
 {
+    /**
+     * 각 테스트 전에 미들웨어 인덱스 정적 캐시를 비워 이전 테스트의 선언이 남지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         ExtensionMiddlewareRegistry::flush();
     }
 
+    /**
+     * 각 테스트 뒤에 미들웨어 인덱스 정적 캐시를 비워 다음 테스트로 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         ExtensionMiddlewareRegistry::flush();
         parent::tearDown();
+    }
+
+    /**
+     * 픽스처 확장 식별자를 테스트 allowlist 에 넣습니다.
+     *
+     * 레지스트리는 테스트 allowlist 밖 확장의 선언을 건너뛴다(#609 F11 가드 — allowlist 밖 확장은
+     * ServiceProvider 가 등록되지 않아 그 미들웨어를 올리면 요청이 500 이 된다). 픽스처 확장은
+     * 실제 디렉터리가 없는 가짜 식별자라, 여기서 허용하지 않으면 모든 선언이 가드에 걸려 빈 결과가 된다.
+     * 마이그레이션 대상(`requiredExtensions`)에는 넣지 않는다.
+     *
+     * @return array<string> 이 테스트에서 로딩을 허용할 확장 식별자 목록
+     */
+    protected function resolveAllowedExtensions(): array
+    {
+        return array_values(array_unique([
+            ...parent::resolveAllowedExtensions(),
+            'modules/sirsoft-shop',
+            'plugins/sirsoft-pay',
+        ]));
     }
 
     /**
@@ -36,6 +65,7 @@ class ExtensionMiddlewareRegistryTest extends TestCase
      * @param  array<int, array<string, mixed>>  $pluginMiddleware  플러그인 getMiddleware() 반환값
      * @param  string  $moduleId  모듈 식별자
      * @param  string  $pluginId  플러그인 식별자
+     * @return ExtensionMiddlewareRegistry 픽스처 선언으로 새로 만든 레지스트리 인스턴스
      */
     private function makeRegistry(
         array $moduleMiddleware = [],
@@ -73,7 +103,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === self 치환 (모듈·플러그인·web·api prefix) ===
 
     /**
+     * 모듈의 self 대상이 그룹마다 자기 모듈 라우트 접두사로만 펼쳐지는지 검증합니다.
+     *
      * @effects self_target_expands_to_own_extension_prefix_per_group, groups_array_expands_to_per_group_entries
+     *
+     * @return void 반환값 없음
      */
     public function test_self_target_expands_to_own_module_prefix_per_group(): void
     {
@@ -106,7 +140,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * 플러그인의 self 대상이 자기 플러그인 라우트 접두사로만 펼쳐지는지 검증합니다.
+     *
      * @effects self_target_expands_to_own_extension_prefix_per_group
+     *
+     * @return void 반환값 없음
      */
     public function test_self_target_expands_to_own_plugin_prefix(): void
     {
@@ -129,7 +167,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === all_extensions / core (positive/negative 판별) ===
 
     /**
+     * all_extensions 대상이 확장 라우트만 잡고 코어 라우트는 놓치는지 검증합니다.
+     *
      * @effects all_extensions_matches_extension_routes_only
+     *
+     * @return void 반환값 없음
      */
     public function test_all_extensions_matches_extension_routes_only(): void
     {
@@ -155,7 +197,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * core 대상이 코어 라우트만 잡고 확장 라우트와 무명 라우트는 잡지 않는지 검증합니다.
+     *
      * @effects core_target_matches_core_routes_only_negative_predicate
+     *
+     * @return void 반환값 없음
      */
     public function test_core_target_matches_core_routes_only(): void
     {
@@ -185,7 +231,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === everything / * (무조건, 무명 포함) ===
 
     /**
+     * everything 대상이 무명 라우트까지 모든 라우트를 잡는지 검증합니다.
+     *
      * @effects everything_and_star_match_all_routes_including_unnamed
+     *
+     * @return void 반환값 없음
      */
     public function test_everything_matches_all_routes_including_unnamed(): void
     {
@@ -211,7 +261,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * 별표 별칭이 everything 과 같이 무명 라우트까지 잡는지 검증합니다.
+     *
      * @effects everything_and_star_match_all_routes_including_unnamed
+     *
+     * @return void 반환값 없음
      */
     public function test_star_alias_matches_everything(): void
     {
@@ -230,7 +284,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === module:{id} / plugin:{id} ===
 
     /**
+     * module:{id} 대상이 그 모듈 라우트만 잡는지 검증합니다.
+     *
      * @effects module_id_and_plugin_id_target_scope_to_that_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_module_id_target_matches_that_module_only(): void
     {
@@ -251,7 +309,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * plugin:{id} 대상이 그 플러그인 라우트만 잡는지 검증합니다.
+     *
      * @effects module_id_and_plugin_id_target_scope_to_that_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_id_target_matches_that_plugin_only(): void
     {
@@ -274,7 +336,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === 원시 glob / brace ===
 
     /**
+     * 원시 글롭 대상이 라우트명 패턴으로 매칭되는지 검증합니다.
+     *
      * @effects raw_glob_target_matches_route_name
+     *
+     * @return void 반환값 없음
      */
     public function test_raw_glob_target_matches_route_name(): void
     {
@@ -295,7 +361,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * 중괄호 대상이 나열한 이름들의 OR 로 펼쳐지는지 검증합니다.
+     *
      * @effects brace_target_expands_to_or_of_names
+     *
+     * @return void 반환값 없음
      */
     public function test_brace_target_expands_to_or_of_names(): void
     {
@@ -322,7 +392,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === URI 패턴 (무명 라우트) ===
 
     /**
+     * 슬래시로 시작하는 대상이 라우트명이 아닌 경로로 무명 라우트를 잡는지 검증합니다.
+     *
      * @effects uri_pattern_target_matches_path_not_route_name
+     *
+     * @return void 반환값 없음
      */
     public function test_uri_pattern_target_matches_path_not_route_name(): void
     {
@@ -340,7 +414,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * 경로 글롭 대상이 경로 접두사가 맞는 요청만 잡는지 검증합니다.
+     *
      * @effects uri_pattern_target_matches_path_not_route_name
+     *
+     * @return void 반환값 없음
      */
     public function test_uri_glob_pattern_matches_path_prefix(): void
     {
@@ -363,7 +441,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === groups 검증 (펼침 / 거부) ===
 
     /**
+     * groups 가 빈 선언은 거부돼 어떤 라우트에도 붙지 않는지 검증합니다.
+     *
      * @effects empty_or_disallowed_groups_declaration_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_groups_declaration_is_rejected(): void
     {
@@ -380,7 +462,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * 허용되지 않은 그룹 이름의 선언은 거부되는지 검증합니다.
+     *
      * @effects empty_or_disallowed_groups_declaration_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_disallowed_group_is_rejected(): void
     {
@@ -399,7 +485,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === targets 필수 / class 검증 ===
 
     /**
+     * targets 가 빈 선언은 거부되는지 검증합니다.
+     *
      * @effects missing_targets_declaration_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_targets_declaration_is_rejected(): void
     {
@@ -416,7 +506,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * 존재하지 않는 미들웨어 클래스 선언은 건너뛰는지 검증합니다.
+     *
      * @effects nonexistent_middleware_class_is_skipped
+     *
+     * @return void 반환값 없음
      */
     public function test_nonexistent_class_is_skipped(): void
     {
@@ -435,7 +529,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === timing 분리 ===
 
     /**
+     * before_core 와 after_core 선언이 시점별로 따로 반환되는지 검증합니다.
+     *
      * @effects before_core_and_after_core_timing_are_separated
+     *
+     * @return void 반환값 없음
      */
     public function test_timing_before_and_after_are_separated(): void
     {
@@ -465,7 +563,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     }
 
     /**
+     * timing 을 생략한 선언은 after_core 로 취급되는지 검증합니다.
+     *
      * @effects default_timing_is_after_core
+     *
+     * @return void 반환값 없음
      */
     public function test_default_timing_is_after_core(): void
     {
@@ -488,7 +590,11 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     // === 캐시 무효화 ===
 
     /**
+     * flush 뒤 다시 만들면 활성 확장 목록 변화가 인덱스에 반영되는지 검증합니다.
+     *
      * @effects flush_rebuilds_index, inactive_extension_is_excluded_from_index
+     *
+     * @return void 반환값 없음
      */
     public function test_flush_rebuilds_index(): void
     {
@@ -530,6 +636,8 @@ class ExtensionMiddlewareRegistryTest extends TestCase
 class FixtureExtension
 {
     /**
+     * 픽스처 확장의 식별자와 미들웨어 선언을 받습니다.
+     *
      * @param  string  $identifier  확장 식별자
      * @param  array<int, array<string, mixed>>  $middleware  getMiddleware() 반환값
      */
@@ -538,13 +646,20 @@ class FixtureExtension
         private array $middleware,
     ) {}
 
+    /**
+     * 픽스처 확장 식별자를 돌려줍니다.
+     *
+     * @return string 확장 식별자
+     */
     public function getIdentifier(): string
     {
         return $this->identifier;
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * 생성자로 받은 미들웨어 선언을 그대로 돌려줍니다.
+     *
+     * @return array<int, array<string, mixed>> 미들웨어 선언 목록
      */
     public function getMiddleware(): array
     {
@@ -555,6 +670,13 @@ class FixtureExtension
 /** 테스트 픽스처 미들웨어. */
 class TestMiddlewareA
 {
+    /**
+     * 아무 처리 없이 다음 미들웨어로 넘깁니다.
+     *
+     * @param  mixed  $request  들어온 요청
+     * @param  \Closure  $next  다음 미들웨어 호출
+     * @return mixed 다음 미들웨어의 응답
+     */
     public function handle($request, \Closure $next)
     {
         return $next($request);
@@ -564,6 +686,13 @@ class TestMiddlewareA
 /** 테스트 픽스처 미들웨어. */
 class TestMiddlewareB
 {
+    /**
+     * 아무 처리 없이 다음 미들웨어로 넘깁니다.
+     *
+     * @param  mixed  $request  들어온 요청
+     * @param  \Closure  $next  다음 미들웨어 호출
+     * @return mixed 다음 미들웨어의 응답
+     */
     public function handle($request, \Closure $next)
     {
         return $next($request);

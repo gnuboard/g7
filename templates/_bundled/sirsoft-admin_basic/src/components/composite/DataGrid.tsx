@@ -80,6 +80,23 @@ const readRowPath = (row: any, path: string): unknown =>
   path.split('.').reduce<any>((acc, key) => (acc == null ? undefined : acc[key]), row);
 
 /**
+ * 열의 `field` 로 행에서 셀 값을 읽습니다.
+ *
+ * 행에 그 이름의 키가 그대로 있으면 그 값을 쓰고, 없고 `field` 가 점 경로(`custom_fields.job`)면
+ * 경로를 따라 내려가 읽습니다. 응답의 하위 객체에 담긴 값을 열로 세울 때(회원 추가 항목 등)
+ * 셀 모양(`cellChildren`)을 따로 쓰지 않아도 값이 나오게 합니다.
+ *
+ * @param row 행 데이터
+ * @param field 열의 field(키 이름 또는 점 경로)
+ * @returns 셀 값
+ */
+const readCellValue = (row: any, field: string): any => {
+  const direct = row?.[field];
+  if (direct !== undefined || typeof field !== 'string' || !field.includes('.')) return direct;
+  return readRowPath(row, field);
+};
+
+/**
  * 반복 렌더 서브트리용 컴포넌트 맵 **폴백**.
  *
  * 정본은 템플릿 레지스트리(`G7Core.getComponentMap()`)다 — CardGrid 와 같은 출처를 쓴다.
@@ -158,6 +175,11 @@ export interface DataGridColumn {
   sortable?: boolean;
   hidden?: boolean;
   required?: boolean;
+  /**
+   * 값이 비었을 때(null, undefined, 빈 문자열) 대신 그릴 글자.
+   * `cellChildren`, `render` 가 없는 열에만 적용됩니다. 주지 않으면 빈 칸입니다.
+   */
+  emptyText?: string;
   render?: (value: any, row: any) => React.ReactNode;
   cellChildren?: DataGridCellChild[];
 }
@@ -560,6 +582,20 @@ const safeRenderValue = (value: any): React.ReactNode => {
 
   // 그 외의 경우 문자열로 변환
   return String(value);
+};
+
+/**
+ * 셀 모양이 없는 열의 값을 그립니다. 값이 비었고 열에 `emptyText` 가 있으면 그 글자를 씁니다.
+ *
+ * @param value 셀 값
+ * @param column 열 정의
+ * @returns 렌더링할 노드
+ */
+const renderPlainCellValue = (value: any, column: DataGridColumn): React.ReactNode => {
+  if (column.emptyText !== undefined && (value === null || value === undefined || value === '')) {
+    return column.emptyText;
+  }
+  return safeRenderValue(value);
 };
 
 /**
@@ -1056,9 +1092,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
         (field) => !prevDynamicFields.includes(field)
       );
 
-      // 새로운 동적 필드가 있을 때만 자동 추가
+      // 새로운 동적 필드가 있을 때만 자동 추가 (hidden 인 동적 열은 스스로 켜지 않는다)
       if (trulyNewFields.length > 0) {
-        const fieldsToAdd = trulyNewFields.filter((field) => !visibleColumns.includes(field));
+        const hiddenDynamicFields = dynamicColumns.filter((col) => col.hidden).map((col) => col.field);
+        const fieldsToAdd = trulyNewFields.filter(
+          (field) => !visibleColumns.includes(field) && !hiddenDynamicFields.includes(field)
+        );
         if (fieldsToAdd.length > 0) {
           const updatedVisible = [...visibleColumns, ...fieldsToAdd];
           setVisibleColumns(updatedVisible);
@@ -1486,10 +1525,10 @@ export const DataGrid: React.FC<DataGridProps> = ({
                   </Span>
                   <Div className="text-sm text-gray-900 dark:text-gray-200 mt-0.5 break-words">
                     {col.cellChildren && col.cellChildren.length > 0
-                      ? renderCellChildren(col.cellChildren, row, row[col.field], `card-${row[idField]}-${col.field}`, __componentContext, getRowContext(row, rowNumber, col))
+                      ? renderCellChildren(col.cellChildren, row, readCellValue(row, col.field), `card-${row[idField]}-${col.field}`, __componentContext, getRowContext(row, rowNumber, col))
                       : col.render
-                        ? col.render(row[col.field], row)
-                        : safeRenderValue(row[col.field])}
+                        ? col.render(readCellValue(row, col.field), row)
+                        : renderPlainCellValue(readCellValue(row, col.field), col)}
                   </Div>
                 </Div>
               ))}
@@ -1847,10 +1886,10 @@ export const DataGrid: React.FC<DataGridProps> = ({
                           style={{ width: column.width, minWidth: column.width }}
                         >
                           {column.cellChildren && column.cellChildren.length > 0
-                            ? renderCellChildren(column.cellChildren, row, row[column.field], `${row[idField]}-${column.field}`, __componentContext, getRowContext(row, rowIndex + 1, column))
+                            ? renderCellChildren(column.cellChildren, row, readCellValue(row, column.field), `${row[idField]}-${column.field}`, __componentContext, getRowContext(row, rowIndex + 1, column))
                             : column.render
-                              ? column.render(row[column.field], row)
-                              : safeRenderValue(row[column.field])}
+                              ? column.render(readCellValue(row, column.field), row)
+                              : renderPlainCellValue(readCellValue(row, column.field), column)}
                         </Td>
                       ))}
 

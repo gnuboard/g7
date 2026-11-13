@@ -21,6 +21,8 @@
       </field>
     </init-local>
     <success>
+      <!-- 주문서 항목 설정(order_fields)을 받아 둔다 — 쿠폰이나 배송지를 바꿔 주문서를 다시 계산한 응답(PUT)이 이 값을 싣지 않아도 칸이 사라지지 않게 마지막으로 받은 것을 쓴다 -->
+      <set-state if="{{!!response.data.data.order_fields}}" target="local" orderFieldsSeen="{{response.data.data.order_fields}}"/>
       <!-- 구매불가 상품이 있으면 setState로 데이터 설정 후 모달 표시 (initLocal 머지는 모달 표현식 캐시를 갱신하지 않으므로 setState 필수) -->
       <conditions>
         <when if="{{(response.data.data.unavailable_items?.length ?? 0) > 0}}">
@@ -133,13 +135,19 @@
     <field name="selectedAddressObj" :value="null"/>
     <field name="saveShippingAddress" :value="false"/>
     <field name="updateSelectedAddress" :value="true"/>
+    <field name="orderFieldsSeen" :value="null"/>
+    <field name="checkoutForm">
+      <field name="extra_fields" :value="{}"/>
+    </field>
     <field name="unavailableModal">
       <field name="visible" :value="false"/>
       <field name="items" :value="[]"/>
       <field name="hasStockIssue" :value="false"/>
     </field>
   </init-local>
-  <computed name="comment">orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결) / 결제 통화에서 고를 수 없는 수단(체크아웃 응답 allowed_payment_methods 밖, #639 D17)은 고객 선택 가능 목록(selectablePaymentMethods)에서 빠지고, 고른 값이어도 버리고 그 목록의 첫 수단으로 돌린다 — 서버가 같은 판정으로 422 를 낸다 / 서버로 보낼 코어 결제수단(selectedCorePaymentMethod) — 플러그인이 더한 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 고른 결제수단의 core_payment_method(모듈이 병합 때 보존한다)로 옮겨 보낸다. 선언이 없는 것(dbank·KG 등)은 원래 id 를 그대로 쓴다.</computed>
+  <computed name="comment">orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결) / 결제 통화에서 고를 수 없는 수단(체크아웃 응답 allowed_payment_methods 밖, #639 D17)은 고객 선택 가능 목록(selectablePaymentMethods)에서 빠지고, 고른 값이어도 버리고 그 목록의 첫 수단으로 돌린다 — 서버가 같은 판정으로 422 를 낸다 / 서버로 보낼 코어 결제수단(selectedCorePaymentMethod) — 플러그인이 더한 결제수단(toss_* 등)은 코어 PaymentMethodEnum 이 거부하므로, 고른 결제수단의 core_payment_method(모듈이 병합 때 보존한다)로 옮겨 보낸다. 선언이 없는 것(dbank·KG 등)은 원래 id 를 그대로 쓴다. / checkoutFields 는 운영자가 쇼핑몰 설정에서 정한 주문서 항목 설정이다 — 주문서 응답의 order_fields 를 읽고, 그 값이 없는 응답(옛 서버, 받기 전)에서는 종전 화면과 같은 기본값을 쓴다: 주문자 이메일은 사용하되 비회원만 필수, 상세 주소는 사용과 필수, 배송 메모는 사용과 선택, 추가 항목 없음. 잠긴 항목(주문자와 수령인의 이름과 연락처, 주소)은 여기에 없고 늘 필수로 그린다. extraFieldsPayload 는 주문 요청에 실을 추가 항목 값이다 — 지금 그려진 항목의 키만 싣고, 입력하지 않은 칸은 항목의 기본값(화면에 골라진 것으로 보이는 값)을 쓰며, 빈 값은 뺀다.</computed>
+  <computed name="checkoutFields">{{({ orderer_email: { enabled: (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.builtin?.orderer_email?.enabled ?? true, required: (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.builtin?.orderer_email?.required ?? !_global.currentUser?.uuid }, address_detail: { enabled: (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.builtin?.address_detail?.enabled ?? true, required: (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.builtin?.address_detail?.required ?? true }, shipping_memo: { enabled: (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.builtin?.shipping_memo?.enabled ?? true, required: (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.builtin?.shipping_memo?.required ?? false }, orderer: Array.isArray((checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.orderer) ? (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen).orderer : [], shipping: Array.isArray((checkoutData?.data?.order_fields ?? _local.orderFieldsSeen)?.shipping) ? (checkoutData?.data?.order_fields ?? _local.orderFieldsSeen).shipping : [] })}}</computed>
+  <computed name="extraFieldsPayload">{{Object.fromEntries((_computed.checkoutFields?.orderer ?? []).concat(_computed.checkoutFields?.shipping ?? []).map(function(f) { return [f.key, (_local.checkoutForm?.extra_fields ?? {})[f.key] ?? f.default ?? null]; }).filter(function(entry) { return entry[1] !== null &amp;&amp; entry[1] !== ''; }))}}</computed>
   <computed name="ordererDefaults">{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}</computed>
   <computed name="shippingAddressDirty">{{!!_local.selectedAddressId &amp;&amp; [['recipient_name', 'recipient_name'], ['recipient_phone', 'recipient_phone'], ['zipcode', 'zipcode'], ['address', 'address'], ['address_detail', 'address_detail'], ['address_line_1', 'address_line_1'], ['address_line_2', 'address_line_2'], ['intl_city', 'city'], ['intl_state', 'state'], ['intl_postal_code', 'postal_code']].some(pair => ((_local.shipping ?? {})[pair[0]] ?? '') !== ((_local.selectedAddressObj ?? {})[pair[1]] ?? ''))}}</computed>
   <computed name="selectablePaymentMethods">{{(paymentSettings.data?.order_settings?.payment_methods ?? []).filter(m => m.is_active &amp;&amp; m.customer_selectable !== false &amp;&amp; (!m.requires_ios || _global.appConfig?.isIos) &amp;&amp; (!Array.isArray(checkoutData?.data?.allowed_payment_methods) || checkoutData.data.allowed_payment_methods.includes(m.id)))}}</computed>

@@ -58,6 +58,8 @@
           <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.version_history.chars)</span>
         </div>
         <div class="mt-2 text-label-subtle">$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name ?? 'admin'}}</div>
+        <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 created_by_real_name 을 싣는다. -->
+        <div data-ref="version_saved_by_real_name_{{idx}}" data-if="{{!!version.created_by_real_name}}" class="text-tertiary">$t:admin.common.real_name.with_label|name={{version.created_by_real_name}}</div>
       </div>
     </div>
     <!-- 받은 묶음이 상한만큼 꽉 찼으면 더 오래된 버전이 남아 있다는 뜻이라 '더 보기' 를 노출한다. 서버 상한(500)에 도달하면 감춘다 — 더 넓히면 목록 전체가 422 가 되어 보고 있던 이력까지 사라진다. -->

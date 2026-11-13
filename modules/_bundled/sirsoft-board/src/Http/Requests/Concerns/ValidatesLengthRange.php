@@ -37,6 +37,7 @@ trait ValidatesLengthRange
      * 기존 레이아웃의 max_* 오류 표시 요소가 그대로 렌더하도록 한다.
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음 (검증기에 after 콜백을 등록)
      */
     protected function applyLengthRangeValidation(Validator $validator): void
     {

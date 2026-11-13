@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\Extension\HookManager;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -35,7 +36,7 @@ class AdminStoreExchangeRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->adminClaimRules(ClaimTypeEnum::EXCHANGE) + [
+        $rules = $this->adminClaimRules(ClaimTypeEnum::EXCHANGE) + [
             'items.*.new_product_option_id' => ['nullable', 'integer'],
             'items.*.custom_options' => ['nullable', 'array'],
             'redelivery_address' => ['nullable', 'array'],
@@ -49,6 +50,11 @@ class AdminStoreExchangeRequest extends FormRequest
             'redelivery_address.country_code' => ['nullable', 'string', 'size:2'],
             'redelivery_address.changed_by_user' => ['nullable', 'boolean'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.admin_exchange.store_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

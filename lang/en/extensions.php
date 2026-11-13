@@ -214,7 +214,7 @@ return [
 
         // Bundled extension bulk update prompt of core:update / core:execute-bundled-updates
         'bundled_update' => [
-            'lock_unavailable_aborted' => 'The bulk update was aborted because the operation lock store (cache) is unavailable — skipped the remaining :count item(s). Check the cache status and run it again.',
+            'lock_unavailable_aborted' => 'The bulk update was aborted because the operation lock store (cache) is unavailable — skipped the remaining :count item. Check the cache status and run it again.|The bulk update was aborted because the operation lock store (cache) is unavailable — skipped the remaining :count items. Check the cache status and run it again.',
             'up_to_date' => 'Active extensions match the latest bundle.',
             'detected' => 'Extensions with a newer version in the bundle were detected:',
             'detected_items' => [
@@ -256,7 +256,7 @@ return [
             'manifest_parse_failed' => 'Failed to parse manifest JSON: :path',
             'lang_pack_phase_in_process' => 'Could not run the language pack phase in a separate process; continuing in this process — if extension data translations are empty afterwards, run php artisan language-pack:update <pack> --force.',
             'item_process_aborted' => 'The process handling this item ended without a result (exit code :code). If it ran out of memory, the PHP error log shows "Allowed memory size".',
-            'failed_items_header' => ':count item(s) were not updated — update each one again with the command below:',
+            'failed_items_header' => ':count item was not updated — update it again with the command below:|:count items were not updated — update each one again with the command below:',
             'failed_item_labels' => [
                 'module' => '[Module] :identifier',
                 'plugin' => '[Plugin] :identifier',

@@ -336,6 +336,7 @@
                 <span data-ref="background_color_value" class="hs:text-sm hs:text-gray-600 hs:dark:text-gray-300 hs:tabular-nums">{{_local.form?.presentation?.background_color ?? $t('sirsoft-hero_section.admin.form.layout.background_color_none')}}</span>
                 <button type="button" data-ref="background_color_clear" class="hs-btn hs-btn-secondary" disabled="{{_local.isSaving || !_local.form?.presentation?.background_color}}">
                   <on type="click">
+                    <!-- 바탕색 지우기 — 지정 없음(null)으로 되돌린다. 표시 칸은 「없음」 문구로 바뀐다 -->
                     <set-state target="local" form.presentation="{{({...(_local.form?.presentation ?? {}), background_color: null})}}" :hasChanges="true"/>
                   </on>
                   <span>$t:sirsoft-hero_section.admin.form.layout.background_color_clear</span>
@@ -638,6 +639,7 @@
                   <span class="hs-form-label">$t:sirsoft-hero_section.admin.form.text_layout.width_pc</span>
                   <input type="number" id="hero_text_width_pc" inputMode="numeric" min="{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}" max="{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}" :step="5" class="hs-input" placeholder="{{$t('sirsoft-hero_section.admin.form.text_layout.width_follow', {width: _local.form?.presentation?.text_width ?? 100})}}" value="{{_local.form?.presentation?.text_width_pc ?? ''}}" disabled="{{_local.isSaving}}">
                     <on type="change">
+                      <!-- PC 문구 폭 — 비우면 null 로 담아 위 공통 폭을 따른다(프로모션형은 문구 칸 폭) -->
                       <set-state target="local" form.presentation="{{({...(_local.form?.presentation ?? {}), text_width_pc: $event.target.value === '' ? null : Number($event.target.value)})}}" :hasChanges="true"/>
                     </on>
                   </input>
@@ -646,6 +648,7 @@
                   <span class="hs-form-label">$t:sirsoft-hero_section.admin.form.text_layout.width_mobile</span>
                   <input type="number" id="hero_text_width_mobile" inputMode="numeric" min="{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}" max="{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}" :step="5" class="hs-input" placeholder="{{$t('sirsoft-hero_section.admin.form.text_layout.width_follow', {width: _local.form?.presentation?.text_width ?? 100})}}" value="{{_local.form?.presentation?.text_width_mobile ?? ''}}" disabled="{{_local.isSaving}}">
                     <on type="change">
+                      <!-- 휴대폰 문구 폭 — 비우면 null 로 담아 위 공통 폭을 따른다 -->
                       <set-state target="local" form.presentation="{{({...(_local.form?.presentation ?? {}), text_width_mobile: $event.target.value === '' ? null : Number($event.target.value)})}}" :hasChanges="true"/>
                     </on>
                   </input>

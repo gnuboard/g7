@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Export;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Support\ExportAccess;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 내보내기 작업 Repository
@@ -119,8 +120,8 @@ class ExportRepository implements ExportRepositoryInterface
     /**
      * 관리 목록 필터를 적용합니다.
      *
-     * 요청자 검색은 요청 때 남긴 이름(`requester_name_snapshot`)과 지금 회원 정보(이름·이메일)를 함께 본다 — 목록은
-     * 지금 이름·이메일을 보이고, 탈퇴해 연결이 끊긴 요청자는 남긴 이름만 남는다. 검색어의 `%`·`_` 는 글자 그대로 찾는다.
+     * 요청자 검색은 요청 때 남긴 이름(`requester_name_snapshot`)과 지금 회원 정보(이름, 닉네임, 이메일)를 함께 본다 — 목록은
+     * 요청 때 남긴 이름을 보이고, 운영자는 지금 이름이나 닉네임으로도 찾는다. 탈퇴해 연결이 끊긴 요청자는 남긴 이름만 남는다. 검색어의 `%`·`_` 는 글자 그대로 찾는다.
      * 요청자 한정(`requester_uuid`)은 이름 포함 검색과 달리 그 회원 한 사람의 작업만 남긴다.
      *
      * @param  Builder  $query  작업 쿼리
@@ -134,15 +135,14 @@ class ExportRepository implements ExportRepositoryInterface
         if ($keyword !== '') {
             $field = $filters['search_field'] ?? 'all';
             $contains = '%'.KeywordSearch::escapeLikeWildcards($keyword).'%';
-            $query->where(function (Builder $q) use ($field, $contains) {
+            $query->where(function (Builder $q) use ($field, $contains, $keyword) {
                 if ($field === 'all' || $field === 'file_name') {
                     $q->orWhere('file_name', 'like', $contains);
                 }
                 if ($field === 'all' || $field === 'requester') {
+                    // 지금 회원 정보는 이름과 닉네임을 모두 찾는다(관리자 화면의 회원 검색 공통 규칙). 이메일도 종전대로 찾는다.
                     $q->orWhere('requester_name_snapshot', 'like', $contains)
-                        ->orWhereHas('requester', fn (Builder $user) => $user
-                            ->where('name', 'like', $contains)
-                            ->orWhere('email', 'like', $contains));
+                        ->orWhereHas('requester', fn (Builder $user) => MemberDisplayName::constrainUsersForAdmin($user, $keyword, withEmail: true));
                 }
             });
         }

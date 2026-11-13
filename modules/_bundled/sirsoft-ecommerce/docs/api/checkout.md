@@ -114,6 +114,11 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (아래 "free_shipping" 표) |
 | allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (#639). 결제수단 화이트리스트를 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 로 거른 결과이고, 템플릿이 결제수단 버튼을 이 목록으로 거른다. 주문 생성 검증(`POST /user/orders` 의 `payment_method`)과 같은 판정이다 |
+| order_fields | object | — | 주문서 항목 설정. 운영자가 주문 설정의 「주문서 항목」 표에서 정한 값으로, 화면이 이 값대로 칸을 그린다. 조회와 다시 계산 응답이 같은 값을 싣는다 |
+| order_fields.fields_version | string | `1f0c9a7be4d2` | 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 정의 버전 |
+| order_fields.builtin | object | `{"orderer_email":{"enabled":true,"required":false},"address_detail":{"enabled":true,"required":true},"shipping_memo":{"enabled":true,"required":false}}` | 주문자 이메일, 상세 주소, 배송 메모의 사용과 필수. 비회원이면 `orderer_email` 은 설정과 무관하게 `{enabled: true, required: true}` |
+| order_fields.orderer[] | array | `[]` | 주문자 구획에 그릴 추가 항목 계약(운영자가 추가한 항목, 다른 확장이 기여한 항목). 회원 항목과 같은 공용 모양이고 `name` 이 `extra_fields.{키}` 다(입력칸의 폼 경로이자 검증 오류 키). 주요 키: `key`, `name`, `type`, `renderer`, `label`, `placeholder`, `help`, `required`, `options`, `constraints`, `parts`(주소 유형) |
+| order_fields.shipping[] | array | `[]` | 배송지 구획에 그릴 추가 항목 계약(구획을 정하지 않은 항목 포함) |
 | unavailable_items | array | `[]` | 구매 불가 상품 목록 (존재할 때만 포함) |
 | has_stock_issue | boolean | `false` | 구매 불가 사유에 재고 부족이 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
 | has_status_issue | boolean | `false` | 구매 불가 사유에 판매 상태 문제가 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
@@ -518,6 +523,11 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (`enabled` / `threshold_base` / `threshold_multi_currency` / `remaining_base` / `remaining_multi_currency`) |
 | allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (조회 응답과 같은 판정, #639) |
+| order_fields | object | — | 주문서 항목 설정. 운영자가 주문 설정의 「주문서 항목」 표에서 정한 값으로, 화면이 이 값대로 칸을 그린다. 조회와 다시 계산 응답이 같은 값을 싣는다 |
+| order_fields.fields_version | string | `1f0c9a7be4d2` | 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 정의 버전 |
+| order_fields.builtin | object | `{"orderer_email":{"enabled":true,"required":false},"address_detail":{"enabled":true,"required":true},"shipping_memo":{"enabled":true,"required":false}}` | 주문자 이메일, 상세 주소, 배송 메모의 사용과 필수. 비회원이면 `orderer_email` 은 설정과 무관하게 `{enabled: true, required: true}` |
+| order_fields.orderer[] | array | `[]` | 주문자 구획에 그릴 추가 항목 계약(운영자가 추가한 항목, 다른 확장이 기여한 항목). 회원 항목과 같은 공용 모양이고 `name` 이 `extra_fields.{키}` 다(입력칸의 폼 경로이자 검증 오류 키). 주요 키: `key`, `name`, `type`, `renderer`, `label`, `placeholder`, `help`, `required`, `options`, `constraints`, `parts`(주소 유형) |
+| order_fields.shipping[] | array | `[]` | 배송지 구획에 그릴 추가 항목 계약(구획을 정하지 않은 항목 포함) |
 
 **응답 예시**
 

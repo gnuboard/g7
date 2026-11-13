@@ -23,6 +23,7 @@ import cartSummaryJson from '../../layouts/partials/shop/_cart_summary.json';
 import loginJson from '../../layouts/auth/login.json';
 import checkoutSummaryJson from '../../layouts/partials/shop/_checkout_summary.json';
 import checkoutOrdererJson from '../../layouts/partials/shop/_checkout_orderer.json';
+import checkoutJson from '../../layouts/shop/checkout.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 객체 트리에서 조건을 만족하는 첫 노드를 깊이우선 탐색 */
@@ -333,12 +334,22 @@ describe('주문자 이메일 필수 표시 - _checkout_orderer (Issue #55)', ()
     );
     expect(emailLabel).toBeDefined();
 
-    // 필수 표시(*) Span 은 비로그인(!_global.currentUser?.uuid) 조건으로만 노출
+    // 필수 표시(*) Span 은 운영자 설정을 읽는 계산값(checkoutFields.orderer_email.required)을 따른다(#490).
+    // 설정이 없는 응답에서 그 계산값은 비로그인(!_global.currentUser?.uuid)일 때만 참이다 — 종전 화면과 같다.
     const requiredMark = asArray(emailLabel?.children).find(
       (c: any) => c.name === 'Span' && c.text === '*'
     );
     expect(requiredMark).toBeDefined();
-    expect(requiredMark.if).toBe('{{!_global.currentUser?.uuid}}');
+    expect(requiredMark.if).toBe('{{!!_computed.checkoutFields?.orderer_email?.required}}');
+
+    const engine = new DataBindingEngine();
+    const definition = String((checkoutJson as any).computed.checkoutFields);
+    const requiredFor = (currentUser: unknown) =>
+      engine.evaluateExpression(definition.slice(2, -2), { checkoutData: { data: {} }, _local: {}, _global: { currentUser } })
+        .orderer_email.required;
+    expect(requiredFor([])).toBe(true);
+    expect(requiredFor(null)).toBe(true);
+    expect(requiredFor({ uuid: 'user-uuid-1' })).toBe(false);
   });
 
   // @scenario actor=guest

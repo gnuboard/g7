@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Marketing;
 
 use App\Extension\AbstractPlugin;
+use Plugins\Sirsoft\Marketing\Fields\MarketingConsentFields;
 use Plugins\Sirsoft\Marketing\Listeners\MarketingConsentListener;
 
 class Plugin extends AbstractPlugin
@@ -186,6 +187,31 @@ class Plugin extends AbstractPlugin
             'user_marketing_consent_histories',
             'user_marketing_consents',
         ];
+    }
+
+    /**
+     * 코어 회원 항목 집합(`core.user`)에 선언하는 동의 항목을 반환합니다.
+     *
+     * 전체 동의, 수신 채널(설정 `channels` 의 항목마다 하나), 법적 동의 둘을 예/아니오 항목으로 선언한다.
+     * 값은 이 플러그인의 동의 테이블에 두고 저장소 어댑터(`Fields\MarketingConsentFieldHandler`)로 잇는다.
+     * 채널은 설정이라 호출 시점의 목록으로 만들며, 설정을 저장하면 리스너가 다시 동기화한다.
+     *
+     * 선언을 만드는 클래스를 아직 쓸 수 없는 시점(클래스 경로나 저장소 바인딩 등록 전)에는 빈 배열을 돌려준다 —
+     * 빈 선언은 기존 행을 지우지 않고, 그동안은 리스너가 요청 시점에 항목을 채운다.
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     */
+    public function getFields(): array
+    {
+        if (! class_exists(MarketingConsentFields::class)) {
+            return [];
+        }
+
+        try {
+            return app(MarketingConsentFields::class)->declarations();
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**

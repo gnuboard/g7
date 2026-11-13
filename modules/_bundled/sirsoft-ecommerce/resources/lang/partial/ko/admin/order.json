@@ -104,6 +104,11 @@
         "intl_state_placeholder": "주/도를 입력하세요",
         "intl_postal_code_placeholder": "우편번호를 입력하세요"
       },
+      "extra_fields": {
+        "title": "주문서 추가 항목",
+        "section_orderer": "주문자",
+        "section_shipping": "배송지"
+      },
       "admin_memo": {
         "title": "관리자 메모",
         "placeholder": "관리자 메모를 입력하세요..."

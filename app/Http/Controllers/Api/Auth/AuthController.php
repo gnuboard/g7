@@ -17,6 +17,7 @@ use App\Http\Requests\Auth\LoginDiscoverRequest;
 use App\Http\Requests\Auth\LoginHandoffRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\PostponePasswordChangeRequest;
+use App\Http\Requests\Auth\RegisterFieldsRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
@@ -26,8 +27,10 @@ use App\Http\Resources\UserResource;
 use App\Services\Auth\LoginEntryService;
 use App\Services\Auth\LoginHandoffService;
 use App\Services\AuthService;
+use App\Services\MemberFieldSchemaService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends AuthBaseController
@@ -40,11 +43,13 @@ class AuthController extends AuthBaseController
      * @param  AuthService  $authService  인증 서비스
      * @param  LoginHandoffService  $loginHandoffService  로그인 인계 코드 서비스
      * @param  LoginEntryService  $loginEntryService  로그인 진입 판정 서비스
+     * @param  MemberFieldSchemaService  $memberFieldSchema  회원 항목 화면 계약 서비스
      */
     public function __construct(
         private AuthService $authService,
         private LoginHandoffService $loginHandoffService,
         private LoginEntryService $loginEntryService,
+        private MemberFieldSchemaService $memberFieldSchema,
     ) {
         // 부모 생성자 호출하지 않음 - 인증 미들웨어를 수동으로 설정
         // parent::__construct();
@@ -63,6 +68,7 @@ class AuthController extends AuthBaseController
             'completePasswordChange',
             'postponePasswordChange',
             'register',
+            'registerFields',
             'forgotPassword',
             'resetPassword',
             'validateResetToken',
@@ -172,9 +178,26 @@ class AuthController extends AuthBaseController
         }
 
         // 사용자 정보는 Resource로, 토큰은 그대로
-        $data['user'] = new UserResource($data['user']);
+        $data = $this->withLoggedInUser($data);
 
         return $this->success('auth.login_success', $data);
+    }
+
+    /**
+     * 로그인을 마친 응답 데이터의 회원을 리소스로 바꾸고 비어 있는 필수 항목 키를 싣습니다.
+     *
+     * `pending_required_fields` 가 비어 있지 않으면 화면이 로그인 직후 추가 정보 입력 화면으로 보낸다.
+     *
+     * @param  array<string, mixed>  $data  로그인 결과 (`user` 는 회원 모델)
+     * @return array<string, mixed> `user` 가 리소스로 바뀌고 `pending_required_fields` 가 더해진 데이터
+     */
+    private function withLoggedInUser(array $data): array
+    {
+        $resource = new UserResource($data['user']);
+        $data['user'] = $resource;
+        $data['pending_required_fields'] = $resource->pendingRequiredFields();
+
+        return $data;
     }
 
     /**
@@ -200,7 +223,7 @@ class AuthController extends AuthBaseController
                 return $this->success($this->passwordChangeRequiredMessageKey($data), $data);
             }
 
-            $data['user'] = new UserResource($data['user']);
+            $data = $this->withLoggedInUser($data);
 
             return $this->success('auth.login_success', $data);
         } catch (AccountLockedException $e) {
@@ -238,7 +261,7 @@ class AuthController extends AuthBaseController
                 'user'
             );
 
-            $data['user'] = new UserResource($data['user']);
+            $data = $this->withLoggedInUser($data);
 
             return $this->success('auth.password_change_success', $data);
         } catch (AccountLockedException $e) {
@@ -265,7 +288,7 @@ class AuthController extends AuthBaseController
                 'user'
             );
 
-            $data['user'] = new UserResource($data['user']);
+            $data = $this->withLoggedInUser($data);
 
             return $this->success('auth.password_change_postponed', $data);
         } catch (AccountLockedException $e) {
@@ -319,7 +342,8 @@ class AuthController extends AuthBaseController
         }
 
         try {
-            $data = $this->authService->register($request->validated());
+            // 정의 버전(fields_version)은 낡은 화면 판정에만 쓴다 — 가입 데이터와 확장 훅 페이로드에 싣지 않는다.
+            $data = $this->authService->register(Arr::except($request->validated(), ['fields_version']));
 
             // 사용자 정보는 Resource로, 토큰은 그대로
             $data['user'] = new UserResource($data['user']);
@@ -328,6 +352,19 @@ class AuthController extends AuthBaseController
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'auth.register_failed');
         }
+    }
+
+    /**
+     * 가입 화면이 그릴 회원 항목과 정의 버전을 조회합니다.
+     *
+     * 화면은 받은 `fields_version` 을 가입 요청에 실어 보낸다 — 그 사이 운영자가 항목을 바꿨으면 가입 요청이 409 로 알린다.
+     *
+     * @param  RegisterFieldsRequest  $request  검증된 요청
+     * @return JsonResponse 항목 계약 목록과 정의 버전
+     */
+    public function registerFields(RegisterFieldsRequest $request): JsonResponse
+    {
+        return $this->success('common.success', $this->memberFieldSchema->forSignup($request->validated()));
     }
 
     /**

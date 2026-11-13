@@ -293,6 +293,31 @@ _등록하는 알림 정의가 없습니다._
 알림을 보내지 않는다 — 배너 노출은 운영자가 화면에서 확인한다.
 <!-- @intent END -->
 
+## 활동 로그 훅
+
+> 이 플러그인이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 8개입니다.
+> 기록은 `ResolvesActivityLogType::logActivity()` 로 남기며, 로그 유형은 요청 문맥에서 판정합니다
+> (모두 관리자 화면의 동작이므로 Admin). 설명 문구는 `sirsoft-hero_section::activity_log.description.*` 이고
+> 이 플러그인의 `lang/{ko,en}/activity_log.php` 와 번들 일본어 팩이 함께 정의합니다.
+> 일괄 처리(노출과 비노출, 삭제)는 배너마다 한 줄을 남깁니다. 삭제 기록은 행이 이미 없으므로
+> 훅이 넘긴 삭제 전 값으로 남깁니다.
+
+### 배너 훅 (BannerActivityLogListener)
+
+**파일**: `plugins/_bundled/sirsoft-hero_section/src/Listeners/BannerActivityLogListener.php`
+**총 8훅**
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-hero_section.banner.after_create` | `handleCreated` | `hero_banner.create` | Admin | Banner |
+| `sirsoft-hero_section.banner.after_update` | `handleUpdated` | `hero_banner.update` | Admin | Banner |
+| `sirsoft-hero_section.banner.after_delete` | `handleDeleted` | `hero_banner.delete` | Admin | Banner (ID 지정) |
+| `sirsoft-hero_section.banner.after_bulk_status` | `handleBulkStatus` | `hero_banner.bulk_status` | Admin | Banner |
+| `sirsoft-hero_section.banner.after_bulk_delete` | `handleBulkDelete` | `hero_banner.bulk_delete` | Admin | Banner (ID 지정) |
+| `sirsoft-hero_section.banner.after_reorder` | `handleReordered` | `hero_banner.reorder` | Admin | 없음 |
+| `sirsoft-hero_section.banner_image.after_change` | `handleImageChanged` | `hero_banner.image_update`, `hero_banner.image_remove`, `hero_banner.video_update`, `hero_banner.video_remove` | Admin | Banner |
+| `sirsoft-hero_section.position_setting.after_update` | `handlePositionSetting` | `hero_position.update` | Admin | PositionSetting |
+
 ## 표시 설정·관리자 미리보기 계약
 
 `HeroSlider`의 배너 객체는 선택적 `presentation`을 받습니다. `pc_x`, `pc_y`, `mobile_x`, `mobile_y`는 0~100의 이미지 초점이며 `overlay`는 none/dark/light입니다. PC와 모바일 표시 비율은 각각 1920×640·750×1000으로 고정해 순서 변경이 영역 높이를 바꾸지 않습니다. 문구 값은 `text_{pc|mobile}_{x|y}`(0~100 — 띠의 세로 위치와 상자의 가로 위치), `text_width`(30~100%), `animation`(none·rise·fade·left·right·zoom·blur·letters)·`animation_speed`(slow 1초·normal 0.6초·fast 0.35초)·`animation_delay`(0~2초), `tone`(dark·light)입니다. 등장 효과는 활성 장이 될 때마다 줄마다 0.2초씩 늦게 재생하고, 움직임 줄이기면 끕니다. 구성 값은 `layout`(background·promo), `background_color`(`#RRGGBB`), `text_width_pc`·`text_width_mobile`(비우면 `text_width`), `media_animation`(none·fade·right — 미디어 감싸개 `.hs-slider__media` 에 0.8초 기준), `animation: sequence`(줄 간격 0.3초·한 줄 0.4초)입니다. 프로모션형 마크업은 `.hs-slider__slide--promo > .hs-promo > .hs-promo__box > (.hs-promo__text > .hs-slider__text, .hs-slider__media.hs-promo__media)` 이고, 장에 `data-hs-side-pc`(left·right)·`data-hs-stack-mobile`(text·media)와 바탕색 변수 `--hs-slide-bg` 가 실립니다. 새 키가 없는 배너는 배경형으로 그립니다. 템플릿 오버라이드도 이 계약을 반영해야 합니다.

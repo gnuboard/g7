@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -13,6 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 장바구니 Repository 구현체
@@ -338,7 +340,7 @@ class CartRepository implements CartRepositoryInterface
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
             relations: [
-                'user:id,uuid,name,email,status',
+                'user:'.User::displayColumns(),
                 'product:id,name,display_status,sales_status',
                 'productOption',
             ],
@@ -372,9 +374,8 @@ class CartRepository implements CartRepositoryInterface
                     }
                 });
             }),
-            default => $query->whereHas('user', fn (Builder $u) => $u->where(
-                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
-            )),
+            // 회원 검색은 이름과 닉네임을 모두 찾는다(화면에 보이는 표시 이름이 어느 쪽이든 찾을 수 있게). 이메일도 종전대로 찾는다.
+            default => $query->whereHas('user', fn (Builder $u) => MemberDisplayName::constrainUsersForAdmin($u, trim($keyword), withEmail: true)),
         };
     }
 

@@ -2,7 +2,7 @@
 
 return [
     'link_url' => [
-        'unsafe' => 'Links must be a site path (starting with /) or an http(s) address. Addresses starting with // and schemes such as javascript: are not allowed.',
+        'unsafe' => 'Links must be a site path (starting with /) or an http or https address. Addresses starting with // and schemes such as javascript: are not allowed.',
     ],
     'position' => [
         'unregistered' => 'This exposure position is not registered. If the extension (module or plugin) that adds it is turned off, turn it back on and try again.',

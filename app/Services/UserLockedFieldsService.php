@@ -26,6 +26,12 @@ class UserLockedFieldsService
     /** 관리자 화면 표면 */
     public const SURFACE_ADMIN = 'admin';
 
+    /** 잠근 쪽이 사유를 주지 않았을 때의 일반 사유 */
+    public const REASON_DEFAULT = 'locked';
+
+    /** 본인인증 값으로 채워져 잠긴 칸의 사유 */
+    public const REASON_IDENTITY = 'identity';
+
     /**
      * 그 회원·표면의 잠긴 칸을 돌려줍니다.
      *
@@ -47,6 +53,36 @@ class UserLockedFieldsService
     }
 
     /**
+     * 그 회원·표면의 잠긴 칸마다 잠근 사유를 돌려줍니다.
+     *
+     * 화면이 사유별 안내 문구를 고르는 데 쓴다. 확장이 필터 `core.user.locked_field_reasons(array $reasons, User $user, string $surface)`
+     * 로 `칸 이름 => 사유` 를 준다(예: 회사 계정 연동은 `sso`, 본인인증은 `identity`). 잠근 쪽이 사유를 주지 않은 칸은
+     * 일반 사유 `locked` 로 본다. 잠기지 않은 칸의 사유는 버린다.
+     *
+     * @param  User  $user  대상 회원
+     * @param  string  $surface  표면 (`profile` | `admin`)
+     * @return array<string, string> 잠긴 칸 이름 => 사유
+     */
+    public function reasonsFor(User $user, string $surface): array
+    {
+        $locked = $this->lockedFor($user, $surface);
+        if ($locked === []) {
+            return [];
+        }
+
+        $given = HookManager::applyFilters('core.user.locked_field_reasons', [], $user, $surface);
+        $given = is_array($given) ? $given : [];
+
+        $reasons = [];
+        foreach ($locked as $field) {
+            $reason = $given[$field] ?? null;
+            $reasons[$field] = is_string($reason) && $reason !== '' ? $reason : self::REASON_DEFAULT;
+        }
+
+        return $reasons;
+    }
+
+    /**
      * 잠긴 칸에 「현재 값과 같아야 함」 규칙을 덧붙인 검증 규칙을 돌려줍니다.
      *
      * @param  array<string, mixed>  $rules  기존 규칙
@@ -60,10 +96,10 @@ class UserLockedFieldsService
             return $rules;
         }
 
-        foreach ($this->lockedFor($user, $surface) as $field) {
+        foreach ($this->reasonsFor($user, $surface) as $field => $reason) {
             $existing = $rules[$field] ?? [];
             $existing = is_string($existing) ? explode('|', $existing) : (array) $existing;
-            $existing[] = $this->unchangedRule($user, $field);
+            $existing[] = $this->unchangedRule($user, $field, $reason);
             $rules[$field] = $existing;
         }
 
@@ -75,16 +111,17 @@ class UserLockedFieldsService
      *
      * @param  User  $user  대상 회원
      * @param  string  $field  칸 이름
+     * @param  string  $reason  잠근 사유 (본인인증으로 잠긴 칸은 그 사유의 문구로 안내한다)
      * @return Closure 검증 규칙
      */
-    private function unchangedRule(User $user, string $field): Closure
+    private function unchangedRule(User $user, string $field, string $reason = self::REASON_DEFAULT): Closure
     {
-        return function (string $attribute, mixed $value, Closure $fail) use ($user, $field): void {
+        return function (string $attribute, mixed $value, Closure $fail) use ($user, $field, $reason): void {
             $current = $user->getAttribute($field);
             $normalize = fn (mixed $v) => $v === null || $v === '' ? null : (string) $v;
 
             if ($normalize($value) !== $normalize($current)) {
-                $fail(__('user.field_locked'));
+                $fail($reason === self::REASON_IDENTITY ? __('fields.validation.locked_identity') : __('user.field_locked'));
             }
         };
     }

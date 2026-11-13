@@ -1,0 +1,13 @@
+feature: social_login_signup_nickname_policy
+description: |
+  소셜 가입의 닉네임은 사이트의 닉네임 정책(중복 금지, 금지어)을 따른다. 가입 창에 적은 닉네임은 요청 검증에서,
+  제공자가 준 닉네임은 코어 가입에서 판정하고, 걸리면 닉네임 칸의 검증 오류(422)로 돌아온다.
+coverage_strategy: full
+axes:
+  nickname_source: [provider, input]
+effects:
+  - provider_nickname_checked_against_policy
+  - signup_retry_with_new_nickname
+  - input_nickname_checked_against_policy
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Signup/SignupNicknamePolicyTest.php

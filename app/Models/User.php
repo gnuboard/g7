@@ -11,6 +11,7 @@ use App\Enums\ScopeType;
 use App\Enums\UserStatus;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Helpers\TimezoneHelper;
+use App\Support\NicknameNormalizer;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,16 @@ class User extends Authenticatable implements HasLocalePreference
      * 닉네임 컬럼 최대 길이 (마이그레이션에서 명시한 값)
      */
     public const NICKNAME_MAX_LENGTH = 50;
+
+    /**
+     * 표시 이름을 계산하는 데 필요한 컬럼 (7.2.0).
+     *
+     * 회원 관계를 컬럼 제한으로 읽을 때(`with('user:id,name')` 꼴)는 이 목록을 쓴다. 이름만 읽으면 닉네임 사이트에서
+     * 표시 이름을 계산할 수 없고, 상태가 없으면 탈퇴 회원을 가려내지 못한다. {@see self::displayColumns()}
+     *
+     * @var array<int, string>
+     */
+    public const DISPLAY_COLUMNS = ['id', 'uuid', 'name', 'nickname', 'email', 'status', 'display_name_kind'];
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
@@ -145,6 +156,12 @@ class User extends Authenticatable implements HasLocalePreference
         'password_expired_processed_at',
         'password_change_postponed_until',
         'search_history_auto_save',
+        // 회원 항목·표시 이름·닉네임 정책(7.2.0) — 요청 검증이 받지 않는 칸이라 서비스 계층만 채운다
+        'display_name_kind',
+        'nickname_normalized',
+        'nickname_unique_key',
+        'nickname_changed_at',
+        'required_fields_deferred_at',
     ];
 
     /**
@@ -180,6 +197,8 @@ class User extends Authenticatable implements HasLocalePreference
             'locked_until' => 'datetime',
             'locked_permanently' => 'boolean',
             'last_failed_login_at' => 'datetime',
+            'nickname_changed_at' => 'datetime',
+            'required_fields_deferred_at' => 'datetime',
             'password_changed_at' => 'datetime',
             'password_change_required' => 'boolean',
             'password_expiry_policy' => PasswordExpiryPolicy::class,
@@ -709,6 +728,20 @@ class User extends Authenticatable implements HasLocalePreference
     }
 
     /**
+     * 표시 이름 계산에 필요한 컬럼을 eager load 제약 문자열로 반환합니다 (7.2.0).
+     *
+     * 예: `->with('user:'.User::displayColumns())`, `->with(['creator:'.User::displayColumns('avatar')])`.
+     * 관계 이름 뒤에 `:id,name` 을 직접 적지 않는다.
+     *
+     * @param  string  ...$extra  함께 읽을 컬럼
+     * @return string 쉼표로 이은 컬럼 목록
+     */
+    public static function displayColumns(string ...$extra): string
+    {
+        return implode(',', array_values(array_unique([...self::DISPLAY_COLUMNS, ...$extra])));
+    }
+
+    /**
      * 탈퇴한 사용자인지 확인합니다.
      *
      * @return bool 탈퇴 여부
@@ -761,11 +794,14 @@ class User extends Authenticatable implements HasLocalePreference
         // 닉네임에 suffix 추가 (있는 경우만, 날짜 없이)
         if ($this->nickname) {
             // nickname 은 마이그레이션에서 길이를 명시(50)한 컬럼이다.
-            // 이 접미사는 유일성 토큰(id)이 없다 — 현재 nickname/name 에 unique 인덱스가
-            // 없어 무해하지만, 향후 unique 인덱스를 추가하면 email 과 동일한 충돌
-            // (같은 값 재가입 후 재탈퇴 실패)이 재발하므로 그때 id 부착으로 전환할 것.
-            $this->nickname = $this->appendWithdrawnSuffix($this->nickname, '_탈퇴', self::NICKNAME_MAX_LENGTH);
+            // 접미사에 회원 ID 를 넣어 구조적으로 유일하게 만든다(7.2.0) — 닉네임 중복 금지가 켜진 사이트에서 같은 닉네임으로
+            // 재가입한 회원이 다시 탈퇴해도 서로 겹치지 않는다. 탈퇴 회원의 표시 이름은 「탈퇴한 회원」 문구라 접미사는 화면에 나가지 않는다.
+            $this->nickname = $this->appendWithdrawnSuffix($this->nickname, '_탈퇴_'.$this->id, self::NICKNAME_MAX_LENGTH);
         }
+
+        // 탈퇴한 회원의 닉네임은 중복 검사에서 빠진다 — 같은 닉네임을 다른 회원이 다시 쓸 수 있다.
+        $this->nickname_normalized = NicknameNormalizer::normalize($this->nickname);
+        $this->nickname_unique_key = null;
 
         // 상태 변경
         $this->status = UserStatus::Withdrawn->value;

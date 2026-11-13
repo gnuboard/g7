@@ -50,9 +50,12 @@ effects:
   - admin_user_form_carries_every_detail_field_in_the_same_order
   - admin_user_form_record_only_fields_are_locked
   - admin_user_form_editable_fields_carry_a_form_name
+  # 회원 항목 묶음(공용 조각)을 놓은 자리와 순서가 두 화면에서 같다 — 수정은 입력 조각, 상세는 보기 조각 (#490 6단계)
+  - admin_user_form_and_detail_place_same_member_field_groups
   # 두 화면을 같은 순서로 옮기면서 md:/lg: 구조 분기(선행 부채)도 걷었다 — 규약 §6-0.
   - admin_user_screens_have_no_tailwind_breakpoint_layout_branch
   # 사용자 (mypage-profile-view-edit-parity.test.ts)
+  - mypage_profile_view_and_edit_share_field_source
   - mypage_profile_edit_carries_every_view_item
   - mypage_profile_edit_shows_account_status
   - mypage_profile_edit_carries_the_avatar_uploader

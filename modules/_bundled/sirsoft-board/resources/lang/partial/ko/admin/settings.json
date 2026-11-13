@@ -49,6 +49,7 @@
     "list_description": "게시판 목록 페이지 관련 설정입니다",
     "post": "게시글 설정",
     "post_description": "게시글 작성 관련 설정입니다",
+    "guest_author_fields": "비회원 작성자 항목",
     "reply": "답변글 설정",
     "reply_description": "답변글 관련 설정입니다",
     "comment": "댓글 설정",
@@ -659,5 +660,9 @@
       "running": "실행 중",
       "never": "미실행"
     }
+  },
+  "guest_author_fields": {
+    "label": "비회원 작성자 항목 기본값",
+    "description": "새 게시판을 만들 때 그 게시판의 비회원 작성자 항목 설정으로 복사됩니다. 이미 만든 게시판은 바뀌지 않습니다. 이름과 비밀번호는 항상 받습니다."
   }
 }

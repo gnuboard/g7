@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Board\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Extension\ModuleManager;
 use App\Services\NotificationRecipientCapability;
 use App\Support\ScreenUrl;
@@ -189,7 +191,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $post->title ?? '',
-                'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
+                'comment_author' => $this->authorNameForNotification($comment),
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
                 'site_url' => ScreenUrl::userBase(),
@@ -249,7 +251,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $post->title ?? '',
-                'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
+                'comment_author' => $this->authorNameForNotification($comment),
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
                 'site_url' => ScreenUrl::userBase(),
@@ -559,7 +561,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $post->title ?? '',
-                'post_author' => $post->author_name ?? $post->user?->name ?? '',
+                'post_author' => $this->authorNameForNotification($post),
                 'post_url' => $this->buildPostUrl($board, $post),
                 'site_url' => SiteUrl::base(),
             ],
@@ -742,6 +744,26 @@ class BoardNotificationDataListener implements HookListenerInterface
     {
         // 회원이 여는 글보기 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
         return BoardScreenUrl::post($board->slug, $post->id, absolute: true);
+    }
+
+    /**
+     * 알림 본문에 실을 글 또는 댓글 작성자 이름을 반환합니다.
+     *
+     * 수신자가 아닌 다른 회원의 이름이다. 알림 영역(`core:notification`)의 표시 이름으로 싣고,
+     * 비회원이 쓴 글과 댓글은 입력한 이름을 그대로 싣는다.
+     *
+     * @param  Post|Comment  $content  글 또는 댓글
+     * @return string 작성자 이름 (없으면 빈 문자열)
+     */
+    private function authorNameForNotification(Post|Comment $content): string
+    {
+        $user = $content->user_id ? $content->user : null;
+
+        return (string) app(DisplayNameResolver::class)->resolve(
+            $user,
+            DisplayNameAreaRegistry::AREA_NOTIFICATION,
+            ['guest_name' => $content->author_name],
+        );
     }
 
     /**

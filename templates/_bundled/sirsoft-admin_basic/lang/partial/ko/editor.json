@@ -1184,6 +1184,7 @@
     "tab_navigation": "탭 내비게이션",
     "tab_navigation_scroll": "스크롤 탭 내비",
     "toggle": "토글 스위치",
+    "member_field_input": "회원 항목 입력칸",
     "input": "입력",
     "textarea": "여러 줄 입력",
     "label": "레이블",
@@ -1787,6 +1788,9 @@
     "queue_failed": "큐 실패 Job",
     "queue_logs": "큐 처리 기록",
     "coreSchedules": "코어 예약 작업 목록",
-    "template_settings": "템플릿 설정"
+    "template_settings": "템플릿 설정",
+    "memberFieldDefs": "회원 항목 정의",
+    "memberFields": "회원 항목",
+    "memberNicknameRecompute": "닉네임 중복 검사 준비 상태"
   }
 }

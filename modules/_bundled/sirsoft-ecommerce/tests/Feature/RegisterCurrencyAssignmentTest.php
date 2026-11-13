@@ -16,6 +16,18 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class RegisterCurrencyAssignmentTest extends ModuleTestCase
 {
     /**
+     * 회원 항목 선언(결제 통화, 배송국가)을 동기화합니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->syncMemberFieldDeclarations();
+    }
+
+    /**
      * 가입 요청 본문을 만듭니다.
      *
      * @param  array  $overrides  덮어쓸 필드
@@ -97,6 +109,7 @@ class RegisterCurrencyAssignmentTest extends ModuleTestCase
         ]));
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors('preferred_currency');
+        // 옛 키로 보낸 값도 정식 키(회원 항목 키)의 오류로 돌아온다
+        $response->assertJsonValidationErrors('ecommerce_preferred_currency');
     }
 }

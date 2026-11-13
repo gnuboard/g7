@@ -511,6 +511,10 @@
     "refund_bank_holder_placeholder": "Account holder",
     "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required."
   },
+  "checkout_fields": {
+    "orderer_extra": "Additional orderer information",
+    "shipping_extra": "Additional shipping information"
+  },
   "order_complete": {
     "page_title": "Order Complete",
     "title": "Order Complete",

@@ -429,7 +429,7 @@ return [
         ],
         'reset_failed' => '템플릿 설정을 기본값으로 되돌리지 못했습니다: :error',
         'warnings' => [
-            'owned_elsewhere' => '템플릿 ":template" 의 설정 칸 :fields 은(는) 코어·다른 확장이 이미 가진 값과 이름이 같습니다 — 그 값을 읽어 쓰고 다시 저장하지 마세요.',
+            'owned_elsewhere' => '템플릿 ":template" 의 설정 칸 :fields — 코어·다른 확장이 이미 가진 값과 이름이 같습니다. 그 값을 읽어 쓰고 다시 저장하지 마세요.',
         ],
         'update_failed' => '템플릿 설정 저장에 실패했습니다: :error',
         'not_found' => '설정 화면이 없는 템플릿입니다.',

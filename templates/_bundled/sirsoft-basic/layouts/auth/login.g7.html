@@ -42,7 +42,10 @@
            평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다
            풀린 사실을 끝내 모른다. -->
       <toast if="{{!response.two_factor_required &amp;&amp; !response.password_change_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-      <navigate if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
+      <!-- 최종 이동 — 필수 항목이 비어 있는 회원(응답의 pending_required_fields 에 키가 있다)은 원래 가려던 곳을 redirect 로 실어 추가 정보 입력 화면으로 보낸다.
+           그 밖에는 원래 가려던 곳, 없으면 홈이다. 원래 가려던 곳이 이미 추가 정보 입력 화면이면(그 화면에서 로그인이 풀려 다시 로그인한 경우) 겹쳐 싣지 않고 그 주소로 바로 보낸다.
+           폼 조각의 나머지 세 성공 지점(2단계 인증 완료, 비밀번호 변경 완료, 다음에 변경)도 같은 식을 쓴다. -->
+      <navigate if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" path="{{((response.pending_required_fields ?? []).length > 0 &amp;&amp; (query.redirect ?? '').indexOf('/mypage/required-info') !== 0) ? '/mypage/required-info' + (query.redirect ? '?redirect=' + encodeURIComponent(query.redirect) : '') : (query.redirect ?? '/')}}" fallbackPath="/"/>
     </sequence>
   </action>
   <init>

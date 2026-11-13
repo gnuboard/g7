@@ -197,7 +197,7 @@ class WithdrawAtomicityTest extends TestCase
         $this->assertStringContainsString('_deleted_', $user->email);
         $this->assertStringEndsWith('_'.$user->id, $user->email);
         $this->assertStringContainsString('_탈퇴_', $user->name);
-        $this->assertStringEndsWith('_탈퇴', $user->nickname);
+        $this->assertStringEndsWith('_탈퇴_'.$user->id, $user->nickname);
     }
 
     /**

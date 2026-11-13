@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce;
 
 use App\Extension\AbstractModule;
+use App\Extension\Helpers\ExtensionLangTexts;
 use App\Notifications\Identity\IdentityNotificationType;
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Support\AssetUrl;
@@ -19,6 +20,8 @@ use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
+use Modules\Sirsoft\Ecommerce\Fields\UserPreferenceFieldHandler;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\VerifyGuestOrderToken;
@@ -39,6 +42,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceScopeLedgerListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\ExemptRequiredFieldsRoutesListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ExportActivityLogDescriptionResolver;
 use Modules\Sirsoft\Ecommerce\Listeners\ExportActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ExportNotificationDataListener;
@@ -55,6 +59,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\ProvideNecessaryStorageKeysListener;
 use Modules\Sirsoft\Ecommerce\Listeners\PurgeCashReceiptIdentifierListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SearchProductsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
+use Modules\Sirsoft\Ecommerce\Listeners\SeoMemberDisplayNameCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductDetailRegenerateListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
@@ -70,11 +75,12 @@ use Modules\Sirsoft\Ecommerce\Listeners\UserListAddressFilterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserListMileageFilterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageCleanupListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
-use Modules\Sirsoft\Ecommerce\Listeners\UserPreferenceCoreSaveListener;
+use Modules\Sirsoft\Ecommerce\Listeners\UserPreferenceFieldDefinitionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
 use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimNotificationHooks;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 class Module extends AbstractModule
 {
@@ -3891,6 +3897,211 @@ class Module extends AbstractModule
     }
 
     /**
+     * 이 모듈이 선언하는 항목 목록을 반환합니다.
+     *
+     * 회원의 결제 통화와 배송국가를 회원 항목 집합(core.user)의 항목으로 선언한다. 값은 종전과 같이
+     * `ecommerce_user_profiles` 에 두고 `UserPreferenceFieldHandler` 로 잇는다. 요청 키와 응답 키는 최상위
+     * `ecommerce_preferred_currency`, `ecommerce_preferred_shipping_country` 이고, 가입 요청이 종전에 쓰던
+     * `preferred_currency`, `preferred_shipping_country` 는 옛 키로 받는다.
+     *
+     * - 선택지는 선언에 두지 않는다. 사이트 설정(통화와 환율, 배송 가능 국가)에 따라 달라지므로
+     *   `UserPreferenceFieldDefinitionListener` 가 요청 시점에 채운다.
+     * - 관리자 회원 추가에서는 받지 않는다(`ui.surfaces` 에 `admin_create` 없음). 추가 직후의 값은
+     *   기본값 지정 리스너(`AssignDefault*OnRegisterListener`)가 정한다.
+     *
+     * 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)에는 주문서의 기본 항목 8개를 선언한다({@see self::orderContactFields()}).
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     */
+    public function getFields(): array
+    {
+        $surfaces = ['signup', 'self_update', 'admin_update', 'required_info'];
+
+        return [
+            ...$this->orderContactFields(),
+            [
+                'field_set' => 'core.user',
+                'key' => UserPreferenceFieldHandler::CURRENCY_FIELD,
+                'type' => 'choice',
+                'storage' => 'handler',
+                'storage_target' => UserPreferenceFieldHandler::class,
+                'name' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::CURRENCY_FIELD.'.name'),
+                'description' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::CURRENCY_FIELD.'.description'),
+                'constraints' => ['display' => 'select'],
+                'enabled' => true,
+                'required' => false,
+                'show_on_signup' => true,
+                'edit_scope' => 'self',
+                'legacy_keys' => [UserPreferenceFieldHandler::LEGACY_CURRENCY_FIELD],
+                'ui' => ['group' => 'shop', 'surfaces' => $surfaces],
+                'sort_order' => 2100,
+            ],
+            [
+                'field_set' => 'core.user',
+                'key' => UserPreferenceFieldHandler::SHIPPING_COUNTRY_FIELD,
+                'type' => 'choice',
+                'storage' => 'handler',
+                'storage_target' => UserPreferenceFieldHandler::class,
+                'name' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::SHIPPING_COUNTRY_FIELD.'.name'),
+                'description' => $this->fieldTexts('user.'.UserPreferenceFieldHandler::SHIPPING_COUNTRY_FIELD.'.description'),
+                'constraints' => ['display' => 'select'],
+                'enabled' => true,
+                'required' => false,
+                'show_on_signup' => true,
+                'edit_scope' => 'self',
+                'legacy_keys' => [UserPreferenceFieldHandler::LEGACY_SHIPPING_COUNTRY_FIELD],
+                'ui' => ['group' => 'shop', 'surfaces' => $surfaces],
+                'sort_order' => 2110,
+            ],
+        ];
+    }
+
+    /**
+     * 이 모듈이 가진 항목 집합 선언을 반환합니다.
+     *
+     * 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)은 주문서에서 받는 주문자와 배송지 항목이 모이는 자리다.
+     * 운영자는 이커머스 환경설정의 주문 설정 탭에서 코어 공용 항목 API 로 이 집합의 표를 보고 고친다(권한은 이커머스 설정 권한).
+     * 다른 확장도 `getFields()` 에서 이 집합에 항목을 선언할 수 있고, 그 항목은 같은 표에 출처와 함께 나타난다.
+     * 추가 항목의 요청 키는 `extra_fields.{항목 키}`, 값은 공용 값 테이블(소유자 종류 `ecommerce_order`)에 저장한다.
+     *
+     * @return array<int, array<string, mixed>> 집합 선언 목록
+     */
+    public function getFieldSets(): array
+    {
+        return [
+            [
+                'key' => OrderContactFields::SET,
+                'label' => 'sirsoft-ecommerce::fields.order_contact.set_label',
+                'owner_types' => [OrderContactFields::OWNER_TYPE],
+                'surfaces' => [OrderContactFields::SURFACE],
+                // 주문서에는 파일을 올릴 자리가 없다. 파일과 이미지 유형은 받지 않는다.
+                'allowed_types' => OrderContactFields::ALLOWED_TYPES,
+                'accepts_contributions' => true,
+                'allows_custom' => true,
+                'read_permission' => 'sirsoft-ecommerce.settings.read',
+                'manage_permission' => 'sirsoft-ecommerce.settings.update',
+                'bundle_key' => OrderContactFields::BUNDLE,
+            ],
+        ];
+    }
+
+    /**
+     * 이 모듈이 등록하는 표시 이름 영역을 반환합니다.
+     *
+     * | 영역 | 쓰는 자리 | 상위 | 기본값 |
+     * | --- | --- | --- | --- |
+     * | `sirsoft-ecommerce:review` | 사용자 화면의 상품 후기 작성자 | 사이트 기본 | 따름 |
+     * | `sirsoft-ecommerce:inquiry` | 사용자 화면의 상품 문의 작성자 | 사이트 기본 | 가린 이름 고정 (종전 표시와 같다) |
+     * | `sirsoft-ecommerce:admin` | 이커머스 관리자 화면의 회원 이름, 새로 남기는 기록 | 관리자 화면 | 따름 |
+     *
+     * 기능별 설정은 영역 설정 자체(코어 `member.display_name_areas`)에 저장하므로 인스턴스 판정과 사용처 목록을 두지 않는다.
+     * 후기와 문의 영역은 쇼핑몰 환경설정(리뷰 설정 탭, 기본 정보 탭)과 환경설정의 회원 탭 어느 쪽에서 바꿔도 같은 값이다.
+     *
+     * @return array<int, array<string, mixed>> 영역 선언 목록
+     */
+    public function getDisplayNameAreas(): array
+    {
+        return [
+            [
+                'key' => MemberDisplayName::AREA_REVIEW,
+                'label' => 'sirsoft-ecommerce::display_name.areas.review',
+                'audience' => 'user',
+                'parent' => 'core:site',
+                'default' => ['mode' => 'inherit'],
+                'sort_order' => 200,
+            ],
+            [
+                'key' => MemberDisplayName::AREA_INQUIRY,
+                'label' => 'sirsoft-ecommerce::display_name.areas.inquiry',
+                'audience' => 'user',
+                'parent' => 'core:site',
+                'default' => ['mode' => 'fixed', 'kind' => 'masked_name'],
+                'sort_order' => 210,
+            ],
+            [
+                'key' => MemberDisplayName::AREA_ADMIN,
+                'label' => 'sirsoft-ecommerce::display_name.areas.admin',
+                'audience' => 'admin',
+                'parent' => 'core:admin',
+                'default' => ['mode' => 'inherit'],
+                'sort_order' => 220,
+            ],
+        ];
+    }
+
+    /**
+     * 주문서 항목 집합에 선언하는 기본 항목 8개를 반환합니다.
+     *
+     * | 항목 | 구획 | 기본 | 잠금 |
+     * | --- | --- | --- | --- |
+     * | 주문자 이름, 주문자 연락처 | 주문자 | 사용, 필수 | 사용과 필수 |
+     * | 주문자 이메일 | 주문자 | 사용, 선택 (비회원 주문은 늘 필수) | 없음 |
+     * | 수령인 이름, 수령인 연락처, 배송 주소 | 배송지 | 사용, 필수 | 사용과 필수 |
+     * | 상세 주소 | 배송지 | 사용, 필수 | 없음 |
+     * | 배송 메모 | 배송지 | 사용, 선택 | 없음 |
+     *
+     * 모두 주문 주소의 컬럼에 저장하는 항목이라 `column` 으로 선언한다(항목 엔진은 이 값을 값 테이블에 쓰지 않고, 저장은 주문 생성 코드가 한다).
+     * 잠긴 항목의 검증 규칙은 주문 요청의 고정 규칙이고, 표에는 잠긴 행으로 보이기만 한다. `locks` 의 값은 사유 문구의 번역 키다.
+     *
+     * @return array<int, array<string, mixed>> 항목 선언 목록
+     */
+    private function orderContactFields(): array
+    {
+        $lockReason = 'sirsoft-ecommerce::fields.order_contact.locked';
+        $locked = ['enabled' => $lockReason, 'required' => $lockReason];
+
+        // [키, 유형, 컬럼, 구획, 필수, 잠금, 제한]
+        $rows = [
+            ['orderer_name', 'text', 'orderer_name', OrderContactFields::GROUP_ORDERER, true, $locked, ['max_length' => 50]],
+            ['orderer_phone', 'phone', 'orderer_phone', OrderContactFields::GROUP_ORDERER, true, $locked, null],
+            ['orderer_email', 'email', 'orderer_email', OrderContactFields::GROUP_ORDERER, false, null, null],
+            ['recipient_name', 'text', 'recipient_name', OrderContactFields::GROUP_SHIPPING, true, $locked, ['max_length' => 50]],
+            ['recipient_phone', 'phone', 'recipient_phone', OrderContactFields::GROUP_SHIPPING, true, $locked, null],
+            ['address', 'address', 'zipcode,address', OrderContactFields::GROUP_SHIPPING, true, $locked, null],
+            ['address_detail', 'text', 'address_detail', OrderContactFields::GROUP_SHIPPING, true, null, ['max_length' => 255]],
+            ['shipping_memo', 'textarea', 'delivery_memo', OrderContactFields::GROUP_SHIPPING, false, null, ['max_length' => 500]],
+        ];
+
+        $fields = [];
+        foreach ($rows as $index => [$key, $type, $column, $group, $required, $locks, $constraints]) {
+            $fields[] = [
+                'field_set' => OrderContactFields::SET,
+                'key' => $key,
+                'type' => $type,
+                'storage' => 'column',
+                'storage_target' => $column,
+                'name' => $this->fieldTexts("order_contact.{$key}.name"),
+                'description' => $this->fieldTexts("order_contact.{$key}.description") ?: null,
+                'constraints' => $constraints,
+                'enabled' => true,
+                'required' => $required,
+                'locks' => $locks,
+                'ui' => ['group' => $group],
+                'sort_order' => 10 + ($index * 10),
+            ];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * 항목 문구 파일(`src/lang/{언어}/fields.php`)과 이 모듈을 대상으로 하는 활성 언어팩의
+     * `backend/{언어}/fields.php` 에서 한 키의 언어별 글을 모읍니다(코어 `ExtensionLangTexts`).
+     *
+     * 번역기를 거치지 않고 파일을 직접 읽는다. 선언 동기화는 설치와 갱신 도중에도 돌아, 그때는 이 모듈의
+     * 번역 네임스페이스가 아직 등록되지 않았을 수 있다. 경로는 `getModulePath()` 로 얻는다. 갱신 도중 새 코드를 다시 읽는
+     * 인스턴스에서는 `__DIR__` 이 모듈 디렉터리를 가리키지 않을 수 있다. 언어팩(ja 등)을 읽지 않으면 그 언어 화면에서
+     * 이 모듈의 항목 이름만 한국어로 보인다. 팩을 켜고 끄면 코어가 이 선언을 다시 동기화한다.
+     *
+     * @param  string  $path  점 표기 키 (예: user.ecommerce_preferred_currency.name)
+     * @return array<string, string> 언어 => 글
+     */
+    private function fieldTexts(string $path): array
+    {
+        return ExtensionLangTexts::collect('sirsoft-ecommerce', $this->getModulePath().'/src/lang', 'fields', $path);
+    }
+
+    /**
      * 훅 리스너 목록 반환
      */
     public function getHookListeners(): array
@@ -3923,13 +4134,18 @@ class Module extends AbstractModule
             SeoCategoryCacheListener::class,
             CategoryTreeCacheListener::class,
             SeoSettingsCacheListener::class,
+            // 회원의 표시 이름이 바뀌면 후기와 문의 작성자가 구워진 상품 상세 SEO 캐시를 비운다(#490)
+            SeoMemberDisplayNameCacheListener::class,
             ShippingPolicyCacheListener::class,
             MileageTransactionListener::class,
             UserMileageInfoListener::class,
             UserEcommerceDataInfoListener::class,
             UserCurrencyInfoListener::class,
             UserShippingCountryInfoListener::class,
-            UserPreferenceCoreSaveListener::class,
+            // 회원 항목 「결제 통화」「배송국가」의 선택지를 요청 시점에 채운다(검증과 저장은 선언 + UserPreferenceFieldHandler)
+            UserPreferenceFieldDefinitionListener::class,
+            // 추가 정보를 아직 입력하지 않은 회원에게도 열어 둘 쓰기 라우트(결제 결과 처리, 통화와 배송국가 전환)를 코어에 알린다
+            ExemptRequiredFieldsRoutesListener::class,
             AssignDefaultCurrencyOnRegisterListener::class,
             SystemActorContextListener::class,
             AssignDefaultShippingCountryOnRegisterListener::class,
@@ -4359,7 +4575,7 @@ class Module extends AbstractModule
             // 프로토콜 상대(`//cdn/…` → `https://host//cdn/…`) · 상대 경로
             // (`img.png` → `https://hostimg.png`) · `data:` URI. 그리고 접두사를 채우는
             // 주체가 없어 리터럴 사이트 경로(`/images/logo.png`)는 하위 폴더 배치에서
-            // 접두사를 잃었다 (16차 G3 라운드 A-4).
+            // 접두사를 잃었다.
             $imageRaw = $this->resolveLocalizedValue($product['thumbnail_url'] ?? '');
             // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
             // `AssetUrl::siteAbsolute()` 의 본체는 `SiteUrl::absolute()` 이고, 사이트 경로가 아닌 값은 그대로 둔다.

@@ -2,7 +2,7 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "analytics", "privacy", "system", "content"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "analytics", "privacy", "system", "content", "member"]
     },
     "defaults": {
         "general": {
@@ -304,6 +304,18 @@
             "embed_custom_providers": [],
             "custom_tags": [],
             "media_url_ttl_minutes": 240
+        },
+        "member": {
+            "nickname_unique": false,
+            "nickname_banned_words": [],
+            "nickname_change_interval_days": 0,
+            "display_name_selectable_kinds": ["name"],
+            "display_name_member_default_kind": "name",
+            "display_name_areas": {
+                "core:site": { "mode": "fixed", "kind": "name" },
+                "core:admin": { "mode": "fixed", "kind": "name" },
+                "sirsoft-ecommerce:inquiry": { "mode": "fixed", "kind": "masked_name" }
+            }
         }
     },
     "frontend_schema": {
@@ -651,6 +663,15 @@
                     "source": "allow_external_embed",
                     "transform": "content_render_policy"
                 }
+            }
+        },
+        "member": {
+            "expose": true,
+            "_comment": "회원이 고를 수 있는 표시 이름 종류, 회원 기본 종류, 닉네임 변경 주기만 노출한다(가입·내 정보 화면 안내용). 금지어와 영역별 표시 이름 설정은 fields 에 선언하지 않아 내보내지 않는다 — 이 값은 비로그인 공개 API 로도 나간다",
+            "fields": {
+                "display_name_selectable_kinds": { "type": "array", "sensitive": false },
+                "display_name_member_default_kind": { "type": "string", "sensitive": false },
+                "nickname_change_interval_days": { "type": "integer", "sensitive": false }
             }
         }
     }

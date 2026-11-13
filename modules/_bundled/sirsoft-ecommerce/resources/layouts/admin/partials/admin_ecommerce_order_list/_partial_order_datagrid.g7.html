@@ -211,6 +211,8 @@
                 <div class="ecommerce:min-w-0 ecommerce:flex-1">
                   <span data-if="{{!!row.user?.uuid}}" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
                   <span data-if="{{!row.user?.uuid}}" class="ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
+                  <!-- 실명 보조 줄(#490) — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 이 칸은 주문서에 적힌 주문자 이름을 먼저 보이므로, 그 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다. -->
+                  <span data-if="{{!!row.user?.real_name &amp;&amp; row.user?.real_name !== (row.address?.orderer_name || row.user?.name)}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user?.real_name })}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate ecommerce:block">{{row.user?.real_name}}</span>
                   <!-- 첫구매 표시 -->
                   <span data-if="{{row.is_first_order}}" class="ecommerce:text-xs ecommerce:text-emerald-700 ecommerce:dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
                 </div>

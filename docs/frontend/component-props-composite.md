@@ -294,7 +294,7 @@
 | `placeholder` | string | - | 입력창 placeholder |
 | `noOptionsMessage` | string | - | 검색 결과 없을 때 메시지 |
 | `formatCreateLabel` | string | - | 새 항목 추가 라벨 |
-| `createLabelSuffix` | string | `'추가'` | 새 항목 추가 접미사 |
+| `createLabelSuffix` | string | - | 새 항목 추가 접미사. 넘기면 값 뒤에 붙인다. 생략하면 화면 언어 문장 `common.tag_input.create_label`(값 자리 `{{value}}`, 없으면 `Add {값}`)이 어순을 정한다 |
 | `disabled` | boolean | `false` | 비활성화 |
 | `tagVariants` | object | - | 태그 값별 색상 맵핑 |
 | `defaultVariant` | string | - | 기본 태그 색상 |

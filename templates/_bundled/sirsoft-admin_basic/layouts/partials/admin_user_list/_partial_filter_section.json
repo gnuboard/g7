@@ -1,5 +1,5 @@
 {
-    "comment": "회원 목록 — 검색 필터 영역. 쿠폰·상품·주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),\n  다만 항목이 회원 도메인이고 **프리셋이 없다**(#705 D6).\n\n  ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를\n     정한다 — 보이고 숨겨도 행이 다시 만들어지지 않으므로 입력값이 유지된다.\n  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage)에 남긴다. 저장은 본체의 필터 표시 선택기가\n     자기 `id`(`admin_user_filters`)와 로그인 사용자로 만든 키에 스스로 한다 — 편집모드 체크박스는\n     상태만 바꾼다. 되읽기는 코어 템플릿 핸들러 `loadVisibleFilters` 가 같은 키로 한다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다(`searchUsers`).\n  ⓓ 모듈·플러그인이 더하는 필터 행은 상세 영역 아래 확장점(`admin_user_list_filters`)에 모인다.\n     그 행은 기본/상세 이동 대상이 아니다 — 코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다.\n     값은 각 확장이 자기 네임스페이스로 등록한 핸들러로 `_local.userFilterExtraQuery` 배열에 모으고,\n     이 영역의 검색이 그 배열을 `ext_filters[]` 로 보낸다 — 확장 조각은 이 템플릿의 핸들러에 기대지 않는다.\n\n  날짜 축이 **넷**이다 — 가입일(`created*`), 최근 로그인(`lastLogin*`), 휴면 전환일(`dormant*`),\n  상태 변경일(`statusChanged*`, 탈퇴/차단 중 고른 쪽). 빠른 기간 버튼은 가입일·최근 로그인에만 있다.\n  날짜 칸은 `<input type=\"date\">` 라 빠른 기간 핸들러를 `format=\"date\"` 로 부른다.",
+    "comment": "회원 목록 — 검색 필터 영역. 쿠폰·상품·주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드),\n  다만 항목이 회원 도메인이고 **프리셋이 없다**(#705 D6).\n\n  ⓐ 필터 행은 화면 밖 등록 영역에 한 번만 정의하고 `data-slot` 이 기본/상세 중 어디로 갈지를\n     정한다 — 보이고 숨겨도 행이 다시 만들어지지 않으므로 입력값이 유지된다.\n  ⓑ 어떤 필터를 기본에 둘지는 브라우저(localStorage)에 남긴다. 저장은 본체의 필터 표시 선택기가\n     자기 `id`(`admin_user_filters`)와 로그인 사용자로 만든 키에 스스로 한다 — 편집모드 체크박스는\n     상태만 바꾼다. 되읽기는 코어 템플릿 핸들러 `loadVisibleFilters` 가 같은 키로 한다.\n  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 검색은 URL 로 나간다(`searchUsers`).\n  ⓓ 모듈·플러그인이 더하는 필터 행은 상세 영역 아래 확장점(`admin_user_list_filters`)에 모인다.\n     그 행은 기본/상세 이동 대상이 아니다 — 코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다.\n     값은 각 확장이 자기 네임스페이스로 등록한 핸들러로 `_local.userFilterExtraQuery` 배열에 모으고,\n     이 영역의 검색이 그 배열을 `ext_filters[]` 로 보낸다 — 확장 조각은 이 템플릿의 핸들러에 기대지 않는다.\n\n  ⓔ 회원 항목 조건 둘(필수 항목 미입력, 닉네임 중복)은 켜고 끄는 값이라 행마다 체크박스 하나다.\n     운영자가 「회원 검색」으로 켠 추가 항목은 검색 대상 선택지 뒤에, 「회원 목록 열」로 켠 항목은 열 선택기에 붙는다.\n\n  날짜 축이 **넷**이다 — 가입일(`created*`), 최근 로그인(`lastLogin*`), 휴면 전환일(`dormant*`),\n  상태 변경일(`statusChanged*`, 탈퇴/차단 중 고른 쪽). 빠른 기간 버튼은 가입일·최근 로그인에만 있다.\n  날짜 칸은 `<input type=\"date\">` 라 빠른 기간 핸들러를 `format=\"date\"` 로 부른다.",
     "meta": {
         "is_partial": true,
         "description": "User List - Filter Section with Slot System"
@@ -2243,6 +2243,210 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "id": "required_missing_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('requiredMissing') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 13,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex flex-row gap-2 items-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "필수 항목 미입력 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('requiredMissing') ? (_local.visibleFilters || []).filter(f => f !== 'requiredMissing') : [...(_local.visibleFilters || []), 'requiredMissing']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('requiredMissing')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.list_member_fields.filter_required_missing"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "filter-field-label w-32"
+                            },
+                            "text": "$t:admin.users.list_member_fields.filter_required_missing"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "필수 항목 미입력. 켜면 운영자가 필수로 둔 항목 중 하나라도 비어 있는 회원만 남는다(주소 인자 required_missing=1). 어떤 항목이 비었는지는 표의 「미입력」 열이 보인다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.requiredMissing": "{{!_local.filter.requiredMissing}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "requiredMissing",
+                                                "className": "checkbox",
+                                                "checked": "{{!!_local.filter.requiredMissing}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.list_member_fields.filter_required_missing_only"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "nickname_duplicate_filter_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "slot": "{{(_local.visibleFilters || []).includes('nicknameDuplicate') ? 'basic_filters' : 'detail_filters'}}",
+                    "slotOrder": 14,
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 flex-col items-start"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex flex-row gap-2 items-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "닉네임 중복 필터 노출 스위치.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "visibleFilters": "{{(_local.visibleFilters || []).includes('nicknameDuplicate') ? (_local.visibleFilters || []).filter(f => f !== 'nicknameDuplicate') : [...(_local.visibleFilters || []), 'nicknameDuplicate']}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                                "checked": "{{(_local.visibleFilters || []).includes('nicknameDuplicate')}}",
+                                "aria-label": "$t:admin.users.filter.show_in_basic|label=$t:admin.users.list_member_fields.filter_nickname_duplicate"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "filter-field-label mb-0 shrink-0 flex items-center w-32"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "filter-field-label w-32"
+                            },
+                            "text": "$t:admin.users.list_member_fields.filter_nickname_duplicate"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-1 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "닉네임 중복. 켜면 닉네임이 다른 회원과 겹치는 회원만 남는다(주소 인자 nickname_duplicate=1). 닉네임 정책 화면의 「겹치는 회원 보기」가 이 조건을 켠 채 들어온다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.nicknameDuplicate": "{{!_local.filter.nicknameDuplicate}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "name": "nicknameDuplicate",
+                                                "className": "checkbox",
+                                                "checked": "{{!!_local.filter.nicknameDuplicate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.users.list_member_fields.filter_nickname_duplicate_only"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
@@ -2289,7 +2493,7 @@
                             },
                             "actions": [
                                 {
-                                    "comment": "검색어를 어느 칸에서 찾을지. 회원번호/고유ID 는 LIKE 가 아니라 정확 일치다(숫자면 번호, UUID 면 고유ID).",
+                                    "comment": "검색어를 어느 칸에서 찾을지. 회원번호/고유ID 는 LIKE 가 아니라 정확 일치다(숫자면 번호, UUID 면 고유ID). 고정 선택지 일곱 뒤에 운영자가 「회원 검색」으로 켠 추가 항목이 붙는다(값은 custom:{항목 키}, 같은 filters[0][field] 로 나간다).",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -2303,36 +2507,7 @@
                                 "aria-label": "$t:common.search_field",
                                 "className": "w-32",
                                 "value": "{{_local.filter.searchField || 'all'}}",
-                                "options": [
-                                    {
-                                        "value": "all",
-                                        "label": "$t:admin.users.search_fields.all"
-                                    },
-                                    {
-                                        "value": "name",
-                                        "label": "$t:admin.users.search_fields.name"
-                                    },
-                                    {
-                                        "value": "nickname",
-                                        "label": "$t:admin.users.search_fields.nickname"
-                                    },
-                                    {
-                                        "value": "email",
-                                        "label": "$t:admin.users.search_fields.email"
-                                    },
-                                    {
-                                        "value": "contact",
-                                        "label": "$t:admin.users.search_fields.contact"
-                                    },
-                                    {
-                                        "value": "identifier",
-                                        "label": "$t:admin.users.search_fields.identifier"
-                                    },
-                                    {
-                                        "value": "admin_memo",
-                                        "label": "$t:admin.users.search_fields.admin_memo"
-                                    }
-                                ]
+                                "options": "{{[{ value: 'all', label: '$t:admin.users.search_fields.all' }, { value: 'name', label: '$t:admin.users.search_fields.name' }, { value: 'nickname', label: '$t:admin.users.search_fields.nickname' }, { value: 'email', label: '$t:admin.users.search_fields.email' }, { value: 'contact', label: '$t:admin.users.search_fields.contact' }, { value: 'identifier', label: '$t:admin.users.search_fields.identifier' }, { value: 'admin_memo', label: '$t:admin.users.search_fields.admin_memo' }, ...(users?.data?.member_fields?.search_fields ?? [])]}}"
                             }
                         },
                         {
@@ -2388,7 +2563,7 @@
                     },
                     "children": [
                         {
-                            "comment": "보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다",
+                            "comment": "보이는 열 선택. 선택지는 표(users_data_grid)가 실제로 그리는 열과 같아야 한다 — 표에 없는 열을 두면 「필수」 로 켜져 있어도 아무것도 보이지 않는다.\n             운영자가 켠 추가 항목 열은 표와 같은 computed(memberFieldColumns)를 같은 자리(닉네임 뒤)에 받는다. 처음 보는 항목 열은 선택기가 스스로 켠다",
                             "id": "column_selector",
                             "type": "composite",
                             "name": "ColumnSelector",
@@ -2416,6 +2591,8 @@
                             "props": {
                                 "id": "admin_user_list_columns",
                                 "visibleColumns": "{{_global.visibleColumns_admin_users}}",
+                                "dynamicColumns": "{{_computed.memberFieldColumns ?? []}}",
+                                "dynamicColumnsInsertAfter": "nickname",
                                 "triggerLabel": "$t:common.column_selector",
                                 "menuTitle": "$t:common.column_selector_title",
                                 "menuDescription": "$t:common.column_selector_description",
@@ -2437,8 +2614,16 @@
                                         "required": true
                                     },
                                     {
+                                        "field": "display_name",
+                                        "header": "$t:admin.users.list_member_fields.display_name_column"
+                                    },
+                                    {
                                         "field": "nickname",
                                         "header": "$t:admin.users.columns.nickname"
+                                    },
+                                    {
+                                        "field": "pending_required_fields",
+                                        "header": "$t:admin.users.list_member_fields.pending_column"
                                     },
                                     {
                                         "field": "country",
@@ -2729,7 +2914,9 @@
                                                             "language": "",
                                                             "country": "",
                                                             "emailVerified": "all",
-                                                            "identityVerified": "all"
+                                                            "identityVerified": "all",
+                                                            "requiredMissing": false,
+                                                            "nicknameDuplicate": false
                                                         }
                                                     }
                                                 },
@@ -2862,7 +3049,9 @@
                                                     "language": "",
                                                     "country": "",
                                                     "emailVerified": "all",
-                                                    "identityVerified": "all"
+                                                    "identityVerified": "all",
+                                                    "requiredMissing": false,
+                                                    "nicknameDuplicate": false
                                                 }
                                             }
                                         },

@@ -12,6 +12,7 @@ use App\Exceptions\PhpExtensionRequirementException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\AllowInactiveUser;
+use App\Http\Middleware\AllowPendingRequiredFields;
 use App\Http\Middleware\Analytics\EnsureArchiveFresh;
 use App\Http\Middleware\Analytics\TrackBotHit;
 use App\Http\Middleware\Analytics\TrackServerVisit;
@@ -24,6 +25,8 @@ use App\Http\Middleware\DatabaseCredentialGuard;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureDebugMode;
+use App\Http\Middleware\EnsureFieldSetPermission;
+use App\Http\Middleware\EnsureRequiredFieldsCompleted;
 use App\Http\Middleware\ExtensionMiddlewareGate;
 use App\Http\Middleware\GzipEncodeResponse;
 use App\Http\Middleware\MaintenanceModePage;
@@ -197,6 +200,14 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToPriorityList(AuthenticatesRequests::class, OptionalSanctumMiddleware::class);
         $middleware->appendToPriorityList(OptionalSanctumMiddleware::class, EnsureActiveUser::class);
 
+        // 추가 정보 입력 요구 관문(7.2.0) — 비어 있는 필수 항목이 있는 회원의 쓰기 요청을 코어, 모듈, 플러그인 API 전부에서 거부한다
+        // (403 `required_fields_pending`). 회원 상태 관문 **뒤**에서 돈다 — 차단, 휴면 회원은 상태 사유로 먼저 끊긴다.
+        // 통과시킬 라우트에는 표식 `allow.pending_required_fields` 를 붙이고, 확장은 필터 `core.required_fields.filter_exempt_routes` 로 보탠다.
+        $middleware->appendToGroup('api', [
+            EnsureRequiredFieldsCompleted::class,
+        ]);
+        $middleware->appendToPriorityList(EnsureActiveUser::class, EnsureRequiredFieldsCompleted::class);
+
         // 확장 선언 미들웨어 self-gate 래퍼 — 확장이 getMiddleware() 로 선언한 미들웨어를
         // 요청 시점에 라우트명·URI 매칭으로 실행. web/api × before_core/after_core 로 4회 등록.
         //   - before_core → 그룹 선두(prepend): 코어 전처리(인증·SetLocale·IDV) 전체보다 먼저 실행
@@ -231,7 +242,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'check.user_status' => CheckUserStatus::class,
             // 공통 회원 상태 관문 통과 표식 — 가입 후 인증 대기 회원의 본인인증 경로(`api.identity.*`)에만 붙인다(7.2.0)
             'allow.inactive_user' => AllowInactiveUser::class,
+            // 추가 정보 입력 요구 관문 통과 표식 — 회원이 빠져나갈 길(로그아웃, 내 정보, 본인인증, 탈퇴)과 기술 요청에 붙인다(7.2.0)
+            'allow.pending_required_fields' => AllowPendingRequiredFields::class,
             'permission' => PermissionMiddleware::class,
+            // 항목 집합의 조회·수정 권한 — 집합마다 권한이 달라 라우트의 {set} 으로 찾아 확인한다(7.2.0)
+            'field_set.permission' => EnsureFieldSetPermission::class,
             'role' => RoleMiddleware::class,
             // 최고관리자 전용 — 판정은 회원의 최고관리자 표지(is_super). 코어에 최고관리자 역할은 없다.
             'super.admin' => SuperAdminMiddleware::class,
@@ -334,13 +349,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // **HTML 오류 페이지**를 돌려준다. 같은 라우트가 `Accept` 헤더에 따라 JSON 과 HTML 을
         // 갈라 내는 상태이고, 링크가 되는 서버의 정적 서빙(빈 본문 404)과도 갈린다. 형제
         // 렌더러 다섯이 전부 `expectsJson() || is('api/*')` 로 JSON 을 고정하는데 이 종류만
-        // 빠져 있었다 (16차 G3 라운드 E-9).
+        // 빠져 있었다.
         //
         // 조건은 `expectsJson() || is('api/*')` 다 — 종전의 `is('api/*') && !expectsJson()`
         // 은 XHR(`Accept: application/json`) 요청을 이 렌더러 밖으로 흘려, 프레임워크 기본값이
         // 본문 없는 HTTP 예외를 `{"message":""}`(빈 문자열)로 돌려줬다. 그러면 같은 라우트가
         // 요청의 `Accept` 에 따라 `{success,message}` 와 `{message:""}` 로 응답 형태가 갈린다.
-        // `api/*` 응답 형태 분기는 이 렌더러 한 곳이 소유한다 (17차 G3 라운드 B-6).
+        // `api/*` 응답 형태 분기는 이 렌더러 한 곳이 소유한다.
         //
         // 예외가 실은 헤더(`Retry-After` 등)는 그대로 승계한다 — 예: 레이트리밋(429) 이 봇에
         // 재시도 간격을 알리는 통로다.

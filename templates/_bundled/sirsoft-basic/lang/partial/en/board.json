@@ -138,6 +138,13 @@
   "guest_password_post_delete_message": "Please enter password to delete this guest post.",
   "guest_password_comment_edit_message": "Please enter password to edit this guest comment.",
   "guest_password_comment_delete_message": "Please enter password to delete this guest comment.",
+  "guest_fields": {
+    "group_label": "Additional guest author details"
+  },
+  "author_display": {
+    "notice": "Name shown on this board: {{name}} ({{kind}})",
+    "notice_without_kind": "Name shown on this board: {{name}}"
+  },
   "password_placeholder": "Enter password",
   "password_incorrect": "Password is incorrect.",
   "password_verify": {

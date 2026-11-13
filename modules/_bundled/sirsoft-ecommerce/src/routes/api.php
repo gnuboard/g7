@@ -882,8 +882,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     });
 
     // 회원 결제 통화·배송국가 변경 — 폐기 예고(deprecated, 1.3.0). 번들 관리자 회원 수정 화면은 이제 코어 회원
-    // 저장(PUT /api/admin/users/{user}) 본문에 함께 실어 보내고 UserPreferenceCoreSaveListener 가 코어 훅으로
-    // 검증·저장한다. 이 두 라우트는 그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 한 버전 더 남기며,
+    // 저장(PUT /api/admin/users/{user}) 본문에 함께 실어 보내고 코어가 회원 항목 선언대로
+    // 검증하고 UserPreferenceFieldHandler 로 저장한다. 이 두 라우트는 그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 한 버전 더 남기며,
     // 다음 이커머스 버전에서 제거한다(결정 2026-09-28).
     Route::patch('users/{user}/currency', [AdminUserCurrencyController::class, 'update'])
         ->middleware('permission:admin,sirsoft-ecommerce.user-currency.manage')

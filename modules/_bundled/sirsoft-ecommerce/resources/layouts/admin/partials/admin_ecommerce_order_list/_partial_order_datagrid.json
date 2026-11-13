@@ -890,6 +890,19 @@
                                                                 "text": "{{row.address?.orderer_name || row.user?.name}}"
                                                             },
                                                             {
+                                                                "comment": "실명 보조 줄(#490) — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 이 칸은 주문서에 적힌 주문자 이름을 먼저 보이므로, 그 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다.",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!!row.user?.real_name && row.user?.real_name !== (row.address?.orderer_name || row.user?.name)}}",
+                                                                "props": {
+                                                                    "data-testid": "real-name-sub",
+                                                                    "role": "note",
+                                                                    "aria-label": "{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user?.real_name })}}",
+                                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate ecommerce:block"
+                                                                },
+                                                                "text": "{{row.user?.real_name}}"
+                                                            },
+                                                            {
                                                                 "comment": "첫구매 표시",
                                                                 "type": "basic",
                                                                 "name": "Span",

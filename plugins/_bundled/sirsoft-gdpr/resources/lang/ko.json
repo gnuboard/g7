@@ -347,7 +347,8 @@
     "common": {
         "loading": "불러오는 중...",
         "refresh": "새로고침",
-        "list_load_failed": "목록을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요."
+        "list_load_failed": "목록을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
+        "real_name_sub": "실명 {{name}}"
     },
     "banner": {
         "re_appear_reason": "쿠키 정책이 버전 {version} 로 변경되어 동의를 다시 확인합니다.",

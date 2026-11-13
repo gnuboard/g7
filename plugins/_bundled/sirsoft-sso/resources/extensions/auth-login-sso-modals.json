@@ -217,7 +217,7 @@
                                             "name": "Span",
                                             "if": "{{!!_global.ssoPending?.name}}",
                                             "props": {
-                                                "className": "sso:col-span-2 sso:text-gray-900 sso:dark:text-white"
+                                                "className": "sso:col-span-2 sso:min-w-0 sso:break-all sso:text-gray-900 sso:dark:text-white"
                                             },
                                             "text": "{{_global.ssoPending?.name}}"
                                         },
@@ -235,7 +235,7 @@
                                             "name": "Span",
                                             "if": "{{!!_global.ssoPending?.email}}",
                                             "props": {
-                                                "className": "sso:col-span-2 sso:text-gray-900 sso:dark:text-white"
+                                                "className": "sso:col-span-2 sso:min-w-0 sso:break-all sso:text-gray-900 sso:dark:text-white"
                                             },
                                             "text": "{{_global.ssoPending?.email}}"
                                         }

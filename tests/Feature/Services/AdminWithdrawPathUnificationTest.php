@@ -51,7 +51,7 @@ class AdminWithdrawPathUnificationTest extends TestCase
         $this->assertSame(UserStatus::Withdrawn->value, $user->status);
         $this->assertNotNull($user->withdrawn_at);
         $this->assertStringContainsString('_deleted_', $user->email);
-        $this->assertStringEndsWith('_탈퇴', $user->nickname);
+        $this->assertStringEndsWith('_탈퇴_'.$user->id, $user->nickname);
         $this->assertSame(0, $user->tokens()->count());
 
         $this->assertTrue($fired['before'], 'before_withdraw 훅이 발화해야 합니다.');

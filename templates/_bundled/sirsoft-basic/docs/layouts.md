@@ -7,7 +7,7 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 195개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 201개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -15,9 +15,9 @@
 | `auth` | 6개 |
 | `board` | 5개 |
 | `errors` | 7개 |
-| `mypage` | 15개 |
+| `mypage` | 16개 |
 | `page` | 1개 |
-| `partials` | 145개 |
+| `partials` | 150개 |
 | `search` | 1개 |
 | `shop` | 11개 |
 | `users` | 2개 |
@@ -57,11 +57,13 @@
 | `show` | `mypage` | 화면 | `_user_base` |
 | `profile-edit` | `mypage` | 화면 | `_user_base` |
 | `profile` | `mypage` | 화면 | `_user_base` |
+| `required-info` | `mypage` | 화면 | `_user_base` |
 | `scrap` | `mypage` | 화면 | `_user_base` |
 | `wishlist` | `mypage` | 화면 | `_user_base` |
 | `show` | `page` | 화면 | `_user_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_modal_required_info_pending` | `partials` | partial | - |
 | `_visitor_counter` | `partials` | partial | - |
 | `_login_form` | `partials` | partial | - |
 | `_modal_privacy` | `partials` | partial | - |
@@ -69,6 +71,7 @@
 | `_password_auth_blocked` | `partials` | partial | - |
 | `_redirect_if_logged_in` | `partials` | partial | - |
 | `_register_form` | `partials` | partial | - |
+| `_guest_fields` | `partials` | partial | - |
 | `_board_card` | `partials` | partial | - |
 | `_parent_post` | `partials` | partial | - |
 | `_password_verify_modal` | `partials` | partial | - |
@@ -107,6 +110,8 @@
 | `_stat_card_posts` | `partials` | partial | - |
 | `_stat_card_users` | `partials` | partial | - |
 | `_welcome_card` | `partials` | partial | - |
+| `_member_fields` | `partials` | partial | - |
+| `_member_fields_view` | `partials` | partial | - |
 | `_tab_navigation` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_modal_address` | `partials` | partial | - |
@@ -170,6 +175,7 @@
 | `_cart_list` | `partials` | partial | - |
 | `_cart_summary` | `partials` | partial | - |
 | `_checkout_discount` | `partials` | partial | - |
+| `_checkout_extra_fields` | `partials` | partial | - |
 | `_checkout_items` | `partials` | partial | - |
 | `_checkout_mileage` | `partials` | partial | - |
 | `_checkout_orderer` | `partials` | partial | - |
@@ -324,6 +330,7 @@
 | `/mypage/profile` | `mypage/profile` | - |
 | `/mypage/profile/edit` | `mypage/profile-edit` | - |
 | `/mypage/change-password` | `mypage/change-password` | - |
+| `/mypage/required-info` | `mypage/required-info` | - |
 | `/mypage/orders` | `mypage/orders` | - |
 | `/mypage/orders/:order_number` | `mypage/orders/show` | - |
 | `/mypage/orders/:order_number/claims/apply/:type` | `mypage/claims/apply` | - |
@@ -389,6 +396,8 @@
 | 대상 | 설명 |
 |---|---|
 | `extensions/sirsoft-daum_postcode/user-address-search.g7.html` | 모듈/플러그인 확장 조각을 대체하는 오버라이드 — 확장점 `address_search_slot` |
+| `extensions/sirsoft-social_login/auth_register_social_modals.g7.html` | 모듈/플러그인 확장 조각을 대체하는 오버라이드 — 대상 레이아웃 `auth/register` |
+| `extensions/sirsoft-sso/auth-login-sso-modals.g7.html` | 모듈/플러그인 확장 조각을 대체하는 오버라이드 — 대상 레이아웃 `auth/login` |
 <!-- @generated:template-overrides END -->
 
 <!-- @intent START -->
@@ -603,6 +612,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _parent_post.g7.html (원글 표시)
 │   │       ├── _type_renderer.g7.html (타입별 렌더러 분기)
 │   │       └── _password_verify_modal.g7.html (비밀번호 확인)
+│   ├── partials/board/_guest_fields.g7.html (비회원 작성자 항목 반복 조각 — 운영자가 게시판 설정에서 켠 이메일, 추가 항목, 확장이 보탠 항목을 항목 계약대로 그림. 글쓰기 폼, 댓글, 답글 입력칸이 `data-each="boardGuestFieldGroup in …"` 안에서 부름, #490)
 │   ├── popular.g7.html (인기글)
 │   │   └── partials/board/popular/
 │   │       ├── _popular_list.g7.html (인기글 리스트)
@@ -659,6 +669,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │   └── partials/shop/
 │   │       ├── _checkout_orderer.g7.html (주문자 정보)
 │   │       ├── _checkout_shipping.g7.html (배송 정보)
+│   │       ├── _checkout_extra_fields.g7.html (운영자가 더한 주문서 추가 항목 — 주문자, 배송 정보 구획이 함께 쓴다)
 │   │       ├── _checkout_items.g7.html (주문 상품)
 │   │       ├── _checkout_discount.g7.html (할인/쿠폰)
 │   │       ├── _checkout_mileage.g7.html (마일리지)
@@ -678,6 +689,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── scrap.g7.html (스크랩 — 일괄 삭제 확인 조각 포함)
 │   ├── profile.g7.html (프로필 보기)
 │   ├── profile-edit.g7.html (프로필 수정)
+│   ├── required-info.g7.html (추가 정보 입력 — 기존 회원에게도 입력을 요구한 필수 항목이 비어 있는 회원이 로그인 뒤 거치는 화면, 저장하면 redirect 로, 없으면 홈으로, #490)
 │   │   └── partials/mypage/profile/
 │   │       ├── _view.g7.html (프로필 보기 섹션 — 국가는 응답의 country_name 으로 이름 표시)
 │   │       ├── _edit.g7.html (프로필 수정 섹션 — 국가 선택은 profile-edit 의 countryList define)
@@ -749,6 +761,9 @@ _user_base.g7.html (베이스 레이아웃)
 │   │   └── partials/mypage/scrap/
 │   │       ├── _modal_scrap_delete.g7.html (스크랩 삭제)
 │   │       └── _modal_scrap_bulk_delete.g7.html (스크랩 일괄 삭제)
+│   ├── partials/member/
+│   │   ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 가입, 내 정보 수정, 추가 정보 입력이 `data-each="memberFieldGroup in …"` 안에서 부름, #490)
+│   │   └── _member_fields_view.g7.html (회원 항목 보기 조각 — 내 정보 보기가 카드마다 부름, 값이 없으면 「-」, #490)
 │   └── partials/mypage/
 │       └── _tab_navigation.g7.html (마이페이지 공통 탭)
 │           hiddenTabIds: inquiries 탭은 sirsoft-ecommerce inquiry 설정 시에만 노출
@@ -781,6 +796,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── partials/common/
 │   │   └── _currency_selector.g7.html (통화 선택기)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달 — #657)
+│   ├── partials/_modal_required_info_pending.g7.html (추가 정보 필요 안내 — 쓰기 요청이 403 `required_fields_pending` 으로 거절되면 템플릿 오류 처리가 열고 「입력하러 가기」로 추가 정보 입력 화면에 보냄, #490)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html (알림 전체 삭제 확인)
 │
 └── 에러 페이지 (errors/)
@@ -821,7 +837,7 @@ slots.content:
 - 마이페이지 정보 수정의 본인 확인 칸(`_password_verify_section`)과 비밀번호 변경 화면은 메일을 받을 수 없는 비밀번호 없는 회원(`has_password === false` · `email_deliverable === false` — 대체 이메일로 가입)에게 인증번호 대신 확장점 `mypage_reauth_methods`·`mypage_change_password_reauth` 를 보인다. 기본 내용은 관리자 문의 안내이고(비밀번호 변경 화면은 코어가 고를 재확인 수단 `reauth_provider` 가 있으면 「저장하면 그 방법으로 확인」 안내), 다른 확인 수단(예: 소셜 재로그인)을 가진 확장이 `mode="replace"` 로 바꾼다. 비밀번호 변경 화면은 회원 응답의 `can_set_password` 가 false 면(비밀번호 인증 정책이 막는 회원) 칸·처음 설정 안내·본인 확인 자리 대신 `password_set_blocked_message` 와 내 정보로 돌아가는 길을 보인다(7.2.0). 정보 수정 본인 확인은 그 확장점 위에 「본인 확인 계속하기」(`reauth_continue_button`)를 두어 메일 받는 칸과 같은 요청(`POST /api/identity/challenges`, 수단 비움)으로 서버가 그 회원에게 쓸 수 있는 수단을 고르게 한다(7.2.0) — 외부 수단이면 그 화면으로 이동, 인증번호 수단이면 인증번호 칸이 열린다
 - 같은 본인 확인 칸의 제목과 안내는 비밀번호 없는 회원(`has_password === false`)에게 「본인 확인 / 내 정보를 수정하려면 본인 확인이 필요합니다」(`mypage.profile.verify_identity_*`), 비밀번호가 있는 회원에게 「비밀번호 확인」으로 갈린다
 - 로그인 화면은 `?login_handoff={코드}` 로 들어오면 진입 시 코드를 교환한다(`loginHandoff`) — 외부 인증 확장이 본인 확인을 마친 회원을 넘기는 통로이며, 응답 분기(2단계 인증·비밀번호 변경·로그인 완료)는 비밀번호 로그인과 같은 명명 액션 `applyLoginResult` 를 쓴다
-- 이메일 판정(`POST /api/auth/login/discover`)이 외부 수단이면 비밀번호 칸 대신 「…(으)로 계속」과 함께 「…(으)로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를 보인다. `?local=1`(비상 계정 진입로)로 들어오면 카드 맨 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 둔다. 비밀번호 변경 화면은 403 `auth.password_auth_disabled` 로 폼이 숨으면 「내 정보로 돌아가기」(`password_blocked_back`)를 따로 보인다(폼 안의 취소 링크가 함께 숨기 때문)
+- 이메일 판정(`POST /api/auth/login/discover`)이 외부 수단이면 비밀번호 칸 대신 「… 계정으로 계속」과 함께 「… 계정으로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를 보인다. `?local=1`(비상 계정 진입로)로 들어오면 카드 맨 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 둔다. 비밀번호 변경 화면은 403 `auth.password_auth_disabled` 로 폼이 숨으면 「내 정보로 돌아가기」(`password_blocked_back`)를 따로 보인다(폼 안의 취소 링크가 함께 숨기 때문)
 - 가입을 받는지는 서버가 계산한 실효값 `_global.appConfig.auth.registration_open`(환경설정 「일반 회원가입 받기」 + 확장 필터 `core.auth.self_registration_open` — 예: 사이트 전체 회사 계정 강제)을 먼저 보고, 없을 때만 원 설정값 `_global.settings.security.registration_enabled` 를 본다. 닫히면 `/register` 는 안내 카드(`registration_closed_card`), 로그인 화면·모바일 드로어·홈 환영 카드의 가입 링크와 헤더 가입 버튼(`registrationEnabled` prop)이 숨는다
 - 회원가입 폼은 `PasswordInput` 사용 (비밀번호 규칙 검증, 확인 일치)
 - 약관 동의 모달: `_modal_terms.g7.html`, `_modal_privacy.g7.html`
@@ -1078,6 +1094,7 @@ slots.content:
   └── Container
       ├── _checkout_orderer.g7.html (주문자 정보)
       ├── _checkout_shipping.g7.html (배송 정보)
+      ├── _checkout_extra_fields.g7.html (주문서 추가 항목 — 주문자, 배송 정보 구획 끝에 놓인다)
       ├── _checkout_items.g7.html (주문 상품 목록)
       ├── _checkout_discount.g7.html (할인/쿠폰)
       ├── _checkout_mileage.g7.html (마일리지)

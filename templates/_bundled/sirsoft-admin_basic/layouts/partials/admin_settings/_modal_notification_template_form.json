@@ -99,7 +99,14 @@
                     "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
                 },
-                "text": "$t:common.cancel"
+                "children": [
+                    {
+                        "comment": "저장이 끝나 경고만 보이는 상태에서는 되돌릴 것이 없으므로 「닫기」로 읽힌다.",
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{(_global.notification_template_form_modal?.warnings ?? []).length > 0 ? '$t:common.close' : '$t:common.cancel'}}"
+                    }
+                ]
             },
             {
                 "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
@@ -122,7 +129,7 @@
                 "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                 "actions": [
                     {
-                        "comment": "저장 — 제목·본문 언어별 객체와 수신자 규칙 배열을 함께 보낸다.\n               성공하면 정의 목록을 다시 받고 창 상태를 통째로 비운다.",
+                        "comment": "저장 — 제목·본문 언어별 객체와 수신자 규칙 배열을 함께 보낸다.\n               성공하면 정의 목록을 다시 받고 창 상태를 통째로 비운다.\n               서버가 경고(지금 없는 회원 항목 변수)를 함께 주면 저장은 된 것이므로 목록 재조회와 성공 안내는 그대로 하고,\n               창은 닫지 않은 채 경고를 창 안 상자와 경고 토스트로 알린다. 갈래는 응답 값으로만 가른다\n               (성공 처리 안에서 방금 쓴 전역 상태를 형제 액션의 조건으로 다시 읽으면 갱신 전 값이다).",
                         "type": "click",
                         "handler": "sequence",
                         "actions": [
@@ -131,7 +138,8 @@
                                 "params": {
                                     "target": "global",
                                     "notification_template_form_modal.isSaving": true,
-                                    "notification_template_form_modal.errors": null
+                                    "notification_template_form_modal.errors": null,
+                                    "notification_template_form_modal.warnings": null
                                 }
                             },
                             {
@@ -163,13 +171,32 @@
                                     },
                                     {
                                         "handler": "closeModal",
-                                        "target": "modal_notification_template_form"
+                                        "target": "modal_notification_template_form",
+                                        "if": "{{(response?.data?.warnings ?? []).length === 0}}"
                                     },
                                     {
                                         "handler": "setState",
+                                        "if": "{{(response?.data?.warnings ?? []).length === 0}}",
                                         "params": {
                                             "target": "global",
                                             "notification_template_form_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{(response?.data?.warnings ?? []).length > 0}}",
+                                        "params": {
+                                            "target": "global",
+                                            "notification_template_form_modal.isSaving": false,
+                                            "notification_template_form_modal.warnings": "{{response?.data?.warnings ?? []}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{(response?.data?.warnings ?? []).length > 0}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:admin.settings.notification_definitions.edit_modal.warnings_toast|count={{(response?.data?.warnings ?? []).length}}"
                                         }
                                     }
                                 ],
@@ -241,6 +268,85 @@
                 "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
             },
             "children": [
+                {
+                    "comment": "저장은 됐지만 알릴 것이 있을 때의 경고 상자. 지금 없는 회원 항목 변수(지워졌거나 꺼진 항목, 잘못 적은 이름)를\n           제목, 본문, 이동 주소에 썼으면 서버가 저장 응답의 warnings 에 실어 준다. 그 자리는 빈 글자로 발송되므로\n           운영자가 창을 닫기 전에 고칠 수 있게 창을 닫지 않고 여기에 보인다. 스크롤 영역 밖(위)에 두어 본문을 아래까지\n           내린 채 저장해도 보인다.",
+                    "id": "template_save_warnings",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.notification_template_form_modal?.warnings ?? []).length > 0}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "flex-shrink-0 mb-3 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "size": "sm",
+                                        "className": "flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H3",
+                                            "props": {
+                                                "className": "font-medium"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.warnings_title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.warnings_description"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Ul",
+                                            "props": {
+                                                "className": "mt-2 list-disc list-inside space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "template_save_warning_{{warnIdx}}",
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "iteration": {
+                                                        "source": "{{_global.notification_template_form_modal?.warnings ?? []}}",
+                                                        "item_var": "warn",
+                                                        "index_var": "warnIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "break-words"
+                                                    },
+                                                    "text": "{{warn.message ?? warn.target ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
                 {
                     "type": "basic",
                     "name": "Div",
@@ -805,7 +911,7 @@
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",
-                                                                                    "notification_template_form_modal": "{{_global.notification_template_form_modal == null ? null : ({ userSearchResults: (response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email })) })}}"
+                                                                                    "notification_template_form_modal": "{{_global.notification_template_form_modal == null ? null : ({ userSearchResults: (response.data ?? []).map(u => ({ value: u.uuid, label: u.display_name ?? u.name, description: u.email })) })}}"
                                                                                 }
                                                                             },
                                                                             "onError": {
@@ -1198,8 +1304,11 @@
                                     "text": "$t:admin.settings.notification_definitions.edit_modal.variables_title"
                                 },
                                 {
+                                    "comment": "이 알림이 선언한 변수. 회원 공통 변수(group 이 member)는 아래 「회원 항목」 묶음으로 가른다.",
+                                    "id": "template_variables_own",
                                     "type": "basic",
                                     "name": "Div",
+                                    "if": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member').length > 0}}",
                                     "props": {
                                         "className": "flex flex-wrap gap-2"
                                     },
@@ -1208,7 +1317,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "iteration": {
-                                                "source": "{{_global.notification_template_form_modal?.definition?.variables ?? []}}",
+                                                "source": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group !== 'member')}}",
                                                 "item_var": "v"
                                             },
                                             "props": {
@@ -1243,6 +1352,117 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "text": " — {{v.description ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "회원 항목 묶음. 서버가 알림 정의의 변수 뒤에 회원 공통 변수(표시 이름, 코어와 확장 항목, 운영자 추가 항목)를\n               group: member 로 덧붙인다. 운영자가 항목을 더할수록 길어지므로 접어 두고, 제목 단추로 펼친다.\n               본인인증 알림에는 이 변수가 오지 않아 묶음이 그려지지 않는다.",
+                                    "id": "template_variables_member",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length > 0}}",
+                                    "props": {
+                                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "template_variables_member_toggle",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "펼침 상태는 창 이름 공간에 둔다. 창을 열 때마다 이름 공간을 새로 채우므로 다시 열면 접힌 채로 시작한다.",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notification_template_form_modal.memberVariablesOpen": "{{!(_global.notification_template_form_modal?.memberVariablesOpen === true)}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "aria-expanded": "{{_global.notification_template_form_modal?.memberVariablesOpen === true}}",
+                                                "aria-controls": "template_variables_member_list",
+                                                "className": "flex-center gap-2 min-h-[44px] text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{_global.notification_template_form_modal?.memberVariablesOpen === true ? 'chevron-down' : 'chevron-right'}}",
+                                                        "className": "text-xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{$t('admin.settings.notification_definitions.edit_modal.member_variables_title', { count: (_global.notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member').length })}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_global.notification_template_form_modal?.memberVariablesOpen === true}}",
+                                            "props": {
+                                                "className": "form-hint mb-2"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.edit_modal.member_variables_hint"
+                                        },
+                                        {
+                                            "id": "template_variables_member_list",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.notification_template_form_modal?.memberVariablesOpen === true}}",
+                                            "props": {
+                                                "className": "flex flex-wrap gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).filter(v => v.group === 'member')}}",
+                                                        "item_var": "mv"
+                                                    },
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-mono"
+                                                            },
+                                                            "text": "{"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-mono"
+                                                            },
+                                                            "text": "{{mv.key}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-mono"
+                                                            },
+                                                            "text": "}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": " — {{mv.description ?? ''}}"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }

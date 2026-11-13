@@ -3077,7 +3077,6 @@ function initDataSourceAPI(G7Core: any): void {
  * ```
  *
  * @param G7Core - window.G7Core 전역 객체
- * @since 12차 G3 검증 라운드
  */
 function initUrlAPI(G7Core: any): void {
   G7Core.url = {
@@ -3300,10 +3299,14 @@ function initModalAPI(G7Core: any): void {
     },
     /**
      * 모든 모달을 닫습니다.
+     *
+     * closeModal 의 전부 닫기 옵션(`params.all`)으로 보낸다(engine-v1.94.0). 종전에는 없는 핸들러
+     * `closeAllModals` 를 불러 아무 일도 하지 않았다.
      */
     closeAll: () => {
       G7Core.dispatch({
-        handler: 'closeAllModals',
+        handler: 'closeModal',
+        params: { all: true },
       });
     },
     /**

@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -111,9 +112,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
-     * 회원 주문 (order_confirmed) → name 은 회원명, order_url 은 마이페이지 경로.
+     * 회원 주문 (order_confirmed) → name 은 받는 사람 이름 자리표시, order_url 은 마이페이지 경로.
      *
-     * 회귀 방지: 비회원 분기 추가 후에도 회원 알림 데이터 구조가 기존과 동일해야 한다.
+     * 회원 이름을 여기서 읽어 싣지 않는다. 코어가 받는 사람과 채널마다 그 채널의 표시 이름으로 바꾼다(#490).
+     * 주문서에 적힌 주문자 이름(배송지)이나 회원의 이름 컬럼이 그대로 나가지 않아야 한다.
      *
      * @effects member_order_notification_uses_member_name_and_mypage_url
      *
@@ -125,11 +127,48 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
         $result = $this->listener->extractData($this->emptyDefault(), 'order_confirmed', [$order]);
 
-        $this->assertSame('홍길동', $result['data']['name']);
+        $this->assertSame('{recipient_name}', $result['data']['name']);
         $this->assertStringContainsString('/mypage/orders/ORD-MEMBER-1', $result['data']['order_url']);
         // 회원 주문 컨텍스트에는 비회원 전용 키가 추가되지 않는다.
         $this->assertArrayNotHasKey('is_guest_order', $result['context']);
         $this->assertArrayNotHasKey('guest_orderer_email', $result['context']);
+    }
+
+    /**
+     * 받는 사람이 회원인 알림의 name 은 자리표시이고, 받는 사람이 아닌 회원의 이름(customer_name)은 알림 영역의 표시 이름이다 (#490).
+     *
+     * @scenario case=notification_member_names
+     *
+     * @effects notification_recipient_name_is_placeholder_for_member, notification_customer_name_follows_notification_area
+     *
+     * @return void 반환값 없음
+     */
+    public function test_member_names_in_notifications_follow_display_name_rules(): void
+    {
+        $member = (new User)->forceFill(['id' => 77, 'name' => '홍길동', 'nickname' => '길동이', 'email' => 'gildong@example.com', 'status' => 'active']);
+
+        // 받는 사람이 회원: 마일리지 소멸 예정, 문의 답변 완료
+        $mileage = $this->listener->extractData($this->emptyDefault(), 'mileage_expiring_soon', [$member, 1000, 'KRW', '2026-12-31', 5000]);
+        $this->assertSame('{recipient_name}', $mileage['data']['name']);
+
+        $inquiry = new ProductInquiry;
+        $inquiry->setRelation('user', $member);
+        $inquiry->setRelation('product', null);
+        $inquiry->setRelation('inquirable', null);
+        $replied = $this->listener->extractData($this->emptyDefault(), 'inquiry_replied', [$inquiry]);
+        $this->assertSame('{recipient_name}', $replied['data']['name']);
+
+        // 받는 사람이 아닌 회원: 기본 설정에서는 이름, 알림 영역을 닉네임으로 바꾸면 닉네임
+        $order = $this->makeMemberOrder('홍길동', 'ORD-MEMBER-DN');
+        $order->setRelation('user', $member);
+
+        config(['g7_settings.core.member.display_name_areas' => null]);
+        $this->assertSame('홍길동', $this->listener->extractData($this->emptyDefault(), 'new_order_admin', [$order])['data']['customer_name']);
+        $this->assertSame('홍길동', $this->listener->extractData($this->emptyDefault(), 'inquiry_received', [$inquiry])['data']['customer_name']);
+
+        config(['g7_settings.core.member.display_name_areas' => ['core:notification' => ['mode' => 'fixed', 'kind' => 'nickname']]]);
+        $this->assertSame('길동이', $this->listener->extractData($this->emptyDefault(), 'new_order_admin', [$order])['data']['customer_name']);
+        $this->assertSame('길동이', $this->listener->extractData($this->emptyDefault(), 'inquiry_received', [$inquiry])['data']['customer_name']);
     }
 
     /**
@@ -641,7 +680,7 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      * 주문 링크는 요청이 아니라 **설정된 사이트 주소**를 따르고 후행 슬래시를 이어 붙이지 않는다.
      *
      * `config('app.url').'/mypage/…'` 는 후행 슬래시를 그대로 실어 `https://host/g7//mypage/…` 를
-     * 만든다 — 메일 안의 링크가 조용히 깨진다 (16차 G3 라운드 B-4).
+     * 만든다 — 메일 안의 링크가 조용히 깨진다.
      *
      * @scenario base_path=subpath, navigation_direction=navigation
      *

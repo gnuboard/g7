@@ -5,10 +5,11 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 17종 / 호출 지점 19곳. 훅 이름이 상수·변수로 조립된 호출이 19곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 18종 / 호출 지점 20곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 19곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
+| `core.auth.register_validation_rules` | filter | — | `src/Http/Requests/CompleteSignupRequest.php:66` |
 | `sirsoft-social_login.account.after_link` | action | 회원에게 소셜 계정 연결을 새로 만든 직후 발행됩니다. 인자: (SocialAccount $account, User $user, array $context — method: link·existing·auto·signup) | 선언 (호출 위치 미확인) |
 | `sirsoft-social_login.account.after_unlink` | action | 소셜 계정 연결을 지운 직후 발행됩니다. 인자: (SocialAccount $account, User $user, string $reason) | 선언 (호출 위치 미확인) |
 | `sirsoft-social_login.account.before_unlink` | action | 소셜 계정 연결을 지우기 직전에 발행됩니다. 인자: (SocialAccount $account, User $user, string $reason — user·admin·webhook·withdraw·delete) | 선언 (호출 위치 미확인) |
@@ -39,10 +40,12 @@
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
+| `core.field.filter_definitions` | filter | `PrefillSignupFieldsListener` | `prefill` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterSocialReauthProviderListener` | `register` | 30 |
 | `core.notification.filter_default_definitions` | filter | `NotificationDataListener` | `defaults` | 20 |
 | `core.plugin_settings.after_save` | action (미선언) | `ActivityLogListener` | `onSettingsSaved` | 50 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateSettingsListener` | `rules` | 10 |
+| `core.required_fields.filter_exempt_routes` | filter | `ExemptRequiredFieldsRoutesListener` | `exemptRoutes` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanAccountsOnUserWithdraw` | `handle` | 50 |
 | `core.user.before_delete` | action (미선언) | `CleanAccountsOnUserDelete` | `handle` | 50 |
 | `core.user.filter_list_rows` | filter | `UserListSocialProvidersColumn` | `addColumn` | 30 |
@@ -96,8 +99,10 @@
 | `ActivityLogListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/ActivityLogListener.php` |
 | `CleanAccountsOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanAccountsOnUserDelete.php` |
 | `CleanAccountsOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanAccountsOnUserWithdraw.php` |
+| `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `InjectSocialProvidersIntoUserResource` | 1개 | 명시 등록 | ✅ | `src/Listeners/InjectSocialProvidersIntoUserResource.php` |
 | `NotificationDataListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/NotificationDataListener.php` |
+| `PrefillSignupFieldsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PrefillSignupFieldsListener.php` |
 | `RegisterMockProvidersListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterMockProvidersListener.php` |
 | `RegisterSocialReauthProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterSocialReauthProviderListener.php` |
 | `UserListSocialProviderFilter` | 3개 | 명시 등록 | ✅ | `src/Listeners/UserListSocialProviderFilter.php` |

@@ -1,4 +1,10 @@
 {
+  "common": {
+    "real_name": {
+      "label": "실명",
+      "with_label": "실명: {{name}}"
+    }
+  },
   "extension_integrations": {
     "title": "함께 쓰면 연동되는 확장",
     "hint": "아래 확장이 설치돼 있으면 기능이 서로 연결됩니다. 없어도 이 확장은 그대로 동작합니다.",
@@ -17,7 +23,7 @@
     "requires_no_permission": "필요한 확장을 설치할 권한이 없음",
     "integrated_by_label": "연동 중인 확장",
     "deactivate_notice_title": "연동 중인 확장 확인",
-    "deactivate_notice_body": "{{name}}을(를) 끄면 아래 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다. 아래 확장은 계속 동작합니다.",
+    "deactivate_notice_body": "「{{name}}」 확장을 끄면 아래 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다. 아래 확장은 계속 동작합니다.",
     "deactivate_confirm": "비활성화",
     "uninstall_notice": "아래 확장이 이 확장과 연동 중입니다 — 삭제하면 이 확장을 쓰던 메뉴·화면이 사라집니다.",
     "notice_toast": "함께 쓰면 연동되는 확장 안내: {{items}}"
@@ -171,6 +177,40 @@
     "alert_action_no_permission": "이 경고를 처리할 권한이 없습니다. 권한이 있는 관리자에게 요청하세요."
   },
   "users": {
+    "member_fields": {
+      "select_placeholder": "선택하세요",
+      "other": "기타(직접 입력)",
+      "other_input": "{{label}} 직접 입력",
+      "other_placeholder": "직접 입력하세요",
+      "range_start": "{{label}} 시작일",
+      "range_end": "{{label}} 종료일",
+      "zipcode_label": "{{label}} 우편번호",
+      "address_label": "{{label}} 기본 주소",
+      "address_detail_label": "{{label}} 상세 주소",
+      "upload_after_save": "회원을 저장한 뒤 수정 화면에서 올릴 수 있습니다.",
+      "file_add": "파일 추가",
+      "file_add_label": "{{label}} 파일 추가",
+      "file_remove": "{{name}} 삭제",
+      "file_rules": "허용 확장자: {{extensions}} / 파일당 최대 {{size}}MB / 최대 {{count}}개",
+      "locked_identity": "본인인증으로 확인된 항목이라 수정할 수 없습니다.",
+      "locked_generic": "수정할 수 없는 항목입니다.",
+      "extra_title": "추가 항목",
+      "extension_title": "확장 항목",
+      "tab_has_error": "오류가 있는 칸이 있습니다",
+      "status": {
+        "nickname_changed_at": "닉네임 마지막 변경",
+        "nickname_next_changeable_at": "닉네임 다음 변경 가능",
+        "nickname_next_changeable_hint": "회원 본인이 닉네임을 다시 바꿀 수 있는 때입니다. 관리자는 언제든 바꿀 수 있습니다.",
+        "pending_required": "비어 있는 필수 항목",
+        "display_name_kind": "회원이 고른 표시 이름 종류",
+        "display_name_kind_none": "고르지 않음 (회원 기본 종류: {{kind}})",
+        "display_name_kind_unavailable": "지금은 고를 수 없는 종류입니다. 회원 기본 종류({{kind}})로 보입니다.",
+        "display_name_kind_hint": "회원 본인만 바꿀 수 있습니다.",
+        "display_name_current": "지금 보이는 이름",
+        "display_name_site": "사이트 기본",
+        "display_name_admin": "관리자 화면"
+      }
+    },
     "page_title": "사용자 관리",
     "page_description": "시스템 사용자를 관리합니다.",
     "title": "사용자 관리",
@@ -178,6 +218,15 @@
     "add_user": "사용자 추가",
     "search": "검색",
     "search_placeholder": "검색어를 입력하세요...",
+    "list_member_fields": {
+      "pending_column": "미입력",
+      "pending_count": "{{count}}개",
+      "filter_required_missing": "필수 항목 미입력",
+      "filter_required_missing_only": "미입력 회원만",
+      "filter_nickname_duplicate": "닉네임 중복",
+      "filter_nickname_duplicate_only": "겹치는 회원만",
+      "display_name_column": "보이는 이름"
+    },
     "search_fields": {
       "all": "전체",
       "name": "이름",
@@ -310,8 +359,6 @@
       },
       "fields": {
         "id": "ID",
-        "name": "이름",
-        "nickname": "닉네임",
         "role": "역할",
         "role_placeholder": "역할을 선택하세요",
         "role_no_options": "선택 가능한 역할이 없습니다",
@@ -321,20 +368,12 @@
         "email": "이메일",
         "email_verified": "인증됨",
         "email_verify_btn": "인증",
-        "mobile": "휴대폰번호",
-        "phone": "전화번호",
-        "homepage": "홈페이지",
         "address": "주소",
         "zipcode": "우편번호",
         "address_detail": "상세 주소",
-        "country": "국가",
-        "language": "언어",
-        "timezone": "시간대",
         "password": "비밀번호",
         "password_confirmation": "비밀번호 확인",
         "password_hint": "수정 시 빈 값이면 기존 비밀번호 유지",
-        "signature": "서명",
-        "bio": "자기소개",
         "admin_memo": "관리자 메모",
         "created_at": "가입일",
         "last_login_at": "마지막 로그인",
@@ -438,8 +477,6 @@
       "info_public": "공개",
       "info_private": "비공개",
       "consent_history": "약관 동의 이력",
-      "enabled": "활성",
-      "disabled": "비활성",
       "withdrawn_at": "탈퇴일",
       "blocked_at": "차단일",
       "dormant_at": "휴면 전환일",
@@ -1857,6 +1894,7 @@
       "content": "본문 콘텐츠",
       "seo": "SEO",
       "security": "보안",
+      "member": "회원",
       "drivers": "드라이버",
       "advanced": "고급",
       "notification_definitions": "알림 설정",
@@ -2391,6 +2429,279 @@
         "preview_hint": "저장된 값 기준입니다. 모드나 호스트를 바꿨다면 저장한 뒤 다시 확인하세요."
       }
     },
+    "member": {
+      "sub_tabs": {
+        "fields": "가입 항목",
+        "nickname": "닉네임 정책"
+      },
+      "display_name": {
+        "sub_tab": "표시 이름",
+        "title": "표시 이름",
+        "description": "회원을 화면에 어떤 이름으로 보일지 정합니다. 아래 「저장」을 눌러야 적용됩니다.",
+        "selectable_kinds": "회원이 고를 수 있는 종류",
+        "selectable_kinds_hint": "둘 이상을 켜면 회원이 가입 화면과 내 정보 수정에서 하나를 고를 수 있습니다. 고른 종류는 방식이 「회원이 고른 값」인 영역에 쓰입니다.",
+        "selectable_default_locked": "회원 기본 종류는 뺄 수 없습니다. 먼저 회원 기본 종류를 바꿔 주세요.",
+        "requires_nickname_badge": "닉네임 필요",
+        "sample": "미리보기 기준 회원: 이름 {{name}}, 닉네임 {{nickname}}, 아이디 {{id}}",
+        "member_default_kind": "회원 기본 종류",
+        "member_default_kind_hint": "회원이 종류를 고르지 않았을 때 쓰는 종류입니다. 회원이 고를 수 있는 종류 가운데 하나여야 합니다.",
+        "areas_title": "영역별 방식",
+        "areas_hint": "이름이 보이는 영역마다 방식을 정합니다. 들여 쓴 영역은 바로 위 영역을 따를 수 있습니다.",
+        "col": {
+          "area": "영역",
+          "mode": "방식",
+          "kind": "종류"
+        },
+        "mode": {
+          "inherit": "상위 영역 따름",
+          "fixed": "종류 고정",
+          "member": "회원이 고른 값"
+        },
+        "area_mode_label": "{{area}} 방식",
+        "area_kind_label": "{{area}} 종류",
+        "effective_member": "고르지 않은 회원은 {{kind}}",
+        "effective_inherit": "지금 적용: {{kind}}",
+        "effective_inherit_member": "지금 적용: 회원이 고른 값",
+        "effective_inherit_pending": "저장하면 상위 영역의 설정을 따릅니다",
+        "extension_note": "게시판처럼 한 영역 안에서 다시 나뉘는 곳은 그 확장의 설정 화면에서 따로 정합니다.",
+        "nickname_notice": {
+          "all": "저장하면 닉네임 항목이 사용, 필수로 고정됩니다.",
+          "chosen": "저장하면 닉네임 항목이 사용으로 고정되고, 닉네임이 필요한 종류로 보이는 회원은 닉네임이 필수가 됩니다.",
+          "empty_count": "지금 닉네임이 비어 있는 회원은 {{count}}명입니다.",
+          "require_existing": "로그인 시 닉네임 입력 요구",
+          "require_existing_hint": "켜면 닉네임이 비어 있는 기존 회원이 로그인했을 때 닉네임부터 입력하게 합니다.",
+          "already_required": "기존 회원에게도 닉네임 입력을 이미 요구하고 있습니다."
+        },
+        "lock_link": "표시 이름 설정 보기",
+        "usage": {
+          "title": "표시 이름에 쓰이고 있어 삭제할 수 없습니다.",
+          "hint": "아래 설정에서 이 항목을 뺀 뒤 다시 삭제해 주세요.",
+          "link": "표시 이름 설정으로 가기"
+        },
+        "data_source": {
+          "options": "표시 이름 종류와 영역",
+          "nickname_empty_count": "닉네임이 빈 회원 수"
+        }
+      },
+      "fields": {
+        "title": "가입 항목",
+        "description": "가입 화면, 내 정보 수정, 관리자 회원 폼에서 받는 항목을 정합니다.",
+        "add_button": "항목 추가",
+        "instant_save_notice": "이 표의 변경(사용, 필수, 가입 표시, 순서)은 바로 저장됩니다.",
+        "fixed_notice": "고정: 이메일, 비밀번호, 약관 동의 (항상 사용)",
+        "layout_modified_notice": "가입 화면 레이아웃이 수정본으로 유지되고 있어 새 항목이 보이지 않을 수 있습니다.",
+        "layout_modified_hint": "레이아웃 편집기에서 가입 화면을 원본으로 복원하면 여기서 정한 항목이 그대로 보입니다.",
+        "empty_custom": "추가한 항목이 없습니다. 「항목 추가」로 가입 항목을 만드세요.",
+        "unavailable": "사용 불가",
+        "unavailable_desc": "유형을 제공한 확장이 꺼져 있습니다. 확장을 다시 켜면 복구됩니다.",
+        "signup_unsupported": "이 유형은 가입 화면에서 받지 않습니다.",
+        "signup_unsupported_short": "가입 화면 미지원",
+        "drag_handle": "{{name}} 순서 바꾸기",
+        "drag_hint": "끌어서 순서를 바꿉니다",
+        "move_up": "{{name}} 위로",
+        "move_down": "{{name}} 아래로",
+        "move_up_short": "위로",
+        "move_down_short": "아래로",
+        "saved": "저장했습니다.",
+        "order_saved": "순서를 저장했습니다.",
+        "save_failed": "저장하지 못했습니다. 표를 다시 불러왔습니다.",
+        "load_failed": "항목 정보를 불러오지 못했습니다.",
+        "changed_by_other": "다른 관리자가 항목을 바꿨습니다. 다시 불러왔습니다.",
+        "col": {
+          "order": "순서",
+          "name": "항목",
+          "type": "유형",
+          "source": "출처",
+          "enabled": "사용",
+          "required": "필수",
+          "show_on_signup": "가입 표시",
+          "edit_scope": "범위"
+        },
+        "source": {
+          "core": "기본",
+          "custom": "추가",
+          "extension": "확장"
+        },
+        "scope": {
+          "self": "본인 수정",
+          "admin_edit": "관리자만 수정",
+          "admin_only": "관리자만 열람"
+        },
+        "btn": {
+          "settings": "설정",
+          "edit": "수정",
+          "view": "보기"
+        },
+        "delete": {
+          "title": "항목 삭제",
+          "message": "「{{name}}」 항목을 삭제합니다.",
+          "values_warning": "회원 {{count}}명이 입력한 값이 함께 삭제되며 되돌릴 수 없습니다.",
+          "no_values_warning": "아직 입력된 값은 없습니다. 삭제한 항목은 되돌릴 수 없습니다.",
+          "confirm_check": "위 내용을 확인했습니다",
+          "success": "항목을 삭제했습니다.",
+          "failed": "항목을 삭제하지 못했습니다."
+        },
+        "required_confirm": {
+          "title": "필수로 바꾸기",
+          "message": "「{{name}}」 항목이 비어 있는 기존 회원이 {{count}}명 있습니다.",
+          "mode_label": "이 회원들에게 언제 입력을 요구할까요?",
+          "on_edit": "내 정보 수정 때만",
+          "on_login": "로그인하면 바로",
+          "submit": "필수로 바꾸기",
+          "hint": {
+            "on_edit": "회원이 내 정보를 수정해 저장할 때만 입력을 요구합니다. 그 전까지는 지금처럼 이용할 수 있습니다.",
+            "on_login": "로그인한 회원을 추가 정보 입력 화면으로 보내고, 입력할 때까지 글쓰기 같은 요청을 받지 않습니다."
+          }
+        },
+        "form": {
+          "title": {
+            "create": "항목 추가",
+            "edit": "항목 수정",
+            "settings": "항목 설정",
+            "view": "항목 보기"
+          },
+          "readonly_notice": "조회 권한만 있어 내용을 바꿀 수 없습니다.",
+          "declared_notice": "기본 항목과 확장이 제공한 항목은 이름, 안내 문구와 공통 옵션만 바꿀 수 있습니다.",
+          "type": "유형",
+          "type_locked": "유형은 만든 뒤 바꿀 수 없습니다.",
+          "change_type": "바꾸기",
+          "type_step": {
+            "description": "받을 값의 유형을 고르고 「다음」을 누르세요. 저장하기 전에는 다시 고를 수 있습니다.",
+            "unavailable": "확장 꺼짐"
+          },
+          "key": "키",
+          "key_hint": "영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄만 쓸 수 있습니다(2~50자). 만든 뒤에는 바꿀 수 없습니다.",
+          "name": "이름",
+          "description": "안내 문구",
+          "description_hint": "입력칸 아래에 보이는 설명입니다.",
+          "placeholder": "예시 글",
+          "placeholder_hint": "빈 입력칸에 흐리게 보이는 글입니다.",
+          "save_success": "항목을 저장했습니다.",
+          "section": {
+            "type_options": "유형별 옵션",
+            "common": "공통 옵션"
+          },
+          "c": {
+            "min_length": "최소 길이",
+            "max_length": "최대 길이",
+            "regex": "형식(정규식)",
+            "regex_hint": "/^[a-z]+$/ 처럼 구분자를 포함해 적습니다. 비우면 형식을 검사하지 않습니다.",
+            "regex_message": "형식 오류 문구",
+            "regex_message_hint": "형식에 맞지 않을 때 회원에게 보일 글입니다. 비우면 기본 문구가 나옵니다.",
+            "rows": "줄 수",
+            "rows_hint": "입력칸의 높이입니다(2~20줄).",
+            "min": "최솟값",
+            "max": "최댓값",
+            "decimals": "소수 자리",
+            "decimals_hint": "0 이면 정수만 받습니다(0~6).",
+            "unit": "단위",
+            "unit_hint": "입력칸 옆에 붙는 글입니다(예: 세, 개).",
+            "widget": "입력 모양",
+            "widget_toggle": "스위치",
+            "widget_checkbox": "체크박스",
+            "inline_label": "옆 문구",
+            "inline_label_hint": "스위치나 체크박스 옆에 보이는 글입니다.",
+            "default_on": "처음부터 켜진 채로 보이기",
+            "date_min": "가장 이른 날",
+            "date_max": "가장 늦은 날",
+            "date_hint": "「오늘」은 사이트 시간대 기준입니다.",
+            "display": "표시 방식",
+            "display_select": "목록에서 고르기",
+            "display_radio": "라디오 단추",
+            "display_checkbox": "체크박스",
+            "display_multi_select": "여러 개 고르는 목록",
+            "allow_other": "「기타(직접 입력)」 허용",
+            "allow_other_hint": "회원이 「기타」를 고르면 바로 아래 칸에 직접 적을 수 있습니다.",
+            "min_select": "최소 선택 개수",
+            "max_select": "최대 선택 개수",
+            "address_note": "우편번호, 기본 주소, 상세 주소를 받습니다. 우편번호 검색 플러그인이 켜져 있으면 검색 단추가 함께 보입니다.",
+            "extensions": "허용 확장자",
+            "extensions_placeholder": "jpg 처럼 입력 후 Enter",
+            "extensions_hint": "비우면 유형의 기본 확장자를 따릅니다.",
+            "max_count": "최대 개수",
+            "max_size_mb": "최대 크기(MB)",
+            "file_signup_note": "파일과 이미지는 가입 화면에서 받지 않습니다. 가입한 뒤 내 정보 수정에서 올릴 수 있습니다."
+          },
+          "date_bound": {
+            "none": "제한 없음",
+            "today": "오늘",
+            "after_today": "오늘 이후",
+            "date": "날짜 지정"
+          },
+          "options": {
+            "title": "선택지",
+            "add_button": "선택지 추가",
+            "paste_button": "여러 줄 붙여넣기",
+            "paste_label": "줄마다 선택지 1개",
+            "paste_placeholder": "학생\n직장인\n자영업",
+            "paste_hint": "값(영문)은 자동으로 만들어지고 이미 있는 값과 겹치면 번호가 붙습니다. 선택지는 50개까지 넣을 수 있습니다.",
+            "paste_apply": "선택지로 추가",
+            "empty": "선택지가 없습니다.",
+            "value": "값",
+            "value_placeholder": "값(영문)",
+            "label": "이름",
+            "label_placeholder": "회원에게 보일 이름",
+            "usage": "사용 {{count}}명",
+            "remove_warning": "이 값을 고른 회원 {{count}}명의 값이 비워집니다. 저장해야 적용됩니다.",
+            "remove_pending": "저장하면 이 선택지가 삭제됩니다.",
+            "restore": "되돌리기"
+          },
+          "opt": {
+            "enabled": "사용",
+            "required": "필수",
+            "show_on_signup": "가입 화면 표시",
+            "edit_scope": "범위",
+            "edit_scope_hint": {
+              "self": "회원 본인과 관리자가 고칠 수 있습니다.",
+              "admin_edit": "회원은 볼 수만 있고 관리자만 고칠 수 있습니다.",
+              "admin_only": "관리자 화면에서만 보이고 회원에게는 보이지 않습니다."
+            },
+            "require_existing_members": "기존 회원에게도 입력 요구",
+            "require_existing_locked": "「관리자만 수정」「관리자만 열람」 범위에서는 기존 회원에게 입력을 요구할 수 없습니다.",
+            "public_profile": "공개 프로필 노출",
+            "admin_list_column": "회원 목록 열",
+            "admin_searchable": "회원 검색",
+            "unique": "중복 금지",
+            "display_name_usable": "표시 이름으로 사용 가능",
+            "display_name_usable_hint": "한 줄 글 유형만 켤 수 있습니다.",
+            "idv_claim": "본인인증 연결",
+            "idv_claim_none": "없음",
+            "idv_claim_name": "이름",
+            "idv_claim_mobile": "휴대폰",
+            "idv_claim_birth_date": "생년월일",
+            "idv_claim_gender": "성별",
+            "idv_lock": "인증 값으로 채우고 잠금"
+          },
+          "close_confirm": {
+            "message": "작성 중인 내용이 있습니다. 닫으면 사라집니다.",
+            "keep": "계속 작성",
+            "discard": "저장하지 않고 닫기"
+          }
+        }
+      },
+      "nickname": {
+        "title": "닉네임 정책",
+        "description": "닉네임에 적용할 규칙을 정합니다. 아래 「저장」을 눌러야 적용됩니다.",
+        "unique": "중복 금지",
+        "unique_desc": "같은 닉네임을 두 회원이 쓸 수 없게 합니다. 대소문자, 전각 문자, 공백 차이는 같은 닉네임으로 봅니다.",
+        "duplicates_message": "지금 같은 닉네임을 쓰는 회원이 있습니다. 겹치는 닉네임 {{nicknames}}종, 회원 {{members}}명.",
+        "duplicates_hint": "켜도 이 회원들의 닉네임은 그대로 둡니다. 닉네임을 바꾸거나 새로 가입할 때부터 겹치지 않게 막습니다.",
+        "duplicates_view": "겹치는 회원 보기",
+        "duplicates_confirm": "그래도 켜기",
+        "duplicates_failed": "겹치는 닉네임을 확인하지 못해 켜지 않았습니다.",
+        "recompute_running": "중복 검사를 준비하고 있습니다",
+        "recompute_count": "{{processed}} / {{total}}명",
+        "recompute_running_hint": "기존 회원의 닉네임을 비교할 수 있게 정리하는 중입니다. 화면을 떠나도 계속됩니다.",
+        "recompute_done": "중복 검사 준비가 끝났습니다. 회원 {{total}}명을 확인했습니다.",
+        "banned_words": "금지어",
+        "banned_words_placeholder": "금지어 입력 후 Enter",
+        "banned_words_hint": "닉네임에 이 낱말이 들어 있으면 쓸 수 없습니다. 500개까지 넣을 수 있습니다.",
+        "change_interval": "변경 주기",
+        "change_interval_unit": "일",
+        "change_interval_hint": "닉네임을 바꾼 뒤 다시 바꿀 수 있을 때까지의 날 수입니다. 0 이면 제한이 없습니다.",
+        "display_note": "표시 이름이 닉네임을 쓰는 동안 닉네임은 필수입니다."
+      }
+    },
     "identity": {
       "sub_tabs": {
         "basic": "기본",
@@ -2825,7 +3136,12 @@
         "variables_title": "사용 가능한 변수",
         "btn_preview": "미리보기",
         "validation_error": "입력 정보를 확인해주세요.",
-        "is_active_label": "활성화"
+        "is_active_label": "활성화",
+        "warnings_title": "저장했습니다. 다만 확인할 것이 있습니다.",
+        "warnings_description": "아래 변수는 지금 없는 회원 항목이라 그 자리가 빈 글자로 발송됩니다. 고친 뒤 다시 저장하거나 그대로 닫을 수 있습니다.",
+        "warnings_toast": "저장했지만 지금 없는 변수가 있습니다 ({{count}}건). 창의 경고를 확인하세요.",
+        "member_variables_title": "회원 항목 ({{count}})",
+        "member_variables_hint": "받는 회원의 값으로 바뀝니다. 값이 비어 있으면 빈 글자로 발송됩니다."
       },
       "recipients_label": "수신자:",
       "category": {
@@ -5015,7 +5331,10 @@
       "core_update_result_modal": "코어 업데이트 확인 결과",
       "cron_token_rotate_modal": "웹 크론 호출 번호 재발급 모달",
       "settings_thumbnail_purge_all_modal": "썸네일 모두 비우기 확인",
-      "settings_thumbnail_pregenerate_modal": "기존 이미지 썸네일 만들기"
+      "settings_thumbnail_pregenerate_modal": "기존 이미지 썸네일 만들기",
+      "member_field_form_modal": "회원 항목 추가와 수정",
+      "member_field_delete_modal": "회원 항목 삭제 확인",
+      "member_field_required_modal": "회원 항목 필수 전환 확인"
     },
     "admin_template_list": {
       "template_activate_modal": "템플릿 활성화 확인",

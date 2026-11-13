@@ -33,6 +33,14 @@
   <data-source id="navigation" label_key="$t:editor.data_source.navigation" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/navigation" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
     <params del="{{query.del ?? ''}}"/>
   </data-source>
+  <init-local>
+    <field name="commentGuestForm">
+      <field name="guest_fields" :value="{}"/>
+    </field>
+    <field name="replyGuestForm">
+      <field name="guest_fields" :value="{}"/>
+    </field>
+  </init-local>
   <computed name="commentRootMap">{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}</computed>
   <permissions/>
   <slot name="content">

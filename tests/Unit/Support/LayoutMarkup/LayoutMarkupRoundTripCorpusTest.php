@@ -126,8 +126,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-board/resources/extensions/admin-ecommerce-inquiry-settings.g7.html',
         'modules/_bundled/sirsoft-board/resources/extensions/admin_dashboard_community.g7.html',
         'modules/_bundled/sirsoft-board/resources/extensions/admin_dashboard_quick_menu.g7.html',
-        'modules/_bundled/sirsoft-board/resources/extensions/user-notification-detail.g7.html',
-        'modules/_bundled/sirsoft-board/resources/extensions/user-notification-settings.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_form.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_index.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_post_detail.g7.html',
@@ -179,9 +177,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_schedules.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_spam_security.g7.html',
-        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-currency-field.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-mileage-tab.g7.html',
-        'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-shipping-country-field.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin_dashboard_commerce.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin_dashboard_quick_menu.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/checkout_cash_receipt.g7.html',
@@ -191,8 +187,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/mypage-profile-mileage-card.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/mypage-withdraw-refund-credit-notice.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/mypage_order_cash_receipt.g7.html',
-        'modules/_bundled/sirsoft-ecommerce/resources/extensions/register-currency-field.g7.html',
-        'modules/_bundled/sirsoft-ecommerce/resources/extensions/register-shipping-country-field.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/register-preference-defaults.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/user-account-preference-sync.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/user-global-footer-business-info.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_brand_index.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_category_index.g7.html',
@@ -441,16 +437,16 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/plugin_settings/_policy_version_publish_modal.g7.html',
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/plugin_settings.g7.html',
         // #810 히어로섹션 — 플러그인 추가 때 이관 목록 등록을 빠뜨린 것을 develop-7.2.0 리베이스 종료 관문에서 찾아 등록
+        // #874 가 더한 게시판·카테고리·상품 자리 조각 3개도 같은 누락이라 #490 develop-7.2.0 리베이스 종료 관문에서 등록
+        'plugins/_bundled/sirsoft-hero_section/resources/extensions/board_hero.g7.html',
+        'plugins/_bundled/sirsoft-hero_section/resources/extensions/category_hero.g7.html',
         'plugins/_bundled/sirsoft-hero_section/resources/extensions/home_hero.g7.html',
+        'plugins/_bundled/sirsoft-hero_section/resources/extensions/product_hero.g7.html',
         'plugins/_bundled/sirsoft-hero_section/resources/extensions/shop_hero.g7.html',
         'plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/hero_section_banner_form.g7.html',
         'plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/hero_section_banner_list.g7.html',
         'plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-detail.g7.html',
-        'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-form.g7.html',
-        'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-profile-view.g7.html',
-        'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-profile.g7.html',
-        'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-register.g7.html',
         'plugins/_bundled/sirsoft-marketing/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-message_bizppurio/resources/extensions/notification_log_result.g7.html',
         'plugins/_bundled/sirsoft-message_bizppurio/resources/extensions/notification_row_footer.g7.html',
@@ -722,6 +718,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/template_partial_test.g7.html',
         'templates/_bundled/sirsoft-admin_basic/settings/template_settings.g7.html',
         'templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html',
+        'templates/_bundled/sirsoft-basic/extensions/sirsoft-social_login/auth_register_social_modals.g7.html',
+        'templates/_bundled/sirsoft-basic/extensions/sirsoft-sso/auth-login-sso-modals.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/_user_base.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/auth/forgot_password.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/auth/identity_challenge.g7.html',
@@ -752,16 +750,19 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/mypage/profile-edit.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/mypage/profile.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/mypage/required-info.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/mypage/wishlist.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/page/show.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/_identity_challenge_modal.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/_modal_notification_delete_all_confirm.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/_modal_required_info_pending.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/auth/_login_form.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/auth/_modal_privacy.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/auth/_password_auth_blocked.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/auth/_modal_terms.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/auth/_redirect_if_logged_in.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/auth/_register_form.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/board/_guest_fields.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/board/boards/_board_card.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/board/form/_parent_post.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/board/form/_password_verify_modal.g7.html',
@@ -800,6 +801,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/partials/home/_stat_card_posts.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/home/_stat_card_users.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/home/_welcome_card.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/member/_member_fields.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/member/_member_fields_view.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/mypage/_tab_navigation.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/mypage/addresses/_list.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/mypage/addresses/_modal_address.g7.html',
@@ -840,6 +843,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_list.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_summary.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_discount.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_extra_fields.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_items.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_mileage.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_orderer.g7.html',
@@ -1043,6 +1047,25 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_content_media_policy.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_embed_provider_form.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_content.g7.html',
+        // ── #490 회원 항목 설정 4단계 — 관리자 환경설정 「회원」 탭(가입 항목 표와 카드, 닉네임 정책)과 항목 창 셋.
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_fields.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_fields_cards.g7.html',
+        // #490 8단계 — 회원 탭의 표시 이름 구획.
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_display_name.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_nickname.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_member_field_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_member_field_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_member_field_required.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/member/_member_fields.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/member/_member_fields_view.g7.html',
+        // ── #490 쇼핑몰 설정 주문 설정 탭의 주문서 항목 표와 카드, 항목 추가·수정 창과 삭제 확인 창.
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_checkout_fields_table.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_checkout_fields_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_checkout_field_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_checkout_field_delete.g7.html',
+        // ── #490 게시판 설정 글쓰기 탭의 비회원 작성자 항목 추가 창 — 커밋 전 점검(2026-11-13)의 선별 시험이 찾았다.
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_form/_guest_author_field_add_modal.g7.html',
     ];
 
     /**
@@ -1326,8 +1349,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
 
         $markup = array_map($relative, $this->scanMarkupFiles());
 
-        // 34차 — 대장이 S16 에서 비었으므로 이 축의 단언은 `assertSame([], [])` 가 됐고, 그러면
-        // **스캔이 죽어 0건이 되어도 green** 이다(31차가 "결함 대장 19행이 공허하게 참" 으로 잡은
+        // 대장이 S16 에서 비었으므로 이 축의 단언은 `assertSame([], [])` 가 됐고, 그러면
+        // **스캔이 죽어 0건이 되어도 green** 이다("결함 대장 19행이 공허하게 참" 으로 잡힌
         // 형태의 재발). 대장이 빈 상태에서도 성립해야 하는 것은 "모집단이 살아 있다" 이므로,
         // 하한은 대장이 아니라 스캔 쪽에 건다.
         $this->assertNotEmpty($markup,

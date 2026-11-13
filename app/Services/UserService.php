@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameChoicePolicy;
+use App\DisplayName\DisplayNameKindRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\PasswordChangeSource;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\PasswordAuthDisallowedException;
@@ -12,10 +15,16 @@ use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\PermissionEscalationException;
 use App\Extension\HookManager;
+use App\Fields\Contracts\FieldTypeInterface;
+use App\Fields\FieldContext;
+use App\Fields\FieldRegistry;
+use App\Fields\FieldSet;
+use App\Fields\FieldValueService;
 use App\Helpers\PermissionHelper;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
+use App\Models\FieldDefinition;
 use App\Models\User;
 use App\Services\Auth\PasswordAuthPolicyService;
 use App\Support\PermissionEscalationGuard;
@@ -32,6 +41,9 @@ use Illuminate\Validation\ValidationException;
 
 class UserService
 {
+    /** 관리자 회원 목록 검색 대상에서 운영자 추가 항목을 가리키는 접두 — `custom:{항목 키}` */
+    public const CUSTOM_SEARCH_PREFIX = 'custom:';
+
     /**
      * 사용자 서비스를 생성합니다.
      *
@@ -66,6 +78,14 @@ class UserService
     {
         $filters = HookManager::applyFilters('core.user.filter_list_params', $filters);
         $extensions = HookManager::applyFilters('core.user.list_query_extensions', [], $filters);
+
+        // 운영자 추가 항목 검색(`custom:{키}`) — 저장소가 항목 ID 로 값 테이블을 찾도록 키와 ID 의 대응을 넘긴다.
+        $filters['custom_search_definitions'] = $this->searchableCustomFields();
+
+        // 「필수 항목 미입력」 필터 — 어느 항목이 비었는지 볼 대상을 저장소에 넘긴다.
+        if (filter_var($filters['required_missing'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $filters['required_missing_spec'] = app(RequiredFieldsChecker::class)->querySpec();
+        }
 
         $result = $this->userRepository->getPaginatedUsers(
             $filters,
@@ -156,7 +176,21 @@ class UserService
                 $data = array_merge($data, $statusEnum->transitionTimestamps());
             }
 
-            $user = $this->userRepository->create($data);
+            // 회원 항목 — 컬럼이 아닌 항목(운영자 추가 항목, 확장 핸들러 항목)의 값을 회원 행 데이터에서 떼어 낸다.
+            // 확장 필터와 「비밀번호 없이 만들기」 처리가 끝난 뒤의 데이터에서 뗀다.
+            $fieldContext = new FieldContext(FieldContext::SURFACE_ADMIN_CREATE, actor: Auth::user() instanceof User ? Auth::user() : null);
+            [$data, $fieldValues] = $this->extractMemberFieldValues($data, $fieldContext);
+
+            // 닉네임 정책 — 통과하면 비교용 정규화 값과 중복 키를 함께 저장한다(요청을 거치지 않은 호출은 여기서 걸린다).
+            [$data] = app(NicknamePolicyService::class)->apply(null, $data, $fieldContext->surface, $fieldContext->actor);
+
+            // 회원 행과 항목 값은 함께 저장되거나 함께 취소된다.
+            $user = DB::transaction(function () use ($data, $fieldValues, $fieldContext) {
+                $user = $this->userRepository->create($data);
+                $this->storeMemberFieldValues($user, $fieldValues, $fieldContext);
+
+                return $user;
+            });
 
             // 관리자가 정해 준 비밀번호 — 변경일을 남기고 다음 로그인 때 회원이 바꾸도록 표시한다(D11).
             $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::AdminCreate);
@@ -185,6 +219,11 @@ class UserService
                 throw $e;
             }
 
+            // 판정과 저장 사이에 다른 회원이 같은 닉네임을 먼저 저장한 경우 — 닉네임 칸의 검증 오류로 알린다.
+            if (($duplicate = app(NicknamePolicyService::class)->duplicateFrom($e)) !== null) {
+                throw $duplicate;
+            }
+
             // 원본 예외는 로그로만 남기고, 사용자 응답에는 원문을 싣지 않는다.
             Log::error('User create failed', ['exception' => $e]);
 
@@ -199,11 +238,16 @@ class UserService
      *
      * @param  User  $user  수정할 사용자 모델
      * @param  array  $data  수정할 데이터
+     * @param  array{field_surface?: string, nickname_policy?: string}  $options  호출 문맥 (7.2.0).
+     *                                                                            `nickname_policy` — `skip_field` 면 닉네임이 닉네임 정책에 걸렸을 때 닉네임만 빼고 저장하고
+     *                                                                            액션 `core.user.nickname_rejected` 로 알린다(화면 없는 호출). 생략하면 검증 예외를 던진다.
+     *                                                                            `field_surface` — 회원 항목을 어느 표면의 규칙으로 저장할지. 내 정보 수정은 `self_update`(본인이 고칠 수 있는
+     *                                                                            항목만 저장), 생략하면 `admin_update`(사용 중인 항목 전부)
      * @return User 수정된 사용자 모델
      *
      * @throws ValidationException 수정 실패 시
      */
-    public function updateUser(User $user, array $data): User
+    public function updateUser(User $user, array $data, array $options = []): User
     {
         // 등급 상한 가드: 비-슈퍼관리자 액터는 슈퍼 관리자 계정을 수정할 수 없다.
         // (비밀번호·status(withdrawn/blocked)·email 등 모든 수정 경로를 한 지점에서 차단)
@@ -337,6 +381,22 @@ class UserService
                 }
             }
 
+            // 회원 항목 — 컬럼이 아닌 항목(운영자 추가 항목, 확장 핸들러 항목)의 값을 회원 행 데이터에서 떼어 낸다.
+            $fieldContext = new FieldContext(
+                ($options['field_surface'] ?? null) === FieldContext::SURFACE_SELF_UPDATE ? FieldContext::SURFACE_SELF_UPDATE : FieldContext::SURFACE_ADMIN_UPDATE,
+                owner: $user,
+                actor: Auth::user() instanceof User ? Auth::user() : null,
+            );
+            [$data, $fieldValues] = $this->extractMemberFieldValues($data, $fieldContext);
+            $fieldChanges = [];
+
+            // 표시 이름 종류 — 본인이 내 정보 수정에서만 바꾼다. 관리자 경로와 확장의 직접 호출이 실어 보낸 값은 버린다.
+            $data = $this->applyDisplayNameChoice($user, $data, $fieldContext);
+
+            // 닉네임 정책 — 통과하면 비교용 정규화 값과 중복 키를 함께 저장한다. 요청을 거치지 않은 호출(외부 인증의 속성 동기화 등)이
+            // `nickname_policy => skip_field` 를 넘기면 걸린 닉네임만 빼고 나머지를 저장한다.
+            [$data, $nicknameRejected] = app(NicknamePolicyService::class)->apply($user, $data, $fieldContext->surface, $fieldContext->actor, $options);
+
             // 스냅샷 캡처 (ChangeDetector용)
             $snapshot = $user->toArray();
 
@@ -352,8 +412,11 @@ class UserService
             // 상태 변경 경유 탈퇴는 **탈퇴까지 같은 트랜잭션**에 넣는다 — 프로필 갱신을
             // 먼저 커밋하고 탈퇴를 따로 커밋하면, 탈퇴가 실패했을 때 이름·이메일 변경만
             // 남아 "전부 성공하거나 전부 취소" 가 그 경로에서만 깨진다.
-            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus, $passwordChanged, $oldPasswordHash, &$roleSync) {
+            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus, $passwordChanged, $oldPasswordHash, &$roleSync, $fieldValues, $fieldContext, &$fieldChanges) {
                 $this->userRepository->update($user, $data);
+
+                // 컬럼이 아닌 회원 항목 값 — 회원 행과 함께 저장되거나 함께 취소된다.
+                $fieldChanges = $this->storeMemberFieldValues($user, $fieldValues, $fieldContext);
 
                 // 비밀번호 변경 기록 — 출처는 행위자로 판정한다. 본인이면 현재 기기 토큰만 남기고,
                 // 관리자가 다른 회원의 비밀번호를 정했으면 그 회원의 토큰을 전부 폐기하고 다음 로그인 때
@@ -396,6 +459,22 @@ class UserService
             // After 훅: 사용자 객체와 원본 데이터, 스냅샷 전달
             HookManager::doAction('core.user.after_update', $user, $originalData, $snapshot);
 
+            // 다른 회원에게 보이는 이름이 달라졌으면 알린다(이름, 닉네임, 고른 종류, 표시 이름으로 쓰는 추가 항목 값).
+            $this->announceDisplayNameChange($user, $snapshot, $fieldChanges);
+
+            // 컬럼이 아닌 회원 항목 값이 바뀌었으면 따로 알린다(회원 행 스냅샷에는 그 값이 없다).
+            if ($fieldChanges !== []) {
+                HookManager::doAction('core.user.fields.after_update', $user, $fieldChanges, $fieldContext->surface);
+            }
+
+            // 정책에 걸려 버린 닉네임을 알린다(외부 인증 확장이 자기 기록에 사유를 남긴다).
+            if ($nicknameRejected !== null) {
+                HookManager::doAction('core.user.nickname_rejected', $user, $nicknameRejected['nickname'], $nicknameRejected['reason'], [
+                    'surface' => $fieldContext->surface,
+                    'operation' => 'update',
+                ]);
+            }
+
             // 권한 변경 기록(D23) — 역할·최고관리자 지정이 실제로 바뀐 경우만, 커밋 뒤에 알린다.
             $this->dispatchRoleChange($user, $roleSync, $wasSuper, 'update');
 
@@ -429,6 +508,11 @@ class UserService
                 throw $e;
             }
 
+            // 판정과 저장 사이에 다른 회원이 같은 닉네임을 먼저 저장한 경우 — 닉네임 칸의 검증 오류로 알린다.
+            if (($duplicate = app(NicknamePolicyService::class)->duplicateFrom($e)) !== null) {
+                throw $duplicate;
+            }
+
             // 원본 예외는 로그로만 남기고, 사용자 응답에는 원문을 싣지 않는다.
             Log::error('User update failed', ['user_id' => $user->id, 'exception' => $e]);
 
@@ -436,6 +520,143 @@ class UserService
                 'general' => [__('user.update_failed')],
             ]);
         }
+    }
+
+    /**
+     * 관리자 회원 목록에서 검색할 수 있는 운영자 추가 항목을 반환합니다.
+     *
+     * 사용 중이고, 운영자가 「회원 검색」을 켰고, 값 테이블에 저장하며, 유형이 검색을 지원하는 항목이다.
+     *
+     * @return array<string, int> 항목 키 => 항목 ID
+     */
+    public function searchableCustomFields(): array
+    {
+        $registry = app(FieldRegistry::class);
+        $fields = [];
+
+        foreach ($registry->active(FieldSet::CORE_USER) as $definition) {
+            if ($definition->admin_searchable
+                && $definition->exists
+                && $definition->storage === FieldDefinition::STORAGE_VALUE
+                && $registry->typeOf($definition)?->supports(FieldTypeInterface::FEATURE_SEARCH) === true) {
+                $fields[$definition->key] = (int) $definition->id;
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * 회원 행 데이터에서 컬럼이 아닌 회원 항목 값을 떼어 냅니다.
+     *
+     * 운영자 추가 항목은 `custom_fields.{키}`, 확장이 선언한 값 테이블·핸들러 항목은 자기 요청 키로 실려 온다.
+     * 그 표면에서 받는 항목만 떼고(본인 수정이면 본인이 고칠 수 있는 항목만), 뗀 키는 회원 행 데이터에서 지운다.
+     * `custom_fields` 묶음은 받지 않는 키가 섞여 있어도 통째로 지운다 — users 컬럼이 아니다.
+     *
+     * @param  array<string, mixed>  $data  확장 필터를 거친 회원 데이터
+     * @param  FieldContext  $context  항목 문맥
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>} [회원 행 데이터, 항목 키 => 정규화 값]
+     */
+    private function extractMemberFieldValues(array $data, FieldContext $context): array
+    {
+        $registry = app(FieldRegistry::class);
+        $values = app(FieldValueService::class)->partition(FieldSet::CORE_USER, $data, $context)['values'];
+
+        foreach ($registry->active(FieldSet::CORE_USER) as $definition) {
+            if ($definition->storage !== FieldDefinition::STORAGE_COLUMN) {
+                Arr::forget($data, $registry->attributeFor($definition));
+            }
+        }
+        unset($data[FieldSet::CUSTOM_BUNDLE]);
+
+        return [$data, $values];
+    }
+
+    /**
+     * 요청이 실은 표시 이름 종류를 저장할 값으로 맞춥니다.
+     *
+     * | 경우 | 처리 |
+     * | --- | --- |
+     * | 내 정보 수정이 아닌 경로 | 버린다 (관리자는 회원의 종류를 바꾸지 못한다) |
+     * | 빈 값 | null 로 저장한다 (고른 종류를 지우고 회원 기본 종류로 보인다) |
+     * | 권한이 없거나 허용하지 않은 종류 | 버린다 (지금 값을 유지한다. 요청 규칙을 거친 경로는 여기 오기 전에 422 로 끝난다) |
+     *
+     * @param  User  $user  대상 회원
+     * @param  array<string, mixed>  $data  회원 행 데이터
+     * @param  FieldContext  $context  항목 문맥 (표면 판정)
+     * @return array<string, mixed> 맞춘 회원 행 데이터
+     */
+    private function applyDisplayNameChoice(User $user, array $data, FieldContext $context): array
+    {
+        if (! array_key_exists('display_name_kind', $data)) {
+            return $data;
+        }
+
+        $kind = $data['display_name_kind'];
+        if ($context->surface !== FieldContext::SURFACE_SELF_UPDATE) {
+            unset($data['display_name_kind']);
+        } elseif (! is_string($kind) || $kind === '') {
+            $data['display_name_kind'] = null;
+        } elseif (app(DisplayNameChoicePolicy::class)->rejection($user, $kind) !== null) {
+            unset($data['display_name_kind']);
+        }
+
+        return $data;
+    }
+
+    /**
+     * 회원의 표시 이름에 영향을 주는 값이 바뀌었으면 액션 `core.user.display_name_changed` 를 발화합니다.
+     *
+     * 표시 이름은 저장하지 않고 볼 때마다 계산하므로, 이름이 구워진 캐시(검색 엔진용 미리 그린 화면 등)를 가진 쪽이
+     * 이 액션을 구독해 그 회원이 나오는 화면을 무효화한다.
+     *
+     * @param  User  $user  저장된 회원
+     * @param  array<string, mixed>  $snapshot  저장 전 회원 행
+     * @param  array<string, array{old: mixed, new: mixed}>  $fieldChanges  바뀐 항목 값
+     * @return void 반환값 없음
+     */
+    private function announceDisplayNameChange(User $user, array $snapshot, array $fieldChanges): void
+    {
+        $changed = [];
+        foreach (['name', 'nickname', 'email', 'display_name_kind'] as $column) {
+            if (($snapshot[$column] ?? null) !== $user->getAttribute($column)) {
+                $changed[] = $column;
+            }
+        }
+
+        $kinds = app(DisplayNameKindRegistry::class);
+        foreach (array_keys($fieldChanges) as $fieldKey) {
+            $kindKey = DisplayNameKindRegistry::fieldKindKey((string) $fieldKey);
+            if ($kinds->has($kindKey)) {
+                $changed[] = $kindKey;
+            }
+        }
+
+        if ($changed === []) {
+            return;
+        }
+
+        // 같은 요청 안에서 이 회원의 이름을 다시 계산해도 새 값이 나오게 읽어 둔 항목 값을 버린다.
+        app(DisplayNameResolver::class)->forget($user);
+
+        HookManager::doAction('core.user.display_name_changed', $user, $changed);
+    }
+
+    /**
+     * 컬럼이 아닌 회원 항목 값을 저장합니다 (호출자의 트랜잭션 안에서 부른다).
+     *
+     * @param  User  $user  저장된 회원
+     * @param  array<string, mixed>  $values  항목 키 => 정규화 값
+     * @param  FieldContext  $context  항목 문맥
+     * @return array<string, array{old: mixed, new: mixed}> 바뀐 항목 키 => 이전·새 값
+     */
+    private function storeMemberFieldValues(User $user, array $values, FieldContext $context): array
+    {
+        if ($values === []) {
+            return [];
+        }
+
+        return app(FieldValueService::class)->write($user, FieldSet::CORE_USER, $values, $context);
     }
 
     /**
@@ -519,8 +740,35 @@ class UserService
             }
         }
 
+        // 회원 항목에 올린 파일도 탈퇴 직후 지운다(프로필 사진과 같게). 항목 값은 보관 기간 처리 때 파기된다.
+        app(MemberFieldFileService::class)->purgeFor($user);
+
         // 훅 실행 (탈퇴 후)
         HookManager::doAction('core.user.after_withdraw', $user);
+    }
+
+    /**
+     * 추가 정보 입력 화면에서 받은 값(비어 있던 필수 항목)을 저장합니다.
+     *
+     * 내 정보 수정과 같은 저장 경로를 탄다(본인이 고칠 수 있는 항목만, 같은 훅). 저장 뒤 비어 있는 필수 항목 판정을 다시 맞추고,
+     * 필수 항목을 건너뛰고 만들어진 회원이 미입력을 모두 채웠으면 그 표시(`required_fields_deferred_at`)를 지운다.
+     *
+     * @param  User  $user  본인
+     * @param  array<string, mixed>  $data  검증된 항목 값 (비어 있던 필수 항목뿐)
+     * @return User 저장된 회원
+     *
+     * @throws ValidationException 저장 실패 시
+     */
+    public function completeRequiredFields(User $user, array $data): User
+    {
+        $updated = $data === []
+            ? $user
+            : $this->updateUser($user, $data, ['field_surface' => FieldContext::SURFACE_SELF_UPDATE]);
+
+        // 저장할 값이 없던 요청(파일 항목만 남았다가 올린 뒤 등)도 판정을 다시 맞춘다.
+        app(RequiredFieldsChecker::class)->settle($updated);
+
+        return $updated;
     }
 
     /**
@@ -610,6 +858,8 @@ class UserService
 
             // 아바타는 파일 삭제를 동반하므로 커밋 후에 처리한다 (롤백되어도 파일은 안 돌아온다).
             $avatarAttachment = $user->avatarAttachment;
+            // 회원 항목에 올린 파일도 같은 이유로 커밋 후에 지운다 — 회원 행이 사라지기 전에 대상을 모아 둔다.
+            $fieldAttachments = app(MemberFieldFileService::class)->collectFor($user);
 
             // 마지막 delete 가 FK 등으로 실패하면 역할·동의·토큰만 사라지고 계정은 남는
             // 껍데기 활성 계정이 된다 (실회귀 이력 존재). 전 단계를 하나로 묶는다.
@@ -628,6 +878,9 @@ class UserService
 
                 // 최근 검색어 삭제 (명시적 삭제 - CASCADE 의존 금지, 7.1.5)
                 $this->searchHistoryService->purgeForUser($user);
+
+                // 회원 항목 값 삭제 (운영자 추가 항목의 값, 확장 핸들러 항목 — 명시적 삭제, 7.2.0)
+                app(FieldValueService::class)->purgeOwner($user, FieldSet::CORE_USER);
 
                 // API 토큰 삭제
                 $user->tokens()->delete();
@@ -649,6 +902,8 @@ class UserService
                     ]);
                 }
             }
+
+            app(MemberFieldFileService::class)->purgeAttachments($fieldAttachments, $userData['id'] ?? null);
 
             // After 훅: 삭제된 사용자 데이터 전달
             HookManager::doAction('core.user.after_delete', $userData);
@@ -1476,7 +1731,8 @@ class UserService
 
         return [
             'uuid' => $user->uuid,
-            'name' => $user->name,
+            // 공개 프로필의 이름은 사이트 기본 영역의 표시 이름이다 — 닉네임으로 보이는 사이트에서 실명이 나가지 않는다.
+            'name' => app(DisplayNameResolver::class)->resolve($user),
             'status' => $user->status,
             'status_label' => $status?->label() ?? $user->status,
             // `avatar_url` 은 접근자가 없어 늘 null 이었다 — 아바타 주소의 SSoT 는 getAvatarUrl() 이다 (#869)

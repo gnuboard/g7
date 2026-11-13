@@ -1,0 +1,18 @@
+<!-- 회원 탭의 **껍데기**(#490). 내용은 없고 하위 구획 셋(가입 항목, 표시 이름, 닉네임 정책)을 담기만 한다.
+  하위 탭 막대(`member_sub_tab_navigation`)는 이 조각이 아니라 부모 화면의 고정 머리에 있고, 탭 id 에
+  `member_section_` 을 붙인 구획으로 스크롤한다. 구획의 `scroll-mt-*` 여백이 그 머리 높이를 비켜 둔 것이다.
+  구획마다 저장 방식이 다르다. 가입 항목 표는 조작하는 즉시 저장하고(설정 폼과 「변경 있음」을 건드리지 않는다),
+  표시 이름과 닉네임 정책은 화면 하단 「저장」이 회원 탭 몫(`member`)을 한 번에 보낸다. -->
+<partial description="환경설정 회원 탭 컨테이너 — 하위 탭 막대는 admin_settings 의 sticky_header 안에 있고, 이 조각은 가입 항목, 표시 이름, 닉네임 정책 세 구획만 포함한다">
+  <div data-ref="tab_content_member" data-if="{{(_global.activeSettingsTab || query.tab) === 'member'}}" class="card-stack">
+    <div data-ref="member_section_fields" class="scroll-mt-44">
+      <include src="partials/admin_settings/_tab_member_fields.g7.html"/>
+    </div>
+    <div data-ref="member_section_display_name" class="scroll-mt-44">
+      <include src="partials/admin_settings/_tab_member_display_name.g7.html"/>
+    </div>
+    <div data-ref="member_section_nickname" class="scroll-mt-44">
+      <include src="partials/admin_settings/_tab_member_nickname.g7.html"/>
+    </div>
+  </div>
+</partial>

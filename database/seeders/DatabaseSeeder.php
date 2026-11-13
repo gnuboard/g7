@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             NotificationDefinitionSeeder::class,
             IdentityPolicySeeder::class,
             CoreScheduleSeeder::class,
+            CoreFieldDefinitionSeeder::class,
         ]);
 
         // 샘플 시더 (--sample 옵션 시에만 실행)

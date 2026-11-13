@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Fields\UserPreferenceFieldHandler;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\SignupCurrencyResolver;
 
@@ -43,36 +44,7 @@ class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
             'core.auth.after_register' => ['method' => 'handleRegister', 'priority' => 20, 'sync' => true],
             // 관리자 회원생성
             'core.user.after_create' => ['method' => 'handleAdminCreate', 'priority' => 20, 'sync' => true],
-            // 가입 검증 규칙: preferred_currency 를 등록 통화로 제한(무효 통화 강제 전송 차단)
-            'core.auth.register_validation_rules' => [
-                'method' => 'addCurrencyRule',
-                'type' => 'filter',
-                'priority' => 20,
-            ],
         ];
-    }
-
-    /**
-     * 가입 검증 규칙에 결제 통화(preferred_currency) 규칙을 추가합니다. (filter 훅)
-     *
-     * 선택값이라 nullable. 값이 있으면 등록된 선택 가능 통화여야 한다(무효 통화 강제 전송 차단).
-     *
-     * @param  array<string, mixed>  $rules  기존 가입 검증 규칙
-     * @return array<string, mixed> 통화 규칙이 추가된 규칙
-     */
-    public function addCurrencyRule(array $rules): array
-    {
-        $rules['preferred_currency'] = [
-            'nullable',
-            'string',
-            function (string $attribute, mixed $value, \Closure $fail): void {
-                if (! $this->resolver->isRegistered(is_string($value) ? $value : null)) {
-                    $fail(__('sirsoft-ecommerce::validation.custom.user_currency.invalid'));
-                }
-            },
-        ];
-
-        return $rules;
     }
 
     /**
@@ -95,9 +67,13 @@ class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
      */
     public function handleRegister(User $user, array $context = []): void
     {
-        // 가입폼이 제출한 통화(registration_data.preferred_currency)가 등록 통화면 우선(D-LOGIN-CUR),
-        // 없거나 무효면 locale 기반 추정(D-SIGNUP)으로 폴백.
-        $submitted = $context['registration_data']['preferred_currency'] ?? null;
+        // 가입 화면이 낸 통화는 회원 항목 선언대로 코어가 검증해 가입 트랜잭션 안에서 이미 저장했다
+        // (`UserPreferenceFieldHandler`). 그때는 아래 「이미 설정돼 있으면 유지」에 걸려 아무것도 하지 않는다.
+        // 여기서 가입 데이터를 다시 읽는 것은 요청 검증을 거치지 않는 내부 가입 호출을 위한 것이다(정식 키 우선, 옛 키 수용).
+        $registration = is_array($context['registration_data'] ?? null) ? $context['registration_data'] : [];
+        $submitted = $registration[UserPreferenceFieldHandler::CURRENCY_FIELD]
+            ?? $registration[UserPreferenceFieldHandler::LEGACY_CURRENCY_FIELD]
+            ?? null;
         $this->assignCurrency($user, is_string($submitted) ? $submitted : null);
     }
 

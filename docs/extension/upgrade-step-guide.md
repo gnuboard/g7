@@ -700,6 +700,18 @@ $pluginResult = app(PluginManager::class)->resyncAllActiveDeclarativeArtifacts()
 
 **자동 정합성 검증**: 자동 검증이 새 declaration 메서드 추가 시 sync 묶음에 누락 없이 반영되는지 검증. 누락 시 빌드/커밋 단계에서 차단된다.
 
+**7.2.0 에서 더해진 declaration 영역**: 다섯 게터가 더해졌다. DB 행으로 동기화되는 것은 `getFields()` 하나이고, 나머지 넷은 저장하지 않고 요청마다 등록소가 켜진 확장의 선언을 읽는다.
+
+| 게터 | 반영되는 곳 | 반영 시점 |
+| --- | --- | --- |
+| `getFields()` | `field_definitions` 행. `syncDeclarativeArtifacts()` 가 `FieldDefinitionSyncHelper` 로 동기화한다. 운영자가 고친 속성은 `user_overrides` 로 보존되고, 선언에서 빠진 항목은 행과 값이 함께 지워진다(선언이 빈 배열이면 지우지 않는다). 운영자가 만든 항목은 건드리지 않는다 | 확장 설치, 확장 업데이트, 코어 업그레이드의 선언 재동기화 |
+| `getFieldSets()` | DB 에 저장하지 않는다. `App\Fields\FieldSetRegistry` 가 읽는다. 동기화 때는 자기 집합을 먼저 등록소에 올린 뒤 항목을 동기화한다 | 요청마다 |
+| `getFieldTypes()` | DB 에 저장하지 않는다. `App\Fields\FieldTypeRegistry` 가 읽는다 | 요청마다 |
+| `getDisplayNameKinds()` | DB 에 저장하지 않는다. `App\DisplayName\DisplayNameKindRegistry` 가 읽는다 | 요청마다 |
+| `getDisplayNameAreas()` | DB 에 저장하지 않는다. `App\DisplayName\DisplayNameAreaRegistry` 가 읽는다. 운영자가 정한 영역별 설정은 코어 설정 `member.display_name_areas` 에 저장된다 | 요청마다 |
+
+이 게터에 새 선언만 더한 확장 버전은 업그레이드 스텝이 필요 없다. `getFields()` 의 새 항목은 업데이트의 선언 재동기화가 행을 만들고, 나머지 넷은 새 코드가 올라간 다음 요청부터 읽힌다. 스텝은 기존 데이터를 옮기거나 고칠 때만 쓴다(예: 자기 테이블의 값을 새 항목의 저장 위치로 옮기기). 선언 방법은 [항목 집합과 항목 선언](field-sets.md), [표시 이름](display-name.md)을 본다.
+
 ### 권한 정상화 실패 노출
 
 `CoreUpdateService::restoreOwnership()` 는 chown / `chmod g+w` 실패 항목을 누적하여 `getLastPermissionWarnings()` 로 노출. `CoreUpdateCommand` 가 매 호출 직후 콘솔에 실패 경로 + 운영자 수동 복구 명령(`sudo chown -R / chmod g+w`) 을 즉시 안내. upgrade step 에서 권한 정상화를 수행할 때도 동일한 회귀 차단 패턴이 권장된다 (`FilePermissionHelper::chownRecursiveDetailed` / `syncGroupWritabilityDetailed` 사용).

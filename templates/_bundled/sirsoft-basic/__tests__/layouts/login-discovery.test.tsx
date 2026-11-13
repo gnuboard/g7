@@ -4,7 +4,7 @@
  *
  * 이메일 칸을 벗어날 때 값이 바뀌었으면 `POST /api/auth/login/discover` 로 그 식별자의 로그인 수단을 묻는다.
  * 응답이 외부 수단(`method=external`)이면 `_local.discovery` 에 `{label, redirect_url}` 을 담고 비밀번호 칸과
- * 로그인 버튼 대신 「{label}(으)로 계속」(redirect 쿼리를 실어 그 수단으로 이동)과 「다른 이메일로 로그인」(판정 초기화)을
+ * 로그인 버튼 대신 「{label} 계정으로 계속」(redirect 쿼리를 실어 그 수단으로 이동)과 「다른 이메일로 로그인」(판정 초기화)을
  * 보인다. 실패나 `password` 면 지금 화면 그대로다.
  *
  * 식별자 칸은 `_global.appConfig.auth.login_identifier.user` 가 `email_or_username` 이면 `type=text` 와
@@ -216,7 +216,7 @@ describe('sirsoft-basic 로그인 이메일 먼저 입력 (7.2.0 B1)', () => {
    * @scenario identifier_mode=email, discovery=external
    * @effects discovery_external_swaps_password_for_continue, discovery_continue_carries_redirect, discovered_notice_shown
    */
-  it('외부 수단 판정이면 비밀번호 칸·로그인 버튼 대신 「{label}(으)로 계속」을 보이고 누르면 redirect 쿼리를 실어 이동한다', async () => {
+  it('외부 수단 판정이면 비밀번호 칸·로그인 버튼 대신 「{label} 계정으로 계속」을 보이고 누르면 redirect 쿼리를 실어 이동한다', async () => {
     fetchMock.mockImplementation(async () => jsonResponse(200, {
       success: true,
       data: { method: 'external', label: { ko: '사내 SSO', en: 'Corp SSO' }, redirect_url: '/plugins/sirsoft-sso/start/corp' },
@@ -224,7 +224,7 @@ describe('sirsoft-basic 로그인 이메일 먼저 입력 (7.2.0 B1)', () => {
     const t = await renderLogin({ query: { redirect: '/mypage/orders' } });
 
     typeAndLeave('kim@corp.test');
-    await waitFor(() => expect(buttonByText('사내 SSO(으)로 계속'), '「사내 SSO(으)로 계속」 버튼이 없다').toBeDefined());
+    await waitFor(() => expect(buttonByText('사내 SSO 계정으로 계속'), '「사내 SSO 계정으로 계속」 버튼이 없다').toBeDefined());
 
     const [[url, init]] = discoverCalls();
     expect(url).toBe('/api/auth/login/discover');
@@ -237,7 +237,7 @@ describe('sirsoft-basic 로그인 이메일 먼저 입력 (7.2.0 B1)', () => {
     // 왜 비밀번호 칸이 사라졌는지 안내한다(디자인 ②)
     expect(document.body.textContent).toContain(koAuth.external.discovered_notice.replace('{{method}}', '사내 SSO'));
 
-    fireEvent.click(buttonByText('사내 SSO(으)로 계속')!);
+    fireEvent.click(buttonByText('사내 SSO 계정으로 계속')!);
     await waitFor(() => expect(locationAssign).toHaveBeenCalledTimes(1));
     expect(locationAssign).toHaveBeenCalledWith('/plugins/sirsoft-sso/start/corp?redirect=%2Fmypage%2Forders');
 
@@ -250,7 +250,7 @@ describe('sirsoft-basic 로그인 이메일 먼저 입력 (7.2.0 B1)', () => {
    * @scenario identifier_mode=email, discovery=external
    * @effects discovery_label_falls_back_across_locales
    */
-  it('수단 이름에 화면 로케일이 없으면 있는 이름으로 폴백해 「{label}(으)로 계속」을 보인다', async () => {
+  it('수단 이름에 화면 로케일이 없으면 있는 이름으로 폴백해 「{label} 계정으로 계속」을 보인다', async () => {
     fetchMock.mockImplementation(async () => jsonResponse(200, {
       success: true,
       data: { method: 'external', label: { ko: '사내 SSO' }, redirect_url: '/plugins/sirsoft-sso/start/corp' },
@@ -258,7 +258,7 @@ describe('sirsoft-basic 로그인 이메일 먼저 입력 (7.2.0 B1)', () => {
     const t = await renderLogin({ locale: 'en' });
 
     typeAndLeave('kim@corp.test');
-    await waitFor(() => expect(buttonByText('사내 SSO(으)로 계속'), '폴백 이름 버튼이 없다').toBeDefined());
+    await waitFor(() => expect(buttonByText('사내 SSO 계정으로 계속'), '폴백 이름 버튼이 없다').toBeDefined());
     expect(buttonByText(koAuth.external.continue_with_company)).toBeUndefined();
 
     t.cleanup();
@@ -303,7 +303,7 @@ describe('sirsoft-basic 로그인 이메일 먼저 입력 (7.2.0 B1)', () => {
     fireEvent.click(buttonByText(koAuth.external.use_other_email)!);
     await waitFor(() => expect(document.querySelector('input[name="password"]')).not.toBeNull());
     expect(document.querySelector('button[type="submit"]')).not.toBeNull();
-    expect(buttonByText('사내 SSO(으)로 계속')).toBeUndefined();
+    expect(buttonByText('사내 SSO 계정으로 계속')).toBeUndefined();
 
     // 판정 기준값(discoveryFor)도 지워졌다 — 같은 주소로 다시 벗어나면 다시 묻는다
     typeAndLeave('kim@corp.test');

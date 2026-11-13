@@ -15,6 +15,8 @@ export type { BrandMarkProps, BrandMarkData } from './BrandMark';
 export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
+export { default as MemberFieldInput } from './MemberFieldInput';
+export type { MemberFieldInputProps, MemberFieldContract } from './MemberFieldInput';
 export { default as RichTextEditor } from './RichTextEditor';
 export { HtmlContent } from './HtmlContent';
 export { HtmlEditor } from './HtmlEditor';
@@ -64,6 +66,7 @@ export declare const compositeComponents: {
     ImageGallery: () => Promise<typeof import("./ImageGallery")>;
     ProductImageViewer: () => Promise<typeof import("./ProductImageViewer")>;
     QuantitySelector: () => Promise<typeof import("./QuantitySelector")>;
+    MemberFieldInput: () => Promise<typeof import("./MemberFieldInput")>;
     RichTextEditor: () => Promise<typeof import("./RichTextEditor")>;
     HtmlContent: () => Promise<typeof import("./HtmlContent")>;
     HtmlEditor: () => Promise<typeof import("./HtmlEditor")>;

@@ -139,15 +139,17 @@ class MileageExportType extends AbstractExportType
 
         $fields = $this->declaredFields(MileageTransaction::class, 'mileage', static fn (object $row) => $row, $groups);
 
+        // 파일의 회원 이름과 지급자 이름은 표시 이름이 아니라 실명이다(정산, 대조용 자료). 이름이 없는 회원은 빈 칸으로 낸다.
         $fields[] = $this->computed('mileage.member_name', ExportFieldType::STRING, true,
-            static fn (MileageTransaction $t) => $t->user?->name, 'member');
+            static fn (MileageTransaction $t) => (string) ($t->user?->getAttribute('name') ?? ''), 'member');
         $fields[] = $this->computed('mileage.member_uuid', ExportFieldType::STRING, false,
             static fn (MileageTransaction $t) => $t->user?->uuid, 'member');
         $fields[] = $this->computed('mileage.order_number', ExportFieldType::STRING, false,
             static fn (MileageTransaction $t) => $t->order?->order_number, 'order');
         $fields[] = $this->computed('mileage.granted_by_name', ExportFieldType::STRING, false,
             static fn (MileageTransaction $t) => $t->granted_by
-                ? ($t->grantedByUser?->name ?? (string) $t->granted_by)
+                // 지급자 행이 지워졌으면 종전처럼 지급자 번호를, 행은 있는데 이름이 없으면 빈 칸을 낸다
+                ? ($t->grantedByUser !== null ? (string) ($t->grantedByUser->getAttribute('name') ?? '') : (string) $t->granted_by)
                 : __('sirsoft-ecommerce::export.values.system'), 'granted_by');
 
         return $fields;
@@ -180,7 +182,7 @@ class MileageExportType extends AbstractExportType
      */
     public function rows(Builder $query, string $unit, ?CarbonInterface $cutoff = null): Generator
     {
-        $relations = ['user:id,uuid,name', 'grantedByUser:id,name', 'order:id,order_number'];
+        $relations = ['user:'.User::displayColumns(), 'grantedByUser:'.User::displayColumns(), 'order:id,order_number'];
 
         foreach ((clone $query)->with($relations)->lazyByIdDesc(self::CHUNK) as $transaction) {
             yield [$transaction, true, $transaction->currency];

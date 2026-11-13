@@ -79,7 +79,6 @@ effects:
   - admin_coupon_form_edit_mode_follows_update
   - admin_route_permissions_are_defined
   - admin_mockup_batch_button_locked
-  - admin_user_preference_fields_locked
   - user_claim_buttons_locked_by_abilities
   - address_search_button_follows_host_readonly
   - user_claim_pay_button_locked

@@ -75,7 +75,8 @@ describe('목록 필터 접근성 — 빠른 기간 버튼·검색편집 체크�
 
     expect(toggles.length).toBeGreaterThanOrEqual(12);
     for (const toggle of toggles) {
-      expect(toggle.props['aria-label'], JSON.stringify(toggle.props)).toMatch(/^\$t:admin\.users\.filter\.show_in_basic\|label=\$t:admin\.users\.filter\.[a-z_.]+$/);
+      // 필터 이름 키는 `admin.users.filter.*` 이거나, 회원 항목 조건 둘(필수 항목 미입력, 닉네임 중복)의 `admin.users.list_member_fields.*` 다(#490)
+      expect(toggle.props['aria-label'], JSON.stringify(toggle.props)).toMatch(/^\$t:admin\.users\.filter\.show_in_basic\|label=\$t:admin\.users\.(filter|list_member_fields)\.[a-z_.]+$/);
     }
 
     for (const pack of [adminKo, adminEn, adminJa]) {

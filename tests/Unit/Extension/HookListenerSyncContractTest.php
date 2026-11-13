@@ -85,8 +85,10 @@ class HookListenerSyncContractTest extends PureTestCase
             'gdpr GdprUserDeleteListener' => ['Plugins\\Sirsoft\\Gdpr\\Listeners\\GdprUserDeleteListener', [
                 'core.user.before_delete',
             ]],
+            // 동의값 저장은 #490 에서 코어 회원 항목(확장 선언 항목) 저장으로 옮겨 after_create·after_update 구독이 없어졌다.
+            // 남은 sync 구독: 회원 삭제와 같은 트랜잭션의 동의 삭제, 설정 저장 직후 항목 선언 재동기화.
             'marketing MarketingConsentListener' => ['Plugins\\Sirsoft\\Marketing\\Listeners\\MarketingConsentListener', [
-                'core.user.after_create', 'core.user.after_update', 'core.user.before_delete',
+                'core.user.before_delete', 'core.plugin_settings.after_save',
             ]],
             'bizppurio LinkNotificationLogListener' => ['Plugins\\Sirsoft\\MessageBizppurio\\Listeners\\LinkNotificationLogListener', [
                 'core.notification_log.after_log_sent', 'core.notification_log.after_log_failed',

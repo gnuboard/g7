@@ -5,7 +5,7 @@
  * 회사 계정 로그인이 강제된 계정·도메인이면 서버가 비밀번호 찾기(`/api/auth/forgot-password`)·재설정
  * (`/api/auth/reset-password`)·재설정 링크 확인(`/api/auth/validate-reset-token`)을 422 `errors.code=auth.password_auth_disabled`
  * 로 거절한다. 화면은 토스트 대신 조각 `partials/auth/_password_auth_blocked` 로 안내 문구와 그 수단으로 가는 버튼
- * (`errors.redirect_url` 이 있을 때, 「{method_label}(으)로 로그인」)을 보인다. 재설정 화면은 안내가 서면 폼을 숨긴다.
+ * (`errors.redirect_url` 이 있을 때, 「{method_label} 계정으로 로그인」)을 보인다. 재설정 화면은 안내가 서면 폼을 숨긴다.
  *
  * 조각은 실제 JSON 을 그 자리에 끼워 그린다(서버가 조각을 푸는 것과 같은 모양). 그 밖의 조각은 표지 칸으로 바꾼다.
  *
@@ -218,7 +218,7 @@ describe('sirsoft-basic 비밀번호 찾기·재설정 차단 안내 (7.2.0 B3)'
    * @scenario surface=forgot_password, phase=submit, response=password_auth_disabled
    * @effects forgot_password_blocked_shows_notice, password_blocked_offers_method_button
    */
-  it('비밀번호 찾기가 422 auth.password_auth_disabled 면 토스트 대신 안내와 「{method_label}(으)로 로그인」 버튼을 보인다', async () => {
+  it('비밀번호 찾기가 422 auth.password_auth_disabled 면 토스트 대신 안내와 「{method_label} 계정으로 로그인」 버튼을 보인다', async () => {
     expect(forgotCard, 'forgot_password.g7.html 에 안내 조각 자리가 없다').toBeDefined();
     const t = await renderCard(forgotCard, jsonResponse(422, BLOCKED_BODY));
 
@@ -230,7 +230,7 @@ describe('sirsoft-basic 비밀번호 찾기·재설정 차단 안내 (7.2.0 B3)'
     expect(toastsOf(t)).toEqual([]);
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/auth/forgot-password')).toBe(true);
 
-    fireEvent.click(buttonByText('사내 SSO(으)로 로그인')!);
+    fireEvent.click(buttonByText('사내 SSO 계정으로 로그인')!);
     await waitFor(() => expect(locationAssign).toHaveBeenCalledWith('/plugins/sirsoft-sso/start/corp'));
 
     t.cleanup();
@@ -284,7 +284,7 @@ describe('sirsoft-basic 비밀번호 찾기·재설정 차단 안내 (7.2.0 B3)'
     expect(toastsOf(t)).toEqual([]);
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/auth/reset-password')).toBe(true);
 
-    fireEvent.click(buttonByText('사내 SSO(으)로 로그인')!);
+    fireEvent.click(buttonByText('사내 SSO 계정으로 로그인')!);
     await waitFor(() => expect(locationAssign).toHaveBeenCalledWith('/plugins/sirsoft-sso/start/corp'));
 
     t.cleanup();

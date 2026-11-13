@@ -152,9 +152,13 @@ class GeneratesComponentManifestTest extends TestCase
     {
         $scanned = $this->scanHelloModule();
 
+        // 종단 검증이므로 모듈 버전도 실물(module.json)을 쓴다 — 템플릿 대체본의 targetVersion 은 모듈 판이 오를 때 함께 오른다.
+        $moduleVersion = json_decode((string) file_get_contents(base_path('modules/_bundled/gnuboard7-hello_module/module.json')), true)['version'] ?? null;
+        $this->assertIsString($moduleVersion, 'hello 모듈 module.json 의 version 을 읽지 못했습니다.');
+
         $module = ComponentManifest::fromArray([
             'identifier' => 'gnuboard7-hello_module',
-            'version' => '0.2.0',
+            'version' => $moduleVersion,
             'components' => $scanned['components'],
             'for' => $scanned['for'],
         ], 'hello-module.json');
@@ -171,8 +175,8 @@ class GeneratesComponentManifestTest extends TestCase
         $this->assertNotNull($card, '모듈이 제공한 컴포넌트가 마크업 어휘에 합류하지 않았습니다.');
         $this->assertSame('gnuboard7-hello_module.MemoCard', $card->name);
 
-        // ② 오버라이드 — 이 템플릿의 대체본이 같은 좌표를 차지한다. targetVersion(^0.2)이
-        //    모듈 버전(0.2.0)과 호환이므로 대체본이 적용된다. `accent` 는 대체본에만 있는
+        // ② 오버라이드 — 이 템플릿의 대체본이 같은 좌표를 차지한다. targetVersion 이
+        //    실물 모듈 버전과 호환이므로 대체본이 적용된다. `accent` 는 대체본에만 있는
         //    prop 이라, 이것이 보이면 원본이 아니라 대체본이 자리를 잡았다는 뜻이다.
         $this->assertSame('gnuboard7-hello_module', $card->owner);
         $this->assertSame('string', $card->propType('accent'), '템플릿의 대체본이 적용되지 않았습니다.');
@@ -197,7 +201,7 @@ class GeneratesComponentManifestTest extends TestCase
     {
         $scanned = $this->scanHelloModule();
 
-        // 모듈이 1.0.0 으로 올라가면 템플릿의 `^0.2` 대체본은 낡은 것이 된다.
+        // 모듈이 1.0.0 으로 올라가면 템플릿의 `^0.x` 대체본은 낡은 것이 된다.
         $module = ComponentManifest::fromArray([
             'identifier' => 'gnuboard7-hello_module',
             'version' => '1.0.0',

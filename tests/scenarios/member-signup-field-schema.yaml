@@ -1,0 +1,23 @@
+feature: member_signup_field_schema
+
+description: |
+  가입 화면 항목 조회(GET /api/auth/register/fields)가 운영자 설정대로 항목 계약을 주는지.
+  화면은 이 응답만 보고 입력칸을 그리므로 순서, 필수 표시, 폼 경로, 선택지 글자, 정의 버전이 계약이다.
+
+coverage_strategy: full
+
+axes:
+  setting: [defaults, core_field_tuned, custom_field, file_and_admin_scope, address_parts, fields_version, pending_prefill]
+
+effects:
+  - schema_matches_legacy_signup_form
+  - schema_follows_enabled_required_and_signup_visibility
+  - schema_custom_field_path_and_localized_text
+  - schema_file_field_is_deferred_and_admin_scope_hidden
+  - schema_address_parts_paths
+  - schema_version_round_trips_to_signup
+  # 소셜, SSO 가입 창이 공급자 값을 받는 통로 — 조회 인자가 필터 문맥으로 가고, 구독자가 채운 초기값과 잠금이 계약에 실린다
+  - schema_carries_filter_supplied_default_and_lock
+
+test_files:
+  - tests/Feature/Auth/RegisterFieldsApiTest.php

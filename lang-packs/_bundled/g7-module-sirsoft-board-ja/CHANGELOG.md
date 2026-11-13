@@ -13,11 +13,17 @@
 - 쇼핑몰 환경설정 「문의 게시판」 칸에서 게시판 목록을 볼 수 없을 때 나오는 안내의 일본어 번역을 추가했습니다.
 - 환경설정 > 업로드 「기존 이미지 썸네일 만들기」 창에 보이는 게시판 첨부 원본 이름의 일본어 번역을 추가했습니다.
 - 게시판 이미지 썸네일 실측 샘플 시더의 콘솔 출력(표 제목, 머리글, 구분, 정리 건수 이름)의 일본어 번역을 추가했습니다 (`messages.seeders.thumbnail_measure.*`).
+- 「비회원 작성자 항목」 표의 항목 추가 창, 운영자 항목 지우기, 환경설정 「비회원 작성자 항목 기본값」 카드의 일본어 번역을 추가했습니다(`admin.form.guest_author_fields.add.*`, `types.*`, `delete*`, `admin.settings.guest_author_fields.*`).
+- 게시판 「작성자 표시 이름」 설정과 「비회원 작성자 항목」 표의 일본어 번역을 추가했습니다 — 게시판 폼 문구(`admin.form.display_name.*`, `admin.form.guest_author_fields.*`), 표시 이름 영역 이름과 항목 집합 이름(`admin.display_name.areas.*`, `admin.guest_author_fields.set_label`), 검증 문구와 항목 이름 12건(비회원 작성자 항목 표의 행, 게시글과 댓글 사용 여부, 필수 여부 칸 이름 포함), 회원 항목으로 선언하는 게시판 알림 4종과 비회원 이메일 항목의 이름과 안내(`fields.*`), 「실명: …」 표기(`common.real_name_label`) (#490)
 
 ### Changed
 
 - 코어 최소 요구 버전을 7.2.0 으로 상향
 - 환경설정 > 업로드 「기존 이미지 썸네일 만들기」 창의 게시판 원본 이름 번역을 본문 이미지를 포함한 이름으로 바꿨습니다(원본 모듈과 같은 수정).
+
+### Removed
+
+- 회원 폼의 「게시판 알림 설정」 구획이 회원 항목으로 옮겨져 쓰이지 않게 된 문구 5건(`admin.users.form.sections.notification_settings`, `admin.users.form.notifications.*`)을 정리했습니다 (#490)
 
 ### Fixed
 

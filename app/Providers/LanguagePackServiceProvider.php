@@ -158,6 +158,10 @@ class LanguagePackServiceProvider extends ServiceProvider
             return $injector->injectCoreSchedules(is_array($schedules) ? $schedules : []);
         });
 
+        HookManager::addFilter('core.fields.config', function ($fields) use ($injector) {
+            return $injector->injectCoreFields(is_array($fields) ? $fields : []);
+        });
+
         $this->registerExtensionSeedFilters($injector);
 
         // 프론트엔드 다국어 데이터 병합 (TemplateService::getLanguageDataWithModules 의 마지막 단계)

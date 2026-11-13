@@ -290,7 +290,9 @@ class TrustedProxyContractTest extends TestCase
      */
     public function test_설치_마법사의_전달_헤더_목록이_코어와_같다(): void
     {
-        $source = (string) file_get_contents(base_path('public/install/api/check-configuration.php'));
+        // 목록의 자리는 웹, 터미널 설치가 함께 쓰는 요구사항 함수 파일(`installer_forwarded_headers()`)이다(7.2.0) —
+        // 종전에는 설정 검사 API(check-configuration.php) 본문에 있었다.
+        $source = (string) file_get_contents(base_path('public/install/includes/requirements.php'));
 
         foreach (TrustedProxyDiagnostic::FORWARDED_HEADERS as $header) {
             $this->assertStringContainsString(

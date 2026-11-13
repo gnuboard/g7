@@ -1184,6 +1184,7 @@
     "tab_navigation": "タブナビゲーション",
     "tab_navigation_scroll": "スクロールタブナビ",
     "toggle": "トグルスイッチ",
+    "member_field_input": "会員項目入力欄",
     "input": "入力",
     "textarea": "複数行入力",
     "label": "ラベル",
@@ -1709,7 +1710,10 @@
     "queue_failed": "キュー失敗 Job",
     "queue_logs": "キュー処理記録",
     "coreSchedules": "コアの予約タスク一覧",
-    "template_settings": "テンプレート設定"
+    "template_settings": "テンプレート設定",
+    "memberFieldDefs": "会員項目定義",
+    "memberFields": "会員項目",
+    "memberNicknameRecompute": "ニックネーム重複チェックの準備状態"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

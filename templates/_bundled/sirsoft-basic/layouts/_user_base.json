@@ -71,6 +71,23 @@
                         "accountCountry": "{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}",
                         "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
                     }
+                },
+                {
+                    "comment": "추가 정보 입력 유도 — 필수 항목이 비어 있는 회원(응답의 pending_required_fields 에 키가 있다)이 유도 제외 화면이 아닌 곳에 있으면 추가 정보 입력 화면으로 바꿔 보낸다(뒤로 가기 이력을 남기지 않는다).\n           돌아올 곳과 제외 여부는 화면에 들어올 때 init 이 _global.requiredInfoGate 에 적어 둔다(이 자리에서는 주소를 읽을 수 없다). 적힌 값이 없으면 보내지 않는다.\n           제외 화면에서는 판정이 stay 라, 옮겨 간 추가 정보 입력 화면에서 다시 옮기는 일이 없다.\n           데이터소스 성공 처리의 if 는 응답만 읽고 전역 상태를 읽지 못한다 — 그래서 남은 항목 유무(응답)는 if 로, 제외 여부(전역 상태)는 switch 의 값으로 가른다.",
+                    "handler": "switch",
+                    "if": "{{((response.data?.data?.pending_required_fields ?? response.data?.pending_required_fields) ?? []).length > 0}}",
+                    "params": {
+                        "value": "{{(!!_global.requiredInfoGate?.from && _global.requiredInfoGate?.exempt === false) ? 'guide' : 'stay'}}"
+                    },
+                    "cases": {
+                        "guide": {
+                            "handler": "redirect",
+                            "params": {
+                                "replace": true,
+                                "url": "{{'/mypage/required-info?redirect=' + encodeURIComponent(_global.requiredInfoGate?.from ?? '/')}}"
+                            }
+                        }
+                    }
                 }
             ],
             "errorHandling": {
@@ -241,6 +258,14 @@
         }
     },
     "init_actions": [
+        {
+            "comment": "추가 정보 입력 유도의 기준값 — 지금 주소(from: 경로와 쿼리)와 이 화면이 유도 제외 화면인지(exempt)를 적어 둔다. current_user 를 받은 뒤의 유도 판정과 「추가 정보 필요」 안내 창이 읽는다.\n         제외 화면: 추가 정보 입력 화면 자신, 문서 화면(약관, 개인정보처리방침 등 /page/ 아래), 본인인증 화면 둘, 비밀번호 변경, 내 정보 보기(탈퇴 창이 있는 화면), 로그인 전 화면 넷. 내 정보 수정은 제외가 아니다.",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "requiredInfoGate": "{{({ from: (route?.path ?? '') + (Object.keys(query ?? {}).length > 0 ? '?' + Object.entries(query ?? {}).flatMap(function(e) { return [].concat(e[1]).map(function(v) { return encodeURIComponent(e[0]) + '=' + encodeURIComponent(v); }); }).join('&') : ''), exempt: ['/mypage/required-info', '/mypage/profile', '/mypage/change-password', '/identity/challenge', '/identity/verify', '/login', '/register', '/forgot-password', '/reset-password'].indexOf(route?.path ?? '') !== -1 || (route?.path ?? '').indexOf('/page/') === 0 })}}"
+            }
+        },
         {
             "handler": "initTheme"
         },
@@ -1158,7 +1183,7 @@
                                             "name": "Avatar",
                                             "props": {
                                                 "avatar": "{{_global.currentUser?.avatar}}",
-                                                "name": "{{_global.currentUser?.name ?? '?'}}",
+                                                "name": "{{_global.currentUser?.display_name ?? _global.currentUser?.name ?? '?'}}",
                                                 "size": "md"
                                             }
                                         },
@@ -1170,12 +1195,13 @@
                                             },
                                             "children": [
                                                 {
+                                                    "id": "mobile_drawer_user_name",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
                                                         "className": "font-medium text-gray-900 dark:text-white truncate"
                                                     },
-                                                    "text": "{{_global.currentUser?.name}}"
+                                                    "text": "{{_global.currentUser?.display_name ?? _global.currentUser?.name ?? '?'}}"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2990,6 +3016,10 @@
         {
             "comment": "알림 전체 삭제 확인 창 — 헤더와 모바일 드로어의 알림센터가 공유한다(둘 다 onDeleteAll 에서 이 이름을 연다).",
             "partial": "partials/_modal_notification_delete_all_confirm.json"
+        },
+        {
+            "comment": "추가 정보 필요 안내 창 — 필수 항목이 비어 있는 회원의 쓰기 요청을 서버가 거부하면 템플릿 수준 오류 처리(template.json)가 어느 화면에서든 띄우므로 상속원에 둔다.",
+            "partial": "partials/_modal_required_info_pending.json"
         }
     ]
 }

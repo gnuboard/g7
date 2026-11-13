@@ -1,4 +1,10 @@
 {
+  "common": {
+    "real_name": {
+      "label": "Real name",
+      "with_label": "Real name: {{name}}"
+    }
+  },
   "extension_integrations": {
     "title": "Works together with",
     "hint": "When these extensions are installed, their features connect with this one. This extension works without them.",
@@ -171,6 +177,40 @@
     "alert_action_no_permission": "You do not have permission to handle this alert. Ask an administrator who has the permission."
   },
   "users": {
+    "member_fields": {
+      "select_placeholder": "Select",
+      "other": "Other (enter your own)",
+      "other_input": "Enter {{label}}",
+      "other_placeholder": "Enter your own",
+      "range_start": "{{label}} start date",
+      "range_end": "{{label}} end date",
+      "zipcode_label": "{{label}} postal code",
+      "address_label": "{{label}} address",
+      "address_detail_label": "{{label}} address line 2",
+      "upload_after_save": "You can upload this from the edit screen after saving the member.",
+      "file_add": "Add file",
+      "file_add_label": "Add file for {{label}}",
+      "file_remove": "Remove {{name}}",
+      "file_rules": "Allowed extensions: {{extensions}} / Max size per file: {{size}}MB / Max files: {{count}}",
+      "locked_identity": "This field was confirmed by identity verification and cannot be edited.",
+      "locked_generic": "This field cannot be edited.",
+      "extra_title": "Additional fields",
+      "extension_title": "Extension fields",
+      "tab_has_error": "This section has errors",
+      "status": {
+        "nickname_changed_at": "Nickname last changed",
+        "nickname_next_changeable_at": "Nickname can next be changed",
+        "nickname_next_changeable_hint": "This is when the member can change the nickname again. Administrators can change it at any time.",
+        "pending_required": "Missing required fields",
+        "display_name_kind": "Display name kind chosen by the member",
+        "display_name_kind_none": "Not chosen (member default kind: {{kind}})",
+        "display_name_kind_unavailable": "This kind can no longer be chosen. The member is shown by the member default kind ({{kind}}).",
+        "display_name_kind_hint": "Only the member can change this.",
+        "display_name_current": "Name shown now",
+        "display_name_site": "Site default",
+        "display_name_admin": "Admin screens"
+      }
+    },
     "page_title": "User Management",
     "page_description": "Manage system users.",
     "title": "User Management",
@@ -178,6 +218,16 @@
     "add_user": "Add User",
     "search": "Search",
     "search_placeholder": "Enter search term...",
+    "list_member_fields": {
+      "pending_column": "Missing",
+      "pending_count": "{{count}} fields",
+      "pending_count_one": "{{count}} field",
+      "filter_required_missing": "Missing required fields",
+      "filter_required_missing_only": "Only members with missing fields",
+      "filter_nickname_duplicate": "Duplicate nickname",
+      "filter_nickname_duplicate_only": "Only members sharing a nickname",
+      "display_name_column": "Shown name"
+    },
     "search_fields": {
       "all": "All",
       "name": "Name",
@@ -318,8 +368,6 @@
       },
       "fields": {
         "id": "ID",
-        "name": "Name",
-        "nickname": "Nickname",
         "role": "Role",
         "role_placeholder": "Select roles",
         "role_no_options": "No roles available",
@@ -329,20 +377,12 @@
         "email": "Email",
         "email_verified": "Verified",
         "email_verify_btn": "Verify",
-        "mobile": "Mobile",
-        "phone": "Phone",
-        "homepage": "Homepage",
         "address": "Address",
         "zipcode": "Zipcode",
         "address_detail": "Detail Address",
-        "country": "Country",
-        "language": "Language",
-        "timezone": "Timezone",
         "password": "Password",
         "password_confirmation": "Confirm Password",
         "password_hint": "Leave empty to keep current password",
-        "signature": "Signature",
-        "bio": "Bio",
         "admin_memo": "Admin Memo",
         "created_at": "Created At",
         "last_login_at": "Last Login",
@@ -446,8 +486,6 @@
       "info_public": "Public",
       "info_private": "Private",
       "consent_history": "Consent History",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
       "withdrawn_at": "Withdrawn At",
       "blocked_at": "Blocked At",
       "dormant_at": "Dormant Since",
@@ -1886,6 +1924,7 @@
       "content": "Content",
       "seo": "SEO",
       "security": "Security",
+      "member": "Members",
       "drivers": "Drivers",
       "advanced": "Advanced",
       "notification_definitions": "Notifications",
@@ -2427,6 +2466,283 @@
         "preview_hint": "Based on saved values. Save first if you changed the mode or hosts."
       }
     },
+    "member": {
+      "sub_tabs": {
+        "fields": "Signup Fields",
+        "nickname": "Nickname Policy"
+      },
+      "display_name": {
+        "sub_tab": "Display Name",
+        "title": "Display Name",
+        "description": "Choose which name members are shown by on screen. Press \"Save\" below to apply.",
+        "selectable_kinds": "Kinds members can choose",
+        "selectable_kinds_hint": "When two or more are checked, members pick one on the signup screen and in profile editing. The chosen kind is used in areas set to \"Member's choice\".",
+        "selectable_default_locked": "The member default kind cannot be removed. Change the member default kind first.",
+        "requires_nickname_badge": "Needs nickname",
+        "sample": "Preview member: name {{name}}, nickname {{nickname}}, ID {{id}}",
+        "member_default_kind": "Member default kind",
+        "member_default_kind_hint": "Used when a member has not chosen a kind. It must be one of the kinds members can choose.",
+        "areas_title": "Method by area",
+        "areas_hint": "Set the method for each area a name appears in. An indented area can follow the area above it.",
+        "col": {
+          "area": "Area",
+          "mode": "Method",
+          "kind": "Kind"
+        },
+        "mode": {
+          "inherit": "Follow parent area",
+          "fixed": "Fixed kind",
+          "member": "Member's choice"
+        },
+        "area_mode_label": "{{area}} method",
+        "area_kind_label": "{{area}} kind",
+        "effective_member": "Members who have not chosen: {{kind}}",
+        "effective_inherit": "Currently applied: {{kind}}",
+        "effective_inherit_member": "Currently applied: member's choice",
+        "effective_inherit_pending": "Follows the parent area once saved",
+        "extension_note": "Areas that are split further inside (such as each board) are set on that extension's settings screen.",
+        "nickname_notice": {
+          "all": "Saving locks the nickname field to enabled and required.",
+          "chosen": "Saving locks the nickname field to enabled, and the nickname becomes required for members shown by a kind that needs it.",
+          "empty_count": "{{count}} members currently have an empty nickname.",
+          "empty_count_one": "{{count}} member currently has an empty nickname.",
+          "require_existing": "Ask for a nickname at login",
+          "require_existing_hint": "When on, existing members with an empty nickname must enter one first when they log in.",
+          "already_required": "Existing members are already asked to enter a nickname."
+        },
+        "lock_link": "View display name settings",
+        "usage": {
+          "title": "This field is used as a display name and cannot be deleted.",
+          "hint": "Remove this field from the settings below, then delete it again.",
+          "link": "Go to display name settings"
+        },
+        "data_source": {
+          "options": "Display name kinds and areas",
+          "nickname_empty_count": "Members with an empty nickname"
+        }
+      },
+      "fields": {
+        "title": "Signup Fields",
+        "description": "Choose the fields collected on the signup screen, the profile edit screen and the admin member form.",
+        "add_button": "Add Field",
+        "instant_save_notice": "Changes in this table (use, required, show on signup, order) are saved immediately.",
+        "fixed_notice": "Fixed: email, password, terms agreement (always used)",
+        "layout_modified_notice": "The signup screen layout is kept as a modified copy, so new fields may not appear.",
+        "layout_modified_hint": "Restore the signup screen to its original in the layout editor to show the fields set here.",
+        "empty_custom": "No fields have been added. Use \"Add Field\" to create a signup field.",
+        "unavailable": "Unavailable",
+        "unavailable_desc": "The extension that provides this type is turned off. It is restored when the extension is turned on again.",
+        "signup_unsupported": "This type is not collected on the signup screen.",
+        "signup_unsupported_short": "Not on signup",
+        "drag_handle": "Reorder {{name}}",
+        "drag_hint": "Drag to reorder",
+        "move_up": "Move {{name}} up",
+        "move_down": "Move {{name}} down",
+        "move_up_short": "Move up",
+        "move_down_short": "Move down",
+        "saved": "Saved.",
+        "order_saved": "Order saved.",
+        "save_failed": "Could not save. The table was reloaded.",
+        "load_failed": "Could not load the field.",
+        "changed_by_other": "Another administrator changed the fields. They were reloaded.",
+        "col": {
+          "order": "Order",
+          "name": "Field",
+          "type": "Type",
+          "source": "Source",
+          "enabled": "Use",
+          "required": "Required",
+          "show_on_signup": "On Signup",
+          "edit_scope": "Scope"
+        },
+        "source": {
+          "core": "Built-in",
+          "custom": "Added",
+          "extension": "Extension"
+        },
+        "scope": {
+          "self": "Member can edit",
+          "admin_edit": "Admin edit only",
+          "admin_only": "Admin view only"
+        },
+        "btn": {
+          "settings": "Settings",
+          "edit": "Edit",
+          "view": "View"
+        },
+        "delete": {
+          "title": "Delete Field",
+          "message": "The field \"{{name}}\" will be deleted.",
+          "values_warning": "Values entered by {{count}} members are deleted with it and cannot be restored.",
+          "values_warning_one": "The value entered by {{count}} member is deleted with it and cannot be restored.",
+          "no_values_warning": "No values have been entered yet. A deleted field cannot be restored.",
+          "confirm_check": "I have read the above",
+          "success": "The field was deleted.",
+          "failed": "Could not delete the field."
+        },
+        "required_confirm": {
+          "title": "Make Required",
+          "message": "{{count}} existing members have not filled in \"{{name}}\".",
+          "message_one": "{{count}} existing member has not filled in \"{{name}}\".",
+          "mode_label": "When should these members be asked to fill it in?",
+          "on_edit": "Only when editing their profile",
+          "on_login": "Right after they log in",
+          "submit": "Make Required",
+          "hint": {
+            "on_edit": "Members are asked only when they edit and save their profile. Until then they can use the site as before.",
+            "on_login": "Logged-in members are sent to the additional information screen, and requests such as posting are not accepted until they fill it in."
+          }
+        },
+        "form": {
+          "title": {
+            "create": "Add Field",
+            "edit": "Edit Field",
+            "settings": "Field Settings",
+            "view": "View Field"
+          },
+          "readonly_notice": "You only have view permission, so nothing can be changed.",
+          "declared_notice": "For built-in fields and fields provided by extensions, only the name, help text and common options can be changed.",
+          "type": "Type",
+          "type_locked": "The type cannot be changed after the field is created.",
+          "change_type": "Change",
+          "type_step": {
+            "description": "Choose the type of value to collect, then press \"Next\". You can choose again before saving.",
+            "unavailable": "Extension off"
+          },
+          "key": "Key",
+          "key_hint": "Start with a lowercase letter and use only lowercase letters, digits and underscores (2-50 characters). It cannot be changed after the field is created.",
+          "name": "Name",
+          "description": "Help Text",
+          "description_hint": "Shown below the input.",
+          "placeholder": "Placeholder",
+          "placeholder_hint": "Shown faintly in the empty input.",
+          "save_success": "The field was saved.",
+          "section": {
+            "type_options": "Type Options",
+            "common": "Common Options"
+          },
+          "c": {
+            "min_length": "Minimum Length",
+            "max_length": "Maximum Length",
+            "regex": "Format (Regular Expression)",
+            "regex_hint": "Include the delimiters, as in /^[a-z]+$/. Leave empty to skip the format check.",
+            "regex_message": "Format Error Message",
+            "regex_message_hint": "Shown to the member when the value does not match the format. Leave empty to use the default message.",
+            "rows": "Rows",
+            "rows_hint": "Height of the input (2-20 rows).",
+            "min": "Minimum",
+            "max": "Maximum",
+            "decimals": "Decimal Places",
+            "decimals_hint": "0 accepts whole numbers only (0-6).",
+            "unit": "Unit",
+            "unit_hint": "Shown next to the input (for example: years, pcs).",
+            "widget": "Input Style",
+            "widget_toggle": "Switch",
+            "widget_checkbox": "Checkbox",
+            "inline_label": "Side Text",
+            "inline_label_hint": "Shown next to the switch or checkbox.",
+            "default_on": "Show turned on from the start",
+            "date_min": "Earliest Date",
+            "date_max": "Latest Date",
+            "date_hint": "\"Today\" follows the site time zone.",
+            "display": "Display",
+            "display_select": "Dropdown list",
+            "display_radio": "Radio buttons",
+            "display_checkbox": "Checkboxes",
+            "display_multi_select": "Multi-select list",
+            "allow_other": "Allow \"Other (enter directly)\"",
+            "allow_other_hint": "When a member chooses \"Other\", they can type a value in the input right below.",
+            "min_select": "Minimum Selections",
+            "max_select": "Maximum Selections",
+            "address_note": "Collects the postal code, address and detailed address. If a postal code search plugin is on, a search button is shown as well.",
+            "extensions": "Allowed Extensions",
+            "extensions_placeholder": "Type jpg and press Enter",
+            "extensions_hint": "Leave empty to use the default extensions of the type.",
+            "max_count": "Maximum Count",
+            "max_size_mb": "Maximum Size (MB)",
+            "file_signup_note": "Files and images are not collected on the signup screen. Members can upload them from the profile edit screen after signing up."
+          },
+          "date_bound": {
+            "none": "No limit",
+            "today": "Today",
+            "after_today": "After today",
+            "date": "Specific date"
+          },
+          "options": {
+            "title": "Options",
+            "add_button": "Add Option",
+            "paste_button": "Paste Multiple Lines",
+            "paste_label": "One option per line",
+            "paste_placeholder": "Student\nEmployee\nSelf-employed",
+            "paste_hint": "Values are generated automatically, and a number is added when a value already exists. Up to 50 options are allowed.",
+            "paste_apply": "Add as Options",
+            "empty": "There are no options.",
+            "value": "Value",
+            "value_placeholder": "Value",
+            "label": "Name",
+            "label_placeholder": "Name shown to members",
+            "usage": "Used by {{count}}",
+            "remove_warning": "The value of {{count}} members who chose this option will be cleared. It applies when you save.",
+            "remove_warning_one": "The value of {{count}} member who chose this option will be cleared. It applies when you save.",
+            "remove_pending": "This option is deleted when you save.",
+            "restore": "Restore"
+          },
+          "opt": {
+            "enabled": "Use",
+            "required": "Required",
+            "show_on_signup": "Show on signup screen",
+            "edit_scope": "Scope",
+            "edit_scope_hint": {
+              "self": "The member and administrators can edit it.",
+              "admin_edit": "Members can only view it, and only administrators can edit it.",
+              "admin_only": "Shown only on admin screens and hidden from members."
+            },
+            "require_existing_members": "Also require from existing members",
+            "require_existing_locked": "With the \"Admin edit only\" or \"Admin view only\" scope, existing members cannot be asked to fill it in.",
+            "public_profile": "Show on public profile",
+            "admin_list_column": "Member list column",
+            "admin_searchable": "Member search",
+            "unique": "No duplicates",
+            "display_name_usable": "Usable as display name",
+            "display_name_usable_hint": "Only available for the single-line text type.",
+            "idv_claim": "Identity Verification Link",
+            "idv_claim_none": "None",
+            "idv_claim_name": "Name",
+            "idv_claim_mobile": "Mobile",
+            "idv_claim_birth_date": "Date of birth",
+            "idv_claim_gender": "Gender",
+            "idv_lock": "Fill with the verified value and lock"
+          },
+          "close_confirm": {
+            "message": "You have unsaved input. It is lost if you close.",
+            "keep": "Keep Editing",
+            "discard": "Close Without Saving"
+          }
+        }
+      },
+      "nickname": {
+        "title": "Nickname Policy",
+        "description": "Set the rules applied to nicknames. They apply after you press \"Save\" below.",
+        "unique": "No Duplicates",
+        "unique_desc": "Two members cannot use the same nickname. Differences in letter case, full-width characters and spaces are treated as the same nickname.",
+        "duplicates_message": "Some members currently share a nickname: {{nicknames}} nicknames, {{members}} members.",
+        "duplicates_hint": "Turning this on keeps their nicknames as they are. Duplicates are blocked from the next nickname change or new signup.",
+        "duplicates_view": "View Members with Duplicates",
+        "duplicates_confirm": "Turn On Anyway",
+        "duplicates_failed": "Could not check for duplicate nicknames, so it was not turned on.",
+        "recompute_running": "Preparing the duplicate check",
+        "recompute_count": "{{processed}} / {{total}} members",
+        "recompute_running_hint": "Existing nicknames are being prepared for comparison. It continues even if you leave this screen.",
+        "recompute_done": "The duplicate check is ready. {{total}} members were checked.",
+        "banned_words": "Banned Words",
+        "banned_words_placeholder": "Type a word and press Enter",
+        "banned_words_hint": "A nickname containing any of these words cannot be used. Up to 500 words are allowed.",
+        "change_interval": "Change Interval",
+        "change_interval_unit": "days",
+        "change_interval_hint": "The number of days before a nickname can be changed again. 0 means no limit.",
+        "display_note": "While a display name uses the nickname, the nickname is required."
+      }
+    },
     "identity": {
       "sub_tabs": {
         "basic": "Basic",
@@ -2863,7 +3179,12 @@
         "variables_title": "Available Variables",
         "btn_preview": "Preview",
         "is_active_label": "Active",
-        "validation_error": "Please check the input fields."
+        "validation_error": "Please check the input fields.",
+        "warnings_title": "Saved, but there is something to check.",
+        "warnings_description": "The variables below are member fields that do not exist right now, so they are sent as empty text. Fix them and save again, or close as is.",
+        "warnings_toast": "Saved, but some variables do not exist right now ({{count}}). Check the warning in the window.",
+        "member_variables_title": "Member fields ({{count}})",
+        "member_variables_hint": "Replaced with the recipient member's values. An empty value is sent as empty text."
       },
       "recipients_label": "Recipients:",
       "category": {
@@ -5081,7 +5402,10 @@
       "core_update_result_modal": "Core Update Check Result",
       "cron_token_rotate_modal": "Web cron call number reissue modal",
       "settings_thumbnail_purge_all_modal": "Purge All Thumbnails Confirmation",
-      "settings_thumbnail_pregenerate_modal": "Generate Thumbnails for Existing Images"
+      "settings_thumbnail_pregenerate_modal": "Generate Thumbnails for Existing Images",
+      "member_field_form_modal": "Add or Edit Member Field",
+      "member_field_delete_modal": "Confirm Member Field Deletion",
+      "member_field_required_modal": "Confirm Making Member Field Required"
     },
     "admin_template_list": {
       "template_activate_modal": "Activate Template",

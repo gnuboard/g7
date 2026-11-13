@@ -7,7 +7,11 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * TemplateService::sanitizePath() 경로 정제 회귀 테스트 (이슈 #486 인접 결함 ③).
+ * TemplateService 자산 경로 정제 회귀 테스트 (이슈 #486 인접 결함 ③).
+ *
+ * 정제는 #609 에서 템플릿, 모듈, 플러그인이 함께 쓰는 trait
+ * (`SecuresExtensionAssetPath::sanitizeExtensionAssetPath()`)로 옮겨졌다. 이 테스트는 템플릿 통로가
+ * 그 정제를 그대로 갖는지를 TemplateService 인스턴스로 잰다.
  *
  * 결함: `str_replace(['../', '..\\'], '', $path)` 1회성 치환은 제거 자체가 새 패턴을
  * 만들어낸다. `....//` 는 가운데 `../` 가 제거되면서 `../` 로 복원된다.
@@ -18,14 +22,14 @@ use Tests\TestCase;
 class TemplateServiceSanitizePathTest extends TestCase
 {
     /**
-     * sanitizePath() 를 리플렉션으로 호출합니다.
+     * TemplateService 의 sanitizeExtensionAssetPath() 를 리플렉션으로 호출합니다.
      *
      * @param  string  $path  정제할 경로
      * @return string 정제 결과
      */
     private function sanitize(string $path): string
     {
-        $method = new ReflectionMethod(TemplateService::class, 'sanitizePath');
+        $method = new ReflectionMethod(TemplateService::class, 'sanitizeExtensionAssetPath');
         $method->setAccessible(true);
 
         return $method->invoke(app(TemplateService::class), $path);
@@ -35,6 +39,12 @@ class TemplateServiceSanitizePathTest extends TestCase
      * 중첩 패턴이 탈출 시퀀스를 복원하지 않아야 한다.
      *
      * 수정 전에는 `....//` → `../` 로 복원되어 이 단언이 실패한다.
+     *
+     * @scenario path_shape=nested_traversal
+     *
+     * @effects sanitize_does_not_restore_traversal_from_nested_pattern
+     *
+     * @return void 반환값 없음
      */
     public function test_중첩_패턴이_상위_경로_시퀀스를_복원하지_않는다(): void
     {
@@ -56,6 +66,12 @@ class TemplateServiceSanitizePathTest extends TestCase
 
     /**
      * 단순 상위 경로 패턴은 기존대로 제거되어야 한다.
+     *
+     * @scenario path_shape=simple_traversal
+     *
+     * @effects sanitize_removes_simple_traversal_sequences
+     *
+     * @return void 반환값 없음
      */
     public function test_단순_상위_경로_패턴을_제거한다(): void
     {
@@ -65,6 +81,12 @@ class TemplateServiceSanitizePathTest extends TestCase
 
     /**
      * 절대 경로 선행 구분자를 제거해야 한다.
+     *
+     * @scenario path_shape=leading_separator
+     *
+     * @effects sanitize_strips_leading_separator
+     *
+     * @return void 반환값 없음
      */
     public function test_절대_경로_선행_구분자를_제거한다(): void
     {
@@ -76,6 +98,12 @@ class TemplateServiceSanitizePathTest extends TestCase
      * 정상 경로는 변형하지 않아야 한다.
      *
      * 과잉 정제로 멀쩡한 자산 경로가 깨지면 안 된다.
+     *
+     * @scenario path_shape=normal_asset_path
+     *
+     * @effects sanitize_keeps_normal_asset_path_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_정상_경로는_변형하지_않는다(): void
     {

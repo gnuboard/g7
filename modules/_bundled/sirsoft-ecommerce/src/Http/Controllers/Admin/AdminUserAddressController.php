@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminUserAddressBulkDeleteRequ
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminUserAddressListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\AdminUserAddressCollection;
 use Modules\Sirsoft\Ecommerce\Services\UserAddressService;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -44,11 +45,13 @@ class AdminUserAddressController extends AdminBaseController
 
         $payload = (new AdminUserAddressCollection($result['rows']))->toArray($request);
         // 적용된 회원 한정을 이름까지 붙여 되돌린다 — 화면의 칩이 이 값으로 선다.
+        // 이름은 목록의 회원 칸과 같은 이커머스 관리자 영역의 표시 이름이다.
+        MemberDisplayName::preload($result['members']);
         $payload['filters'] = [
             'members' => $result['members']
                 ->map(fn ($user) => [
                     'uuid' => (string) $user->uuid,
-                    'name' => (string) $user->name,
+                    'name' => (string) MemberDisplayName::name($user),
                     'email' => (string) $user->email,
                 ])
                 ->values()

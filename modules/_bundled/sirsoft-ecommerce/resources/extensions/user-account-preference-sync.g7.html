@@ -1,0 +1,11 @@
+<!-- 로그인 회원의 계정 결제 통화와 배송국가를 화면 전역 값에 맞추는 조각. 그리는 것은 없고 초기화 액션 하나만 기여한다.
+  사용자 템플릿은 통화와 배송국가를 모른다. 내 정보 수정에서 두 값을 바꿔 저장하면 화면은 로그인 사용자(`current_user`)를
+  다시 받고, 그 응답이 전역 `currentUser` 로 올라온다. 아래 핸들러는 `currentUser` 가 새 응답으로 바뀌는 것을 구독해
+  응답의 `ecommerce_preferred_currency`, `ecommerce_preferred_shipping_country` 를 `_global.preferredCurrency`,
+  `_global.preferredShippingCountry` 에 옮긴다. 그래서 새로고침 없이 헤더 셀렉터와 가격 표시가 바뀐 값을 따른다.
+  초기화 액션은 화면을 옮길 때마다 다시 돌지만 핸들러가 구독을 한 번만 건다. -->
+<extension target-layout="_user_base" priority="321">
+  <init>
+    <action handler="sirsoft-ecommerce.watchAccountPreferences"/>
+  </init>
+</extension>

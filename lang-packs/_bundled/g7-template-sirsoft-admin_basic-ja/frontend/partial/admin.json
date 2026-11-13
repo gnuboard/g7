@@ -1,4 +1,10 @@
 {
+  "common": {
+    "real_name": {
+      "label": "実名",
+      "with_label": "実名: {{name}}"
+    }
+  },
   "extension_integrations": {
     "title": "一緒に使うと連携する拡張機能",
     "hint": "以下の拡張機能がインストールされていると、機能が相互に連携します。なくてもこの拡張機能はそのまま動作します。",
@@ -171,6 +177,40 @@
     "alert_action_no_permission": "この警告を処理する権限がありません。権限のある管理者に依頼してください。"
   },
   "users": {
+    "member_fields": {
+      "select_placeholder": "選択してください",
+      "other": "その他(直接入力)",
+      "other_input": "{{label}} 直接入力",
+      "other_placeholder": "直接入力してください",
+      "range_start": "{{label}} 開始日",
+      "range_end": "{{label}} 終了日",
+      "zipcode_label": "{{label}} 郵便番号",
+      "address_label": "{{label}} 基本住所",
+      "address_detail_label": "{{label}} 詳細住所",
+      "upload_after_save": "会員を保存した後、編集画面でアップロードできます。",
+      "file_add": "ファイルを追加",
+      "file_add_label": "{{label}} ファイルを追加",
+      "file_remove": "{{name}} を削除",
+      "file_rules": "許可される拡張子: {{extensions}} / 1ファイルあたり最大 {{size}}MB / 最大 {{count}}個",
+      "locked_identity": "本人認証で確認された項目のため、変更できません。",
+      "locked_generic": "変更できない項目です。",
+      "extra_title": "追加項目",
+      "extension_title": "拡張項目",
+      "tab_has_error": "エラーのある入力欄があります",
+      "status": {
+        "nickname_changed_at": "ニックネームの最終変更",
+        "nickname_next_changeable_at": "ニックネームの次回変更可能日時",
+        "nickname_next_changeable_hint": "会員本人がニックネームを再び変更できる時期です。管理者はいつでも変更できます。",
+        "pending_required": "未入力の必須項目",
+        "display_name_kind": "会員が選んだ表示名の種類",
+        "display_name_kind_none": "未選択 (会員の既定の種類: {{kind}})",
+        "display_name_kind_unavailable": "現在は選択できない種類です。会員の既定の種類({{kind}})で表示されます。",
+        "display_name_kind_hint": "会員本人のみ変更できます。",
+        "display_name_current": "現在表示される名前",
+        "display_name_site": "サイト既定",
+        "display_name_admin": "管理者画面"
+      }
+    },
     "page_title": "ユーザー管理",
     "page_description": "システムユーザーを管理します。",
     "title": "ユーザー管理",
@@ -178,6 +218,15 @@
     "add_user": "ユーザーの追加",
     "search": "検索",
     "search_placeholder": "検索キーワードを入力してください...",
+    "list_member_fields": {
+      "pending_column": "未入力",
+      "pending_count": "{{count}}件",
+      "filter_required_missing": "必須項目の未入力",
+      "filter_required_missing_only": "未入力の会員のみ",
+      "filter_nickname_duplicate": "ニックネームの重複",
+      "filter_nickname_duplicate_only": "重複している会員のみ",
+      "display_name_column": "表示される名前"
+    },
     "search_fields": {
       "all": "すべて",
       "name": "名前",
@@ -286,8 +335,6 @@
       },
       "fields": {
         "id": "ID",
-        "name": "名前",
-        "nickname": "ニックネーム",
         "role": "ロール",
         "role_placeholder": "ロールを選択してください",
         "role_no_options": "選択可能なロールがありません",
@@ -296,20 +343,12 @@
         "email": "メール",
         "email_verified": "認証済み",
         "email_verify_btn": "認証",
-        "mobile": "携帯電話番号",
-        "phone": "電話番号",
-        "homepage": "ホームページ",
         "address": "住所",
         "zipcode": "郵便番号",
         "address_detail": "詳細住所",
-        "country": "国",
-        "language": "言語",
-        "timezone": "タイムゾーン",
         "password": "パスワード",
         "password_confirmation": "パスワード確認",
         "password_hint": "編集時に空白の場合、既存のパスワードを保持します",
-        "signature": "署名",
-        "bio": "自己紹介",
         "admin_memo": "管理者メモ",
         "created_at": "登録日",
         "last_login_at": "最後のログイン",
@@ -414,8 +453,6 @@
       "info_public": "公開",
       "info_private": "非公開",
       "consent_history": "規約同意履歴",
-      "enabled": "有効",
-      "disabled": "無効",
       "withdrawn_at": "退会日",
       "blocked_at": "ブロック日",
       "consent_type": {
@@ -1857,6 +1894,7 @@
       "content": "本文コンテンツ",
       "seo": "SEO",
       "security": "セキュリティ",
+      "member": "会員",
       "drivers": "ドライバー",
       "advanced": "詳細",
       "notification_definitions": "通知設定",
@@ -2391,6 +2429,279 @@
         "preview_hint": "保存済みの値に基づきます。モードやホストを変更した場合は保存してから確認してください。"
       }
     },
+    "member": {
+      "sub_tabs": {
+        "fields": "会員登録項目",
+        "nickname": "ニックネームポリシー"
+      },
+      "display_name": {
+        "sub_tab": "表示名",
+        "title": "表示名",
+        "description": "会員を画面にどの名前で表示するかを設定します。下の「保存」を押すと適用されます。",
+        "selectable_kinds": "会員が選択できる種類",
+        "selectable_kinds_hint": "2つ以上オンにすると、会員が会員登録画面と my情報編集で1つを選べます。選んだ種類は、方式が「会員が選んだ値」の領域で使われます。",
+        "selectable_default_locked": "会員の既定の種類は外せません。先に会員の既定の種類を変更してください。",
+        "requires_nickname_badge": "ニックネームが必要",
+        "sample": "プレビューの基準会員: 名前 {{name}}、ニックネーム {{nickname}}、ID {{id}}",
+        "member_default_kind": "会員の既定の種類",
+        "member_default_kind_hint": "会員が種類を選んでいないときに使う種類です。会員が選択できる種類のいずれかである必要があります。",
+        "areas_title": "領域別の方式",
+        "areas_hint": "名前が表示される領域ごとに方式を設定します。字下げされた領域は、すぐ上の領域に従うことができます。",
+        "col": {
+          "area": "領域",
+          "mode": "方式",
+          "kind": "種類"
+        },
+        "mode": {
+          "inherit": "上位領域に従う",
+          "fixed": "種類を固定",
+          "member": "会員が選んだ値"
+        },
+        "area_mode_label": "{{area}}の方式",
+        "area_kind_label": "{{area}}の種類",
+        "effective_member": "選んでいない会員は{{kind}}",
+        "effective_inherit": "現在の適用: {{kind}}",
+        "effective_inherit_member": "現在の適用: 会員が選んだ値",
+        "effective_inherit_pending": "保存すると上位領域の設定に従います",
+        "extension_note": "掲示板のように1つの領域の中でさらに分かれる場所は、その拡張の設定画面で個別に設定します。",
+        "nickname_notice": {
+          "all": "保存すると、ニックネーム項目が使用、必須に固定されます。",
+          "chosen": "保存すると、ニックネーム項目が使用に固定され、ニックネームが必要な種類で表示される会員はニックネームが必須になります。",
+          "empty_count": "現在ニックネームが空の会員は{{count}}人です。",
+          "require_existing": "ログイン時のニックネーム入力要求",
+          "require_existing_hint": "オンにすると、ニックネームが空の既存会員がログインしたときに、まずニックネームを入力してもらいます。",
+          "already_required": "既存会員にもニックネームの入力をすでに求めています。"
+        },
+        "lock_link": "表示名の設定を見る",
+        "usage": {
+          "title": "表示名に使われているため、削除できません。",
+          "hint": "下の設定からこの項目を外してから、もう一度削除してください。",
+          "link": "表示名の設定へ移動"
+        },
+        "data_source": {
+          "options": "表示名の種類と領域",
+          "nickname_empty_count": "ニックネームが空の会員数"
+        }
+      },
+      "fields": {
+        "title": "会員登録項目",
+        "description": "会員登録画面、my情報編集、管理者の会員フォームで入力を受け付ける項目を設定します。",
+        "add_button": "項目を追加",
+        "instant_save_notice": "この表の変更(使用、必須、登録時表示、順序)はすぐに保存されます。",
+        "fixed_notice": "固定: メール、パスワード、規約への同意 (常に使用)",
+        "layout_modified_notice": "会員登録画面のレイアウトが編集版のまま維持されているため、新しい項目が表示されない場合があります。",
+        "layout_modified_hint": "レイアウトエディターで会員登録画面を元の状態に復元すると、ここで設定した項目がそのまま表示されます。",
+        "empty_custom": "追加した項目がありません。「項目を追加」で会員登録項目を作成してください。",
+        "unavailable": "使用不可",
+        "unavailable_desc": "タイプを提供した拡張がオフになっています。拡張を再びオンにすると復旧します。",
+        "signup_unsupported": "このタイプは会員登録画面では受け付けません。",
+        "signup_unsupported_short": "会員登録画面は非対応",
+        "drag_handle": "{{name}} の順序を変更",
+        "drag_hint": "ドラッグして順序を変更します",
+        "move_up": "{{name}} を上へ",
+        "move_down": "{{name}} を下へ",
+        "move_up_short": "上へ",
+        "move_down_short": "下へ",
+        "saved": "保存しました。",
+        "order_saved": "順序を保存しました。",
+        "save_failed": "保存できませんでした。表を読み込み直しました。",
+        "load_failed": "項目情報を読み込めませんでした。",
+        "changed_by_other": "他の管理者が項目を変更しました。読み込み直しました。",
+        "col": {
+          "order": "順序",
+          "name": "項目",
+          "type": "タイプ",
+          "source": "提供元",
+          "enabled": "使用",
+          "required": "必須",
+          "show_on_signup": "登録時表示",
+          "edit_scope": "範囲"
+        },
+        "source": {
+          "core": "基本",
+          "custom": "追加",
+          "extension": "拡張"
+        },
+        "scope": {
+          "self": "本人が編集",
+          "admin_edit": "管理者のみ編集",
+          "admin_only": "管理者のみ閲覧"
+        },
+        "btn": {
+          "settings": "設定",
+          "edit": "編集",
+          "view": "表示"
+        },
+        "delete": {
+          "title": "項目の削除",
+          "message": "「{{name}}」項目を削除します。",
+          "values_warning": "会員 {{count}} 人が入力した値も一緒に削除され、元に戻すことはできません。",
+          "no_values_warning": "まだ入力された値はありません。削除した項目は元に戻すことはできません。",
+          "confirm_check": "上記の内容を確認しました",
+          "success": "項目を削除しました。",
+          "failed": "項目を削除できませんでした。"
+        },
+        "required_confirm": {
+          "title": "必須に変更",
+          "message": "「{{name}}」項目が空の既存会員が {{count}} 人います。",
+          "mode_label": "これらの会員にいつ入力を求めますか?",
+          "on_edit": "my情報編集のときのみ",
+          "on_login": "ログイン後すぐ",
+          "submit": "必須に変更",
+          "hint": {
+            "on_edit": "会員が my情報を編集して保存するときにのみ入力を求めます。それまではこれまでどおり利用できます。",
+            "on_login": "ログインした会員を追加情報の入力画面へ移動させ、入力するまで投稿などのリクエストを受け付けません。"
+          }
+        },
+        "form": {
+          "title": {
+            "create": "項目を追加",
+            "edit": "項目を編集",
+            "settings": "項目の設定",
+            "view": "項目の表示"
+          },
+          "readonly_notice": "閲覧権限のみのため、内容を変更できません。",
+          "declared_notice": "基本項目と拡張が提供した項目は、名前、案内文と共通オプションのみ変更できます。",
+          "type": "タイプ",
+          "type_locked": "タイプは作成後に変更できません。",
+          "change_type": "変更",
+          "type_step": {
+            "description": "受け付ける値のタイプを選んで「次へ」を押してください。保存する前であれば選び直せます。",
+            "unavailable": "拡張オフ"
+          },
+          "key": "キー",
+          "key_hint": "英小文字で始まり、英小文字、数字、アンダースコアのみ使用できます(2〜50文字)。作成後は変更できません。",
+          "name": "名前",
+          "description": "案内文",
+          "description_hint": "入力欄の下に表示される説明です。",
+          "placeholder": "プレースホルダー",
+          "placeholder_hint": "空の入力欄に薄く表示される文字です。",
+          "save_success": "項目を保存しました。",
+          "section": {
+            "type_options": "タイプ別オプション",
+            "common": "共通オプション"
+          },
+          "c": {
+            "min_length": "最小文字数",
+            "max_length": "最大文字数",
+            "regex": "形式(正規表現)",
+            "regex_hint": "/^[a-z]+$/ のように区切り文字を含めて入力します。空にすると形式を検査しません。",
+            "regex_message": "形式エラーの文言",
+            "regex_message_hint": "形式に合わないときに会員に表示する文言です。空にすると既定の文言が表示されます。",
+            "rows": "行数",
+            "rows_hint": "入力欄の高さです(2〜20行)。",
+            "min": "最小値",
+            "max": "最大値",
+            "decimals": "小数桁数",
+            "decimals_hint": "0 の場合は整数のみ受け付けます(0〜6)。",
+            "unit": "単位",
+            "unit_hint": "入力欄の横に付く文字です(例: 歳、個)。",
+            "widget": "入力の形",
+            "widget_toggle": "スイッチ",
+            "widget_checkbox": "チェックボックス",
+            "inline_label": "横の文言",
+            "inline_label_hint": "スイッチやチェックボックスの横に表示される文字です。",
+            "default_on": "最初からオンの状態で表示",
+            "date_min": "最も早い日",
+            "date_max": "最も遅い日",
+            "date_hint": "「今日」はサイトのタイムゾーン基準です。",
+            "display": "表示方式",
+            "display_select": "リストから選択",
+            "display_radio": "ラジオボタン",
+            "display_checkbox": "チェックボックス",
+            "display_multi_select": "複数選択リスト",
+            "allow_other": "「その他(直接入力)」を許可",
+            "allow_other_hint": "会員が「その他」を選ぶと、すぐ下の欄に直接入力できます。",
+            "min_select": "最小選択数",
+            "max_select": "最大選択数",
+            "address_note": "郵便番号、基本住所、詳細住所を受け付けます。郵便番号検索プラグインがオンの場合は検索ボタンも表示されます。",
+            "extensions": "許可する拡張子",
+            "extensions_placeholder": "jpg のように入力して Enter",
+            "extensions_hint": "空にするとタイプの既定の拡張子に従います。",
+            "max_count": "最大個数",
+            "max_size_mb": "最大サイズ(MB)",
+            "file_signup_note": "ファイルと画像は会員登録画面では受け付けません。登録後に my情報編集からアップロードできます。"
+          },
+          "date_bound": {
+            "none": "制限なし",
+            "today": "今日",
+            "after_today": "今日以降",
+            "date": "日付を指定"
+          },
+          "options": {
+            "title": "選択肢",
+            "add_button": "選択肢を追加",
+            "paste_button": "複数行を貼り付け",
+            "paste_label": "1行につき選択肢1個",
+            "paste_placeholder": "学生\n会社員\n自営業",
+            "paste_hint": "値(英字)は自動で作成され、既存の値と重なる場合は番号が付きます。選択肢は50個まで追加できます。",
+            "paste_apply": "選択肢として追加",
+            "empty": "選択肢がありません。",
+            "value": "値",
+            "value_placeholder": "値(英字)",
+            "label": "名前",
+            "label_placeholder": "会員に表示する名前",
+            "usage": "使用 {{count}} 人",
+            "remove_warning": "この値を選んだ会員 {{count}} 人の値が空になります。保存すると適用されます。",
+            "remove_pending": "保存するとこの選択肢が削除されます。",
+            "restore": "元に戻す"
+          },
+          "opt": {
+            "enabled": "使用",
+            "required": "必須",
+            "show_on_signup": "会員登録画面に表示",
+            "edit_scope": "範囲",
+            "edit_scope_hint": {
+              "self": "会員本人と管理者が編集できます。",
+              "admin_edit": "会員は閲覧のみで、管理者だけが編集できます。",
+              "admin_only": "管理者画面にのみ表示され、会員には表示されません。"
+            },
+            "require_existing_members": "既存会員にも入力を求める",
+            "require_existing_locked": "「管理者のみ編集」「管理者のみ閲覧」の範囲では、既存会員に入力を求めることはできません。",
+            "public_profile": "公開プロフィールに表示",
+            "admin_list_column": "会員一覧の列",
+            "admin_searchable": "会員検索",
+            "unique": "重複禁止",
+            "display_name_usable": "表示名として使用可能",
+            "display_name_usable_hint": "1行テキストのタイプのみオンにできます。",
+            "idv_claim": "本人認証との連携",
+            "idv_claim_none": "なし",
+            "idv_claim_name": "名前",
+            "idv_claim_mobile": "携帯電話",
+            "idv_claim_birth_date": "生年月日",
+            "idv_claim_gender": "性別",
+            "idv_lock": "認証値で入力してロック"
+          },
+          "close_confirm": {
+            "message": "入力中の内容があります。閉じると失われます。",
+            "keep": "入力を続ける",
+            "discard": "保存せずに閉じる"
+          }
+        }
+      },
+      "nickname": {
+        "title": "ニックネームポリシー",
+        "description": "ニックネームに適用するルールを設定します。下の「保存」を押すと適用されます。",
+        "unique": "重複禁止",
+        "unique_desc": "同じニックネームを2人の会員が使えないようにします。大文字と小文字、全角文字、空白の違いは同じニックネームとみなします。",
+        "duplicates_message": "現在、同じニックネームを使っている会員がいます。重複しているニックネーム {{nicknames}} 種類、会員 {{members}} 人。",
+        "duplicates_hint": "オンにしても、これらの会員のニックネームはそのままです。ニックネームの変更時や新規登録時から重複を防ぎます。",
+        "duplicates_view": "重複している会員を表示",
+        "duplicates_confirm": "それでもオンにする",
+        "duplicates_failed": "重複しているニックネームを確認できなかったため、オンにしませんでした。",
+        "recompute_running": "重複チェックを準備しています",
+        "recompute_count": "{{processed}} / {{total}} 人",
+        "recompute_running_hint": "既存会員のニックネームを比較できるように整理しています。画面を離れても続行されます。",
+        "recompute_done": "重複チェックの準備が完了しました。会員 {{total}} 人を確認しました。",
+        "banned_words": "禁止語",
+        "banned_words_placeholder": "禁止語を入力して Enter",
+        "banned_words_hint": "ニックネームにこの語句が含まれていると使用できません。500個まで追加できます。",
+        "change_interval": "変更間隔",
+        "change_interval_unit": "日",
+        "change_interval_hint": "ニックネームを変更してから再び変更できるようになるまでの日数です。0 の場合は制限がありません。",
+        "display_note": "表示名がニックネームを使用している間、ニックネームは必須です。"
+      }
+    },
     "identity": {
       "sub_tabs": {
         "basic": "基本",
@@ -2825,7 +3136,12 @@
         "variables_title": "使用可能な変数",
         "btn_preview": "プレビュー",
         "validation_error": "入力情報を確認してください。",
-        "is_active_label": "有効化"
+        "is_active_label": "有効化",
+        "warnings_title": "保存しました。ただし、確認が必要な点があります。",
+        "warnings_description": "下の変数は現在存在しない会員項目のため、その位置は空文字で送信されます。修正して保存し直すか、そのまま閉じることができます。",
+        "warnings_toast": "保存しましたが、現在存在しない変数があります ({{count}}件)。ウィンドウの警告を確認してください。",
+        "member_variables_title": "会員項目 ({{count}})",
+        "member_variables_hint": "受信する会員の値に置き換わります。値が空の場合は空文字で送信されます。"
       },
       "recipients_label": "受信者:",
       "category": {
@@ -4246,7 +4562,10 @@
       "cron_token_rotate_modal": "ウェブ cron 呼び出し番号の再発行モーダル",
       "ip_restriction_rule_form_modal": "IP アクセス制限ルール編集",
       "settings_thumbnail_purge_all_modal": "サムネイルをすべて削除の確認",
-      "settings_thumbnail_pregenerate_modal": "既存画像のサムネイルを作成"
+      "settings_thumbnail_pregenerate_modal": "既存画像のサムネイルを作成",
+      "member_field_form_modal": "会員項目の追加と編集",
+      "member_field_delete_modal": "会員項目の削除確認",
+      "member_field_required_modal": "会員項目の必須切り替え確認"
     },
     "admin_template_list": {
       "template_activate_modal": "テンプレート有効化確認",

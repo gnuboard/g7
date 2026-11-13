@@ -1,0 +1,1511 @@
+{
+    "comment": "로그인 화면의 SSO 흐름 조각의 사용자 템플릿 판본 — SSO 플러그인의 같은 조각(resources/extensions/auth-login-sso-modals)을 대체한다(템플릿 오버라이드, 대상 auth/login).\n     원본과 다른 점은 하나다: ② 첫 로그인 동의 창이 약관 동의와 함께 코어 가입 화면과 같은 회원 항목(환경설정 > 회원 > 가입 항목)을 그린다.\n     항목은 가입 화면과 같은 API(/api/auth/register/fields)에서 받되 동의 대기 토큰을 함께 넘겨, 회사 계정이 준 값을 초기값으로 받고 회사 계정이 관리하는 칸은 읽기 전용(locked_reason = sso)으로 받는다. 받은 정의 버전(fields_version)을 동의 완료 요청에 싣는다.\n     항목을 받지 못하면(옛 코어 등) 원본처럼 약관만 받고 버전 없이 보낸다 — 그 회원의 빠진 필수 항목은 첫 로그인 뒤 추가 정보 입력 화면이 받는다.\n     그 밖(① 오류 토스트, 만료 안내, ③ 기존 회원 연결 확인 창, 로그인 인계)은 원본과 같다. 원본을 고치면 이 파일도 함께 고친다 — 플러그인 버전이 version-constraint 를 벗어나면 코어가 원본으로 되돌린다.\n     확장 조각은 include 를 풀지 않으므로 공용 조각 partials/member/_member_fields 의 항목 반복 구획을 이 파일 안에 옮겨 적었다(두 번: 항목 묶음, 약관 묶음). 화면 문맥(computed memberFieldCtx)은 창의 전역 상태로 바꿨고, 노드 id 는 sso_ 접두를 붙였다.\n     주소 검색 단추와 파일 갈래는 옮기지 않았다(구획 주석 참고). 구획이 공용 조각과 어긋나면 __tests__/layouts/member-fields-markup-parity 가 알린다.\n     상태는 원본과 같이 _global 에 둔다. 더한 상태: ssoFields(항목 계약), ssoFieldsVersion(정의 버전), ssoFieldsState(loading, ready, failed), ssoFieldForm(항목 값, 폼 자동 바인딩), ssoErrors(칸별 검증 오류).\n     E2E: 원본의 tests/Playwright/specs/sso-oidc-mock.spec.ts, sso-saml-mock.spec.ts 가 ② 동의 창(`#sso_consent_form`)을 지나 로그인한다 — 이 판본도 같은 id 를 갖는다.",
+    "target_layout": "auth/login",
+    "priority": 10,
+    "init_actions": [
+        {
+            "comment": "① 오류 — 문구 키가 없으면(IdP 가 준 낯선 코드) 일반 실패 문구",
+            "handler": "toast",
+            "if": "{{!!query.sso_error}}",
+            "params": {
+                "type": "error",
+                "message": "{{$t('sirsoft-sso.errors.' + query.sso_error) === 'sirsoft-sso.errors.' + query.sso_error ? $t('sirsoft-sso.errors.generic') : $t('sirsoft-sso.errors.' + query.sso_error)}}"
+            }
+        },
+        {
+            "comment": "② 동의 대기 받기",
+            "handler": "setState",
+            "if": "{{!!query.sso_pending}}",
+            "params": {
+                "target": "global",
+                "ssoPending": null,
+                "ssoPendingExpired": false,
+                "ssoBusy": false,
+                "ssoError": null,
+                "ssoForm.agree_terms": false,
+                "ssoForm.agree_privacy": false,
+                "ssoErrors": null,
+                "ssoFields": null,
+                "ssoFieldsVersion": null,
+                "ssoFieldForm": null,
+                "ssoFieldsState": "loading"
+            }
+        },
+        {
+            "handler": "apiCall",
+            "target": "/api/plugins/sirsoft-sso/pending/{{query.sso_pending}}",
+            "if": "{{!!query.sso_pending}}",
+            "auth_mode": "optional",
+            "params": {
+                "method": "GET"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoPending": "{{response.data}}"
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_consent"
+                },
+                {
+                    "comment": "회원 항목 받기 — 코어 가입 화면과 같은 항목 계약을 받는다. 동의 대기 토큰을 넘기면 서버가 회사 계정이 준 값을 항목의 초기값(default)으로 채우고, 회사 계정이 관리하는 칸을 읽기 전용으로 표시해 준다.\n             글 칸의 초기값은 폼 값으로 옮겨 적는다(입력 부품은 글 칸의 default 를 그리지 않는다). 고르는 칸(선택, 예/아니오, 국가, 시간대)은 입력 부품이 default 를 직접 보여 주므로 옮기지 않는다.\n             받지 못하면(옛 코어 등) failed 로 두어 창이 원본처럼 약관만 받게 한다.",
+                    "handler": "apiCall",
+                    "target": "/api/auth/register/fields?pending_source=sirsoft-sso&pending_token={{query.sso_pending}}",
+                    "auth_mode": "optional",
+                    "params": {
+                        "method": "GET"
+                    },
+                    "onSuccess": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "merge": "shallow",
+                            "ssoFields": "{{response.data?.fields ?? []}}",
+                            "ssoFieldsVersion": "{{response.data?.fields_version ?? null}}",
+                            "ssoFieldForm": "{{Object.fromEntries((response.data?.fields ?? []).filter(function(f) { return !f.deferred && f.default !== null && f.default !== undefined && f.name.indexOf('.') === -1 && ['choice', 'multi_choice', 'boolean'].indexOf(f.type) === -1 && !f.constraints?.widget; }).map(function(f) { return [f.name, f.default]; }))}}",
+                            "ssoFieldsState": "{{response.data?.fields_version ? 'ready' : 'failed'}}"
+                        }
+                    },
+                    "onError": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "ssoFieldsState": "failed"
+                        }
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoPendingExpired": true
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_consent"
+                }
+            ]
+        },
+        {
+            "comment": "③ 연결 확인 대기 받기",
+            "handler": "setState",
+            "if": "{{!!query.sso_link}}",
+            "params": {
+                "target": "global",
+                "ssoLink": null,
+                "ssoLinkExpired": false,
+                "ssoBusy": false,
+                "ssoError": null,
+                "ssoLinkMethod": "password",
+                "ssoLinkChallengeId": null,
+                "ssoForm.password": "",
+                "ssoForm.code": ""
+            }
+        },
+        {
+            "handler": "apiCall",
+            "target": "/api/plugins/sirsoft-sso/link/{{query.sso_link}}",
+            "if": "{{!!query.sso_link}}",
+            "auth_mode": "optional",
+            "params": {
+                "method": "GET"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoLink": "{{response.data}}",
+                        "ssoLinkMethod": "{{(response.data?.methods ?? []).includes('password') ? 'password' : 'email'}}"
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_link_verify"
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoLinkExpired": true
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_link_verify"
+                }
+            ]
+        }
+    ],
+    "modals": [
+        {
+            "comment": "② 처음 로그인 약관 동의",
+            "id": "sso_consent",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-sso.consent.title|idp={{_global.ssoPending?.idp?.label ?? $t('sirsoft-sso.common.company_account')}}",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sso:space-y-5"
+                    },
+                    "children": [
+                        {
+                            "id": "sso_consent_expired",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoPendingExpired === true}}",
+                            "props": {
+                                "className": "sso:space-y-4 sso:text-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-sso.consent.expired"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "만료 안내에서 닫고 로그인 화면 처음으로 — 대기 정보가 사라졌으므로 회사 계정 로그인부터 다시 한다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "replaceUrl",
+                                                    "params": {
+                                                        "path": "/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-sso.common.retry"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sso_consent_form",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoPendingExpired !== true && !!_global.ssoPending}}",
+                            "props": {
+                                "className": "sso:space-y-5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "sso:text-sm sso:text-gray-600 sso:dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.consent.intro"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-x-4 sso:gap-y-1 sso:text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.name && _global.ssoFieldsState !== 'ready'}}",
+                                            "props": {
+                                                "className": "sso:font-medium sso:text-gray-700 sso:dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-sso.consent.name"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.name && _global.ssoFieldsState !== 'ready'}}",
+                                            "props": {
+                                                "className": "sso:col-span-2 sso:min-w-0 sso:break-all sso:text-gray-900 sso:dark:text-white"
+                                            },
+                                            "text": "{{_global.ssoPending?.name}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.email}}",
+                                            "props": {
+                                                "className": "sso:font-medium sso:text-gray-700 sso:dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-sso.consent.email"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.email}}",
+                                            "props": {
+                                                "className": "sso:col-span-2 sso:min-w-0 sso:break-all sso:text-gray-900 sso:dark:text-white"
+                                            },
+                                            "text": "{{_global.ssoPending?.email}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "회원 항목을 받는 동안의 안내 줄",
+                                    "id": "sso_consent_fields_loading",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.ssoFieldsState === 'loading'}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:common.loading"
+                                },
+                                {
+                                    "comment": "회원 항목 — 이름, 닉네임, 연락처, 언어와 운영자가 추가한 항목. 어떤 칸을 어떤 순서로 받고 무엇이 필수인지는 환경설정 > 회원 > 가입 항목이 정한다(코어 가입 화면과 같은 항목). 회사 계정이 관리하는 칸은 읽기 전용이고 값을 보내도 서버가 회사 계정의 값을 쓴다. 값은 전역 폼 ssoFieldForm 에 자동 바인딩된다. 아래 묶음 노드는 공용 조각 partials/member/_member_fields 를 옮겨 적은 것이다",
+                                    "id": "sso_consent_member_fields",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ssoFieldsState === 'ready'}}",
+                                    "dataKey": "_global.ssoFieldForm",
+                                    "children": [
+                                        {
+                                            "id": "sso_member_fields_each_{{memberFieldGroup.key}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{[{ key: 'signup', fields: _global.ssoFields ?? [] }]}}",
+                                                "item_var": "memberFieldGroup"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "sso_member_fields_group_{{memberFieldGroup.key}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "{{memberFieldGroup?.portableClassName ?? memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "{{memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "sso_field_{{field.key}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "{{(memberFieldGroup?.fields ?? []).filter(function(f) { return !!memberFieldGroup?.includeAgreements || (f.ui?.group ?? '') !== 'agreements'; })}}",
+                                                                "item_var": "field"
+                                                            },
+                                                            "props": {
+                                                                "className": "{{field.ui?.parent ? 'ml-6' : ''}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다.",
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
+                                                                    "props": {
+                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.label}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{field.required}}",
+                                                                            "props": {
+                                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                            },
+                                                                            "text": "*"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "가입 화면에서 받지 않는 유형(파일, 이미지) — 안내 줄만 둔다. 가입 뒤 내 정보에서 올린다.",
+                                                                    "id": "sso_mf_deferred_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.deferred}}",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.upload_after_signup"
+                                                                },
+                                                                {
+                                                                    "comment": "주소 — 우편번호, 기본 주소, 상세 주소 세 칸. 이 창에는 주소 검색 단추가 없어 세 칸 모두 직접 적는다(검색 단추는 고른 주소를 화면 지역 상태에 쓰는데 이 창의 폼 값은 전역 상태다). 잠긴 항목이면 세 칸 모두 읽기 전용(회색)이다.",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{!field.deferred && field.renderer === 'address'}}",
+                                                                    "props": {
+                                                                        "className": "space-y-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "flex flex-wrap gap-2"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Input",
+                                                                                    "props": {
+                                                                                        "type": "text",
+                                                                                        "name": "{{field.parts?.zipcode}}",
+                                                                                        "aria-label": "$t:member.fields.zipcode_label|label={{field.label}}",
+                                                                                        "placeholder": "$t:member.fields.zipcode",
+                                                                                        "className": "{{field.readonly ? 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                        "readOnly": "{{!!field.readonly}}",
+                                                                                        "disabled": "{{_global.ssoBusy}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address}}",
+                                                                                "aria-label": "$t:member.fields.address_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.ssoBusy}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address_detail}}",
+                                                                                "aria-label": "$t:member.fields.address_detail_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address_detail",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.ssoBusy}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "확장이 제공한 유형 — 그 확장의 조각이 이 자리에 자기 입력칸을 그린다(조각은 루트에서 자기 유형일 때만 그린다).",
+                                                                    "id": "sso_member_field_input_slot_{{field.key}}",
+                                                                    "type": "extension_point",
+                                                                    "name": "member_field_input",
+                                                                    "if": "{{!field.deferred && field.renderer === 'extension'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "error": "{{_global.ssoErrors?.[field.name]?.[0] ?? ''}}",
+                                                                        "disabled": "{{!!_global.ssoBusy}}",
+                                                                        "formKey": "{{'_global.ssoFieldForm'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "그 밖의 유형 — 항목 1개짜리 입력 컴포넌트가 유형과 제한 값을 보고 입력칸을 고른다. 값은 폼 자동 바인딩(name)으로 오간다. 잠긴 항목(field.readonly)은 컴포넌트가 읽기 전용 회색으로 그린다.",
+                                                                    "type": "composite",
+                                                                    "name": "MemberFieldInput",
+                                                                    "if": "{{!field.deferred && field.renderer !== 'address' && field.renderer !== 'extension' && field.renderer !== 'file'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "name": "{{field.name}}",
+                                                                        "disabled": "{{!!_global.ssoBusy}}",
+                                                                        "error": "{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}",
+                                                                        "errorId": "sso_mf_error_{{field.key}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "동의 항목(약관 묶음)의 필수 여부와 약관 보기 링크 — 체크박스 옆 문구에는 별표가 없으므로 「(필수)」「(선택)」을 글자로 알린다.\n                       약관 문서 링크는 그 문서를 서빙하는 모듈이 켜져 있을 때만 그린다(새 창). 하위 동의(ui.parent)는 들여 쓴다.",
+                                                                    "id": "sso_mf_agreement_meta_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
+                                                                    "props": {
+                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.required ? $t('member.fields.agreement_required') : $t('member.fields.agreement_optional')}}"
+                                                                        },
+                                                                        {
+                                                                            "id": "sso_mf_agreement_link_{{field.key}}",
+                                                                            "type": "basic",
+                                                                            "name": "A",
+                                                                            "if": "{{!!field.ui?.link?.url && (!field.ui?.link?.requires_module || (_global.activeModules?.includes(field.ui?.link?.requires_module) ?? true))}}",
+                                                                            "props": {
+                                                                                "href": "{{field.ui?.link?.url}}",
+                                                                                "target": "_blank",
+                                                                                "rel": "noopener noreferrer",
+                                                                                "aria-label": "{{field.ui?.link?.title ?? field.label}}",
+                                                                                "className": "ml-2 text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            },
+                                                                            "text": "{{field.ui?.link?.label ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "잠긴 항목의 사유 안내 — 사유마다 문구가 다르고 한 번에 하나만 보인다. 회사 계정이 잠근 칸의 문구와 모양은 예전 내 정보 수정 화면 그대로다.",
+                                                                    "id": "sso_mf_locked_sso_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:mypage.profile.locked_by_company"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_identity_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_identity"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_admin_only_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_admin_only"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_nickname_interval_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_other_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_generic"
+                                                                },
+                                                                {
+                                                                    "comment": "운영자가 적은 안내 문구",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.help}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                    },
+                                                                    "text": "{{field.help}}"
+                                                                },
+                                                                {
+                                                                    "comment": "이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다.",
+                                                                    "id": "sso_mf_error_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
+                                                                    "props": {
+                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                    },
+                                                                    "text": "{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "sso:space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sso:flex sso:items-center sso:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "이용약관 동의 값을 전역 폼에 담는다 — 동의 완료 요청 본문이 이 값을 읽는다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoForm.agree_terms": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "sso_agree_terms",
+                                                        "checked": "{{!!_global.ssoForm?.agree_terms}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:sirsoft-sso.consent.agree_terms",
+                                                        "disabled": "{{_global.ssoBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.consent.agree_terms"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sso:flex sso:items-center sso:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "개인정보 처리방침 동의 값을 전역 폼에 담는다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoForm.agree_privacy": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "sso_agree_privacy",
+                                                        "checked": "{{!!_global.ssoForm?.agree_privacy}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:sirsoft-sso.consent.agree_privacy",
+                                                        "disabled": "{{_global.ssoBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.consent.agree_privacy"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "약관 묶음 회원 항목(ui.group = agreements — 마케팅 수신 동의 등) — 약관, 방침 동의 줄 아래에 그린다. 묶음이 includeAgreements 를 켜야 공용 구획이 이 항목들을 그린다",
+                                    "id": "sso_consent_member_agreements",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ssoFieldsState === 'ready' && (_global.ssoFields ?? []).some(function(f) { return (f.ui?.group ?? '') === 'agreements'; })}}",
+                                    "dataKey": "_global.ssoFieldForm",
+                                    "children": [
+                                        {
+                                            "id": "sso_member_fields_each_{{memberFieldGroup.key}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{[{ key: 'agreements', includeAgreements: true, fields: (_global.ssoFields ?? []).filter(function(f) { return (f.ui?.group ?? '') === 'agreements'; }) }]}}",
+                                                "item_var": "memberFieldGroup"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "sso_member_fields_group_{{memberFieldGroup.key}}",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "{{memberFieldGroup?.portableClassName ?? memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "{{memberFieldGroup?.className ?? 'space-y-4'}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "sso_field_{{field.key}}",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "{{(memberFieldGroup?.fields ?? []).filter(function(f) { return !!memberFieldGroup?.includeAgreements || (f.ui?.group ?? '') !== 'agreements'; })}}",
+                                                                "item_var": "field"
+                                                            },
+                                                            "props": {
+                                                                "className": "{{field.ui?.parent ? 'ml-6' : ''}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "라벨과 필수 별표 — 예/아니오 칸은 체크박스 옆 문구가 라벨 노릇을 하므로 옆 문구를 따로 정한 경우에만 위 라벨을 둔다.",
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "if": "{{field.type !== 'boolean' || !!field.constraints?.inline_label}}",
+                                                                    "props": {
+                                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.label}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{field.required}}",
+                                                                            "props": {
+                                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                            },
+                                                                            "text": "*"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "가입 화면에서 받지 않는 유형(파일, 이미지) — 안내 줄만 둔다. 가입 뒤 내 정보에서 올린다.",
+                                                                    "id": "sso_mf_deferred_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.deferred}}",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.upload_after_signup"
+                                                                },
+                                                                {
+                                                                    "comment": "주소 — 우편번호, 기본 주소, 상세 주소 세 칸. 이 창에는 주소 검색 단추가 없어 세 칸 모두 직접 적는다(검색 단추는 고른 주소를 화면 지역 상태에 쓰는데 이 창의 폼 값은 전역 상태다). 잠긴 항목이면 세 칸 모두 읽기 전용(회색)이다.",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{!field.deferred && field.renderer === 'address'}}",
+                                                                    "props": {
+                                                                        "className": "space-y-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "flex flex-wrap gap-2"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Input",
+                                                                                    "props": {
+                                                                                        "type": "text",
+                                                                                        "name": "{{field.parts?.zipcode}}",
+                                                                                        "aria-label": "$t:member.fields.zipcode_label|label={{field.label}}",
+                                                                                        "placeholder": "$t:member.fields.zipcode",
+                                                                                        "className": "{{field.readonly ? 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-28 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                        "readOnly": "{{!!field.readonly}}",
+                                                                                        "disabled": "{{_global.ssoBusy}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address}}",
+                                                                                "aria-label": "$t:member.fields.address_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.ssoBusy}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "name": "{{field.parts?.address_detail}}",
+                                                                                "aria-label": "$t:member.fields.address_detail_label|label={{field.label}}",
+                                                                                "placeholder": "$t:member.fields.address_detail",
+                                                                                "className": "{{field.readonly ? 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}",
+                                                                                "readOnly": "{{!!field.readonly}}",
+                                                                                "disabled": "{{_global.ssoBusy}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "확장이 제공한 유형 — 그 확장의 조각이 이 자리에 자기 입력칸을 그린다(조각은 루트에서 자기 유형일 때만 그린다).",
+                                                                    "id": "sso_member_field_input_slot_{{field.key}}",
+                                                                    "type": "extension_point",
+                                                                    "name": "member_field_input",
+                                                                    "if": "{{!field.deferred && field.renderer === 'extension'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "error": "{{_global.ssoErrors?.[field.name]?.[0] ?? ''}}",
+                                                                        "disabled": "{{!!_global.ssoBusy}}",
+                                                                        "formKey": "{{'_global.ssoFieldForm'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "그 밖의 유형 — 항목 1개짜리 입력 컴포넌트가 유형과 제한 값을 보고 입력칸을 고른다. 값은 폼 자동 바인딩(name)으로 오간다. 잠긴 항목(field.readonly)은 컴포넌트가 읽기 전용 회색으로 그린다.",
+                                                                    "type": "composite",
+                                                                    "name": "MemberFieldInput",
+                                                                    "if": "{{!field.deferred && field.renderer !== 'address' && field.renderer !== 'extension' && field.renderer !== 'file'}}",
+                                                                    "props": {
+                                                                        "field": "{{field}}",
+                                                                        "name": "{{field.name}}",
+                                                                        "disabled": "{{!!_global.ssoBusy}}",
+                                                                        "error": "{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}",
+                                                                        "errorId": "sso_mf_error_{{field.key}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "동의 항목(약관 묶음)의 필수 여부와 약관 보기 링크 — 체크박스 옆 문구에는 별표가 없으므로 「(필수)」「(선택)」을 글자로 알린다.\n                       약관 문서 링크는 그 문서를 서빙하는 모듈이 켜져 있을 때만 그린다(새 창). 하위 동의(ui.parent)는 들여 쓴다.",
+                                                                    "id": "sso_mf_agreement_meta_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(field.ui?.group ?? '') === 'agreements'}}",
+                                                                    "props": {
+                                                                        "className": "ml-6 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{field.required ? $t('member.fields.agreement_required') : $t('member.fields.agreement_optional')}}"
+                                                                        },
+                                                                        {
+                                                                            "id": "sso_mf_agreement_link_{{field.key}}",
+                                                                            "type": "basic",
+                                                                            "name": "A",
+                                                                            "if": "{{!!field.ui?.link?.url && (!field.ui?.link?.requires_module || (_global.activeModules?.includes(field.ui?.link?.requires_module) ?? true))}}",
+                                                                            "props": {
+                                                                                "href": "{{field.ui?.link?.url}}",
+                                                                                "target": "_blank",
+                                                                                "rel": "noopener noreferrer",
+                                                                                "aria-label": "{{field.ui?.link?.title ?? field.label}}",
+                                                                                "className": "ml-2 text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            },
+                                                                            "text": "{{field.ui?.link?.label ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "잠긴 항목의 사유 안내 — 사유마다 문구가 다르고 한 번에 하나만 보인다. 회사 계정이 잠근 칸의 문구와 모양은 예전 내 정보 수정 화면 그대로다.",
+                                                                    "id": "sso_mf_locked_sso_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'sso'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:mypage.profile.locked_by_company"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_identity_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'identity'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_identity"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_admin_only_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'admin_only'}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_admin_only"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_nickname_interval_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && field.locked_reason === 'nickname_interval' && !!field.locked_until}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_until|date={{field.locked_until}}"
+                                                                },
+                                                                {
+                                                                    "id": "sso_mf_locked_other_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!!field.readonly && ['sso', 'identity', 'admin_only'].indexOf(field.locked_reason) === -1 && !(field.locked_reason === 'nickname_interval' && !!field.locked_until)}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:member.fields.locked_generic"
+                                                                },
+                                                                {
+                                                                    "comment": "운영자가 적은 안내 문구",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{field.help}}",
+                                                                    "props": {
+                                                                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400 break-words"
+                                                                    },
+                                                                    "text": "{{field.help}}"
+                                                                },
+                                                                {
+                                                                    "comment": "이 칸의 검증 오류 — 묶음 유형(주소, 기간, 여러 개 선택)은 하위 경로의 오류도 이 줄에 모은다.",
+                                                                    "id": "sso_mf_error_{{field.key}}",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{Object.keys(_global.ssoErrors ?? {}).some(function(k) { return k === field.name || k.indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(k) !== -1; })}}",
+                                                                    "props": {
+                                                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                                    },
+                                                                    "text": "{{Object.entries(_global.ssoErrors ?? {}).filter(function(entry) { return entry[0] === field.name || entry[0].indexOf(field.name + '.') === 0 || Object.values(field.parts ?? {}).indexOf(entry[0]) !== -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "sso_consent_error",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_global.ssoError}}",
+                                    "props": {
+                                        "role": "alert",
+                                        "className": "sso:text-sm sso:text-red-600 sso:dark:text-red-400"
+                                    },
+                                    "text": "{{_global.ssoError}}"
+                                },
+                                {
+                                    "id": "sso_consent_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "동의하고 시작 — 회원을 만들고 받은 인계 코드로 로그인을 이어 간다(2단계 인증·비밀번호 변경은 화면의 로그인 응답 분기가 처리).\n                   본문은 「약관 동의 + 회원 항목 값 + 받은 항목의 정의 버전(fields_version)」이다. 회원 항목을 받지 못한 창은 원본처럼 약관만 싣고 버전을 싣지 않는다.\n                   실패하면 칸별 검증 오류를 ssoErrors 에 담아 각 칸 아래에 붙이고, 응답 문구는 아래 오류 줄에 보인다.\n                   그 사이 운영자가 가입 항목을 바꿨으면 서버가 409(fields_changed)로 알린다 — 안내만 띄우고 항목을 다시 받는다(입력한 값과 동의 대기는 그대로다).",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoBusy": true,
+                                                        "ssoError": null,
+                                                        "ssoErrors": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-sso/pending/{{query.sso_pending}}/complete",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": "{{Object.assign({}, _global.ssoFieldsState === 'ready' ? (_global.ssoFieldForm ?? {}) : {}, { agree_terms: !!_global.ssoForm?.agree_terms, agree_privacy: !!_global.ssoForm?.agree_privacy }, _global.ssoFieldsState === 'ready' && _global.ssoFieldsVersion ? { fields_version: _global.ssoFieldsVersion } : {})}}"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isLoginAction": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoBusy": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "loginHandoff",
+                                                            "target": "user",
+                                                            "params": {
+                                                                "body": {
+                                                                    "code": "{{response.data?.handoff_code}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "actionRef": "applyLoginResult"
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "merge": "shallow",
+                                                                "ssoBusy": false,
+                                                                "ssoErrors": "{{(error.response?.error_code ?? error.error_code) === 'fields_changed' ? null : (error.response?.errors ?? error.errors ?? null)}}",
+                                                                "ssoError": "{{(error.response?.error_code ?? error.error_code) === 'fields_changed' ? $t('member.fields.signup_fields_changed') : (error.response?.message ?? error.message)}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "가입 항목이 바뀌었으면 항목과 정의 버전만 다시 받는다(입력한 값은 건드리지 않는다)",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/auth/register/fields?pending_source=sirsoft-sso&pending_token={{query.sso_pending}}",
+                                                            "if": "{{(error.response?.error_code ?? error.error_code) === 'fields_changed'}}",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "GET"
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "merge": "shallow",
+                                                                    "ssoFields": "{{response.data?.fields ?? []}}",
+                                                                    "ssoFieldsVersion": "{{response.data?.fields_version ?? null}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.ssoBusy || _global.ssoFieldsState === 'loading' || !_global.ssoForm?.agree_terms || !_global.ssoForm?.agree_privacy}}"
+                                    },
+                                    "text": "$t:sirsoft-sso.consent.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "③ 기존 회원 연결 확인",
+            "id": "sso_link_verify",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-sso.link.title",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sso:space-y-5"
+                    },
+                    "children": [
+                        {
+                            "id": "sso_link_expired",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoLinkExpired === true}}",
+                            "props": {
+                                "className": "sso:space-y-4 sso:text-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-sso.link.expired"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "만료·횟수 초과 안내에서 닫고 로그인 화면 처음으로",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "replaceUrl",
+                                                    "params": {
+                                                        "path": "/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-sso.common.retry"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sso_link_form",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoLinkExpired !== true && !!_global.ssoLink}}",
+                            "props": {
+                                "className": "sso:space-y-5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "sso:text-sm sso:text-gray-600 sso:dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.link.intro|idp={{_global.ssoLink?.idp?.label ?? ''}}|email={{_global.ssoLink?.email ?? ''}}"
+                                },
+                                {
+                                    "comment": "확인 방법 고르기 — 둘 다 쓸 수 있을 때만",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.ssoLink?.methods ?? []).length > 1}}",
+                                    "props": {
+                                        "role": "tablist",
+                                        "className": "sso:flex sso:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "sso_link_method_password",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "비밀번호로 확인",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoLinkMethod": "password",
+                                                        "ssoError": null
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "role": "tab",
+                                                "aria-selected": "{{_global.ssoLinkMethod === 'password'}}",
+                                                "className": "sso:flex-1 sso:px-3 sso:py-2 sso:rounded-lg sso:border sso:text-sm sso:cursor-pointer {{_global.ssoLinkMethod === 'password' ? 'sso:border-gray-900 sso:dark:border-white sso:text-gray-900 sso:dark:text-white sso:font-medium' : 'sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-600 sso:dark:text-gray-400'}}"
+                                            },
+                                            "text": "$t:sirsoft-sso.link.method_password"
+                                        },
+                                        {
+                                            "id": "sso_link_method_email",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "메일 인증번호로 확인",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoLinkMethod": "email",
+                                                        "ssoError": null
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "role": "tab",
+                                                "aria-selected": "{{_global.ssoLinkMethod === 'email'}}",
+                                                "className": "sso:flex-1 sso:px-3 sso:py-2 sso:rounded-lg sso:border sso:text-sm sso:cursor-pointer {{_global.ssoLinkMethod === 'email' ? 'sso:border-gray-900 sso:dark:border-white sso:text-gray-900 sso:dark:text-white sso:font-medium' : 'sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-600 sso:dark:text-gray-400'}}"
+                                            },
+                                            "text": "$t:sirsoft-sso.link.method_email"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "비밀번호로 확인",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ssoLinkMethod === 'password'}}",
+                                    "props": {
+                                        "className": "sso:space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "htmlFor": "sso_link_password",
+                                                "className": "sso:block sso:text-sm sso:font-medium sso:text-gray-700 sso:dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-sso.link.password"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "입력한 비밀번호를 담는다 — [연결하고 로그인] 이 이 값으로 확인한다",
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoForm.password": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "password",
+                                                "id": "sso_link_password",
+                                                "name": "sso_link_password",
+                                                "value": "{{_global.ssoForm?.password ?? ''}}",
+                                                "autoComplete": "current-password",
+                                                "maxLength": "255",
+                                                "className": "sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:bg-white sso:dark:bg-gray-700 sso:text-gray-900 sso:dark:text-white",
+                                                "disabled": "{{_global.ssoBusy}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "메일 인증번호로 확인",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ssoLinkMethod === 'email'}}",
+                                    "props": {
+                                        "className": "sso:space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "sso_link_request_code",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "인증번호 받기 — 기존 계정 메일로 보낸다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoBusy": true,
+                                                                "ssoError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-sso/link/{{query.sso_link}}/email",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "POST"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ssoBusy": false,
+                                                                        "ssoLinkChallengeId": "{{response.data?.challenge_id}}",
+                                                                        "ssoForm.code": ""
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "info",
+                                                                        "message": "$t:sirsoft-sso.link.code_sent"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "ssoBusy": false,
+                                                                    "ssoError": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "sso:w-full sso:px-3 sso:py-3 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.ssoBusy}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!_global.ssoLinkChallengeId}}",
+                                                    "text": "$t:sirsoft-sso.link.request_code"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!_global.ssoLinkChallengeId}}",
+                                                    "text": "$t:sirsoft-sso.link.resend_code"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "if": "{{!!_global.ssoLinkChallengeId}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "입력한 인증번호를 담는다",
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoForm.code": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "name": "sso_link_code",
+                                                "value": "{{_global.ssoForm?.code ?? ''}}",
+                                                "inputMode": "numeric",
+                                                "autoComplete": "one-time-code",
+                                                "maxLength": "10",
+                                                "aria-label": "$t:sirsoft-sso.link.code",
+                                                "placeholder": "$t:sirsoft-sso.link.code",
+                                                "className": "sso:w-full sso:px-3 sso:py-2 sso:text-center sso:tracking-widest sso:font-mono sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:bg-white sso:dark:bg-gray-700 sso:text-gray-900 sso:dark:text-white",
+                                                "disabled": "{{_global.ssoBusy}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "sso_link_error",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_global.ssoError}}",
+                                    "props": {
+                                        "role": "alert",
+                                        "className": "sso:text-sm sso:text-red-600 sso:dark:text-red-400"
+                                    },
+                                    "text": "{{_global.ssoError}}"
+                                },
+                                {
+                                    "id": "sso_link_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "연결하고 로그인 — 확인이 맞으면 연결하고 받은 인계 코드로 로그인을 이어 간다. 비밀번호 3번 오류면 처음부터 다시(만료 안내로 바뀐다)",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoBusy": true,
+                                                        "ssoError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-sso/link/{{query.sso_link}}/verify",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "method": "{{_global.ssoLinkMethod}}",
+                                                            "password": "{{_global.ssoLinkMethod === 'password' ? _global.ssoForm?.password : undefined}}",
+                                                            "challenge_id": "{{_global.ssoLinkMethod === 'email' ? _global.ssoLinkChallengeId : undefined}}",
+                                                            "code": "{{_global.ssoLinkMethod === 'email' ? _global.ssoForm?.code : undefined}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isLoginAction": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoBusy": false,
+                                                                "ssoForm.password": ""
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "loginHandoff",
+                                                            "target": "user",
+                                                            "params": {
+                                                                "body": {
+                                                                    "code": "{{response.data?.handoff_code}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "actionRef": "applyLoginResult"
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "ssoBusy": false,
+                                                            "ssoForm.password": "",
+                                                            "ssoError": "{{error.message}}",
+                                                            "ssoLinkExpired": "{{error.status === 404}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.ssoBusy || (_global.ssoLinkMethod === 'password' ? !_global.ssoForm?.password : (!_global.ssoLinkChallengeId || !_global.ssoForm?.code))}}"
+                                    },
+                                    "text": "$t:sirsoft-sso.link.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "version_constraint": "~1.0.0"
+}

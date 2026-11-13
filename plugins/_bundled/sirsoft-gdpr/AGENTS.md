@@ -146,8 +146,8 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 5개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 12개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 13개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -172,6 +172,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 - [ ] 업그레이드 스텝·데이터 마이그레이션이 설정 파일을 새로 쓰면(`File::put`) 바로 뒤에 `FilePermissionHelper::inheritOwnershipFromParent($path)` — `sudo` 코어 업데이트 안에서 root 로 실행되어 그 파일이 root 소유로 남으면 이후 웹 프로세스의 설정 저장이 영구 실패한다. 번들 확장 `upgrades/**` 전수를 파일시스템에서 파생해 검사하는 패리티 테스트가 누락을 잡는다
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-gdpr` 재실행 + `docs/api/**` 갱신
+- [ ] 로그인한 회원이 부르는 쓰기 라우트(POST, PUT, PATCH, DELETE)를 더할 때 코어 필터 `core.required_fields.filter_exempt_routes` 에 보탤지 판단한다. 코어는 추가 정보를 아직 입력하지 않은 회원의 쓰기 요청을 403 `required_fields_pending` 으로 막는다. 그런 회원도 반드시 할 수 있어야 하는 요청(동의 기록, 철회처럼 법이 요구하는 동의 처리 요청)이면 `src/Listeners/ExemptRequiredFieldsRoutesListener.php` 의 `ROUTES` 에 라우트 이름을 더하고, 사용자 콘텐츠를 만드는 요청이면 더하지 않는다
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`gdpr:` 접두 유틸리티 · `gdpr-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-gdpr --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
@@ -213,10 +214,10 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 55개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 39개 | `vitest.config.ts` |
+| PHPUnit | 58개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| Vitest | 41개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 49개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 53개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

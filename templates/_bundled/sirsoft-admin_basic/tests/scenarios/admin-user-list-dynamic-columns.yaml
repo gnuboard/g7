@@ -1,0 +1,83 @@
+feature: 회원 목록의 회원 항목 표면 — 추가 항목 열, 「미입력」 열, 검색 대상, 회원 항목 조건 (sirsoft-admin_basic, #490 6단계)
+
+description: |
+  운영자가 환경설정에서 「회원 목록 열」로 켠 추가 항목은 목록 응답 member_fields.columns 로 오고, 레이아웃 computed
+  memberFieldColumns 하나가 표 users_data_grid 와 열 선택기 column_selector 양쪽의 dynamicColumns 가 된다(닉네임 열 뒤).
+  DataGrid 와 ColumnSelector 의 dynamicColumns 를 쓰는 첫 레이아웃이라 열 추가, 숨김, 순서, 저장값 영속을 여기서 잠근다.
+  0단계 S9(열 선택 저장값이 있는 운영자에게 새 동적 열이 켜지지 않음, hidden 과 visible:false 가 무력)는 부품을 고쳤다:
+  선택기가 「이미 본 동적 열」을 저장 키 옆에 남겨 처음 보는 열만 켜고, 사용자가 끈 열은 다시 켜지 않는다.
+  「미입력」 열은 비어 있는 필수 항목 개수 배지(올리면 항목 이름), 검색 대상은 고정 7종 뒤에 member_fields.search_fields,
+  회원 항목 조건 둘(required_missing, nickname_duplicate)은 값 1 인 평면 주소 인자다.
+  「보이는 이름」 열(#490 8단계)은 사이트 기본 자리에서 보이는 이름(display_name)을 그리는 정적 열이고 닉네임 앞에 서며 기본은 꺼져 있다.
+
+axes:
+  case:
+    - shared_columns
+    - pending_column
+    - display_name_column
+    - search_field
+    - member_field_filter
+    - grid_merge
+    - grid_cell_value
+    - grid_visibility
+    - selector_listing
+    - selector_auto_show
+    - selector_persistence
+    - wired_screen
+
+effects:
+  # 레이아웃: 표와 열 선택기
+  - grid_and_selector_share_dynamic_columns_source
+  - dynamic_columns_follow_response_order_and_value_path
+  - no_member_field_columns_leaves_list_unchanged
+  # 레이아웃: 「미입력」 열
+  - pending_column_listed_after_nickname_in_grid_and_selector
+  - display_name_column_static_off_by_default_in_grid_and_selector
+  - pending_badge_shows_count_and_field_names
+  - pending_empty_shows_dash
+  - pending_count_has_english_singular
+  # 레이아웃: 검색 대상
+  - search_field_options_append_member_fields
+  - search_field_options_fixed_without_member_fields
+  - custom_search_field_uses_existing_filter_serialization
+  # 레이아웃: 회원 항목 조건
+  - member_field_filters_sent_as_flat_params
+  - url_entry_turns_filter_on_and_opens_detail
+  - member_field_filter_rows_follow_filter_row_convention
+  - reset_turns_member_field_filters_off
+  - member_field_filter_state_keys_in_init_and_reset
+  # 부품: DataGrid
+  - dynamic_columns_inserted_after_named_field_in_order
+  - dynamic_columns_appended_when_anchor_missing
+  - no_dynamic_columns_keeps_static_columns
+  - cell_value_read_by_dot_path
+  - empty_text_only_for_empty_values
+  - literal_row_key_wins_over_dot_path
+  - custom_render_receives_dot_path_value
+  - hidden_dynamic_column_not_auto_shown
+  - external_visible_columns_decide_dynamic_columns
+  # 부품: ColumnSelector
+  - selector_lists_dynamic_columns_after_anchor
+  - first_seen_dynamic_column_auto_shown_and_saved
+  - saved_selection_still_gets_new_dynamic_column
+  - second_new_dynamic_column_auto_shown_after_reload
+  - user_hidden_dynamic_column_stays_hidden_after_reload
+  - user_toggle_of_dynamic_column_saved
+  - late_dynamic_columns_handled_like_first_seen
+  - visible_false_dynamic_column_listed_but_off
+  - removed_dynamic_column_keeps_user_choice_when_back
+  - no_dynamic_columns_writes_nothing
+  - known_dynamic_key_shares_declared_storage_prefix
+  # 부품 둘을 레이아웃처럼 이은 화면
+  - grid_and_selector_same_dynamic_set_and_order
+  - new_member_field_columns_visible_on_first_visit
+  - zero_member_field_columns_no_change
+  - hidden_and_shown_columns_persist_after_reload
+  - saved_user_sees_newly_enabled_member_field_column
+  - removed_member_field_column_leaves_grid_and_selector
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-list-dynamic-columns.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.dynamicColumns.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ColumnSelector.dynamicColumns.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGridColumnSelectorDynamicParity.test.tsx

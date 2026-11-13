@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Page\Services;
 
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use App\Exceptions\ContentMediaLimitExceededException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
@@ -412,12 +414,18 @@ class PageService
     /**
      * 페이지 버전 이력을 조회합니다.
      *
+     * 작성자 이름은 관리자 영역(`core:admin`) 표시 이름이다. 행마다 계산하기 전에 작성자를 모아
+     * 표시 이름 계산에 필요한 값(추가 항목 종류의 값)을 한 번에 읽어 둔다.
+     *
      * @param  Page  $page  페이지 모델
      * @return Collection 버전 목록 (최신순)
      */
     public function getVersions(Page $page): Collection
     {
-        return $this->pageVersionRepository->getVersionsByPage($page);
+        $versions = $this->pageVersionRepository->getVersionsByPage($page);
+        app(MemberNamePresenter::class)->preloadRelations($versions, ['creator'], null, DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $versions;
     }
 
     /**

@@ -15,6 +15,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
 use Modules\Sirsoft\Board\Models\Comment;
@@ -426,17 +427,22 @@ class ReportRepository implements ReportRepositoryInterface
 
             // 작성자 검색
             if ($searchField === 'all' || $searchField === 'author_name') {
+                // 관리자 화면 검색 — 이름, 닉네임, 이메일을 모두 찾는다
                 $q->orWhereHas('author', function ($aq) use ($keyword) {
-                    $aq->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $aq->where(function ($w) use ($keyword) {
+                        app(BoardDisplayNames::class)->constrainUsersForAdmin($w, (string) $keyword);
+                        $w->orWhere('email', 'like', "%{$keyword}%");
+                    });
                 });
             }
 
             // 신고자 검색 (logs → reporter 관계)
             if ($searchField === 'all' || $searchField === 'reporter_name') {
                 $q->orWhereHas('logs.reporter', function ($rq) use ($keyword) {
-                    $rq->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $rq->where(function ($w) use ($keyword) {
+                        app(BoardDisplayNames::class)->constrainUsersForAdmin($w, (string) $keyword);
+                        $w->orWhere('email', 'like', "%{$keyword}%");
+                    });
                 });
             }
         });
