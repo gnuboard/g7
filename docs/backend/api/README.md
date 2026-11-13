@@ -301,7 +301,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 46 · **엔드포인트 수**: 399
+- **문서 수**: 50 · **엔드포인트 수**: 410
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -319,6 +319,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [dashboard.md](dashboard.md) | `dashboard` | 5 |
 | [extensions.md](extensions.md) | `extensions` | 8 |
 | [favicon.md](favicon.md) | `favicon` | 1 |
+| [fields.md](fields.md) | `fields` | 3 |
 | [field-sets.md](field-sets.md) | `field-sets` | 7 |
 | [frontend-config.md](frontend-config.md) | `frontend-config` | 2 |
 | [identity.md](identity.md) | `identity` | 27 |
@@ -327,6 +328,8 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [license.md](license.md) | `license` | 1 |
 | [locales.md](locales.md) | `locales` | 1 |
 | [me.md](me.md) | `me` | 3 |
+| [member-fields.md](member-fields.md) | `member-fields` | 4 |
+| [member-notifications.md](member-notifications.md) | `member-notifications` | 3 |
 | [menus.md](menus.md) | `menus` | 10 |
 | [modules.md](modules.md) | `modules` | 29 |
 | [notification-channels.md](notification-channels.md) | `notification-channels` | 1 |
@@ -340,6 +343,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [privacy.md](privacy.md) | `privacy` | 3 |
 | [profile.md](profile.md) | `profile` | 4 |
 | [queue.md](queue.md) | `schedules/queue` | 10 |
+| [required-fields.md](required-fields.md) | `required-fields` | 1 |
 | [roles.md](roles.md) | `roles` | 7 |
 | [schedules.md](schedules.md) | `schedules` | 14 |
 | [search-history.md](search-history.md) | `search-history` | 6 |

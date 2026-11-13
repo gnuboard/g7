@@ -556,6 +556,7 @@
               <span>$t:sirsoft-hero_section.admin.target_settings.items.autoplay</span>
               <input type="checkbox" id="hero_target_autoplay" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" checked="{{_computed.targetEffective.autoplay === true}}" disabled="{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('autoplay')}}">
                 <on type="change">
+                <!-- 대상 슬라이더 설정 작업본 — 자동 넘김 여부를 이 대상의 재정의로 담는다(저장 단추를 눌러야 반영) -->
                 <set-state target="local" merge="shallow" targetForm="{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, autoplay: $event.target.checked}})}}"/>
                 </on>
               </input>
@@ -578,6 +579,7 @@
                 <option value="7">$t:sirsoft-hero_section.admin.slider.seconds|n=7</option>
                 </options>
                 <on type="change">
+                <!-- 대상 슬라이더 설정 작업본 — 넘김 간격(초)을 숫자로 이 대상의 재정의에 담는다(저장 단추를 눌러야 반영) -->
                 <set-state target="local" merge="shallow" targetForm="{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, interval_seconds: Number($event.target.value)}})}}"/>
                 </on>
               </select>
@@ -604,6 +606,7 @@
                 <option value="none">$t:sirsoft-hero_section.admin.slider.effects.none</option>
                 </options>
                 <on type="change">
+                <!-- 대상 슬라이더 설정 작업본 — 넘김 효과를 이 대상의 재정의로 담는다(저장 단추를 눌러야 반영) -->
                 <set-state target="local" merge="shallow" targetForm="{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, effect: $event.target.value}})}}"/>
                 </on>
               </select>
@@ -625,6 +628,7 @@
                 <option value="full">$t:sirsoft-hero_section.admin.slider.widths.full</option>
                 </options>
                 <on type="change">
+                <!-- 대상 슬라이더 설정 작업본 — 표시 폭을 이 대상의 재정의로 담는다(저장 단추를 눌러야 반영) -->
                 <set-state target="local" merge="shallow" targetForm="{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, width: $event.target.value}})}}"/>
                 </on>
               </select>
@@ -642,6 +646,7 @@
               <span>$t:sirsoft-hero_section.admin.target_settings.items.header_overlay</span>
               <input type="checkbox" id="hero_target_header_overlay" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" checked="{{_computed.targetEffective.header_overlay === true}}" disabled="{{!_computed.canWrite || !_computed.targetData || !_computed.targetOverridden.includes('header_overlay')}}">
                 <on type="change">
+                <!-- 대상 슬라이더 설정 작업본 — 메뉴 겹치기 여부를 이 대상의 재정의로 담는다(저장 단추를 눌러야 반영) -->
                 <set-state target="local" merge="shallow" targetForm="{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, header_overlay: $event.target.checked}})}}"/>
                 </on>
               </input>
@@ -666,6 +671,7 @@
                 <option value="pill">$t:sirsoft-hero_section.admin.slider.paginations.pill</option>
                 </options>
                 <on type="change">
+                <!-- 대상 슬라이더 설정 작업본 — 페이징 모양을 이 대상의 재정의로 담는다(저장 단추를 눌러야 반영) -->
                 <set-state target="local" merge="shallow" targetForm="{{({key: _computed.targetFormKey, overrides: {..._computed.targetDraft, pagination: $event.target.value}})}}"/>
                 </on>
               </select>

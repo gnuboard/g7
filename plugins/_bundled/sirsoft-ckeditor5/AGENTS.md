@@ -190,8 +190,8 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 25개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 39개 | `vitest.config.ts` |
+| PHPUnit | 26개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
+| Vitest | 40개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 27개 | `tests/scenarios` |
 

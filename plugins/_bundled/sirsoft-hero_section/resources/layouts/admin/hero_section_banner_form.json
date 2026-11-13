@@ -930,6 +930,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "바탕색 지우기 — 지정 없음(null)으로 되돌린다. 표시 칸은 「없음」 문구로 바뀐다",
                                                                         "type": "click",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -2366,6 +2367,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "PC 문구 폭 — 비우면 null 로 담아 위 공통 폭을 따른다(프로모션형은 문구 칸 폭)",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -2411,6 +2413,7 @@
                                                                         "name": "Input",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "휴대폰 문구 폭 — 비우면 null 로 담아 위 공통 폭을 따른다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {

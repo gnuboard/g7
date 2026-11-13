@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\HeroSection\Support\Positions;
 
+use App\Extension\Helpers\LayoutFragmentSourceHelper;
+
 /**
  * 위치 출력 조각 — 히어로가 자기 자리(`home_hero`·`board_hero`)에 붙이는 조각과 같은 처리(공개 API 조회·로딩·빈 응답·실패·언어·
  * 선택 인증·수정 단추·표시 폭·본문 상자·메뉴 겹침·스켈레톤·대상 전환)를 다른 위치 키로 만든다.
@@ -78,16 +80,17 @@ final class PositionFragment
     /**
      * 원본 조각 파일을 읽습니다.
      *
+     * 코어 진입점({@see LayoutFragmentSourceHelper::read()})으로 읽는다 — 짝 소스(`.g7.html`)가 있으면 그것을 컴파일한 결과가
+     * 원본이다. `.json` 을 직접 열면 소스를 고쳐도 이 경로에서만 옛 굽기 결과가 쓰인다.
+     *
      * @param  string  $file  `resources/extensions` 안 파일 이름
      * @return array<string, mixed>|null 조각 (읽지 못하면 null)
      */
     private static function read(string $file): ?array
     {
-        $path = dirname(__DIR__, 3).'/resources/extensions/'.$file;
-        $json = is_file($path) ? file_get_contents($path) : false;
-        $decoded = is_string($json) ? json_decode($json, true) : null;
+        $decoded = LayoutFragmentSourceHelper::read(dirname(__DIR__, 3).'/resources/extensions/'.$file);
 
-        return is_array($decoded) ? $decoded : null;
+        return $decoded === [] ? null : $decoded;
     }
 
     /**
