@@ -197,3 +197,15 @@ Tailwind 빌드로, 템플릿에서 가져온 의미 클래스는 `pay-kginicis-
 처리 위치: 결제 요청이 `markStandardPaymentCloseReportContext()` 에 `claimCancelReturnUrl` 을 함께 기억하고,
 `resources/js/paymentCloseMessageListener.ts` 가 닫힘 메시지를 받으면 `returnToClaimDetailIfClaimPayment()` 로 먼저 이동한다.
 <!-- @intent END -->
+
+## 클레임 추가결제 창을 열기 전 실패
+
+<!-- @intent START -->
+교환·반품·환불 신청서의 추가결제(`pg_payment_data.claim_cancel_return_url` 이 있는 결제)에서 결제창을 열기 **전에** 실패하면
+주문서 전용 오류 모달·토스트를 띄우지 않고 사용자 문구를 담은 `Error` 를 던진다. 신청서 화면에는 그 모달이 없어, 종전에는 안내 없이
+「결제 진행 중…」에 멈췄다. 쇼핑몰 신청서 핸들러가 `G7Core.dispatch` 결과로 받아 진행 표시를 내리고 문구를 보여 준다(계약:
+쇼핑몰 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 「결제 플러그인 연동 계약」, 쇼핑몰 1.4.0 이상). 상태 코드 없는 오류라 템플릿의 상태 코드별 오류 처리는
+타지 않는다. 주문 결제는 종전대로 주문서 오류 안내를 쓴다.
+
+처리 위치: `resources/js/handlers/requestPayment.ts` 의 `requestPaymentHandler()` 의 catch. 핸들러 안의 실패는 모두 한 catch 로 모이므로 그 자리에서 클레임 결제면 던진다.
+<!-- @intent END -->

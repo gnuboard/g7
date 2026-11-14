@@ -1,4 +1,4 @@
-// e2e:allow 수정 진입 핸들러 단위 테스트 — 브라우저 흐름은 Playwright MCP 라이브 재실측으로 덮었다: 승인 건 RF20260922-1155163369 /edit 진입(SPA·직접 입력) → 안내 후 상세·[저장] 0, 승인 전 건은 수정 화면 유지. (#599 실측, 2026-09-23).
+// e2e:allow 수정 진입 핸들러 단위 테스트 — 브라우저 흐름은 Playwright MCP 라이브 재실측으로 덮었다: 승인 건 RF20260922-1155163369 /edit 진입(SPA·직접 입력) → 안내 후 상세·[저장] 0, 승인 전 건은 수정 화면 유지. (#599 실측, 2026-09-23). / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * 클레임 신청서 **수정(edit) 모드** 핸들러 테스트 (#599 S13)
  *
@@ -16,7 +16,7 @@
  *  - 저장 페이로드에 품목·수량·교환 대상을 실으면 바꾸지 않은 축이 "바뀐 것" 으로 처리된다.
  *
  * 축 요약(마커 아님 — 평문): claim_type=exchange, charge_method=pay_on_request, refund_branch=none
- * @effects claim_edit_route_resolves_number_by_position,
+ * 효과 요약(마커 아님 — 평문): claim_edit_route_resolves_number_by_position,
  *   claim_edit_order_404_is_a_normal_path,
  *   claim_edit_seeds_items_from_the_claim,
  *   claim_edit_preview_excludes_its_own_lock,
@@ -1049,11 +1049,50 @@ describe('클레임 수정 — 저장', () => {
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260901-0001' } },
+            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다(#855).
+            errorHandling: { default: { handler: 'suppress' } },
         });
         // 결제창으로 가므로 목적지 이동은 하지 않는다 — 두 번 이동하면 결제창이 닫힌다.
         expect(mockG7Core.dispatch).not.toHaveBeenCalledWith(
             expect.objectContaining({ handler: 'navigate' })
         );
+    });
+
+    /**
+     * 차액 결제창을 열기 전에 결제 플러그인이 실패하면 문구를 토스트로 알리고 신청서 상세로 보낸다 (#855).
+     *
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_pay_pg_entry_failure_releases_the_button
+     */
+    it('배송비 차액 결제창을 열기 전 PG 실패는 토스트로 알리고 신청서 상세로 이동한다', async () => {
+        mockG7Core.api.patch.mockResolvedValue({
+            success: true,
+            data: {
+                requires_pg_payment: true,
+                pg_payment_handler: 'example-pg.requestPayment',
+                pg_payment_data: { order_number: 'CP20260901-0001', claim_cancel_return_url: '/mypage/claims/EX20260901-0001' },
+            },
+        });
+        mockG7Core.dispatch.mockImplementation(async (action: any) => (
+            action.handler === 'example-pg.requestPayment'
+                ? { success: false, error: { message: 'Failed to execute action', originalError: { message: '서명값을 만들지 못했습니다.' } } }
+                : { success: true }
+        ));
+
+        await saveClaimEditHandler(
+            {
+                handler: 'saveClaimEdit',
+                params: { claimEditApiBase: MEMBER_CLAIM_BASE, successPath: '/mypage/claims/EX20260901-0001' },
+            },
+            {} as any
+        );
+
+        expect(mockG7Core.toast.error).toHaveBeenCalledWith('서명값을 만들지 못했습니다.');
+        expect(mockG7Core.dispatch).toHaveBeenCalledWith({
+            handler: 'navigate',
+            params: { path: '/mypage/claims/EX20260901-0001' },
+        });
     });
 
     /**

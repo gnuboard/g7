@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 
@@ -32,6 +33,7 @@ class MobileApprovalController
     use BindsMobileVbankSession;
     use HandlesClaimPaymentCallbacks;
     use RecordsPaymentWindowClosure;
+    use VerifiesOrderOwnership;
 
     /** 결제수단 → KCP 모바일 pay_method 코드 */
     private const MOBILE_PAY_METHOD_MAP = [
@@ -149,6 +151,7 @@ class MobileApprovalController
                     (string) $validated['order_number'],
                     (int) $validated['amount'],
                     $validated['currency'] ?? null,
+                    $this->guestOrderAuthService,
                 );
 
                 if ($claimError !== null) {
@@ -163,7 +166,13 @@ class MobileApprovalController
                     ], 404);
                 }
 
-                $ownershipError = $this->orderOwnershipError($request, $order);
+                // 회원 주문은 로그인 본인(아니면 403), 비회원 주문은 그 주문의 조회 토큰(아니면 401) — 클레임 경로와 한 판정(#883, #855)
+                $ownershipError = $this->orderOwnershipRejection(
+                    $request,
+                    $order,
+                    $this->guestOrderAuthService,
+                    'You cannot request a NHN KCP approval key for this order.',
+                );
                 if ($ownershipError !== null) {
                     return $ownershipError;
                 }
@@ -284,46 +293,6 @@ class MobileApprovalController
                 'error' => $e->getMessage(),
             ], 422);
         }
-    }
-
-    /**
-     * 승인키를 요청한 사람이 주문의 주인인지 확인합니다.
-     *
-     * - 회원 주문: 로그인한 본인만. 다른 회원·비로그인은 403.
-     * - 비회원 주문(`user_id` 없음): 주문 생성 때 받은 조회 토큰(`X-Guest-Order-Token`)이 이 주문의 것이어야 한다.
-     *   토큰이 없거나 틀리면 401 — 브라우저는 토큰 없이 보낸 요청이라 로그인 화면으로 옮기지 않고
-     *   「주문 조회에서 다시 결제」 안내를 띄운다(결제창 닫힘 보고와 같은 판정, #883).
-     *
-     * @param  Request  $request  승인키 요청
-     * @param  Order  $order  결제할 주문
-     * @return JsonResponse|null 거부 응답 (주인이면 null)
-     */
-    private function orderOwnershipError(Request $request, Order $order): ?JsonResponse
-    {
-        if ($order->user_id !== null) {
-            if ((int) $order->user_id === (int) ($request->user()?->id ?? 0)) {
-                return null;
-            }
-
-            return response()->json([
-                'success' => false,
-                'error' => 'You cannot request a NHN KCP approval key for this order.',
-            ], 403);
-        }
-
-        $verified = $this->guestOrderAuthService->verifyToken(
-            $request->header('X-Guest-Order-Token'),
-            (string) $order->order_number,
-        );
-
-        if ($verified !== null && (int) $verified->id === (int) $order->id) {
-            return null;
-        }
-
-        return response()->json([
-            'success' => false,
-            'error' => 'Guest order verification failed.',
-        ], 401);
     }
 
     /**

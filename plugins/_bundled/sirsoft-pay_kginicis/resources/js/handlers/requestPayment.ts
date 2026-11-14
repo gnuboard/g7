@@ -1,4 +1,4 @@
-// e2e:allow 결제창 과세 구분(#820) — PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않는다. Vitest 가 PC tax·taxfree / 모바일 P_TAX·P_TAXFREE 금액을 잠그고, 「부가세 업체정함」 계약 MID 가 없어 KG 매출 구분은 실측 불가.
+// e2e:allow 결제창 과세 구분(#820) — PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않는다. Vitest 가 PC tax·taxfree / 모바일 P_TAX·P_TAXFREE 금액을 잠그고, 「부가세 업체정함」 계약 MID 가 없어 KG 매출 구분은 실측 불가. / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다. / #855 후속: 결제창 열기 전 오류의 화면 문구를 번역된 일반 문구로(내부 영어 문구는 콘솔) — Chrome MCP 실측(신청서 ko/ja, 주문서 오류 창)과 Vitest 로 고정한다.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { toApiClientPath } from '../apiPath';
@@ -231,6 +231,40 @@ function t(key: string, fallback: string): string {
 }
 
 /**
+ * 사용자에게 그대로 보여도 되는(이미 번역된) 결제 진입 오류입니다.
+ *
+ * 핸들러 안의 나머지 오류(설정 누락·통화 불일치 같은 내부 영어 문구, 네트워크 오류)는 콘솔에만 남기고 화면에는
+ * 번역된 일반 문구를 보인다 — 내부 문구가 주문서 오류 모달과 신청서 추가결제 안내에 그대로 노출됐다(#855).
+ */
+export class InicisUserFacingError extends Error {}
+
+/**
+ * 결제 진입 실패를 화면에 보일 문구로 바꿉니다.
+ *
+ * 이미 번역된 오류(`InicisUserFacingError`)는 그 문구, 서버가 준 응답 문구(`response.data.message`·`error`)는 그 문구,
+ * 나머지는 번역된 일반 문구다.
+ *
+ * @param error 잡은 오류
+ * @returns 화면에 보일 문구
+ */
+export function resolvePaymentErrorMessage(error: unknown): string {
+    if (error instanceof InicisUserFacingError && error.message !== '') {
+        return error.message;
+    }
+
+    const data = (error as { response?: { data?: { message?: unknown; error?: unknown } } })?.response?.data;
+    const serverMessage = typeof data?.message === 'string' && data.message !== ''
+        ? data.message
+        : (typeof data?.error === 'string' && data.error !== '' ? data.error : null);
+
+    if (serverMessage !== null) {
+        return serverMessage;
+    }
+
+    return t('payment.error.request_failed', '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+}
+
+/**
  * SDK URL 이 신뢰 호스트인지 확인하고, 아니면 예외를 던집니다.
  *
  * @param url 주입할 SDK URL
@@ -250,7 +284,7 @@ export function assertTrustedSdkUrl(url: string): void {
         || parsed.protocol !== 'https:'
         || !KNOWN_SDK_HOSTS.includes(parsed.hostname.toLowerCase())
     ) {
-        throw new Error(
+        throw new InicisUserFacingError(
             t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
         );
     }
@@ -272,7 +306,7 @@ export function requireSiteAbsoluteUrl(url: unknown): string {
         return url;
     }
 
-    throw new Error(
+    throw new InicisUserFacingError(
         t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
     );
 }
@@ -296,7 +330,7 @@ export function assertTrustedPgFormAction(url: unknown): void {
     }
 
     if (parsed === null || parsed.protocol !== 'https:' || !/(^|\.)inicis\.com$/i.test(parsed.hostname)) {
-        throw new Error(
+        throw new InicisUserFacingError(
             t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
         );
     }
@@ -905,7 +939,17 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
     } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        // 내부 영어 문구는 콘솔에만 남기고 화면에는 번역된 문구를 보인다(#855).
+        console.error('[sirsoft-pay_kginicis] requestPayment error', error);
+        const errorMessage = resolvePaymentErrorMessage(error);
+
+        // 클레임 추가결제(교환·반품·환불 신청서의 결제)는 신청서 화면에서 열린다 — 그 화면에는 주문서 전용 오류 모달이
+        // 없어 모달을 열면 안내 없이 「결제 진행 중…」에 멈췄다. 문구를 담아 던지면 이커머스 신청서 핸들러가 dispatch
+        // 결과로 받아 진행 표시를 내리고 문구를 보여 준다. 상태 코드 없는 오류라 템플릿의 상태 코드별 오류 처리는 타지 않는다.
+        if (pgPaymentData.claim_cancel_return_url) {
+            throw new Error(errorMessage);
+        }
+
         G7Core?.state?.setLocal?.({ paymentErrorMessage: errorMessage, isSubmittingOrder: false, paymentMethod });
         G7Core?.modal?.open?.('kginicis_payment_error_modal');
     }

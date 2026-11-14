@@ -1,4 +1,4 @@
-// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 면세 금액 상한(#820)은 Vitest 단언으로 잠근다 — 마일리지를 과세분보다 많이 쓴 면세 혼합 결제는 실계약 상점에서만 재현된다.
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 면세 금액 상한(#820)은 Vitest 단언으로 잠근다 — 마일리지를 과세분보다 많이 쓴 면세 혼합 결제는 실계약 상점에서만 재현된다. / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * 토스페이먼츠 결제창 호출 핸들러
  *
@@ -317,6 +317,44 @@ function attachEscrowProducts(payload: any, config: ClientConfig, pgPaymentData:
     }
 }
 
+/**
+ * 클레임 추가결제(교환·반품·환불 신청서의 결제)인지 판별합니다 — 서버는 그때만 신청서 복귀 주소를 싣는다.
+ *
+ * @param pgPaymentData 결제 데이터
+ * @returns 클레임 추가결제면 true
+ */
+function isClaimPayment(pgPaymentData: PgPaymentData): boolean {
+    const url = pgPaymentData.claim_cancel_return_url;
+
+    return typeof url === 'string' && url !== '';
+}
+
+/**
+ * 결제창을 열기 전의 실패를 알립니다.
+ *
+ * 주문 결제는 주문서의 결제 오류 모달(`tosspayments_payment_error_modal`)에 문구를 띄운다(문구가 없으면 종전처럼 콘솔에만 남긴다).
+ * 클레임 추가결제는 신청서 화면에서 열려 그 모달이 없다 — 모달을 열면 안내 없이 「결제 진행 중…」에 멈췄다. 그래서 문구를 담아
+ * 던지고(문구가 없으면 빈 문구 — 신청서가 「결제를 시작하지 못했습니다.」로 대신한다), 이커머스 신청서 핸들러가 `G7Core.dispatch`
+ * 결과로 받아 진행 표시를 내리고 문구를 보여 준다. 상태 코드 없는 오류라 템플릿의 상태 코드별 오류 처리는 타지 않는다.
+ *
+ * @param G7Core 코어 전역
+ * @param pgPaymentData 결제 데이터
+ * @param message 사용자에게 보일 문구 (null 이면 주문 결제에서는 모달을 열지 않는다)
+ * @throws Error 클레임 추가결제면 문구를 담아 던진다
+ */
+function reportPaymentError(G7Core: any, pgPaymentData: PgPaymentData, message: string | null): void {
+    if (isClaimPayment(pgPaymentData)) {
+        throw new Error(message ?? '');
+    }
+
+    if (message === null) {
+        return;
+    }
+
+    G7Core?.state?.setLocal?.({ paymentErrorMessage: message, isSubmittingOrder: false });
+    G7Core?.modal?.open?.('tosspayments_payment_error_modal');
+}
+
 export async function requestPaymentHandler(action: any, _context?: any): Promise<void> {
     const params = (action.params || {}) as RequestPaymentParams;
     const { pgPaymentData } = params;
@@ -336,6 +374,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
         if (!configJson.data) {
             console.error('[sirsoft-tosspayments] Failed to fetch client config', configJson);
+            reportPaymentError(G7Core, pgPaymentData, null);
             return;
         }
 
@@ -353,6 +392,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
         if (!window.TossPayments) {
             console.error('[sirsoft-tosspayments] TossPayments SDK not available');
+            reportPaymentError(G7Core, pgPaymentData, null);
             return;
         }
 
@@ -370,11 +410,11 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         const domesticOnly = method !== 'CARD' || easyPay !== null;
         if (currency !== 'KRW' && domesticOnly) {
             console.warn('[sirsoft-tosspayments] non-KRW currency supports card only', { currency, method });
-            G7Core?.state?.setLocal?.({
-                paymentErrorMessage: G7Core?.t?.('sirsoft-tosspayments.errors.non_krw_method') ?? 'This payment method is available for KRW only.',
-                isSubmittingOrder: false,
-            });
-            G7Core?.modal?.open?.('tosspayments_payment_error_modal');
+            reportPaymentError(
+                G7Core,
+                pgPaymentData,
+                G7Core?.t?.('sirsoft-tosspayments.errors.non_krw_method') ?? 'This payment method is available for KRW only.',
+            );
             return;
         }
 
@@ -505,10 +545,8 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             return;
         }
 
-        // 기타 에러 시 모달로 오류 표시 (체크아웃 페이지 유지)
-        const errorMessage = error?.message ?? 'Unknown error';
-        G7Core?.state?.setLocal?.({ paymentErrorMessage: errorMessage, isSubmittingOrder: false });
-        G7Core?.modal?.open?.('tosspayments_payment_error_modal');
+        // 기타 에러 시 모달로 오류 표시 (체크아웃 페이지 유지). 클레임 추가결제는 신청서 핸들러로 넘긴다.
+        reportPaymentError(G7Core, pgPaymentData, error?.message ?? 'Unknown error');
     }
 }
 

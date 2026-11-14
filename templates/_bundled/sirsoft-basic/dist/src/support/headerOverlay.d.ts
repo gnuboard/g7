@@ -17,6 +17,14 @@ export declare const OVERLAY_ACTIVE_ATTRIBUTE = "data-header-overlay-active";
 /** 보이는 헤더 높이 CSS 변수 */
 export declare const HEADER_HEIGHT_VARIABLE = "--g7-header-height";
 /**
+ * 고정 헤더 높이 CSS 변수 — 겹침 신호와 무관하게 언제나 갱신한다.
+ *
+ * 데스크톱 헤더와 모바일 툴바는 화면 위에 붙어 있다(`sticky top-0`). 키보드로 초점을 옮기거나 앵커로 이동할 때 브라우저는 대상을
+ * 화면 맨 위에 맞추는데, 그 자리가 헤더 밑이라 초점이 가려졌다(WCAG 2.4.11 — 휴대폰 비회원 주문서에서 Shift+Tab 으로 「주문자 정보와
+ * 동일」에 초점을 옮기면 56px 툴바 밑 top 16 에 놓였다). main.css 가 이 값만큼 `scroll-padding-top` 을 둔다(#855).
+ */
+export declare const STICKY_HEADER_HEIGHT_VARIABLE = "--g7-sticky-header-height";
+/**
  * 배너의 메뉴 겹침 신호를 따라 헤더 높이·투명 상태를 문서 뿌리에 반영합니다. 신호가 없으면 아무것도 바꾸지 않는다(종전 화면).
  */
 export declare function useHeaderOverlayController(): void;

@@ -75,7 +75,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 상태인지 먼저 확인해 재처리를 조기 차단합니다.
 
 **모바일 결제 승인**: `/mobile/approval-key` API 호출(주문 소유자 확인 — 회원은 본인 로그인, 비회원 주문은
-`X-Guest-Order-Token`. 라우트는 `optional.sanctum`) → KCP SOAP `approve` 로 승인키·`pay_url`
+`X-Guest-Order-Token`. 라우트는 `optional.sanctum`. 클레임 추가결제(`CP` 결제번호)도 결제 건이 딸린 주문으로 같은 판정 —
+`VerifiesOrderOwnership::orderOwnershipRejection` 한 곳) → KCP SOAP `approve` 로 승인키·`pay_url`
 획득 → 브라우저가 `pay_url` 로 폼 POST → KCP가 `/payment/callback` 으로 결과 POST(PC와 동일
 콜백 엔드포인트 공유) → 이후는 PC 흐름과 합류.
 

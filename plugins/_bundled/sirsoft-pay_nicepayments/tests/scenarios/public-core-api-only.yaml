@@ -36,6 +36,7 @@ effects:
   - easy_pay_rendered_by_payment_method_catalog_only # 주입 대상 없던 주문서 간편결제 조각을 다시 두지 않음
   - no_locale_dependent_dom_lookup                  # 결제수단 선택이 화면 문구로 DOM 을 찾지 않음
   - payment_entry_guarded                           # 입력·설정·서명 실패 시 결제 폼을 제출하지 않음
+  - claim_payment_entry_failure_is_handed_to_the_claim_screen  # 클레임 추가결제의 결제창 열기 전 실패는 문구를 담아 던진다(신청서가 안내, #855)
   - payment_method_from_action_argument_only        # 결제수단은 액션 인자로만 — 화면 상태·card 기본값 추측 없음
   - mobile_pay_method_mapped                        # 결제수단 → PayMethod·간편결제 지시 필드 매핑
   - sign_data_via_core_api                          # SignData 는 G7Core.api 로, 비회원은 조회 토큰 헤더

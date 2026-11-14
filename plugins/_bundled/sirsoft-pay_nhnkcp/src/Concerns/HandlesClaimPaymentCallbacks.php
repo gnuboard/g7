@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 
@@ -27,9 +28,12 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
  * 호스트 요건: 생성자에서 `ClaimPaymentRepositoryInterface` 를 `$claimPaymentRepository` 로 주입받는다
  * (서비스 로케이터 `app()` 로 Repository 를 꺼내지 않는다). 승인 직렬화 헬퍼
  * `approveClaimPaymentSerialized()` 를 부르는 호스트는 `SerializesPaymentCallbacks` 도 함께 쓴다.
+ * 승인키 검증의 소유자 판정은 `VerifiesOrderOwnership` 을 이 트레이트가 함께 들여 쓴다(주문 경로와 한 판정).
  */
 trait HandlesClaimPaymentCallbacks
 {
+    use VerifiesOrderOwnership;
+
     /**
      * 클레임 결제 건을 결제번호로 되찾습니다.
      *
@@ -125,18 +129,25 @@ trait HandlesClaimPaymentCallbacks
      * 모바일 승인키 발급 요청의 클레임 결제 맥락을 검증합니다. (주문 검증 경로의 CP 대응)
      *
      * 주문 경로와 같은 강도 — 대상 존재 / 결제 가능 상태 / 소유자 대조 / KRW / 금액 일치 —
-     * 를 클레임 결제 건에 적용한다. 소유자 대조는 결제 건이 딸린 주문의 회원이 로그인한 본인일 때만
-     * 통과시킨다 — 이 라우트는 로그인이 필요하므로 비회원은 여기까지 오지 못하고, 주문이 사라졌거나
-     * 열람자를 알 수 없으면 차단한다(아래 본문 주석).
+     * 를 클레임 결제 건에 적용한다. 소유자 대조는 결제 건이 딸린 주문을 기준으로 주문 경로와 같은 판정
+     * ({@see VerifiesOrderOwnership::orderOwnershipRejection()})을 쓴다 — 회원 주문은 로그인한 본인,
+     * 비회원 주문은 그 주문의 조회 토큰(`X-Guest-Order-Token`)이어야 통과한다(#855). 주문이 사라졌으면
+     * 열람자와 무관하게 차단한다(아래 본문 주석).
      *
      * @param  Request  $request  승인키 요청
      * @param  string  $paymentNumber  클레임 결제번호 (CP 채번)
      * @param  int  $amount  클라이언트가 보낸 결제 금액
      * @param  string|null  $currency  클라이언트가 보낸 통화 (nullable)
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
      * @return JsonResponse|null 거절 응답 (통과 시 null)
      */
-    protected function validateClaimApprovalKeyContext(Request $request, string $paymentNumber, int $amount, ?string $currency): ?JsonResponse
-    {
+    protected function validateClaimApprovalKeyContext(
+        Request $request,
+        string $paymentNumber,
+        int $amount,
+        ?string $currency,
+        GuestOrderAuthService $guestOrderAuthService,
+    ): ?JsonResponse {
         $payment = $this->findClaimPayment($paymentNumber);
 
         if (! $payment) {
@@ -155,19 +166,27 @@ trait HandlesClaimPaymentCallbacks
 
         $payment->loadMissing('order');
 
-        // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — `?->user_id ?? 0` 은
-        // 주문이 사라진 결제 건에서 열람자 판정을 0 == 0 으로 접어 통과시킨다. 지금은 라우트가
-        // `auth:sanctum` 이라 오른쪽이 0 이 될 수 없어 실질은 닫혀 있지만, 그 방어가 이 함수
-        // 밖의 조건에 얹혀 있는 형태다. 형제 플러그인(kginicis·nicepayments)과 같은 형태로
-        // 이 자리에서 닫는다. 모바일 승인키 라우트가 optional.sanctum 으로 바뀐 뒤(#883 — 비회원 주문 결제)
-        // 비로그인 요청은 여기의 `$viewerId === 0` 이 막는다.
-        $viewerId = (int) ($request->user()?->id ?? 0);
-
-        if (! $payment->order || $viewerId === 0 || (int) $payment->order->user_id !== $viewerId) {
+        // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — `?->user_id ?? 0` 처럼 접으면
+        // 주문이 사라진 결제 건에서 열람자 판정이 0 == 0 으로 통과한다. 라우트가 optional.sanctum 이라
+        // (#883) 비로그인 요청도 여기까지 오므로, 그 방어를 이 함수 밖의 조건에 기대지 않고 이 자리에서 닫는다.
+        if (! $payment->order) {
             return response()->json([
                 'success' => false,
                 'error' => 'You cannot request a NHN KCP approval key for this claim payment.',
             ], 403);
+        }
+
+        // 소유자 판정은 주문 경로와 한 규칙이다(#855) — 회원 주문은 로그인 본인만(아니면 403), 비회원 주문은
+        // 그 주문의 조회 토큰만(없거나 다른 주문 것이면 401). 결제번호만 아는 제3자는 어느 쪽으로도 통과하지 못한다.
+        $ownershipError = $this->orderOwnershipRejection(
+            $request,
+            $payment->order,
+            $guestOrderAuthService,
+            'You cannot request a NHN KCP approval key for this claim payment.',
+        );
+
+        if ($ownershipError !== null) {
+            return $ownershipError;
         }
 
         $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);

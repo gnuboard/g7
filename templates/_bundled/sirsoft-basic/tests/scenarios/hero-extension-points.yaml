@@ -25,6 +25,7 @@ effects:
   - header_overlays_banner
   - scroll_restores_header
   - header_unchanged_without_signal
+  - sticky_header_height_drives_scroll_padding  # 고정 헤더 높이를 늘 알리고 main.css 가 그만큼 scroll-padding-top — 키보드 초점이 헤더 밑에 가리지 않음(WCAG 2.4.11, #855)
   - hero_slot_placed_outside_content_box   # 각 레이아웃이 본문 상자 밖(page_top)에 자기 히어로 확장점을 하나 두고 본문 상자 클래스를 넘긴다
 
 test_files:

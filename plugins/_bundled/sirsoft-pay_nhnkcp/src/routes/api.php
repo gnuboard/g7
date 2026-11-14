@@ -39,7 +39,8 @@ Route::get('/user/orders/{orderNumber}/receipt', [UserReceiptController::class, 
     ->name('user.orders.receipt');
 
 // 모바일 결제 승인키 획득 (KCP SmartPhone Pay SOAP) — 주문 소유자(회원 Sanctum / 비회원 X-Guest-Order-Token) 확인 후 발급.
-// 종전 auth:sanctum 은 비회원 주문의 모바일 결제를 막았다(#883). 클레임 추가결제는 컨트롤러가 회원 본인만 통과시킨다.
+// 종전 auth:sanctum 은 비회원 주문의 모바일 결제를 막았다(#883). 클레임 추가결제(교환/반품 추가결제)도 결제 건이 딸린
+// 주문 기준으로 같은 판정을 쓴다 — 비회원 주문은 그 주문의 조회 토큰이어야 한다(#855).
 Route::post('/mobile/approval-key', [MobileApprovalController::class, 'getApprovalKey'])
     ->middleware('optional.sanctum')
     ->name('mobile.approval-key');
