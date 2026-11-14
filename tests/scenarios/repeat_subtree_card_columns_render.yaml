@@ -1,0 +1,21 @@
+feature: 반복 서브트리 진입 키(cardColumns 등)의 skipBindingKeys 선언이 실제 화면에서 항목 값 렌더로 이어진다 (engine-v1.56.1)
+
+description: |
+  `cardColumns[].cellChildren`·`footerCells[].children`·`footerCardChildren` 은 반복 렌더 경로
+  (`renderItemChildren`)가 항목 컨텍스트와 함께 해석하는 자리라, 컴포넌트 선언의 `skipBindingKeys` 에 들어
+  있어야 props 선평가를 건너뛴다. 선언이 빠지거나 이름이 틀리면 항목 변수가 없는 시점에 식이 먼저 평가돼
+  셀이 비거나 `{{...}}` 원문이 화면에 남는다(예외 없음). 정적 검사 `component-skipbinding-keys-complete` 는
+  선언과 구현의 일치만 보므로 실제 화면에서 값이 채워지는지는 이 spec 만 잡는다.
+
+  축 screen 은 cardColumns 를 실제로 쓰면서 번들 확장 때문에 목록이 늘 비지 않는 관리자 화면 둘이다.
+  spec 은 반복문 안의 test 하나가 두 화면을 모두 돈다.
+
+axes:
+  screen: [modules_card_view, plugins_card_view]
+
+effects:
+  - item_values_rendered_no_raw_binding   # 목록이 그려진 뒤 본문에 `{{` 원문이 남지 않는다
+  - translation_exempt_marker_not_leaked  # 번역 면제 마커(U+FDD0·U+FDD1)가 화면 텍스트로 새지 않는다 (engine-v1.56.3)
+
+test_files:
+  - tests/Playwright/specs/repeat-subtree-skip-binding-keys.spec.ts

@@ -11,12 +11,10 @@
  * 게시판을 무변경 저장하는 것조차 422 로 막힌다.
  *
  * @scenario board-allowed-extensions-required
- * @axes surface=settings_attachment surface=board_form use_file_upload=true use_file_upload=false value=empty value=nonempty
- * @effects empty_extensions_blocked_on_settings_save_when_upload_enabled,
- *          empty_extensions_allowed_on_settings_save_when_upload_disabled,
- *          empty_extensions_blocked_on_board_form_when_upload_enabled,
- *          empty_extensions_allowed_on_board_form_when_upload_disabled,
- *          allowed_extensions_guide_text_updated_to_min_one
+ * 커버 축(마커 아님 — 평문): surface settings_attachment·board_form / use_file_upload true·false
+ *   (저장 시험 넷은 모두 허용 확장자를 비운 채 저장한다)
+ * 효과 요약(마커 아님 — 평문): 첨부 사용 시 빈 확장자 저장 차단, 첨부 미사용 시 빈 확장자 저장 허용
+ *   (환경설정과 게시판 폼 각각), 최소 1개 안내 문구 노출 — 효과 이름은 시험마다 마킹
  *
  * 활성화 절차: PlaywrightIssueToken 발급이 가능한 환경에서 test.describe.skip → test.describe.
  */
@@ -41,7 +39,7 @@ async function clearAllowedExtensionChips(page: import('@playwright/test').Page)
 }
 
 test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#413, #78)', () => {
-  // @scenario surface=settings_attachment, use_file_upload=true, value=empty
+  // @scenario surface=settings_attachment, use_file_upload=true
   // @effects empty_extensions_blocked_on_settings_save_when_upload_enabled
   test('환경설정에서 첨부 사용 ON + 허용 확장자를 비우고 저장하면 오류가 노출된다', async ({
     page,
@@ -66,7 +64,7 @@ test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#413, #78)
     await expect(page.getByText(EXTENSION_REQUIRED_TEXT)).toBeVisible({ timeout: 10_000 });
   });
 
-  // @scenario surface=settings_attachment, use_file_upload=false, value=empty
+  // @scenario surface=settings_attachment, use_file_upload=false
   // @effects empty_extensions_allowed_on_settings_save_when_upload_disabled
   test('환경설정에서 첨부 미사용이면 허용 확장자를 비워도 저장된다 (#78)', async ({
     page,
@@ -91,7 +89,7 @@ test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#413, #78)
     await expect(page.getByText(EXTENSION_REQUIRED_TEXT)).toHaveCount(0, { timeout: 10_000 });
   });
 
-  // @scenario surface=board_form, use_file_upload=true, value=empty
+  // @scenario surface=board_form, use_file_upload=true
   // @effects empty_extensions_blocked_on_board_form_when_upload_enabled
   test('게시판 폼에서 파일 업로드 ON + 허용 확장자 빈 채 저장하면 오류가 노출된다', async ({
     page,
@@ -112,7 +110,7 @@ test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#413, #78)
     await expect(page.getByText(EXTENSION_REQUIRED_TEXT)).toBeVisible({ timeout: 10_000 });
   });
 
-  // @scenario surface=board_form, use_file_upload=false, value=empty
+  // @scenario surface=board_form, use_file_upload=false
   // @effects empty_extensions_allowed_on_board_form_when_upload_disabled
   test('게시판 폼에서 파일 업로드 OFF 이면 허용 확장자 빈 값으로도 저장된다', async ({
     page,
@@ -133,7 +131,7 @@ test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#413, #78)
     await expect(page.getByText(EXTENSION_REQUIRED_TEXT)).toHaveCount(0, { timeout: 10_000 });
   });
 
-  // @scenario surface=board_form, value=nonempty
+  // @scenario surface=board_form, use_file_upload=true
   // @effects allowed_extensions_guide_text_updated_to_min_one
   test('허용 확장자 안내 문구가 "최소 1개 입력" 으로 노출된다', async ({
     page,

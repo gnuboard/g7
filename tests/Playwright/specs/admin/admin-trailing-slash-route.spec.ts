@@ -10,7 +10,8 @@
  * 단위 테스트(Router.test.ts)가 매칭 로직을 잠그지만, 실제 브라우저에서
  * 재현한 증상이므로(단위 green + 브라우저 깨짐 방지) 브라우저 레벨로도 잠근다.
  *
- * 축 요약(마커 아님 — 평문): admin_trailing_slash_unauthenticated, admin_no_trailing_slash_unauthenticated.
+ * @scenario admin-trailing-slash-route
+ * 커버 축(마커 아님 — 평문): trailing_slash present·absent (케이스 admin_trailing_slash_unauthenticated, admin_no_trailing_slash_unauthenticated).
  * 효과 요약(마커 아님 — 평문): redirect_to_login_not_404.
  */
 import { test, expect } from '../../fixtures/auth';
@@ -19,7 +20,8 @@ import { test, expect } from '../../fixtures/auth';
 const NOT_FOUND_TEXT = '페이지를 찾을 수 없습니다';
 
 test.describe('관리자 경로 끝 슬래시 정규화', () => {
-  // @scenario admin_trailing_slash_unauthenticated
+  // 케이스(마커 아님 — 평문): admin_trailing_slash_unauthenticated
+  // @scenario trailing_slash=present
   // @effects redirect_to_login_not_404
   test('미인증 상태로 /admin/ (끝 슬래시) 접근 시 404 가 아니라 로그인으로 이동한다', async ({ page }) => {
     // authenticatePage 미호출 — 로그인 풀린 상태 모사(localStorage 에 auth_token 없음).
@@ -32,7 +34,8 @@ test.describe('관리자 경로 끝 슬래시 정규화', () => {
     await expect(page.getByText(NOT_FOUND_TEXT)).toHaveCount(0);
   });
 
-  // @scenario admin_no_trailing_slash_unauthenticated
+  // 케이스(마커 아님 — 평문): admin_no_trailing_slash_unauthenticated
+  // @scenario trailing_slash=absent
   // @effects redirect_to_login_not_404
   test('미인증 상태로 /admin (끝 슬래시 없음) 접근도 동일하게 로그인으로 이동한다', async ({ page }) => {
     await page.goto('/admin');

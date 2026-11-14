@@ -1,8 +1,9 @@
 /**
  * E2E: 관리자 「GDPR 동의 이력」 화면 — 출처 필터 「회원탈퇴」 체크박스 (#601 문서화 세션 중 발견)
  *
- * @scenario admin_gdpr_consent_log_source_filter_withdraw
- * @effects withdraw_checkbox_visible, withdraw_filter_updates_query_and_refetches
+ * @scenario consent-source-vocabulary
+ * 케이스(마커 아님 — 평문): admin_gdpr_consent_log_source_filter_withdraw
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): withdraw_checkbox_visible, withdraw_filter_updates_query_and_refetches
  *
  * 배경: `ConsentSource` enum 에 `withdraw`(회원탈퇴 시 일괄 철회) case 가 없어, 그 출처로
  * 기록된 동의 이력 행이 출처 필터 어디로도 걸러지지 않던 결함을 발견해 enum·기록 지점(Service·

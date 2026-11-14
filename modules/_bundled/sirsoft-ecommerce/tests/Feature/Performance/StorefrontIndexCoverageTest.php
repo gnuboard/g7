@@ -20,7 +20,8 @@ use PHPUnit\Framework\Attributes\Test;
  *
  * MySQL 계열이 아니면 EXPLAIN 출력 형식이 달라 판정할 수 없으므로 건너뛴다.
  *
- * @scenario storefront-index-coverage
+ * @scenario storefront-query-performance, bounded-total-pagination
+ * 케이스(마커 아님 — 평문): storefront-index-coverage
  */
 class StorefrontIndexCoverageTest extends ModuleTestCase
 {

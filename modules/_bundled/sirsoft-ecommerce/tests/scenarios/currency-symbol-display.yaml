@@ -1,0 +1,46 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 screen=order_history 조합을 재는 시험은 currency-symbol-display.spec.ts 뿐인데 그 spec 이 test.describe.skip(skeleton, 활성화 조건은 spec 머리말)이라 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않는다(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」). 나머지 세 화면은 additional-option-currency-conversion.spec.ts 의 실행 시험이 잰다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). skip 을 풀면 이 표식을 걷는다.
+
+feature: 유저 화면 통화 표기 — 통화 기호 구분과 추가옵션 추가금의 표시통화 환산 (E2E)
+
+description: |
+  유저 화면(템플릿 sirsoft-basic)에서 금액 옆 통화 표기가 어긋나지 않는지 브라우저로 잰다.
+
+  ① 통화 기호 — 장바구니에서 JPY 는 ¥, CNY 는 元 로 갈리고 5통화가 모두 보인다. 추가옵션 추가금은 원화 고정이
+     아니라 설정된 기본 통화 기호를 따르고, 주문 내역 금액은 주문 시점 통화로 고정된다.
+     (currency-symbol-display.spec.ts — testid 보강과 시드 전까지 test.describe.skip placeholder. 추가금과 주문 내역
+     두 테스트는 현재 노출만 단언한다. 기호 SSoT 는 currency-symbol-and-unit.yaml 의 백엔드 테스트가 잰다.)
+
+  ② 추가옵션 추가금 표시통화 환산 — 추가금은 기본 통화 기준으로 저장되는데 서버가 통화별로 환산해 주지 않고
+     화면 합계는 그 값을 KRW 로 간주해, 기본통화와 표시통화가 다른 쇼핑몰에서 통화가 섞인 합계가 나왔다.
+     한 화면 안에서 추가금 표기의 통화와 상품가·총액 표기의 통화가 같다는 불변조건을 상품상세, 장바구니,
+     주문서, 통화 전환에서 대조한다. (additional-option-currency-conversion.spec.ts — 헤더 셀렉터로 기본통화가
+     아닌 통화로 전환한 뒤 검증한다. 합계 계산 핸들러 단위 회귀는 템플릿 product-options-additional-currency.yaml 몫.)
+
+axes:
+  screen:
+    - cart            # 장바구니 (기호 구분, 추가옵션 줄)
+    - product_detail  # 상품상세 (추가금 기호, 추가옵션 라벨과 금액, 통화 전환)
+    - checkout        # 주문서 (추가옵션 줄)
+    - order_history   # 마이페이지 주문 내역 (스냅샷 통화)
+
+effects:
+  # ② 추가옵션 추가금 표시통화 환산
+  - detail_additional_option_label_uses_display_currency     # 상품상세 추가옵션 선택지 라벨의 추가금이 총액과 같은 통화다
+  - detail_total_converts_additional_option_amount           # 상품상세 "추가옵션 금액" 합계가 총액과 같은 통화다
+  - cart_line_additional_option_uses_display_currency        # 장바구니 추가옵션 줄이 상세에서 본 표시통화로 표기된다
+  - checkout_line_additional_option_uses_display_currency    # 주문서 추가옵션 줄이 표시통화로 표기된다
+  - additional_option_currency_follows_display_switch        # 표시통화를 바꾸면 추가금 표기가 따라가고 총액과 같은 통화로 남는다
+
+# 아래 효과는 아직 실행되는 시험이 재지 않는다 — 이 효과를 재는 spec(currency-symbol-display.spec.ts)이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
+# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+pending_effects:
+  # ① 통화 기호
+  - cart_jpy_uses_yen_symbol                                 # 장바구니 JPY 가격은 ¥ 로 표기된다
+  - cart_cny_uses_yuan_glyph_not_yen                         # 장바구니 CNY 가격은 元 로 표기되고 ¥ 를 쓰지 않는다
+  - cart_five_currencies_all_visible                         # 장바구니에 KRW/USD/JPY/CNY/EUR 가 모두 보인다
+  - additional_option_adjustment_uses_configured_symbol      # 상품상세 추가옵션 추가금이 설정된 기본 통화 기호로 표기된다
+  - order_history_amount_uses_snapshot_currency_not_current_default # 주문 내역 금액은 주문 시점 통화로 고정 표기된다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/currency-symbol-display.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/additional-option-currency-conversion.spec.ts

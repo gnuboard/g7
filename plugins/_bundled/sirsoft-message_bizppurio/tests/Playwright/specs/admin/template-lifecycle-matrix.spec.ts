@@ -1,13 +1,14 @@
 /**
  * E2E 정밀 점검 매트릭스: 비즈뿌리오 알림 템플릿 라이프사이클 (#597 §6.3)
  *
- * @scenario bizppurio_tab_integration_e2e, bizppurio_edit_modal_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
- * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active,
+ * @scenario bizppurio-template-lifecycle
+ * 케이스(마커 아님 — 평문): bizppurio_tab_integration_e2e, bizppurio_edit_modal_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active,
  *          row_footer_shows_status_summary_only, approval_badge_two_tier, edit_modal_hosts_alimtalk_and_sms_sections,
  *          core_modal_hides_editor_for_hidden_template_editor_channel, unified_save_chain_alimtalk_then_core_recipients,
  *          compose_modal_switches_conditional_fields_by_type,
  *          manage_screen_lists_db_rows_with_merge_query_round_trip, sms_modal_edits_body_per_locale_tab,
- *          upload_in_progress_locks_save_buttons_not_cancel, manage_row_actions_match_row_footer_visibility,
+ *          upload_in_progress_locks_save_buttons_not_cancel,
  *          sms_body_presence_and_preview_resolved_by_server, inspection_request_carries_reviewer_comment
  *
  * 계획서 §6.3 이 요구한 7대 축(T1~T7) + 선택 축(T8~T10) + 회귀 축(R1~R6)을 브라우저에서 실측한다.
@@ -30,6 +31,11 @@ const SETTINGS_URL = '/admin/settings?tab=notification_definitions&channel=alimt
 const MANAGE_URL = '/admin/plugins/sirsoft-message_bizppurio/settings?tab=templates';
 const BOARD_URL = '/admin/boards/settings?tab=notification_definitions&channel=alimtalk';
 const ECOMMERCE_URL = '/admin/ecommerce/settings?tab=notification_definitions&channel=alimtalk';
+
+// 관리자 SPA 한 번 진입(문서 → 번들 → 레이아웃 → 데이터소스)은 개발 서버에서 11~14초가 걸린다
+// (실측: 요청당 약 1초, 탭 보장 진입 16.8초). 대부분의 시험이 설정 화면에 두 번 이상 들어가므로
+// (탭 보장 + 시드 뒤 편집 모달 재조회) 기본 30초 예산으로는 구조적으로 완주하지 못한다.
+test.describe.configure({ timeout: 120_000 });
 
 /** 측정값을 표준출력에 남긴다(보고서 표의 증거 열이 된다). */
 function evidence(row: string, value: unknown): void {
@@ -60,23 +66,115 @@ function collectConsoleErrors(page: Page): string[] {
     return errors;
 }
 
+/** 코어 알림 설정에 저장되는 채널 한 줄(`notifications.channels[]`). */
+type SavedChannel = { id: string; is_active?: boolean; sort_order?: number };
+
+/** 비즈뿌리오 통합 탭을 띄우는 채널(availableChannels 의 tab_channels). */
+const BIZPPURIO_TAB_CHANNELS = ['alimtalk', 'sms'];
+
+/**
+ * 테스트가 전제 조건으로 바꾼 채널 설정의 원래 값. 테스트가 끝나면 afterEach 가 이 값으로 되돌린다
+ * (공유 개발 DB 의 채널 사용 여부를 영구히 바꾸지 않는다). 바꾸지 않은 테스트는 null 이다.
+ */
+let channelsBeforeTest: SavedChannel[] | null = null;
+
+/**
+ * 서버에 저장된 채널 설정과, 그 값으로 화면의 채널 토글이 그려야 할 체크 상태 배열을 읽는다.
+ *
+ * 채널 토글은 채널 목록(availableChannels) 순서로 그려지고 체크 상태는 설정 폼(settings 응답)에서 온다.
+ * 설정 응답이 반영되기 전에는 모든 토글이 꺼짐으로, 비즈뿌리오 탭은 없음으로 그려진다 — 그 구간에
+ * 탭 노출을 판정하면 켜져 있는 채널을 꺼 버린다(실측: 저장값 alimtalk=true 인데 탭바 innerText 가
+ * "메일\n사이트내 알림" 이었고, 그 판정으로 토글을 눌러 채널이 꺼졌다).
+ */
+async function readSavedChannels(page: Page): Promise<{ channels: SavedChannel[]; expectedSwitches: string[] }> {
+    return page.evaluate(async () => {
+        const headers = { Accept: 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` };
+        const [settings, available] = await Promise.all([
+            fetch('/api/admin/settings', { headers }).then((r) => r.json()),
+            fetch('/api/admin/notification-channels', { headers }).then((r) => r.json()),
+        ]);
+        const channels: Array<{ id: string; is_active?: boolean; sort_order?: number }> = settings?.data?.notifications?.channels ?? [];
+        const expectedSwitches = (available?.data?.channels ?? []).map((ch: { id: string }) =>
+            String(channels.find((c) => c.id === ch.id)?.is_active ?? false));
+
+        return { channels, expectedSwitches };
+    });
+}
+
+/**
+ * 설정 화면의 채널 폼이 저장값으로 그려질 때까지 기다린다(networkidle 대신 쓰는 구체 신호).
+ *
+ * @returns 서버에 저장된 채널 설정
+ */
+async function waitForChannelForm(page: Page): Promise<SavedChannel[]> {
+    await expect(page.locator('#channel_sub_tabs')).toBeVisible({ timeout: 30_000 });
+    const { channels, expectedSwitches } = await readSavedChannels(page);
+    await expect.poll(
+        () => page.locator('#channel_toggles [role="switch"]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-checked') ?? '')),
+        { message: '채널 토글이 저장된 채널 설정으로 그려져야 한다', timeout: 30_000 },
+    ).toEqual(expectedSwitches);
+
+    return channels;
+}
+
+/**
+ * 설정 화면 하단 [저장]을 누르고 저장 응답까지 기다린다.
+ *
+ * 저장은 CSRF 쿠키 요청 뒤에 POST 가 나간다 — 클릭 직후 networkidle 로 기다리면 POST 가 출발하기 전에
+ * 풀리고, 뒤이은 goto 가 그 POST 를 끊는다(실측: POST /api/admin/settings 응답 -1).
+ */
+async function saveChannelSettings(page: Page): Promise<void> {
+    const [resp] = await Promise.all([
+        page.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/admin/settings', { timeout: 30_000 }),
+        page.locator('#save_button').click(),
+    ]);
+    expect(resp.status(), '채널 설정 저장 응답').toBeLessThan(400);
+}
+
+/** 채널 설정을 지정한 값으로 되돌린다(화면 [저장]과 같은 요청 본문). */
+async function restoreChannels(page: Page, channels: SavedChannel[]): Promise<number> {
+    return page.evaluate(async (list) => {
+        const r = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}`,
+            },
+            body: JSON.stringify({ _tab: 'notifications', notifications: { channels: list } }),
+        });
+
+        return r.status;
+    }, channels);
+}
+
+test.afterEach(async ({ page }) => {
+    if (channelsBeforeTest === null) return;
+    const original = channelsBeforeTest;
+    channelsBeforeTest = null;
+    evidence('채널 설정 원복', { status: await restoreChannels(page, original), channels: original });
+});
+
 /** 설정 화면 진입 + 비즈뿌리오 탭이 노출된 상태를 보장한다(멱등). */
 async function openBizppurioTab(page: Page): Promise<void> {
     await page.goto(SETTINGS_URL);
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
-
+    const saved = await waitForChannelForm(page);
     const tabBar = page.locator('#channel_sub_tabs');
-    await expect(tabBar).toBeVisible({ timeout: 30_000 });
 
-    if (!(await tabBar.innerText()).includes('비즈뿌리오')) {
-        const card = page.locator('#channel_toggles')
-            .locator('div.flex-between', { hasText: '비즈뿌리오 알림톡' }).first();
-        await card.locator('[role="switch"]').click();
-        await page.locator('#save_button').click();
-        await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    // 판정은 서버 저장값으로 한다 — 화면 글자는 저장값이 그려지기 전 구간에 탭이 없는 것처럼 보인다.
+    if (!saved.some((c) => BIZPPURIO_TAB_CHANNELS.includes(c.id) && c.is_active === true)) {
+        channelsBeforeTest ??= saved;
+        const sw = page.locator('#channel_toggles')
+            .locator('div.flex-between', { hasText: '비즈뿌리오 알림톡' }).first()
+            .locator('[role="switch"]');
+        await sw.click();
+        await expect(sw).toHaveAttribute('aria-checked', 'true');
+        await saveChannelSettings(page);
         await page.goto(SETTINGS_URL);
-        await page.waitForLoadState('networkidle', { timeout: 30_000 });
+        await waitForChannelForm(page);
     }
+
+    await expect(tabBar).toContainText('비즈뿌리오', { timeout: 30_000 });
 }
 
 /**
@@ -102,9 +200,11 @@ function modalSave(page: Page) {
  * 축을 UI 로 잴 수 없다. 그래서 카테고리가 채워진 행을 API 로 한 번 만들어 두고, 측정은
  * 수정 모달이라는 실제 화면 경로로 수행한다(강제 통과가 아니라 픽스처 준비다).
  *
- * @returns 시드된 행의 notification_type
+ * @returns 시드된 행의 notification_type. 그 유형의 행이 검수중에 묶여 draft 로 되돌릴 수 없으면 null
+ *          (kapi 가 신청 취소를 거부하는 환경 — 실측: "접근할 수 없는 IP 입니다" — 에서는 이전 실행이
+ *          신청해 둔 행이 requested 에 남고, 그 행의 편집 모달에는 본문 입력이 열리지 않는다)
  */
-async function seedTemplate(page: Page, wanted = 'welcome'): Promise<string> {
+async function seedTemplate(page: Page, wanted = 'welcome'): Promise<string | null> {
     return page.evaluate(async (wantedType) => {
         const token = localStorage.getItem('auth_token') ?? '';
         const headers = {
@@ -139,7 +239,8 @@ async function seedTemplate(page: Page, wanted = 'welcome'): Promise<string> {
         const requested = rows.find((r: { notification_type?: string; status?: string }) =>
             r.notification_type === wantedType && r.status === 'requested');
         if (!existing && requested) {
-            await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${requested.id}/cancel-request`, { method: 'POST', headers });
+            const cancel = await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${requested.id}/cancel-request`, { method: 'POST', headers });
+            if (!cancel.ok) return null;
             await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${requested.id}`, {
                 method: 'PUT', headers, body: JSON.stringify({ content }),
             });
@@ -185,10 +286,10 @@ function rowEditButton(page: Page, type: string) {
  */
 async function openEditModal(page: Page, type?: string) {
     await page.goto(SETTINGS_URL);
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
+    // 행 카드의 [편집]이 보이는 것이 목록 렌더 완료 신호다(networkidle 은 관리자 SPA 에서 신호가 아니다)
     const edit = type ? rowEditButton(page, type) : page.getByRole('button', { name: '편집', exact: true }).first();
-    await expect(edit).toBeVisible({ timeout: 20_000 });
+    await expect(edit).toBeVisible({ timeout: 30_000 });
     await edit.click();
     const modal = dialog(page).locator('#bizppurio_tpl_sections');
     await expect(modal).toBeVisible({ timeout: 15_000 });
@@ -232,7 +333,7 @@ async function tabTexts(page: Page): Promise<string[]> {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T1 진입/표시', () => {
     // @scenario content_variant=ba_none
-    // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only
+    // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only, approval_badge_two_tier
     test('1a·1b 통합 탭 노출 + 행 하단 블록 + i18n 원문 0', async ({ page, messagingManageToken }) => {
         const errors = collectConsoleErrors(page);
         await authenticatePage(page, messagingManageToken);
@@ -289,24 +390,32 @@ test.describe('T1 진입/표시', () => {
         evidence('1d 알림톡만 활성 시 탭', await tabTexts(page));
         expect((await tabTexts(page)).join('|')).toContain('비즈뿌리오');
 
-        // 1e: 두 채널 모두 비활성 저장 → 탭 미노출
-        const toggles = page.locator('#channel_toggles');
-        for (const label of ['비즈뿌리오 알림톡', '비즈뿌리오 문자']) {
-            const card = toggles.locator('div.flex-between', { hasText: label }).first();
-            if (await card.count() === 0) continue;
-            const sw = card.locator('[role="switch"]');
-            if ((await sw.getAttribute('aria-checked')) === 'true') await sw.click();
+        // 1e: 두 채널 모두 비활성 저장 → 탭 미노출. 끄기 전 설정을 잡아 두고 끝나면 그대로 되돌린다
+        //     (이후 테스트가 통합 탭을 필요로 하고, 공유 개발 DB 의 채널 설정을 바꾼 채 두지 않는다).
+        const before = (await readSavedChannels(page)).channels;
+        try {
+            const toggles = page.locator('#channel_toggles');
+            for (const label of ['비즈뿌리오 알림톡', '비즈뿌리오 문자']) {
+                const card = toggles.locator('div.flex-between', { hasText: label }).first();
+                if (await card.count() === 0) continue;
+                const sw = card.locator('[role="switch"]');
+                if ((await sw.getAttribute('aria-checked')) === 'true') {
+                    await sw.click();
+                    await expect(sw).toHaveAttribute('aria-checked', 'false');
+                }
+            }
+            await saveChannelSettings(page);
+            await page.goto(SETTINGS_URL);
+            // 저장값(둘 다 꺼짐)으로 폼이 그려진 뒤에 탭을 읽는다
+            await waitForChannelForm(page);
+
+            const off = await tabTexts(page);
+            evidence('1e 둘 다 비활성 시 탭', off);
+            expect(off.join('|')).not.toContain('비즈뿌리오');
+        } finally {
+            evidence('1e 원복 응답', await restoreChannels(page, before));
         }
-        await page.locator('#save_button').click();
-        await page.waitForLoadState('networkidle', { timeout: 30_000 });
-        await page.goto(SETTINGS_URL);
-        await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-        const off = await tabTexts(page);
-        evidence('1e 둘 다 비활성 시 탭', off);
-        expect(off.join('|')).not.toContain('비즈뿌리오');
-
-        // 원복 — 이후 테스트가 통합 탭을 필요로 한다
         await openBizppurioTab(page);
         evidence('1e 원복 후 탭', await tabTexts(page));
     });
@@ -315,7 +424,7 @@ test.describe('T1 진입/표시', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T2·T3 입력', () => {
     // @scenario content_variant=ba_none, content_variant=ex_text, content_variant=ad_image, content_variant=mi_item_list
-    // @effects edit_modal_hosts_alimtalk_and_sms_sections, compose_modal_switches_conditional_fields_by_type
+    // @effects edit_modal_hosts_alimtalk_and_sms_sections, core_modal_hides_editor_for_hidden_template_editor_channel, compose_modal_switches_conditional_fields_by_type
     test('2a·2b 모달 오픈 + 프리필 + 강조유형 4종 전환 시 조건부 블록', async ({ page, messagingManageToken }) => {
         const errors = collectConsoleErrors(page);
         await authenticatePage(page, messagingManageToken);
@@ -470,15 +579,27 @@ test.describe('T4 제출/응답 + T10 경계', () => {
     });
 
     // @scenario content_variant=ba_none
-    // @effects unified_save_chain_alimtalk_then_core_recipients
+    // @effects unified_save_chain_alimtalk_then_core_recipients, inspection_request_carries_reviewer_comment
     test('10c [저장] 더블클릭 시 요청이 1회만 나간다', async ({ page, messagingManageToken }) => {
         // 유효 자격증명 환경에서는 kapi 실호출(add·request·cancel_request·delete) 4회 + 고정 대기 7초가
-        // 한 테스트에 들어가므로 기본 30초를 넘긴다(실측 31.3초). 판정 축이 시간은 아니다.
-        test.setTimeout(90_000);
+        // 한 테스트에 들어가고, 설정 화면 진입도 세 번(탭 보장 + 편집 모달 2회)이라 파일 기본 예산을 넘긴다
+        // (실측 31.3초 — SPA 진입이 11~14초로 느려진 뒤로는 더 길다). 판정 축이 시간은 아니다.
+        test.setTimeout(180_000);
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
-        await seedTemplate(page, 'password_changed');
-        const modal = await openEditModal(page, 'password_changed');
+        // 측정용 행은 draft 로 만들 수 있는 유형이어야 한다. 앞 실행이 신청해 둔 행을 kapi 가 취소해 주지 않으면
+        // (실측: password_changed 행이 08-24 부터 requested, 취소 응답 "접근할 수 없는 IP 입니다") 그 유형은
+        // 건너뛰고 다른 테스트가 쓰지 않는 다음 후보를 쓴다. 쓴 행은 끝의 정리 단계가 지운다.
+        let type: string | null = null;
+        for (const candidate of ['password_changed', 'sitemap_regenerated', 'sitemap_regenerate_failed', 'dormant_pre_notice']) {
+            type = await seedTemplate(page, candidate);
+            if (type !== null) break;
+            evidence('10c 후보 건너뜀(검수중 행 취소 불가)', candidate);
+        }
+        expect(type, 'draft 로 만들 수 있는 측정용 알림 유형이 없다').not.toBeNull();
+        const seededType = type as string;
+        evidence('10c 측정 유형', seededType);
+        const modal = await openEditModal(page, seededType);
         await modal.locator('textarea[name="bz_template_content"]').fill('중복 제출 테스트 #{site_name}');
 
         let saves = 0;
@@ -506,7 +627,7 @@ test.describe('T4 제출/응답 + T10 경계', () => {
         //    판정 축은 "요청 수" 가 아니라 **중복 신청 0** 이다. 클라이언트 if 가드는
         //    setState 반영 전에 두 번째 click 이 디스패치되면 뚫린다(실측). 실제 방어는
         //    서버의 원자 선점(claimForInspection)이며, 두 번째 신청은 422 로 거부된다.
-        const modal2 = await openEditModal(page, 'password_changed');
+        const modal2 = await openEditModal(page, seededType);
         await modal2.locator('textarea[name="bz_template_content"]').fill('중복 신청 테스트 #{site_name}');
         // 검수자 전달 의견(제품 결정 2026-08-23 §18.7) — 신청 요청 본문의 comment 로 실려야 한다.
         const REVIEW_COMMENT = '변수 예시: #{site_name}=G7 데모 사이트';
@@ -526,10 +647,10 @@ test.describe('T4 제출/응답 + T10 경계', () => {
 
         // 정리: 유효 자격증명 환경에서는 신청이 실제로 성립한다 — 신청 취소 후 행을 지워
         // 카카오측에 측정용 템플릿이 남지 않게 한다(자격증명 미설정 환경에서는 둘 다 no-op 에 가깝다).
-        const cleanup = await page.evaluate(async () => {
+        const cleanup = await page.evaluate(async (wantedType) => {
             const headers = { Accept: 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` };
             const list = await (await fetch('/api/plugins/sirsoft-message_bizppurio/admin/templates?per_page=50', { headers })).json();
-            const row = (list?.data?.templates ?? []).find((r: { notification_type?: string }) => r.notification_type === 'password_changed');
+            const row = (list?.data?.templates ?? []).find((r: { notification_type?: string }) => r.notification_type === wantedType);
             if (!row) return { row: null };
             let cancel: number | null = null;
             if (row.status === 'requested') {
@@ -538,7 +659,7 @@ test.describe('T4 제출/응답 + T10 경계', () => {
             const del = (await fetch(`/api/plugins/sirsoft-message_bizppurio/admin/templates/${row.id}`, { method: 'DELETE', headers })).status;
 
             return { row: row.id, status: row.status, cancel, del };
-        });
+        }, seededType);
         evidence('10c 정리(신청 취소 + 삭제)', cleanup);
     });
 });
@@ -619,13 +740,17 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
         // 메일 탭 → 비즈뿌리오 복귀
         // 채널 탭은 링크(#757) — 단추만 보면 늘 0 개라 왕복을 조용히 건너뛰었다. 「메일」 채널을 꺼 둔 환경만 건너뛴다
         const mail = page.locator('#channel_sub_tabs :is(a, button)', { hasText: '메일' }).first();
+        const bizppurio = page.locator('#channel_sub_tabs :is(a, button)', { hasText: '비즈뿌리오' }).first();
         if (await mail.count() > 0) {
             await mail.click();
-            await page.waitForTimeout(800);
+            // 탭 전환 완료 신호 = 그 탭 링크가 현재 탭(aria-current=page)이 되는 것
+            await expect(mail).toHaveAttribute('aria-current', 'page', { timeout: 30_000 });
             expect(new URL(page.url()).searchParams.get('channel'), '메일 탭으로 옮겨 가지 않았다').toBe('mail');
-            await page.locator('#channel_sub_tabs :is(a, button)', { hasText: '비즈뿌리오' }).first().click();
-            await page.waitForTimeout(800);
+            await bizppurio.click();
+            await expect(bizppurio).toHaveAttribute('aria-current', 'page', { timeout: 30_000 });
         }
+        // 돌아온 비즈뿌리오 탭의 행 목록이 다시 그려진 뒤에 [편집]을 누른다
+        await expect(page.locator('[id^="bizppurio_row_lifecycle"]').first()).toBeVisible({ timeout: 30_000 });
         const after = new URL(page.url()).search;
         evidence('7a 탭 왕복 전/후 쿼리', { before, after });
         expect(after).toContain('channel=alimtalk');
@@ -667,7 +792,7 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
 test.describe('T8 3면 패리티·다크·로케일', () => {
     for (const [face, url] of [['게시판', BOARD_URL], ['이커머스', ECOMMERCE_URL]] as const) {
         // @scenario content_variant=ba_none
-        // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only, edit_modal_hosts_alimtalk_and_sms_sections
+        // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only, edit_modal_hosts_alimtalk_and_sms_sections, core_modal_hides_editor_for_hidden_template_editor_channel
         test(`8a·8b ${face} 알림 설정에서 통합 탭·행 하단이 동일하게 렌더된다`, async ({ page, messagingManageToken }) => {
             const errors = collectConsoleErrors(page);
             await authenticatePage(page, messagingManageToken);
@@ -724,7 +849,8 @@ test.describe('T8 3면 패리티·다크·로케일', () => {
 
         await page.evaluate(() => localStorage.setItem('g7_locale', 'en'));
         await page.goto(SETTINGS_URL);
-        await page.waitForLoadState('networkidle', { timeout: 30_000 });
+        // 영어 화면의 행 하단 블록이 그려진 뒤에 읽는다(그 전에 읽으면 빈 영역이라 원문 키 0 이 거저 나온다)
+        await expect(page.locator('[id^="bizppurio_row_lifecycle"]').first()).toBeVisible({ timeout: 30_000 });
         const enText = await page.locator('#notif_channel_content').innerText();
         const enRaw = (enText.match(/\$t:|sirsoft-message_bizppurio\./g) ?? []).length;
         evidence('8e 영어 로케일 원문 키', enRaw);

@@ -2,7 +2,7 @@
  * E2E: 환경설정 > 보안 — "내부 네트워크 주소 호출 허용" 토글 (#466)
  *
  * @scenario admin_settings_security_outbound_toggle
- * @effects toggle_mounted, toggle_persisted
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): toggle_mounted, toggle_interactive, password_limit_binding_resolved
  *
  * 배경: 서버가 대신 보내는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 내부
  * 네트워크 주소를 기본 차단하되, 사내 서버를 호출해야 하는 운영 환경을 위해 이 토글로

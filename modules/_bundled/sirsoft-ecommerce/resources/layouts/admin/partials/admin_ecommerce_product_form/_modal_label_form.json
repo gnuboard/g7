@@ -210,10 +210,11 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "text",
                                                 "name": "label_color_text",
                                                 "value": "{{_global.labelFormData?.color ?? ''}}",
                                                 "placeholder": "#FF0000",
-                                                "className": "ecommerce:flex-1"
+                                                "className": "ecommerce-input ecommerce:flex-1 ecommerce:min-w-[80px]"
                                             }
                                         },
                                         {

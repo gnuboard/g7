@@ -1,0 +1,27 @@
+feature: 이커머스 설정 카탈로그(결제수단, 통화) 이름을 활성 언어팩이 채움
+
+description: |
+  이커머스 설정의 결제수단 이름과 통화 이름은 ko, en 두 벌로 저장된다. `EcommerceSettingsService` 는
+  `getPublicPaymentSettings()` 와 `getAllSettings()` 안에서 `localize_catalog_field()` 로 빈 로케일(ja 등)을
+  활성 언어팩의 번역 키(`sirsoft-ecommerce::settings.payment_methods.{id}.name`, `settings.currencies.{code}.name`)로 채운다.
+  운영자가 직접 적은 로케일 값은 언어팩으로 덮어쓰지 않는다.
+
+  시험은 시험 DB 에 언어팩 행이 없으므로, 활성 팩 등록이 하는 일과 같게 번들 ja 팩의 backend/ja 경로를 번역기 폴백으로 붙인다.
+
+axes:
+  catalog: [payment_method, currency, helper]
+  ja_value: [missing, operator_edited]
+
+exclusions:
+  - { catalog: payment_method, ja_value: operator_edited, reason: "운영자 편집 보존은 helper 단위로 한 번 잰다 — 서비스는 같은 helper 를 부른다" }
+  - { catalog: currency, ja_value: operator_edited, reason: "운영자 편집 보존은 helper 단위로 한 번 잰다 — 서비스는 같은 helper 를 부른다" }
+
+effects:
+  - payment_method_ja_name_filled_from_language_pack
+  - payment_method_name_key_follows_method_id
+  - currency_ja_name_filled_from_language_pack
+  - operator_edited_locale_value_is_preserved
+  - helper_fills_missing_locale_from_language_pack
+
+test_files:
+  - tests/Feature/Settings/EcommerceSettingsLocalizationTest.php

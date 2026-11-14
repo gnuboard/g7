@@ -15,7 +15,8 @@ use Tests\TestCase;
  * 화면이 "1,234건" 과 "10,000건 이상" 을 구분해 말할 수 있으려면, 서버가 그 구분을
  * 응답에 실어 보내야 한다. 세지 않은 값을 정확한 것처럼 말하지 않는다.
  *
- * @scenario pagination-accuracy-contract
+ * @scenario bounded-total-pagination
+ * 케이스(마커 아님 — 평문): pagination-accuracy-contract
  */
 class SearchAccuracyContractTest extends TestCase
 {

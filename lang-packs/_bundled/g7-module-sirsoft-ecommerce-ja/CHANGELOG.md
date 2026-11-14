@@ -18,6 +18,7 @@
 - 환경설정 > 업로드 「기존 이미지 썸네일 만들기」 창에 보이는 본문 이미지 원본 이름(`messages.thumbnail_sources.content_media`)의 일본어 번역을 추가했습니다.
 - 이커머스 이미지 썸네일 실측 샘플 시더의 콘솔 출력(표 제목, 머리글, 구분, 정리 건수 이름)과 주문 계산 오류 문구의 일본어 번역을 추가했습니다 (`messages.seeders.thumbnail_measure.*`).
 - 쇼핑몰 환경설정 「주문서 항목」 표와 항목 추가, 수정, 삭제 창(`admin.settings.checkout_fields.*`), 상품 후기와 상품 문의의 「작성자 표시 이름」 설정(`admin.settings.display_name.*`, `display_name.*`), 주문 상세의 「주문서 추가 항목」 구획(`admin.order.detail.order_info.extra_fields.*`), 회원 항목으로 선언하는 결제 통화와 배송국가, 주문서 항목 집합과 기본 항목 이름(`fields.*`), 「실명 …」 표기(`admin.common.real_name_sub`), 편집기 데이터 소스 이름 「주문서 항목 정의」의 일본어 번역을 추가했습니다 (#490)
+- 환경설정 > 마일리지 탭에서 통화별 사용 단위의 첫 줄이 기본 통화와 다를 때 보이는 안내와 「기본 통화 줄을 첫 줄로 맞추기」 단추(`admin.mileage_settings.currency.mismatch_notice`·`align_hint`·`align_button`)의 일본어 번역을 추가했습니다
 
 ### Changed
 

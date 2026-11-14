@@ -4,11 +4,8 @@
  * 템플릿 sirsoft-basic (유저 화면). (skeleton, placeholder)
  *
  * @scenario currency-symbol-display
- * @effects cart_jpy_uses_yen_symbol,
- *          cart_cny_uses_yuan_glyph_not_yen,
- *          cart_five_currencies_all_visible,
- *          additional_option_adjustment_uses_configured_symbol,
- *          order_history_amount_uses_snapshot_currency_not_current_default
+ * 효과 요약(마커 아님 — 평문): 장바구니 JPY/CNY 기호 구분과 5통화 노출, 추가금 기호, 주문 내역 스냅샷 통화.
+ *   효과 마킹은 각 테스트 주석에 있다.
  *
  * e2e:allow 통화 기호 표기 — 단위/레이아웃/리소스 테스트로 결함을 1차 차단하고,
  *           브라우저 회귀는 본 placeholder(test.describe.skip)가 data-testid 보강 + 실 도메인 시드 후 활성화될 때 검증한다.
@@ -24,6 +21,8 @@
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
 test.describe.skip('통화 기호 표시 — CNY=元 / JPY=¥ 구분 및 주문 스냅샷 통화 (skeleton)', () => {
+  // @scenario screen=cart
+  // @effects cart_jpy_uses_yen_symbol, cart_cny_uses_yuan_glyph_not_yen, cart_five_currencies_all_visible
   test('장바구니: JPY 는 ¥, CNY 는 元 로 구분 표기되고 5통화가 모두 보인다', async ({ page, userToken }) => {
     await authenticatePage(page, userToken);
     await page.goto('/shop/cart');
@@ -42,6 +41,8 @@ test.describe.skip('통화 기호 표시 — CNY=元 / JPY=¥ 구분 및 주문 
     }
   });
 
+  // @scenario screen=product_detail
+  // @effects additional_option_adjustment_uses_configured_symbol
   test('상품 추가옵션 추가금은 설정된 기본 통화 기호로 표기된다(원화 고정 아님)', async ({ page, userToken }) => {
     await authenticatePage(page, userToken);
     await page.goto('/shop/products/237');
@@ -52,6 +53,8 @@ test.describe.skip('통화 기호 표시 — CNY=元 / JPY=¥ 구분 및 주문 
     await expect(adjustment).toBeVisible();
   });
 
+  // @scenario screen=order_history
+  // @effects order_history_amount_uses_snapshot_currency_not_current_default
   test('주문 내역의 금액은 주문 시점 통화로 고정 표기된다(설정 변경에 불변)', async ({ page, userToken }) => {
     await authenticatePage(page, userToken);
     await page.goto('/mypage/orders');

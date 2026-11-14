@@ -1,9 +1,10 @@
 /**
  * E2E: 결제 실패 화면 복귀 시 close-report 보고 회귀 가드
  *
- * @scenario payment_failure_return_reports_to_close_report
- * @effects close_report_posted_on_failure_return, no_report_without_pending_context,
- *          no_report_on_success_return, close_report_omits_buyer_contact
+ * @scenario security-callback-defense
+ * 케이스(마커 아님 — 평문): payment_failure_return_reports_to_close_report
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): close_report_posted_on_failure_return, no_report_without_pending_context,
+ *          close_report_omits_buyer_contact
  *
  * 배경: 브라우저 리턴 콜백(PC·모바일·해외결제)은 PG 서명도 IP 증명도 없고 주문번호가
  * 요청자가 고른 값이라, 승인 실패를 근거로 주문을 취소하면 남의 주문번호를 아는 것만으로

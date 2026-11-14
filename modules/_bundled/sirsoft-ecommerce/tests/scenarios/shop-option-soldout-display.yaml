@@ -1,0 +1,31 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
+
+feature: 상품상세 옵션 품절 표시와 선택 차단 (MP07 §2 — U8/A34, computed 방식, E2E)
+
+description: |
+  상품상세 옵션 드롭다운에서 재고 없는 옵션을 "(품절)" 비활성으로 표시한다. show.g7.html 의
+  computed.optionChoices(백엔드 is_sold_out 플래그를 읽는 인라인 배열식)가 그룹별 선택지를 만들고
+  _purchase_card.g7.html 의 select 가 그 결과를 참조한다. 여러 옵션 조합 상품에서는 그 값을 포함하면서
+  현재 상위 선택과 호환되는 조합이 전부 품절일 때만 비활성으로 둔다(보수적 판정).
+
+  spec 은 option 요소 testid 와 시드 보강 전까지 test.describe.skip 이다(placeholder).
+
+# 입력을 바꿔 가며 재는 축은 없다. 시험 하나가 시나리오 하나다 — 각 case 는 spec 의 테스트 하나와 짝이다.
+axes:
+  case:
+    - single_group_sold_out           # 단일 그룹 재고 0 옵션
+    - multi_group_partially_sold_out  # 다중 그룹에서 호환 조합 일부만 품절
+    - admin_zero_stock_then_reload    # A34 관리자 재고 0 저장 뒤 유저 상세 새로고침
+
+effects: []
+
+# 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
+# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+pending_effects:
+  - dropdown_sold_out_value_disabled        # 재고 0 옵션 값은 드롭다운에서 비활성이다
+  - dropdown_sold_out_label_suffix          # 재고 0 옵션 값 라벨에 "품절" 표기가 붙는다
+  - conservative_partial_not_disabled       # 다중 그룹에서 호환 조합 일부만 품절이면 그 값은 선택 가능하다
+  - admin_zero_stock_reflects_in_dropdown   # 재고 0 옵션이 유저 상세 새로고침 뒤 비활성으로 반영된다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/option-soldout-display.spec.ts

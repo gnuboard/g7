@@ -39,6 +39,8 @@ sub_flows:
     effects:
       - board_settings_purge_toggle_default_off
       - board_settings_purge_keys_declared
+      # 보존기간을 바꿔 저장하면 그 값이 실린 요청이 200 이고 새로고침 뒤에도 남는다 (브라우저)
+      - board_settings_purge_retention_persists_after_save
   - id: temp_directory_hygiene
     description: |
       파일을 지운 뒤 남는 temp 디렉토리 처리. 비워졌을 때만 지우고, 다른 글의 파일이 남아

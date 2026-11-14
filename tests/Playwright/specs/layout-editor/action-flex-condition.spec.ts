@@ -12,7 +12,9 @@
  * 단위/RTL(actionRecipeEngine/conditionRecipeEngine/s7-property-controls)이 잠근다.
  *
  * 축 요약(마커 아님 — 평문): property_modal_action_tab, property_modal_visibility_tab, flex_editor_section.
- * 효과 요약(마커 아님 — 평문): action_tab_visible_when_events, visibility_builder_renders, flex_section_for_container.
+ * 효과 요약(마커 아님 — 평문): action_tab_visible_when_events, visibility_builder_renders, condition_builder_does_not_emit_nested_interpolation_braces, nested_onsuccess_picker_not_empty, action_card_drag_handle_draggable, flex_section_for_container.
+ *
+ * @scenario layout-editor-action-flex-condition
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -31,11 +33,16 @@ async function openFirstNodeModal(page: PwPage): Promise<void> {
  * 캔버스 노드는 드래그 핸들(`g7le-dnd-handle-*`)이 덮어 실제 마우스 클릭이 노드에 닿지
  * 못하므로(핸들이 pointer events 가로챔), path 로 노드를 식별해 selectNode 합성 이벤트로
  * 선택한다. 반응형 hidden 노드(mobile_header 등)는 제외한다.
+ *
+ * 페이지 본문 슬롯(`#main_content`) 안 노드만 모은다. 문서 앞쪽은 베이스 레이아웃 노드(본문 루트·헤더)와
+ * 확장이 헤더에 주입한 노드(이커머스 통화 선택기)라 페이지 편집 중에는 ⓘ 버튼이 뜨지 않는다 — 앞 8개가
+ * 모두 그런 노드여서 탭을 가진 노드를 하나도 시도하지 못했다(실측). 본문 슬롯이 없으면 문서 전체에서 모은다.
  */
 async function visibleNodePaths(page: PwPage, limit: number): Promise<string[]> {
   return page.evaluate((max) => {
     const out: string[] = [];
-    const els = Array.from(document.querySelectorAll('[data-editor-path]'));
+    const scope = document.querySelector('#main_content') ?? document;
+    const els = Array.from(scope.querySelectorAll('[data-editor-path]'));
     for (const el of els) {
       const r = (el as HTMLElement).getBoundingClientRect();
       const visible = r.width > 0 && r.height > 0 && getComputedStyle(el as HTMLElement).display !== 'none';
@@ -96,6 +103,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     expect(found).toBe(true);
   });
 
+  /** @effects condition_builder_does_not_emit_nested_interpolation_braces */
   test('표시조건 빌더 — 조건 추가 시 미리보기에 단일 {{ }} 식 노출', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -128,8 +136,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
   });
 
   // ── D-D 회귀 — 컴포넌트 [동작] 탭 ──
-  // @scenario property_modal_action_tab
-  // @effects nested_onsuccess_picker_not_empty, action_card_drag_handle_draggable
+  // 케이스(마커 아님 — 평문): property_modal_action_tab — 아래 두 test 가 각자 재는 효과를 단다.
 
   /** [동작] 탭을 가진(events capability) 노드를 찾아 동작 탭을 연다. 못 찾으면 null.
    *  Button 등 onClick capability 보유 가능성이 높은 노드를 우선 시도한다(앞쪽 컨테이너는
@@ -164,7 +171,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     return false;
   }
 
-  /** @effects action_tab_visible_when_events */
+  /** @effects action_tab_visible_when_events, nested_onsuccess_picker_not_empty */
   test('동작 탭 — apiCall 의 성공 시 동작(중첩) add picker 가 코어 핸들러를 노출(빈 상태 금지)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -196,6 +203,7 @@ test.describe('@layout-editor 동작/표시조건/정렬박스 (S7)', () => {
     await expect(onSuccess.getByTestId('g7le-init-action-spec-toast')).toHaveCount(1);
   });
 
+  /** @effects action_tab_visible_when_events, action_card_drag_handle_draggable */
   test('동작 탭 — 동작 카드 드래그 핸들(⠿)이 draggable(순서 재배치 가능)', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

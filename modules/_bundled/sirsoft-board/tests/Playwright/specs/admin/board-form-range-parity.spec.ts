@@ -17,8 +17,8 @@
  * 시드 의존: 샘플 시드의 자유게시판(`free`).
  *
  * @scenario board-form-range-parity
- * @axes screen=per_board screen=module_defaults
- * @effects form_boundary_matches_server_limits
+ * 효과 요약(마커 아님 — 평문): form_boundary_matches_server_limits (개별 게시판 수정 화면만 잰다.
+ *   모듈 기본값 화면의 min/max 는 board-settings-range-hints spec 이 잰다)
  */
 import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
@@ -40,6 +40,8 @@ const FIELD_TO_LIMIT: Record<string, string> = {
     max_file_count: 'max_file_count',
 };
 
+// @scenario case=per_board_edit
+// @effects form_boundary_matches_server_limits
 test('#81 - 개별 게시판 수정 화면의 숫자 경계값이 서버 한계값과 일치한다', async ({ page, boardManageToken }) => {
     await authenticatePage(page, boardManageToken);
 

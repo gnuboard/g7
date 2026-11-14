@@ -1,0 +1,31 @@
+feature: shortcut_keymap
+
+description: |
+  레이아웃 편집기 단축키 맵 SSoT(`layout-editor/spec/editorShortcuts`)의 매칭과 표기. EDITOR_SHORTCUTS 정의가
+  키 이벤트 조합(eventCombo)과 맞물려 matchShortcut 이 정의된 id 를 돌려주는지, formatCombo 가 플랫폼(Win Ctrl /
+  Mac ⌘)과 특수키 글리프를 맞게 표기하는지, 모든 단축키 그룹이 SHORTCUT_GROUP_ORDER 에 있는지 잰다.
+  디스패처(useEditorShortcuts)와 도움말 모달은 layout-editor-clipboard-shortcuts-p3.yaml 이 소유한다.
+
+# 입력 axis — 시험이 바꿔 넣는 플랫폼. win 은 ctrl 수식어·isMac=false, mac 은 meta 수식어·isMac=true 다.
+# 두 값 모두 매칭 시험(mod+c 의 ctrl·meta)과 표기 시험(formatCombo Ctrl·⌘)이 잰다.
+axes:
+  platform: [win, mac]
+
+effects:
+  # 키 이벤트 조합이 단축키 맵의 정의된 id 로 매칭된다 (mod+c/x/v, Enter/Delete/Backspace/ArrowUp, save·editCode 등, Mac meta 동일)
+  - shortcut_keymap_ssot_matches_event_combo
+  # redo 가 mod+shift+z 와 mod+y 두 조합으로 매칭되고 mod+z 는 undo 다
+  - shortcut_redo_has_two_combos
+  # Escape 는 정의 순서상 exit 보다 앞선 deselect 로 매칭된다
+  - shortcut_escape_matches_deselect_and_exit
+  # 수식어가 다른 조합(mod 없는 c·s)은 매칭되지 않는다
+  - shortcut_modifier_mismatch_not_matched
+  # formatCombo 가 Win 은 Ctrl, Mac 은 ⌘ 로 표기한다
+  - shortcut_format_combo_platform_aware
+  # formatCombo 가 특수키를 글리프(Enter / Esc / ↑)로 표기한다
+  - shortcut_format_combo_special_key_glyphs
+  # 모든 단축키 정의의 group 이 SHORTCUT_GROUP_ORDER 에 있다
+  - shortcut_groups_declared_in_group_order
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/editorShortcuts.test.ts

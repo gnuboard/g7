@@ -34,7 +34,7 @@
                 <set-state target="global" labelFormData.color="{{$event.target.value}}"/>
               </on>
             </input>
-            <input name="label_color_text" value="{{_global.labelFormData?.color ?? ''}}" placeholder="#FF0000" class="ecommerce:flex-1">
+            <input type="text" name="label_color_text" value="{{_global.labelFormData?.color ?? ''}}" placeholder="#FF0000" class="ecommerce-input ecommerce:flex-1 ecommerce:min-w-[80px]">
               <on type="change">
                 <!-- 색 코드 직접 입력 — 비우면 null 로 떨어뜨려 「색 없음」이 되게 한다(빈 문자열은 색으로 해석돼 미리보기가 깨진다) -->
                 <set-state target="global" labelFormData.color="{{$event.target.value || null}}"/>

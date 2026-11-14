@@ -1,8 +1,9 @@
 /**
  * E2E: 에디터 업로드 이미지 관리 화면 (공개 #115)
  *
- * @scenario admin_ckeditor5_uploads_list_filter_and_permission_boundary
- * @effects admin_index_lists_uploads, admin_ui_reference_badge, admin_ui_merge_query,
+ * @scenario ckeditor5-unused-image-cleanup
+ * 케이스(마커 아님 — 평문): admin_ckeditor5_uploads_list_filter_and_permission_boundary
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): admin_index_lists_uploads, admin_ui_reference_badge, admin_ui_merge_query,
  *          admin_index_unreferenced_filter, admin_destroy_requires_delete_permission,
  *          settings_cleanup_toggle_default_off, admin_destroy_removes_file_and_record,
  *          admin_bulk_delete_removes_selected, settings_cleanup_retention_round_trip

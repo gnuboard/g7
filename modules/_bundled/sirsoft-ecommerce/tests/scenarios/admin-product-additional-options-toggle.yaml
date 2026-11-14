@@ -1,0 +1,25 @@
+feature: 상품폼 추가옵션 사용/미사용 토글과 비우기 확인 모달 (관리자 E2E, §13-D-FAIL)
+
+description: |
+  §13-D-FAIL 회귀 두 건을 브라우저에서 직접 막는다.
+    - 비우기 확인 모달의 footer 버튼(취소/확인)이 slots.footer 에 있어 렌더되지 않았다.
+    - 비우기 확인 뒤 토글이 "미사용" active 로 갱신되지 않았다.
+
+  같은 회귀를 구조로 고정하는 하위 테스트(productOptionsAdditionalToggle.test.tsx 의 footer 버튼 배치와
+  clearAdditionalOptions 호출, optionHandlers.test.ts 의 form 객체 통째 교체)는 mp12-additional-options-toggle.yaml 이
+  소유한다. 이 매니페스트는 추가옵션 선택지를 가진 실제 상품의 수정 화면에서 모달 열기, 확인, 취소 세 동작만 본다.
+
+axes:
+  action:
+    - click_not_use   # 행이 있는 상태에서 "미사용" 클릭
+    - confirm_clear   # 비우기 확인 모달에서 확인
+    - cancel_clear    # 비우기 확인 모달에서 취소
+
+effects:
+  - not_use_opens_clear_confirm_modal                     # 행이 있을 때 "미사용" 클릭은 비우기 확인 모달을 연다
+  - clear_modal_renders_cancel_and_confirm_buttons        # 모달에 취소와 확인 버튼이 모두 렌더된다
+  - confirm_clears_options_and_toggle_switches_to_not_use # 확인하면 추가옵션 행이 사라지고 토글이 "미사용" active 로 바뀐다
+  - cancel_keeps_options_and_modal_closes                 # 취소하면 행이 남고 모달만 닫힌다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/product-additional-options-toggle.spec.ts

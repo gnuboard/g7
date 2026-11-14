@@ -17,7 +17,7 @@
  * 라우트 미선택 상태에서 저장 클릭으로 자연 발생.
  *
  * @scenario save_kinds_422_409_network_guard
- * @effects banner_visible_per_kind
+ * 효과 요약(마커 아님 — 평문): banner_visible_per_kind, validation_banner_lists_field_errors_and_stays, concurrent_modal_shows_versions_and_closes_on_cancel.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -48,6 +48,8 @@ async function addDivAndSave(page: import('@playwright/test').Page) {
 }
 
 test.describe('@layout-editor SaveFeedbackBanner kinds', () => {
+  // @scenario save_kind=validation_failed
+  // @effects banner_visible_per_kind, validation_banner_lists_field_errors_and_stays
   test('validation_failed (422) → 검증 배너 + 필드별 메시지', async ({ page }) => {
     await bootstrap(page);
     await page.route(SAVE_URL_PATTERN, async (route) => {
@@ -80,6 +82,8 @@ test.describe('@layout-editor SaveFeedbackBanner kinds', () => {
     await expect(page.getByTestId('g7le-save-banner-validation')).toBeVisible();
   });
 
+  // @scenario save_kind=concurrent_modification
+  // @effects banner_visible_per_kind, concurrent_modal_shows_versions_and_closes_on_cancel
   test('concurrent_modification (409) → 모달 + version_info + 3 액션 버튼', async ({ page }) => {
     await bootstrap(page);
     await page.route(SAVE_URL_PATTERN, async (route) => {
@@ -115,6 +119,8 @@ test.describe('@layout-editor SaveFeedbackBanner kinds', () => {
     await expect(modal).toBeHidden();
   });
 
+  // @scenario save_kind=network_error
+  // @effects banner_visible_per_kind
   test('network_error → 네트워크 에러 배너 + message', async ({ page }) => {
     await bootstrap(page);
     await page.route(SAVE_URL_PATTERN, async (route) => {
@@ -130,6 +136,8 @@ test.describe('@layout-editor SaveFeedbackBanner kinds', () => {
     await expect(page.getByTestId('g7le-save-banner-network')).toBeVisible({ timeout: 5_000 });
   });
 
+  // @scenario save_kind=guard_no_document
+  // @effects banner_visible_per_kind
   test('guard_no_document → 라우트 미선택 상태 저장 시 가드 배너', async ({ page }) => {
     await bootstrap(page);
     // 라우트 쿼리 없이 진입 (홈 자동선택 회피)
@@ -147,6 +155,8 @@ test.describe('@layout-editor SaveFeedbackBanner kinds', () => {
   // resolveActiveExtensions 콜백을 mock 하려면 useLayoutDocument hook 자체를 wrap 해야 하므로
   // 단위 테스트(useLayoutDocument.test.ts) 영역으로 위임. 본 spec 에서는 스킵하고 후속에서
   // dev-only fixture 또는 단위 테스트로 커버.
+  // 재는 효과가 없어 소속 슬러그만 단다(blocked_inactive_extension 은 축 값이 아니다 — 매니페스트 notes 참고).
+  // @scenario save_kinds_422_409_network_guard
   test.skip('blocked_inactive_extension → 비활성 확장 path 차단 배너 (후속 — 단위 테스트로 커버)', async () => {
     // 본 분기는 useLayoutDocument 의 options.resolveActiveExtensions 콜백이
     // 비활성 확장 path 를 반환할 때만 발생. Playwright 통합 환경에서는 활성 확장이

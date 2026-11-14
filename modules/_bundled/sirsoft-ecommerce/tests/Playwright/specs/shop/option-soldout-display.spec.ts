@@ -2,10 +2,8 @@
  * 상품상세 옵션 품절 표시/차단 (MP07 §2 — U8/A34, computed 방식).
  *
  * @scenario shop-option-soldout-display
- * @effects dropdown_sold_out_value_disabled,
- *          dropdown_sold_out_label_suffix,
- *          conservative_partial_not_disabled,
- *          admin_zero_stock_reflects_in_dropdown
+ * 효과 요약(마커 아님 — 평문): 재고 0 옵션 비활성과 품절 라벨, 다중 그룹 보수적 판정, 관리자 재고 0 저장 반영.
+ *   효과 마킹은 각 테스트 주석에 있다.
  *
  * 배경: 상품상세 옵션 드롭다운에서 재고 없는 옵션을 "(품절)" 비활성으로 표시한다.
  *       show.g7.html 의 computed.optionChoices(백엔드 is_sold_out 플래그를 읽는 순수 인라인
@@ -19,7 +17,7 @@
  *   2. 시드: 재고0 옵션 1건 + 정상 옵션 1건 보유 상품(ecommerce-seed)
  *   3. test.describe.skip → test.describe 변경
  *
- * 매트릭스(시나리오 매니페스트 mp07-cart-add-availability.yaml 와 1:1):
+ * 매트릭스(시나리오 매니페스트 shop-option-soldout-display.yaml 와 1:1):
  *   - 단일 그룹 재고0 옵션  : 드롭다운 disabled + "(품절)" 라벨
  *   - 다중 그룹 보수적 판정  : 일부만 품절이면 선택 가능, 호환 조합 전부 품절이면 비활성
  *   - A34 관리자 재고0 저장 → 유저 상세 새로고침 → 품절 반영
@@ -27,6 +25,8 @@
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
 test.describe.skip('상품상세 옵션 품절 표시 (computed — placeholder, data-testid 보강 후 활성화)', () => {
+  // @scenario case=single_group_sold_out
+  // @effects dropdown_sold_out_value_disabled, dropdown_sold_out_label_suffix
   test('재고0 옵션은 드롭다운에서 비활성 + "(품절)" 라벨', async ({ page }) => {
     await page.goto('/shop/products/{seededProductId}');
     const soldOut = page.getByTestId('option-0-value-품절색상');
@@ -34,12 +34,16 @@ test.describe.skip('상품상세 옵션 품절 표시 (computed — placeholder,
     await expect(soldOut).toContainText('품절');
   });
 
+  // @scenario case=multi_group_partially_sold_out
+  // @effects conservative_partial_not_disabled
   test('다중 그룹 — 호환 조합 일부만 품절이면 선택 가능', async ({ page }) => {
     await page.goto('/shop/products/{seededMultiOptionProductId}');
     // 빨강(빨강-L 정상 존재) 선택 가능
     await expect(page.getByTestId('option-0-value-빨강')).toBeEnabled();
   });
 
+  // @scenario case=admin_zero_stock_then_reload
+  // @effects admin_zero_stock_reflects_in_dropdown
   test('A34 — 관리자 옵션 재고0 저장 → 유저 상세 새로고침 시 품절 반영', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto('/shop/products/{seededProductId}');

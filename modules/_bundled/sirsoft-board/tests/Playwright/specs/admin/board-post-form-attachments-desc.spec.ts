@@ -11,8 +11,8 @@
  * (위지윅 발행 회귀 #238 교훈).
  *
  * @scenario board-post-form-attachments-desc
- * @effects admin_attachment_hint_renders_board_limits,
- *          admin_attachment_hint_placeholders_not_raw
+ * 효과 요약(마커 아님 — 평문): 안내가 게시판 설정 숫자로 렌더, raw 플레이스홀더 부재,
+ *   사장된 고정 숫자 안내 부재 — 효과 이름은 시험마다 마킹
  *
  * 활성화 절차: PlaywrightIssueToken 발급이 가능한 환경에서 test.describe.skip → test.describe.
  */
@@ -22,6 +22,8 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 const WRITE_URL = '/admin/board/free/write';
 
 test.describe.skip('관리자 게시글 폼 — 첨부 안내 (#81 L-01)', () => {
+  // @scenario case=hint_renders_limits
+  // @effects admin_attachment_hint_renders_board_limits
   test('첨부 안내가 게시판 설정의 개수·용량으로 렌더된다', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto(WRITE_URL);
@@ -32,6 +34,8 @@ test.describe.skip('관리자 게시글 폼 — 첨부 안내 (#81 L-01)', () =>
     await expect(hint).toBeVisible({ timeout: 10_000 });
   });
 
+  // @scenario case=no_raw_placeholders
+  // @effects admin_attachment_hint_placeholders_not_raw
   test('raw 플레이스홀더({{maxFiles}}/{{maxSize}})가 노출되지 않는다', async ({
     page,
     settingsToken,
@@ -46,6 +50,8 @@ test.describe.skip('관리자 게시글 폼 — 첨부 안내 (#81 L-01)', () =>
     await expect(page.getByText('{{maxSize}}', { exact: false })).toHaveCount(0);
   });
 
+  // @scenario case=no_legacy_fixed_hint
+  // @effects admin_attachment_legacy_fixed_hint_absent
   test('사장된 고정 숫자 안내가 다시 나타나지 않는다', async ({ page, settingsToken }) => {
     await authenticatePage(page, settingsToken);
     await page.goto(WRITE_URL);
