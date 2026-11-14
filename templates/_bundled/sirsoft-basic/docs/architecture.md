@@ -78,6 +78,18 @@ src/index.ts               initTemplate() — 핸들러 등록 · IDV launcher �
 
 이커머스가 공개하는 키(`preferredCurrency`·`guestOrderToken` 등)는 이 템플릿이 쓰는 쪽이며, 목록은 이커머스 모듈 문서
 「다른 확장이 읽는 전역 상태」에 있습니다.
+
+### 고정 헤더와 스크롤 기준선
+
+데스크톱 헤더(`Header`)와 모바일 툴바는 화면 위에 붙어 있습니다(`sticky top-0`, 둘 다 `.g7-site-header`). 데스크톱 헤더가 부르는
+`useHeaderOverlayController`(`src/support/headerOverlay.ts`)가 보이는 헤더 높이를 문서 뿌리 CSS 변수로 알립니다.
+
+| 변수 | 언제 | 쓰는 곳 |
+|---|---|---|
+| `--g7-sticky-header-height` | 언제나(헤더가 없으면 지움) | `main.css` 의 `html { scroll-padding-top }` — 키보드 초점 이동·앵커 이동이 대상을 헤더 밑에 두지 않게 한다(WCAG 2.4.11) |
+| `--g7-header-height` | 배너가 메뉴 겹침(`data-header-overlay`)을 알릴 때만 | 본문 앞 전폭 자리(`.g7-page-top`)를 위로 당기고, 배너가 문구를 그만큼 내린다 |
+
+헤더를 고정하지 않도록 바꾸거나 다른 고정 요소를 화면 위에 더하면 `--g7-sticky-header-height` 계산(`visibleHeaderHeight()`)도 함께 맞춥니다.
 <!-- @intent END -->
 
 ## 디렉토리

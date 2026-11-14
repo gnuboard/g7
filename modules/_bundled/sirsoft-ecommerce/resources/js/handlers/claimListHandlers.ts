@@ -1,3 +1,4 @@
+// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * 클레임 신청내역 핸들러 (회원 · 비회원 공용)
  *
@@ -30,6 +31,7 @@
 import type { ActionContext } from '../types';
 import { claimRequestConfig, claimText } from './claimImageHandlers';
 import { isUserFixableClaimError } from './claimApplyHandlers';
+import { claimPgDispatchAction, claimPgDispatchFailureMessage } from '../utils/claimPgDispatch';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimList')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ClaimList]', ...args),
@@ -308,10 +310,20 @@ export async function payClaimOutstandingHandler(
         // 버튼이 다시 살아나면 같은 결제 건으로 두 번 진입할 수 있다. 돌아온 화면은
         // 상세를 다시 읽으므로(진입 시 refetch) 그때 상태가 서버 값으로 맞춰진다.
         if (data.requires_pg_payment && data.pg_payment_handler) {
-            await G7Core.dispatch?.({
-                handler: data.pg_payment_handler,
-                params: { pgPaymentData: data.pg_payment_data },
-            });
+            const pgResult = await G7Core.dispatch?.(
+                claimPgDispatchAction(data.pg_payment_handler, data.pg_payment_data)
+            );
+
+            // 결제 플러그인이 결제창을 열기 전에 실패하면(승인키 거절·비회원 주문 확인 만료 등) 진행 표시를 내리고
+            // 그 문구를 버튼 아래에 남긴다 — 결제 건은 결제 대기 그대로라 [결제하기]로 다시 낼 수 있다(#855).
+            const pgFailure = claimPgDispatchFailureMessage(
+                pgResult,
+                claimText('sirsoft-ecommerce.user.claim.pay.failed', '결제를 시작하지 못했습니다.')
+            );
+
+            if (pgFailure !== null) {
+                G7Core.state.setLocal({ isPayingClaim: false, claimPayError: pgFailure });
+            }
 
             return;
         }

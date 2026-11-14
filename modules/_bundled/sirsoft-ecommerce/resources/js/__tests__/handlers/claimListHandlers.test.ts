@@ -1,3 +1,4 @@
+// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * claimListHandlers 테스트 (#599 S12)
  *
@@ -12,8 +13,8 @@
  *  - 승인 뒤 철회(409)는 구매자가 이 화면에서 고칠 수 없지만 **왜 안 되는지**는 알아야 한다 —
  *    토스트로만 알리면 사라진 뒤 화면에 남지 않는다(§6-3 P13 과 같은 채널 규약).
  *
- * @scenario claim_type=refund, charge_method=none, refund_branch=request
- * @effects claim_withdraw_requires_a_target,
+ * 축 요약(마커 아님 — 평문): claim_type=refund, charge_method=none, refund_branch=request
+ * 효과 요약(마커 아님 — 평문): claim_withdraw_requires_a_target,
  *   claim_withdraw_clears_target_on_close,
  *   claim_withdraw_is_idempotent_against_double_click,
  *   claim_withdraw_error_channel_splits_by_fixability,
@@ -79,6 +80,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_modal_target_lifecycle */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_requires_a_target
     it('열기 — 대상이 없으면 열지 않는다 (확인 버튼이 아무것도 가리키지 않는 모달을 만들지 않는다)', () => {
         openClaimWithdrawHandler({ handler: 'openClaimWithdraw', params: {} }, {} as any);
 
@@ -87,6 +90,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_modal_target_lifecycle */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_clears_target_on_close
     it('닫기 — 대상·오류를 함께 지운다 (다음에 다른 신청서로 열 때 앞 대상이 남지 않는다)', () => {
         mockLocalState = {
             withdrawClaimNumber: 'RT20260901-0001',
@@ -105,6 +110,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_handler_channel_contract */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_uses_the_shell_supplied_base
     it('철회 — 성공하면 모달을 닫고 목록을 다시 부른다', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.api.post.mockResolvedValue({ success: true, message: '철회되었습니다.' });
@@ -133,6 +140,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_handler_channel_contract */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_uses_the_shell_supplied_base
     it('비회원 철회는 주문 스코프 주소를 그대로 쓴다 (셸이 준 앞부분에 번호만 잇는다)', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.state.get = vi.fn(() => ({ guestOrderToken: 'guest-token-1' })) as any;
@@ -149,6 +158,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_handler_channel_contract */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_uses_the_shell_supplied_base
     it('철회 — 셸이 주소를 주지 않으면 보내지 않는다 (잘못된 주소로 보내는 것보다 낫다)', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
 
@@ -158,6 +169,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_handler_channel_contract */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_requires_a_target
     it('철회 — 대상이 없으면 아무것도 보내지 않는다', async () => {
         mockLocalState = {};
 
@@ -170,6 +183,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_handler_channel_contract */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_is_idempotent_against_double_click
     it('철회 — 진행 중이면 두 번째 클릭은 나가지 않는다 (성공한 철회 뒤에 실패 안내가 뜨지 않는다)', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001', isWithdrawingClaim: true };
 
@@ -182,6 +197,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_withdraw_handler_channel_contract */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_error_channel_splits_by_fixability
     it('철회 거절(409) — 사유를 모달 안에 남기고 토스트는 띄우지 않는다', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.api.post.mockRejectedValue({
@@ -202,6 +219,8 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_pay_handler_address_and_guards */
+    // @scenario claim_type=refund, charge_method=none, refund_branch=request
+    // @effects claim_withdraw_error_channel_splits_by_fixability
     it('서버 장애(500) — 화면에 남길 상태가 아니므로 토스트로만 알린다', async () => {
         mockLocalState = { withdrawClaimNumber: 'RT20260901-0001' };
         mockG7Core.api.post.mockRejectedValue({
@@ -329,11 +348,63 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260901-0001', amount: 6000 } },
+            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다(#855).
+            errorHandling: { default: { handler: 'suppress' } },
         });
         // 결제창이 뜨는 동안 버튼이 다시 살아나면 같은 건으로 두 번 진입할 수 있다.
         expect(mockLocalState.isPayingClaim).toBe(true);
         // 결제창으로 넘어갔으므로 상세를 다시 읽지 않는다 — 지금 읽으면 결제 전 값으로 덮인다.
         expect(mockG7Core.dispatch).toHaveBeenCalledTimes(1);
+    });
+
+    /** @effects claim_pay_pg_entry_failure_releases_the_button */
+    it('결제 — 결제 플러그인이 결제창을 열기 전에 실패하면 진행 표시를 내리고 그 문구를 남긴다 (#855)', async () => {
+        mockG7Core.api.post.mockResolvedValue({
+            success: true,
+            data: {
+                requires_pg_payment: true,
+                pg_payment_handler: 'example-pg.requestPayment',
+                pg_payment_data: { order_number: 'CP20260901-0001', amount: 6000, claim_cancel_return_url: '/shop/guest/orders' },
+            },
+        });
+        // 디스패처는 핸들러 오류를 던지지 않고 ActionError 로 감싸 돌려준다 — 사용자 문구는 originalError 에 있다.
+        mockG7Core.dispatch.mockResolvedValueOnce({
+            success: false,
+            error: {
+                message: 'Failed to execute action: example-pg.requestPayment',
+                originalError: { message: '주문 확인 정보가 만료되었습니다. 주문 조회에서 다시 결제해 주세요.' },
+            },
+        });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: GUEST_PAY_BASE, paymentNumber: 'CP20260901-0001', isGuest: true } },
+            {} as any
+        );
+
+        expect(mockLocalState.isPayingClaim).toBe(false);
+        expect(mockLocalState.claimPayError).toBe('주문 확인 정보가 만료되었습니다. 주문 조회에서 다시 결제해 주세요.');
+    });
+
+    /** @effects claim_pay_pg_entry_failure_releases_the_button */
+    it('결제 — 실패 문구가 없는 결제 플러그인 실패는 대체 문구로 남긴다 (#855)', async () => {
+        mockG7Core.api.post.mockResolvedValue({
+            success: true,
+            data: {
+                requires_pg_payment: true,
+                pg_payment_handler: 'example-pg.requestPayment',
+                pg_payment_data: { order_number: 'CP20260901-0001', amount: 6000 },
+            },
+        });
+        mockG7Core.dispatch.mockResolvedValueOnce({ success: false, error: { message: 'Failed to execute action', originalError: { message: '' } } });
+
+        await payClaimOutstandingHandler(
+            { handler: 'payClaimOutstanding', params: { payApiBase: MEMBER_PAY_BASE, paymentNumber: 'CP20260901-0001' } },
+            {} as any
+        );
+
+        expect(mockLocalState.isPayingClaim).toBe(false);
+        // t() 대역은 키를 그대로 돌려주므로 claimText 가 대체 문구로 떨어진다.
+        expect(mockLocalState.claimPayError).toBe('결제를 시작하지 못했습니다.');
     });
 
     /** @effects claim_pay_handler_address_and_guards */

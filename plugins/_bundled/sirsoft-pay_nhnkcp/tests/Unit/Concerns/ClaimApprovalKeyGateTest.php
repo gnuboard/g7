@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
@@ -21,12 +22,12 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  *
  * 열람자 대조를 `(int) ($payment->order?->user_id ?? 0) !== (int) ($request->user()?->id ?? 0)`
  * 로 쓰면 **양쪽이 모두 0 인 순간 통과**한다 — 주문을 못 읽었고(soft-delete) 열람자도 없는
- * 조합이다. 지금은 라우트의 `auth:sanctum` 이 오른쪽을 0 이 되지 못하게 막아 실질은 닫혀
- * 있지만, 그 방어는 이 판정 **밖의** 조건이다. 미들웨어 구성이 바뀌거나 이 메서드를 다른
- * 진입점이 부르면 그 순간 열린다.
+ * 조합이다. 승인키 라우트는 `optional.sanctum` 이라(#883) 비로그인 요청도 이 게이트까지 오므로,
+ * 그 방어는 이 판정 **안에** 있어야 한다.
  *
- * HTTP 경로로는 그 조합을 만들 수 없으므로(인증 미들웨어가 먼저 401 을 낸다) 게이트를
- * 직접 부른다 — 재는 것은 라우트가 아니라 **판정식의 형태**다.
+ * 비회원 주문의 결제 건은 그 주문의 조회 토큰(`X-Guest-Order-Token`)이 있어야 통과한다(#855) —
+ * 토큰 없는 익명 요청은 401 이다. 게이트를 직접 불러 **판정식의 형태**를 잰다(HTTP 경로는
+ * `ClaimPaymentCallbackTest` 가 잰다).
  */
 class ClaimApprovalKeyGateTest extends PluginTestCase
 {
@@ -104,6 +105,7 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
             'CP-K9GATE-1',
             3000,
             'KRW',
+            app(GuestOrderAuthService::class),
         );
 
         $this->assertInstanceOf(
@@ -130,6 +132,7 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
             'CP-DOES-NOT-EXIST',
             3000,
             'KRW',
+            app(GuestOrderAuthService::class),
         );
 
         $this->assertInstanceOf(JsonResponse::class, $response);
@@ -137,9 +140,10 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
     }
 
     /**
-     * 주문이 살아 있는 비회원 결제 건도 열람자가 없으면 막힌다.
+     * 주문이 살아 있는 비회원 결제 건도 조회 토큰이 없으면 막힌다 (401).
      *
-     * 비회원 주문(`user_id` NULL)에서 익명 요청을 허용하면 결제번호만 알면 승인키를 받는다.
+     * 비회원 주문(`user_id` NULL)에서 토큰 없는 익명 요청을 허용하면 결제번호만 알면 승인키를 받는다.
+     * 거부 코드는 주문 경로의 비회원 판정과 같은 401 이다 — 결제 핸들러가 「주문 조회에서 다시 결제」를 안내한다.
      *
      * @return void 반환값 없음
      *
@@ -175,10 +179,11 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
             'CP-K9GATE-2',
             3000,
             'KRW',
+            app(GuestOrderAuthService::class),
         );
 
         $this->assertInstanceOf(JsonResponse::class, $response);
-        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame(401, $response->getStatusCode());
     }
 
     /**

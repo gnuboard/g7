@@ -191,4 +191,11 @@ URL(`https://사이트/plugins/…/payment/close-report`, `/api` 없음)이므�
 
 처리 위치: `resources/js/handlers/requestPayment.ts` 의 `finishCancelledPayment()`. 클레임 결제면 재결제 준비(`/payment/retry`)와
 닫힘 기억(`rememberPendingClose`)도 건너뛴다 — 클레임 결제 번호(`CP…`)는 주문번호가 아니어서 `retry` 가 404 를 내고 결제창이 열리지 않았다.
+
+모바일에서 추가결제 창을 열 때도 주문 결제와 같이 승인키 요청(`/mobile/approval-key`)에 비회원 조회 토큰(`X-Guest-Order-Token`)을
+싣는다. 서버는 결제 건이 딸린 주문으로 주인을 판정하므로, 비회원 주문의 추가결제는 그 주문의 토큰이면 열리고 토큰이 없거나 만료되면
+401 이다. 신청서 화면에는 주문서 전용 결제 오류 모달이 없으므로, 클레임 결제의 결제창 열기 전 실패는 모두 `reportPaymentError()` 가
+문구를 담아 던지고 쇼핑몰 신청서 핸들러가 버튼 아래에 「주문 확인 정보가 만료되었습니다. 주문 조회에서 다시 결제해 주세요.」 같은 문구를
+보여 준다(계약: 쇼핑몰 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 「결제 플러그인 연동 계약」). 결제 설정 조회가 빈 응답이면
+빈 문구로 던져 신청서가 「결제를 시작하지 못했습니다.」로 대신한다. 주문 결제는 종전대로 결제 오류 모달이다(설정 조회 빈 응답은 종전대로 콘솔에만 남긴다, #855).
 <!-- @intent END -->

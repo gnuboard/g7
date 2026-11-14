@@ -388,6 +388,10 @@
 
 비회원 화면의 요청(클레임 신청·미리보기·수정, 클레임 첨부 업로드·삭제, 구매확정, 배송지 변경)은 로그인 토큰 없이 주문 조회 토큰(`X-Guest-Order-Token`)으로 주인을 증명한다. 토큰이 없거나 만료되면 서버가 401 을 주는데, 코어(engine-v1.88.2)는 토큰 없이 보낸 요청의 401 을 세션 만료로 보지 않아 로그인 화면으로 옮기지 않고 호출자에게 돌려준다. 핸들러는 4xx 화면 안내(`isUserFixableClaimError`)보다 **먼저** `resources/js/utils/guestOrderAuth.ts` 의 `isGuestOrderAuthFailure(error)`(= `G7Core.api.isAnonymousUnauthorized`)로 판정해 안내 토스트(`user.claim.guest_auth_required`·`user.guest_order.auth_required`)를 띄우고 입력을 그대로 둔다(1.3.4). 새 비회원 요청 핸들러도 같은 판정을 쓴다 — 빠지면 서버 문구 「인증이 필요합니다.」만 남거나 4xx 로 분류되어 「상품·수량을 확인하라」로 잘못 안내된다.
 
+### 클레임 추가결제의 결제 플러그인 실패
+
+클레임 결제 진입(`payClaimOutstanding`·`submitClaim`·`saveClaimEdit`)은 결제 시작 API 가 지목한 결제 플러그인 핸들러를 `resources/js/utils/claimPgDispatch.ts` 의 `claimPgDispatchAction()` 으로 만든 동작으로 부른다 — 이 동작은 디스패처의 기본 오류 처리를 `suppress` 로 막아 내부 문구(「Failed to execute action: …」) 토스트가 뜨지 않게 한다. 결제 플러그인은 결제창을 열기 전에 실패하면 사용자 문구를 담은 오류를 던지고(계약: `docs/api/claim-payments.md` 「결제 플러그인 연동 계약」), 디스패처는 그 오류를 `{ success: false, error }` 로 돌려준다. 핸들러는 `claimPgDispatchFailureMessage()` 로 문구를 꺼내(원래 오류 `error.originalError.message`, 비면 `user.claim.pay.failed`) 신청서 상세는 `isPayingClaim` 을 내리고 `claimPayError`(버튼 아래)에 남기며, 신청·수정 직후의 결제는 토스트로 알린 뒤 신청서 상세로 옮긴다(1.4.0, #855). 결과를 보지 않으면 결제창이 열리지 않았는데도 진행 표시가 「결제 진행 중…」에 멈춘다 — 결제창이 열리는 동안 일부러 끄지 않기 때문이다.
+
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

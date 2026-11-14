@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Concerns;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -44,5 +45,45 @@ trait VerifiesOrderOwnership
         );
 
         return $verified !== null && (int) $verified->id === (int) $order->id;
+    }
+
+    /**
+     * 주문 주인이 아닌 요청의 거부 응답을 만듭니다. (주인이면 null)
+     *
+     * 판정은 {@see requestOwnsOrder()} 와 같고, 거부 코드만 주문 종류로 가른다.
+     *
+     * - 회원 주문: 403 — 로그인하지 않았거나 다른 회원이다. 비회원 조회 토큰을 붙여도 회원 판정만 한다.
+     * - 비회원 주문: 401 — 조회 토큰이 없거나 만료됐거나 다른 주문의 것이다. 토큰 없이 보낸 401 이라 코어는
+     *   로그인 화면으로 옮기지 않고, 결제 핸들러가 「주문 조회에서 다시 결제」 안내를 띄운다(#883).
+     *
+     * 모바일 승인키 발급의 일반 주문 경로와 클레임 추가결제 경로가 이 한 판정을 쓴다(#855).
+     *
+     * @param  Request  $request  브라우저 요청 (Bearer 토큰 또는 X-Guest-Order-Token 헤더)
+     * @param  Order  $order  결제할 주문 (클레임 추가결제면 그 결제 건이 딸린 주문)
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     * @param  string  $forbiddenError  회원 주문 거부 문구
+     * @return JsonResponse|null 거부 응답 (주인이면 null)
+     */
+    protected function orderOwnershipRejection(
+        Request $request,
+        Order $order,
+        GuestOrderAuthService $guestOrderAuthService,
+        string $forbiddenError,
+    ): ?JsonResponse {
+        if ($this->requestOwnsOrder($request, $order, $guestOrderAuthService)) {
+            return null;
+        }
+
+        if ($order->user_id !== null) {
+            return response()->json([
+                'success' => false,
+                'error' => $forbiddenError,
+            ], 403);
+        }
+
+        return response()->json([
+            'success' => false,
+            'error' => 'Guest order verification failed.',
+        ], 401);
     }
 }

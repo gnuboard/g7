@@ -1,3 +1,4 @@
+// e2e:allow #855 후속: 키보드 초점이 고정 헤더에 가려지던 접근성 결함(scroll-padding-top) — Chrome MCP 실측(휴대폰 비회원 주문서 Shift+Tab, 체크박스 top 16 → 434, PC 변수 113px)과 Vitest 로 고정한다.
 import { useEffect } from 'react';
 
 /**
@@ -21,6 +22,15 @@ export const OVERLAY_ACTIVE_ATTRIBUTE = 'data-header-overlay-active';
 
 /** 보이는 헤더 높이 CSS 변수 */
 export const HEADER_HEIGHT_VARIABLE = '--g7-header-height';
+
+/**
+ * 고정 헤더 높이 CSS 변수 — 겹침 신호와 무관하게 언제나 갱신한다.
+ *
+ * 데스크톱 헤더와 모바일 툴바는 화면 위에 붙어 있다(`sticky top-0`). 키보드로 초점을 옮기거나 앵커로 이동할 때 브라우저는 대상을
+ * 화면 맨 위에 맞추는데, 그 자리가 헤더 밑이라 초점이 가려졌다(WCAG 2.4.11 — 휴대폰 비회원 주문서에서 Shift+Tab 으로 「주문자 정보와
+ * 동일」에 초점을 옮기면 56px 툴바 밑 top 16 에 놓였다). main.css 가 이 값만큼 `scroll-padding-top` 을 둔다(#855).
+ */
+export const STICKY_HEADER_HEIGHT_VARIABLE = '--g7-sticky-header-height';
 
 /** 겹침을 푸는 스크롤 거리(px) */
 const SCROLL_THRESHOLD = 10;
@@ -52,26 +62,31 @@ export function useHeaderOverlayController(): void {
 
     /** 신호·스크롤·헤더 크기를 다시 읽어 맞춘다 */
     function update(): void {
+      // 헤더가 다시 그려져(화면 폭 전환·로그인) 요소가 바뀌었으면 새 요소를 잰다 — 고정 헤더 높이는 겹침과 무관하게 늘 쓰인다
+      const headers = Array.from(document.querySelectorAll<HTMLElement>('.g7-site-header'));
+      if (resize && (headers.length !== observed.length || headers.some((element, i) => element !== observed[i]))) {
+        resize.disconnect();
+        headers.forEach((element) => resize.observe(element));
+        observed = headers;
+      }
+      const height = visibleHeaderHeight();
+      if (root.style.getPropertyValue(STICKY_HEADER_HEIGHT_VARIABLE) !== `${height}px`) {
+        root.style.setProperty(STICKY_HEADER_HEIGHT_VARIABLE, `${height}px`);
+      }
+
       const tone = root.getAttribute(OVERLAY_ATTRIBUTE);
       if (tone !== 'dark' && tone !== 'light') {
         root.style.removeProperty(HEADER_HEIGHT_VARIABLE);
         root.removeAttribute(OVERLAY_ACTIVE_ATTRIBUTE);
         return;
       }
-      root.style.setProperty(HEADER_HEIGHT_VARIABLE, `${visibleHeaderHeight()}px`);
+      root.style.setProperty(HEADER_HEIGHT_VARIABLE, `${height}px`);
       if (window.scrollY <= SCROLL_THRESHOLD) {
         if (root.getAttribute(OVERLAY_ACTIVE_ATTRIBUTE) !== tone) {
           root.setAttribute(OVERLAY_ACTIVE_ATTRIBUTE, tone);
         }
       } else {
         root.removeAttribute(OVERLAY_ACTIVE_ATTRIBUTE);
-      }
-      // 헤더가 다시 그려져(화면 폭 전환·로그인) 요소가 바뀌었으면 새 요소를 잰다
-      const headers = Array.from(document.querySelectorAll<HTMLElement>('.g7-site-header'));
-      if (resize && (headers.length !== observed.length || headers.some((element, i) => element !== observed[i]))) {
-        resize.disconnect();
-        headers.forEach((element) => resize.observe(element));
-        observed = headers;
       }
     }
 
@@ -87,6 +102,7 @@ export function useHeaderOverlayController(): void {
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
       root.style.removeProperty(HEADER_HEIGHT_VARIABLE);
+      root.style.removeProperty(STICKY_HEADER_HEIGHT_VARIABLE);
       root.removeAttribute(OVERLAY_ACTIVE_ATTRIBUTE);
     };
   }, []);

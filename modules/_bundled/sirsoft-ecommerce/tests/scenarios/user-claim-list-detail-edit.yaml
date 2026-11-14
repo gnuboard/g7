@@ -149,6 +149,7 @@ effects:
   - claim_withdraw_modal_target_lifecycle          # 철회 모달의 대상 세우기·지우기
   - claim_withdraw_handler_channel_contract        # 철회 전송·중복 차단·4xx 화면 / 5xx 토스트
   - claim_pay_handler_address_and_guards           # 결제 주소 조립 금지·중복 차단·PG 위임
+  - claim_pay_pg_entry_failure_releases_the_button # 결제창 열기 전 PG 실패 → 진행 표시 해제 + 문구(신청서 상세는 버튼 아래, 작성·수정은 토스트+상세 이동) (#855)
 
   # 대기 결제행의 수단을 다시 고르는 축 (#599 실측)
   # 접수 때 확정한 수단이 뒤에 낼 수 없게 되는 경우가 둘 있다: 마일리지 잔액 부족, 운영자가
@@ -211,6 +212,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimProgressStepsTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimEditHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimListHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/utils/claimPgDispatch.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimListDetailContract.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimListRender.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimDetailRender.test.tsx
