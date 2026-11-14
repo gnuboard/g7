@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [7.1.6] - 2026-11-11
+## [7.1.6] - 2026-11-14
 
 엄격한 스타일 정책(`style-src`)을 건 사이트에서도 화면이 제대로 그려지게 하고, 환경설정에서 스타일 정책을 켤 수 있게 했습니다.
 
@@ -73,6 +73,8 @@
 - 관리자 환경설정 > 본인인증 정책 편집 창의 「인증 수단」은 이제 **인정할 수단**입니다 — 지정하면 그 수단의 본인인증만 인정하고, 비워 두면(「지정 안 함 — 모든 수단 인정」) 어떤 수단이든 인정합니다. 편집 창에 이 안내를 붙였고, 등록되지 않은 수단이나 정책 목적을 지원하지 않는 수단은 저장할 때 거부합니다(이미 저장된 수단은 그 플러그인이 꺼져 있어도 정책을 끄는 저장은 됩니다).
 - API: `POST /api/identity/challenges` 는 등록되지 않은 `purpose`·`login` 목적·등록되지 않았거나 목적을 지원하지 않는 `provider_id` 를 422 로, 정책(`policy_key`)이 지정한 수단과 다른 `provider_id` 를 422(`identity.errors.provider_policy_mismatch`)로, 지정 수단을 쓸 수 없으면 503(`failure_code=POLICY_PROVIDER_UNAVAILABLE`)으로 답합니다. 정책 강제 지점도 지정 수단을 쓸 수 없으면 503 입니다. `POST /api/auth/login/two-factor/resend`·`POST /api/auth/admin/login/two-factor/resend` 는 인증 앱 challenge 에 422(`auth.two_factor_resend_not_supported`), 60초 안의 메일 재발송에 429(`auth.two_factor_resend_cooldown`, `Retry-After`)를 돌려줍니다. `POST /api/me/verify-password` 는 시도 제한을 넘으면 429(`auth.password_reconfirm_throttled`, `Retry-After`)입니다. 관리자 본인인증 정책 저장·수정 API 는 등록되지 않은 `purpose`·`provider_id` 를 422 로 거부합니다. 본인인증 상태 조회 응답에 `policy_key` 가 실려, 사용자·관리자 기본 템플릿의 전체 화면 본인인증이 다시 보내기 때 정책 수단으로 발급받습니다.
 - 확장 개발자용: `IdentityVerificationManager::resolveForPurpose()` 는 명시한 인증 수단이 등록되지 않았거나 그 목적을 지원하지 않으면 다른 수단으로 바꾸지 않고 `IdentityProviderUnavailableException` 을 던집니다. 정책 강제 리스너는 훅 인자 중 `target_email` 키가 있는 배열(없으면 요청의 `email` 입력)로 비회원 인증 대상을 묶습니다 — 비회원 대상이 있는 정책 훅을 발행하는 확장은 `['target_email' => …]` 를 인자로 넘기세요. `IdentityVerificationLogRepositoryInterface`·`UserRepositoryInterface`(`extendTokenExpiration()`·`deleteSessionsByUserIds()`)·`PasswordResetTokenRepositoryInterface`(`deleteMatching()`)에 메서드가 추가되어, 이 인터페이스를 직접 구현해 바꿔 끼운 확장은 메서드를 구현해야 합니다.
+- PHP 의존성 패키지를 최신 안정 버전으로 갱신했습니다 (Laravel 12.72.0, Symfony 7.4.23, Sanctum 4.4, Reverb 1.13, Scout 11.10 등 — 메이저 상승 없음). 기간 한정 서명 링크의 만료 판정 우회, 경로 문자열 정리의 상위 폴더 탈출, 프록시 주소 대역 판정에 대한 상류 보안 수정이 함께 들어옵니다. Composer 를 실행할 수 없는 환경을 위한 코어와 이커머스 모듈의 `vendor-bundle.zip` 도 같은 구성으로 다시 만들었습니다. 코어 업데이트가 `vendor/` 를 새 구성으로 교체합니다.
+- 이메일 주소 검사가 254자까지만 받습니다. 정확히 255자인 이메일은 이제 「유효한 이메일 주소여야 합니다」 오류를 냅니다(종전에는 통과).
 
 ### Removed
 

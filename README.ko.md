@@ -619,7 +619,7 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 |------|------|
 | GitHub | [github.com/gnuboard/g7](https://github.com/gnuboard/g7) |
 | SIR 커뮤니티 | [sir.kr](https://sir.kr) |
-| 문의 | minsup@sir.kr |
+| 문의 | jjh621@sir.kr |
 
 ---
 

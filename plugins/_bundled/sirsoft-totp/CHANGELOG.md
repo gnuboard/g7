@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.0.3] - 2026-11-11
+## [1.0.3] - 2026-11-14
 
 ### Security
 
@@ -23,6 +23,10 @@
 - 확장 개발자용: 인증 앱 등록 확정·본인 해제·백업 코드 재발급 직후 발행되는 훅 `sirsoft-totp.credential.enrolled`·`sirsoft-totp.credential.disabled`·`sirsoft-totp.backup_codes.regenerated` 를 추가했습니다(인자: 회원, `ip_address`·`user_agent`·`occurred_at` 문맥). 문서: `docs/extension-points.md`
 - API: `POST /api/plugins/sirsoft-totp/enrollment` 는 현재 비밀번호(`current_password`, 필수)를 받습니다 — 틀리면 422, 시도 제한을 넘으면 429(`Retry-After`). 등록 확정은 다른 화면이 먼저 확정했으면 409, 해제·백업 코드 재발급은 시도 제한을 넘으면 429 입니다.
 - 코어 7.1.6 이상이 필요합니다(비밀번호 재확인·본인인증 상태 조건부 갱신 기능을 씁니다).
+
+### Changed
+
+- Composer 잠금 파일을 확장 정보와 다시 맞췄습니다. 설치·업데이트 과정에서 잠금 파일이 오래되었다는 경고가 나오지 않습니다.
 
 ### Fixed
 

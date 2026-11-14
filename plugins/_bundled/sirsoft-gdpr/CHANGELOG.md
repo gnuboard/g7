@@ -4,7 +4,11 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.5] - 2026-11-11
+## [1.1.5] - 2026-11-14
+
+### Changed
+
+- Composer 잠금 파일을 확장 정보와 다시 맞췄습니다. 설치·업데이트 과정에서 잠금 파일이 오래되었다는 경고가 나오지 않습니다.
 
 ### Fixed
 

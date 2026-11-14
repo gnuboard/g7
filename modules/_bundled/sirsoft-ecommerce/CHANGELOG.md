@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.3.5] - 2026-11-11
+## [1.3.5] - 2026-11-14
 
 ### Security
 
@@ -43,6 +43,7 @@
 - 관리자 이커머스 환경설정의 본인인증 정책 편집 창에 「인증 수단」 안내를 붙였습니다 — 지정한 수단으로 받은 본인인증만 인정하고, 비워 두면 어떤 수단이든 인정합니다(코어 7.1.6). 지원하지 않는 수단은 저장할 때 항목 아래에 오류로 보입니다.
 - API: 관리자·회원·비회원 현금영수증 발급 API 는 같은 주문의 다른 발급이 처리 중이면 409(`errors.error_code = ISSUE_IN_PROGRESS`)를 돌려줍니다.
 - 확장 개발자용: 훅 `sirsoft-ecommerce.checkout.before_payment` 의 마지막 인자로 `['target_email' => 주문자 이메일]` 을 덧붙였습니다(뒤에 붙인 인자라 기존 구독자는 그대로 동작합니다). 코어 정책 강제가 비회원 본인인증 대상을 이 값으로 묶습니다.
+- Composer 잠금 파일을 확장 정보와 다시 맞추고, Composer 를 실행할 수 없는 환경을 위한 `vendor-bundle.zip` 을 같은 구성으로 다시 만들었습니다. 설치·업데이트 과정에서 잠금 파일이 오래되었다는 경고가 나오지 않습니다.
 
 ### Fixed
 

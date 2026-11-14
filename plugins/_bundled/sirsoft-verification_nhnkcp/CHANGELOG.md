@@ -4,7 +4,7 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.1.4] - 2026-11-13
+## [1.1.4] - 2026-11-14
 
 ### Security
 
@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - 코어 7.1.6 이상이 필요합니다(가입 트랜잭션 안 훅·본인인증 결과 1회 인정 기능을 씁니다).
+- Composer 잠금 파일을 확장 정보와 다시 맞췄습니다. 설치·업데이트 과정에서 잠금 파일이 오래되었다는 경고가 나오지 않습니다.
 
 ### Fixed
 
