@@ -36,20 +36,17 @@ final class PublicDiskHardeningProbe
      * 접근이 막혔으면(403 — 헤더 모듈 없음) false 다. 서버가 자기 주소에 닿지 못했거나 점검 파일이
      * 내려오지 않은 응답(리다이렉트·404·서버 오류)은 보호 규칙 적용 여부를 알려 주지 않으므로 null 이다.
      *
+     * `rules_written` 은 호출부가 방금 규칙 파일을 지금 설정으로 썼는지다 — false 면 헤더가 붙어 있어도 규칙은 옛 내용이다.
+     *
      * @param  string|null  $directory  공개 디스크 루트 (null 이면 `storage/app/public`)
-     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string} 점검 결과
+     * @param  bool  $rulesWritten  규칙 파일을 지금 설정으로 썼는지
+     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string, rules_written: bool} 점검 결과
      */
-    public static function run(?string $directory = null): array
+    public static function run(?string $directory = null, bool $rulesWritten = true): array
     {
         $directory ??= storage_path('app/public');
 
-        $result = [
-            'ok' => null,
-            'nosniff' => false,
-            'disposition' => false,
-            'status' => null,
-            'checked_at' => now()->toIso8601String(),
-        ];
+        $result = self::emptyResult($rulesWritten);
 
         $name = 'g7-header-probe-'.strtolower(Str::random(16)).'.txt';
         $file = $directory.DIRECTORY_SEPARATOR.$name;
@@ -88,9 +85,37 @@ final class PublicDiskHardeningProbe
     }
 
     /**
+     * 헤더 점검 없이 규칙 파일 쓰기 실패만 결과로 남깁니다(공개 자산 디스크가 로컬 공개 디스크가 아닐 때).
+     *
+     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string, rules_written: bool} 저장한 결과 (`ok` 는 null)
+     */
+    public static function recordRulesWriteFailure(): array
+    {
+        return self::store(self::emptyResult(false));
+    }
+
+    /**
+     * 판정하지 않은 상태의 결과 틀을 만듭니다.
+     *
+     * @param  bool  $rulesWritten  규칙 파일을 지금 설정으로 썼는지
+     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string, rules_written: bool} 결과 틀
+     */
+    private static function emptyResult(bool $rulesWritten): array
+    {
+        return [
+            'ok' => null,
+            'nosniff' => false,
+            'disposition' => false,
+            'status' => null,
+            'checked_at' => now()->toIso8601String(),
+            'rules_written' => $rulesWritten,
+        ];
+    }
+
+    /**
      * 저장된 점검 결과를 반환합니다.
      *
-     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string}|null 결과 (없으면 null)
+     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string, rules_written: bool}|null 결과 (없으면 null)
      */
     public static function cached(): ?array
     {
@@ -112,8 +137,8 @@ final class PublicDiskHardeningProbe
     /**
      * 점검 결과를 캐시에 저장하고 그대로 돌려줍니다.
      *
-     * @param  array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string}  $result  점검 결과
-     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string} 같은 결과
+     * @param  array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string, rules_written: bool}  $result  점검 결과
+     * @return array{ok: bool|null, nosniff: bool, disposition: bool, status: int|null, checked_at: string, rules_written: bool} 같은 결과
      */
     private static function store(array $result): array
     {

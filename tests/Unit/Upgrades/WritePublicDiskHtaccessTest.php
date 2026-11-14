@@ -152,4 +152,32 @@ class WritePublicDiskHtaccessTest extends TestCase
 
         $this->assertDirectoryDoesNotExist($this->storageRoot.'/app/public');
     }
+
+    /**
+     * root 로 실행된 업데이트(sudo)가 만든 규칙 파일은 공개 디스크 디렉터리의 소유자·그룹을 이어받는다.
+     *
+     * 이 파일은 업데이트 시작 시점에 없으므로 코어 업데이트의 소유권 스냅샷·복원이 닿지 않는다 — 스텝이 직접 맞춘다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=upgrade_step__not_exportable
+     *
+     * @effects webserver_rules_owned_by_directory_owner
+     */
+    public function test_rules_written_as_root_take_the_directory_owner(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows' || ! function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+            $this->markTestSkipped('소유자 바꾸기는 root 로 실행할 때만 재현됩니다.');
+        }
+
+        $directory = $this->storageRoot.'/app/public';
+        chown($directory, 65534);
+        chgrp($directory, 65534);
+
+        (new WritePublicDiskHtaccess)->run($this->context());
+
+        clearstatcache();
+        $this->assertSame(65534, fileowner($directory.'/.htaccess'));
+        $this->assertSame(65534, filegroup($directory.'/.htaccess'));
+    }
 }

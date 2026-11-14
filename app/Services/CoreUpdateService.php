@@ -1214,12 +1214,38 @@ class CoreUpdateService
             return new VendorInstallResult(
                 mode: VendorMode::Composer,
                 strategy: 'composer',
-                packageCount: 0,
+                packageCount: $this->countInstalledPackages($ctx->sourceDir.DIRECTORY_SEPARATOR.'vendor'),
                 details: ['pending_path' => $ctx->sourceDir],
             );
         };
 
         return $resolver->install($context, $composerExecutor);
+    }
+
+    /**
+     * composer 가 설치를 마친 vendor 의 패키지 수를 셉니다(`vendor/composer/installed.json`).
+     *
+     * 업데이트 로그의 「vendor 설치 완료 (packages: N)」 표시용이다. 파일을 읽을 수 없으면 0 — 설치 성공 판정에는 쓰지 않는다.
+     *
+     * @param  string  $vendorPath  vendor 디렉토리 절대 경로
+     * @return int 설치된 패키지 수
+     */
+    private function countInstalledPackages(string $vendorPath): int
+    {
+        $path = $vendorPath.DIRECTORY_SEPARATOR.'composer'.DIRECTORY_SEPARATOR.'installed.json';
+        if (! is_file($path)) {
+            return 0;
+        }
+
+        $decoded = json_decode((string) @file_get_contents($path), true);
+        if (! is_array($decoded)) {
+            return 0;
+        }
+
+        // Composer 2 는 {packages: [...]}, Composer 1 은 최상위가 패키지 배열이다.
+        $packages = array_key_exists('packages', $decoded) ? $decoded['packages'] : $decoded;
+
+        return is_array($packages) ? count($packages) : 0;
     }
 
     /**

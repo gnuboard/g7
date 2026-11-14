@@ -168,6 +168,136 @@ class PublicDiskHardeningTest extends TestCase
     }
 
     /**
+     * 규칙 파일을 웹 계정이 고쳐 쓸 수 없어도(root 로 실행된 업데이트가 만든 파일) 디렉터리에 쓸 수 있으면 새 내용으로 바꾼다.
+     *
+     * 파일 권한만 막히고 디렉터리 쓰기는 되는 상태를 0444 로 재현한다(root 는 권한 검사를 건너뛰므로 제외).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=webserver_rules__operator_added
+     *
+     * @effects webserver_rules_replaced_when_file_not_writable
+     */
+    public function test_ensure_replaces_a_rules_file_it_cannot_write_in_place(): void
+    {
+        $this->skipUnlessPosixNonRoot();
+
+        $path = $this->directory.'/.htaccess';
+        $this->assertTrue(PublicDiskHardening::ensureHtaccess($this->directory));
+        chmod($path, 0444);
+
+        Config::set('core.storage.public_asset_extensions', ['png']);
+        $this->assertTrue(PublicDiskHardening::ensureHtaccess($this->directory));
+
+        clearstatcache();
+        $this->assertStringContainsString('(?!.*\.(png)$)', (string) file_get_contents($path));
+        $this->assertSame(0444, fileperms($path) & 0777, '바꾼 파일은 원래 권한을 이어받는다');
+        $this->assertSame([], glob($this->directory.'/.htaccess.tmp-*'), '임시 파일이 남지 않는다');
+    }
+
+    /**
+     * 디렉터리에도 쓸 수 없으면 false 를 돌려준다(호출부가 경고한다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=webserver_rules__operator_added
+     *
+     * @effects webserver_rules_replaced_when_file_not_writable
+     */
+    public function test_ensure_reports_failure_when_the_directory_is_not_writable(): void
+    {
+        $this->skipUnlessPosixNonRoot();
+
+        $path = $this->directory.'/.htaccess';
+        $this->assertTrue(PublicDiskHardening::ensureHtaccess($this->directory));
+        chmod($path, 0444);
+        chmod($this->directory, 0555);
+
+        try {
+            Config::set('core.storage.public_asset_extensions', ['png']);
+            $this->assertFalse(PublicDiskHardening::ensureHtaccess($this->directory));
+            $this->assertStringNotContainsString('(?!.*\.(png)$)', (string) file_get_contents($path));
+        } finally {
+            chmod($this->directory, 0777);
+            chmod($path, 0644);
+        }
+    }
+
+    /**
+     * root 로 실행되면(sudo 코어 업데이트) 새로 쓴 규칙 파일을 공개 디스크 디렉터리의 소유자·그룹으로 맞춘다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=webserver_rules__exportable
+     *
+     * @effects webserver_rules_owned_by_directory_owner
+     */
+    public function test_rules_written_as_root_take_the_directory_owner(): void
+    {
+        $this->skipUnlessRoot();
+
+        chown($this->directory, 65534);
+        chgrp($this->directory, 65534);
+
+        $this->assertTrue(PublicDiskHardening::ensureHtaccess($this->directory));
+
+        clearstatcache();
+        $this->assertSame(65534, fileowner($this->directory.'/.htaccess'));
+        $this->assertSame(65534, filegroup($this->directory.'/.htaccess'));
+    }
+
+    /**
+     * 내용이 이미 같아도 root 소유로 남은 규칙 파일(이전 업데이트가 남김)은 디렉터리 소유자로 바로잡는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=webserver_rules__exportable
+     *
+     * @effects webserver_rules_owned_by_directory_owner
+     */
+    public function test_root_owned_rules_with_current_content_get_the_directory_owner(): void
+    {
+        $this->skipUnlessRoot();
+
+        $path = $this->directory.'/.htaccess';
+        file_put_contents($path, PublicDiskHardening::htaccess());
+        chown($this->directory, 65534);
+        chgrp($this->directory, 65534);
+        clearstatcache();
+        $this->assertSame(0, fileowner($path));
+
+        $this->assertTrue(PublicDiskHardening::ensureHtaccess($this->directory));
+
+        clearstatcache();
+        $this->assertSame(65534, fileowner($path));
+        $this->assertSame(65534, filegroup($path));
+    }
+
+    /**
+     * POSIX 권한 검사가 걸리는 환경(Windows 아님, root 아님)이 아니면 건너뜁니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function skipUnlessPosixNonRoot(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows' || ! function_exists('posix_geteuid') || posix_geteuid() === 0) {
+            $this->markTestSkipped('POSIX 파일 권한 검사가 걸리는 일반 계정에서만 재현됩니다.');
+        }
+    }
+
+    /**
+     * root 로 실행 중이 아니면 건너뜁니다(소유자 바꾸기는 root 만 할 수 있다).
+     *
+     * @return void 반환값 없음
+     */
+    private function skipUnlessRoot(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows' || ! function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+            $this->markTestSkipped('소유자 바꾸기는 root 로 실행할 때만 재현됩니다.');
+        }
+    }
+
+    /**
      * 공개 디스크 디렉터리가 없으면 아무것도 만들지 않고 false 를 돌려준다.
      *
      * @return void 반환값 없음

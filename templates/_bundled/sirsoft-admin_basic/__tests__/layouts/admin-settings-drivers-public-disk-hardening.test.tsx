@@ -166,6 +166,52 @@ describe('드라이버 탭 공개 디스크 보호 규칙 경고', () => {
     passing.cleanup();
   });
 
+  // @scenario case=settings_save__operator_added
+  // @effects drivers_tab_warns_when_rules_write_failed
+  it('규칙 파일을 쓰지 못했으면(rules_written=false) 헤더 점검이 정상이어도 쓰기 실패 경고를 보여 준다', async () => {
+    const testUtils = renderCard({ ok: true, nosniff: true, disposition: true, status: 200, checked_at: 'x', rules_written: false });
+    await testUtils.render();
+
+    const warning = screen.getByTestId('public-disk-rules-write-failed-warning');
+    expect(warning).toBeInTheDocument();
+    expect(warning.textContent).toContain('admin.settings.drivers.public_asset.hardening_rules_write_failed');
+    expect(screen.queryByTestId('public-disk-hardening-warning')).toBeNull();
+
+    testUtils.cleanup();
+  });
+
+  // @scenario case=settings_save__exportable
+  // @effects drivers_tab_warns_when_rules_write_failed
+  it('공개 디스크를 쓰지 않아 헤더 점검을 하지 않았어도(ok=null) 쓰기 실패 경고는 보여 준다', async () => {
+    const testUtils = renderCard({ ok: null, nosniff: false, disposition: false, status: null, checked_at: 'x', rules_written: false });
+    await testUtils.render();
+
+    expect(screen.getByTestId('public-disk-rules-write-failed-warning')).toBeInTheDocument();
+
+    testUtils.cleanup();
+  });
+
+  // @scenario case=settings_save__operator_added
+  // @effects drivers_tab_warns_when_rules_write_failed
+  it('규칙 파일을 썼거나(rules_written=true) 그 값이 없는 옛 결과면 쓰기 실패 경고가 없다', async () => {
+    const failing = renderCard({ ok: true, nosniff: true, disposition: true, status: 200, checked_at: 'x', rules_written: false });
+    await failing.render();
+    expect(screen.getByTestId('public-disk-rules-write-failed-warning')).toBeInTheDocument();
+    failing.cleanup();
+
+    for (const hardening of [
+      { ok: true, nosniff: true, disposition: true, status: 200, checked_at: 'x', rules_written: true },
+      { ok: true, nosniff: true, disposition: true, status: 200, checked_at: 'x' },
+      null,
+    ]) {
+      const testUtils = renderCard(hardening);
+      await testUtils.render();
+      expect(screen.getByTestId('drivers.public_asset_extensions')).toBeInTheDocument();
+      expect(screen.queryByTestId('public-disk-rules-write-failed-warning')).toBeNull();
+      testUtils.cleanup();
+    }
+  });
+
   // @scenario case=self_check__not_exportable
   // @effects drivers_tab_warns_only_when_self_check_fails
   it('점검하지 못했거나(ok=null) 결과가 없으면 경고가 없다', async () => {

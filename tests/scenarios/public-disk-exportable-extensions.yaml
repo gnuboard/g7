@@ -12,6 +12,9 @@ description: |
     - 공개 디스크 루트에 웹서버 규칙 파일(.htaccess)을 자동으로 둔다(nosniff, 비이미지 내려받기 강제 + sandbox,
       헤더 모듈 부재 시 차단, PHP 실행 차단). 7.1.6 업그레이드 스텝, 링크 보장 함수, 드라이버 탭 저장이 만든다.
     - 드라이버 탭 저장 뒤 직접 주소의 응답 헤더를 스스로 점검하고, 걸리지 않았을 때만 화면이 경고한다.
+    - root(sudo) 로 실행된 업데이트가 만든 규칙 파일은 공개 디스크 디렉터리의 소유자·그룹으로 맞춘다(업데이트의
+      소유권 스냅샷은 시작 시점에 없던 이 파일에 닿지 않는다). 파일을 고쳐 쓸 수 없으면 임시 파일로 바꿔 넣고,
+      그래도 못 쓰면 저장 결과에 쓰기 실패를 남겨 드라이버 탭이 따로 경고한다(헤더는 옛 규칙으로도 붙는다).
 
   S3 실응답·nginx·mod_headers 부재는 로컬에서 재현할 수 없어 단위 시험으로 잠근다.
 
@@ -53,6 +56,10 @@ effects:
   - self_check_unknown_when_site_unreachable
   - self_check_result_cleared_when_public_disk_not_used
   - upgrade_writes_webserver_rules_once
+  - webserver_rules_owned_by_directory_owner
+  - webserver_rules_replaced_when_file_not_writable
+  - drivers_save_reports_rules_write_failure
+  - drivers_tab_warns_when_rules_write_failed
   - drivers_save_refreshes_rules_and_runs_self_check
   - drivers_tab_warns_only_when_self_check_fails
   - drivers_tab_shows_exportable_extensions_field

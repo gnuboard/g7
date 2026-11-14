@@ -112,6 +112,12 @@ final class PublicDiskHardening
      * 내용이 같으면 다시 쓰지 않는다. 표지가 없는 기존 파일(손으로 만든 파일)은 `.htaccess.g7-backup` 으로
      * 사본을 남기고 바꾼다. 공개 디스크 디렉터리가 없으면 만들지 않는다.
      *
+     * 소유권: root 로 실행된 코어 업데이트(sudo)가 만든 파일은 웹 계정이 고쳐 쓸 수 없다. 이 파일은 업데이트
+     * 시작 시점에 없어 업데이트의 소유권 스냅샷·복원이 닿지 않으므로, 쓴 뒤(또는 내용이 같아도) 공개 디스크
+     * 디렉터리의 소유자·그룹으로 맞춘다 — root 가 아니면 바꿀 수 없으므로 아무 일도 없다. 그래도 파일을 고쳐 쓸
+     * 수 없으면(이미 root 소유로 남은 사이트) 같은 디렉터리의 임시 파일로 쓴 뒤 바꿔 넣는다. 디렉터리에도 쓸 수
+     * 없으면 false 다.
+     *
      * @param  string|null  $directory  공개 디스크 루트 (null 이면 `storage/app/public`)
      * @return bool 규칙 파일이 최신 내용으로 놓여 있으면 true
      */
@@ -128,6 +134,8 @@ final class PublicDiskHardening
         $existing = is_file($path) ? @file_get_contents($path) : false;
 
         if ($existing === $content) {
+            self::matchDirectoryOwnership($path, $directory);
+
             return true;
         }
 
@@ -135,6 +143,77 @@ final class PublicDiskHardening
             @copy($path, $path.'.g7-backup');
         }
 
-        return @file_put_contents($path, $content, LOCK_EX) !== false;
+        if (! self::write($path, $content)) {
+            return false;
+        }
+
+        self::matchDirectoryOwnership($path, $directory);
+
+        return true;
+    }
+
+    /**
+     * 규칙 파일을 씁니다 — 제자리에 쓸 수 없으면 같은 디렉터리의 임시 파일로 쓴 뒤 바꿔 넣습니다.
+     *
+     * 바꿔 넣기는 파일이 아니라 디렉터리의 쓰기 권한만 요구한다. 바꿔 넣은 파일은 원래 파일의 권한을 이어받는다.
+     * 규칙 파일 자리가 파일이 아니면(디렉터리 등) 쓰지 않는다.
+     *
+     * @param  string  $path  규칙 파일 경로
+     * @param  string  $content  쓸 내용
+     * @return bool 썼으면 true
+     */
+    private static function write(string $path, string $content): bool
+    {
+        if (file_exists($path) && ! is_file($path)) {
+            return false;
+        }
+
+        if ((! file_exists($path) || is_writable($path)) && @file_put_contents($path, $content, LOCK_EX) !== false) {
+            return true;
+        }
+
+        $temporary = $path.'.tmp-'.bin2hex(random_bytes(6));
+
+        if (@file_put_contents($temporary, $content) === false) {
+            return false;
+        }
+
+        $perms = is_file($path) ? (@fileperms($path) & 0777) : false;
+        if ($perms !== false && $perms !== 0) {
+            @chmod($temporary, $perms);
+        }
+
+        if (! @rename($temporary, $path)) {
+            @unlink($temporary);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 규칙 파일의 소유자·그룹을 공개 디스크 디렉터리와 같게 맞춥니다(root 로 실행 중일 때만 실제로 바뀐다).
+     *
+     * @param  string  $path  규칙 파일 경로
+     * @param  string  $directory  공개 디스크 루트
+     * @return void 반환값 없음
+     */
+    private static function matchDirectoryOwnership(string $path, string $directory): void
+    {
+        if (! function_exists('chown') || ! function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+            return;
+        }
+
+        clearstatcache(true, $path);
+        $owner = @fileowner($directory);
+        $group = @filegroup($directory);
+
+        if ($owner !== false && @fileowner($path) !== $owner) {
+            @chown($path, $owner);
+        }
+        if ($group !== false && @filegroup($path) !== $group) {
+            @chgrp($path, $group);
+        }
     }
 }

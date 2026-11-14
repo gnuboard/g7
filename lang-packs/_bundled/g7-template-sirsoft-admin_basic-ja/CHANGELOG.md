@@ -4,12 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.5] - 2026-11-14
+## [1.1.5] - 2026-11-15
 
 ### Added
 
 - 관리자 기본 템플릿 1.1.6 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 카드 「스타일 정책」 구획 문구(`admin.settings.security.csp.style.*` 18개 — 「スタイルポリシー」·적용 모드·차단 강도(「基本」·「厳格」)·강제 경고·강제 시 깨지는 화면 안내·`.env` 우선 안내·추가 허용 호스트·자동 포함 호스트·정책 미리보기)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 구획 문구가 키 그대로 보입니다.
-- 관리자 기본 템플릿 1.1.6 의 환경설정 새 입력칸 문구(`admin.settings.upload.layout_attachment_extensions`·`_hint`, `admin.settings.drivers.public_asset.extensions`·`extensions_hint`·`hardening_warning`, `admin.settings.security.password_reset_rate_limit_per_minute`·`register_rate_limit_per_minute`·`rate_limit_per_minute_hint`)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.6 의 환경설정 새 입력칸 문구(`admin.settings.upload.layout_attachment_extensions`·`_hint`, `admin.settings.drivers.public_asset.extensions`·`extensions_hint`·`hardening_warning`·`hardening_rules_write_failed`, `admin.settings.security.password_reset_rate_limit_per_minute`·`register_rate_limit_per_minute`·`rate_limit_per_minute_hint`)의 일본어 번역을 추가했습니다.
 
 - 관리자 기본 템플릿 1.1.6 의 본인인증 정책 편집 창 「인증 수단」 안내(`admin.identity.policies.form.provider_id_desc` — 지정한 수단으로 받은 인증만 인정하고, 비우면 모든 수단을 인정한다는 설명)의 일본어 번역을 추가했습니다.
 

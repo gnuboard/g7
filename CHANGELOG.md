@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [7.1.6] - 2026-11-14
+## [7.1.6] - 2026-11-15
 
 엄격한 스타일 정책(`style-src`)을 건 사이트에서도 화면이 제대로 그려지게 하고, 환경설정에서 스타일 정책을 켤 수 있게 했습니다.
 
@@ -43,7 +43,7 @@
 - 환경설정 > 업로드에 「레이아웃 첨부 허용 확장자」 를 추가했습니다(기본 `jpg, jpeg, png, gif, webp`). 레이아웃 편집기에서 올릴 수 있는 형식을 운영자가 정합니다. 템플릿별로 다른 목록을 쓰려면 필터 훅 `core.template_layout_attachment.filter_allowed_extensions`(목록, 템플릿 식별자)로 돌려주며, 우선순위는 템플릿 설정 > 이 설정 > 기본값입니다.
 - 환경설정 > 드라이버의 「공개 자산 스토리지」 에 「공개 디스크로 내보낼 확장자」 를 추가했습니다(기본 `jpg, jpeg, png, gif, webp, avif`). 이 목록의 형식만 공개 디스크에 저장되어 직접 주소로 제공되고, 그 밖의 형식은 기존 디스크에 저장되어 서버를 거쳐 제공됩니다. 이미지가 아닌 형식을 목록에 넣으면 직접 주소에서도 내려받기로만 열립니다.
 - 환경설정 > 보안에 「비밀번호 찾기·재설정 분당 허용 횟수」 와 「회원가입 분당 허용 횟수」 를 추가했습니다(각 기본 10, 1~1000). 같은 IP 에서 1분 동안 받을 요청 수이며, 사내망처럼 여러 사람이 한 IP 를 쓰는 곳은 값을 올리면 됩니다. 비밀번호 찾기와 재설정·토큰 확인은 같은 값을 쓰되 따로 셉니다.
-- 환경설정 > 드라이버를 저장하면 `/storage` 직접 주소의 보호 헤더가 실제로 붙는지 스스로 확인하고, 붙지 않았을 때 「웹서버 보호 규칙이 적용되지 않았습니다」 경고와 설치 문서 링크를 보여 줍니다(공개 자산 디스크가 로컬 공개 디스크일 때). 저장은 그대로 됩니다. 사이트 주소가 다른 주소로 넘어가거나 점검 파일을 찾지 못해 확인할 수 없을 때는 경고를 띄우지 않습니다.
+- 환경설정 > 드라이버를 저장하면 `/storage` 직접 주소의 보호 헤더가 실제로 붙는지 스스로 확인하고, 붙지 않았을 때 「웹서버 보호 규칙이 적용되지 않았습니다」 경고와 설치 문서 링크를 보여 줍니다(공개 자산 디스크가 로컬 공개 디스크일 때). 저장은 그대로 됩니다. 사이트 주소가 다른 주소로 넘어가거나 점검 파일을 찾지 못해 확인할 수 없을 때는 경고를 띄우지 않습니다. 보호 규칙 파일을 지금 설정으로 바꾸지 못했으면(권한) 「웹서버 보호 규칙 파일을 지금 설정으로 바꾸지 못했습니다」 경고를 따로 보여 줍니다. 코어 업데이트를 root(sudo)로 실행해도 보호 규칙 파일은 공개 디스크 폴더의 소유자로 맞춰져, 이후 웹서버 계정이 다시 만들 수 있습니다.
 - 확장 개발자용: 저장 파일명 확장자를 파일 내용에서 정하는 `App\Support\Files\StoredFileExtension::resolve()`, 허용 MIME 목록에서 이름 확장자 목록을 만드는 `AllowedExtensions::fromMimeTypes()`, 공개 디스크로 내보낼 확장자 판정(`PublicAssetDisk::exportsExtension()`·`resolveForExtension()`·`storageForExtension()`·`allowsDirectUrl()`), 연결 대상 호스트·주소 검증 규칙(`App\Rules\ConnectionHost`·`ConnectionEndpointUrl`), 링크로컬·메타데이터 주소 판정(`OutboundUrlValidator::isMetadataHost()`·`isMetadataUrl()`·`isNumericDisguisedHost()`·`isRefusedConnectionUrl()`), 본인인증 메일 대상 해시(`MailIdentityProvider::targetHash()`)와 재요청 대기 시간(`IdentityVerificationService::cooldownRemaining()`)을 추가했습니다. 환경설정 조회 응답의 `_meta.public_disk_hardening` 에 `/storage` 보호 헤더 점검 결과가 실립니다. `AbstractModule`·`AbstractPlugin` 의 `resolvePublicAssetDisk()` 는 두 번째 인자로 저장할 파일의 확장자를 받습니다(주지 않으면 종전과 같습니다). 문서: `docs/extension/storage-driver.md` 「저장 파일명 확장자」·「공개 디스크로 내보낼 확장자」 허용 MIME 목록의 모든 형식에서 이름 확장자를 알 수 있는지 판정하는 `AllowedExtensions::coversEveryMimeType()` 도 더했습니다.
 - 모듈·플러그인이 manifest `trusted_style_hosts`(+ 사유 `trusted_style_hosts_reason`)로 외부 CSS 호스트를 선언하면, 켜져 있는 동안 스타일 정책에 자동으로 허용됩니다. 결제창처럼 외부 스크립트가 스스로 싣는 CSS 를 위한 것입니다 — 종전에는 운영자가 「추가 스타일 허용 호스트」에 직접 넣지 않으면 스타일 정책을 강제한 사이트에서 결제창이 화면을 덮지 못했습니다. 실행 중에 더하려면 필터 훅 `core.csp.trusted_style_hosts` 를 씁니다. 확장 개발 안내: `docs/extension/module-assets.md`.
 - 확장 개발자용: 모듈·플러그인의 공개 설정(화면으로 내려가는 설정)을 내려보내기 직전에 걸러 낼 수 있는 필터 훅 `core.module_settings.filter_frontend_settings`·`core.plugin_settings.filter_frontend_settings` 를 추가했습니다. 인자는 (설정 배열, 확장 식별자)이고 걸러 낸 배열을 돌려줍니다. 배열이 아닌 값을 돌려주면 원래 값이 쓰입니다.
@@ -91,6 +91,7 @@
 - PHP 확장이 없을 때와 일괄 업데이트가 중단됐을 때 나오는 영어 안내 문구에서 `(s)` 표기를 없앴습니다.
 - `core:update` 가 새 버전을 적용한 뒤의 마무리 단계(캐시 재생성·업데이트 기록 저장·함께 온 확장 업데이트)에서 오류가 나면, 이미 지운 백업을 두고 「백업에서 복원되었습니다」 라고 안내하고 공식 번들 배치 기록을 업데이트 전 상태로 되돌리며 성공 기록과 실패 기록을 둘 다 남기던 문제를 고쳤습니다. 이제 「업데이트는 ○○ 으로 적용됐습니다. 마무리 단계(○○)에서 오류가 나 나머지를 끝내지 못했습니다」 라고 알리고, 남은 일을 끝내는 명령(`config:cache`·`route:cache`·`hooks:cache`, 확장별 `module:update`·`plugin:update`·`template:update --source=bundled`)을 안내한 뒤 종료 코드 1 로 끝납니다. 파일과 데이터는 새 버전 그대로 둡니다.
 - `core:update` 가 진행 표시를 만들기 전(업데이트 확인·확인 질문 단계)에 오류를 만나면 원래 오류 대신 「정의되지 않은 변수」 오류가 나오던 문제를 고쳤습니다. 원래 오류가 그대로 보입니다. 백업 경로는 있는데 백업 폴더가 없을 때 복원했다고 안내하던 것도 「복원할 백업이 없어 복원을 건너뜁니다」 로 바로잡았습니다.
+- `core:update` 가 PHP 의존성을 Composer 로 설치했을 때 업데이트 로그의 「vendor 설치 완료」 줄에 패키지 수를 늘 0 으로 적던 문제를 고쳤습니다. 실제로 설치된 패키지 수를 적습니다.
 - 웹 설치가 끝난 뒤 설치 잔여 파일(`storage/installer/runtime.php`)을 지우지 못해도 설치가 성공으로 끝나고 다시 정리할 길이 없던 문제를 고쳤습니다. 이 파일이 남으면 `.env` 대신 쓰여 서버를 옮기며 `.env` 를 고쳐도 반영되지 않았습니다. 7.1.6 으로 올릴 때 업데이트가 이 파일의 값을 `.env` 로 옮기고(빈 칸은 채우고, DB 정보가 다르면 실제로 접속해 본 뒤 정하며, `APP_KEY` 는 지금까지 쓰인 값을 유지합니다) 파일을 지웁니다. `.env` 를 고친 경우 `.env.bak-7.1.6-<시각>` 사본을 남깁니다. 새로 설치할 때는 삭제를 한 번 더 시도하고, 그래도 안 되면 파일 내용을 비우며, 터미널 설치는 완료 화면에 「설치 잔여 파일을 지우지 못했습니다」 라고 알립니다.
 - `bootstrap/cache` 의 캐시 파일이 **없을 때**(서버 이전, 배포 도구가 폴더를 비움) 사이트가 멈추거나 캐시 없이 계속 돌던 문제를 고쳤습니다. 확장 오토로드 캐시(`autoload-extensions.php`)가 없으면 다음 요청이 다시 만듭니다 — 종전에는 확장의 Composer 의존성과 헬퍼 파일이 빠져 500 오류가 났습니다. 훅 캐시(`hooks.php`)·설정 캐시(`config.php`)·라우트 캐시(`routes-v7.php`)는 운영 환경(`APP_ENV=production`, 디버그 꺼짐)의 웹 요청이 응답을 보낸 뒤에 다시 만듭니다. 개발 환경과 명령줄 실행(`config:clear` 등으로 일부러 지운 경우)에서는 만들지 않습니다. 다시 만들기가 실패하면 확장 오토로드·훅은 60초, 설정·라우트는 5분 동안 다시 시도하지 않으며, root 로 실행 중일 때는 만들지 않습니다(root 가 만든 캐시 파일은 웹 서버 계정이 고쳐 쓰지 못합니다). 캐시를 일부러 두지 않는 운영이라면 `.env` 에 `G7_CACHE_SELF_HEAL=false` 를 두세요.
 - 명령줄(`php artisan …`)이 웹 요청과 달리 확장 소스의 클래스 목록을 등록하지 않아, 명령줄에서만 확장 클래스를 폴더 탐색으로 찾던 차이를 없앴습니다.

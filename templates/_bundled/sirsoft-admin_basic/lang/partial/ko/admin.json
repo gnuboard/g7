@@ -2075,7 +2075,8 @@
         "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다.",
         "extensions": "공개 디스크로 내보낼 확장자",
         "extensions_hint": "이 목록의 형식만 공개 디스크에 저장되어 직접 URL 로 제공됩니다. 그 밖의 형식은 기존 디스크에 저장되어 서버를 거쳐 제공됩니다. 이미지가 아닌 형식을 넣으면 직접 URL 에서도 다운로드로만 제공됩니다.",
-        "hardening_warning": "웹서버 보호 규칙이 적용되지 않았습니다. /storage 직접 주소 응답에 보호 헤더가 없습니다 — 설치 문서의 nginx/Apache 설정을 확인하세요."
+        "hardening_warning": "웹서버 보호 규칙이 적용되지 않았습니다. /storage 직접 주소 응답에 보호 헤더가 없습니다 — 설치 문서의 nginx/Apache 설정을 확인하세요.",
+        "hardening_rules_write_failed": "웹서버 보호 규칙 파일을 지금 설정으로 바꾸지 못했습니다. 공개 디스크 폴더(storage/app/public)와 그 안의 .htaccess 파일을 웹서버 계정이 쓸 수 있는지 확인한 뒤 다시 저장하세요."
       },
       "cache": {
         "title": "캐시",

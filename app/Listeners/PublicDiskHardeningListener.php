@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
  * - 공개 디스크 루트의 웹서버 규칙 파일을 지금 설정(「공개 디스크로 내보낼 확장자」)에 맞춰 다시 만들고,
  * - 공개 자산 디스크가 로컬 공개 디스크(`public`)면 `/storage` 직접 주소의 보호 헤더를 점검해 결과를 남긴다.
  *   다른 디스크면 지난 점검 결과를 지운다(경고를 띄울 대상이 아니다).
+ * - 규칙 파일을 쓰지 못했으면 디스크와 무관하게 그 실패를 결과(`rules_written=false`)에 남겨 화면이 경고하게 한다.
+ *   헤더는 옛 규칙 파일로도 붙으므로 헤더 점검만으로는 「목록을 바꿨는데 규칙이 그대로」를 알 수 없다.
  *
  * 저장은 막지 않는다 — 이 리스너의 실패는 경고 로그로만 남긴다.
  */
@@ -83,10 +85,16 @@ class PublicDiskHardeningListener implements HookListenerInterface
                 config(['core.storage.public_asset_disk' => $disk === 'none' ? '' : $disk]);
             }
 
-            PublicDiskHardening::ensureHtaccess();
+            $rulesWritten = PublicDiskHardening::ensureHtaccess();
+
+            if (! $rulesWritten) {
+                Log::warning('공개 디스크 보호 규칙 파일(.htaccess)을 쓰지 못했습니다 — 공개 디스크 디렉터리의 쓰기 권한을 확인하세요.');
+            }
 
             if (PublicAssetDisk::resolve() === 'public') {
-                PublicDiskHardeningProbe::run();
+                PublicDiskHardeningProbe::run(rulesWritten: $rulesWritten);
+            } elseif (! $rulesWritten) {
+                PublicDiskHardeningProbe::recordRulesWriteFailure();
             } else {
                 PublicDiskHardeningProbe::forget();
             }

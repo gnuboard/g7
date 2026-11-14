@@ -2103,7 +2103,8 @@
         "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used.",
         "extensions": "Extensions Exported to the Public Disk",
         "extensions_hint": "Only these file types are stored on the public disk and served by direct URL. Other types stay on the existing disk and are served through the server. Non-image types listed here are served as downloads even by direct URL.",
-        "hardening_warning": "Web server protection rules are not applied. Responses from /storage direct URLs have no protective headers — check the nginx/Apache settings in the installation guide."
+        "hardening_warning": "Web server protection rules are not applied. Responses from /storage direct URLs have no protective headers — check the nginx/Apache settings in the installation guide.",
+        "hardening_rules_write_failed": "Could not update the web server protection rules file to the current settings. Make sure the web server account can write to the public disk folder (storage/app/public) and its .htaccess file, then save again."
       },
       "cache": {
         "title": "Cache",

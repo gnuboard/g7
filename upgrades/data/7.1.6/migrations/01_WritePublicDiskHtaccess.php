@@ -18,6 +18,10 @@ use App\Extension\UpgradeContext;
  *
  * idempotent: 자동 생성 표지가 있는 파일은 건드리지 않는다. 표지가 없는 기존 파일은 `.htaccess.g7-backup` 으로
  * 사본을 남기고 바꾼다. 공개 디스크 디렉터리가 없으면 건너뛴다.
+ *
+ * 소유권: 코어 업데이트를 root(sudo)로 실행하면 이 스텝이 만든 파일이 root 소유로 남아 웹 계정이 다시 쓰지 못한다.
+ * 이 파일은 업데이트 시작 시점에 없어 업데이트의 소유권 스냅샷·복원이 닿지 않으므로, 스텝이 직접 공개 디스크
+ * 디렉터리의 소유자·그룹으로 맞춘다(root 가 아니면 아무 일도 없다). PHP 파일 함수만 쓴다.
  */
 class WritePublicDiskHtaccess implements DataMigration
 {
@@ -78,6 +82,7 @@ HTACCESS;
         $existing = is_file($path) ? @file_get_contents($path) : false;
 
         if (is_string($existing) && str_starts_with($existing, self::MARKER_PREFIX)) {
+            $this->matchDirectoryOwnership($path, $directory);
             $context->logger->info('[7.1.6] 공개 디스크 보호 규칙 파일이 이미 있음 — 건너뜀');
 
             return;
@@ -100,6 +105,33 @@ HTACCESS;
             return;
         }
 
+        $this->matchDirectoryOwnership($path, $directory);
+
         $context->logger->info('[7.1.6] 공개 디스크 보호 규칙 파일 생성: storage/app/public/.htaccess');
+    }
+
+    /**
+     * 규칙 파일의 소유자·그룹을 공개 디스크 디렉터리와 같게 맞춥니다(root 로 실행 중일 때만 실제로 바뀐다).
+     *
+     * @param  string  $path  규칙 파일 경로
+     * @param  string  $directory  공개 디스크 루트
+     * @return void 반환값 없음
+     */
+    private function matchDirectoryOwnership(string $path, string $directory): void
+    {
+        if (! function_exists('chown') || ! function_exists('posix_geteuid') || posix_geteuid() !== 0) {
+            return;
+        }
+
+        clearstatcache(true, $path);
+        $owner = @fileowner($directory);
+        $group = @filegroup($directory);
+
+        if ($owner !== false && @fileowner($path) !== $owner) {
+            @chown($path, $owner);
+        }
+        if ($group !== false && @filegroup($path) !== $group) {
+            @chgrp($path, $group);
+        }
     }
 }

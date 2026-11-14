@@ -86,7 +86,74 @@ class PublicDiskHardeningListenerTest extends TestCase
         $rules = (string) file_get_contents($this->storageRoot.'/app/public/.htaccess');
         $this->assertStringContainsString('(?!.*\.(png)$)', $rules);
         $this->assertTrue(PublicDiskHardeningProbe::cached()['ok']);
+        $this->assertTrue(PublicDiskHardeningProbe::cached()['rules_written']);
         Http::assertSentCount(1);
+    }
+
+    /**
+     * 규칙 파일을 새 목록으로 쓰지 못하면, 직접 주소의 보호 헤더가 붙어 있어도 점검 결과에 쓰기 실패를 남긴다.
+     *
+     * 헤더는 옛 규칙 파일로도 붙으므로 헤더 점검만으로는 「목록을 바꿨는데 규칙이 그대로」를 알 수 없다.
+     * 쓰기 실패는 규칙 파일 자리에 디렉터리를 두어 재현한다(파일로 쓰지도, 바꿔 넣지도 못한다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=settings_save__operator_added
+     *
+     * @effects drivers_save_reports_rules_write_failure
+     */
+    public function test_drivers_save_records_a_rules_write_failure(): void
+    {
+        Http::fake(fn () => Http::response('probe', 200, [
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Disposition' => 'attachment',
+        ]));
+        $blocked = $this->storageRoot.'/app/public/.htaccess';
+        mkdir($blocked);
+
+        try {
+            (new PublicDiskHardeningListener)->onSettingsSave('drivers', [
+                'public_asset_disk' => 'public',
+                'public_asset_extensions' => ['png', 'pdf'],
+            ], true);
+
+            $result = PublicDiskHardeningProbe::cached();
+            $this->assertIsArray($result);
+            $this->assertFalse($result['rules_written']);
+            $this->assertTrue($result['ok'], '헤더 점검 결과는 그대로 둔다');
+        } finally {
+            @rmdir($blocked);
+        }
+    }
+
+    /**
+     * 공개 자산 디스크가 로컬 공개 디스크가 아니어도 규칙 파일을 쓰지 못했으면 그 실패만은 남긴다.
+     *
+     * 공개 디스크(`/storage`)는 공개 자산 디스크 설정과 무관하게 열려 있으므로 규칙 파일이 낡으면 안 된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=settings_save__exportable
+     *
+     * @effects drivers_save_reports_rules_write_failure
+     */
+    public function test_drivers_save_without_public_disk_still_records_a_rules_write_failure(): void
+    {
+        Http::fake();
+        $blocked = $this->storageRoot.'/app/public/.htaccess';
+        mkdir($blocked);
+
+        try {
+            (new PublicDiskHardeningListener)->onSettingsSave('drivers', ['public_asset_disk' => 'none'], true);
+
+            $result = PublicDiskHardeningProbe::cached();
+            $this->assertIsArray($result);
+            $this->assertFalse($result['rules_written']);
+            $this->assertNull($result['ok'], '헤더 점검은 하지 않았다');
+            Http::assertNothingSent();
+        } finally {
+            @rmdir($blocked);
+        }
     }
 
     /**
