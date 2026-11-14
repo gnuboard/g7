@@ -69,6 +69,34 @@ class IdentityVerificationController extends PublicBaseController
             $providerId = null;
         }
 
+        // 428 이 알려 준 정책 — 메일 발송부가 그 정책별 문구를 고르고 이력에 출처 정책을 남긴다.
+        $originPolicy = $this->policyService->findUsableForChallenge(
+            $validated['policy_key'] ?? null,
+            (string) $validated['purpose'],
+        );
+
+        // 정책이 인증 수단을 지정했으면 그 수단으로만 발급한다(KVE-2026-3188) — 요청이 수단을 빼면 정책 값을 쓰고,
+        // 다른 수단을 고르면 거부한다. 다른 수단으로 받은 결과는 정책 강제 단계에서 어차피 인정되지 않는다.
+        // 수단 해석은 재요청 대기 계산보다 먼저 한다 — 대기는 실제로 보낼 수단 기준이다.
+        $requiredProviderId = $originPolicy !== null ? $this->policyService->requiredProviderId($originPolicy) : null;
+        if ($requiredProviderId !== null) {
+            if ($providerId !== null && $providerId !== $requiredProviderId) {
+                return $this->error('identity.errors.provider_policy_mismatch', 422, [
+                    'provider_id' => [__('identity.errors.provider_policy_mismatch')],
+                ]);
+            }
+
+            // 지정 수단을 지금 쓸 수 없으면(플러그인 꺼짐·제거) 다른 수단으로 대신 발급하지 않는다(B9)
+            if ($this->policyService->resolveProviderId($originPolicy) === null) {
+                return $this->error('identity.errors.policy_provider_unavailable', 503, [
+                    'failure_code' => 'POLICY_PROVIDER_UNAVAILABLE',
+                    'policy_key' => $originPolicy->key,
+                ]);
+            }
+
+            $providerId = $requiredProviderId;
+        }
+
         // 같은 수신 주소·같은 목적의 재요청 대기 — 새 challenge 를 만들지 않고 남은 시간을 알린다.
         // 로그인하지 않아도 아무 주소로 요청할 수 있는 입구라, 제한이 없으면 한 주소에 메일을 계속 보낸다.
         $cooldown = $this->service->cooldownRemaining((string) $validated['purpose'], $target, $providerId);
@@ -80,12 +108,6 @@ class IdentityVerificationController extends PublicBaseController
                 ['seconds' => $cooldown, 'count' => $cooldown]
             )->header('Retry-After', (string) $cooldown);
         }
-
-        // 428 이 알려 준 정책 — 메일 발송부가 그 정책별 문구를 고르고 이력에 출처 정책을 남긴다.
-        $originPolicy = $this->policyService->findUsableForChallenge(
-            $validated['policy_key'] ?? null,
-            (string) $validated['purpose'],
-        );
 
         $challenge = $this->service->start(
             purpose: (string) $validated['purpose'],

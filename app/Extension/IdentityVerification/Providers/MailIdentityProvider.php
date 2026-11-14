@@ -257,42 +257,42 @@ class MailIdentityProvider implements IdentityVerificationInterface
             return VerificationResult::failure($challengeId, self::ID, 'WRONG_PROVIDER', 'identity.errors.wrong_provider');
         }
 
-        if (in_array($log->status, [
-            IdentityVerificationStatus::Verified->value,
-            IdentityVerificationStatus::Expired->value,
-            IdentityVerificationStatus::Cancelled->value,
-        ], true)) {
+        // 진행 중(requested·sent)인 challenge 만 확인한다. `status` 는 enum 으로 캐스팅되므로 enum 끼리 비교한다 —
+        // 문자열 배열과 엄격 비교하면 늘 거짓이라 이미 쓴·취소된·발송 실패한 인증번호가 다시 통과했다(KVE 동형 O1).
+        if (! in_array($log->status, [IdentityVerificationStatus::Requested, IdentityVerificationStatus::Sent], true)) {
             return VerificationResult::failure($challengeId, self::ID, 'INVALID_STATE', 'identity.errors.invalid_state');
         }
 
         if ($log->isExpired()) {
-            $this->logRepository->updateById($log->id, [
-                'status' => IdentityVerificationStatus::Expired->value,
-            ]);
+            $this->logRepository->expireIfPending($log);
 
             return VerificationResult::failure($challengeId, self::ID, 'EXPIRED', 'identity.errors.expired');
         }
 
-        if ($log->attempts >= $log->max_attempts) {
-            return VerificationResult::failure($challengeId, self::ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts');
+        // 시도 횟수는 DB 가 상한 안에서만 올린다 — 읽은 값 + 1 을 저장하면 동시 오답이 서로를 덮어
+        // 5회 제한을 넘겨 맞혀 볼 수 있었다(KVE-2026-3190).
+        $attempts = $this->logRepository->incrementAttemptsIfAllowed($log->id);
+
+        if ($attempts === null) {
+            $current = $this->logRepository->findById($log->id);
+            $stillPending = $current !== null
+                && in_array($current->status, [IdentityVerificationStatus::Requested, IdentityVerificationStatus::Sent], true);
+
+            return $stillPending
+                ? VerificationResult::failure($challengeId, self::ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts')
+                : VerificationResult::failure($challengeId, self::ID, 'INVALID_STATE', 'identity.errors.invalid_state');
         }
 
         $storedHash = $log->metadata['code_hash'] ?? $log->metadata['link_token_hash'] ?? null;
         $provided = (string) ($input['code'] ?? $input['token'] ?? '');
-
-        $this->logRepository->updateById($log->id, [
-            'attempts' => $log->attempts + 1,
-        ]);
 
         if ($storedHash === null || ! Hash::check($provided, $storedHash)) {
             // 이번 오답으로 max_attempts 에 도달하면 잠금(Failed)으로 전환하고, 사용자에게
             // 일반 오답 안내 대신 "최대 시도 초과 + 재요청" 안내(MAX_ATTEMPTS)를 반환한다.
             // 프론트 모달은 도달 즉시 확인 버튼을 비활성화하므로 추가 시도를 기대할 수 없어,
             // 막 소진된 이 응답에서 안내하지 않으면 max_attempts 문구가 사용자에게 영영 도달하지 못한다.
-            if (($log->attempts + 1) >= $log->max_attempts) {
-                $this->logRepository->updateById($log->id, [
-                    'status' => IdentityVerificationStatus::Failed->value,
-                ]);
+            if ($attempts >= (int) $log->max_attempts) {
+                $this->logRepository->markFailedIfPending($log->id);
 
                 return VerificationResult::failure($challengeId, self::ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts');
             }
@@ -303,11 +303,14 @@ class MailIdentityProvider implements IdentityVerificationInterface
         $verifiedAt = Carbon::now();
         $verificationToken = $this->generateVerificationToken($log->purpose, $log->target_hash);
 
-        $this->logRepository->updateById($log->id, [
+        // 진행 중일 때만 확인 완료로 바꾼다 — 같은 challenge 에 맞는 코드를 동시에 내도 토큰은 하나다(KVE 동형 O3).
+        if (! $this->logRepository->markVerifiedIfPending($log->id, [
             'status' => IdentityVerificationStatus::Verified->value,
             'verified_at' => $verifiedAt,
             'verification_token' => $verificationToken,
-        ]);
+        ])) {
+            return VerificationResult::failure($challengeId, self::ID, 'INVALID_STATE', 'identity.errors.invalid_state');
+        }
 
         return VerificationResult::success(
             challengeId: $challengeId,
@@ -326,9 +329,8 @@ class MailIdentityProvider implements IdentityVerificationInterface
      */
     public function cancel(string $challengeId): bool
     {
-        return $this->logRepository->updateById($challengeId, [
-            'status' => IdentityVerificationStatus::Cancelled->value,
-        ]);
+        // 진행 중일 때만 취소한다 — 확인을 마친 challenge 를 재발송이 취소로 덮지 않는다.
+        return $this->logRepository->markCancelledIfPending($challengeId);
     }
 
     /**

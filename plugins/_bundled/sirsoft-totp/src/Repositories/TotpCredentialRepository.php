@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Totp\Repositories;
 
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\Totp\Models\TotpCredential;
 use Plugins\Sirsoft\Totp\Repositories\Contracts\TotpCredentialRepositoryInterface;
 
@@ -110,5 +111,91 @@ class TotpCredentialRepository implements TotpCredentialRepositoryInterface
     public function deleteByUserId(int $userId): int
     {
         return TotpCredential::query()->where('user_id', $userId)->delete();
+    }
+
+    /**
+     * 확정 자격증명의 마지막 사용 timestep 을 「더 클 때만」 올립니다.
+     *
+     * @param  int  $credentialId  자격증명 ID
+     * @param  int  $step  이번에 맞은 timestep
+     * @return bool 이번 호출이 올렸으면 true
+     */
+    public function advanceTimestep(int $credentialId, int $step): bool
+    {
+        return TotpCredential::query()
+            ->whereKey($credentialId)
+            ->whereNotNull('confirmed_at')
+            ->where(fn ($query) => $query->whereNull('last_used_timestep')->orWhere('last_used_timestep', '<', $step))
+            ->update(['last_used_timestep' => $step]) > 0;
+    }
+
+    /**
+     * 백업 코드 하나를 행 잠금 안에서 대조·소진합니다.
+     *
+     * 목록을 통째로 덮어쓰는 갱신이라, 잠금 없이 읽은 목록으로 쓰면 같은 코드를 동시에 낸 두 요청이 둘 다 통과한다.
+     *
+     * @param  int  $credentialId  자격증명 ID
+     * @param  string  $plain  입력한 백업 코드
+     * @return bool 맞고 이번 호출이 소진했으면 true
+     */
+    public function consumeBackupCode(int $credentialId, string $plain): bool
+    {
+        return DB::transaction(function () use ($credentialId, $plain): bool {
+            $locked = TotpCredential::query()->whereKey($credentialId)->whereNotNull('confirmed_at')->lockForUpdate()->first();
+
+            if ($locked === null) {
+                return false;
+            }
+
+            $remaining = $locked->matchBackupCode($plain);
+
+            if ($remaining === null) {
+                return false;
+            }
+
+            $locked->backup_codes = $remaining;
+            $locked->save();
+
+            return true;
+        });
+    }
+
+    /**
+     * 미확정 자격증명을 「시크릿이 그대로일 때만」 확정합니다.
+     *
+     * 시크릿은 암호화 저장이라 같은 평문이어도 저장값이 매번 다르다 — 읽어 둔 원본 암호문과 같은지로 「그 사이 재발급되지
+     * 않았음」을 확인한다.
+     *
+     * @param  TotpCredential  $credential  확정할 때 읽은 자격증명
+     * @param  int  $step  확정에 쓴 timestep
+     * @param  array<int, string>  $hashes  저장할 백업 코드 해시
+     * @return bool 이번 호출이 확정했으면 true
+     */
+    public function confirmIfPending(TotpCredential $credential, int $step, array $hashes): bool
+    {
+        return TotpCredential::query()
+            ->whereKey($credential->getKey())
+            ->whereNull('confirmed_at')
+            ->where('secret', $credential->getRawOriginal('secret'))
+            ->update([
+                'confirmed_at' => now(),
+                'last_used_timestep' => $step,
+                'backup_codes' => json_encode(array_values($hashes)),
+            ]) > 0;
+    }
+
+    /**
+     * 확정 자격증명의 백업 코드를 통째로 바꿉니다.
+     *
+     * @param  int  $credentialId  자격증명 ID
+     * @param  array<int, string>  $hashes  새 백업 코드 해시
+     * @return bool 행이 있어 바꿨으면 true
+     */
+    public function replaceBackupCodes(int $credentialId, array $hashes): bool
+    {
+        return TotpCredential::query()
+            ->whereKey($credentialId)
+            ->whereNotNull('confirmed_at')
+            ->update(['backup_codes' => json_encode(array_values($hashes))]) > 0;
     }
 }

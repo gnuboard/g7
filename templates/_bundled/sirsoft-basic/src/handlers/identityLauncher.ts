@@ -326,6 +326,9 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
     unsubscribe?.();
     return identity.redirectExternally({
       ...payload,
+      // 해석한 대상을 함께 보관한다 — 전체화면은 페이지를 새로 읽어 전역 상태가 사라지고, 비회원은 로그인 세션에서
+      // 대상을 얻을 수 없다. 전체화면의 [코드 재전송] 이 이 값을 되살려 싣는다(restoreIdentityTargetHandler).
+      target: target ?? payload.target ?? null,
       render_hint: 'external_redirect',
       // 인증 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는 빼는데,
       // 인증 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
@@ -406,6 +409,51 @@ export function rememberIdentityClaimHandler(
   }
   claimSecrets.set(id, secret);
   return true;
+}
+
+/** 전체화면이 되살릴 수 있는 보관값의 수명 — 같은 탭에서 한참 전에 시작한 다른 인증의 대상이 섞이지 않게. */
+const TARGET_STASH_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * 전체화면 본인인증 진입 때, 넘어오기 전 화면이 세션 보관함에 남긴 인증 대상을 화면 상태로 되살립니다.
+ *
+ * 모달을 열지 못해 전체화면으로 넘어가면 페이지를 새로 읽어 전역 상태(`_global.identityChallenge.target`)가 사라진다.
+ * 비회원은 로그인 세션에서 대상을 얻을 수 없어 [코드 재전송] 이 대상 없이 나가 422 로 거절됐다. launcher(와 코어
+ * 기본 launcher)가 넘어가기 전 코어 보관함(`G7Core.identity.redirectStashKey`)에 대상을 함께 넣으므로, 그 값의
+ * 이메일·전화번호만 꺼내 `_local.identity_target` 에 둔다. 30분이 지났거나 깨진 보관값은 쓰지 않는다.
+ *
+ * @param _action 액션 정의 (인자 없음)
+ * @param _context 실행 컨텍스트 (미사용 — 상태는 G7Core.state 로 쓴다)
+ * @return 되살린 대상, 없으면 null
+ */
+export function restoreIdentityTargetHandler(_action?: unknown, _context?: unknown): IdentityVerificationTarget | null {
+  const G7Core = (window as any).G7Core;
+  const key: string = G7Core?.identity?.redirectStashKey ?? 'g7.identity.redirectStash';
+
+  let stash: { payload?: { target?: Record<string, unknown> | null }; stashed_at?: number } | null = null;
+  try {
+    const raw = window.sessionStorage?.getItem(key);
+    stash = raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+
+  if (!stash || typeof stash.stashed_at !== 'number' || Date.now() - stash.stashed_at > TARGET_STASH_TTL_MS) {
+    return null;
+  }
+
+  const source = stash.payload?.target ?? null;
+  const target: IdentityVerificationTarget = {};
+  if (typeof source?.email === 'string' && source.email !== '') target.email = source.email;
+  if (typeof source?.phone === 'string' && source.phone !== '') target.phone = source.phone;
+
+  if (!target.email && !target.phone) {
+    return null;
+  }
+
+  G7Core?.state?.setLocal?.({ identity_target: target });
+
+  return target;
 }
 
 /** 링크 방식 결과를 묻는 간격 — 서버 throttle(분당 60) 안에서 회원이 링크를 누른 뒤 곧 이어지게. */

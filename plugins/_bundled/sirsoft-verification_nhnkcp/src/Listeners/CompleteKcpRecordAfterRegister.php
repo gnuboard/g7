@@ -6,9 +6,9 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Models\User;
+use App\Services\IdentityTokenAcceptanceService;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
-use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityRecordRepositoryInterface;
 
 /**
@@ -30,13 +30,13 @@ class CompleteKcpRecordAfterRegister implements HookListenerInterface
 {
     /**
      * @param  IdentityVerificationLogRepositoryInterface  $logRepository  코어 IDV log Repository (user_id backfill)
-     * @param  KcpIdentityLogQueryRepositoryInterface  $logQueryRepository  consumed_at 무관 verified 로그 조회
+     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  같은 가입 요청에서 인정한 본인인증 결과 조회 (1.1.4)
      * @param  KcpIdentityRecordRepositoryInterface  $recordRepository  본 plugin record Repository
      * @param  CacheInterface  $cache  stash 회수/정리용 (PluginCacheDriver 자동 prefix)
      */
     public function __construct(
         protected readonly IdentityVerificationLogRepositoryInterface $logRepository,
-        protected readonly KcpIdentityLogQueryRepositoryInterface $logQueryRepository,
+        protected readonly IdentityTokenAcceptanceService $tokenAcceptance,
         protected readonly KcpIdentityRecordRepositoryInterface $recordRepository,
         protected readonly CacheInterface $cache,
     ) {}
@@ -61,6 +61,7 @@ class CompleteKcpRecordAfterRegister implements HookListenerInterface
      * 훅 진입점.
      *
      * @param  mixed  ...$args  [$user, $context]
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -78,10 +79,9 @@ class CompleteKcpRecordAfterRegister implements HookListenerInterface
             return;
         }
 
-        // 코어 priority 10 listener 가 token 검증 후 consumed_at 을 set 하므로 코어 표준
-        // Repository(findVerifiedForToken)는 null 을 반환한다. 본 plugin Repository 는
-        // consumed_at 무관 조회를 제공한다.
-        $log = $this->logQueryRepository->findVerifiedLogForToken($token, 'signup');
+        // 같은 가입 요청에서 before_register 단계가 인정(1회 소비)한 결과를 받는다(1.1.4) — 소비 여부와 무관하게 토큰만으로
+        // 다시 찾으면 다른 요청이 쓴 결과의 PII 를 이 회원에게 붙일 수 있었다.
+        $log = $this->tokenAcceptance->acceptedInRequest($token, 'signup');
         if ($log === null) {
             return;
         }

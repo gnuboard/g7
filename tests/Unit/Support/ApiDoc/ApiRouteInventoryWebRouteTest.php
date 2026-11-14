@@ -19,6 +19,15 @@ use Tests\TestCase;
  */
 class ApiRouteInventoryWebRouteTest extends TestCase
 {
+    /**
+     * 플러그인 웹훅 web 라우트를 문서 대상으로 모은다.
+     *
+     * @scenario case=plugin_webhook
+     *
+     * @effects plugin_webhook_web_route_collected
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 플러그인_웹훅_web_라우트가_수집된다(): void
     {
@@ -30,6 +39,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertContains('web.plugins.sirsoft-tosspayments.webhook.payment-status', $names);
     }
 
+    /**
+     * 플러그인 결제 결과 콜백 web 라우트를 문서 대상으로 모은다.
+     *
+     * @scenario case=plugin_payment_callback
+     *
+     * @effects plugin_payment_callback_web_route_collected
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 플러그인_결제_콜백_web_라우트가_수집된다(): void
     {
@@ -41,6 +59,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertContains('web.plugins.sirsoft-tosspayments.payment.fail', $names);
     }
 
+    /**
+     * 모은 web 라우트는 메서드·주소·확장 소유·컨트롤러를 그대로 보존한다.
+     *
+     * @scenario case=web_owner_uri
+     *
+     * @effects web_route_keeps_owner_and_uri
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 수집된_web_라우트는_확장_소유와_uri_를_정확히_보존한다(): void
     {
@@ -59,6 +86,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         );
     }
 
+    /**
+     * web 라우트도 이름의 첫 세그먼트로 도메인 그룹을 정한다.
+     *
+     * @scenario case=web_domain_group
+     *
+     * @effects web_route_classified_into_domain_group
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function web_라우트도_도메인_그룹으로_분류된다(): void
     {
@@ -71,6 +107,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertSame('payment', $byName['web.plugins.sirsoft-tosspayments.payment.success']['domain_group']);
     }
 
+    /**
+     * 확장 소유가 정해지지 않는 코어 web 라우트는 모으지 않는다.
+     *
+     * @scenario case=core_web_excluded
+     *
+     * @effects core_web_routes_not_collected
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 코어_web_라우트는_수집되지_않는다(): void
     {
@@ -86,11 +131,20 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         }
     }
 
+    /**
+     * 확장의 관리자 화면 web 라우트는 모으지 않는다.
+     *
+     * @scenario case=extension_admin_web_excluded
+     *
+     * @effects admin_web_screens_excluded_admin_api_included
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 확장의_관리자_화면_web_라우트는_수집되지_않는다(): void
     {
-        // hello_module 의 admin CRUD 는 사람이 브라우저로 여는 화면(web.modules.{id}.admin.*)이라
-        // machine-facing 엔드포인트가 아니므로 API 레퍼런스 대상이 아니다.
+        // 사람이 브라우저로 여는 확장 관리자 화면(web.modules.{id}.admin.*)은 machine-facing 엔드포인트가
+        // 아니므로 API 레퍼런스 대상이 아니다. hello_module 은 관리자 CRUD 를 JSON API 로 옮겨 web 라우트가 없다.
         $routes = app(ApiRouteInventory::class)->collect('module:gnuboard7-hello_module');
 
         $names = array_column($routes, 'name');
@@ -98,15 +152,26 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.index', $names);
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);
 
+        // 관리자 JSON API(/api/modules/{id}/admin/…)는 문서 대상이다 — 막는 것은 web 화면 라우트뿐이다
         foreach ($routes as $route) {
-            $this->assertStringNotContainsString(
-                '/admin/',
+            $this->assertStringStartsWith(
+                '/api/',
                 $route['uri'],
                 "확장 관리자 화면 web 라우트가 수집되면 안 된다: {$route['uri']}"
             );
+            $this->assertStringStartsNotWith('web.', (string) ($route['name'] ?? ''));
         }
     }
 
+    /**
+     * 다른 플러그인의 web 라우트는 지정한 범위에 섞이지 않는다.
+     *
+     * @scenario case=other_plugin_isolated
+     *
+     * @effects other_plugin_web_routes_not_mixed
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 타_플러그인_web_라우트는_범위에_섞이지_않는다(): void
     {

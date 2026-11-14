@@ -6,6 +6,8 @@ use App\Exceptions\Auth\AccountLockedException;
 use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
+use App\Exceptions\Auth\TwoFactorResendCooldownException;
+use App\Exceptions\Auth\TwoFactorResendNotSupportedException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
@@ -213,6 +215,12 @@ class AuthController extends AuthBaseController
             );
 
             return $this->success($this->twoFactorRequiredMessageKey($data), $data);
+        } catch (TwoFactorResendNotSupportedException $e) {
+            // 인증 앱처럼 코드를 보내지 않는 수단은 재발송이 없다 — 화면에는 버튼이 없고 API 응답으로만 알린다(7.1.6)
+            return $this->error('auth.two_factor_resend_not_supported', 422);
+        } catch (TwoFactorResendCooldownException $e) {
+            return $this->error('auth.two_factor_resend_cooldown', 429, null, ['seconds' => $e->retryAfterSeconds])
+                ->header('Retry-After', (string) $e->retryAfterSeconds);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
         } catch (TwoFactorEnrollmentRequiredException $e) {

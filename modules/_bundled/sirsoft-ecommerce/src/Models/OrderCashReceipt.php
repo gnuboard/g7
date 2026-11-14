@@ -37,6 +37,8 @@ class OrderCashReceipt extends Model
         'error_message',
         'issued_at',
         'raw_response',
+        'slot_released_at',
+        'cancel_target_id',
     ];
 
     protected $casts = [
@@ -47,6 +49,8 @@ class OrderCashReceipt extends Model
         'transaction_type' => CashReceiptTransactionType::class,
         'receipt_type' => CashReceiptType::class,
         'issue_status' => CashReceiptIssueStatus::class,
+        'slot_released_at' => 'datetime',
+        'cancel_target_id' => 'integer',
     ];
 
     /**
@@ -87,6 +91,19 @@ class OrderCashReceipt extends Model
     public function isCompletedIssue(): bool
     {
         return $this->isIssue() && $this->issue_status === CashReceiptIssueStatus::COMPLETED;
+    }
+
+    /**
+     * 처리 중(PG 응답 대기) 이력인지 확인합니다.
+     *
+     * 발급·취소는 PG 호출 전에 처리 중 행을 먼저 기록해 자리를 예약한다. 같은 주문의 다른 요청이 그 자리를
+     * 보면 처리 중 행이 그대로 돌아온다.
+     *
+     * @return bool 처리 중 여부
+     */
+    public function isInProgress(): bool
+    {
+        return $this->issue_status === CashReceiptIssueStatus::IN_PROGRESS;
     }
 
     /**

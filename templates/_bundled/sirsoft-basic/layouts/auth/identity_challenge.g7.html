@@ -22,13 +22,18 @@
     <field name="expiresAt" :value="null"/>
     <field name="remainingSeconds" :value="0"/>
     <field name="error" :value="null"/>
+    <field name="provider_id" :value="null"/>
+    <field name="policy_key" :value="null"/>
+    <field name="identity_target" :value="null"/>
   </init-local>
   <init>
     <set-state target="local" challenge_id="{{query.challenge_id ?? ''}}" render_hint="{{query.render_hint ?? 'text_code'}}" purpose="{{query.purpose ?? 'signup'}}" return_url="{{query.return_url ?? '/'}}" redirect_url="{{query.redirect_url ?? ''}}" expiresAt="{{query.expires_at ?? ''}}" remainingSeconds="{{query.expires_at ? Math.max(0, Math.floor((new Date(query.expires_at).getTime() - Date.now()) / 1000)) : 0}}" attempts="{{Number(query.attempts ?? 0)}}" maxAttempts="{{Number(query.max_attempts ?? 0)}}" :resendCooldown="0"/>
+    <!-- 넘어오기 전 화면이 세션 보관함에 남긴 인증 대상을 되살린다 — 페이지를 새로 읽어 전역 상태가 사라졌고, 비회원은 로그인 세션에서 대상을 얻을 수 없어 [코드 재전송] 이 이 값을 싣는다(없으면 null — 로그인 회원은 서버가 세션으로 정한다). -->
+    <action handler="sirsoft-basic.restoreIdentityTarget"/>
     <!-- challenge_id 가 있으면 서버에서 정확한 max_attempts/expires_at/render_hint 를 받아 query fallback 을 덮어쓴다 — 외부 redirect 콜백 후 진입 시 UI 정합 보장. 누적 시도 횟수(attempts)는 이 응답에 없다 — 인증 없이 challenge id 만으로 조회되는 공개 경로라 서버가 싣지 않는다(IdentityVerificationService::getStatus 주석 참조). 따라서 _local.attempts 는 이 화면에서 시도한 횟수만 세는 자체 카운터이며, 남은 횟수를 화면에 표시하지 않는다. -->
     <api-call target="/api/identity/challenges/{{query.challenge_id}}" if="{{!!query.challenge_id}}" method="GET">
       <success>
-        <set-state target="local" render_hint="{{response.data.render_hint ?? _local.render_hint}}" purpose="{{response.data.purpose ?? _local.purpose}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" maxAttempts="{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"/>
+        <set-state target="local" render_hint="{{response.data.render_hint ?? _local.render_hint}}" purpose="{{response.data.purpose ?? _local.purpose}}" provider_id="{{response.data.provider_id ?? null}}" policy_key="{{response.data.policy_key ?? null}}" expiresAt="{{response.data.expires_at ?? _local.expiresAt}}" remainingSeconds="{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}" maxAttempts="{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"/>
         <redirect if="{{(response.data.render_hint ?? _local.render_hint) === 'external_redirect' &amp;&amp; _local.redirect_url}}" url="{{_local.redirect_url}}"/>
       </success>
       <fail>
@@ -97,7 +102,7 @@
                       <fail>
                         <toast type="error" message="{{error.message}}"/>
                       </fail>
-                      <body purpose="{{_local.purpose ?? 'signup'}}" target="{{query.target ?? ''}}"/>
+                      <body purpose="{{_local.purpose ?? 'signup'}}" provider_id="{{_local.provider_id ?? ''}}" policy_key="{{_local.policy_key ?? ''}}" target="{{_local.identity_target ?? null}}"/>
                     </api-call>
                   </sequence>
                 </on>
@@ -129,7 +134,7 @@
                     <fail>
                       <toast type="error" message="{{error.message}}"/>
                     </fail>
-                    <body purpose="{{_local.purpose ?? 'password_reset'}}" target="{{query.target ?? ''}}"/>
+                    <body purpose="{{_local.purpose ?? 'password_reset'}}" provider_id="{{_local.provider_id ?? ''}}" policy_key="{{_local.policy_key ?? ''}}" target="{{_local.identity_target ?? null}}"/>
                   </api-call>
                 </sequence>
               </on>

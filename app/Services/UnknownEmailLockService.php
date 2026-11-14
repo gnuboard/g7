@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Contracts\Extension\CacheInterface;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 가입되지 않은 주소의 로그인 실패 횟수·잠금 흉내
@@ -31,6 +34,11 @@ class UnknownEmailLockService
     private const PERMANENT_TTL_SECONDS = 86400;
 
     /**
+     * 주소별 실패 기록 잠금 키 접두사
+     */
+    private const LOCK_PREFIX = 'auth.unknown_login.lock.';
+
+    /**
      * @param  CacheInterface  $cache  코어 캐시
      */
     public function __construct(
@@ -51,6 +59,25 @@ class UnknownEmailLockService
             return;
         }
 
+        // 읽고 → 1 더해 → 쓰는 사이에 같은 주소의 다른 실패가 끼면 한 번이 사라진다 — 주소별 잠금으로 직렬화한다
+        // (KVE 동형 L5, 7.1.6). 잠금을 3초 안에 못 얻으면 종전처럼 잠금 없이 센다(로그인 응답을 막지 않는다).
+        try {
+            Cache::lock(self::LOCK_PREFIX.hash('sha256', mb_strtolower($email)), 5)
+                ->block(3, fn () => $this->recordFailureUnlocked($email));
+        } catch (LockTimeoutException) {
+            Log::debug('[auth] 미가입 주소 실패 기록 잠금 시간 초과 — 잠금 없이 셉니다');
+            $this->recordFailureUnlocked($email);
+        }
+    }
+
+    /**
+     * 가입되지 않은 주소의 실패 1회를 기록합니다 (잠금 안에서 부른다).
+     *
+     * @param  string  $email  로그인에 쓰인 이메일
+     * @return void 반환값 없음
+     */
+    private function recordFailureUnlocked(string $email): void
+    {
         $state = $this->read($email);
 
         // 이미 잠긴 주소는 더 세지 않는다 (가입 계정도 잠긴 동안은 시도 자체를 받지 않는다).

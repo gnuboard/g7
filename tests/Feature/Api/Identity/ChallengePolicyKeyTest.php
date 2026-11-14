@@ -100,6 +100,8 @@ class ChallengePolicyKeyTest extends TestCase
             'disabled' => 'core.admin.user_delete',
             'unknown' => 'admin.not.exists',
         ] as $case => $key) {
+            // 같은 주소 재요청 대기(60초)를 넘겨 각 경우를 독립 요청으로 만든다
+            $this->travel(61)->seconds();
             $response = $this->requestChallenge(['policy_key' => $key]);
 
             $response->assertCreated();

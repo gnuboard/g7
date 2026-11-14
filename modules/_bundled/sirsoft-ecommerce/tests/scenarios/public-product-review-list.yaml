@@ -1,0 +1,29 @@
+feature: 공개 상품 후기 목록 API 의 조회·필터·정렬 (Public ProductReviewController::index)
+
+description: |
+  상품 상세의 후기 탭이 부르는 공개 후기 목록(GET products/{id}/reviews)의 조회 계약을 고정한다.
+  이 Feature 테스트는 첨부 이미지 계약 한 건만 review-list-image-payload-contract.yaml 이 소유하고
+  나머지는 매니페스트 없이 존재했으며, KVE-2026-3187~3195 보안 작업이 이 파일을 고치며 함께 등재한다.
+
+  - 응답은 페이지 정보가 붙은 후기 목록·별점 통계·전체 후기 수(total_count)를 함께 싣는다.
+  - 숨긴 후기는 공개 목록에 나오지 않는다.
+  - total_count 는 필터와 무관한 전체 노출 후기 수다(필터 결과 수는 meta.total).
+  - photo_only=false 문자열은 필터를 걸지 않는다(empty('false') 회귀 방지).
+  - 프런트가 보내는 정렬 값 created_at_desc 는 허용하고, 목록 밖 정렬 값은 422.
+  - 작성자 이름 가림은 public-review-author-masking-and-feed.yaml 이 다룬다.
+
+# axis 의미: 목록 요청에 실리는 질의 종류. 같은 질의 안의 결과 분기(숨김 제외·빈 목록·422)는 효과로 둔다.
+axes:
+  query: [default, rating_filter, photo_only_filter, sort]
+
+effects:
+  - public_review_list_returns_reviews_with_rating_stats_and_total  # data·meta·rating_stats·total_count 구조
+  - public_review_list_excludes_hidden_reviews                      # 숨긴 후기 제외
+  - public_review_list_empty_returns_zero_counts                    # 후기가 없으면 빈 배열·total 0·total_count 0
+  - public_review_total_count_ignores_filters                       # 별점 필터를 걸어도 total_count 는 전체 수
+  - public_review_photo_only_false_string_applies_no_filter         # photo_only=false 는 이미지 없는 후기도 모두 반환
+  - public_review_sort_accepts_created_at_desc                      # sort=created_at_desc 는 200
+  - public_review_invalid_sort_rejected_with_422                    # 목록 밖 정렬 값은 sort 검증 오류 422
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductReviewControllerTest.php

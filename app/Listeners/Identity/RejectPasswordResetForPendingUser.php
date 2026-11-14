@@ -34,7 +34,7 @@ class RejectPasswordResetForPendingUser implements HookListenerInterface
         return [
             'core.auth.before_reset_password' => [
                 'method' => 'handle',
-                'priority' => 5, // VerifyIdentityBeforePasswordReset 보다 먼저
+                'priority' => 5, // 정책 강제(EnforceIdentityPolicyListener, priority 15)보다 먼저
                 'sync' => true,
             ],
         ];

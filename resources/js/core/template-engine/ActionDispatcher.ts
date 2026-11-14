@@ -634,6 +634,14 @@ export interface ActionContext {
    */
   failures?: Error[];
   /**
+   * 컴포넌트 writer 없이(렌더 전 init_actions 등) 등록된 `startInterval` 의 틱 문맥 표지.
+   *
+   * `handleStartInterval` 만 단다. 있으면 `_local` setState 가 렌더 전 경로 대신 액션 밖 writer(`G7Core.state.setLocal`)를 탄다.
+   *
+   * @since engine-v1.91.1
+   */
+  detachedTick?: boolean;
+  /**
    * 진입점 이벤트의 currentTarget 이 `<a href>` 일 때 그 href 속성 값.
    *
    * path 를 생략한 navigate 가 이 주소로 이동한다. currentTarget 은 디스패치 중에만 채워지므로
@@ -845,8 +853,9 @@ export class ActionDispatcher {
    * startInterval 핸들러로 등록된 타이머 맵.
    *
    * key = 레이아웃이 지정한 interval id, value = setInterval 반환 timerId.
-   * 레이아웃은 stopInterval 로 id 기반 중단을 수행할 수 있으며,
-   * 페이지 전환 시에는 `stopAllIntervals()` 로 일괄 정리된다.
+   * 레이아웃은 stopInterval 로 id 기반 중단을 수행할 수 있다. 엔진이 페이지 전환 때 `stopAllIntervals()` 를 부르지는 않는다 —
+   * 렌더 전 init_actions 에서 등록한 타이머는 경로 세대가 바뀌면 스스로 멈추고(engine-v1.91.1), 데이터 소스 onSuccess·컴포넌트 동작에서
+   * 등록한 타이머는 레이아웃이 stopInterval(예: onUnmount)로 멈춰야 한다.
    *
    * @since engine-v1.45.0
    */
@@ -5292,6 +5301,60 @@ export class ActionDispatcher {
           ...returnedState,
           ...(mergeMode !== 'deep' ? { __mergeMode: mergeMode } : {}),
         };
+      } else if (context.detachedTick && typeof G7Core?.state?.setLocal === 'function') {
+        // engine-v1.91.1: 렌더 전 문맥에서 등록한 타이머의 틱 — 화면이 이미 그려졌으므로 렌더 전 경로(아래 globalStateUpdater, 저장소 B 만·
+        // setLocal 덮어쓰기 기록 해제)가 아니라 액션 밖 writer 로 쓴다. setLocal 은 B·화면 덧칠·덮어쓰기 기록을 함께 남겨 루트가 저장소 A 의
+        // 같은 키를 정본 B 값으로 맞춘다(타이머·웹소켓 콜백용 경로 — G7CoreGlobals setLocal 3·3-1단계).
+        const { __mergeMode: _tickMergeMode, __setStateId: _tickSetStateId, ...tickPayload } = resolvedPayload as any;
+        // 틱은 다른 동작이 await 하는 사이(그 동작의 `__g7ActionContext` 가 걸려 있는 동안)에도 돈다. 그대로 부르면 setLocal 4단계가
+        // 그 동작의 컴포넌트 writer(모달 버튼이면 모달 저장소 A)에 틱 값을 쓴다 — 틱은 어느 동작에도 속하지 않으므로 그 호출 동안만
+        // 동작 문맥을 비우고 되돌린다(setLocal 은 동기라 사이에 다른 코드가 끼지 않는다).
+        // 같은 이유로 sequence 동기화 변수(`__g7SequenceLocalSync` — handleSequence 가 await 뒤 현재 상태로 갈아 끼움)도 되돌린다.
+        // 그대로 두면 대기 중인 클릭 sequence 가 틱이 남긴 B 기반 스냅숏으로 자기 상태를 바꿔 B 에 없는 값(scope 상태 등)을 잃는다.
+        //
+        // deep 병합은 값 모양별로 나눠 넘긴다 — 엔진 병합(SETSTATE_DEEP_MERGE_OPTIONS)이 「교체」 로 다루는 값(스칼라·배열·빈 객체 `{}`·
+        // `errors`)이 붙은 최상위 키는 shallow 로(setLocal 의 deep 병합은 빈 객체·errors 교체 규칙이 없어 앞 값이 쌓인다 — 사례 16·47),
+        // 비어 있지 않은 일반 객체·점 경로는 deep 으로(최상위 키를 통째로 바꾸면 B 에 없는 저장소 A 전용 하위 값이 사라진다 — 사례 22).
+        const writes: Array<{ payload: Record<string, any>; merge: 'replace' | 'shallow' | 'deep' }> = [];
+        if (mergeMode === 'deep') {
+          const replacing: Record<string, any> = {};
+          const merging: Record<string, any> = {};
+          for (const [key, value] of Object.entries(tickPayload)) {
+            const isPlainObject = value !== null && typeof value === 'object' && !Array.isArray(value)
+              && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
+            if (!key.includes('.') && (!isPlainObject || Object.keys(value as object).length === 0 || key === 'errors')) {
+              replacing[key] = value;
+            } else {
+              merging[key] = value;
+            }
+          }
+          if (Object.keys(replacing).length > 0) writes.push({ payload: replacing, merge: 'shallow' });
+          if (Object.keys(merging).length > 0) writes.push({ payload: merging, merge: 'deep' });
+        } else {
+          writes.push({ payload: tickPayload, merge: mergeMode });
+        }
+        const pendingActionContext = (window as any).__g7ActionContext;
+        const pendingSequenceSync = (window as any).__g7SequenceLocalSync;
+        (window as any).__g7ActionContext = undefined;
+        try {
+          for (const write of writes) {
+            G7Core.state.setLocal(write.payload, { merge: write.merge, ...(__render === false ? { render: false } : {}) });
+          }
+        } finally {
+          (window as any).__g7ActionContext = pendingActionContext;
+          (window as any).__g7SequenceLocalSync = pendingSequenceSync;
+          // setLocal 은 저장소 B 를 동기로 썼다 — getLocal 대체 스냅숏은 필요 없다. 남기면 render:false 틱처럼 루트가 다시 그려지지 않는 동안
+          // 다른 B 쓰기 위에 옛 값이 얹힌다(state-setstate 사례 49). live B 를 쓰는 setState 갈래와 같이 지운다(engine-v1.81.1)
+          if ((window as any).__templateApp?.getGlobalState) {
+            (window as any).__g7LastSetLocalSnapshot = undefined;
+          }
+        }
+        if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
+        return {
+          __target: 'local',
+          ...(G7Core.state.getLocal?.() ?? tickPayload),
+          ...(mergeMode !== 'deep' ? { __mergeMode: mergeMode } : {}),
+        };
       } else if (this.globalStateUpdater) {
         // init_actions 등에서 componentContext가 없는 경우 globalStateUpdater를 통해 _local 업데이트
         logger.log('[handleSetState] Using GLOBAL STATE UPDATER path for _local');
@@ -6676,9 +6739,34 @@ export class ActionDispatcher {
       this.intervals.delete(id);
     }
 
+    // 렌더 전 init_actions 에서(컴포넌트 writer 없이) 등록한 타이머는 틱마다 현재 상태로 문맥을 다시 만든다 (engine-v1.91.1).
+    // 등록 문맥을 그대로 쓰면 렌더 전 데이터 스냅숏을 읽고(렌더 뒤 바뀐 값을 못 봄), 렌더 전 경로로 저장소 B 에만 써서
+    // 저장소 A 가 가진 같은 키에 가려졌다 — 본인인증 전체화면의 남은 시간·재전송 대기가 멈춘 원인.
+    // 이런 타이머는 화면 소속이다 — init_actions 는 경로가 바뀔 때마다 다시 돌아 필요하면 같은 id 로 다시 등록하므로, 경로 세대가
+    // 바뀌면 스스로 멈춘다. 종전에는 화면을 떠나도 계속 돌며 다음 화면 `_local` 에 앞 화면 키를 썼다(`stopAllIntervals` 를 부르는 곳이 없다).
+    // 데이터 소스 onSuccess·컴포넌트 동작에서 등록한 타이머는 종전과 같다.
+    // 판정은 init 실행기가 문맥에 남긴 세대(`__initRouteGeneration`, TemplateApp.executeInitActions)로 한다 — 전역 「init 실행 중」
+    // 깊이값으로 보면 경합 중 다른 문맥(데이터 소스 onSuccess)에서 등록한 타이머까지 잡히고, 등록 시점 세대로 잡으면 init 이 await 하는
+    // 사이 경로가 바뀐 경우(뒤로 가기) 앞 화면 타이머가 새 세대에 붙는다.
+    const initGeneration: unknown = (context.data as Record<string, any> | undefined)?.__initRouteGeneration;
+    const detached = !context.setState && typeof initGeneration === 'number';
+    const registeredGeneration: unknown = detached ? initGeneration : undefined;
+
     const timerId = setInterval(() => {
+      if (detached && typeof registeredGeneration === 'number') {
+        const generationNow = (window as any).__templateApp?.getRouteChangeId?.();
+        if (typeof generationNow === 'number' && generationNow !== registeredGeneration) {
+          clearInterval(timerId);
+          if (this.intervals.get(id) === timerId) {
+            this.intervals.delete(id);
+          }
+
+          return;
+        }
+      }
+      const tickContext = detached ? this.createDetachedTickContext(context) : context;
       for (const act of actions) {
-        this.executeAction(act as ActionDefinition, context).catch((err) => {
+        this.executeAction(act as ActionDefinition, tickContext).catch((err) => {
           logger.error(`[startInterval:${id}] tick action failed`, err);
         });
       }
@@ -6687,6 +6775,35 @@ export class ActionDispatcher {
     this.intervals.set(id, timerId);
 
     return { success: true, id };
+  }
+
+  /**
+   * 컴포넌트 writer 없이 등록된 타이머의 틱 문맥을 현재 상태로 다시 만듭니다. (engine-v1.91.1)
+   *
+   * `_global`·`_local` 을 지금 값(전역 상태·`G7Core.state.getLocal()`)으로 바꾸고 `detachedTick` 표지를 단다 — 이 표지가 있으면
+   * `handleSetState` 의 `_local` 쓰기가 렌더 전 경로(저장소 B 만) 대신 액션 밖 writer(`G7Core.state.setLocal`)를 탄다.
+   * 나머지 문맥(route·query·`_computed`·데이터 소스 등 등록 시점 값)은 그대로 둔다 — 틱의 식은 `_global`·`_local` 만 현재 값으로
+   * 읽는다. 컴포넌트 writer 가 있는 타이머는 이 함수를 거치지 않는다.
+   *
+   * @param context 타이머를 등록한 문맥
+   * @return 틱 문맥
+   */
+  private createDetachedTickContext(context: ActionContext): ActionContext {
+    const G7Core = (window as any).G7Core;
+    const liveGlobal = (window as any).__templateApp?.getGlobalState?.();
+    const liveLocal = G7Core?.state?.getLocal?.();
+    const data: Record<string, any> = { ...(context.data ?? {}) };
+
+    if (liveGlobal && typeof liveGlobal === 'object') {
+      data._global = liveGlobal;
+    }
+    if (liveLocal && typeof liveLocal === 'object') {
+      data._local = liveLocal;
+    }
+
+    // state 도 현재 `_local` 로 — 틱 동작이 sequence 면 handleSequence 가 context.state 로 시작 상태를 잡는다(없으면 `{}` 로 시작해
+    // 첫 setState 전 단계가 빈 `_local` 을 읽는다). setState 는 아니므로 컴포넌트 writer 로 오인되지 않는다(갈래는 setState 로 가른다).
+    return { ...context, data, ...(liveLocal && typeof liveLocal === 'object' ? { state: liveLocal } : {}), detachedTick: true };
   }
 
   /**

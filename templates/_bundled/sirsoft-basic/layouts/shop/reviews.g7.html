@@ -45,6 +45,7 @@
               <option value="1">$t:shop.reviews.rating_one</option>
             </options>
             <on type="change">
+              <!-- 별점 필터 — 「전체」는 빈 값이라 주소에서 빠지고, 쪽수는 1쪽으로 돌린다 -->
               <navigate path="{{route.path}}" :mergeQuery="true">
                 <query rating="{{$event.target.value}}" page=""/>
               </navigate>
@@ -58,6 +59,7 @@
               <option value="rating_asc">$t:shop.reviews.sort.rating_low</option>
             </options>
             <on type="change">
+              <!-- 정렬을 바꾸면 쪽수는 1쪽으로 돌린다(다른 필터는 주소에 그대로 남는다) -->
               <navigate path="{{route.path}}" :mergeQuery="true">
                 <query sort="{{$event.target.value}}" page=""/>
               </navigate>
@@ -93,6 +95,7 @@
         </div>
         <pagination pageHref="{{route.path}}?page={page}" :pageHrefMergeQuery="true" data-type="composite" currentPage="{{reviewFeed?.data?.reviews?.meta?.current_page ?? 1}}" totalPages="{{reviewFeed?.data?.reviews?.meta?.last_page ?? null}}" hasMorePages="{{reviewFeed?.data?.reviews?.meta?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
           <on event="onPageChange">
+            <!-- 쪽 번호만 바꾸고 필터·정렬은 주소에 그대로 둔다 -->
             <navigate path="{{route.path}}" :mergeQuery="true">
               <query page="{{$args[0]}}"/>
             </navigate>

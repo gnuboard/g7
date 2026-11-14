@@ -5,6 +5,14 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.91.1] - 2026-11-14
+
+### Fixed
+
+- 렌더 전 `init_actions` 에서 등록한 `startInterval` 의 틱이 화면 `_local` 을 갱신하지 못하던 문제를 고쳤다. 틱은 등록 문맥으로 돌아 ① 렌더 전 데이터 스냅숏을 읽어 렌더 뒤 바뀐 값을 보지 못했고 ② 컴포넌트 writer 가 없어 `setState`(target `local`)가 렌더 전 경로(저장소 B 만)로 가서 저장소 A 가 가진 같은 키(클릭 `setState`·init 값)에 가려졌다. 본인인증 전체화면(`auth/identity_challenge`, 사용자·관리자 템플릿)이 들어가자마자 「코드 만료」 를 띄우고, [재전송] 뒤 대기 시간이 줄지 않아 새로고침해야 다시 누를 수 있었다. 이제 `TemplateApp.executeInitActions` 가 init 문맥에 시작 세대(`__initRouteGeneration`)를 남기고, 그 값이 있고 컴포넌트 writer 가 없는 타이머의 틱은 매번 `_global`·`_local`(sequence 시작 상태 포함)을 현재 값으로 다시 읽는다. `_local` 쓰기는 액션 밖 writer(`G7Core.state.setLocal` — 저장소 B·화면 덧칠·덮어쓰기 기록)로 하되, 병합은 엔진 규칙(`deepMergeWithState` + 빈 객체 교체)으로 먼저 계산해 최상위 키만 shallow 로 넘기고, 호출 동안 `__g7ActionContext` 를 비우고 `__g7SequenceLocalSync` 를 되돌린다 — 다른 동작이 await 하는 사이 틱이 돌아도 그 동작의 writer(모달 저장소 A)·대기 중인 sequence 상태를 건드리지 않는다(ActionDispatcher `handleStartInterval`·`createDetachedTickContext`·`handleSetState`, `ActionContext.detachedTick`). `route`·`query`·`_computed` 는 등록 시점 값 그대로다.
+- 같은 타이머가 화면을 떠난 뒤에도 계속 돌며 다음 화면 `_local` 에 앞 화면 키를 쓰던 문제를 고쳤다(`stopAllIntervals` 를 부르는 곳이 없었다 — 타이머 맵 주석도 바로잡았다). 렌더 전 `init_actions` 에서 등록한 타이머는 경로 전환 세대가 init 시작 세대와 달라지면 스스로 멈춘다 — init 은 경로마다 다시 돌아 화면이 여전히 원하면 같은 id 로 다시 등록한다. init 이 await 하는 사이 경로가 바뀐 경우(뒤로 가기 경합)도 시작 세대로 판정해 새 세대에 붙지 않는다. 데이터 소스 `onSuccess`·컴포넌트 동작에서 등록한 타이머는 종전과 같다(레이아웃이 `stopInterval` 로 멈춘다).
+- 발생 시점: `startInterval` 과 본인인증 전체화면을 함께 들인 회원 인증 인프라(#297, engine-v1.45.0 무렵)부터. 회귀 잠금: `__tests__/DynamicRenderer.intervalTickFromInit.test.tsx`(실물 TemplateApp init 실행기·루트 렌더러, 수정 전 코드에서 red).
+
 ## [engine-v1.91.0] - 2026-11-11
 
 ### Added

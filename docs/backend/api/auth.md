@@ -597,7 +597,7 @@ HTTP/1.1 200
 | 401 | Unauthorized | 코드가 틀렸거나(`auth.two_factor_failed`), challenge 의 `purpose` 가 `login` 이 아니거나, 확인된 사용자가 없거나 `active` 상태가 아닌 경우 |
 | 403 | Forbidden | 코드 확인은 통과했으나 관리자 역할이 아닌 경우 (`auth.admin_required`) |
 | 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
-| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일 |
+| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일. 2단계 코드 오답도 같은 실패 횟수에 더해진다(7.1.6 — 사용자 경로와 같음) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
 | 503 | Service Unavailable | 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — 토큰도 발급하지 않는다, #736) |
 
@@ -673,8 +673,10 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | challenge 가 식별한 사용자가 관리자 역할이 아닌 경우 (`auth.admin_required`) |
 | 422 | Unprocessable Entity | 재발송 대상이 아닌 challenge (`auth.two_factor_invalid_challenge`) — 사유는 구분하지 않는다 |
+| 422 | Unprocessable Entity | 인증 앱처럼 코드를 보내지 않는 수단의 challenge (`auth.two_factor_resend_not_supported`, 7.1.6) — 인증 앱 코드는 앱이 30초마다 새로 만들므로 재발송이 없다. 화면에는 재발송 버튼이 없고 API 응답으로만 알린다 |
 | 423 | Locked | challenge 를 받은 뒤 계정이 잠긴 경우 |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
+| 429 | Too Many Requests | 메일 인증번호를 보낸 지 60초가 지나지 않은 경우 (`auth.two_factor_resend_cooldown`, `:seconds` 치환, `Retry-After` 헤더, 7.1.6) — 공개 본인인증 요청(`POST /api/identity/challenges`)과 같은 대기 시간 |
 | 503 | Service Unavailable | 새 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
 
 <!-- @generated:end -->
@@ -1117,7 +1119,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthorized | 코드가 틀렸거나(`auth.two_factor_failed`), challenge 의 `purpose` 가 `login` 이 아니거나, 확인된 사용자가 없거나 `active` 상태가 아닌 경우. **세 사유를 같은 응답으로 뭉뚱그린다** — 구분해 내보내면 challenge 유효성 탐색에 쓰인다 |
 | 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
-| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 (`auth.account_locked` / 무기한이면 `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`) |
+| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 (`auth.account_locked` / 무기한이면 `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`). **2단계 코드 오답도 비밀번호 오답과 같은 실패 횟수에 더해진다(7.1.6)** — 이 요청으로 상한에 닿으면 401 대신 423 을 받고, 잠긴 계정은 코드를 확인하기 전에 423 이다 |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (로그인과 같은 제한을 공유하므로 코드 대입 시도도 함께 억제된다 — `auth.too_many_attempts`) |
 | 503 | Service Unavailable | 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — 토큰도 발급하지 않는다, #736) |
 
@@ -1195,8 +1197,10 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 422 | Unprocessable Entity | `challenge_id` 형식 위반, 또는 재발송 대상이 아닌 challenge (`auth.two_factor_invalid_challenge`) — 존재하지 않음 / `purpose` 가 `login` 이 아님 / 이미 검증·취소·실패 / 만료 / 대상 사용자가 없거나 `active` 가 아님. **사유를 구분하지 않는다** — 구분해 내보내면 challenge 유효성 탐색에 쓰인다 |
+| 422 | Unprocessable Entity | 인증 앱처럼 코드를 보내지 않는 수단의 challenge (`auth.two_factor_resend_not_supported`, 7.1.6) — 인증 앱 코드는 앱이 30초마다 새로 만들므로 재발송이 없다. 화면에는 재발송 버튼이 없고 API 응답으로만 알린다 |
 | 423 | Locked | challenge 를 받은 뒤 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
+| 429 | Too Many Requests | 메일 인증번호를 보낸 지 60초가 지나지 않은 경우 (`auth.two_factor_resend_cooldown`, `:seconds` 치환, `Retry-After` 헤더, 7.1.6) — 공개 본인인증 요청(`POST /api/identity/challenges`)과 같은 대기 시간 |
 | 503 | Service Unavailable | 새 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
 
 <!-- @generated:end -->
@@ -1206,6 +1210,8 @@ HTTP/1.1 200
 인증번호를 받지 못했을 때 새 코드를 발행한다. 서버는 **기존 challenge 를 취소하고 새로 발행**하므로, 앞서 받은 인증번호는 더 이상 통하지 않는다 — 유효한 코드를 여러 개 동시에 살려 두면 대입 시도의 표적이 넓어진다. 클라이언트는 응답의 `challenge_id` 로 반드시 교체하고 입력란을 비워야 한다.
 
 계정 잠금은 여기서도 다시 검사한다. challenge 를 받은 뒤 잠긴 계정에는 새 코드를 보내지 않는다. 로그인과 같은 요청 제한(`throttle:auth-login`)이 걸린다.
+
+**재발송 규칙 (7.1.6)**: 「오답 몇 번 → 재발송」을 되풀이해 시도 횟수를 매번 0 으로 되돌리지 못하게, ① 인증 앱처럼 코드를 보내지 않는 수단은 재발송하지 않고 422 `auth.two_factor_resend_not_supported` 로 거부하며(수단이 `ChallengeDeliveryAwareProviderInterface::deliversChallengeCode()` 로 `false` 를 알리거나 challenge 의 채널이 `app` 이면), ② 메일 인증번호는 직전 발송 뒤 60초 안의 재요청을 429 `auth.two_factor_resend_cooldown`(`Retry-After`)으로 거부한다. 또 2단계 코드 오답은 확인 단계에서 계정 실패 횟수에 더해지므로(`POST /api/auth/login/two-factor` 의 423) 재발송으로 시도 상한을 넘길 수 없다.
 
 
 ### POST /api/auth/logout

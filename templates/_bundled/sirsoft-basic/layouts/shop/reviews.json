@@ -135,6 +135,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "별점 필터 — 「전체」는 빈 값이라 주소에서 빠지고, 쪽수는 1쪽으로 돌린다",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -185,6 +186,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "정렬을 바꾸면 쪽수는 1쪽으로 돌린다(다른 필터는 주소에 그대로 남는다)",
                                                 "type": "change",
                                                 "handler": "navigate",
                                                 "params": {
@@ -347,6 +349,7 @@
                                 "name": "Pagination",
                                 "actions": [
                                     {
+                                        "comment": "쪽 번호만 바꾸고 필터·정렬은 주소에 그대로 둔다",
                                         "event": "onPageChange",
                                         "handler": "navigate",
                                         "params": {

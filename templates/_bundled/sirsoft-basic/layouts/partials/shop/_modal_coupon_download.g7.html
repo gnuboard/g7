@@ -23,6 +23,7 @@
       <div data-if="{{(_global.couponDownloadModal?.coupons?.data ?? []).some(c => !c.is_downloaded)}}" class="flex justify-end mb-3">
         <button type="button" data-ref="coupon_download_all" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!!_global.couponDownloadModal?.downloadingAll}}">
           <on type="click">
+            <!-- 진행 중 표시 → 일괄 받기 요청 → 결과를 목록에 반영하고 안내한다(실패해도 진행 중 표시는 푼다) -->
             <sequence>
               <set-state target="global" :couponDownloadModal.downloadingAll="true"/>
               <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/bulk-download" auth_mode="required" method="POST" body="{{_global.couponDownloadModal?.scope === 'product' ? { coupon_ids: (_global.couponDownloadModal?.coupons?.data ?? []).filter(c => !c.is_downloaded &amp;&amp; c.coupon_id != null).map(c => c.coupon_id) } : {}}}">

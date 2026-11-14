@@ -90,6 +90,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "진행 중 표시 → 일괄 받기 요청 → 결과를 목록에 반영하고 안내한다(실패해도 진행 중 표시는 푼다)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [

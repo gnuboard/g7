@@ -33,6 +33,8 @@ class IdentityVerificationRequiredException extends \Error
      * @param  string|null  $providerId  특정 provider 강제 시 id, null 이면 기본
      * @param  string|null  $renderHint  프론트 렌더 힌트
      * @param  array|null  $returnRequest  재실행할 원 요청 정보 (method/url/headers_echo)
+     * @param  string  $message  다국어 메시지 키
+     * @param  array{email?: string}|null  $target  비회원 대상 (요청자가 보낸 대상 이메일을 그대로 되돌림 — 7.1.6)
      */
     public function __construct(
         public readonly string $policyKey,
@@ -41,13 +43,22 @@ class IdentityVerificationRequiredException extends \Error
         public readonly ?string $renderHint = null,
         public readonly ?array $returnRequest = null,
         string $message = 'identity.errors.verification_required',
+        public readonly ?array $target = null,
     ) {
         parent::__construct($message);
     }
 
+    /**
+     * 428 응답의 verification 페이로드를 만듭니다.
+     *
+     * 비회원 대상이 있으면 `target.email` 을 싣는다 — 본인인증 창이 그 대상으로 인증을 시작해야 결과가 대상에 묶여
+     * 정책을 통과한다(launcher 가 `payload.target?.email` 을 읽는다).
+     *
+     * @return array<string, mixed> verification 페이로드
+     */
     public function getPayload(): array
     {
-        return [
+        $payload = [
             'policy_key' => $this->policyKey,
             'purpose' => $this->purpose,
             'provider_id' => $this->providerId,
@@ -55,5 +66,11 @@ class IdentityVerificationRequiredException extends \Error
             'challenge_start_url' => '/api/identity/challenges',
             'return_request' => $this->returnRequest,
         ];
+
+        if (is_array($this->target) && ($this->target['email'] ?? '') !== '') {
+            $payload['target'] = ['email' => (string) $this->target['email']];
+        }
+
+        return $payload;
     }
 }

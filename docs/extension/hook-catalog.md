@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (634)
+- [코어](#코어) (635)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -123,6 +123,7 @@
 | `core.auth.password_expiry_notice` | action | 2 |  |
 | `core.auth.record_consents` | action | 4 |  |
 | `core.auth.register_validation_rules` | filter | 2 |  |
+| `core.auth.registering` | action | 3 |  |
 | `core.auth.reset_password_validation_rules` | filter | 2 |  |
 | `core.auth.two_factor_requested` | action | 2 |  |
 | `core.auth.two_factor_resend_validation_rules` | filter | 2 |  |

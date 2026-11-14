@@ -10,7 +10,7 @@ description: |
 
 axes:
   request: [explicit_ids, no_ids, invalid]
-  outcome: [mixed, all_downloadable, over_limit, none_issued, rejected, query_count, concurrent_limit]
+  outcome: [mixed, all_downloadable, over_limit, none_issued, rejected, query_count, concurrent_limit, english_plural]
 
 effects:
   - bulk_issues_downloadable_coupons
@@ -24,6 +24,7 @@ effects:
   - bulk_rejects_invalid_ids
   - bulk_counts_issued_in_one_query
   - bulk_reports_limit_exceeded_when_raced
+  - bulk_english_message_picks_singular_or_plural
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Coupon/CouponBulkDownloadTest.php

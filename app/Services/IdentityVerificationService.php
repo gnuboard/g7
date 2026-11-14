@@ -12,6 +12,7 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -48,13 +49,16 @@ class IdentityVerificationService
      * Challenge 를 시작합니다.
      *
      * $providerId 가 주어지면 Manager 의 0번째 우선순위로 사용된다 (IdentityVerificationManager::resolveForPurpose).
-     * 미등록/미지원이면 silent fallback (기존 우선순위 체인 진행).
+     * 명시한 수단이 미등록이거나 목적을 지원하지 않으면 다른 수단으로 바꾸지 않고 예외를 던진다(7.1.6).
+     * 명시하지 않으면 기존 우선순위 체인을 따른다.
      *
      * @param  string  $purpose  signup|password_reset|self_update|sensitive_action|플러그인 등록값
      * @param  User|array<string, mixed>  $target  로그인 사용자(User) 또는 ['email' => '...'] 배열
      * @param  array<string, mixed>  $context  origin_type / origin_identifier / origin_policy_key / ip_address / user_agent
      * @param  string|null  $providerId  Mode A controller 요청 또는 Mode B 정책의 명시 provider id
      * @return VerificationChallenge 발행된 challenge DTO
+     *
+     * @throws IdentityProviderUnavailableException 명시한 수단을 이 목적에 쓸 수 없을 때
      */
     public function start(
         string $purpose,
@@ -80,8 +84,8 @@ class IdentityVerificationService
      *
      * 공개 「인증번호 받기」 가 쓴다 — 로그인하지 않아도 아무 주소로 요청할 수 있어, 제한이 없으면 한 주소에
      * 인증 메일을 계속 보낼 수 있다. 메일 프로바이더로 이메일 대상에 보낼 때만 판정하고, 그 밖(다른 수단,
-     * 이메일 없는 대상)은 0 이다. 서비스가 직접 발행하는 경로(로그인 2단계 인증·가입 직후 발송)는 이 판정을
-     * 거치지 않는다.
+     * 이메일 없는 대상)은 0 이다. 가입 직후 발송은 이 판정을 거치지 않고, 로그인 2단계 메일 재발송(7.1.6)은
+     * 이 판정을 쓴다.
      *
      * @param  string  $purpose  인증 목적
      * @param  User|array  $target  인증 대상
@@ -152,12 +156,19 @@ class IdentityVerificationService
         if ($result->success && $log->user_id !== null) {
             $user = $this->userRepository->findById($log->user_id);
             if ($user !== null) {
-                $this->userRepository->update($user, [
+                $attributes = [
                     'identity_verified_at' => $result->verifiedAt,
                     'identity_verified_provider' => $result->providerId,
                     'identity_verified_purpose_last' => $log->purpose,
-                    'identity_hash' => $result->identityHash ?: null,
-                ]);
+                ];
+
+                // 실명 식별자는 그 수단이 돌려줄 때만 갱신한다 — 메일처럼 돌려주지 않는 수단의 인증이
+                // 이전에 받은 실명 확인 기록을 지우지 않게 한다(KVE 동형 B7, 7.1.6).
+                if (is_string($result->identityHash) && $result->identityHash !== '') {
+                    $attributes['identity_hash'] = $result->identityHash;
+                }
+
+                $this->userRepository->update($user, $attributes);
             }
         }
 
@@ -216,9 +227,8 @@ class IdentityVerificationService
             return false;
         }
 
-        $result = $this->logRepository->updateById($log->id, [
-            'consumed_at' => now(),
-        ]);
+        // 아직 안 쓴 결과만 소비한다 — 같은 토큰으로 동시에 두 번 가입해도 한 요청만 true 를 받는다(KVE 동형 O4)
+        $result = $this->logRepository->consumeIfUnconsumed($log->id, now()->startOfSecond());
 
         HookManager::doAction('core.identity.after_consume_token', $token, $log, $result);
 
@@ -273,6 +283,8 @@ class IdentityVerificationService
             // 무방하며, 화면의 '남은 시도 횟수' 는 모달이 자기 시도를 세어 표시하므로 영향이 없다.
             'max_attempts' => (int) $log->max_attempts,
             'public_payload' => $publicPayload,
+            // 이 challenge 를 연 정책 키(공개 정책 키) — 전체화면 인증의 재전송이 같은 정책·수단으로 다시 발급하도록 싣는다(7.1.6)
+            'policy_key' => $log->origin_policy_key,
         ];
     }
 
@@ -357,10 +369,20 @@ class IdentityVerificationService
         }
 
         $secret = Str::random(48);
-        $metadata = is_array($log->metadata) ? $log->metadata : [];
-        $metadata['claim_secret_hash'] = hash('sha256', $secret);
 
-        $this->logRepository->updateById($log->id, ['metadata' => $metadata]);
+        // 행을 잠그고 최신 metadata 에 병합한다 — 읽어 둔 metadata 를 통째로 덮으면 그 사이 다른 요청이
+        // 남긴 값(받아 간 시각 등)이 사라진다(KVE 동형 O5).
+        DB::transaction(function () use ($challengeId, $secret): void {
+            $locked = $this->logRepository->findByIdForUpdate($challengeId);
+            if ($locked === null) {
+                return;
+            }
+
+            $metadata = is_array($locked->metadata) ? $locked->metadata : [];
+            $metadata['claim_secret_hash'] = hash('sha256', $secret);
+
+            $this->logRepository->updateById($locked->id, ['metadata' => $metadata]);
+        });
 
         return $secret;
     }
@@ -377,34 +399,37 @@ class IdentityVerificationService
      */
     public function claim(string $challengeId, string $secret): array
     {
-        $log = $this->logRepository->findById($challengeId);
-        $hash = is_array($log?->metadata) ? ($log->metadata['claim_secret_hash'] ?? null) : null;
+        // 판정과 「받아 감」 표시를 행 잠금 안에서 한다 — 같은 행을 먼저 읽은 두 요청이 둘 다 토큰을 받지 않게(KVE 동형 O5)
+        return DB::transaction(function () use ($challengeId, $secret): array {
+            $log = $this->logRepository->findByIdForUpdate($challengeId);
+            $hash = is_array($log?->metadata) ? ($log->metadata['claim_secret_hash'] ?? null) : null;
 
-        if (! $log || ! is_string($hash) || ! hash_equals($hash, hash('sha256', $secret))) {
-            return ['status' => 'denied'];
-        }
+            if (! $log || ! is_string($hash) || ! hash_equals($hash, hash('sha256', $secret))) {
+                return ['status' => 'denied'];
+            }
 
-        $status = $log->status->value;
-        if (in_array($status, [
-            IdentityVerificationStatus::Requested->value,
-            IdentityVerificationStatus::Sent->value,
-            IdentityVerificationStatus::Processing->value,
-        ], true)) {
-            return ['status' => $log->expires_at && $log->expires_at->isPast() ? IdentityVerificationStatus::Expired->value : 'pending'];
-        }
+            $status = $log->status->value;
+            if (in_array($status, [
+                IdentityVerificationStatus::Requested->value,
+                IdentityVerificationStatus::Sent->value,
+                IdentityVerificationStatus::Processing->value,
+            ], true)) {
+                return ['status' => $log->expires_at && $log->expires_at->isPast() ? IdentityVerificationStatus::Expired->value : 'pending'];
+            }
 
-        if ($status !== IdentityVerificationStatus::Verified->value) {
-            return ['status' => $status];
-        }
+            if ($status !== IdentityVerificationStatus::Verified->value) {
+                return ['status' => $status];
+            }
 
-        if (! empty($log->metadata['claimed_at']) || $log->consumed_at !== null || ! is_string($log->verification_token)) {
-            return ['status' => 'claimed'];
-        }
+            if (! empty($log->metadata['claimed_at']) || $log->consumed_at !== null || ! is_string($log->verification_token)) {
+                return ['status' => 'claimed'];
+            }
 
-        $metadata = $log->metadata;
-        $metadata['claimed_at'] = Carbon::now()->toIso8601String();
-        $this->logRepository->updateById($log->id, ['metadata' => $metadata]);
+            $metadata = $log->metadata;
+            $metadata['claimed_at'] = Carbon::now()->toIso8601String();
+            $this->logRepository->updateById($log->id, ['metadata' => $metadata]);
 
-        return ['status' => IdentityVerificationStatus::Verified->value, 'verification_token' => $log->verification_token];
+            return ['status' => IdentityVerificationStatus::Verified->value, 'verification_token' => $log->verification_token];
+        });
     }
 }

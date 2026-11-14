@@ -45,6 +45,18 @@ class ProductReview extends Model
         'reply_updated_at',
     ];
 
+    /**
+     * 직렬화에서 숨길 속성
+     *
+     * `active_order_option_key` 는 주문옵션당 활성 후기 1건을 DB 가 강제하려고 둔 생성 컬럼(VIRTUAL)이라
+     * 응답·활동 로그 스냅샷에 실을 값이 아니다.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'active_order_option_key',
+    ];
+
     protected $casts = [
         'status' => ReviewStatus::class,
         'rating' => 'integer',

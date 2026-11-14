@@ -71,6 +71,18 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
 
     const children = couponDownloadModal.children;
 
+    /**
+     * 데이터 상태 안의 쿠폰 그리드와 카드는 **자리 번호가 아니라 역할로** 찾는다.
+     * 7.1.6(#898)에서 데이터 상태 첫 자식으로 「모두 받기」 줄이 들어와 그리드가 둘째로 밀렸다 —
+     * 창 동작 계약(스크롤 그리드·반복 카드·버튼 3상태·받기 apiCall)은 그대로이고 자리만 바뀌었다.
+     * 그리드 = 무한스크롤(scroll) 핸들러를 가진 자식, 카드 = 그 그리드 안의 반복(iteration) 노드.
+     */
+    const dataSection = children[2]; // 데이터 상태
+    const scrollGrid = asArray(dataSection?.children).find((c: any) =>
+        asArray(c?.actions).some((a: any) => a.type === 'scroll')
+    );
+    const couponCard = asArray(scrollGrid?.children).find((c: any) => c?.iteration);
+
     // @scenario source=static
     // @effects modal_three_state_branch
     it('3가지 상태 분기가 있다 (로딩/빈상태/데이터)', () => {
@@ -92,9 +104,9 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects coupon_cards_iterate_window_list
     it('쿠폰 카드에 iteration이 있다', () => {
-        const dataSection = children[2]; // 데이터 상태
         // U10: 페이지전환 로딩 오버레이 제거 → 그리드 첫 자식이 곧 iteration 카드
-        const iterationEl = dataSection.children[0].children[0];
+        expect(scrollGrid, '데이터 상태에 무한스크롤 그리드가 있어야 한다').toBeDefined();
+        const iterationEl = couponCard;
 
         expect(iterationEl.iteration).toBeDefined();
         expect(iterationEl.iteration.source).toContain(`${NS}?.coupons?.data`);
@@ -104,8 +116,8 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects infinite_scroll_appends_next_page
     it('U10: 스크롤 영역(max-h + overflow-y-auto)으로 일원화되어 있다', () => {
-        const dataSection = children[2];
-        const grid = dataSection.children[0];
+        const grid = scrollGrid;
+        expect(grid, '데이터 상태에 무한스크롤 그리드가 있어야 한다').toBeDefined();
         expect(grid.props.className).toContain('max-h-96');
         expect(grid.props.className).toContain('overflow-y-auto');
     });
@@ -113,8 +125,8 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects card_button_three_states
     it('쿠폰 카드에 3가지 버튼 상태가 있다 (다운로드완료/진행중/가능)', () => {
-        const dataSection = children[2];
-        const cardChildren = dataSection.children[0].children[0].children; // U10: 오버레이 제거 → 카드가 index 0
+        const cardChildren = asArray(couponCard?.children); // U10: 오버레이 제거 → 카드가 그리드 첫 자식
+        expect(cardChildren.length).toBeGreaterThan(0);
 
         // is_downloaded 버튼
         const downloadedBtn = cardChildren.find((c: any) =>
@@ -141,8 +153,8 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects download_button_posts_coupon_id
     it('다운로드 버튼이 apiCall을 호출한다', () => {
-        const dataSection = children[2];
-        const cardChildren = dataSection.children[0].children[0].children; // U10: 오버레이 제거 → 카드가 index 0
+        const cardChildren = asArray(couponCard?.children); // U10: 오버레이 제거 → 카드가 그리드 첫 자식
+        expect(cardChildren.length).toBeGreaterThan(0);
         const downloadBtn = cardChildren.find(isDownloadableButton);
 
         const clickAction = asArray(downloadBtn?.actions)[0];
@@ -165,8 +177,8 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects download_success_marks_downloaded
     it('다운로드 성공 시 is_downloaded를 true로 업데이트한다', () => {
-        const dataSection = children[2];
-        const cardChildren = dataSection.children[0].children[0].children; // U10: 오버레이 제거 → 카드가 index 0
+        const cardChildren = asArray(couponCard?.children); // U10: 오버레이 제거 → 카드가 그리드 첫 자식
+        expect(cardChildren.length).toBeGreaterThan(0);
         const downloadBtn = cardChildren.find(isDownloadableButton);
         const apiCallAction = asArray(asArray(downloadBtn?.actions)[0]?.actions).find((a: any) => a.handler === 'apiCall');
 
@@ -189,8 +201,8 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects infinite_scroll_appends_next_page
     it('U10 무한스크롤: 그리드에 scroll 핸들러가 있고 하단 근접 시 다음 페이지를 apiCall 한다', () => {
-        const dataSection = children[2];
-        const grid = dataSection.children[0]; // max-h-96 overflow-y-auto 스크롤 그리드
+        const grid = scrollGrid; // max-h-96 overflow-y-auto 스크롤 그리드
+        expect(grid, '데이터 상태에 무한스크롤 그리드가 있어야 한다').toBeDefined();
         expect(grid.props.className).toContain('overflow-y-auto');
 
         const scrollAction = (grid.actions || []).find((a: any) => a.type === 'scroll');
@@ -226,8 +238,7 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects infinite_scroll_appends_next_page
     it('U10 무한스크롤: 다음 페이지 로딩 인디케이터(스피너)가 loadingMore 일 때 표시된다', () => {
-        const dataSection = children[2];
-        // 데이터 상태 = 그리드 + 로딩 인디케이터 두 블록
+        // 데이터 상태 = (모두 받기 줄) + 그리드 + 로딩 인디케이터
         const indicator = dataSection.children.find(
             (c: any) => typeof c.if === 'string' && c.if.includes(`${NS}?.loadingMore`)
         );
@@ -239,8 +250,8 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
     // @scenario source=static
     // @effects infinite_scroll_appends_next_page
     it('U10 회귀: 페이지전환 로딩 오버레이가 제거되었다 (그리드 첫 자식이 iteration 카드)', () => {
-        const dataSection = children[2];
-        const grid = dataSection.children[0];
+        const grid = scrollGrid;
+        expect(grid, '데이터 상태에 무한스크롤 그리드가 있어야 한다').toBeDefined();
         // 그리드의 첫 자식은 곧바로 iteration 카드여야 함 (오버레이 Div 없음)
         expect(grid.children[0].iteration).toBeDefined();
     });
@@ -252,8 +263,7 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
         expect(children[0].if).toContain(`${NS}?.loading`);
 
         // 데이터 상태 iteration source (U10: 오버레이 제거 → 카드가 index 0)
-        const dataSection = children[2];
-        const iterationSource = dataSection.children[0].children[0].iteration.source;
+        const iterationSource = couponCard?.iteration?.source;
         expect(iterationSource).toContain(`${NS}?.coupons?.data`);
 
         // 창 상태를 `_local`/`$parent._local` 에서 읽던 옛 키(영구 마운트 창 A 가 새 목록을 가리던 갈래)가 남지 않는다
