@@ -384,6 +384,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_basic_card.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_currency_cards.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_currency_mismatch.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_currency_table.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_expiry_card.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_notification_card.g7.html',
