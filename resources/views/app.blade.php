@@ -111,6 +111,11 @@
             if (($staticExtBase = \App\Support\AssetUrl::staticExtBase()) !== null) {
                 $g7Config['staticBase'] = $staticExtBase;
             }
+            // 템플릿 설정 중 template.json `expose` 에 제작자가 선언한 키만 — 엔진이 첫 화면 전 config API 를 부르지 않는다.
+            // 선언이 없는 템플릿은 싣지 않고 엔진이 종전처럼 API 를 부른다 (#879)
+            if (($exposedTemplateConfig ?? null) !== null) {
+                $g7Config['templateConfig'] = (object) $exposedTemplateConfig;
+            }
             // 자산 URL 모드 — 'extension'(기본) | 'extensionless'. 서버 기본값만 싣는다.
             // <head> 의 자가 복구가 이미 전환을 확정했다면(window.__g7AssetUrlMode)
             // g7-shell-boot.js 가 그 값을 우선한다 — G7Config 객체를 통째로 교체하므로

@@ -7,10 +7,21 @@ export declare const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = "g7_board_secret_view
  */
 export declare function issueCartKeyFromApi(): Promise<string | null>;
 /**
+ * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다 (#879).
+ *
+ * 종전에는 레이아웃을 받은 뒤 init_actions 의 `initCartKey` 에서야 발급 요청이 나가, 첫 화면 전 PHP 왕복이 레이아웃 → 키로
+ * 줄줄이 이어졌다. 저장된 키가 없고 쇼핑몰 모듈이 켜져 있으면 여기서 요청을 시작해 레이아웃 요청과 겹치게 한다. 렌더 전에
+ * 키 응답을 끝까지 기다리는 것은 그대로다 — `initCartKey` 가 이 결과를 기다린다(설계 확정 2026-11-10).
+ *
+ * @returns 진행 중인 발급(시작하지 않았으면 null)
+ */
+export declare function prefetchCartKey(): Promise<string | null> | null;
+/**
  * 장바구니 키 초기화
  *
  * 비로그인 사용자의 장바구니를 식별하기 위한 키를 생성/로드합니다.
  * 이미 저장된 키가 있으면 로드하고, 없으면 백엔드 API를 통해 새로 발급합니다.
+ * 번들이 실릴 때 시작한 발급({@link prefetchCartKey})이 있으면 새 요청 없이 그 결과를 끝까지 기다린다.
  *
  * ActionDispatcher 핸들러 형식: (action, context) => void | Promise<void>
  *

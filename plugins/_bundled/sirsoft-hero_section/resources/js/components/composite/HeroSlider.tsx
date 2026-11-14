@@ -534,6 +534,20 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     const doc = regionRef.current?.ownerDocument;
     setFramed(!!doc && doc !== document);
   }, [count > 0, stylesReady]);
+  // 주소를 붙일 장(배너 id) — 지금 장·다음 장과 한 번 붙인 장. fade·cube·flip·creative 는 모든 장이 화면 안에 겹쳐 있어
+  // loading="lazy" 가 막지 못하므로, 아직 차례가 아닌 장은 이미지·영상 주소 자체를 붙이지 않는다. 점·이전으로 먼 장에 가면 그 장의
+  // 번호가 바뀌는 렌더에서 바로 붙는다(그림이 올 때까지 그림 칸은 배너 바탕). 한 번 붙인 장은 떼지 않는다(다시 받지 않게)
+  const loadedIds = useRef(new Set<HeroBanner['id']>());
+  if (count > 0) {
+    loadedIds.current.add(banners[index % count].id);
+    loadedIds.current.add(banners[(index + 1) % count].id);
+  }
+  // 높은 우선순위(fetchPriority="high")는 첫 화면의 지금 장에만 준다 — 장이 한 번 바뀌면 어느 장에도 남기지 않는다
+  // (넘긴 뒤의 장은 첫 화면 그리기를 다투지 않는다)
+  const firstPaint = useRef(true);
+  if (index !== 0) {
+    firstPaint.current = false;
+  }
   // 이미지 sizes 에 줄 실제 상자 크기 — 본문 폭이면 템플릿이 정한 상자라 재어야 안다. 재기 전(undefined)에는 장이 이미지 주소를 붙이지 않아
   // 화면 폭(100vw)으로 받기 시작하지 않는다(layout effect 라 칠하기 전에 같은 작업에서 잰 값으로 다시 그린다). 못 재면 null → 100vw.
   const [sliderBox, setSliderBox] = useState<SliderBox | null | undefined>(undefined);
@@ -788,6 +802,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               count={count}
               active={i === index}
               eager={i === index || i === (index + 1) % count}
+              // 편집 미리보기(정적 모드)는 장을 손으로 넘겨 보는 화면이라 전부 붙인다
+              load={framed || loadedIds.current.has(banner.id)}
+              priority={firstPaint.current && i === index}
               forceDevice={forceDevice}
               mobileScreen={heroScreen.mobile}
               box={sliderBox ?? null}
@@ -897,6 +914,12 @@ interface HeroSlideProps {
   count: number;
   active: boolean;
   eager: boolean;
+
+  /** 이미지·영상 주소를 붙일지 — 아직 차례가 아닌 장은 자리·대체 문구만 두고 주소를 붙이지 않는다(기본 붙임) */
+  load?: boolean;
+
+  /** 첫 화면의 지금 장인지 — 이미지에 높은 우선순위(fetchPriority="high")를 준다 */
+  priority?: boolean;
   forceDevice?: 'pc' | 'mobile';
 
   /** 휴대폰 화면인지 — 슬라이더의 기기 판정(`useHeroScreen`: 기기 고정 → 엔진 반응형 폭 → 창 폭). 주 이미지를 이 판정으로 고른다 */
@@ -1054,7 +1077,7 @@ function wrapBox(box: string, node: React.ReactNode): React.ReactNode {
  * @returns 슬라이드
  */
 const HeroSlide: React.FC<HeroSlideProps> = ({
-  banner, index, count, active, eager, forceDevice, mobileScreen = forceDevice === 'mobile', box = null, boxPending = false, textBox = '',
+  banner, index, count, active, eager, load = true, priority = false, forceDevice, mobileScreen = forceDevice === 'mobile', box = null, boxPending = false, textBox = '',
   playing = false, loop = false, onMediaEnded = noop, onMediaFailed = noop,
   reduced = false, replay = 0, onTextMove,
 }) => {
@@ -1108,7 +1131,8 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const mainSrc = main ? mediaSrc(main) : undefined;
   const mainSrcSet = main ? responsiveSrcset(main.url, main.width, mainSrc) : undefined;
   // srcset 이 있으면 상자를 잰 뒤에만 주소를 붙인다 — 재기 전 sizes(100vw)로 큰 후보를 받기 시작했다가 잰 값으로 다시 받지 않게
-  const measuring = !!mainSrcSet && boxPending;
+  // 차례가 아닌 장(load=false)도 같은 자리에서 주소를 뺀다 — 붙일 때 속성 순서(sizes → srcSet → src)가 잰 뒤 붙일 때와 같다
+  const measuring = (!!mainSrcSet && boxPending) || !load;
   const promo = banner.presentation?.layout === 'promo';
   const background = /^#[0-9A-Fa-f]{6}$/.test(String(banner.presentation?.background_color ?? '')) ? String(banner.presentation!.background_color) : null;
   const mediaFx = mediaMotion(focus, reduced);
@@ -1127,7 +1151,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
         height={main.height ?? undefined}
         loading={eager ? 'eager' : 'lazy'}
         draggable={false}
-        {...(index === 0 ? { fetchPriority: 'high' } : {})}
+        {...(priority ? { fetchPriority: 'high' } : {})}
         decoding="async"
       />
     </picture>
@@ -1209,6 +1233,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
       active={active}
       loop={loop}
       eager={eager}
+      load={load}
       reduced={reduced}
       onEnded={onMediaEnded}
       onFailed={onMediaFailed}

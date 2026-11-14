@@ -43,6 +43,18 @@ class GeneratesComponentManifestTest extends TestCase
     }
 
     /**
+     * 표본 모듈의 실제 판 — 템플릿 대체본의 targetVersion 은 이 판을 따라 올라가므로 시험이 판을 박아 두지 않는다.
+     *
+     * @return string module.json 의 version
+     */
+    private function helloModuleVersion(): string
+    {
+        $manifest = json_decode((string) file_get_contents(base_path('modules/_bundled/gnuboard7-hello_module/module.json')), true);
+
+        return (string) ($manifest['version'] ?? '');
+    }
+
+    /**
      * 컴포넌트 종류는 소스 디렉터리로 분류된다.
      *
      * @scenario compile_unit=registry,source_health=valid
@@ -121,7 +133,7 @@ class GeneratesComponentManifestTest extends TestCase
 
         $manifest = ComponentManifest::fromArray([
             'identifier' => 'gnuboard7-hello_module',
-            'version' => '0.2.0',
+            'version' => $this->helloModuleVersion(),
             'components' => $scanned['components'],
             'for' => $scanned['for'],
         ], 'generated.json');

@@ -104,7 +104,7 @@ Admin 템플릿의 최소 구성을 보여줍니다. `sirsoft-admin_basic` 의 �
 
 | 계층 | 예시 파일 | 역할 |
 |------|-----------|------|
-| Entry | `template.json` | type: admin, components 레지스트리, error_config |
+| Entry | `template.json` | type: admin, components 레지스트리, error_config, `expose`(첫 화면에 미리 실을 키 선언 예시) |
 | Components | `src/components/basic/{Div,Button,Input,...}.tsx` | HTML 태그 래핑 Basic 8개 |
 | Layouts (베이스) | `layouts/_admin_base.g7.html` | 헤더 + 사이드바 + 콘텐츠 슬롯 |
 | Layouts (초기) | `layouts/admin_dashboard.g7.html` | 대시보드 예시 |
@@ -119,7 +119,7 @@ User 템플릿의 최소 구성을 보여줍니다. `gnuboard7-hello_module` 의
 
 | 계층 | 예시 파일 | 역할 |
 |------|-----------|------|
-| Entry | `template.json` | type: user, features 플래그, components 레지스트리 |
+| Entry | `template.json` | type: user, features 플래그, components 레지스트리, `expose`(첫 화면에 미리 실을 키 선언 예시) |
 | Components | `src/components/basic/*.tsx` | Basic 컴포넌트 |
 | Layouts (베이스) | `layouts/_user_base.g7.html` | 헤더 + 콘텐츠 + 푸터 |
 | Layouts (홈) | `layouts/home.g7.html` | Memo 모듈 `data_sources` 연동 |

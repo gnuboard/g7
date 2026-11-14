@@ -224,6 +224,29 @@ public function register(array $positions): array
 플러그인 리스너는 자동 발견되지 않으므로 `plugin.php` `getHookListeners()` 에 올린 것만 동작한다. 공개 캐시 비우기(`HeroCacheListener`)는 `sync` 로 즉시 돈다 — 저장 직후 사용자 화면에 옛 배너가 남지 않게. 데이터까지 지우는 제거의 이미지 폴더 정리는 리스너가 아니라 `Plugin::uninstall()` 이 맡는다 — `core.plugins.before_uninstall` 은 제거 가드보다 먼저 발화해 거기서 지우면 제거가 막혀도 파일만 사라진다.
 <!-- @intent END -->
 
+## 활동 로그 훅
+
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기려고 구독하는 훅 10개입니다. 기록 종류(LogType)는
+> `ResolvesActivityLogType` 이 요청 문맥으로 정한다(관리자 화면 요청이면 Admin).
+> action 라벨과 description 문구는 이 플러그인 `lang/{ko,en}/activity_log.php`(일본어는 번들 언어팩)에 있고, 설명 해석은 플러그인 리스너 `ActivityLogDescriptionResolver` 가 맡는다 — 새 항목을 더하면 세 언어를 함께 정의한다.
+
+### 히어로섹션 훅 (BannerActivityLogListener)
+
+**파일**: `plugins/_bundled/sirsoft-hero_section/src/Listeners/BannerActivityLogListener.php`
+
+| 훅 이름 | Listener 메서드 | Action (DB) |
+|---------|----------------|-------------|
+| `sirsoft-hero_section.banner.after_create` | `handleCreated` | `hero_banner.create` |
+| `sirsoft-hero_section.banner.after_update` | `handleUpdated` | `hero_banner.update` |
+| `sirsoft-hero_section.banner.after_delete` | `handleDeleted` | `hero_banner.delete` |
+| `sirsoft-hero_section.banner.after_bulk_status` | `handleBulkStatus` | `hero_banner.bulk_status` |
+| `sirsoft-hero_section.banner.after_bulk_delete` | `handleBulkDelete` | `hero_banner.bulk_delete` (배너마다 1건) |
+| `sirsoft-hero_section.banner.after_reorder` | `handleReordered` | `hero_banner.reorder` |
+| `sirsoft-hero_section.banner_image.after_change` | `handleImageChanged` | `hero_banner.image_update`·`image_remove`·`video_update`·`video_remove` |
+| `sirsoft-hero_section.position_setting.after_update` | `handlePositionSetting` | `hero_position.update` |
+| `sirsoft-hero_section.target_setting.after_update` | `handleTargetSetting` | `hero_target_setting.update` |
+| `sirsoft-hero_section.target_setting.after_reset` | `handleTargetReset` | `hero_target_setting.reset` |
+
 ## 레이아웃 확장
 
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

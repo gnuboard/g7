@@ -110,6 +110,11 @@ export interface PopupImageSizesInput {
   ratio?: number | null;
   /** 관리자 미리보기인지 (기기 크기 틀 안이라 화면 폭으로 줄이지 않는다) */
   preview: boolean;
+  /**
+   * 레이어가 헤더·GDPR 배너 사이에 창이 들어가도록 줄인 본문 높이 상한(px) — `PopupLayer` 의 `fit` 상태(`--g7pp-fit-h`).
+   * 없으면(하단 시트·미리보기·아직 재지 않음) 넣지 않는다
+   */
+  fitHeight?: number | null;
 }
 
 /** 휴대폰 가운데 창·하단 시트의 본문 높이 상한(px) — CSS `--g7pp-body-h` 의 고정값과 같다(main.css) */
@@ -122,8 +127,9 @@ const MOBILE_BODY_MAX = { center: 420, sheet: 380 } as const;
  * 하단 시트는 화면 폭. 이미지는 본문 칸에 잘리지 않게(`contain`) 담기므로 실제 폭은 `min(칸 폭, 칸 높이 × 이미지 비율)` 이다 —
  * 비율을 알면 칸 높이(main.css 의 `.g7pp-body` 높이 식: PC 설정 높이, 가운데 창 `min(70vh, 420px)`, 하단 시트 `min(60vh, 380px)`,
  * 모두 `100vh - 116px` 안)를 곱한 값으로 폭을 줄인다. 세로로 긴 이미지가 375 하단 시트에서 표시 285px 인데 화면 폭(100vw)으로
- * 한 단계 큰 후보를 고르던 것을 막는다. 헤더·GDPR 배너를 피해 레이어가 더 줄이는 높이(`--g7pp-fit-h`)는 넣지 않는다(상한이라 화질은
- * 모자라지 않는다). 비율을 모르면 칸 폭만 준다.
+ * 한 단계 큰 후보를 고르던 것을 막는다. 헤더·GDPR 배너를 피해 레이어가 더 줄이는 높이(`--g7pp-fit-h`, `fitHeight`)도 같은 식의
+ * 세 번째 항으로 넣는다 — CSS `.g7pp-body` 높이가 `min(--g7pp-body-h, 100vh - 116px, --g7pp-fit-h)` 라, 빼면 PC 에서 320px 로 그리면서
+ * 390px 로 계산해 한 단계 큰 후보(1280w)를 골랐다. 비율을 모르면 칸 폭만 준다.
  * 미리보기는 관리자 화면 안의 기기 틀이라 화면 폭·높이(`vw`·`vh`)가 틀 크기가 아니다 — PC 는 설정 폭, 휴대폰은 휴대폰 판정 상한 폭을
  * 상한으로 두고 칸 높이 상한 × 비율과 견준 숫자를 준다.
  *
@@ -142,11 +148,12 @@ export function popupImageSizes(input: PopupImageSizesInput): string {
     return `${ratio !== null && heightCap !== null ? Math.min(widthCap, Math.ceil(heightCap * ratio)) : widthCap}px`;
   }
 
+  const fit = typeof input.fitHeight === 'number' && Number.isFinite(input.fitHeight) && input.fitHeight > 0 ? `, ${Math.round(input.fitHeight)}px` : '';
   let bodyHeight: string | null;
   if (input.isMobile) {
-    bodyHeight = input.isSheet ? `min(60vh, ${MOBILE_BODY_MAX.sheet}px, 100vh - 116px)` : `min(70vh, ${MOBILE_BODY_MAX.center}px, 100vh - 116px)`;
+    bodyHeight = input.isSheet ? `min(60vh, ${MOBILE_BODY_MAX.sheet}px, 100vh - 116px${fit})` : `min(70vh, ${MOBILE_BODY_MAX.center}px, 100vh - 116px${fit})`;
   } else {
-    bodyHeight = pcHeight !== null ? `min(${pcHeight}px, 100vh - 116px)` : null;
+    bodyHeight = pcHeight !== null ? `min(${pcHeight}px, 100vh - 116px${fit})` : null;
   }
   const cap = ratio !== null && bodyHeight !== null ? `calc(${bodyHeight} * ${ratio})` : null;
   const within = (width: string) => (cap ? `min(${width}, ${cap})` : width);

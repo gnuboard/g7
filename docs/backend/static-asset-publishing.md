@@ -10,6 +10,7 @@
 3. 폴백 2층: 태그 계층은 파일 단위 file_exists + 파샬 역변환, fetch 계층은 fetchStaticFirst
 4. 무효화는 버전 디렉토리 — 포인터(cache_version)가 바뀔 뿐 파일 덮어쓰기가 없다. 버전은 만료되지 않는다 — 재게시는 변경이 있을 때만, 누락은 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」의 [지금 다시 만들기] 로 복구
 5. .json/.js/.css 로 끝나는 신규 동적(Laravel) 라우트를 만들지 않는다 — 실파일만 정적 확장자
+6. 첫 방문은 PHP 를 약 30번 부른다 — 동시 처리 상한(php-fpm pm.max_children) 앞에서 첫 방문이 겹치면 줄을 서 첫 화면이 늦다. 확인·측정법은 §10
 ```
 
 ## 1. 왜 게시(bake)인가
@@ -123,7 +124,7 @@ public/build/ext/{cache_version}/
 | 자산 | 게시본 사용 | 자가 치유 창 (API 폴백) |
 | --- | --- | --- |
 | 아이콘 폰트 (CSS 에 인라인) | 정상 | **정상** — 하위 파일 참조가 없다 |
-| 본문 글꼴 (`pretendard-variable.css` → `woff2/…`) | 정상 | **404** — FontFace `status: "error"`, 시스템 글꼴로 대체 |
+| 본문 글꼴 (`pretendard-variable.css` → `woff2-dynamic-subset/…`) | 정상 | **404** — FontFace `status: "error"`, 시스템 글꼴로 대체 |
 
 기능이 사라지지는 않는다(조작 수단인 아이콘은 인라인이라 영향 없음). 화면이 한 번 다른 글꼴로 보이고, 그 뒤 게시가 끝나면 정상으로 돌아온다.
 
@@ -246,3 +247,67 @@ Apache 는 게시 트리에 포함된 `.htaccess` 가 같은 캐시 헤더와 `m
 - 게시 산출물(`public/build/ext/`)은 git 미추적·release 페이로드 제외다. `public/build/core/` 는 계속 추적한다 (배포 산출물) — 혼동 금지.
 - 루트 `npm run build`(기본 vite 앱 빌드)는 더 이상 `public/build` 를 비우지 않는다 — 루트 vite config 가 `build.emptyOutDir: false` 를 명시한다. 종전에는 기본값 `true` 로 `core`(폴백 없는 코어 3번들)와 `ext`(게시본)가 함께 지워졌고, 이미 배달된 HTML 의 immutable URL 은 재게시로도 복구되지 않았다(공개 #70 · #122). 잔존 구 해시 산출물은 `manifest.json` 이 선택하므로 참조되지 않는 사표이며, 산출물 정리 책임은 빌드 커맨드(`PrunesBuildOutput`)가 진다. 저장소의 모든 vite config 는 이 규약을 명시해야 한다 — 기본값 의존은 자동 검증이 차단한다.
 - 확장 병합 번들의 생성 규율은 [module-assets.md "서버측 번들 병합"](../extension/module-assets.md) 이 소유한다. 본 게시는 그 산출물의 **사본**만 만든다.
+
+## 10. 오리진 처리 용량(첫 방문 요청과 PHP 동시 처리 상한)
+
+정적 게시를 켜도 첫 방문은 PHP 를 여러 번 부른다. 서버가 한꺼번에 처리하는 PHP 요청 수(동시 처리 상한)보다 첫 방문 요청이 많이 겹치면, 요청은 PHP 앞에서 줄을 서고 첫 화면이 그만큼 늦게 뜬다. CDN 을 앞에 두어도 PHP 요청은 오리진까지 온다.
+
+### 첫 방문 1회의 PHP 요청 수
+
+- 비로그인으로 쇼핑몰 메인을 처음 열면 PHP 요청이 약 30건 나간다(로컬 실측 기준 HTML 1 + API·상품 이미지·레이아웃 등 약 30). 로그인 상태면 몇 건 더 많다.
+- PHP 요청 1건 비용의 대부분은 프레임워크 기동이다. 빈 상태 확인 주소(`/up`)도 응답에 약 0.8~1초가 걸린 측정이 있다(로컬, OPcache 켜짐). 그래서 요청 수를 줄이는 것이 1건을 빠르게 하는 것보다 효과가 크다.
+- 정적 게시로 나가는 파일(`/build/ext/…`, `/build/core/…`)은 PHP 를 거치지 않는다. 같은 파일이 PHP 경로(`/api/templates/assets/…`)로 나가면 약 1초, 정적 경로로 나가면 수십 ms 다.
+
+### 동시 처리 상한과 대기 시간
+
+- 상한이 N 이고 요청 1건이 약 1초면, 서버는 초당 약 N건을 처리한다.
+- 계산 예: 상한 5에 첫 방문자 2명이 같은 순간 들어와 PHP 요청 약 50~60건이 겹치면, 마지막 요청은 약 10초를 기다린다. 이때 HTML 요청이 줄 뒤쪽에 서면 첫 글자까지 10초 넘게 걸린다(HTTP/2 중계로 상한 5를 흉내 낸 로컬 측정: HTML 줄 대기 약 10.5초, 첫 글자 약 15초).
+- 방문자 1명만 있을 때는 상한 5~8 에서도 첫 글자 약 4초 안팎이었다. 지연은 「겹침」에서 커진다.
+
+### php-fpm 동시 처리 상한 정하기
+
+- php-fpm 은 `pm.max_children` 이 상한이다. 정하는 식은 「PHP 에 줄 수 있는 메모리 ÷ PHP 프로세스 1개가 쓰는 메모리」다.
+- 프로세스 1개 메모리는 운영 중인 서버에서 잰다. 예: `ps -ylC php-fpm --sort:rss` 의 RSS 평균(보통 수십 MB). 데이터베이스·웹서버·캐시가 쓸 메모리는 먼저 뺀다.
+- 상한을 메모리보다 크게 잡으면 교체(swap)가 일어나 오히려 느려진다. 상한을 올린 뒤에는 아래 「서버에서 재는 법」으로 대기 시간이 줄었는지 확인한다.
+
+### 자산이 정적 경로로 나가는지 확인하기
+
+- `php artisan ext-static:status` 가 「게시 상태: 완료」와 「이상 없음」을 보여야 한다.
+- 브라우저에서 페이지 소스를 열어 템플릿 CSS·JS·글꼴 주소가 `/build/ext/{버전}/…` 인지 `/api/templates/assets/…` 인지 본다. `/api/…` 면 PHP 를 거친다. 프로덕션 환경, 정적 게시 켜짐, 게시 완료, 파일 존재의 네 조건을 모두 갖춰야 정적 경로로 나간다(§2·§5).
+
+### 서버에서 재는 법
+
+- nginx 접근 기록에 요청 처리 시간과 PHP 응답 시간을 함께 남긴다. 둘의 차이가 PHP 앞 대기 시간이다.
+
+  ```nginx
+  log_format timing '$remote_addr [$time_local] "$request" $status '
+                    'rt=$request_time urt=$upstream_response_time';
+  access_log /var/log/nginx/access_timing.log timing;
+  ```
+
+- php-fpm 풀 설정에 상태 주소와 느린 요청 기록을 켠다. 상태 주소의 `listen queue`·`max listen queue` 가 0 보다 크면 요청이 줄을 서고 있다는 뜻이다.
+
+  ```ini
+  pm.status_path = /fpm-status
+  slowlog = /var/log/php-fpm/slow.log
+  request_slowlog_timeout = 3s
+  ```
+
+  상태 주소는 외부에 열지 않는다(내부 주소에서만 허용).
+
+### `/build/core/` 캐시·압축 (§8 보충)
+
+§8 은 게시 트리(`/build/ext/`)만 다룬다. 코어 번들(`/build/core/`)은 파일 이름이 버전 쿼리(`?v=`)로 바뀌므로 길게 캐시하고 압축한다.
+
+```nginx
+location ^~ /build/core/ {
+    expires 30d;
+    add_header Cache-Control "public";
+    access_log off;
+    gzip on;
+    gzip_types application/javascript text/css application/json;
+    gzip_min_length 1024;
+}
+```
+
+엔진은 첫 화면에 필요한 템플릿 설정을 HTML 에 함께 싣고(템플릿이 `expose` 로 선언한 키), 화면 구성 요청을 확장 번들보다 먼저 시작해 첫 화면 전 PHP 왕복을 줄인다. 그래도 남는 요청은 위 상한 안에서 처리되므로, 동시 방문이 많은 사이트는 상한과 대기 시간을 함께 본다.

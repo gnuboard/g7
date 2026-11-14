@@ -122,6 +122,7 @@
         "wait": "height",
         "timeout_ms": 5000
     },
+    "expose": ["scroll_restoration", "errorHandling", "error_config"],
     "error_config": {
         "layouts": {
             "401": "errors/401",

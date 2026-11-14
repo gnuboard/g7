@@ -13,6 +13,7 @@
 3. 필수: template.json, routes.json, components.json
 4. 코어/템플릿 분리: 코어는 엔진, 템플릿은 컴포넌트
 5. 버전 히스토리: Admin만 지원, User는 미지원
+6. template.json `expose`: 엔진이 앱 시작 때 읽는 키를 화면 HTML 에 미리 실어 config API 왕복을 없앤다(선택)
 ```
 
 ---
@@ -436,7 +437,7 @@ CHANGELOG 에 적습니다.
 
 ### 뒤로가기·새로고침 스크롤 기본값 (scroll_restoration) — engine-v1.85.0+
 
-뒤로/앞으로 가기·새로고침으로 화면에 돌아왔을 때의 스크롤 동작을 템플릿 전체에 거는 **선택 필드**입니다. 사용자·관리자 템플릿 모두 씁니다. 엔진은 앱 시작 때 `/api/templates/{identifier}/config.json`(이 파일을 그대로 내보낸다)으로 읽어 엔진 기본값 위에 깝니다.
+뒤로/앞으로 가기·새로고침으로 화면에 돌아왔을 때의 스크롤 동작을 템플릿 전체에 거는 **선택 필드**입니다. 사용자·관리자 템플릿 모두 씁니다. 엔진은 앱 시작 때 `/api/templates/{identifier}/config.json`(이 파일을 그대로 내보낸다)으로 읽어 엔진 기본값 위에 깝니다. `expose` 에 선언하면 API 대신 화면 HTML 에 실린 값을 씁니다([첫 화면에 미리 싣는 키](#첫-화면에-미리-싣는-키-expose--engine-v1950)).
 
 ```json
 "scroll_restoration": {
@@ -460,6 +461,20 @@ CHANGELOG 에 적습니다.
 | `navigate` 의 `returnScroll` | 그 이동으로 떠난 화면에 뒤로 가기로 돌아올 때만 ([actions-handlers-navigation.md](../frontend/actions-handlers-navigation.md#returnscroll-옵션)) |
 
 운영자가 사이트에 맞게 고치는 값은 `template.json` 이 아니라 베이스 레이아웃에 둡니다 — `template.json` 은 업데이트 때 덮이고 쓰기 화면이 없습니다.
+
+### 첫 화면에 미리 싣는 키 (expose) — engine-v1.95.0+
+
+엔진은 앱을 시작할 때 template.json 의 몇 가지 값(`scroll_restoration`·`errorHandling`·`error_config`)을 읽습니다. 종전에는 이 값을 받으려고 첫 화면 전에 `/api/templates/{identifier}/config.json` 을 한 번 불렀습니다. 서버 왕복 한 번이 첫 화면을 그만큼 늦춥니다. 최상위 `expose` 에 키 이름을 적으면 서버가 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에 함께 실어 보내고, 엔진은 API 를 부르지 않습니다.
+
+```json
+"expose": ["scroll_restoration", "errorHandling", "error_config"]
+```
+
+- **형식**: 최상위 키 이름의 배열입니다(선택 필드). 문자열이 아닌 항목, `a.b` 처럼 최상위 키 이름 모양이 아닌 항목, 예약 이름(`expose`·`cache_version`)은 무시합니다. 선언했는데 template.json 에 없는 키는 `null`(값 없음)로 실립니다.
+- **엔진의 판단**: 엔진은 키 단위로 봅니다. 앱 시작이 읽는 `scroll_restoration`·`errorHandling` 이 모두 실려 있으면(값이 `null` 이어도) API 를 부르지 않습니다. 하나라도 빠지면 API 를 한 번 불러 그 값을 씁니다 — 선언을 빠뜨려도 값을 잃지 않습니다. 오류 화면은 `error_config` 가 실려 있을 때만 API 를 건너뜁니다.
+- **하위 호환**: `expose` 가 없는 템플릿은 아무것도 싣지 않고, 엔진이 종전처럼 API 를 부릅니다. 이 필드를 모르는 이전 코어는 무시합니다. 레이아웃 편집기와 확장 상태 갱신은 최신 값을 확인하려고 계속 API 를 씁니다.
+- **공개 값**: 실린 값은 누구나 페이지 소스에서 볼 수 있습니다. config API 도 로그인 없이 template.json 을 그대로 돌려주므로 새로 드러나는 값은 아니지만, HTML 에는 선언한 키만 싣습니다. 비밀 값(키·토큰·내부 주소)은 template.json 에 두지 않습니다.
+- **설치·업데이트 경고**: `expose` 를 선언한 템플릿에서, `expose` 가 배열이 아니거나 위 세 키가 template.json 에 있는데 `expose` 에 없으면 설치·업데이트 결과에 경고가 나옵니다(설치는 그대로 됩니다). `expose` 를 아예 쓰지 않는 템플릿은 경고하지 않습니다.
 
 ---
 

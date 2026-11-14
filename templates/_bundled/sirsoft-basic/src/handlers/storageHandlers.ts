@@ -141,11 +141,52 @@ async function issueAndStoreCartKey(): Promise<string | null> {
   return issued;
 }
 
+/** 번들이 실릴 때 시작한 장바구니 키 발급 — initCartKey 가 한 번 가져가면 비운다 (#879) */
+let pendingIssue: Promise<string | null> | null = null;
+
+/**
+ * 셸이 실은 활성 모듈 목록에 쇼핑몰 모듈이 있는지 — 레이아웃 가드 `{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}`
+ * 와 같은 관대 규칙(목록이 없으면 켜진 것으로 본다). 번들이 실리는 시점에는 엔진 전역 상태가 아직 없어 `G7Config.activeModules`
+ * (식별자 문자열 또는 `{identifier}` 메타의 배열)를 읽는다.
+ *
+ * @returns 켜져 있으면 true
+ */
+function isEcommerceActiveInShell(): boolean {
+  const list = (window as any).G7Config?.activeModules;
+  if (!Array.isArray(list)) {
+    return true;
+  }
+
+  return list.some((meta: unknown) => (typeof meta === 'string' ? meta : (meta as { identifier?: unknown })?.identifier) === 'sirsoft-ecommerce');
+}
+
+/**
+ * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다 (#879).
+ *
+ * 종전에는 레이아웃을 받은 뒤 init_actions 의 `initCartKey` 에서야 발급 요청이 나가, 첫 화면 전 PHP 왕복이 레이아웃 → 키로
+ * 줄줄이 이어졌다. 저장된 키가 없고 쇼핑몰 모듈이 켜져 있으면 여기서 요청을 시작해 레이아웃 요청과 겹치게 한다. 렌더 전에
+ * 키 응답을 끝까지 기다리는 것은 그대로다 — `initCartKey` 가 이 결과를 기다린다(설계 확정 2026-11-10).
+ *
+ * @returns 진행 중인 발급(시작하지 않았으면 null)
+ */
+export function prefetchCartKey(): Promise<string | null> | null {
+  if (pendingIssue) {
+    return pendingIssue;
+  }
+  if (readStoredCartKey() || !isEcommerceActiveInShell()) {
+    return null;
+  }
+  pendingIssue = issueAndStoreCartKey();
+
+  return pendingIssue;
+}
+
 /**
  * 장바구니 키 초기화
  *
  * 비로그인 사용자의 장바구니를 식별하기 위한 키를 생성/로드합니다.
  * 이미 저장된 키가 있으면 로드하고, 없으면 백엔드 API를 통해 새로 발급합니다.
+ * 번들이 실릴 때 시작한 발급({@link prefetchCartKey})이 있으면 새 요청 없이 그 결과를 끝까지 기다린다.
  *
  * ActionDispatcher 핸들러 형식: (action, context) => void | Promise<void>
  *
@@ -156,11 +197,19 @@ export async function initCartKeyHandler(
   _action?: any,
   _context?: any
 ): Promise<void> {
+  // 미리 시작한 발급은 한 번만 쓴다 — 키를 지운 뒤(로그아웃 등) 다시 부르면 지난 결과를 되쓰지 않고 새로 발급한다
+  const pending = pendingIssue;
+  pendingIssue = null;
+
   // 로그인/비로그인 사용자 모두 cartKey 필요 (API 헤더에 포함)
   // localStorage에서 기존 cartKey 확인 — 형식이 망가진 저장 키는 버리고 새로 발급받는다 (#869 ρ 8부 L1)
   let cartKey: string | null = readStoredCartKey();
 
-  // 없으면 백엔드 API를 통해 새로 발급 — 응답이 올 때까지 기다린다(출시본과 같음, 설계 확정 2026-11-10)
+  // 없으면 미리 시작한 발급을, 그것도 없거나 실패했으면 백엔드 API를 통해 새로 발급 — 응답이 올 때까지 기다린다
+  // (출시본과 같음, 설계 확정 2026-11-10)
+  if (!cartKey && pending) {
+    cartKey = await pending;
+  }
   if (!cartKey) {
     cartKey = await issueAndStoreCartKey();
   } else {

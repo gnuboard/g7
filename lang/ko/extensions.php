@@ -92,6 +92,8 @@ return [
         'necessary_storage_not_object' => 'necessary_storage 선언이 객체 모양이 아니라 전부 무시했습니다',
         'necessary_storage_invalid_scope' => '저장소 종류가 localStorage·sessionStorage·cookie 가 아니거나 키 목록이 배열이 아니라 버렸습니다: :names',
         'necessary_storage_invalid_key' => '저장 키 형식이 틀려 버렸습니다(영문·숫자·_ . : @ + - 로 128자 이내, 앞부분 맞춤은 끝에 * 하나): :items',
+        'expose_not_array' => 'expose 선언이 배열이 아니라 첫 화면에 템플릿 설정을 싣지 않습니다(키 이름 배열로 적으세요)',
+        'expose_missing_engine_keys' => 'template.json 에 있는 :keys 가 expose 선언에 없어 첫 화면에 API 왕복 1회가 남습니다',
         'declaration_hint' => '확장이 선언한 값이 틀린 것이라 다시 실행해도 바뀌지 않습니다 — 확장 개발자에게 알리세요',
     ],
 

@@ -49,6 +49,7 @@
         "composite": [],
         "layout": []
     },
+    "expose": ["scroll_restoration", "errorHandling", "error_config"],
     "error_config": {
         "layouts": {
             "401": "errors/401",

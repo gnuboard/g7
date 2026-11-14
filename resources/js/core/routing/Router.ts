@@ -288,10 +288,25 @@ export class Router {
    * @returns 매칭된 라우트와 파라미터, 없으면 null
    */
   match(pathname: string): RouteMatch | null {
-    const normalizedPath = this.normalizePathname(pathname);
+    return Router.matchRoutes(this.routes, pathname);
+  }
 
-    for (const route of this.routes) {
-      const params = this.matchPattern(route.path, normalizedPath);
+  /**
+   * 라우트 목록에서 경로와 매칭되는 첫 라우트를 찾습니다 — 인스턴스(`match`)와 같은 규칙의 순수 함수.
+   *
+   * 라우터 인스턴스는 생성할 때 popstate 를 구독하므로, 라우터를 만들기 전(부팅 중 routes 를 받은 직후)에 현재 경로의
+   * 레이아웃을 미리 정할 때 쓴다(`TemplateApp` 첫 레이아웃 미리 요청).
+   *
+   * @param routes - 라우트 목록
+   * @param pathname - 매칭할 URL 경로 (사이트 마운트 접두사를 벗긴 값)
+   * @returns 매칭된 라우트와 파라미터, 없으면 null
+   * @since engine-v1.95.0
+   */
+  static matchRoutes(routes: Route[], pathname: string): RouteMatch | null {
+    const normalizedPath = normalizePathname(pathname);
+
+    for (const route of routes) {
+      const params = Router.matchPattern(route.path, normalizedPath);
 
       if (params !== null) {
         return {
@@ -336,7 +351,7 @@ export class Router {
    * @param pathname - 실제 URL 경로
    * @returns 추출된 파라미터 객체, 매칭 실패 시 null
    */
-  private matchPattern(pattern: string, pathname: string): Record<string, string> | null {
+  private static matchPattern(pattern: string, pathname: string): Record<string, string> | null {
     // 파라미터 이름 추출
     const paramNames: string[] = [];
 
@@ -430,7 +445,7 @@ export class Router {
     }
     // 정규형에서 사이트 마운트 접두사를 벗긴다. 라우트 패턴은
     // 언제나 접두사 없이 등록되므로, 하위 폴더 배치(`/g7/board/free`)에서 벗기지
-    // 않으면 어떤 패턴에도 맞지 않아 전 화면이 「없는 페이지」가 된다 (12차 G3).
+    // 않으면 어떤 패턴에도 맞지 않아 전 화면이 「없는 페이지」가 된다.
     const pathname = stripBasePrefix(normalizedPathname);
     const search = window.location.search;
     const matchResult = this.match(pathname);

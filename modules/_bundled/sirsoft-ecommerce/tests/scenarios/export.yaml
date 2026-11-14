@@ -62,6 +62,8 @@ axes:
     - undeclared_personal # personal 누락 선언 (고정물)
   viewport:
     - mobile              # 휴대폰 너비(767px 이하)
+  locale:
+    - site_default        # 값의 대체 언어 = 사이트 기본 언어(app.site_locale)
 
 effects:
   # 요청
@@ -108,6 +110,7 @@ effects:
   - retry_with_no_rows_is_rejected
   - expired_files_pruned
   - date_only_values_keep_calendar_day
+  - empty_value_falls_back_to_site_default_locale   # 고른 언어 값이 비면 사이트 기본 언어 값으로 채운다(env 고정 app.fallback_locale 이 아님)
   - stored_file_removed_when_record_update_fails
   - reservation_retry_does_not_fail_running_job
   - activity_log_labels_resolved

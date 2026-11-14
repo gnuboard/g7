@@ -15,6 +15,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   initCartKeyHandler,
+  prefetchCartKey,
   ensureCartKeyHandler,
   getCartKeyHandler,
   clearCartKeyHandler,
@@ -389,6 +390,126 @@ describe('storageHandlers', () => {
       expect(mockG7Core.state.set).toHaveBeenCalledWith(expect.objectContaining({
         cartKey: expect.any(String),
       }));
+    });
+  });
+
+  describe('장바구니 키 미리 발급 — 번들이 실릴 때 발급 시작, initCartKey 는 같은 결과를 기다린다 (#879)', () => {
+    const KEY = `ck_${'p'.repeat(32)}`;
+    const ok = (key: string) => ({ ok: true, json: async () => ({ data: { cart_key: key } }) } as any);
+    const shopOn = () => { (window as any).G7Config = { user: null, activeModules: [{ identifier: 'sirsoft-ecommerce' }] }; };
+
+    // @scenario storage=cart_key
+    // @effects cart_key_issue_starts_at_bundle_load
+    it('(a)(b) 저장 키가 없고 쇼핑몰이 켜져 있으면 미리 발급 POST 1회 — initCartKey 는 새 POST 없이 같은 결과를 저장해 쓴다', async () => {
+      shopOn();
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(ok(KEY));
+      fetchSpy.mockClear();
+
+      const pending = prefetchCartKey();
+
+      expect(pending).not.toBeNull();
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledWith('/api/modules/sirsoft-ecommerce/cart/key', expect.objectContaining({ method: 'POST' }));
+      // 두 번 불러도 같은 요청
+      expect(prefetchCartKey()).toBe(pending);
+
+      await initCartKeyHandler();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('g7_cart_key', KEY);
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: KEY });
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_issue_starts_at_bundle_load
+    it('(c) 키가 이미 있거나 쇼핑몰이 꺼져 있으면 미리 발급하지 않는다(활성 목록이 없으면 켜진 것으로 본다)', () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(ok(KEY));
+      fetchSpy.mockClear();
+
+      shopOn();
+      mockLocalStorage.setItem('g7_cart_key', `ck_${'s'.repeat(32)}`);
+      expect(prefetchCartKey()).toBeNull();
+      mockLocalStorage.reset();
+
+      (window as any).G7Config = { user: null, activeModules: [{ identifier: 'sirsoft-board' }, 'sirsoft-page'] };
+      expect(prefetchCartKey()).toBeNull();
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_issue_starts_at_bundle_load
+    it('(c) 활성 목록이 없는 옛 셸은 켜진 것으로 보고 미리 발급한다(레이아웃 가드 `?? true` 와 같은 관대 규칙)', async () => {
+      (window as any).G7Config = { user: null };
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(ok(KEY));
+      fetchSpy.mockClear();
+
+      expect(prefetchCartKey()).not.toBeNull();
+      await initCartKeyHandler();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_issue_starts_at_bundle_load
+    it('(d) 미리 발급이 실패(null)하면 initCartKey 가 종전처럼 다시 발급한다', async () => {
+      shopOn();
+      const fetchSpy = vi.spyOn(global, 'fetch')
+        .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) } as any)
+        .mockResolvedValueOnce(ok(KEY));
+      fetchSpy.mockClear();
+
+      await prefetchCartKey();
+      await initCartKeyHandler();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(mockG7Core.state.set).toHaveBeenLastCalledWith({ cartKey: KEY });
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_issue_starts_at_bundle_load
+    // @effects cart_key_loaded_or_issued
+    it('(e) 미리 발급 응답이 늦어도 initCartKey 는 끝까지 기다린다(키 없이 먼저 끝내지 않는다)', async () => {
+      vi.useFakeTimers();
+      try {
+        shopOn();
+        let respond!: (value: any) => void;
+        const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(() => new Promise((resolve) => { respond = resolve; }) as any);
+      fetchSpy.mockClear();
+
+        prefetchCartKey();
+        let done = false;
+        const run = initCartKeyHandler().then(() => { done = true; });
+        await vi.advanceTimersByTimeAsync(10_000);
+
+        expect(done).toBe(false);
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.state.set).not.toHaveBeenCalled();
+
+        respond(ok(KEY));
+        await run;
+
+        expect(mockG7Core.state.set).toHaveBeenCalledTimes(1);
+        expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: KEY });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    // @scenario storage=cart_key
+    // @effects cart_key_issue_starts_at_bundle_load
+    it('initCartKey 가 한 번 쓴 미리 발급 결과는 다시 쓰지 않는다 — 키를 지운 뒤(로그아웃 등) initCartKey 는 새로 발급한다', async () => {
+      shopOn();
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(ok(KEY)).mockResolvedValueOnce(ok(`ck_${'n'.repeat(32)}`));
+      fetchSpy.mockClear();
+
+      prefetchCartKey();
+      await initCartKeyHandler();
+      clearCartKeyHandler();
+      await initCartKeyHandler();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(mockG7Core.state.set).toHaveBeenLastCalledWith({ cartKey: `ck_${'n'.repeat(32)}` });
     });
   });
 

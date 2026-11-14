@@ -43,6 +43,8 @@ class ShellNoInlineScriptTest extends TestCase
         'basePath',
         // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
         'templateSettings',
+        // 템플릿 설정 중 template.json `expose` 선언 키 — 엔진이 첫 화면 전 config API 를 부르지 않는다(#879, 비실행 JSON 블록 안)
+        'templateConfig',
     ];
 
     /**
@@ -61,6 +63,8 @@ class ShellNoInlineScriptTest extends TestCase
         'templateSettings',
         // 템플릿이 공급하는 설정 화면 번들 주소 — 관리자 셸만 싣는다(#434)
         'templateSettingsAssets',
+        // 템플릿 설정 중 template.json `expose` 선언 키(#879)
+        'templateConfig',
     ];
 
     /**

@@ -741,6 +741,17 @@ describe('HeroSlider', () => {
     expect(imgs[2].getAttribute('fetchpriority')).toBeNull();
   });
 
+  // @scenario surface=first_image_eager_rest_lazy
+  // @effects slide_images_load_by_priority
+  it('높은 우선순위는 첫 화면의 지금 장에만 — 넘긴 뒤에는 어느 장에도 남기지 않는다(#879)', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
+    const priorities = () => [...container.querySelectorAll('img.hs-slider__image')].map((img) => img.getAttribute('fetchpriority'));
+    expect(priorities()).toEqual(['high', null, null]);
+
+    fireEvent.click(container.querySelector('.hs-slider__next') as HTMLElement);
+    expect(priorities()).toEqual([null, null, null]);
+  });
+
   // @scenario surface=next_slide_preloaded_before_transition
   // @effects slide_images_load_by_priority
   it('다음으로 넘어갈 장은 전환 전에 미리 받는다', () => {
@@ -749,6 +760,85 @@ describe('HeroSlider', () => {
 
     fireEvent.click(container.querySelector('.hs-slider__next') as HTMLElement);
     expect(container.querySelectorAll('img')[2].getAttribute('loading')).toBe('eager');
+  });
+
+  describe('숨은 장 이미지 지연 (#879)', () => {
+    const EFFECTS = ['slide', 'fade', 'cube', 'flip', 'coverflow', 'creative', 'none'] as const;
+    const five = () => [1, 2, 3, 4, 5].map((id) => banner(id));
+    /** 장별로 이미지 주소(src)가 붙었는지 */
+    const loaded = (container: HTMLElement) => [...container.querySelectorAll('img.hs-slider__image')].map((img) => img.hasAttribute('src'));
+
+    // fade·cube·flip·creative 는 모든 장이 화면 안에 겹쳐 있어 loading=lazy 가 막지 못한다 — 주소 자체를 붙이지 않는다
+    for (const effect of EFFECTS) {
+      // @scenario surface=hidden_slides_load_only_current_and_next
+      // @effects hidden_slide_media_deferred
+      it(`${effect}: 5장 첫 화면은 지금 장·다음 장만 주소를 붙이고, 넘기면 그다음 장을 붙이며 받은 장은 그대로 둔다`, () => {
+        const { container } = render(<HeroSlider banners={five()} settings={{ autoplay: false, effect }} />);
+        expect(loaded(container)).toEqual([true, true, false, false, false]);
+        const hidden = container.querySelectorAll('img.hs-slider__image')[2];
+        expect(hidden.hasAttribute('srcset')).toBe(false);
+        expect(hidden.getAttribute('alt')).toBe('대체 3');
+
+        fireEvent.click(container.querySelector('.hs-slider__next') as HTMLElement);
+        expect(loaded(container)).toEqual([true, true, true, false, false]);
+      });
+    }
+
+    // @scenario surface=hidden_slides_load_only_current_and_next
+    // @effects hidden_slide_media_deferred
+    it('점으로 0 → 3 으로 가면 3번 장(과 그다음 장)을 바로 붙인다', () => {
+      const { container } = render(<HeroSlider banners={five()} settings={{ autoplay: false, effect: 'fade' }} />);
+      act(() => {
+        swiperState.instance!.slideToLoop(3);
+      });
+      expect(loaded(container)).toEqual([true, true, false, true, true]);
+    });
+
+    // @scenario surface=hidden_slides_load_only_current_and_next
+    // @effects hidden_slide_media_deferred
+    it('이전 화살표로 0 → 4 로 가면 4번 장을 바로 붙인다', () => {
+      const { container } = render(<HeroSlider banners={five()} settings={{ autoplay: false, effect: 'fade' }} />);
+      fireEvent.click(container.querySelector('.hs-slider__prev') as HTMLElement);
+      expect(loaded(container)).toEqual([true, true, false, false, true]);
+    });
+
+    // @scenario surface=hidden_slides_load_only_current_and_next
+    // @effects hidden_slide_media_deferred
+    it('1장·2장은 전부 붙인다', () => {
+      expect(loaded(render(<HeroSlider banners={[banner(1)]} settings={{ effect: 'fade' }} />).container)).toEqual([true]);
+      cleanup();
+      expect(loaded(render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, effect: 'fade' }} />).container)).toEqual([true, true]);
+    });
+
+    // @scenario surface=hidden_slides_load_only_current_and_next
+    // @effects hidden_slide_media_deferred
+    it('관리자 미리보기(iframe 정적 모드)는 장을 손으로 넘겨 보는 화면이라 전부 붙인다', () => {
+      const frame = document.createElement('iframe');
+      document.body.appendChild(frame);
+      try {
+        const { container } = render(<HeroSlider banners={five()} settings={{ autoplay: false, effect: 'fade' }} />, { container: frame.contentDocument!.body });
+        expect(loaded(container)).toEqual([true, true, true, true, true]);
+      } finally {
+        cleanup();
+        frame.remove();
+      }
+    });
+
+    // @scenario surface=hidden_slides_load_only_current_and_next
+    // @effects hidden_slide_media_deferred
+    it('영상 배너도 지금 장·다음 장만 video 주소를 붙인다', () => {
+      // jsdom 은 재생을 구현하지 않는다 — 재생 호출은 이 시험의 관심이 아니라 비워 둔다
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => Promise.resolve());
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+      const video = (id: number): HeroBanner => banner(id, { media_type: 'video', videos: { pc: { url: `/vid/pc-${id}.mp4`, mime: 'video/mp4' }, mobile: null } });
+      const { container } = render(<HeroSlider banners={[video(1), video(2), video(3)]} settings={{ autoplay: false, effect: 'fade' }} />);
+      expect([...container.querySelectorAll('video')].map((v) => v.hasAttribute('src'))).toEqual([true, true, false]);
+
+      fireEvent.click(container.querySelector('.hs-slider__next') as HTMLElement);
+      expect([...container.querySelectorAll('video')].map((v) => v.hasAttribute('src'))).toEqual([true, true, true]);
+      cleanup();
+      vi.restoreAllMocks();
+    });
   });
 
   // @scenario surface=images_have_dimensions_and_aspect_ratio

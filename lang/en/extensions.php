@@ -92,6 +92,8 @@ return [
         'necessary_storage_not_object' => 'The necessary_storage declaration is not an object, so all of it was ignored',
         'necessary_storage_invalid_scope' => 'Dropped storage types that are not localStorage, sessionStorage or cookie, or whose key list is not an array: :names',
         'necessary_storage_invalid_key' => 'Dropped storage keys with an invalid format (letters, digits, _ . : @ + - up to 128 characters; a single trailing * for prefix match): :items',
+        'expose_not_array' => 'The expose declaration is not an array, so no template settings are embedded in the first page (list key names)',
+        'expose_missing_engine_keys' => ':keys exist in template.json but are not in the expose declaration, so the first page still makes one API round trip',
         'declaration_hint' => 'This is a mistake in the extension\'s own declaration, so running the task again will not change it — let the extension developer know',
     ],
 

@@ -440,6 +440,8 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   const fitRef = useRef<number | null>(null);
   const pendingRef = useRef<MoveShift | null>(null);
   const gdprRef = useRef(0);
+  // 내용을 한 번 그린 장(팝업 id) — 숨은 장은 지금 장·다음 장·옆 장이 될 때 처음 그리고, 그 뒤로는 계속 둔다(받은 이미지를 다시 받지 않게)
+  const renderedRef = useRef<Set<number>>(new Set());
 
   const visible = useMemo(() => {
     if (preview) {
@@ -989,7 +991,12 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   const showDots = count <= dotLimit(bodyWidth, isMobile, withPause);
   // 이미지 srcset 의 sizes 를 정할 배치 — 위 본문 폭과 같은 기하(PC 설정 폭·높이, 휴대폰 가운데 창·하단 시트), 미리보기는 기기 틀 안의 상한.
   // 장마다 이미지 비율이 달라(잘리지 않게 담는 폭 = 칸 높이 × 비율) sizes 는 장이 제 이미지로 마저 정한다
-  const imageLayout: PopupImageLayout = { isMobile, isSheet, pcWidth: config.pc_width, pcHeight: config.pc_height, preview: !!preview };
+  // 헤더·GDPR 배너를 피해 줄인 본문 상한(fit)도 넘긴다 — CSS 본문 높이와 같은 식이어야 그린 폭에 맞는 후보를 고른다
+  const imageLayout: PopupImageLayout = { isMobile, isSheet, pcWidth: config.pc_width, pcHeight: config.pc_height, preview: !!preview, fitHeight: fit };
+  // 옮길 수 있는 창(PC·휴대폰 가운데 창)은 본문 상한(fit)을 잰 뒤에 내용을 붙인다 — 재기 전에 이미지를 붙이면 fit 없는 sizes 로
+  // 큰 후보를 먼저 요청했다가, fit 이 정해져 sizes 가 바뀌는 순간 끊고 작은 후보를 다시 받는다(실측: lg 요청 취소 뒤 md).
+  // fit 은 열리는 렌더의 layout effect 에서 정해져 화면에 그려지기 전에 다시 그리므로 빈 창이 보이지 않는다
+  const contentReady = !movable || fit !== null;
 
   // 넘김 컨트롤 — 별도 띠 없이 본문 아래쪽 가운데에 겹친 캡슐(점 또는 「n / N」 + 일시정지). 덮는 링크보다 위 층이고
   // 본문 끌기를 시작하지 않는다(onPointerDown). 장(슬라이드) 밖에 있어 장을 넘겨도 제자리다
@@ -1080,6 +1087,12 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
               const isPeer = !isCurrent && i === motion.peer;
               const x = isCurrent ? motion.offset : motion.offset + motion.side * 100;
               const placed = isPeer || (isCurrent && (motion.peer !== null || motion.offset !== 0));
+              // 내용은 지금 장·다음 장·끄는(넘기는) 동안의 옆 장·이미 그린 장만 그린다 — 숨은 장의 이미지와 본문 이미지를
+              // 첫 방문에 받지 않는다. 점으로 먼 장에 가도 그 장이 지금 장이 되는 렌더에서 바로 그린다
+              const wanted = isCurrent || isPeer || i === (current + 1) % count || renderedRef.current.has(popup.id);
+              if (wanted) {
+                renderedRef.current.add(popup.id);
+              }
 
               return (
                 <div
@@ -1100,7 +1113,9 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
                   } : undefined}
                   data-popup-id={popup.id}
                 >
-                  <PopupContent popup={popup} eager={i === 0} isMobile={isMobile} imageLayout={imageLayout} onNavigate={close} inert={!!preview} />
+                  {wanted && contentReady && (
+                    <PopupContent popup={popup} eager={isCurrent} isMobile={isMobile} imageLayout={imageLayout} onNavigate={close} inert={!!preview} />
+                  )}
                 </div>
               );
             })}
@@ -1138,7 +1153,7 @@ interface PopupContentProps {
   /** 팝업 */
   popup: PublicPopup;
 
-  /** 첫 장인지 (이미지를 바로 받는다) */
+  /** 지금 보이는 장인지 (이미지를 바로 받는다) */
   eager: boolean;
 
   /** 레이어가 판정한 기기가 모바일인지 (모바일 이미지가 있으면 그것을 쓴다) */

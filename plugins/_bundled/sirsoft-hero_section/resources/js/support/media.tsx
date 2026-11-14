@@ -112,6 +112,9 @@ interface HeroVideoMediaProps extends MediaCallbacks {
   /** 먼저 받아 둘지 (지금 장·다음 장) */
   eager: boolean;
 
+  /** 영상 주소를 붙일지 — 아직 차례가 아닌 장은 `<video>` 자리만 두고 주소를 붙이지 않는다(기본 붙임) */
+  load?: boolean;
+
   /** 움직임 줄이기 — 재생하기 전까지 영상을 받지 않는다 */
   reduced?: boolean;
 }
@@ -142,11 +145,12 @@ function videoPreload(playing: boolean, eager: boolean, reduced: boolean): 'auto
  * @param props 영상 속성
  * @returns 영상 요소
  */
-export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, posters, playing, active, loop, eager, reduced = false, onEnded, onFailed }) => {
+export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, posters, playing, active, loop, eager, load = true, reduced = false, onEnded, onFailed }) => {
   const ref = useRef<HTMLVideoElement>(null);
   const { mobile } = useHeroScreen(forceDevice);
   const source = (mobile ? sources.mobile ?? sources.pc : sources.pc) ?? null;
-  const src = source ? (typeof source.direct_url === 'string' && source.direct_url !== '' ? source.direct_url : source.url) : undefined;
+  // 차례가 아닌 장은 preload="none" 이어도 브라우저에 따라 주소만으로 요청이 나가므로 주소 자체를 붙이지 않는다
+  const src = source && load ? (typeof source.direct_url === 'string' && source.direct_url !== '' ? source.direct_url : source.url) : undefined;
   // 대표 이미지는 지금·다음 장만 단다 — poster 는 lazy 그림과 달리 바로 받으므로 먼 장의 이미지까지 첫 화면에 받게 된다
   const poster = eager || active ? (mobile ? posters?.mobile ?? posters?.pc : posters?.pc) : undefined;
 

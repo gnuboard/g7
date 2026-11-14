@@ -1,3 +1,4 @@
+// e2e:allow 시험 전용 수정 — 엔진과 히어로 부품이 같은 React 사본을 쓰도록 이 파일에서 vi.mock 으로 고정했을 뿐, 대상 조각·컴포넌트·런타임 동작은 바뀌지 않았다
 /**
  * @file external_position_output.test.tsx
  * @description 다른 확장이 더한 위치의 자동 출력 — 히어로가 자리를 채울 때 붙이는 조각(생성 표본, PHPUnit 이 빌더 출력과 같은지 본다)을
@@ -7,6 +8,17 @@
  * @vitest-environment jsdom
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// 엔진(`@core`)은 루트 react 를, 히어로 부품은 확장 폴더에 따로 설치된 react 를 읽으면 두 사본이 되어 엔진 첫 훅에서
+// 「Invalid hook call」 이 난다. 설정 전역 alias 는 다른 시험과 충돌하므로 이 파일에서만 히어로 쪽 react 를 루트 사본으로 끼운다
+// (`sirsoft-admin_basic` 의 `shippingPolicyFormLabelNames.test.tsx` 선례). 확장 폴더에 react 가 없으면 같은 사본이라 영향 없다.
+vi.mock('react', async () => {
+  const p = await import('path');
+  const u = await import('url');
+  const dir = p.dirname(u.fileURLToPath(import.meta.url));
+
+  return import(/* @vite-ignore */ u.pathToFileURL(p.resolve(dir, '../../../../../../../node_modules/react/index.js')).href);
+});
 import { createLayoutTest, createMockComponentRegistryWithBasics } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { HeroSlider } from '../../components/composite/HeroSlider';
 import generatedStatic from '../fixtures/generated_acme_event_hero.json';
