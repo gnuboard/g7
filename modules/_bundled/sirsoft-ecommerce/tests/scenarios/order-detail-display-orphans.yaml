@@ -1,0 +1,39 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
+
+feature: 주문상세·목록 표시 결함 (U19②③ — 무할인 항목 소계, 취소 주문 적립예정 숨김)
+
+description: |
+  ② 무할인 항목 소계: OrderOptionResource 가 비교용 숫자 보조 필드 subtotal_discount_amount_value(float)를
+     노출하고 _items.g7.html 의 `=== 0`/`> 0` 비교가 이 숫자 필드를 쓰도록 정정했다
+     (decimal:2 문자열 "0.00" 의 strict 비교로 소계가 사라지던 회귀).
+  ③ 취소 주문 적립예정: 레이아웃의 적립예정 if 가드에 취소/부분취소 제외 조건을 결합했다(값 보존, 표시만 숨김).
+
+  이 매니페스트는 관리자 주문상세와 주문목록의 브라우저 회귀만 담는다. 레이아웃 구조 회귀
+  (order-item-subtotal-display.test.tsx, order-cancelled-earned-points-hidden.test.tsx,
+  adminOrderCancelledEarnedPointsHidden.test.tsx)와 백엔드 회귀(OrderOptionResourceSubtotalDiscountValueTest)는
+  각자의 자리에 있다. 할인 항목 소계(line-through 정가 + 할인가) 회귀는 이 spec 이 재지 않는다.
+
+  spec 은 testid 와 시드 보강 전까지 test.describe.skip 이다(placeholder).
+
+# 입력을 바꿔 가며 재는 축은 없다. 시험 하나가 시나리오 하나다 — 각 case 는 spec 의 테스트 하나와 짝이다.
+axes:
+  case:
+    - no_discount_item_subtotal                # ② 무할인 항목 주문상세 소계
+    - normal_order_earned_points               # ③ 정상 주문 결제정보 적립예정
+    - cancelled_order_earned_points            # ③ 전체취소 주문 결제정보 적립예정
+    - partially_cancelled_order_earned_points  # ③ 부분취소 주문 결제정보 적립예정
+    - list_cancelled_row_earned_points         # ③ 주문목록 DataGrid 취소 주문 행
+
+effects: []
+
+# 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
+# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+pending_effects:
+  - admin_detail_shows_subtotal_on_no_discount_item   # 무할인 항목도 주문상세 항목 소계가 노출된다
+  - earned_points_shown_on_normal_order               # 정상 주문은 결제정보에 적립예정이 노출된다
+  - earned_points_hidden_on_cancelled_order           # 전체취소 주문은 결제정보에 적립예정이 없다
+  - earned_points_hidden_on_partially_cancelled_order # 부분취소 주문은 결제정보에 적립예정이 없다
+  - earned_points_hidden_on_cancelled_order_list_row  # 주문목록 DataGrid 의 취소 주문 행에 적립예정이 없다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-cancelled-earned-points-hidden.spec.ts

@@ -36,6 +36,22 @@ use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
 
+// 이 파일은 PHPUnit 밖의 개발 환경 PHP 프로세스(Laravel VS Code 확장의 시험 탐색 등)도 읽는다. 그 프로세스에는 `tests/bootstrap.php` 가
+// 등록하는 `Modules\Sirsoft\Ecommerce\Tests\` 네임스페이스가 없어, 시험 클래스가 그 네임스페이스의 트레이트(`Concerns\BuildsClaimFlowOrders` 등)를
+// `use` 하면 잡을 수 없는 「Trait not found」 Fatal 로 개발 로그에 쌓였다. 그 네임스페이스만 이 디렉터리에서 찾는 보조 로더를 맨 뒤에 덧붙인다 —
+// 다른 로더가 먼저 찾으면 불리지 않는다.
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'Modules\\Sirsoft\\Ecommerce\\Tests\\';
+    if (! str_starts_with($class, $prefix)) {
+        return;
+    }
+
+    $file = __DIR__.'/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
+
 /**
  * Ecommerce 모듈 테스트 베이스 클래스
  *

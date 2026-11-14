@@ -5,8 +5,14 @@ namespace Modules\Sirsoft\Board\Tests\Unit\Rules;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 // _bundled 디렉토리의 CooldownRule을 직접 로드 (재설치 전까지 활성 디렉토리에 없음)
-require_once __DIR__.'/../../../src/Rules/CooldownRule.php';
+// 앱을 먼저 부팅한 개발 환경 프로세스(VS Code 시험 탐색)는 활성 디렉토리 사본으로 이 심볼을 이미 선언해 두므로,
+// 경로가 다른 원본을 다시 읽으면 재선언 Fatal 이 난다 — 아직 없을 때만 _bundled 원본을 읽는다.
+// 이름은 문자열로 적는다 — 아래 use 선언보다 앞이라 `X::class` 짧은 이름은 이 시험 네임스페이스로 풀려 가드가 늘 거짓이 된다.
+if (! class_exists('Modules\\Sirsoft\\Board\\Rules\\CooldownRule', false)) {
+    require_once __DIR__.'/../../../src/Rules/CooldownRule.php';
+}
 
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Modules\Sirsoft\Board\Rules\CooldownRule;
@@ -21,6 +27,12 @@ class CooldownRuleTest extends ModuleTestCase
 {
     /**
      * 쿨다운이 0초일 때 검증을 통과하는지 테스트 (비활성화)
+     *
+     * @scenario guarded_input=write_flow, input_case=skipped_input
+     *
+     * @effects cooldown_rule_passes_when_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_when_cooldown_is_zero(): void
     {
@@ -36,6 +48,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 쿨다운이 음수일 때 검증을 통과하는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=skipped_input
+     *
+     * @effects cooldown_rule_passes_when_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_when_cooldown_is_negative(): void
     {
@@ -51,6 +69,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 캐시가 없을 때 검증을 통과하는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=conforming
+     *
+     * @effects cooldown_rule_passes_when_no_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_when_no_cache_exists(): void
     {
@@ -67,10 +91,16 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 캐시가 있을 때 검증에 실패하는지 테스트 (회원)
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects cooldown_rule_fails_while_member_cooldown_active
+     *
+     * @return void 반환값 없음
      */
     public function test_fails_when_cache_exists_for_authenticated_user(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         Auth::shouldReceive('id')->andReturn($user->id);
 
         // CooldownRule 은 ModuleCacheDriver('sirsoft-board') 를 사용하므로
@@ -92,6 +122,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 캐시가 있을 때 검증에 실패하는지 테스트 (비회원, IP 기반)
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects cooldown_rule_fails_while_guest_ip_cooldown_active
+     *
+     * @return void 반환값 없음
      */
     public function test_fails_when_cache_exists_for_guest_ip(): void
     {
@@ -117,10 +153,16 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 게시글과 댓글 쿨다운이 독립적으로 동작하는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=conforming
+     *
+     * @effects cooldown_rule_keeps_post_and_comment_cooldowns_separate
+     *
+     * @return void 반환값 없음
      */
     public function test_post_and_comment_cooldowns_are_independent(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         Auth::shouldReceive('id')->andReturn($user->id);
 
         // 게시글 쿨다운만 설정 (ModuleCacheDriver prefix)
@@ -151,10 +193,16 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 다른 게시판의 쿨다운은 영향을 주지 않는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=conforming
+     *
+     * @effects cooldown_rule_keeps_each_board_cooldown_separate
+     *
+     * @return void 반환값 없음
      */
     public function test_cooldown_is_per_board(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         Auth::shouldReceive('id')->andReturn($user->id);
 
         // board-a에만 쿨다운 설정
@@ -176,6 +224,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 쿨다운 시간이 초 단위로 표시되는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects cooldown_rule_formats_remaining_duration
+     *
+     * @return void 반환값 없음
      */
     public function test_format_duration_seconds(): void
     {
@@ -189,6 +243,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 쿨다운 시간이 분 단위로 표시되는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects cooldown_rule_formats_remaining_duration
+     *
+     * @return void 반환값 없음
      */
     public function test_format_duration_minutes(): void
     {
@@ -202,6 +262,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 쿨다운 시간이 분+초 단위로 표시되는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects cooldown_rule_formats_remaining_duration
+     *
+     * @return void 반환값 없음
      */
     public function test_format_duration_minutes_and_seconds(): void
     {
@@ -216,6 +282,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 쿨다운 시간이 시간 단위로 표시되는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects cooldown_rule_formats_remaining_duration
+     *
+     * @return void 반환값 없음
      */
     public function test_format_duration_hours(): void
     {
@@ -229,6 +301,12 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 쿨다운 시간이 시간+분 단위로 표시되는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=violating
+     *
+     * @effects cooldown_rule_formats_remaining_duration
+     *
+     * @return void 반환값 없음
      */
     public function test_format_duration_hours_and_minutes(): void
     {
@@ -243,10 +321,16 @@ class CooldownRuleTest extends ModuleTestCase
 
     /**
      * 캐시 만료 후 검증을 통과하는지 테스트
+     *
+     * @scenario guarded_input=write_flow, input_case=conforming
+     *
+     * @effects cooldown_rule_passes_after_cooldown_expires
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_after_cache_expires(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         Auth::shouldReceive('id')->andReturn($user->id);
 
         $cacheKey = "g7:module.sirsoft-board:post_cooldown_test-board_{$user->id}";

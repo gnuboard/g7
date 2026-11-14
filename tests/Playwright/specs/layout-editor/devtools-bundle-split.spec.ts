@@ -15,7 +15,7 @@
  * 라이브 서버의 디버그 상태를 강제 전환하지 않고, 실제 상태를 감지해 해당 불변식만 단언한다.
  *
  * @scenario devtools_bundle_split_lazy
- * @effects devtools_bundle_lazy_by_debug_state
+ * 효과 요약(마커 아님 — 평문): devtools_bundle_lazy_by_debug_state.
  */
 import { test, expect } from '../../fixtures/auth';
 
@@ -34,6 +34,8 @@ function collectDevToolsRequests(page: PwPage): string[] {
 }
 
 test.describe('DevTools — 번들 분리 (lazy/debug 로드)', () => {
+  // @scenario load_surface=storefront_home
+  // @effects devtools_bundle_lazy_by_debug_state
   test('디버그 상태에 따라 devtools.min.js 로드/미로드가 갈린다', async ({ page }) => {
     const devtoolsRequests = collectDevToolsRequests(page);
 

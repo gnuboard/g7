@@ -1,7 +1,8 @@
 /**
  * E2E: 환경설정 > 정보 — OPcache 상태 행 및 성능 저하 경고
  *
- * @scenario admin_settings_info_opcache
+ * @scenario opcache-status-visibility
+ * 케이스(마커 아님 — 평문): admin_settings_info_opcache
  *
  * 배경: OPcache 는 코어 어디에서도 상태를 조회하지 않아, 비활성 환경에서 성능이
  * 떨어져도 운영자가 인지할 경로가 없었다. 정보 탭에 상태를 노출하고, 비활성일 때만

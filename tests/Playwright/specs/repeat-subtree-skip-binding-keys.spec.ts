@@ -17,7 +17,7 @@
  * (모듈·플러그인은 번들 확장이 있어 목록이 비지 않는다).
  *
  * @scenario repeat_subtree_card_columns_render
- * @effects item_values_rendered_no_raw_binding
+ * 효과 요약(마커 아님 — 평문): item_values_rendered_no_raw_binding, translation_exempt_marker_not_leaked.
  */
 import { test, expect, issueToken, authenticatePage } from '../fixtures/auth';
 
@@ -39,8 +39,9 @@ const SCREENS = [
 
 test.describe('반복 서브트리 — cardColumns 항목이 실제 값으로 렌더된다', () => {
   for (const screen of SCREENS) {
-    // @scenario repeat_subtree_card_columns_render
-    // @effects item_values_rendered_no_raw_binding
+    // 반복문 안의 test 하나가 SCREENS 두 화면을 모두 돈다.
+    // @scenario screen=modules_card_view, screen=plugins_card_view
+    // @effects item_values_rendered_no_raw_binding, translation_exempt_marker_not_leaked
     test(`${screen.name}: 카드 셀이 채워지고 원본 바인딩이 남지 않는다`, async ({ page }) => {
       test.setTimeout(120_000);
 

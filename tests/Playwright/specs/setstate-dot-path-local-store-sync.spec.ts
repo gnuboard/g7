@@ -15,9 +15,8 @@
  * "dot notation 기록이 `getLocal()` 에 도달한다" 하나이고, 화면과 무관하게 성립해야 한다.
  *
  * @scenario setstate_dot_path_local_store_sync
- * @effects dot_path_setstate_reaches_getlocal,
- *          dot_path_setstate_preserves_other_local_keys,
- *          dot_path_setstate_accumulates_across_writes
+ * 효과 요약(마커 아님 — 평문): dot_path_setstate_reaches_getlocal, dot_path_setstate_preserves_other_local_keys,
+ * dot_path_setstate_accumulates_across_writes.
  */
 import { test, expect } from '../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -43,6 +42,8 @@ async function waitForEngineBoot(page: Page): Promise<void> {
 }
 
 test.describe('setState dot notation 경로의 _local 저장소 동기화', () => {
+  // @scenario write_pattern=single_write
+  // @effects dot_path_setstate_reaches_getlocal
   test('dot notation 으로 기록한 값이 getLocal() 로 읽힌다', async ({ page }) => {
     await page.goto(ANY_ENGINE_PAGE);
     await waitForEngineBoot(page);
@@ -69,6 +70,8 @@ test.describe('setState dot notation 경로의 _local 저장소 동기화', () =
     expect(result.canonical).toBe('toss_naverpay');
   });
 
+  // @scenario write_pattern=after_setlocal_key
+  // @effects dot_path_setstate_preserves_other_local_keys
   test('동기화가 canonical 저장소의 다른 키를 지우지 않는다', async ({ page }) => {
     await page.goto(ANY_ENGINE_PAGE);
     await waitForEngineBoot(page);
@@ -93,6 +96,8 @@ test.describe('setState dot notation 경로의 _local 저장소 동기화', () =
     expect(result.kept).toBe('must-survive');
   });
 
+  // @scenario write_pattern=sequential_writes
+  // @effects dot_path_setstate_accumulates_across_writes
   test('연속 기록이 서로를 지우지 않고 누적된다', async ({ page }) => {
     await page.goto(ANY_ENGINE_PAGE);
     await waitForEngineBoot(page);

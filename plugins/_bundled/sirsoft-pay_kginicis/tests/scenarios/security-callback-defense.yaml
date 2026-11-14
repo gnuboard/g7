@@ -1,7 +1,15 @@
 # audit:allow test-scenario-coverage reason: issue:#609 Phase 2 SSoT — 본 매니페스트는 KG 이니시스 콜백 보안 매트릭스의 명세 문서. 단위 테스트(ValidatesTimestampFreshnessTest 13건) 가 freshness 핵심 경로를 커버하며, replay/net-cancel 의 cross product 전체 자동 검증은 Phase 3 (침투 PoC) 에서 처리.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
-# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 23건이 미검증으로 드러난다.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 23건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(결제 플러그인(KG이니시스))의 몫이며, 좁히는 시점에 함께 처리한다.
+#   2026-11-14 #857 후속 재실측: [cross_product] 로 좁히면 21건이 드러났다. 그중 replay_* 6건은 이 매니페스트의 축·효과로
+#   이미 마킹된 VbankNotifyReplayTest 가 test_files 에서 빠져 있던 탓이라 test_files 에 더했다(좁히면 15건).
+#   남은 15건은 KG 테스트 어디에도 그 이름의 @effects 마킹이 없다. 일부는 다른 효과 이름으로 마킹된 시험이나 test_files
+#   밖의 시험이 재는 것으로 보인다(후보: post_approve_failure_triggers_auto_cancel ↔ PaymentCallbackControllerTest 의 net cancel 시험,
+#   cbt_post_approve_failure_logs_for_manual_recon ↔ CbtPaymentControllerTest 의 수동 정산 기록 시험,
+#   no_report_on_success_return ↔ payment-close-report-flow.yaml 소유 paymentCloseMessageListener.test.ts
+#   「결제 완료 화면으로 돌아오면 보고하지 않고 저장분만 지운다」). 시험별로 대응을 판정해 마킹하거나, 재는 시험이
+#   없는 것만 pending_effects 로 내린 뒤 [cross_product] 로 좁힌다.
 
 feature: 콜백 보안 방어 (replay attack / signature timestamp freshness / post-approve net cancel / 비인증 브라우저 콜백의 주문 변조)
 
@@ -169,6 +177,7 @@ test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCallbackControllerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCloseReportControllerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/PaymentCloseReportOwnershipTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/VbankNotifyReplayTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Playwright/specs/public/payment-failure-close-report.spec.ts
 
 manual_verification:

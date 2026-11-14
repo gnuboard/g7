@@ -1,0 +1,32 @@
+feature: 레이아웃 편집기 텍스트 propControl·children 항목 텍스트의 동적 다국어 위젯 라이브 검증 (부록7 7-b)
+
+description: |
+  공통 위젯 I18nTextField(현재 로케일 미리보기 + 🌐 로케일 펼침 + `{{...}}` 바인딩 읽기전용)를 속성 패널의
+  텍스트 propControl(`widget:"i18n-text"` + `apply:propValue`)과 children 노드 에디터의 항목 텍스트에 적용한
+  결과를 라이브 편집기에서 잰다. 위젯의 분류·키 round-trip 단위 시험은 layout-editor-i18n-text-pi2
+  (prop-i18n-text-field.test.tsx)가, 캔버스 재렌더는 custom-translations(inline-edit-i18n.spec.ts)가 맡는다.
+
+  같은 spec 의 저장(PUT) test 가 재는 「저장 spec 은 시드 화면을 대상으로 한다」는 layout-editor-e2e-seed-layout 이
+  선언하므로 이 파일은 두 매니페스트가 함께 소유한다. 여기에는 다국어 위젯 효과만 둔다.
+
+  축 case 는 spec 의 test 하나씩이다.
+    - placeholder_preview_create_key_expand: Input placeholder 가 미리보기+🌐 로 렌더 → 평문 blur 로 키 생성 → 펼침 폼
+    - children_item_text_save_on_sandbox: Ul 항목 텍스트도 같은 위젯 → 키 생성 → 시드 화면 저장 PUT 200
+    - placeholder_widget_mount: placeholder 칸에 미리보기 또는 바인딩 배지 중 하나는 늘 마운트된다
+    - no_horizontal_scroll_long_input_and_expand: 긴 입력·펼침 폼에서도 속성 모달 본문에 가로 스크롤이 없다
+
+axes:
+  case: [placeholder_preview_create_key_expand, children_item_text_save_on_sandbox, placeholder_widget_mount, no_horizontal_scroll_long_input_and_expand]
+
+effects:
+  - text_propcontrol_renders_i18n_widget_not_raw_key_input            # 미리보기 input 과 🌐 토글이 보이고 값이 raw `$t:` 키가 아니다
+  - prop_i18n_plain_input_creates_custom_key_via_post                 # 평문 입력 blur 가 POST /custom-translations 200·201 을 낸다
+  - prop_i18n_expand_shows_all_active_locales_bulk_form               # 🌐 펼침이 번역 폼을 열고 ko 칸에 입력값이 들어 있다
+  - children_item_text_uses_shared_i18n_widget_ssot                   # children 항목 행 텍스트가 같은 미리보기 위젯으로 렌더되고 blur 로 키를 만든다
+  - custom_key_token_recorded_in_prop_value_and_node_text_persists_on_put  # 키 생성 뒤 레이아웃 저장 PUT 이 200 이다
+  - placeholder_propcontrol_mounts_preview_or_binding_badge           # placeholder 칸에 미리보기 또는 바인딩 배지가 보인다
+  - control_row_and_widget_minwidth0_prevent_body_horizontal_scroll   # 기본·긴 입력 상태에서 모달 본문 scrollWidth 가 clientWidth 를 넘지 않는다
+  - expand_locale_form_minwidth0_prevents_body_horizontal_scroll      # 펼침 폼과 그 안의 긴 입력에서도 본문이 넘치지 않는다
+
+test_files:
+  - tests/Playwright/specs/layout-editor/prop-i18n-text-field.spec.ts

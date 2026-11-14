@@ -3,10 +3,8 @@
  * 합계에도 그 통화로 더해지는지 검증. 템플릿 sirsoft-basic (유저 화면).
  *
  * @scenario currency-symbol-display
- * @effects additional_option_adjustment_uses_configured_symbol,
- *          detail_total_converts_additional_option_amount,
- *          cart_line_additional_option_uses_display_currency,
- *          checkout_line_additional_option_uses_display_currency
+ * 효과 요약(마커 아님 — 평문): 상품상세 라벨과 추가옵션 금액, 장바구니 줄, 주문서 줄, 통화 전환 뒤 표기가
+ *   총액과 같은 통화다. 효과 마킹은 각 테스트 주석에 있다.
  *
  * 배경(회귀): 추가옵션 추가금은 쇼핑몰 기본 통화 기준으로 저장되는데, 서버가 그 값을
  * 통화별로 환산해 주지 않았고 화면 합계 계산은 그 값을 KRW 로 간주했다. 기본통화가 KRW 인
@@ -21,8 +19,9 @@
  * 그 상태를 이 spec 자신이 만든다 — 헤더 통화 셀렉터로 **기본통화가 아닌 통화**로
  * 전환한 뒤 검증하고, 전환할 통화가 하나도 없으면 사유와 함께 스킵한다.
  *
- * 이 spec 은 시드를 만들지 않는다 — 공개 상품 목록에서 "메인 옵션 2개 이상 + 추가금이
- * 양수인 추가옵션" 상품을 찾아 쓰고, 없으면 개별 테스트가 사유와 함께 스킵된다.
+ * 대상 상품("메인 옵션 2개 + 추가금이 양수인 추가옵션")은 테스트마다 API 로 만들고 끝나면 지운다
+ * (additional-option-product-seed.ts). 종전처럼 공개 상품 목록 앞쪽을 상세 조회로 뒤지면 공유 DB 에
+ * 다른 시험 상품이 쌓였을 때 조회만으로 30초 제한을 넘기거나 대상 없음으로 스킵됐다.
  *
  * 매트릭스:
  *   T1 상품상세 추가옵션 선택지 라벨 — 총액과 같은 통화로 표기
@@ -34,13 +33,17 @@
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';
 import {
-  findAdditionalOptionProduct,
   pickOption,
   pickAllMainOptions,
   escapeRegExp,
   switchToOtherCurrency,
   type AddOptProduct,
 } from '../../fixtures/shop-additional-option-lookup';
+import {
+  seedAdditionalOptionProduct,
+  deleteSeededProduct,
+  type SeededAddOptProduct,
+} from '../../fixtures/additional-option-product-seed';
 
 /**
  * 표기 문자열에서 **통화**를 뽑는다 (글리프가 아니다).
@@ -73,15 +76,24 @@ async function selectOptionsWithAdditional(page: Page, product: AddOptProduct): 
 }
 
 test.describe('추가옵션 추가금 표시통화 환산', () => {
-  test('T1/T2 상품상세: 추가옵션 라벨과 추가금 합계가 총액과 같은 통화로 표기된다', async ({ page }) => {
-    await page.goto('/shop');
-    const product = await findAdditionalOptionProduct(page);
-    test.skip(product === null, '메인 옵션 2개 이상 + 추가옵션을 가진 공개 상품이 없어 검증할 수 없습니다');
-    test.skip(
-      (product?.priceAdjustment ?? 0) <= 0,
-      '추가금이 양수인 추가옵션 선택지가 없어 통화 표기를 검증할 수 없습니다',
-    );
+  // 테스트마다 시험 상품을 API 로 만든다 — 상품 생성 POST 1건이 실측 17초(공유 개발 서버)라
+  // 기본 30초 제한 안에서는 화면 단계가 시작하자마자 시간이 다 된다.
+  test.describe.configure({ timeout: 120_000 });
 
+  let product: SeededAddOptProduct | null = null;
+
+  test.beforeEach(async ({ request, productSeedToken }) => {
+    product = await seedAdditionalOptionProduct(request, productSeedToken);
+  });
+
+  test.afterEach(async ({ request, productSeedToken }) => {
+    if (product) await deleteSeededProduct(request, productSeedToken, product.id);
+    product = null;
+  });
+
+  // @scenario screen=product_detail
+  // @effects detail_additional_option_label_uses_display_currency, detail_total_converts_additional_option_amount
+  test('T1/T2 상품상세: 추가옵션 라벨과 추가금 합계가 총액과 같은 통화로 표기된다', async ({ page }) => {
     await page.goto(product!.url);
     const switched = await switchToOtherCurrency(page);
     test.skip(switched === null, '기본통화 외 표시통화가 없어 기본통화 ≠ 표시통화 상태를 만들 수 없습니다');
@@ -100,15 +112,9 @@ test.describe('추가옵션 추가금 표시통화 환산', () => {
     expect(currencyMarkOf(amount), '추가옵션 금액 합계가 총액과 다른 통화로 표기됐다').toBe(totalMark);
   });
 
+  // @scenario screen=cart
+  // @effects cart_line_additional_option_uses_display_currency
   test('T3 장바구니: 추가옵션 줄이 상세에서 본 표시통화로 표기된다', async ({ page }) => {
-    await page.goto('/shop');
-    const product = await findAdditionalOptionProduct(page);
-    test.skip(product === null, '메인 옵션 2개 이상 + 추가옵션을 가진 공개 상품이 없어 검증할 수 없습니다');
-    test.skip(
-      (product?.priceAdjustment ?? 0) <= 0,
-      '추가금이 양수인 추가옵션 선택지가 없어 통화 표기를 검증할 수 없습니다',
-    );
-
     await page.goto(product!.url);
     const switched = await switchToOtherCurrency(page);
     test.skip(switched === null, '기본통화 외 표시통화가 없어 기본통화 ≠ 표시통화 상태를 만들 수 없습니다');
@@ -131,16 +137,10 @@ test.describe('추가옵션 추가금 표시통화 환산', () => {
     ).toBe(totalMark);
   });
 
+  // @scenario screen=checkout
+  // @effects checkout_line_additional_option_uses_display_currency
   test('T4 주문서: 추가옵션 줄이 표시통화로 표기된다', async ({ page, userToken }) => {
     await authenticatePage(page, userToken);
-    await page.goto('/shop');
-    const product = await findAdditionalOptionProduct(page);
-    test.skip(product === null, '메인 옵션 2개 이상 + 추가옵션을 가진 공개 상품이 없어 검증할 수 없습니다');
-    test.skip(
-      (product?.priceAdjustment ?? 0) <= 0,
-      '추가금이 양수인 추가옵션 선택지가 없어 통화 표기를 검증할 수 없습니다',
-    );
-
     await page.goto(product!.url);
     const switched = await switchToOtherCurrency(page);
     test.skip(switched === null, '기본통화 외 표시통화가 없어 기본통화 ≠ 표시통화 상태를 만들 수 없습니다');
@@ -163,15 +163,9 @@ test.describe('추가옵션 추가금 표시통화 환산', () => {
     ).toBe(totalMark);
   });
 
+  // @scenario screen=product_detail
+  // @effects additional_option_currency_follows_display_switch
   test('T5 통화 전환: 표시통화를 바꾸면 추가금 표기가 함께 따라간다', async ({ page }) => {
-    await page.goto('/shop');
-    const product = await findAdditionalOptionProduct(page);
-    test.skip(product === null, '메인 옵션 2개 이상 + 추가옵션을 가진 공개 상품이 없어 검증할 수 없습니다');
-    test.skip(
-      (product?.priceAdjustment ?? 0) <= 0,
-      '추가금이 양수인 추가옵션 선택지가 없어 통화 표기를 검증할 수 없습니다',
-    );
-
     await page.goto(product!.url);
     const first = await switchToOtherCurrency(page);
     test.skip(first === null, '기본통화 외 표시통화가 없어 전환을 검증할 수 없습니다');

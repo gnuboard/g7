@@ -86,6 +86,9 @@
                     ]
                 },
                 {
+                    "partial": "_tab_mileage_currency_mismatch.json"
+                },
+                {
                     "id": "currency_rules_view",
                     "type": "basic",
                     "name": "Div",

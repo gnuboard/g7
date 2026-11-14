@@ -17,13 +17,12 @@
  * 테스트 키가 유효해야 한다. 미설정/무효면 발급 자체가 불가하므로 해당 테스트는 skip 한다
  * (실패로 위장하지 않는다 — 환경 미비와 코드 결함을 구분한다).
  *
- * @scenario cash-receipt-provider-and-refund-integrity
- * @effects amount_change_triggers_cancel_then_reissue,
- *          cancel_delegated_as_full_cancel_without_amount,
- *          order_id_suffixed_with_issue_sequence,
- *          tax_free_amount_sent_with_issue,
- *          issue_response_mapped_to_receipt_key_and_issue_number,
- *          receipt_type_converted_to_provider_specific_value
+ * @scenario cash-receipt-dead-provider, cash-receipt-ui-and-refund-bank, cash-receipt-provider-refund-integrity
+ * 케이스(마커 아님 — 평문): cash-receipt-provider-and-refund-integrity
+ * 효과 요약(마커 아님 — 평문): 자동발급, 금액변동 시 전액취소 후 재발급, 입금 전 발급 차단,
+ *   사후 발급, 자진발급, 발급사 미설정 차단. 효과 마킹은 각 테스트 주석에 있다. 발급 요청의
+ *   면세 금액 전달과 영수증 유형의 PG 별 값 변환은 PG 요청 본문을 봐야 해서 이 spec 이 아니라
+ *   PG 플러그인 RegisterCashReceiptProviderListenerTest 가 잰다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';
@@ -125,6 +124,34 @@ async function cashReceiptProvider(page: Page): Promise<string | null> {
 }
 
 /**
+ * 시험 계정의 결제 통화(영속 통화)를 쇼핑몰 기본 통화로 맞춘다.
+ *
+ * 이 spec 의 금액 단언(입금액 = 주문 총액, 발급액 = 주문 총액, 재발급액 = 취소 후 총액)은 결제 통화가
+ * 기본 통화와 같은 단일 통화 상점을 전제한다. 주문 총액(total_amount)은 기본 통화 금액이고, 입금확인
+ * 검증과 영수증 발급액은 결제 통화 금액이기 때문이다(OrderResource::total_due_charge_amount,
+ * CashReceiptService::toPaymentCurrencyAmount — 두 통화가 같으면 환산이 항등이다).
+ * 공유 개발 서버는 기본 통화 JPY 에 한국어 화면이면 결제 통화가 KRW 로 잡혀, 기본 통화 금액(5,000)을
+ * 입금액으로 넣으면 서버가 결제 통화 청구액(47,500)과 달라 거절하고 입금확인 창이 닫히지 않았다(실측).
+ * 영속 통화는 주문 통화 해석의 1순위(회원 영속 통화 → X-Currency → 기본 통화)이고 이 계정은 토큰마다
+ * 새로 만들어지므로, 공유 설정을 건드리지 않고 이 계정에서만 전제를 만든다.
+ *
+ * @param page 관리자 권한 토큰을 심은 페이지
+ * @return 없음
+ */
+async function alignPaymentCurrencyToBase(page: Page): Promise<void> {
+  const settings = await api(page, '/api/modules/sirsoft-ecommerce/admin/settings');
+  expect(settings.status, `설정 조회 실패: ${settings.body.slice(0, 300)}`).toBe(200);
+  const base = JSON.parse(settings.body)?.data?.language_currency?.default_currency as string | undefined;
+  expect(base, '쇼핑몰 기본 통화를 읽지 못했다').toBeTruthy();
+
+  const saved = await api(page, '/api/modules/sirsoft-ecommerce/user/currency', {
+    method: 'PUT',
+    body: { currency: base },
+  });
+  expect(saved.status, `결제 통화(${base}) 저장 실패: ${saved.body}`).toBe(200);
+}
+
+/**
  * 무통장 + 현금영수증 신청 주문을 체크아웃 화면에서 실제로 만든다.
  *
  * 주문 생성은 검증 대상(발급 생애주기)의 전제이지 검증 대상이 아니므로 카트/임시주문은
@@ -134,6 +161,8 @@ async function placeDbankOrderWithCashReceipt(
   page: Page,
   identifier: string | null
 ): Promise<string> {
+  await alignPaymentCurrencyToBase(page);
+
   const seeded = await page.evaluate(async ({ locale }) => {
     const headers = {
       'Content-Type': 'application/json',
@@ -259,9 +288,11 @@ async function placeDbankOrderWithCashReceipt(
 
   // 주문 생성 실패를 "화면이 안 넘어감" 으로 뭉뚱그리면 원인을 알 수 없다.
   // 서버 응답을 붙잡아 실패 시 본문을 그대로 드러낸다.
+  // 주문 행은 요청 2초 뒤 생겼는데 응답이 30초 안에 오지 않은 실측이 있다(공유 개발 서버) —
+  // 30초로 자르면 "주문 생성 실패" 로 위장된다. 시험 전체 제한(180초) 안에서 넉넉히 기다린다.
   const orderPost = page.waitForResponse(
     (r) => r.url().includes('/user/orders') && r.request().method() === 'POST',
-    { timeout: 30_000 }
+    { timeout: 90_000 }
   );
   await submit.click();
 

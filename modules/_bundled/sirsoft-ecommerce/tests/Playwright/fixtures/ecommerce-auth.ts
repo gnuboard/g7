@@ -51,6 +51,8 @@ type EcommerceAuthFixtures = {
   couponManageToken: string;
   /** 배송정책 + 상품 + 카테고리 권한 토큰 (구간 경계 E2E 픽스처 구성용) */
   shippingBoundaryToken: string;
+  /** 시험 상품 생성·삭제 토큰 (추가옵션 상품 시드 — additional-option-product-seed.ts) */
+  productSeedToken: string;
 };
 
 export const test = base.extend<EcommerceAuthFixtures>({
@@ -141,6 +143,17 @@ export const test = base.extend<EcommerceAuthFixtures>({
         'sirsoft-ecommerce.products.update',
         'sirsoft-ecommerce.products.delete',
         'sirsoft-ecommerce.categories.read',
+      ),
+    );
+  },
+  productSeedToken: async ({}, use) => {
+    await use(
+      issueToken(
+        'sirsoft-ecommerce.products.read',
+        'sirsoft-ecommerce.products.create',
+        'sirsoft-ecommerce.products.delete',
+        'sirsoft-ecommerce.categories.read',
+        'sirsoft-ecommerce.shipping-policies.read',
       ),
     );
   },

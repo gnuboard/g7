@@ -13,7 +13,9 @@
  * 잠근다 — 셀에 파이프를 넣은 화면이 코어 기본 레이아웃에 없으므로, 배포된
  * 번들의 `G7Core.renderItemChildren` 를 그대로 호출해 결과를 검증한다.
  *
- * 축 요약(마커 아님 — 평문): cellchildren_pipe_with_args, cellchildren_pipe_without_args, cellchildren_props_pipe.
+ * 케이스는 매니페스트 `tests/scenarios/datagrid-cellchildren-pipe.yaml` 의 `case` 축이다.
+ *
+ * @scenario datagrid-cellchildren-pipe
  * 효과 요약(마커 아님 — 평문): pipe_formatted_value_rendered.
  */
 import { test, expect } from '../fixtures/auth';
@@ -58,7 +60,7 @@ test.describe('반복 렌더 컨텍스트의 파이프 표현식', () => {
     });
   });
 
-  // @scenario cellchildren_pipe_with_args
+  // @scenario case=cellchildren_pipe_with_args
   // @effects pipe_formatted_value_rendered
   test('인자 있는 파이프(datetime)가 포맷된 값을 그린다', async ({ page }) => {
     const { available, results } = await resolveViaItemRenderer(
@@ -78,7 +80,7 @@ test.describe('반복 렌더 컨텍스트의 파이프 표현식', () => {
     expect(String(results[0].children)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
   });
 
-  // @scenario cellchildren_pipe_without_args
+  // @scenario case=cellchildren_pipe_without_args
   // @effects pipe_formatted_value_rendered
   test('인자 없는 파이프(number/uppercase)가 비트 연산으로 오염되지 않는다', async ({ page }) => {
     const { available, results } = await resolveViaItemRenderer(
@@ -96,7 +98,7 @@ test.describe('반복 렌더 컨텍스트의 파이프 표현식', () => {
     expect(results[1].children).toBe('ABC');
   });
 
-  // @scenario cellchildren_props_pipe
+  // @scenario case=cellchildren_props_pipe
   // @effects pipe_formatted_value_rendered
   test('props 값의 파이프도 해석된다', async ({ page }) => {
     const { available, results } = await resolveViaItemRenderer(

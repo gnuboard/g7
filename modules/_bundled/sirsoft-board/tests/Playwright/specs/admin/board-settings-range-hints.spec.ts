@@ -9,11 +9,8 @@
  * 실제 데이터 바인딩 + 치환 결과는 브라우저 렌더로만 확인 가능 (위지윅 발행 회귀 #238 교훈).
  *
  * @scenario board-settings-range-hints
- * @effects per_page_hint_renders_config_range,
- *          title_length_hints_render_config_range,
- *          reply_depth_hint_renders_config_max_10,
- *          file_size_hint_renders_config_max_200,
- *          range_placeholders_not_raw
+ * 효과 요약(마커 아님 — 평문): 페이지당 게시글 수, 제목 길이, 답변 깊이, 파일 크기 힌트의 config 범위 치환,
+ *   raw 플레이스홀더 부재, 숫자 입력 min/max 속성 — 효과 이름은 시험마다 마킹
  *
  * 활성화 절차: PlaywrightIssueToken 발급이 가능한 환경에서 test.describe.skip → test.describe.
  */
@@ -22,6 +19,8 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 const SETTINGS_URL = '/admin/boards/settings?tab=basic_defaults';
 
 test.describe.skip('게시판 환경설정 — 범위 힌트 동적 렌더 (#413)', () => {
+  // @scenario case=hint_text_ranges
+  // @effects per_page_hint_renders_config_range, title_length_hints_render_config_range, reply_depth_hint_renders_config_max_10, file_size_hint_renders_config_max_200
   test('숫자 필드 description 이 config 범위로 치환된다 (raw 플레이스홀더 없음)', async ({
     page,
     settingsToken,
@@ -55,6 +54,8 @@ test.describe.skip('게시판 환경설정 — 범위 힌트 동적 렌더 (#413
     ).toBeVisible();
   });
 
+  // @scenario case=no_raw_placeholders
+  // @effects range_placeholders_not_raw
   test('raw 플레이스홀더({{min}}/{{max}})가 화면에 노출되지 않는다', async ({
     page,
     settingsToken,
@@ -72,6 +73,8 @@ test.describe.skip('게시판 환경설정 — 범위 힌트 동적 렌더 (#413
     await expect(page.getByText('{{max}}', { exact: false })).toHaveCount(0);
   });
 
+  // @scenario case=input_min_max_attributes
+  // @effects number_input_min_max_match_config_range
   test('숫자 Input 의 min/max 속성이 config 범위로 설정된다', async ({
     page,
     settingsToken,

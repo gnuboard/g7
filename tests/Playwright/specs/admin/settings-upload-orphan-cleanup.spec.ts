@@ -1,8 +1,9 @@
 /**
  * E2E: 환경설정 > 업로드 — "고아 첨부 정리" 카드 (공개 #115)
  *
- * @scenario admin_settings_upload_orphan_cleanup
- * @effects core_settings_orphan_toggle_default_off, core_settings_orphan_keys_declared
+ * @scenario attachment-orphan-cleanup
+ * 케이스(마커 아님 — 평문): admin_settings_upload_orphan_cleanup
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): core_settings_orphan_toggle_default_off, core_settings_orphan_keys_declared
  *
  * 배경: 폼을 저장하지 않고 나가 소유자 없이 남은 첨부를 매일 파기하는 기능의 운영자 스위치다.
  * 사용자 파일을 실제로 지우는 설정이라 "기본 꺼짐" 이 인수 기준이고, 그 상태는 서버 기본값과
@@ -82,6 +83,8 @@ test('#115 - 보존기간 0 은 항목명이 드러난 안내와 함께 거절�
   await gotoUploadTab(page);
 
   const input = page.locator(RETENTION_ROW).locator('input').first();
+  // 폼이 저장된 설정으로 채워진 뒤에 고쳐야 변경으로 잡힌다 (로드 전 입력은 덮어써진다)
+  await expect.poll(() => input.inputValue(), { timeout: 15_000 }).not.toBe('');
   await input.fill('0');
 
   const response = page.waitForResponse(
@@ -89,7 +92,10 @@ test('#115 - 보존기간 0 은 항목명이 드러난 안내와 함께 거절�
     { timeout: 20_000 },
   );
 
-  await page.getByRole('button', { name: /저장|Save/ }).first().click();
+  // 이름으로 찾으면 업로드 탭의 「… 썸네일 저장 디스크」 선택 버튼이 먼저 잡힌다(#869) — 하단 저장 버튼을 ref 로 누른다
+  const saveButton = page.locator('#save_button');
+  await expect(saveButton).toBeEnabled({ timeout: 10_000 });
+  await saveButton.click();
 
   const res = await response;
   expect(res.status()).toBe(422);

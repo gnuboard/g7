@@ -3,8 +3,9 @@
  * + 관리자 환경설정 카드 제목 색상 회귀 가드 (브라우저 스크린샷으로 발견)
  * + 정책 버전 이력 토글 sequence handler 회귀 가드
  *
- * @scenario admin_gdpr_policy_version_snapshot_open_policy_page_link
- * @effects snapshot_modal_opens, policy_link_href_equals_server_resolved_url, card_title_not_error_color, policy_history_toggle_expands_and_refetches
+ * @scenario policy-version
+ * 케이스(마커 아님 — 평문): admin_gdpr_policy_version_snapshot_open_policy_page_link
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): snapshot_modal_opens, policy_link_href_equals_server_resolved_url, card_title_not_error_color, policy_history_toggle_expands_and_refetches
  *
  * 배경: 1.0.x 는 스냅샷의 슬러그를 화면에서 페이지 모듈 주소 규칙(`/page/{slug}`)으로 조합했고,
  * `/page/` 가 빠져 404 가 나는 결함(#509)이 있었다. 1.1.0 부터 운영자가 처리방침 주소를 직접 적고,

@@ -1,8 +1,9 @@
 /**
  * E2E: 비즈뿌리오 알림 템플릿 라이프사이클 화면 (#597)
  *
- * @scenario bizppurio_tab_integration_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
- * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only,
+ * @scenario bizppurio-template-lifecycle
+ * 케이스(마커 아님 — 평문): bizppurio_tab_integration_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only,
  *          compose_modal_switches_conditional_fields_by_type, manage_screen_lists_db_rows_with_merge_query_round_trip,
  *          manage_list_mobile_card_view_and_unified_toolbar
  *
@@ -30,7 +31,8 @@ const SETTINGS_URL = '/admin/settings?tab=notification_definitions&channel=alimt
 const MANAGE_URL = '/admin/plugins/sirsoft-message_bizppurio/settings?tab=templates';
 
 test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
-  // @scenario bizppurio_tab_integration_e2e
+  // 케이스(마커 아님 — 평문): bizppurio_tab_integration_e2e
+  // @scenario bizppurio-template-lifecycle
   // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active
   test('채널 활성 저장 시 서브탭에 비즈뿌리오 단일 탭이 노출되고 문자·알림톡 개별 탭은 없다', async ({ page, messagingManageToken }) => {
     await authenticatePage(page, messagingManageToken);
@@ -67,7 +69,8 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     expect(joined).not.toContain('비즈뿌리오 알림톡');
   });
 
-  // @scenario bizppurio_tab_integration_e2e
+  // 케이스(마커 아님 — 평문): bizppurio_tab_integration_e2e
+  // @scenario bizppurio-template-lifecycle
   // @effects row_footer_shows_status_summary_only, approval_badge_two_tier
   test('알림 행 하단에 알림톡 승인 2단 배지와 SMS 설정 요약만 렌더된다(버튼 0)', async ({ page, messagingManageToken }) => {
     await authenticatePage(page, messagingManageToken);
@@ -94,7 +97,8 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     expect(content).not.toContain('sirsoft-message_bizppurio.');
   });
 
-  // @scenario bizppurio_edit_modal_e2e, bizppurio_compose_modal_e2e
+  // 케이스(마커 아님 — 평문): bizppurio_edit_modal_e2e, bizppurio_compose_modal_e2e
+  // @scenario bizppurio-template-lifecycle
   // @effects edit_modal_hosts_alimtalk_and_sms_sections, core_modal_hides_editor_for_hidden_template_editor_channel, compose_modal_switches_conditional_fields_by_type
   test('[편집] 모달의 알림톡 섹션에서 강조 유형 전환 시 조건부 필드가 등장·소멸한다', async ({ page, messagingManageToken }) => {
     await authenticatePage(page, messagingManageToken);
@@ -153,7 +157,8 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
 });
 
 test.describe('비즈뿌리오 알림 템플릿 관리 (플러그인 설정)', () => {
-  // @scenario bizppurio_manage_round_trip_e2e
+  // 케이스(마커 아님 — 평문): bizppurio_manage_round_trip_e2e
+  // @scenario bizppurio-template-lifecycle
   // @effects manage_screen_lists_db_rows_with_merge_query_round_trip
   test('상태 필터가 URL 에 보존되고 목록이 렌더된다 (mergeQuery 왕복)', async ({ page, messagingManageToken }) => {
     await authenticatePage(page, messagingManageToken);
@@ -187,7 +192,8 @@ test.describe('비즈뿌리오 알림 템플릿 관리 (플러그인 설정)', (
     expect(text).not.toContain('$t:');
     expect(text).not.toContain('sirsoft-message_bizppurio.');
   });
-  // @scenario bizppurio_manage_round_trip_e2e
+  // 케이스(마커 아님 — 평문): bizppurio_manage_round_trip_e2e
+  // @scenario bizppurio-template-lifecycle
   // @effects manage_list_mobile_card_view_and_unified_toolbar
   test('portable(375px) 에서 목록이 카드로 전환되고 도구줄 버튼이 btn 계열로 통일된다', async ({ page, messagingManageToken }) => {
     await authenticatePage(page, messagingManageToken);

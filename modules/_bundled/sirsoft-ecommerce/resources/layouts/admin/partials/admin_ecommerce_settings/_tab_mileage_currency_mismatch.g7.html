@@ -1,0 +1,22 @@
+<!-- 쇼핑몰 설정 마일리지 탭 — 통화별 사용 단위의 첫 줄이 쇼핑몰 기본 통화와 어긋났을 때의 안내와 복구.
+  첫 줄은 통화 코드 입력과 삭제가 잠겨 있고 서버는 첫 줄이 기본 통화여야 이 탭을 저장한다. 기본 통화를 바꾸는
+  저장이 줄을 맞춰 주지 않던 버전이 남긴 상태(예: 기본 통화 JPY + 첫 줄 KRW)에서는 둘 사이에 갇혀 탭을 다시는
+  저장할 수 없었으므로, 여기서 어긋남을 알리고 단추 한 번으로 기본 통화 줄을 첫 줄에 세운다.
+  있던 줄은 앞으로 옮기고, 없으면 「통화 추가」와 같은 기본값 줄을 만든다 — 다른 통화의 금액 단위를 옮겨 오지 않는다.
+  다른 줄은 순서대로 두고, 저장은 운영자가 확인한 뒤 저장 단추로 한다. 규칙이 하나도 없으면 맞출 것이 없어 보이지 않는다. -->
+<partial description="마일리지 통화 규칙 — 기본 통화 어긋남 안내와 복구">
+  <div data-ref="mileage_currency_mismatch_notice" data-testid="mileage-currency-mismatch" data-if="{{(_local.form?.mileage?.currency_rules ?? []).length > 0 &amp;&amp; !!_local.form?.language_currency?.default_currency &amp;&amp; String(_local.form.mileage.currency_rules[0]?.currency_code ?? '').toUpperCase() !== String(_local.form.language_currency.default_currency).toUpperCase()}}" class="ecommerce-alert-warning ecommerce:mb-4 ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3">
+    <icon name="triangle-exclamation" class="ecommerce:text-amber-600 ecommerce:dark:text-amber-400 ecommerce:text-lg ecommerce:mt-0.5 ecommerce:shrink-0"/>
+    <div class="ecommerce:flex-1 ecommerce:min-w-0 ecommerce:space-y-1">
+      <p class="ecommerce-tone-warning-soft ecommerce:text-sm">$t:sirsoft-ecommerce.admin.mileage_settings.currency.mismatch_notice|current={{String(_local.form?.mileage?.currency_rules?.[0]?.currency_code ?? '').toUpperCase()}}|base={{String(_local.form?.language_currency?.default_currency ?? '').toUpperCase()}}</p>
+      <p class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.mileage_settings.currency.align_hint|base={{String(_local.form?.language_currency?.default_currency ?? '').toUpperCase()}}</p>
+    </div>
+    <button type="button" data-testid="mileage-currency-align" class="ecommerce-btn ecommerce-btn-secondary ecommerce:shrink-0 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+      <on type="click">
+        <!-- 기본 통화 줄을 첫 줄에 세운다. 서버 저장 경로(EcommerceSettingsService::alignedMileageRules)와 같은 규칙이고 기본값도 같다. -->
+        <set-state target="local" form.mileage.currency_rules="{{(function() { const base = String(_local.form?.language_currency?.default_currency ?? '').toUpperCase(); const rules = Array.isArray(_local.form?.mileage?.currency_rules) ? _local.form.mileage.currency_rules : []; const own = rules.find(r => String(r?.currency_code ?? '').toUpperCase() === base); const head = own ?? { currency_code: base, point_value: 1, min_use_amount: 0, use_unit: 1, max_use_type: 'percent', max_use_percent: 30, max_use_value: 0, earn_rounding_unit: '1', earn_rounding_method: 'floor' }; return [head, ...rules.filter(r => String(r?.currency_code ?? '').toUpperCase() !== base)]; })()}}" :hasChanges="true"/>
+      </on>
+      $t:sirsoft-ecommerce.admin.mileage_settings.currency.align_button|base={{String(_local.form?.language_currency?.default_currency ?? '').toUpperCase()}}
+    </button>
+  </div>
+</partial>

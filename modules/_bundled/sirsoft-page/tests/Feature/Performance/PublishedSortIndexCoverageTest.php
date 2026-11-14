@@ -13,7 +13,8 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
  * 색인은 "만들었다" 가 아니라 "쿼리가 그것을 고른다" 가 목표다. 존재 여부만 확인하면
  * 컬럼 순서가 어긋나 옵티마이저가 무시하는 색인을 정상으로 판정한다.
  *
- * @scenario page-published-sort-index
+ * @scenario bounded-total-pagination
+ * 케이스(마커 아님 — 평문): page-published-sort-index
  */
 class PublishedSortIndexCoverageTest extends ModuleTestCase
 {

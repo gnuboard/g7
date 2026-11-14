@@ -14,7 +14,7 @@
  *   (B) 상시 취소(진짜 부재) → 백지·raw 영문이 아니라 명시적 안내로 끝난다
  *
  * @scenario network-resilience
- * @effects retry-on-network-failure, no-blank-screen, no-raw-error-leak
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): retry_on_network_failure, no_blank_screen, no_raw_error_leak
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -95,6 +95,8 @@ test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', 
   ];
 
   for (const { name, pattern } of SINGLE_ABORT_PATHS) {
+    // @scenario failure=single_abort
+    // @effects retry_on_network_failure, no_blank_screen, no_raw_error_leak
     test(`@smoke ${name} 1건 취소 → 재시도로 복구되어 앱이 정상 렌더된다`, async ({ page }) => {
       const counter = await abortFirstRequestOnly(page, pattern);
 
@@ -131,6 +133,8 @@ test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', 
    * describe 가 검증한다. 여기서는 그 사이 계약 — 재시도 훅이 실제로 설치되고
    * 정상 경로를 방해하지 않는다는 것 — 만 잠근다.
    */
+  // @scenario failure=none
+  // @effects bootstrap_retry_hook_installed_without_false_failure, no_raw_error_leak
   test('@smoke script 번들 경로 — 부트스트랩 재시도 훅이 설치되고 정상 로드를 방해하지 않는다', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
@@ -160,6 +164,8 @@ test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', 
 
   // 레이아웃 API 는 페이지마다 경로가 다르다. 방어가 로드 계층에 걸려 있으므로
   // URL 이 달라져도 동일하게 복구돼야 한다 (URL 열거 방식이 아님을 잠근다).
+  // @scenario failure=single_abort
+  // @effects retry_on_network_failure, no_raw_error_leak
   test('@smoke 레이아웃 json 1건 취소 → 다른 경로의 페이지에서도 복구된다', async ({ page }) => {
     const counter = await abortFirstRequestOnly(page, '**/api/layouts/**');
 
@@ -183,6 +189,8 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    *
    * 수정 전: 완전 백지 (콘솔에만 `G7Core.initTemplateApp is not available`).
    */
+  // @scenario failure=persistent_absence
+  // @effects no_blank_screen, bundle_absence_renders_fallback_with_reload_button, retry_attempts_capped_at_three
   test('@smoke 코어 번들 상시 부재 → 백지가 아니라 폴백 안내 + 새로고침 버튼', async ({ page }) => {
     let attempts = 0;
     await page.route('**/build/core/template-engine.min.js*', (route) => {
@@ -217,6 +225,8 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    *  abort 된 script 를 스스로 재요청해 수정 전에도 통과하기 때문. 재시도가 실제로
    *  값을 갖는 지점은 브라우저가 포기한 뒤인 여기다.)
    */
+  // @scenario failure=persistent_absence
+  // @effects no_blank_screen, bundle_absence_renders_fallback_with_reload_button, retry_attempts_capped_at_three
   test('@smoke 템플릿 컴포넌트 번들 상시 부재 → 백지가 아니라 폴백 안내 + 새로고침 버튼', async ({ page }) => {
     let attempts = 0;
     // 자산 URL 은 **이중 모드**다 — 확장자 형태(`.../js/components.iife.js`)가 실패하면
@@ -270,6 +280,8 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    * 재시도를 소진한 **진짜 실패**는 조용히 삼키면 안 된다. 사용자가 상황을 알고
    * 재시도(새로고침)할 수 있어야 한다 — 복원력이 은폐가 되어서는 안 된다.
    */
+  // @scenario failure=persistent_absence
+  // @effects retry_attempts_capped_at_three, persistent_failure_shows_explicit_error_with_reload
   test('@smoke routes.json 상시 부재 → 명시적 에러 화면 + 새로고침 버튼', async ({ page }) => {
     let attempts = 0;
     await page.route(suffixedPath('\\/api\\/templates\\/[^/]+\\/routes', 'json'), (route) => {
@@ -301,6 +313,8 @@ test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)'
    *   (a) waitForHandlers 가 maxWait(5000ms) 통째로 블로킹 → 5초 백지
    *   (b) `Unknown action handler: sirsoft-ecommerce.initPreferredCurrency` raw 노출
    */
+  // @scenario failure=persistent_absence
+  // @effects missing_module_bundle_does_not_block_render, no_raw_error_leak, no_blank_screen
   test('@smoke 모듈 번들 상시 부재 → 5초 블로킹 없이 렌더 + 내부 식별자 미노출', async ({ page }) => {
     await page.route(suffixedPath('\\/api\\/modules\\/bundle', 'js'), (route) => route.abort('failed'));
 
