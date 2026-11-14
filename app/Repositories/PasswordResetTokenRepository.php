@@ -46,4 +46,18 @@ class PasswordResetTokenRepository implements PasswordResetTokenRepositoryInterf
     {
         return $token->delete();
     }
+
+    /**
+     * 읽어 둔 토큰 레코드와 이메일·토큰 해시가 모두 같은 행만 지웁니다.
+     *
+     * @param  PasswordResetToken  $token  읽어 둔 토큰 레코드
+     * @return int 지운 행 수
+     */
+    public function deleteMatching(PasswordResetToken $token): int
+    {
+        return PasswordResetToken::query()
+            ->where('email', $token->email)
+            ->where('token', $token->token)
+            ->delete();
+    }
 }

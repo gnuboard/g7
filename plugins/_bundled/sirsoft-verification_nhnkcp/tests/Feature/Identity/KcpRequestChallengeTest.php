@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\VerificationNhnkcp\Tests\Feature\Identity;
 
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Plugins\Sirsoft\VerificationNhnkcp\Exceptions\RemoteCallException;
@@ -30,9 +31,13 @@ class KcpRequestChallengeTest extends PluginTestCase
     ];
 
     /**
+     * 거래등록이 성공하면 표준창 호출 정보를 실은 challenge 를 발행하고 로그 행을 sent 로 남긴다.
+     *
      * @scenario mode=test,kcp_response=success
      *
      * @effects challenge_issued_with_call_url_and_reg_cert_key
+     *
+     * @return void 반환값 없음
      */
     public function test_successful_registration_issues_challenge_with_standard_window_payload(): void
     {
@@ -55,9 +60,13 @@ class KcpRequestChallengeTest extends PluginTestCase
     }
 
     /**
+     * 거래 행은 거래키를 조회용 해시와 암호문으로만 저장한다(평문 보관 없음).
+     *
      * @scenario mode=test,kcp_response=success
      *
      * @effects transaction_row_stores_hashed_and_encrypted_reg_cert_key
+     *
+     * @return void 반환값 없음
      */
     public function test_transaction_row_stores_key_as_hash_and_ciphertext_only(): void
     {
@@ -79,9 +88,13 @@ class KcpRequestChallengeTest extends PluginTestCase
     }
 
     /**
+     * KCP 가 거래등록을 거절하면 예외로 끝나고 challenge·거래 행을 남기지 않는다.
+     *
      * @scenario mode=test,kcp_response=res_cd_error
      *
      * @effects res_cd_error_raises_remote_call_exception_without_challenge_row
+     *
+     * @return void 반환값 없음
      */
     public function test_rejected_registration_does_not_create_any_row(): void
     {
@@ -99,9 +112,13 @@ class KcpRequestChallengeTest extends PluginTestCase
     }
 
     /**
+     * KCP 서버 통신이 실패하면 예외로 끝나고 challenge·거래 행을 남기지 않는다.
+     *
      * @scenario mode=test,kcp_response=http_error
      *
      * @effects http_error_raises_remote_call_exception_without_challenge_row
+     *
+     * @return void 반환값 없음
      */
     public function test_communication_failure_does_not_create_any_row(): void
     {
@@ -120,9 +137,43 @@ class KcpRequestChallengeTest extends PluginTestCase
     }
 
     /**
+     * KCP 서버 연결이 실패하면 API 는 500 이 아니라 503 과 「인증 서버 통신 실패」 안내로 답한다 —
+     * 일시 장애를 서버 오류로 보이게 하지 않는다(KVE 후속).
+     *
+     * @scenario mode=test,kcp_response=http_error
+     *
+     * @effects remote_failure_answers_503_with_retry_message
+     *
+     * @return void 반환값 없음
+     */
+    public function test_api_answers_503_when_kcp_server_is_unreachable(): void
+    {
+        // 비회원 본인인증 입구는 guest 역할 권한으로 열린다
+        $this->seed(RolePermissionSeeder::class);
+        Http::fake([
+            '*kcp.co.kr/*' => Http::response('gateway timeout', 504),
+        ]);
+
+        $response = $this->postJson('/api/identity/challenges', [
+            'purpose' => 'signup',
+            'provider_id' => KcpIdentityProvider::PROVIDER_ID,
+            'target' => ['email' => 'guest@example.test'],
+        ]);
+
+        $response->assertStatus(503)
+            ->assertJsonPath('message', __('sirsoft-verification_nhnkcp::exceptions.remote_call_failed'))
+            ->assertJsonPath('errors.failure_code', 'REMOTE_CALL_FAILED');
+        $this->assertSame(0, IdentityVerificationLog::query()->count());
+    }
+
+    /**
+     * 운영 모드는 운영 호스트를 부르고 사이트코드에 접두사를 붙여 보낸다.
+     *
      * @scenario mode=live,kcp_response=success
      *
      * @effects live_mode_uses_live_host_and_prefixed_site_cd
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mode_calls_live_host_with_prefixed_site_code(): void
     {
@@ -159,6 +210,7 @@ class KcpRequestChallengeTest extends PluginTestCase
      *
      * @param  string  $resCd  응답 코드
      * @param  string  $resMsg  응답 메시지
+     * @return void 반환값 없음
      */
     private function fakeRegistration(string $resCd, string $resMsg = '정상처리'): void
     {
@@ -175,7 +227,8 @@ class KcpRequestChallengeTest extends PluginTestCase
     /**
      * 설정이 주입된 provider 인스턴스.
      *
-     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $config  KCP 플러그인 설정
+     * @return KcpIdentityProvider 설정을 주입한 본인확인 수단
      */
     private function provider(array $config = self::TEST_CONFIG): KcpIdentityProvider
     {

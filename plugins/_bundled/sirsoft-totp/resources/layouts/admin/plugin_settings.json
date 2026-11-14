@@ -1,5 +1,5 @@
 {
-    "comment": "인증 앱 등록 화면 — 시크릿과 백업 코드는 발급 응답에만 실리므로 이 화면이 그 1회 노출을 책임진다.\n     e2e:allow 이번 변경은 `<on>` 블록 주석 4곳 추가뿐 — 마크업·배선·문구가 그대로라 브라우저에서 잴 차이가 없다(화면 동작은 admin-totp-enrollment.spec.ts 가 덮는다).\n     audit:allow extension-doc-coverage 주석만 추가해 생성 문서 블록에 반영될 변경이 없다(ext:docgen 재실행 시 이슈 0·산출 무변경).\n\n     평문은 _local 상태에만 두어 화면을 떠나면 사라지고, 새로고침하면 다시 볼 수 없다는 사실을 각 단계에 명시한다.\n\n     파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이\n     「플러그인 관리 → 설정」(/admin/plugins/sirsoft-totp/settings)으로 띄운다. 전용 메뉴도\n     routes.json 도 두지 않는다(확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도\n     메뉴로 세울 사항이 아니다). 이름을 바꾸면 설정 화면이 통째로 사라지므로 바꾸지 않는다.",
+    "comment": "인증 앱 등록 화면 — 시크릿과 백업 코드는 발급 응답에만 실리므로 이 화면이 그 1회 노출을 책임진다.\n     사이트 설정 카드 아래에 보안 알림 카드(등록·해제·백업 코드 재발급 알림의 발송 수단·템플릿)와 그 편집·미리보기·복원 창을 둔다 —\n     코어 「알림 설정」 화면은 코어 정의만 보이므로 이 플러그인 알림은 여기서만 관리한다(형제: 환율·GDPR 설정 화면).\n\n     평문은 _local 상태에만 두어 화면을 떠나면 사라지고, 새로고침하면 다시 볼 수 없다는 사실을 각 단계에 명시한다.\n\n     파일명이 계약이다 — `plugin_settings` 라야 코어 `AbstractPlugin::getSettingsLayout()` 이\n     「플러그인 관리 → 설정」(/admin/plugins/sirsoft-totp/settings)으로 띄운다. 전용 메뉴도\n     routes.json 도 두지 않는다(확정 2026-09-18 — 이 화면은 플러그인 환경설정이지 별도\n     메뉴로 세울 사항이 아니다). 이름을 바꾸면 설정 화면이 통째로 사라지므로 바꾸지 않는다.",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -76,12 +76,70 @@
                 }
             },
             "comment": "사이트 운영 설정(발급자 표기·미등록자 메일 폴백). 위 등록 상태는 「내 계정」이고 이쪽은 사이트 전체 값이다.\n       플러그인 설정을 읽을 권한이 없으면 카드만 숨긴다 — 등록 화면 전체를 오류로 바꾸지 않는다."
+        },
+        {
+            "id": "totpNotificationChannels",
+            "label_key": "$t:sirsoft-totp.editor.data_source.totpNotificationChannels",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "channels": []
+                }
+            },
+            "comment": "보안 알림(등록·해제·백업 코드 재발급) 정의·채널 — 코어 「알림 설정」 화면은 extension_type=core 정의만 받으므로\n       확장이 들인 정의는 그 확장의 설정 화면이 보여 준다(형제: 환율·GDPR). 코어가 런타임에 정한 발송 채널 목록은\n       다른 요청을 막지 않도록 progressive 로 받는다."
+        },
+        {
+            "id": "totpNotificationDefinitions",
+            "label_key": "$t:sirsoft-totp.editor.data_source.totpNotificationDefinitions",
+            "type": "api",
+            "endpoint": "/api/admin/notification-definitions?extension_type=plugin&extension_identifier=sirsoft-totp",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "template_channel": "all"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "total": 0
+                    }
+                }
+            },
+            "errorHandling": {
+                "comment": "실패의 종류를 남긴다 — fallback 이 빈 목록을 주므로 이것이 없으면 403(알림 설정 권한 없음)도 「등록된 알림이 없습니다」로\n         보인다. 이 핸들러가 실패를 받아 끊으므로 등록 화면 전체 오류로 번지지 않는다(인증 앱 등록은 알림 권한과 무관하게 써야 한다).",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "totpNotificationsError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "totpNotificationsError": "failed"
+                    }
+                }
+            },
+            "comment": "이 플러그인 소유 알림 정의 — 켠 채널 전부의 템플릿을 한 번에 그리려고 template_channel=all 로 받는다(이 인자가 없으면 templates 가 비어 편집 버튼이 그려지지 않는다)"
         }
     ],
     "initLocal": {
         "secret": null,
         "otpauthUri": null,
         "code": "",
+        "currentPassword": "",
         "backupCodes": null,
         "error": null,
         "busy": false,
@@ -90,7 +148,8 @@
         "settingsErrors": null
     },
     "computed": {
-        "isPluginReadOnly": "{{totpSettings?.data?.abilities?.can_update !== true}}"
+        "isPluginReadOnly": "{{totpSettings?.data?.abilities?.can_update !== true}}",
+        "isNotificationReadOnly": "{{totpNotificationDefinitions?.data?.abilities?.can_update !== true}}"
     },
     "transition_overlay": {
         "wait_for": [
@@ -481,12 +540,82 @@
                                 ]
                             },
                             {
+                                "id": "totp_security_intro_password_field",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mt-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "totp_security_intro_password_label",
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "htmlFor": "totp_current_password",
+                                            "className": "form-label"
+                                        },
+                                        "text": "$t:sirsoft-totp.admin.security.intro.password_label"
+                                    },
+                                    {
+                                        "id": "totp_security_intro_password_input",
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "actions": [
+                                            {
+                                                "comment": "등록 시작에 쓸 현재 비밀번호를 담는다(1.0.3 — 열린 세션만으로 인증 앱을 바꾸지 못하게) — 입력을 고치는 순간 이전 실패 문구를 지운다",
+                                                "event": "onChange",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "currentPassword": "{{$event.target.value}}",
+                                                    "error": null,
+                                                    "passwordError": null
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "id": "totp_current_password",
+                                            "type": "password",
+                                            "name": "totp_current_password",
+                                            "value": "{{_local.currentPassword ?? ''}}",
+                                            "autoComplete": "current-password",
+                                            "maxLength": "255",
+                                            "placeholder": "$t:sirsoft-totp.admin.security.intro.password_placeholder",
+                                            "className": "input",
+                                            "disabled": "{{_local.busy}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "비밀번호가 틀리면(422) 칸 바로 아래에 서버 문구를 보인다 — 입력값은 남겨 오타만 고쳐 다시 누를 수 있게 한다",
+                                        "id": "totp_security_intro_password_error",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.passwordError}}",
+                                        "props": {
+                                            "className": "text-sm text-red-600 dark:text-red-400 mt-1",
+                                            "role": "alert"
+                                        },
+                                        "text": "{{_local.passwordError ?? ''}}"
+                                    },
+                                    {
+                                        "id": "totp_security_intro_password_hint",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-hint mt-1"
+                                        },
+                                        "text": "$t:sirsoft-totp.admin.security.intro.password_hint"
+                                    }
+                                ]
+                            },
+                            {
                                 "id": "totp_security_start",
                                 "type": "basic",
                                 "name": "Button",
                                 "actions": [
                                     {
-                                        "comment": "시크릿 발급 — 응답의 평문은 이 시점에만 받는다.",
+                                        "comment": "시크릿 발급 — 응답의 평문은 이 시점에만 받는다. 현재 비밀번호를 함께 보내고, 성공하면 화면 상태에서 곧바로 비운다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -495,7 +624,8 @@
                                                 "params": {
                                                     "target": "local",
                                                     "busy": true,
-                                                    "error": null
+                                                    "error": null,
+                                                    "passwordError": null
                                                 }
                                             },
                                             {
@@ -503,7 +633,10 @@
                                                 "target": "/api/plugins/sirsoft-totp/enrollment",
                                                 "auth_required": true,
                                                 "params": {
-                                                    "method": "POST"
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "current_password": "{{_local.currentPassword}}"
+                                                    }
                                                 },
                                                 "onSuccess": {
                                                     "handler": "setState",
@@ -512,17 +645,47 @@
                                                         "busy": false,
                                                         "secret": "{{response.data.secret}}",
                                                         "otpauthUri": "{{response.data.otpauth_uri}}",
-                                                        "code": ""
+                                                        "code": "",
+                                                        "currentPassword": ""
                                                     }
                                                 },
-                                                "onError": {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "busy": false,
-                                                        "error": "{{error.message}}"
+                                                "onError": [
+                                                    {
+                                                        "comment": "비밀번호 틀림(422)은 칸 아래, 그 밖(429 등)은 상단 상자. 회원별 횟수 초과(429)면 남은 대기 시간 동안 시작 버튼을 잠근다",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "busy": false,
+                                                            "error": "{{error.status === 422 ? null : error.message}}",
+                                                            "passwordError": "{{error.status === 422 ? (error.errors?.current_password?.[0] ?? error.message) : null}}",
+                                                            "startLocked": "{{error.status === 429}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "잠금 해제는 1회 타이머 — 틱이 화면 상태를 읽지 않게(등록 시점 문맥으로 돈다) 해제·정지만 한다",
+                                                        "handler": "startInterval",
+                                                        "if": "{{error.status === 429}}",
+                                                        "params": {
+                                                            "id": "totp_start_unlock",
+                                                            "intervalMs": "{{Math.max(1, Number(error.errors?.retry_after ?? 60)) * 1000}}",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "startLocked": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "stopInterval",
+                                                                    "params": {
+                                                                        "id": "totp_start_unlock"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
                                                     }
-                                                }
+                                                ]
                                             }
                                         ]
                                     }
@@ -530,7 +693,7 @@
                                 "props": {
                                     "type": "button",
                                     "className": "mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                    "disabled": "{{_local.busy}}"
+                                    "disabled": "{{!_local.currentPassword || _local.busy || _local.startLocked}}"
                                 },
                                 "children": [
                                     {
@@ -805,6 +968,7 @@
                                                                     "secret": null,
                                                                     "otpauthUri": null,
                                                                     "code": "",
+                                                                    "currentPassword": "",
                                                                     "error": null
                                                                 }
                                                             }
@@ -1294,9 +1458,27 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "comment": "보안 알림 카드 — 사이트 설정 카드 아래. 노출 규칙은 형제 환율 설정과 같다: 카드는 늘 그리고, 알림 정의를 읽을 권한이 없으면(403)\n           카드 안에 그 사유를, 수정 권한(abilities.can_update)이 없으면 스위치·저장·편집·초기화를 잠근다(isNotificationReadOnly).",
+                        "partial": "partials/plugin_settings/_notifications_card.json"
                     }
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "comment": "알림 템플릿 편집 창 — 알림 카드의 템플릿 행 「템플릿 편집」에서 연다",
+            "partial": "partials/plugin_settings/_modal_notification_template_edit.json"
+        },
+        {
+            "comment": "템플릿 미리보기 창 — 편집 창 안의 「미리보기」에서 연다",
+            "partial": "partials/plugin_settings/_modal_notification_template_preview.json"
+        },
+        {
+            "comment": "알림 정의 초기화 확인 창 — 알림 카드의 「기본값 되돌리기」에서 연다",
+            "partial": "partials/plugin_settings/_modal_notification_definition_reset.json"
+        }
+    ]
 }

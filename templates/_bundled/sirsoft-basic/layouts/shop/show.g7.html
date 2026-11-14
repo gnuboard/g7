@@ -405,6 +405,7 @@
           <action-ref name="toggleProductWishlist"/>
         </on>
         <on event="onCart">
+          <!-- 아직 다 고르지 않았거나 수량이 한도 밖이면 담지 않고 선택 시트를 연다(장바구니 모드) -->
           <conditions>
             <when if="{{$computed.purchaseNeedsSelection || $computed.purchaseQuantityOutOfRange}}">
               <set-state target="local" :buySheetOpen="true" buySheetMode="cart" :buySheetSeen="true"/>
@@ -415,6 +416,7 @@
           </conditions>
         </on>
         <on event="onBuy">
+          <!-- 아직 다 고르지 않았거나 수량이 한도 밖이면 주문하지 않고 선택 시트를 연다(바로 구매 모드) -->
           <conditions>
             <when if="{{$computed.purchaseNeedsSelection || $computed.purchaseQuantityOutOfRange}}">
               <set-state target="local" :buySheetOpen="true" buySheetMode="buy" :buySheetSeen="true"/>

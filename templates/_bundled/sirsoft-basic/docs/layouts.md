@@ -381,6 +381,8 @@
 
 라우트를 바꾸면 `php artisan template:update sirsoft-basic --force` 로 반영합니다. 빌드는
 필요 없습니다.
+
+**전체 화면 본인인증의 [다시 보내기] 는 정책·수단을 싣는다**(가입·비밀번호 찾기, 코어 7.1.6~): `auth/identity_challenge` 는 상태 조회(`GET /api/identity/challenges/{id}`) 성공 시 응답의 `provider_id`·`policy_key` 를 `_local.provider_id`·`_local.policy_key` 에 담고, 재전송 요청 본문 2곳(코드 입력형·링크형)에 함께 싣습니다. 코어 7.1.6 은 정책이 지정한 수단으로 받은 인증만 인정하고 정책 키가 있으면 그 수단으로만 발급하므로(다른 수단이면 422), 이 두 값을 빼면 다시 보낸 인증이 기본 수단(메일)으로 발급되어 정책을 통과하지 못합니다. 잠금: `__tests__/layouts/identity-challenge-target-and-policy.test.ts`.
 <!-- @intent END -->
 
 ## 확장 오버라이드

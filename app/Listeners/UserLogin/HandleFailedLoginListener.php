@@ -85,7 +85,18 @@ class HandleFailedLoginListener implements HookListenerInterface
             return;
         }
 
-        $user = $this->userRepository->findByEmail($email);
+        // 로그인 2단계 실패처럼 대상 회원이 확정된 실패는 id 로 찾는다 — 그 사이 이메일이 비었거나 바뀐 회원이
+        // 미가입 주소 경로로 새지 않게 한다(7.1.6). 회원을 못 찾으면 아무것도 세지 않는다.
+        if (isset($context['user_id'])) {
+            $user = $this->userRepository->findById((int) $context['user_id']);
+
+            if ($user === null) {
+                return;
+            }
+        } else {
+            $user = $this->userRepository->findByEmail($email);
+        }
+
         if ($user === null) {
             // 가입되지 않은 주소도 같은 기준으로 세어 같은 횟수 뒤에 같은 잠금 응답이 나가게 한다 —
             // 가입 계정만 잠금 응답을 받으면 그 차이로 가입 여부를 알 수 있다. 회원 데이터는 건드리지 않고

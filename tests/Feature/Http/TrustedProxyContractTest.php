@@ -290,7 +290,7 @@ class TrustedProxyContractTest extends TestCase
      */
     public function test_설치_마법사의_전달_헤더_목록이_코어와_같다(): void
     {
-        $source = (string) file_get_contents(base_path('public/install/api/check-configuration.php'));
+        $source = (string) file_get_contents(base_path('public/install/includes/requirements.php'));
 
         foreach (TrustedProxyDiagnostic::FORWARDED_HEADERS as $header) {
             $this->assertStringContainsString(

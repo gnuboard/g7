@@ -7,11 +7,11 @@ description: |
 
 axes:
   case: [c01, c02, c03, c04, c05]
-  # c01: show.json computed: 단일 그룹 — 재고0 옵션 값이 disabled + "(품절)" 라벨
-  # c02: show.json computed: 다중 그룹 보수적 판정 — 일부만 품절이면 선택 가능, 전부 품절이면 비활성
-  # c03: show.json computed: 하위 그룹 — 상위 선택(빨강) 호환 조합 기준 S 품절/L 정상
-  # c04: _purchase_card.json select options: $computed.optionChoices 를 참조해 품절 결과를 펼친다
-  # c05: _purchase_card.json select options: computed 부재 시 평문 폴백(품절 표시 없이 깨지지 않음)
+  # c01: show.g7.html computed: 단일 그룹 — 재고0 옵션 값이 disabled + "(품절)" 라벨
+  # c02: show.g7.html computed: 다중 그룹 보수적 판정 — 일부만 품절이면 선택 가능, 전부 품절이면 비활성
+  # c03: show.g7.html computed: 하위 그룹 — 상위 선택(빨강) 호환 조합 기준 S 품절/L 정상
+  # c04: _purchase_card.g7.html select options: $computed.optionChoices 를 참조해 품절 결과를 펼친다
+  # c05: _purchase_card.g7.html select options: computed 부재 시 평문 폴백(품절 표시 없이 깨지지 않음)
 
 effects:
   - sold_out_option_choices_disabled

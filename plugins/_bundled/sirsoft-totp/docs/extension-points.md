@@ -5,34 +5,39 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 1종 / 호출 지점 1곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
+발행 훅 4종 / 호출 지점 4곳.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-totp.credential.admin_reset` | action | — | `src/Services/TotpEnrollmentService.php:216` |
+| `sirsoft-totp.backup_codes.regenerated` | action | 회원이 현재 코드를 확인해 백업 코드를 새로 발급한 직후 발행(1.0.3, 이전 코드는 전부 무효). 인자: (User $user, array $context — ip_address·user_agent·occurred_at) | `src/Services/TotpEnrollmentService.php:210` |
+| `sirsoft-totp.credential.admin_reset` | action | 관리자가 회원의 인증 앱 등록을 강제 해제한 직후 발행. 인자: (User $user, array $context) | `src/Services/TotpEnrollmentService.php:246` |
+| `sirsoft-totp.credential.disabled` | action | 회원이 현재 코드를 확인해 인증 앱 등록을 직접 해제한 직후 발행(1.0.3). 인자: (User $user, array $context — ip_address·user_agent·occurred_at·by_admin=false) | `src/Services/TotpEnrollmentService.php:177` |
+| `sirsoft-totp.credential.enrolled` | action | 회원이 첫 코드를 확인해 인증 앱 등록을 확정한 직후 발행(1.0.3). 인자: (User $user, array $context — ip_address·user_agent·occurred_at) | `src/Services/TotpEnrollmentService.php:143` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
-이 플러그인이 발행하는 훅은 하나뿐이며, 관리자 강제 해제에만 붙어 있습니다.
+이 플러그인은 인증 앱 등록 상태가 바뀌는 네 사건마다 훅을 발행합니다. 넷 모두 `TotpEnrollmentService` 에서
+**상태 변경이 실제로 성공한 뒤에만** 발행합니다 — 지울 것이 없던 해제, 코드 확인에 실패한 요청, 다른 화면이 먼저
+확정해 충돌(409)로 끝난 확정은 사건이 아니므로 발행하지 않습니다.
 
-`sirsoft-totp.credential.admin_reset` 은 `TotpAdminCredentialController::destroy()` 가
-`TotpEnrollmentService::reset()` 을 호출해 **실제로 자격증명이 지워진 경우에만** 발행합니다
-(`$removed` 가 거짓이면 발행하지 않습니다 — 지울 것이 없었던 호출까지 해제 사건으로 기록되면
-감사 기록에 존재하지 않는 사건이 쌓입니다). 인자는 `(User $user, array $context)` 이고
-`$context` 에는 `actor_id`(해제를 실행한 관리자 id)와 `ip_address` 가 실립니다.
+| 훅 | 사건 | `$context` |
+| --- | --- | --- |
+| `sirsoft-totp.credential.enrolled` | 본인이 첫 코드로 등록을 확정함 (1.0.3) | `ip_address`·`user_agent`·`occurred_at`(ISO8601) |
+| `sirsoft-totp.credential.disabled` | 본인이 현재 코드로 등록을 해제함 (1.0.3) | 위와 같음 + `by_admin=false` |
+| `sirsoft-totp.backup_codes.regenerated` | 본인이 현재 코드로 백업 코드를 새로 받음 — 이전 코드는 전부 무효 (1.0.3) | `ip_address`·`user_agent`·`occurred_at` |
+| `sirsoft-totp.credential.admin_reset` | 관리자 화면 [강제 해제] 또는 `php artisan totp:reset` 으로 등록이 지워짐 | `actor_id`(해제한 관리자 id, 명령이면 `null`)·`ip_address`(명령이면 `null`) |
 
-이 자리에 훅을 둔 이유는 강제 해제가 **코드 확인 없이 남의 2단계 인증을 푸는 유일한 경로**
-이기 때문입니다. 누가 누구의 2단계 인증을 언제 풀었는지 추적할 수 없으면 이 경로 자체가
-권한 상승 수단이 됩니다. 추가 감사 로그를 남기거나 당사자에게 메일·알림을 보내는 확장은
-이 훅을 잡습니다.
+인자는 모두 `(User $user, array $context)` 이고 첫 인자는 **등록 상태가 바뀐 회원**입니다(강제 해제에서도 운영자가
+아니라 해제된 회원).
 
-`actor_id` 는 관리자 API 경로에서만 채워집니다 — `php artisan totp:reset` 은 컨트롤러를
-거치지 않으므로 이 훅을 발행하지 않습니다. 셸 접근 자체가 권한인 최후 구제 경로이며,
-그 사용 흔적은 서버 접근 기록에 남습니다.
+본인 사건 세 훅을 1.0.3 에서 둔 이유는, 로그인된 탭만 가진 사람이 인증 앱을 바꾸거나 끄거나 백업 코드를 새로 받아도
+계정 주인이 알 길이 없었기 때문입니다. 이 플러그인의 보안 알림 3종(아래 「알림 정의」)이 이 훅들을 구독해 계정
+이메일로 알립니다. 추가 감사 로그나 다른 통지 수단이 필요한 확장도 같은 훅을 잡습니다.
 
-본인 등록·확정·해제·백업 코드 재발급에는 훅을 두지 않았습니다. 본인이 자기 인증 수단을
-다루는 행위는 코드 확인을 통과해야만 성립하므로, 강제 해제와 같은 수준의 감사 대상이
-아닙니다.
+강제 해제 훅은 **코드 확인 없이 남의 2단계 인증을 푸는 경로**에 붙어 있습니다. 누가 누구의 2단계 인증을 언제
+풀었는지 추적할 수 없으면 이 경로 자체가 권한 상승 수단이 되므로 활동 로그(`TotpAdminResetActivityLogListener`)가
+이 훅으로 남습니다. 관리자 화면 경로는 해제 전에 코어 등급 상한(`UserGradeGuard`)을 확인해, 슈퍼 관리자가 아닌
+운영자는 슈퍼 관리자의 인증 앱을 해제하지 못합니다(403, 1.0.3).
 <!-- @intent END -->
 
 ## 구독 훅
@@ -43,15 +48,23 @@
 | `core.auth.console_password_reset_notices` | filter | `ConsolePasswordResetNoticeListener` | `appendResetNotice` | 20 |
 | `core.identity.purposes` | filter | `ExtendLoginPurposeChannels` | `extend` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterTotpProviderListener` | `register` | 20 |
+| `core.notification.filter_default_definitions` | filter | `TotpNotificationDataListener` | `defaults` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `CleanTotpCredentialOnUserWithdraw` | `handle` | 50 |
 | `core.user.before_delete` | action (미선언) | `CleanTotpCredentialOnUserDelete` | `handle` | 50 |
 | `core.user.filter_resource_data` | filter | `UserTotpEnrollmentInfoListener` | `injectEnrollmentStatus` | 40 |
 | `sirsoft-totp.credential.admin_reset` | action (미선언) | `TotpAdminResetActivityLogListener` | `handle` | 50 |
+| `sirsoft-totp.notification.extract_data` | filter | `TotpNotificationDataListener` | `extract` | 10 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
-구독 훅 4건은 전부 **코어가 소유한 훅**이라 이 플러그인의 계약이 아닙니다. 다만 어느 훅을
-골랐는지는 설계 결정이므로 그 이유가 여기에 있습니다.
+구독 훅은 대부분 **코어가 소유한 훅**이라 이 플러그인의 계약이 아닙니다(자기 훅
+`sirsoft-totp.credential.admin_reset`·`sirsoft-totp.notification.extract_data` 구독은 활동 로그와 알림 치환값용).
+어느 훅을 골랐는지는 설계 결정이므로 그 이유가 여기에 있습니다.
+
+`sirsoft-totp.notification.extract_data` (filter, priority 10) · `core.notification.filter_default_definitions`
+(filter, priority 20) — `TotpNotificationDataListener` 가 보안 알림 3종의 치환 변수(`name`·`app_name`·`occurred_at`·
+`ip_address`·`actor_label`·`security_url`)를 채우고, 코어 알림 「기본값 복원」 경로에 이 플러그인 소유의 기본 정의를
+돌려줍니다(gdpr·koreaexim 플러그인 선례와 같은 방식).
 
 `core.identity.registered_providers` (filter, priority 20) — `RegisterTotpProviderListener`
 가 `TotpIdentityProvider` 인스턴스를 레지스트리 배열에 `totp` 키로 더합니다. 코어는 이
@@ -92,11 +105,12 @@
 | `ExtendLoginPurposeChannels` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExtendLoginPurposeChannels.php` |
 | `RegisterTotpProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterTotpProviderListener.php` |
 | `TotpAdminResetActivityLogListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/TotpAdminResetActivityLogListener.php` |
+| `TotpNotificationDataListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/TotpNotificationDataListener.php` |
 | `UserTotpEnrollmentInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserTotpEnrollmentInfoListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-리스너 6개는 전부 `plugin.php` 의 `getHookListeners()` 에 명시 등록되어 있습니다. 자동
+리스너 8개는 전부 `plugin.php` 의 `getHookListeners()` 에 명시 등록되어 있습니다. 자동
 스캔에 맡기지 않으므로 목록 자체가 "이 플러그인이 코어의 어디에 손을 대는가" 의 SSoT 입니다.
 
 두 부류로 갈립니다.
@@ -213,21 +227,32 @@ _등록하는 스케줄이 없습니다._
 ## 알림 정의
 
 <!-- @generated:notifications START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 알림 정의가 없습니다._
+| 알림 키 | 채널 |
+|---|---|
+| `totp_enrolled` | `mail` |
+| `totp_disabled` | `mail` |
+| `totp_backup_codes_regenerated` | `mail` |
 <!-- @generated:notifications END -->
 
 <!-- @intent START -->
-알림 정의를 등록하지 않습니다 — 본인인증 알림(`category = 'identity'`)도 없고, `plugin.php` 의
-@deprecated `getIdentityMessages()` 오버라이드도 빈 배열입니다.
+**계정 보안 알림 3종**(1.0.3)을 등록합니다. 인증 코드를 보내는 본인인증 알림(`category = 'identity'`)은 없습니다 —
+코드는 사용자 단말의 앱이 만들고 서버는 제출된 코드를 대조할 뿐이라 발송할 코드가 없습니다(`plugin.php` 의
+@deprecated `getIdentityMessages()` 오버라이드도 빈 배열).
 
-서버가 아무것도 보내지 않는 수단이기 때문입니다. 코드는 사용자 단말의 앱이 만들고, 서버는
-challenge 를 열어 두고 제출된 코드를 대조할 뿐이라 발송할 메시지가 없습니다.
+| 알림 키 | 구독 훅 | 내용 |
+| --- | --- | --- |
+| `totp_enrolled` | `sirsoft-totp.credential.enrolled` | 인증 앱이 등록되었습니다 |
+| `totp_disabled` | `sirsoft-totp.credential.disabled` · `sirsoft-totp.credential.admin_reset` | 인증 앱이 해제되었습니다(본인·관리자 강제 해제·`totp:reset` 명령) |
+| `totp_backup_codes_regenerated` | `sirsoft-totp.backup_codes.regenerated` | 백업 코드가 재발급되었습니다 |
 
-등록·해제 같은 계정 보안 사건에 대한 통지도 이 플러그인이 직접 보내지 않습니다. 관리자
-강제 해제는 `sirsoft-totp.credential.admin_reset` 훅으로 열려 있으므로, 당사자 통지가
-필요한 사이트는 그 훅을 잡는 확장에서 자기 통지 체계로 보냅니다 — 통지 수단·문구·수신
-정책은 사이트마다 다르고, 인증 수단 플러그인이 그것까지 정하면 끄기 어려운 결합이
-생깁니다.
+세 알림 모두 대상 `customer`, 채널 `mail`, 수신자 `trigger_user`(등록 상태가 바뀐 회원 본인)입니다. 로그인된 탭만
+가진 사람이 인증 앱을 바꾸거나 끄더라도 계정 주인이 메일로 알 수 있게 하려는 것이며, 본문은 「본인이 아니면 즉시
+비밀번호를 바꾸고 관리자에게 알려 달라」는 안내와 요청 IP 를 담습니다. 운영자는 이 플러그인의 설정 화면(플러그인 관리 →
+인증 앱 → 설정) 「보안 알림」 카드에서 각 항목을 끄고 켜고, 문구를 고치고 미리 보고, 기본값으로 복원합니다 — 코어
+「알림 설정」 화면은 코어 정의만 보이므로 확장이 들인 정의는 그 확장의 설정 화면이 보여 줍니다(환율·GDPR 플러그인과
+같은 방식). 치환 변수는 `TotpNotificationDataListener` 가 채웁니다(위 「구독 훅」).
+
+비밀번호 재설정은 인증 앱 등록을 지우지 않으므로 이 알림이 나가지 않습니다.
 <!-- @intent END -->
 
 ## 활동 로그 훅

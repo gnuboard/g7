@@ -9,6 +9,9 @@ return [
     'two_factor_enrollment_required' => 'You must enroll an authenticator app before signing in. Please contact the administrator.',
     'two_factor_failed' => 'The verification code is incorrect or has expired.',
     'two_factor_invalid_challenge' => 'Verification request not found. Please sign in again.',
+    'two_factor_resend_not_supported' => 'Authenticator apps do not send codes. Enter the current code shown in your authenticator app.',
+    'two_factor_resend_cooldown' => 'A code was just sent. You can request another one in :seconds seconds.',
+    'password_reconfirm_throttled' => 'Too many failed password confirmations. Please try again in :seconds seconds.',
     'two_factor_delivery_failed' => 'Could not send the verification code. Please contact the administrator.',
     // Password change step (#736) — password and two-factor passed, but sign-in finishes only after changing the password
     'password_change_required' => 'Your password has expired. Please set a new password.',

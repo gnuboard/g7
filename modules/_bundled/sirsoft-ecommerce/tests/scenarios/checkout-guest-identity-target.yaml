@@ -1,0 +1,28 @@
+feature: 비회원 결제 본인인증 결과의 주문자 이메일 결박 (KVE 동형 B4)
+
+description: |
+  결제 직전 훅(`sirsoft-ecommerce.checkout.before_payment`)이 대상 이메일을 넘기지 않아, 비회원은
+  남의(또는 아무) 이메일로 받은 본인인증 결과로 결제 정책(`sirsoft-ecommerce.checkout.before_pay`)을 통과했다.
+
+  핵심 계약:
+    - 주문 생성 진입(HandlesOrderCreation)은 결제 직전 훅에 `['target_email' => 주문자 이메일]` 을 넘긴다.
+    - 정책이 켜져 있으면 비회원 결제는 그 이메일로 받은 결과만 인정한다. 다른 이메일의 결과는 428 이고,
+      예외 payload 의 target.email 이 주문자 이메일을 되돌려 화면이 그 주소로 인증을 다시 받게 한다.
+    - 주문자 이메일로 받은 결과는 통과하며 1회 소비(consumed_at)된다.
+
+  회원 결제·관리자 우회·정책 4종의 실경로 발화는 order-idv-trigger.yaml(EcommerceIdentityPolicyDeclarationTest)이 다룬다.
+
+# axis 의미:
+#   entry — 대상 이메일이 어디서 결정·검사되는가. http_order_create 는 실제 주문 생성 요청이 훅 인자에
+#   주문자 이메일을 싣는 지점, before_payment_hook 은 그 인자를 받은 정책 집행이 결과의 대상과 대조하는 지점이다.
+axes:
+  actor: [guest]
+  entry: [http_order_create, before_payment_hook]
+
+effects:
+  - checkout_hook_passes_orderer_email                    # 주문 생성 요청이 결제 직전 훅에 주문자 이메일을 target_email 로 넘김
+  - guest_checkout_token_bound_to_orderer                 # 다른 이메일 결과는 428, payload target.email = 주문자 이메일
+  - guest_checkout_orderer_token_accepted_and_consumed    # 주문자 이메일 결과는 통과하고 consumed_at 이 찍힘
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Identity/CheckoutGuestIdentityTargetTest.php

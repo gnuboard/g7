@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Enums\AttachmentSourceType;
+use App\Exceptions\Auth\PasswordReconfirmThrottledException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Requests\Auth\VerifyPasswordRequest;
@@ -13,11 +14,11 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AttachmentService;
 use App\Services\IdentityPolicyService;
+use App\Services\PasswordReconfirmationService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -34,11 +35,13 @@ class ProfileController extends AuthBaseController
      * @param  UserService  $userService  회원 서비스
      * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타)
      * @param  IdentityPolicyService  $identityPolicyService  본인인증 정책 서비스 (정보수정 API 의 비밀번호 변경)
+     * @param  PasswordReconfirmationService  $passwordReconfirmation  현재 비밀번호 재확인(회원 단위 시도 제한) 서비스 — 7.1.6
      */
     public function __construct(
         private UserService $userService,
         private AttachmentService $attachmentService,
-        private IdentityPolicyService $identityPolicyService
+        private IdentityPolicyService $identityPolicyService,
+        private PasswordReconfirmationService $passwordReconfirmation,
     ) {
         parent::__construct();
     }
@@ -265,13 +268,17 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            if (! Hash::check($request->password, $user->password)) {
+            // 회원 단위 시도 제한과 함께 확인한다 — 열린 세션으로 비밀번호를 계속 맞혀 보지 못하게(7.1.6, KVE 동형 L2)
+            if (! $this->passwordReconfirmation->attempt($user, (string) $request->password)) {
                 return $this->error('user.password_incorrect', 401);
             }
 
             $this->logUserActivity('profile.verify_password');
 
             return $this->success('user.password_verified');
+        } catch (PasswordReconfirmThrottledException $e) {
+            return $this->error('auth.password_reconfirm_throttled', 429, null, ['seconds' => $e->retryAfterSeconds])
+                ->header('Retry-After', (string) $e->retryAfterSeconds);
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'user.password_verify_failed');
         } catch (\Exception $e) {

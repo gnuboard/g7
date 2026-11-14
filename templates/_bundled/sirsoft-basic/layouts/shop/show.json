@@ -1182,6 +1182,7 @@
                                 "actionRef": "toggleProductWishlist"
                             },
                             {
+                                "comment": "아직 다 고르지 않았거나 수량이 한도 밖이면 담지 않고 선택 시트를 연다(장바구니 모드)",
                                 "event": "onCart",
                                 "handler": "conditions",
                                 "conditions": [
@@ -1205,6 +1206,7 @@
                                 ]
                             },
                             {
+                                "comment": "아직 다 고르지 않았거나 수량이 한도 밖이면 주문하지 않고 선택 시트를 연다(바로 구매 모드)",
                                 "event": "onBuy",
                                 "handler": "conditions",
                                 "conditions": [

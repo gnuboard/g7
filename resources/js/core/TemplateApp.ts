@@ -5832,7 +5832,10 @@ export class TemplateApp {
         }
 
         // 현재 데이터 컨텍스트 (각 액션 실행 후 갱신됨)
-        let currentDataContext = { ...dataContext };
+        // 이 init 이 속한 경로 세대를 문맥에 남긴다 (engine-v1.91.1) — init 안에서 등록한 `startInterval` 이 화면 소속 타이머임을
+        // 알아보고, 이 세대가 끝나면(다른 화면으로 옮기면) 스스로 멈추게 한다. init 이 await 하는 사이 경로가 바뀌어도(뒤로 가기 경합)
+        // 등록 시점이 아니라 init 을 시작한 세대로 판정해야 앞 화면 타이머가 새 세대에 붙지 않는다.
+        let currentDataContext: Record<string, any> = { ...dataContext, __initRouteGeneration: this.currentRouteChangeId };
 
         // 렌더 전 단계 표시 — 이 안에서 부른 showErrorPage 는 렌더 뒤로 미뤄진다 (isRunningPreRenderInit)
         this.preRenderInitDepth++;

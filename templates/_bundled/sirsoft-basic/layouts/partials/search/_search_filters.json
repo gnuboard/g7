@@ -94,6 +94,7 @@
                     "name": "Checkbox",
                     "actions": [
                         {
+                            "comment": "체크하면 1, 풀면 빈 값(주소에서 빠진다) — 쪽·커서는 비워 첫 쪽부터 다시 받는다",
                             "type": "change",
                             "handler": "navigate",
                             "params": {

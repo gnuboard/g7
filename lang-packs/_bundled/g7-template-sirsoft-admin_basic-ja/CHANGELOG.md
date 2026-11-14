@@ -11,9 +11,12 @@
 - 관리자 기본 템플릿 1.1.6 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 카드 「스타일 정책」 구획 문구(`admin.settings.security.csp.style.*` 18개 — 「スタイルポリシー」·적용 모드·차단 강도(「基本」·「厳格」)·강제 경고·강제 시 깨지는 화면 안내·`.env` 우선 안내·추가 허용 호스트·자동 포함 호스트·정책 미리보기)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 구획 문구가 키 그대로 보입니다.
 - 관리자 기본 템플릿 1.1.6 의 환경설정 새 입력칸 문구(`admin.settings.upload.layout_attachment_extensions`·`_hint`, `admin.settings.drivers.public_asset.extensions`·`extensions_hint`·`hardening_warning`, `admin.settings.security.password_reset_rate_limit_per_minute`·`register_rate_limit_per_minute`·`rate_limit_per_minute_hint`)의 일본어 번역을 추가했습니다.
 
+- 관리자 기본 템플릿 1.1.6 의 본인인증 정책 편집 창 「인증 수단」 안내(`admin.identity.policies.form.provider_id_desc` — 지정한 수단으로 받은 인증만 인정하고, 비우면 모든 수단을 인정한다는 설명)의 일본어 번역을 추가했습니다.
+
 ### Changed
 
 - 관리자 비밀번호 찾기 성공 안내(`auth.forgot_password.success`)를 관리자 기본 템플릿 1.1.6 의 새 문구에 맞췄습니다.
+- 본인인증 정책 편집 창의 인증 수단 빈 선택지(`admin.identity.policies.form.use_default_provider`)를 「（指定なし — すべての手段を受け入れる）」로 바꿨습니다(관리자 기본 템플릿 1.1.6 원문 변경).
 - 스타일 정책 강제 경고(`admin.settings.security.csp.style.known_issues_basic`·`known_issues_strict`)의 글쓰기 편집기 항목을 관리자 기본 템플릿 1.1.6 의 원문에 맞춰 고쳤습니다 — 편집 화면 서식은 이제 보이므로 빼고, 색상 선택기가 접힌다는 안내(「投稿エディター (CKEditor) のカラーピッカー …」)로 바꿨습니다.
 - 「자동으로 포함되는 스타일 호스트」 안내(`admin.settings.security.csp.style.auto_hosts`·`auto_hosts_empty`)를 원문에 맞춰 「有効なテンプレート・拡張機能の宣言」으로 고쳤습니다 — 확장이 선언한 스타일 호스트도 자동으로 들어갑니다.
 

@@ -24,8 +24,6 @@ class PublicReviewAuthorMaskingTest extends ModuleTestCase
 {
     private Product $product;
 
-    private OrderOption $orderOption;
-
     /**
      * 공개 상품 조회 권한과 상품을 준비합니다.
      *
@@ -43,7 +41,6 @@ class PublicReviewAuthorMaskingTest extends ModuleTestCase
         Role::where('identifier', 'guest')->first()?->permissions()->syncWithoutDetaching([$permission->id]);
 
         $this->product = Product::factory()->onSale()->create();
-        $this->orderOption = OrderOption::factory()->create(['product_id' => $this->product->id]);
     }
 
     /**
@@ -138,6 +135,8 @@ class PublicReviewAuthorMaskingTest extends ModuleTestCase
     /**
      * 노출 상태 후기를 하나 만듭니다.
      *
+     * 주문옵션당 활성 후기는 1건만 둘 수 있어(DB 유니크) 후기마다 새 주문옵션을 만든다.
+     *
      * @param  array<string, mixed>  $attributes  덮어쓸 속성
      * @return ProductReview 만든 후기
      */
@@ -145,7 +144,7 @@ class PublicReviewAuthorMaskingTest extends ModuleTestCase
     {
         return ProductReview::factory()->create(array_merge([
             'product_id' => $this->product->id,
-            'order_option_id' => $this->orderOption->id,
+            'order_option_id' => OrderOption::factory()->create(['product_id' => $this->product->id])->id,
             'status' => ReviewStatus::VISIBLE->value,
         ], $attributes));
     }

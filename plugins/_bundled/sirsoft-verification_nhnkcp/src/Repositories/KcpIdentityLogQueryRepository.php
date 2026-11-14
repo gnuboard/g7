@@ -14,11 +14,10 @@ use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
 class KcpIdentityLogQueryRepository implements KcpIdentityLogQueryRepositoryInterface
 {
     /**
-     * verified 상태의 IDV 로그를 token + purpose 로 조회한다 (consumed_at 무관).
+     * 아직 쓰지 않았고 만료되지 않은 verified IDV 로그를 token + purpose 로 조회한다.
      *
-     * 코어 findVerifiedForToken 과 달리 consumed_at IS NULL 필터를 두지 않는다 —
-     * 코어 priority 10 listener 가 consume 한 후 본 plugin priority 20 listener 가
-     * 같은 토큰으로 metadata 의 식별자 해시를 회수해야 하기 때문.
+     * 1.1.4 부터 소비·만료된 결과는 돌려주지 않는다(KVE 동형 B6). 가입 경로 listener 는 이 메서드 대신 코어
+     * `IdentityTokenAcceptanceService` 로 같은 요청에서 인정한 결과를 받는다 — 이 메서드는 하위 호환을 위한 공개 계약으로만 남는다.
      *
      * @param  string  $token  verification_token
      * @param  string  $purpose  IDV purpose
@@ -34,6 +33,9 @@ class KcpIdentityLogQueryRepository implements KcpIdentityLogQueryRepositoryInte
             ->where('verification_token', $token)
             ->where('purpose', $purpose)
             ->where('status', IdentityVerificationStatus::Verified->value)
+            // 이미 쓴 결과·만료된 결과는 재사용 대상이 아니다(1.1.4, KVE 동형 B6)
+            ->whereNull('consumed_at')
+            ->where('expires_at', '>', now())
             ->first();
     }
 

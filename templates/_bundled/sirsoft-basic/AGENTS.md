@@ -135,7 +135,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 |---|---|---|
 | 제공 컴포넌트 | 84개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
 | 레이아웃 | 196개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
-| 전용 핸들러 | 41개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
+| 전용 핸들러 | 42개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 1개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
 
@@ -226,7 +226,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 361개 | `vitest.config.ts` |
+| Vitest | 362개 | `vitest.config.ts` |
 | Playwright | 37개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 153개 | `tests/scenarios` |
 

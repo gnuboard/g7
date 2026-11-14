@@ -116,6 +116,35 @@ class CouponBulkDownloadTest extends ModuleTestCase
     }
 
     /**
+     * 영어 응답 문구는 받은 장수로 단·복수를 고른다 — `coupon(s)` 처럼 둘을 함께 적지 않는다.
+     *
+     * @scenario request=explicit_ids, outcome=english_plural
+     *
+     * @effects bulk_english_message_picks_singular_or_plural
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_download_english_message_picks_singular_or_plural(): void
+    {
+        $user = $this->createUser();
+        $one = $this->makeCoupon();
+        $taken = $this->makeCoupon();
+        $this->actingAs($user, 'sanctum')->postJson(self::URL, ['coupon_ids' => [$taken->id]])->assertOk();
+
+        $this->actingAs($user, 'sanctum')->withHeaders(['Accept-Language' => 'en'])
+            ->postJson(self::URL, ['coupon_ids' => [$one->id, $taken->id]])
+            ->assertOk()
+            ->assertJsonPath('message', 'Downloaded 1 coupon. 1 could not be downloaded.');
+
+        $second = $this->makeCoupon();
+        $third = $this->makeCoupon();
+        $this->actingAs($user, 'sanctum')->withHeaders(['Accept-Language' => 'en'])
+            ->postJson(self::URL, ['coupon_ids' => [$second->id, $third->id]])
+            ->assertOk()
+            ->assertJsonPath('message', 'Downloaded 2 coupons.');
+    }
+
+    /**
      * 번호를 주지 않으면 그 회원이 받을 수 있는 쿠폰 전체를 받는다.
      *
      * @scenario request=no_ids, outcome=all_downloadable

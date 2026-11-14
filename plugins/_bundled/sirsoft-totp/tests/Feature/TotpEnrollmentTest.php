@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Totp\Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
@@ -25,6 +26,9 @@ use Plugins\Sirsoft\Totp\Tests\PluginTestCase;
  */
 class TotpEnrollmentTest extends PluginTestCase
 {
+    /** 등록 시작 재확인에 쓰는 시험 비밀번호(1.0.3 — 등록 시작은 현재 비밀번호를 요구한다) */
+    private const PASSWORD = 'totp-enroll-pass';
+
     private User $user;
 
     /**
@@ -36,7 +40,7 @@ class TotpEnrollmentTest extends PluginTestCase
     {
         parent::setUp();
 
-        $this->user = User::factory()->create(['email' => 'totp-enroll@test.com']);
+        $this->user = User::factory()->create(['email' => 'totp-enroll@test.com', 'password' => Hash::make(self::PASSWORD)]);
         Sanctum::actingAs($this->user);
     }
 
@@ -47,7 +51,7 @@ class TotpEnrollmentTest extends PluginTestCase
      */
     private function startEnrollment(): string
     {
-        $response = $this->postJson('/api/plugins/sirsoft-totp/enrollment');
+        $response = $this->postJson('/api/plugins/sirsoft-totp/enrollment', ['current_password' => self::PASSWORD]);
         $response->assertStatus(200);
 
         return $response->json('data.secret');
@@ -76,7 +80,7 @@ class TotpEnrollmentTest extends PluginTestCase
     #[Test]
     public function starting_enrollment_returns_a_secret_and_an_otpauth_uri(): void
     {
-        $response = $this->postJson('/api/plugins/sirsoft-totp/enrollment');
+        $response = $this->postJson('/api/plugins/sirsoft-totp/enrollment', ['current_password' => self::PASSWORD]);
 
         $response->assertStatus(200);
         $this->assertNotEmpty($response->json('data.secret'));
@@ -176,7 +180,7 @@ class TotpEnrollmentTest extends PluginTestCase
         $this->confirmEnrollment($secret)->assertStatus(200);
 
         // 덮어쓰면 기존 앱이 조용히 무효가 되고 사용자는 다음 로그인에서야 알게 된다.
-        $this->postJson('/api/plugins/sirsoft-totp/enrollment')->assertStatus(409);
+        $this->postJson('/api/plugins/sirsoft-totp/enrollment', ['current_password' => self::PASSWORD])->assertStatus(409);
 
         $credential = TotpCredential::where('user_id', $this->user->id)->first();
         $this->assertNotNull($credential->confirmed_at, '거절된 재발급이 확정 상태를 지웠습니다.');

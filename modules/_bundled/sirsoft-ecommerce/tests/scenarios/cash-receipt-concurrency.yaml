@@ -1,0 +1,55 @@
+# e2e:allow 화면 변경 없음 — 겹친 발급은 기존 발급 버튼의 409 오류 안내로, 정리된 처리 중 이력은 기존 이력·재발급 화면에 그대로 나타난다.
+feature: 현금영수증 발급·취소·재발급 동시성 (KVE-2026-3191 · U1)
+
+description: |
+  - KVE-2026-3191 발급은 PG 호출 전에 처리 중(IN_PROGRESS) 발급 행을 먼저 INSERT 해 주문의 발급 슬롯을 예약한다.
+    슬롯은 생성 컬럼 `active_issue_order_key`(발급·처리중/완료·미해제 → order_id)의 유니크가 지킨다. 겹친 요청은 PG 를 부르지 않고
+    슬롯 보유 행을 돌려받는다 — 처리 중이면 관리자·회원·비회원 발급 API 가 409 ISSUE_IN_PROGRESS 로 답한다.
+  - 10분(IN_PROGRESS_STALE_MINUTES)이 지난 처리 중 행은 다음 시도가 FAILED(IN_PROGRESS_STALE)로 정리하고 자동 재발급하지 않는다
+    (PG 에서는 발급됐을 수 있고 KG이니시스에는 멱등키가 없다 — 관리자가 PG 화면 확인 뒤 재발급).
+  - U1 전액취소는 PG 취소 전에 처리 중 취소 행을 먼저 INSERT 한다. 발급 행당 열린 취소 1건은 `open_cancel_target_key` 유니크가 지키고,
+    취소 완료와 발급 행 슬롯 해제는 한 트랜잭션이다. 금액 동기화·재발급 복구는 이 두 보호를 상속한다.
+  - 마이그레이션 백필은 제약을 걸기 전에 취소 대상·해제 시각을 채우고, 남은 처리 중을 실패로 정리하며, 과거 중복 슬롯은 최신 1건만 남긴다(로그).
+
+axes:
+  case:
+    # 서비스·API (CashReceiptIssueConcurrencyTest · CashReceiptCancelConcurrencyTest)
+    - issue_reentry             # PG 발급 대기 중 같은 주문 발급 재진입
+    - issue_in_progress_fresh   # 처리 중(10분 이내) 발급이 있을 때 발급 API 3곳
+    - issue_in_progress_stale   # 10분 지난 처리 중 발급
+    - issue_without_key         # 영수증 키 없이 성공한 발급
+    - issue_sequence            # 예약 행 기준 발급 회차
+    - cancel_reentry            # PG 취소 대기 중 같은 주문 취소 재진입
+    - cancel_failed_retry       # 실패한 취소 뒤 재시도
+    - cancel_in_progress_stale  # 10분 지난 처리 중 취소
+    - cancel_in_progress_conflict  # 다른 화면의 취소가 처리 중일 때 관리자 취소
+    - sync_reentry              # 금액 동기화가 취소 중·재발급 중에 재진입
+    # 마이그레이션 백필 (CashReceiptActiveSlotMigrationTest)
+    - duplicate_slot_holders    # 같은 주문의 활성 발급 2건 이상 (과거 경합)
+    - duplicate_open_cancels    # 같은 발급의 완료 취소 2건 이상 (과거 취소 경합)
+    - cancelled_issue_backfill  # 취소된 발급의 취소 대상·해제 시각
+    - stale_and_keyless_backfill # 남은 처리 중·키 없는 완료 발급
+
+effects:
+  - concurrent_issue_calls_pg_once                   # 겹친 발급에도 PG 발급 1회 (수정 전 2회)
+  - concurrent_issue_leaves_one_active_receipt       # 겹친 발급 뒤 활성 영수증 1건 (수정 전 2건)
+  - fresh_in_progress_issue_blocks_issue_guard       # 신선한 처리 중 발급이 있으면 발급 가드가 ISSUE_IN_PROGRESS
+  - fresh_in_progress_issue_returns_409              # 관리자·회원·비회원 발급 API 모두 409 ISSUE_IN_PROGRESS
+  - stale_in_progress_issue_marked_failed_without_reissue # 10분 지난 처리 중 발급은 FAILED(IN_PROGRESS_STALE), PG 재호출 없음
+  - keyless_completed_issue_releases_slot            # 키 없는 완료 발급은 슬롯을 놓아 다시 발급 가능
+  - issue_sequence_follows_reserved_row_order        # 회차 = 예약 행까지의 발급 이력 수
+  - concurrent_cancel_calls_pg_once                  # 겹친 취소에도 PG 취소 1회
+  - completed_cancel_releases_issue_slot             # 취소 완료 시 발급 행 슬롯 해제 (한 트랜잭션)
+  - failed_cancel_releases_cancel_slot               # 실패한 취소는 열린 취소로 남지 않아 재시도 가능
+  - stale_in_progress_cancel_marked_failed           # 10분 지난 처리 중 취소는 FAILED(IN_PROGRESS_STALE), PG 재호출 없음
+  - fresh_in_progress_cancel_returns_409            # 처리 중인 취소가 있으면 관리자 취소는 409 cancel_in_progress, PG 재호출 없음
+  - concurrent_sync_reissues_once                    # 겹친 금액 동기화에도 대체 발급 1건, 결제 요약 유지
+  - migration_keeps_latest_duplicate_slot_holder_and_logs # 과거 중복 슬롯은 최신 1건만 유지, 나머지 해제 + warning 로그
+  - migration_links_only_first_completed_cancel      # 같은 발급의 완료 취소 중복은 먼저 기록된 것만 연결 + warning 로그
+  - migration_backfills_cancel_target_and_releases_slot # 취소 대상 백필 + 취소된 발급 슬롯 해제(해제 시각 = 취소 기록 시각)
+  - migration_fails_leftover_in_progress_and_releases_keyless # 남은 처리 중은 FAILED(IN_PROGRESS_STALE), 키 없는 완료 발급은 슬롯 해제
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/CashReceiptIssueConcurrencyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/CashReceiptCancelConcurrencyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/CashReceiptActiveSlotMigrationTest.php

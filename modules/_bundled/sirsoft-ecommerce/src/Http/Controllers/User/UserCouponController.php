@@ -192,7 +192,7 @@ class UserCouponController extends AuthBaseController
                 $messageKey,
                 $result,
                 200,
-                ['issued' => $result['issued_count'], 'skipped' => $result['skipped_count']]
+                ['count' => $result['issued_count'], 'issued' => $result['issued_count'], 'skipped' => $result['skipped_count']]
             );
         } catch (Exception $e) {
             Log::error('쿠폰 일괄 받기 실패', [
