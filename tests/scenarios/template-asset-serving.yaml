@@ -19,6 +19,7 @@ effects:
   - template_asset_returns_404_for_inactive_template
   - template_asset_returns_404_for_nonexistent_file
   - template_asset_blocks_path_traversal_attack
+  - template_asset_path_sanitizer_keeps_normal_paths   # 경로 정제(SecuresExtensionAssetPath)가 정상 자산 경로·파일명 속 점 두 개를 바꾸지 않는다
   - template_asset_blocks_path_traversal_with_backslash
   - template_asset_blocks_double_slash_pattern
   - template_asset_blocks_url_encoded_path_traversal
@@ -50,4 +51,5 @@ effects:
   - template_asset_applies_rate_limiting
 
 test_files:
+  - tests/Unit/Services/TemplateServiceSanitizePathTest.php
   - tests/Feature/Template/TemplateAssetServingTest.php

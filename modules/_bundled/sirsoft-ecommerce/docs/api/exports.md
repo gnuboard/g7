@@ -64,7 +64,7 @@ _단건 응답: `data` 객체의 필드 (`ExportService::catalog()` 가 만든 �
 | max_period_days | integer | `366` | 기간 상한 일수 (시작일 포함 1년) |
 | max_selected_ids | integer | `1000` | 「선택한 항목」 범위의 최대 ID 수 |
 | locales | array | `[{"code":"ko","label":"한국어"}]` | 다국어 데이터 언어 `{code, label}` |
-| default_locale | string | `ko` | 기본 데이터 언어 (요청 언어가 지원 언어면 그 언어, 아니면 대체 언어) |
+| default_locale | string | `ko` | 기본 데이터 언어 (요청 언어가 지원 언어면 그 언어, 아니면 대체 언어 — 사이트 기본 언어, 그것이 데이터 언어에 없으면 첫 데이터 언어). 고른 언어에 값이 없는 칸도 이 대체 언어 값으로 채운다 |
 | can_personal_data | boolean | `true` | 요청자가 개인정보 필드를 고를 수 있는지 (`exports.personal_data` 권한) |
 | warnings | array | `["queue_sync"]` | 설치 경고 코드 (`queue_sync` 큐 연결이 sync, `storage_public` 공개 디스크) |
 

@@ -8,7 +8,7 @@
  * sizes → srcSet → src 순서로 적는다. 이 플러그인 설정은 다른 확장처럼 Chromium 프로젝트 하나다 — WebKit 으로 잴 때는 webkit 프로젝트를
  * 더한 임시 설정으로 이 spec 을 돌린다(WebKit 은 밑줄 든 호스트의 https 접속이 안 되어 http 주소를 쓴다).
  */
-import { test, expect, createBanner, gotoUser, uploadBannerImage } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, slider, uploadBannerImage, PNG_1X1 } from '../fixtures/hero-auth';
 
 test.setTimeout(120_000);
 
@@ -58,4 +58,34 @@ test('1920 화면 본문 폭 배너의 첫 장 이미지는 칸 폭과 화면 �
   }).sort((a, b) => a.width - b.width);
   const expected = candidates.find((candidate) => candidate.width >= slot * dpr) ?? candidates[candidates.length - 1];
   expect(new URL(first[0]).search, `DPR ${dpr}, 칸 ${slot}px`).toBe(new URL(expected.url, first[0]).search);
+});
+
+// @scenario surface=hidden_slides_load_only_current_and_next
+// @effects hidden_slide_media_deferred
+test('fade 3장 첫 방문은 지금 장·다음 장 이미지 2장만 받고, 다음으로 넘기면 셋째 장을 그때 받는다(#879)', async ({ page }) => {
+  // 효과·장 수는 공개 응답을 가로채 정한다(DB 를 바꾸지 않는다). fade 는 모든 장이 화면 안에 겹쳐 있어 loading=lazy 로는 막히지 않던 경우다
+  await hidePopups(page);
+  const fetched: string[] = [];
+  await page.route('**/e2e-hero-fade-*.png', (route) => route.fulfill({ contentType: 'image/png', body: PNG_1X1 }));
+  page.on('request', (req) => {
+    if (/e2e-hero-fade-\d\.png/.test(req.url())) fetched.push(req.url());
+  });
+  const banners = [1, 2, 3].map((n) => ({
+    id: 990900 + n, title: `페이드 ${n}`, title_visible: true, title_color: '#FFFFFF', title_align: 'left', description: '', description_visible: false,
+    description_color: '#E5E7EB', button_text: '', link_url: '/', media_type: 'image', images: { pc: { url: `/e2e-hero-fade-${n}.png`, width: 1920, height: 640 }, mobile: null },
+  }));
+  await page.route('**/api/plugins/sirsoft-hero_section/hero?*', (route) => route.fulfill({ json: { success: true, data: { position: 'home_hero', banners, settings: { autoplay: false, interval_seconds: 5, effect: 'fade', width: 'full', pagination: 'dots' }, abilities: { can_update: false } } } }));
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoUser(page, '/');
+  const section = slider(page);
+  await expect(section.locator('[data-banner-id="990901"] img.hs-slider__image')).toHaveAttribute('src', /e2e-hero-fade-1/, { timeout: 60_000 });
+  await expect.poll(() => new Set(fetched).size, { timeout: 30_000 }).toBe(2);
+  await page.waitForTimeout(1_500);
+  expect([...new Set(fetched)].map((url) => url.match(/fade-(\d)/)![1]).sort(), `받은 주소: ${fetched.join(', ')}`).toEqual(['1', '2']);
+  expect(await section.locator('[data-banner-id="990903"] img.hs-slider__image').getAttribute('src')).toBeNull();
+
+  await section.locator('.hs-slider__next').click();
+  await expect.poll(() => new Set(fetched).size, { timeout: 30_000 }).toBe(3);
+  expect(fetched, '같은 그림을 두 번 받지 않는다').toHaveLength(3);
 });

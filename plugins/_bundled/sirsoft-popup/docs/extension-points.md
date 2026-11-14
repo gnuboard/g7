@@ -94,6 +94,27 @@
 리스너는 모두 `plugin.php` 의 `getHookListeners()` 에 올라 있다. 활동 로그는 항목별(일괄 처리는 건마다 한 줄), 캐시 비우기는 `sync` — 큐로 미루면 저장 직후 사용자 화면에 옛 팝업이 보인다.
 <!-- @intent END -->
 
+## 활동 로그 훅
+
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기려고 구독하는 훅 8개입니다. 기록 종류(LogType)는
+> `ResolvesActivityLogType` 이 요청 문맥으로 정한다(관리자 화면 요청이면 Admin).
+> action 라벨과 description 문구는 이 플러그인 `lang/{ko,en}/activity_log.php`(일본어는 번들 언어팩)에 있고, 설명 해석은 플러그인 리스너 `ActivityLogDescriptionResolver` 가 맡는다 — 새 항목을 더하면 세 언어를 함께 정의한다.
+
+### 팝업 훅 (PopupActivityLogListener)
+
+**파일**: `plugins/_bundled/sirsoft-popup/src/Listeners/PopupActivityLogListener.php`
+
+| 훅 이름 | Listener 메서드 | Action (DB) |
+|---------|----------------|-------------|
+| `sirsoft-popup.popup.after_create` | `handleCreated` | `popup.create` |
+| `sirsoft-popup.popup.after_update` | `handleUpdated` | `popup.update` |
+| `sirsoft-popup.popup.after_delete` | `handleDeleted` | `popup.delete` |
+| `sirsoft-popup.popup.after_bulk_status` | `handleBulkStatus` | `popup.bulk_status` (팝업마다 1건) |
+| `sirsoft-popup.popup.after_bulk_copy` | `handleBulkCopy` | `popup.bulk_copy` (복사본마다 1건) |
+| `sirsoft-popup.popup.after_bulk_delete` | `handleBulkDelete` | `popup.bulk_delete` (팝업마다 1건) |
+| `sirsoft-popup.popup.after_reorder` | `handleReordered` | `popup.reorder` |
+| `sirsoft-popup.popup_image.after_change` | `handleImageChanged` | `popup.image_update`·`image_remove` |
+
 ## 레이아웃 확장
 
 <!-- @generated:layout-extensions START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

@@ -124,7 +124,7 @@ public/build/ext/{cache_version}/
 | 자산 | 게시본 사용 | 자가 치유 창 (API 폴백) |
 | --- | --- | --- |
 | 아이콘 폰트 (CSS 에 인라인) | 정상 | **정상** — 하위 파일 참조가 없다 |
-| 본문 글꼴 (`pretendard-variable.css` → `woff2/…`) | 정상 | **404** — FontFace `status: "error"`, 시스템 글꼴로 대체 |
+| 본문 글꼴 (`pretendard-variable.css` → `woff2-dynamic-subset/…`) | 정상 | **404** — FontFace `status: "error"`, 시스템 글꼴로 대체 |
 
 기능이 사라지지는 않는다(조작 수단인 아이콘은 인라인이라 영향 없음). 화면이 한 번 다른 글꼴로 보이고, 그 뒤 게시가 끝나면 정상으로 돌아온다.
 

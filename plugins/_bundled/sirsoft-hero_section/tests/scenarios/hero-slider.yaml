@@ -46,6 +46,7 @@ axes:
     - index_resets_when_banners_change
     - first_image_eager_rest_lazy
     - next_slide_preloaded_before_transition
+    - hidden_slides_load_only_current_and_next
     - images_have_dimensions_and_aspect_ratio
     - aspect_ratio_falls_back_to_recommended
     - preview_renders_device_frame
@@ -78,6 +79,7 @@ effects:
   - slider_navigation_controls_operable   # 이전·다음 단추, 좌우 화살표 키, 점 단추로 장을 넘긴다
   - preview_slider_moves_without_swiper   # iframe 미리보기에서는 Swiper 없이 화살표·점이 장을 옮긴다
   - slide_images_load_by_priority   # 첫 장 이미지는 즉시·높은 우선순위, 다음 장은 전환 전에 미리, 나머지는 지연으로 받는다
+  - hidden_slide_media_deferred   # 전환 효과와 상관없이 지금 장·다음 장(과 한 번 받은 장)만 이미지·영상 주소를 붙이고, 점·이전으로 먼 장에 가면 그 장을 바로 붙인다. 편집 미리보기는 전부 붙인다
   - loading_skeleton_reserves_slot   # 받는 중에는 같은 비율의 스켈레톤으로 자리를 잡고, 직전 방문의 모양(0건·화면 전체)과 표시 폭 힌트를 따른다
   - admin_edit_link_shown_only_to_editors   # 수정 권한이 있을 때만(편집 미리보기 제외) 지금 보이는 배너의 관리자 수정 화면 링크를 새 탭으로 그린다
   - slider_renders_without_asset_api   # 코어 자산 API 가 없으면 Swiper CSS 를 싣지 않고 바로 슬라이더를 그린다
@@ -100,3 +102,4 @@ test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/slider-a11y.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/text-motion-scroll.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/hero-image-single-fetch.spec.ts

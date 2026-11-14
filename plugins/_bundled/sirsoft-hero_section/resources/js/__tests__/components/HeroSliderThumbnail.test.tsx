@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, fireEvent } from '@testing-library/react';
 import { HeroSlider, type HeroBanner } from '../../components/composite/HeroSlider';
 import { contentSrcset, contentSrcsetWithin, isThumbnailableUrl, thumbnailSrcset, withThumbnailSize } from '@core/support/thumbnailUrl';
 import { mediaSrc, responsiveSrcset } from '../../support/thumbnail';
@@ -260,6 +260,30 @@ describe('HeroSlider 이미지 썸네일 srcset', () => {
       expect(seen.filter((entry) => entry.startsWith('src=')).length).toBe(1);
       // 붙는 순서는 sizes → srcset → src — WebKit 은 srcset 이 sizes 보다 먼저 붙으면 기본 100vw 로 원본을 한 번 더 받는다(실측 2건)
       expect(seen.map((entry) => entry.split('=')[0])).toEqual(['sizes', 'srcset', 'src']);
+    } finally {
+      spy.mockRestore();
+      restore();
+    }
+  });
+
+  // @scenario thumbnail_query=slider_sizes_slot_width
+  // @effects hero_slider_sizes_follow_rendered_slot
+  it('차례가 아니어서 주소를 미뤄 둔 장(#879)도 차례가 오면 잰 sizes → srcset → src 순서로 한 번에 붙는다', () => {
+    const restore = layoutSlider(1216, 405);
+    const seen: string[] = [];
+    const setAttribute = Element.prototype.setAttribute;
+    const spy = vi.spyOn(Element.prototype, 'setAttribute').mockImplementation(function (this: Element, name: string, value: string) {
+      if (this instanceof HTMLImageElement && this.closest('[data-banner-id="3"]') && ['src', 'srcset', 'sizes'].includes(name.toLowerCase())) {
+        seen.push(`${name.toLowerCase()}=${name.toLowerCase() === 'sizes' ? value : '…'}`);
+      }
+      return setAttribute.call(this, name, value);
+    });
+    try {
+      const { container } = render(<HeroSlider banners={[banner(), banner({ id: 2 }), banner({ id: 3 })]} settings={{ width: 'content', effect: 'fade', autoplay: false }} />);
+      expect(container.querySelector('[data-banner-id="3"] img')?.hasAttribute('src')).toBe(false);
+
+      fireEvent.click(container.querySelector('.hs-slider__next') as HTMLElement);
+      expect(seen).toEqual(['sizes=1216px', 'srcset=…', 'src=…']);
     } finally {
       spy.mockRestore();
       restore();

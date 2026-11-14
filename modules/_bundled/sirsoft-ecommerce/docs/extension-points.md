@@ -927,6 +927,7 @@ public function addXlsx(array $formats): array
 모델은 `sirsoft-ecommerce.export.declarations` 필터로 선언 클래스를 더하고, 이미 있는 유형에 항목만 더하려면
 `sirsoft-ecommerce.export.{orders|products|mileage}.fields`(인자: 필드 배열·행 단위) 필터에서 `ExportField` 를 덧붙입니다.
 `personal: true` 항목은 개인정보 권한이 있는 운영자에게만 보이고, 고르면 다운로드 사유가 필수입니다.
+다국어 항목은 실행 문맥(`ExportRunContext`)의 언어로 고르고, 그 언어 값이 비면 문맥의 대체 언어 — 사이트 기본 언어(`app.site_locale`, 데이터 언어에 없으면 첫 데이터 언어) — 값으로 채웁니다. 번역 문구용 `app.fallback_locale` 은 쓰지 않습니다.
 
 **행 가공·요청 가공** — `sirsoft-ecommerce.export.filter_row`(파일 한 행의 셀)와 `filter_request_data`(저장 전 요청 본문)로
 값을 바꿀 수 있고, 생애주기는 `export.after_*` 액션(요청·시작·완료·실패·다운로드·삭제·만료·다시 요청)으로 받습니다. 이

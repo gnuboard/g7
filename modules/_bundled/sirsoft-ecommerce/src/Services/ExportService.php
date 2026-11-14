@@ -1267,6 +1267,6 @@ class ExportService
         $fallback = (string) config('app.site_locale', config('app.locale'));
         $locales = $this->dataLocales();
 
-        return in_array($fallback, $locales, true) ? $fallback : $locales[0];
+        return is_string($fallback) && in_array($fallback, $locales, true) ? $fallback : $locales[0];
     }
 }

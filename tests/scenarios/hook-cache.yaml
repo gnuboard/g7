@@ -71,6 +71,8 @@ effects:
   - queue_options_survive_cache_round_trip
   # 별도 프로세스 복구 수단 (extension:update-autoload)
   - update_autoload_command_regenerates_hook_cache_after_reregistering_autoload
+  - autoload_map_kept_when_db_reports_no_extensions_but_directories_exist   # DB 가 확장 0건이어도 디렉터리가 있으면 기존 오토로드 매핑을 지우지 않는다
+  - testing_env_never_writes_real_autoload_cache   # testing 환경은 실 bootstrap/cache/autoload-extensions.php 를 다시 쓰지 않는다
   - update_autoload_command_runs_without_required_arguments
   # 코어 리스너 등록 경로 중복 (명시 등록 + 캐시 재귀 수집) — 같은 필터가 두 번 붙으면 대시보드 경고가 두 번 뜬다
   - core_listener_registered_exactly_once_across_registration_paths
@@ -80,6 +82,7 @@ effects:
   - substituted_path_manager_still_writes_and_clears_in_testing
 
 test_files:
+  - tests/Unit/Extension/ExtensionAutoloadCacheGuardTest.php
   - tests/Unit/Extension/HookCacheManagerTest.php
   - tests/Unit/Extension/HookCacheRealFileGuardTest.php
   - tests/Unit/Extension/HookListenerRegistrarTest.php
