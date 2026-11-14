@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\PayKginicis\Tests\Feature\Controllers;
 
 use Carbon\Carbon;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -15,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Exceptions\KgInicisRejectedException;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCheckoutTokenService;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCvsOperationsService;
@@ -1642,6 +1644,143 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame(CbtReconciliationService::STATUS_REFUND_RETRYING, $firstClaim['status'] ?? null);
         $this->assertSame(1, $firstClaim['retry_count'] ?? null);
         $this->assertNull($secondClaim);
+    }
+
+    /**
+     * 수동 대사 기록은 관리자 주문 상세에 「사유」·「환불 오류」로 그대로 보인다 — 운영 모드에서는 DB 예외·통신 예외의
+     * 원문(SQL·결제대행사 API 주소)을 싣지 않고 일반 문구를 싣는다(#858).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=reconciliation
+     *
+     * @effects cbt_reconciliation_record_hides_internal_detail
+     */
+    public function test_cbt_manual_reconciliation_record_hides_internal_detail(): void
+    {
+        $record = $this->recordManualReconciliationAfter(
+            'JP-ORDER-858A',
+            new \PDOException('SQLSTATE[HY000] [2002] Connection refused (Connection: mysql, SQL: update `ecommerce_orders` set ...)'),
+            new ConnectionException('cURL error 28: Operation timed out for https://jpgw.inicis.com/refund'),
+        );
+
+        // 결제대행사 콜백은 로그인 사용자가 없어 요청 언어로 기록된다 — 기대 문구는 요청 뒤 로케일로 푼다
+        $this->assertSame(__('extensions.errors.internal_error'), $record['reason'] ?? null);
+        $this->assertSame(__('sirsoft-pay_kginicis::messages.refund.pg_failed'), $record['refund_error'] ?? null);
+        $this->assertStringNotContainsString('SQLSTATE', json_encode($record, JSON_UNESCAPED_UNICODE));
+        $this->assertStringNotContainsString('inicis.com', json_encode($record, JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * 업무 예외 사유와 KG이니시스가 돌려준 거절 사유는 운영자가 조치에 쓰는 정보라 그대로 남긴다(#858).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=reconciliation
+     *
+     * @effects cbt_reconciliation_record_hides_internal_detail
+     */
+    public function test_cbt_manual_reconciliation_record_keeps_domain_and_pg_reason(): void
+    {
+        $record = $this->recordManualReconciliationAfter(
+            'JP-ORDER-858B',
+            new \RuntimeException('local write failed'),
+            new KgInicisRejectedException('[R201]既に取消済みです'),
+        );
+
+        $this->assertSame('local write failed', $record['reason'] ?? null);
+        $this->assertSame('[R201]既に取消済みです', $record['refund_error'] ?? null);
+    }
+
+    /**
+     * 운영 모드에서 승인 뒤 로컬 처리와 자동 환불이 모두 실패한 CBT 콜백을 보내고 대사 기록을 돌려줍니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  \Throwable  $localFailure  결제 완료 처리가 던질 예외
+     * @param  \Throwable  $refundFailure  자동 환불이 던질 예외
+     * @return array<string, mixed> 대사 기록
+     */
+    private function recordManualReconciliationAfter(string $orderNumber, \Throwable $localFailure, \Throwable $refundFailure): array
+    {
+        config(['app.debug' => false]);
+        app()->setLocale('ko');
+
+        $this->insertOrderRow($orderNumber, 100);
+        $order = $this->makePendingJpyOrder($orderNumber, 100);
+
+        $orderService = Mockery::mock(OrderProcessingService::class);
+        $orderService->shouldReceive('findByOrderNumber')->with($orderNumber)->andReturn($order);
+        $orderService->shouldReceive('completePayment')->once()->andThrow($localFailure);
+
+        $apiService = Mockery::mock(KgInicisApiService::class);
+        $apiService->shouldReceive('getJapanMid')->andReturn(KgInicisApiService::JAPAN_TEST_MID);
+        $apiService->shouldReceive('isTestMode')->andReturn(true);
+        $apiService->shouldReceive('approveCbtPayment')->andReturn([
+            'resultCode' => 'OK',
+            'tid' => 'CBT_TID_'.$orderNumber,
+            'paymethod' => 'CARD',
+            'amount' => 100,
+        ]);
+        $apiService->shouldReceive('refundCbtPayment')->once()->andThrow($refundFailure);
+
+        $this->app->instance(OrderProcessingService::class, $orderService);
+        $this->app->instance(KgInicisApiService::class, $apiService);
+
+        $this->get('/plugins/sirsoft-pay_kginicis/payment/cbt/callback?'.http_build_query([
+            'oid' => $orderNumber,
+            'sid' => 'SID'.$orderNumber,
+            'resultCode' => 'OK',
+            'mid' => KgInicisApiService::JAPAN_TEST_MID,
+        ]));
+
+        $record = $this->orderMeta($orderNumber)[CbtReconciliationService::META_KEY] ?? [];
+        $this->assertSame(CbtReconciliationService::STATUS_MANUAL_REFUND_REQUIRED, $record['status'] ?? null);
+
+        return $record;
+    }
+
+    /**
+     * 관리자 자동환불 재시도가 통신 오류로 실패하면 「환불 오류」·마지막 재시도 오류에 원문 대신 일반 문구를 남긴다(#858).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=reconciliation
+     *
+     * @effects cbt_reconciliation_record_hides_internal_detail
+     */
+    public function test_admin_cbt_refund_retry_failure_hides_internal_detail(): void
+    {
+        config(['app.debug' => false]);
+        app()->setLocale('ko');
+
+        $this->insertOrderRow('JP-ORDER-858C', 100, [
+            CbtReconciliationService::META_KEY => [
+                'status' => CbtReconciliationService::STATUS_MANUAL_REFUND_REQUIRED,
+                'manual_action_required' => true,
+                'tid' => 'CBT_TID_858C',
+                'amount' => 100,
+                'reason' => 'local write failed',
+                'refund_error' => 'timeout',
+                'is_test_mode' => true,
+                'cbt_mid' => KgInicisApiService::JAPAN_TEST_MID,
+                'retry_count' => 0,
+            ],
+        ]);
+        $this->actingAs($this->createAdminUser(['sirsoft-ecommerce.claims.execute-refund']));
+
+        $apiService = Mockery::mock(KgInicisApiService::class);
+        $apiService->shouldReceive('useStoredCbtCredentials')->once();
+        $apiService->shouldReceive('refundCbtPayment')->once()
+            ->andThrow(new ConnectionException('cURL error 7: Failed to connect to jpgw.inicis.com port 443'));
+        $this->app->instance(KgInicisApiService::class, $apiService);
+
+        $this->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/JP-ORDER-858C/cbt-reconciliation/refund-retry')
+            ->assertStatus(502);
+
+        $record = $this->orderMeta('JP-ORDER-858C')[CbtReconciliationService::META_KEY] ?? [];
+        $generic = __('sirsoft-pay_kginicis::messages.refund.pg_failed');
+        $this->assertSame($generic, $record['refund_error'] ?? null);
+        $this->assertSame($generic, $record['last_retry_error'] ?? null);
     }
 
     /**

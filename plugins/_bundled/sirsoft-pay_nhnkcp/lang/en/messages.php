@@ -14,6 +14,7 @@ return [
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction number (tno) is missing.',
         'default_reason' => 'Buyer refund request',
+        'pg_failed' => 'An error occurred while communicating with the payment gateway. Please try again later.',
         'in_progress' => 'NHN KCP refund is already in progress.',
         'vbank_requires_bank_transfer' => 'A settled virtual account payment cannot be refunded automatically through NHN KCP. Change the refund method to bank transfer and send the money to the customer account directly.',
     ],
@@ -30,6 +31,9 @@ return [
         'mobile_payment_unavailable' => 'Mobile payment is currently unavailable. Please choose another payment method or contact the store.',
         'cli_binary_missing' => 'KCP CLI binary missing: :path',
         'cli_binary_not_executable' => 'KCP CLI binary is not executable. Operator action required (sudo chmod 755 :path)',
+        'escrow_delivery_rejected' => 'NHN KCP rejected the escrow delivery registration.',
+        'cancel_rejected' => 'NHN KCP rejected the payment cancellation.',
+        'escrow_delivery_failed' => 'An error occurred and the escrow delivery registration could not be completed. Please try again later, and check the server log if it keeps failing.',
     ],
     // Rows of the settings "System check" card (item name, result, remediation) and the payment-server IP source — text built by the server
     'health' => [

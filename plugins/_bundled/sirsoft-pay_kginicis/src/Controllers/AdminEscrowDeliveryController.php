@@ -230,7 +230,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 ]);
 
                 return ResponseHelper::error('common.failed', 502, [
-                    'message' => [$pgResponse['resultMsg'] ?? '배송등록에 실패했습니다.'],
+                    'message' => [($pgResponse['resultMsg'] ?? '') !== '' ? $pgResponse['resultMsg'] : __('sirsoft-pay_kginicis::messages.escrow.delivery_rejected')],
                 ]);
             }
 
@@ -273,13 +273,17 @@ class AdminEscrowDeliveryController extends AdminBaseController
             ]);
 
         } catch (\Exception $e) {
+            // PG 거절(resultCode != 00)은 위에서 resultMsg 로 답했다. 여기 오는 것은 통신 실패·HTTP 오류·DB 예외라
+            // 원문(API 주소·cURL 문구·SQL)은 서버 로그에만 남기고 응답에는 일반 문구를 싣는다(#858).
             Log::error('KG Inicis: escrow delivery register exception', [
                 'order_number' => $orderNumber,
+                'exception_class' => $e::class,
                 'error' => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 500, [
-                'message' => [$e->getMessage()],
+                // 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다
+                'message' => [config('app.debug') ? $e->getMessage() : __('sirsoft-pay_kginicis::messages.escrow.delivery_failed')],
             ]);
         }
     }

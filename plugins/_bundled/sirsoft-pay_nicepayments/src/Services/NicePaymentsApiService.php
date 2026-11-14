@@ -10,6 +10,7 @@ use App\Support\OutboundUrlValidator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\PayNicepayments\Exceptions\NicePayApiException;
+use Plugins\Sirsoft\PayNicepayments\Exceptions\NicePayRejectedException;
 
 class NicePaymentsApiService
 {
@@ -130,7 +131,8 @@ class NicePaymentsApiService
      * @param  string  $registerName  등록자명
      * @return array NicePay 응답 (UTF-8 변환 + JSON 파싱)
      *
-     * @throws \Exception API 호출 실패 또는 PG 오류 시
+     * @throws NicePayRejectedException 나이스페이먼츠가 거절 결과(ResultCode != C000)를 돌려줬을 때 — 메시지는 ResultMsg
+     * @throws \Exception 통신 실패(연결·시간 초과·HTTP 오류) 시 — 원문에 API 주소·cURL 문구가 담기므로 화면에 싣지 않는다
      */
     public function registerEscrowDelivery(
         string $tid,
@@ -169,7 +171,7 @@ class NicePaymentsApiService
                 'result_msg' => $result['ResultMsg'] ?? '',
                 'tid' => $tid,
             ]);
-            throw new NicePayApiException($result['ResultMsg'] ?? 'NicePayments escrow delivery registration failed');
+            throw new NicePayRejectedException(($result['ResultMsg'] ?? '') !== '' ? $result['ResultMsg'] : __('sirsoft-pay_nicepayments::messages.errors.escrow_delivery_rejected'));
         }
 
         return $result;
@@ -340,7 +342,7 @@ class NicePaymentsApiService
                 'result_msg' => $result['ResultMsg'] ?? '',
                 'tid' => $tid,
             ]);
-            throw new NicePayApiException($result['ResultMsg'] ?? 'NicePayments cancel failed');
+            throw new NicePayRejectedException(($result['ResultMsg'] ?? '') !== '' ? $result['ResultMsg'] : __('sirsoft-pay_nicepayments::messages.errors.cancel_rejected'));
         }
 
         // 훅: 결제 취소 완료 후 (외부 소비자 후처리 확장 지점)

@@ -163,6 +163,7 @@
 | 결제 실패를 `fail()` 이 기록해 줄 것으로 가정 | 주문 소유자(회원 본인 로그인 / 비회원 `X-Guest-Order-Token`)를 확인하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 기록한다 — 주문자 연락처 대조는 소유 증명이 아니다 (KVE-2026-2434) | 결제 성립은 `success()` 의 서버 `confirmPayment`, 결제완료 후 취소는 secret 대조를 통과한 웹훅이 담당한다. 주문을 실패로 전이시키는 결제창 경로는 close-report 하나뿐이다 |
 | 결제창 컨텍스트(주문 정보)를 `window` 전역에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남긴다 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 전역에만 두면 실패 화면에서 보고할 근거가 사라져 결제 실패가 어디에도 기록되지 않는다 |
 | 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
+| 결제 환불·현금영수증 리스너 결과 `error_message` 에 예외 원문을 그대로 싣기 | `refundFailureReason()`·`cashReceiptFailureReason()` — 토스가 오류 코드와 함께 돌려준 거절(`TossPaymentsApiException::getPgCode() !== null`)만 그 message, 그 밖은 `refund.pg_failed`·`cash_receipt.pg_failed` + 서버 로그(디버그 모드만 원문) | 쇼핑몰이 환불 사유는 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워, 현금영수증 사유는 이력으로 회원·비회원·관리자 응답에 낸다 — 통신 예외의 API 주소·cURL 문구가 구매자 화면까지 간다(#858) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -170,10 +171,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 31개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| PHPUnit | 33개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 14개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 25개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

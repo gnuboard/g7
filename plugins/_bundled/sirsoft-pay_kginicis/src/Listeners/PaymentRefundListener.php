@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
+use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\SplitsInicisTax;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class PaymentRefundListener implements HookListenerInterface
 {
+    use DescribesRefundFailure;
     use SplitsInicisTax;
 
     private const PG_PROVIDER_ID = 'kginicis';
@@ -209,7 +211,9 @@ class PaymentRefundListener implements HookListenerInterface
                 'success' => false,
                 'handled' => true,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 쇼핑몰이 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->refundFailureReason($e),
                 'transaction_id' => null,
             ];
         }

@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-14
+
+### Added
+
+- 관리자 에스크로 배송 등록이 오류로 끝났을 때 보이는 안내(`errors.escrow_delivery_failed` 「エラーが発生したため、エスクロー配送登録を完了できませんでした。…」)와, NHN KCP 가 사유 없이 배송 등록·결제 취소를 거절했을 때의 안내(`errors.escrow_delivery_rejected`·`errors.cancel_rejected`) 일본어 번역을 추가했습니다.
+- 주문 취소·환불 중 결제대행사 환불 호출이 오류로 끝났을 때 보이는 안내(`refund.pg_failed` 「決済代行会社との通信中にエラーが発生しました。…」) 일본어 번역을 추가했습니다.
+
 ## [1.1.3] - 2026-11-10
 
 ### Added

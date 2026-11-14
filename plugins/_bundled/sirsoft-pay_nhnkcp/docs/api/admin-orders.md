@@ -93,3 +93,12 @@
 | `deli_corp` | body | string | 예 | 택배사 코드 (KCP 공식 코드표) |
 
 NHN KCP 에 운송장 정보를 등록하고, 응답 중 허용된 필드만 정제해 결제 정보에 기록한다. 주문 조회 권한만 보유한 관리자는 이 경로에서 403 을 받는다.
+
+등록이 실패하면 500 으로 답하고 `message` 는 `common.failed`, 사유는 `errors.message[0]` 에 싣는다.
+
+| 실패 | `errors.message[0]` |
+| --- | --- |
+| KCP 가 거절(`res_cd` 가 `0000` 이 아님) | KCP 응답의 `res_msg` (`NhnKcpRejectedException`) |
+| CLI 실행 실패(바이너리 누락·실행 권한·위험 문자 거부)·DB 오류 등 | 번역된 일반 문구 `sirsoft-pay_nhnkcp::messages.errors.escrow_delivery_failed` |
+
+CLI 실행 실패 문구에는 서버 절대 경로가 담기므로 응답에 싣지 않고, 원문은 예외 클래스와 함께 서버 로그(`KCP: escrow delivery register exception`)에 남긴다. CLI 상태는 설정 화면의 시스템 점검으로 확인한다. 디버그 모드(`APP_DEBUG=true`)에서는 코어 관례(`App\Support\SafeExceptionMessage`)대로 원문을 싣는다.

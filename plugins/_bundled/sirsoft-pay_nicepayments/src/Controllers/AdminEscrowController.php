@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
+use Plugins\Sirsoft\PayNicepayments\Exceptions\NicePayRejectedException;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
@@ -120,17 +121,37 @@ class AdminEscrowController extends AdminBaseController
             return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             // 메시지 키 자리에는 원문 금지 — 키 해석에 실패해 원문이 그대로 나간다.
-            // 단 errors 페이로드는 관리자 전용 면의 진단 통로다(형제 KCP/이니시스
-            // 에스크로와 동형) — 비우면 운영자가 서버 로그 없이는 실패 원인을 모른다.
+            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다(#858).
             Log::error('NicePayments: escrow delivery registration failed', [
                 'tid' => $validated['tid'],
+                'exception_class' => $e::class,
                 'error' => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 502, [
-                'message' => [$e->getMessage()],
+                'message' => [$this->failureReason($e)],
             ]);
         }
+    }
+
+    /**
+     * 배송 등록 실패 응답에 실을 사유를 고릅니다.
+     *
+     * 나이스페이먼츠가 돌려준 거절 사유(ResultMsg)는 운영자가 조치에 쓰는 정보라 그대로 싣는다.
+     * 통신 예외(연결·시간 초과)의 원문에는 결제대행사 API 주소와 cURL 오류 문구가, DB 예외 원문에는
+     * SQL·DB 접속 정보가 담기므로 운영 모드에서는 일반 문구로 바꾼다(원문은 호출 측이 서버 로그에 남긴다).
+     * 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
+     *
+     * @param  \Throwable  $e  처리 중 잡은 예외
+     * @return string 응답에 실을 사유
+     */
+    private function failureReason(\Throwable $e): string
+    {
+        if ($e instanceof NicePayRejectedException || config('app.debug')) {
+            return $e->getMessage();
+        }
+
+        return __('sirsoft-pay_nicepayments::messages.errors.escrow_delivery_failed');
     }
 
     /**

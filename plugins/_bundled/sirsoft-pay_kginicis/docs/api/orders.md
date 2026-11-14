@@ -585,14 +585,14 @@ _단건 응답: `data` 객체의 필드. 주문에 CBT 조정 레코드가 없�
 | can_retry | boolean | `true` | 관리자 환불 재시도 가능 여부. `manual_action_required` 이면서 `tid` 가 비어있지 않을 때 `true`. |
 | tid | string | `INIJPGCARDapidocsmpl0000000001` | 환불 대상 CBT 결제의 KG 이니시스 거래 ID. |
 | amount | integer | `5000` | 환불 대상 금액. |
-| reason | string | `주문 취소 자동환불` | 자동환불 시도 사유(환불 요청 시 전달된 사유 문자열). |
-| refund_error | string \| null | `CBT refund API timeout` | 마지막 환불 시도에서 발생한 오류 메시지. 성공 시 `null`. |
+| reason | string | `주문 취소 자동환불` | 자동환불 시도 사유(환불 요청 시 전달된 사유 문자열). 승인 뒤 로컬 처리 예외로 자동환불했으면 그 예외 사유이며, DB·PHP 내부 예외는 운영 모드에서 일반 문구(`extensions.errors.internal_error`)로 바뀐다(원문은 서버 로그). |
+| refund_error | string \| null | `[R201]既に取消済みです` | 마지막 환불 시도의 실패 사유. KG이니시스가 거절했으면 그 `resultMsg`, 통신 실패·HTTP 오류·내부 예외면 번역된 일반 문구(`refund.pg_failed`) — 원문은 서버 로그에만 남는다(디버그 모드는 원문). 성공 시 `null`. |
 | refund_result | object \| null | `{"resultCode":"00","resultMsg":"정상처리","tid":"INIJPGCARDapidocsmpl0000000001"}` | 환불 성공 시 저장된 PG 응답(정제 필드: `resultCode`·`resultMsg`·`tid`·`cancelDate`·`cancelTime`·`prtcCode`). |
 | refund_result_code | string | `00` | `refund_result.resultCode`(또는 `code`)에서 파생된 결과 코드. 값이 없으면 빈 문자열. |
 | refund_result_msg | string | `정상처리` | `refund_result.resultMsg`(또는 `message`)에서 파생된 결과 메시지. 값이 없으면 빈 문자열. |
 | retry_count | integer | `1` | 관리자 재시도 선점 횟수(재시도 요청마다 1씩 증가). |
 | last_retry_at | string \| null | `2026-07-08T06:32:39+00:00` | 마지막 재시도 시각(ISO8601). |
-| last_retry_error | string \| null | `null` | 마지막 재시도에서 발생한 오류 메시지. 성공 시 `null`. |
+| last_retry_error | string \| null | `null` | 마지막 재시도의 실패 사유. `refund_error` 와 같은 규칙(거절 사유 또는 일반 문구). 성공 시 `null`. |
 | is_test_mode | boolean | `true` | 원 결제가 테스트 모드였는지 여부. 재시도 시 사용할 자격증명 모드를 결정한다. |
 | cbt_mid | string | `apidocmid1` | 원 결제에 사용된 CBT 일본 가맹점 ID. 재시도 시 동일 MID 자격증명을 사용한다. |
 | created_at | string | `2026-07-08T06:30:01+00:00` | 조정 레코드 최초 생성 시각(ISO8601). |
@@ -911,8 +911,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | 해당 주문에 KG 이니시스 에스크로 결제(`is_escrow = true` + TID 존재)가 없는 경우 |
 | 422 | Unprocessable | 요청 파라미터가 `EscrowDeliveryRegisterRequest` 검증 규칙을 위반한 경우 (표준 validation 응답, `error.errors` 에 필드별 메시지) — `invoice` 미입력·40자 초과(`운송장번호를 입력해주세요.`), `ex_code` 미입력·공식 택배사 코드표에 없음(`택배사를 선택해주세요.` — 다국어 키 `sirsoft-pay_kginicis::messages.escrow.*`), `report`/`charge` 허용값 위반, `recv_*`/`send_*`/`regist_name` 길이 상한 초과 등 |
-| 500 | Server Error | 배송등록 호출 중 예외 발생 (errors.message = 예외 메시지) |
-| 502 | Bad Gateway | KG 이니시스 배송등록 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`) |
+| 500 | Server Error | 배송등록 호출 중 예외 발생(통신 실패·HTTP 오류·DB 예외). errors.message = 번역된 일반 문구 `escrow.delivery_failed` — 예외 원문(결제대행사 API 주소·cURL 문구·SQL)은 서버 로그에만 남긴다. 디버그 모드(`APP_DEBUG=true`)에서는 원문 |
+| 502 | Bad Gateway | KG 이니시스 배송등록 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`, 없으면 번역 문구 `escrow.delivery_rejected`) |
 
 <!-- @generated:end -->
 
@@ -982,9 +982,9 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | 해당 주문에 KG 이니시스 에스크로 결제(`is_escrow = true` + TID 존재)가 없는 경우 |
-| 422 | Unprocessable | `dcnf_name` 이 형식 검증(문자열, 최대 20자)을 위반한 경우 (표준 validation 응답, `error.errors.dcnf_name`) / 이미 구매거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있는 경우 (errors.message = "이미 구매거절확인이 완료되었습니다.") |
-| 500 | Server Error | 구매거절확인 호출 중 예외 발생 (errors.message = 예외 메시지) |
-| 502 | Bad Gateway | KG 이니시스 구매거절확인 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`) |
+| 422 | Unprocessable | `dcnf_name` 이 형식 검증(문자열, 최대 20자)을 위반한 경우 (표준 validation 응답, `error.errors.dcnf_name`) / 이미 구매거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있는 경우 (errors.message = 번역 문구 `escrow.deny_confirm_already_done`, ko: "이미 구매거절확인이 완료되었습니다.") |
+| 500 | Server Error | 구매거절확인 호출 중 예외 발생(통신 실패·HTTP 오류·DB 예외). errors.message = 번역된 일반 문구 `escrow.deny_confirm_failed` — 예외 원문은 서버 로그에만 남긴다. 디버그 모드에서는 원문 |
+| 502 | Bad Gateway | KG 이니시스 구매거절확인 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`, 없으면 번역 문구 `escrow.deny_confirm_rejected`) |
 
 <!-- @generated:end -->
 

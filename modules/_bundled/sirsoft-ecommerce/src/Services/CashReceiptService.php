@@ -151,7 +151,7 @@ class CashReceiptService
             );
         } catch (\Throwable $e) {
             ConcurrencyErrors::rethrowIfConcurrencyError($e);
-            $result = $this->providerExceptionResult($e);
+            $result = $this->providerExceptionResult($e, 'issue_failed');
         }
 
         $succeeded = (bool) ($result['success'] ?? false);
@@ -225,7 +225,7 @@ class CashReceiptService
                 );
             } catch (\Throwable $e) {
                 ConcurrencyErrors::rethrowIfConcurrencyError($e);
-                $result = $this->providerExceptionResult($e);
+                $result = $this->providerExceptionResult($e, 'cancel_failed');
             }
 
             $succeeded = (bool) ($result['success'] ?? false);
@@ -682,17 +682,24 @@ class CashReceiptService
     /**
      * 프로바이더 예외를 실패 결과 모양으로 바꿉니다. (B1 · B2)
      *
+     * 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보와 구매자 응답에 그대로 보인다. 프로바이더 예외 원문에는
+     * 결제대행사 API 주소·cURL 오류 문구나 서버 경로가 담길 수 있으므로 운영 모드에서는 번역된 실패 문구를 남기고
+     * 원문은 서버 로그에만 둔다. 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다(#858).
+     *
      * @param  \Throwable  $e  프로바이더 예외
+     * @param  string  $failedKey  운영 모드에서 남길 실패 문구 키(`cash_receipt.errors.` 아래 — issue_failed·cancel_failed)
      * @return array{success: false, error_code: string, error_message: string, receipt_key: null, receipt_url: null, issue_number: null, raw_response: null} 실패 결과
      */
-    private function providerExceptionResult(\Throwable $e): array
+    private function providerExceptionResult(\Throwable $e, string $failedKey): array
     {
-        Log::error('[cash_receipt] 프로바이더 예외 — 실패 이력으로 기록', ['error' => $e->getMessage()]);
+        Log::error('[cash_receipt] 프로바이더 예외 — 실패 이력으로 기록', ['exception_class' => $e::class, 'error' => $e->getMessage()]);
 
         return [
             'success' => false,
             'error_code' => 'PROVIDER_EXCEPTION',
-            'error_message' => mb_substr($e->getMessage(), 0, 255),
+            'error_message' => config('app.debug')
+                ? mb_substr($e->getMessage(), 0, 255)
+                : __('sirsoft-ecommerce::cash_receipt.errors.'.$failedKey),
             'receipt_key' => null,
             'receipt_url' => null,
             'issue_number' => null,

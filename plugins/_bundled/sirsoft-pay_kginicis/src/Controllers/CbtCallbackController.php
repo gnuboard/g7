@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Services\PluginSettingsService;
+use App\Support\SafeExceptionMessage;
 use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
@@ -38,6 +40,7 @@ use Plugins\Sirsoft\PayKginicis\Support\ShopRedirectUrl;
  */
 class CbtCallbackController
 {
+    use DescribesRefundFailure;
     use HandlesCbtClaimPayments;
     use HandlesClaimPaymentCallbacks;
     use IssuesReceiptCookie;
@@ -375,11 +378,13 @@ class CbtCallbackController
                 return redirect($this->resolveSuccessUrl($oid));
             }
 
+            // 이 사유는 CBT 대사 기록에 남아 관리자 주문 상세 「사유」 칸에 보이고 환불 요청 사유에도 실린다 —
+            // DB·PHP 내부 예외 원문(SQL·서버 경로)은 일반 문구로 바꾸고 원문은 위 로그에 남긴다(#858)
             $this->refundApprovedCbtPaymentOrFlagManualReconciliation(
                 $approvedTid,
                 $oid,
                 $approvedAmount,
-                $e->getMessage(),
+                SafeExceptionMessage::for($e, ['plugin' => 'sirsoft-pay_kginicis', 'action' => 'cbt_callback']),
             );
 
             return redirect($this->resolveFailUrl(['error' => 'cbt_failed', 'orderId' => $oid]));
@@ -835,6 +840,7 @@ class CbtCallbackController
                 'oid' => $oid,
                 'amount' => $amount,
                 'reason' => $reason,
+                'exception_class' => $refundException::class,
                 'refund_error' => $refundException->getMessage(),
             ]);
 
@@ -844,7 +850,8 @@ class CbtCallbackController
                 'tid' => $tid,
                 'amount' => $amount,
                 'reason' => $reason,
-                'refund_error' => $refundException->getMessage(),
+                // 이 기록은 관리자 주문 상세 「환불 오류」 칸에 그대로 보인다 — 원문은 위 로그에만 남긴다(#858)
+                'refund_error' => $this->refundFailureReason($refundException),
                 'refund_result' => null,
                 'is_test_mode' => $this->apiService->isTestMode(),
                 'cbt_mid' => $this->apiService->getJapanMid(),

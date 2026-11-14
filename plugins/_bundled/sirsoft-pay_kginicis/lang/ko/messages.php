@@ -12,6 +12,8 @@ return [
     'cash_receipt' => [
         'provider_name' => 'KG이니시스',
         'cancel_reason' => '현금영수증 발행취소',
+        'cancel_rejected' => 'KG이니시스가 현금영수증 취소를 거절했습니다.',
+        'pg_failed' => '결제대행사와 통신하는 중 오류가 발생해 현금영수증을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
     ],
     'escrow' => [
         'invoice_required' => '운송장번호를 입력해주세요.',
@@ -21,6 +23,11 @@ return [
         'confirm_page_title' => '에스크로 구매결정',
         'confirm_preparing' => '에스크로 구매결정 창을 준비 중입니다...',
         'confirm_redirecting' => '에스크로 구매결정 페이지로 이동 중입니다...',
+        'delivery_rejected' => '배송등록에 실패했습니다.',
+        'delivery_failed' => '에스크로 배송 등록 중 오류가 발생해 등록을 마치지 못했습니다. 잠시 후 다시 시도하고, 계속 실패하면 서버 로그를 확인해 주세요.',
+        'deny_confirm_already_done' => '이미 구매거절확인이 완료되었습니다.',
+        'deny_confirm_rejected' => '구매거절확인에 실패했습니다.',
+        'deny_confirm_failed' => '구매거절확인 중 오류가 발생해 처리를 마치지 못했습니다. 잠시 후 다시 시도하고, 계속 실패하면 서버 로그를 확인해 주세요.',
     ],
     'claim' => [
         'invalid_callback' => '클레임 결제 승인에 필요한 콜백 파라미터가 없습니다.',
@@ -34,6 +41,8 @@ return [
     'refund' => [
         'missing_tid' => '거래 ID(TID)가 없어 환불을 진행할 수 없습니다.',
         'default_reason' => '구매자 환불 요청',
+        'pg_rejected' => 'KG이니시스가 결제 취소를 거절했습니다.',
+        'pg_failed' => '결제대행사와 통신하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
         'admin_cancel_reason' => '관리자 취소',
     ],
     'cbt_connectivity' => [

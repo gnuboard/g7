@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpRejectedException;
 use Plugins\Sirsoft\PayNhnkcp\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 
@@ -208,15 +209,36 @@ class AdminEscrowDeliveryController extends AdminBaseController
             ]);
 
         } catch (\Exception $e) {
+            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다(#858).
             Log::error('KCP: escrow delivery register exception', [
                 'order_number' => $orderNumber,
+                'exception_class' => $e::class,
                 'error' => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 500, [
-                'message' => [$e->getMessage()],
+                'message' => [$this->failureReason($e)],
             ]);
         }
+    }
+
+    /**
+     * 배송 등록 실패 응답에 실을 사유를 고릅니다.
+     *
+     * KCP 가 돌려준 거절 사유(res_msg)는 운영자가 조치에 쓰는 정보라 그대로 싣는다. CLI 실행 실패 문구에는
+     * 서버 절대 경로가, DB 예외 원문에는 SQL·DB 접속 정보가 담기므로 운영 모드에서는 일반 문구로 바꾼다
+     * (원문은 호출 측이 서버 로그에 남긴다). 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
+     *
+     * @param  \Throwable  $e  처리 중 잡은 예외
+     * @return string 응답에 실을 사유
+     */
+    private function failureReason(\Throwable $e): string
+    {
+        if ($e instanceof NhnKcpRejectedException || config('app.debug')) {
+            return $e->getMessage();
+        }
+
+        return __('sirsoft-pay_nhnkcp::messages.errors.escrow_delivery_failed');
     }
 
     /**

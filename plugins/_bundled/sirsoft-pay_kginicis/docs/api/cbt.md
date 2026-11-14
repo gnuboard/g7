@@ -159,6 +159,6 @@ HTTP/1.1 200
 
 **설명**
 
-일본 CBT(JPPG) 결제 검증을 손쉽게 하기 위해 JPY 가격(100엔)이 설정된 테스트용 상품을 한 번에 자동 생성하는 관리자 엔드포인트입니다. `ProductService::create()` 를 호출해 다국어(ko/en/ja) 이름·설명과 판매 상태, 기본 옵션 1행을 갖춘 상품을 생성하며, 성공 시 `product_id`·`product_code` 와 함께 어드민 편집 URL·일본어 쇼핑몰 URL 을 반환해 운영자가 곧바로 CBT 결제 흐름을 테스트할 수 있게 합니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.products.create` 권한이 필요하며, 토큰 누락·만료는 401, 권한 부족은 403, 상품 생성 중 예외 발생 시 500(에러 상세 포함)으로 응답합니다.
+일본 CBT(JPPG) 결제 검증을 손쉽게 하기 위해 JPY 가격(100엔)이 설정된 테스트용 상품을 한 번에 자동 생성하는 관리자 엔드포인트입니다. `ProductService::create()` 를 호출해 다국어(ko/en/ja) 이름·설명과 판매 상태, 기본 옵션 1행을 갖춘 상품을 생성하며, 성공 시 `product_id`·`product_code` 와 함께 어드민 편집 URL·일본어 쇼핑몰 URL 을 반환해 운영자가 곧바로 CBT 결제 흐름을 테스트할 수 있게 합니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.products.create` 권한이 필요하며, 토큰 누락·만료는 401, 권한 부족은 403, 상품 생성 중 예외 발생 시 500 으로 응답합니다. `errors.detail` 은 코어 `SafeExceptionMessage::for()` 가 고른 사유입니다 — DB 예외·PHP 오류의 원문(SQL·DB 접속 정보·서버 경로)은 운영 모드에서 일반 문구(`extensions.errors.internal_error`)로 바뀌고 원문은 서버 로그에 남습니다.
 
 
