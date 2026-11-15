@@ -10,7 +10,7 @@
 1. 에스크로 결제 건의 배송 정보를 나이스페이먼츠에 등록한다. 에스크로 결제 목록 조회는 orders.md 에 있다
 2. Bearer 토큰 + admin 미들웨어 + 이커머스 주문 권한(sirsoft-ecommerce.orders.update)이 필요하다
 3. 배송 등록이 성공하면 구매자에게 구매확정 안내가 결제대행사를 통해 자동 발송된다
-4. 결제대행사 호출 실패는 502 다. message 는 common.failed 이고 errors.message 에 예외 메시지 원문이 실린다
+4. 결제대행사 호출 실패는 502 다. message 는 common.failed, errors.message 에 결제대행사 거절 사유(ResultMsg) 또는 번역된 일반 문구가 실린다 — 통신 예외 원문은 서버 로그에만 남는다
 5. 대상 TID 의 등록 가능한 에스크로 결제(이 플러그인, 에스크로, 결제완료)를 찾지 못하면 422
 ```
 
@@ -104,7 +104,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 관리자가 아니거나 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우. 권한을 「본인만」 또는 「소유역할」 범위로 받은 관리자가 범위 밖 주문의 거래번호를 보냈거나 이 사이트 주문에 없는 거래번호를 보낸 경우 `auth.scope_denied` |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 422 | Unprocessable Entity | `tid` 로 배송 등록할 수 있는 결제(이 플러그인, 에스크로, 결제완료)를 찾지 못한 경우. `message` 는 `common.failed`, `errors.message` 에 사유. 결제대행사를 부르지 않는다 |
-| 502 | Bad Gateway | 결제대행사 호출이 실패했거나 결과 코드가 `C000` 이 아닌 경우. `message` 는 `common.failed`, `errors.message` 에 결제대행사 메시지 또는 호출 오류 |
+| 502 | Bad Gateway | 결제대행사 호출이 실패했거나 결과 코드가 `C000` 이 아닌 경우. `message` 는 `common.failed`, `errors.message` 에 결제대행사 거절 사유(`ResultMsg`) 또는 번역된 일반 문구(`errors.escrow_delivery_failed`) |
 
 <!-- @generated:end -->
 
@@ -114,12 +114,12 @@ HTTP/1.1 200
 
 권한 범위 판정은 결제 레코드 조회보다 먼저 한다. 범위가 「전체」인 관리자는 판정하지 않는다.
 
-502 응답의 `message` 는 언제나 `common.failed` 번역문(「처리에 실패했습니다.」)이다. 예외 메시지를 메시지 키 자리에 넘기지 않는 것은, 이미 번역된 문장을 키로 넘기면 키 해석에 실패해 원문이 그대로 `message` 로 나가기 때문이다. 대신 `errors.message` 배열의 첫 항목에 예외 메시지 원문을 그대로 싣는다. 관리자 화면이 서버 로그 없이도 실패 원인을 보여 주게 하려는 것이다. 들어가는 값은 다음과 같다.
+502 응답의 `message` 는 언제나 `common.failed` 번역문(「처리에 실패했습니다.」)이다. 예외 메시지를 메시지 키 자리에 넘기지 않는 것은, 이미 번역된 문장을 키로 넘기면 키 해석에 실패해 원문이 그대로 `message` 로 나가기 때문이다. 실패 사유는 `errors.message` 배열의 첫 항목에 싣는다. 운영자가 조치에 쓰는 결제대행사 거절 사유는 그대로 싣고, 통신 예외 원문은 싣지 않는다. 그 원문에는 결제대행사 API 주소와 cURL 오류 문구가 담기기 때문이다. 들어가는 값은 다음과 같다.
 
 | 실패 | `errors.message[0]` |
 | --- | --- |
-| 결과 코드가 `C000` 이 아님 | 결제대행사 응답의 `ResultMsg` (없으면 `NicePayments escrow delivery registration failed`) |
-| 결제대행사가 HTTP 오류로 응답 | `NicePayments delivery reg API error: HTTP {상태코드}` |
-| 통신 예외(시간 초과, 연결 실패 등) | HTTP 클라이언트 예외 메시지 원문 |
+| 결과 코드가 `C000` 이 아님 | 결제대행사 응답의 `ResultMsg` (비어 있으면 번역 문구 `errors.escrow_delivery_rejected` 「나이스페이먼츠가 에스크로 배송 등록을 거절했습니다.」) |
+| 결제대행사가 HTTP 오류로 응답 | 번역된 일반 문구 `sirsoft-pay_nicepayments::messages.errors.escrow_delivery_failed` (「에스크로 배송 등록 중 오류가 발생해 등록을 마치지 못했습니다. …」) |
+| 통신 예외(시간 초과, 연결 실패 등)·그 밖의 서버 오류 | 위와 같은 일반 문구 |
 
-같은 메시지가 서버 로그(`NicePayments: escrow delivery registration failed`)에도 남는다. 상세: [docs/backend/exceptions.md "예외 → 응답 매핑"](../../../../../docs/backend/exceptions.md).
+디버그 모드(`APP_DEBUG=true`)에서는 코어 관례(`App\Support\SafeExceptionMessage`)대로 일반 문구 대신 예외 원문을 싣는다. 어느 경우든 원문은 예외 클래스와 함께 서버 로그(`NicePayments: escrow delivery registration failed`)에 남는다. 결제대행사 거절은 `NicePayRejectedException`(`NicePayApiException` 의 하위 클래스)으로 구분한다. 상세: [docs/backend/exceptions.md "예외 → 응답 매핑"](../../../../../docs/backend/exceptions.md).

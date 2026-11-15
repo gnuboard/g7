@@ -4,6 +4,7 @@ return [
     'refund' => [
         'missing_tid' => '取引番号(tno)がないため返金を進めることができません。',
         'default_reason' => '購入者返金リクエスト',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生しました。しばらくしてからもう一度お試しください。',
         'in_progress' => 'NHN KCP 返金はすでに処理中です。',
         'vbank_requires_bank_transfer' => '入金済みの仮想口座決済は NHN KCP で自動返金できません。返金方法を口座返金に変更し、お客様の口座へ直接送金してください。',
     ],
@@ -20,6 +21,9 @@ return [
         'mobile_payment_unavailable' => '現在モバイル決済をご利用いただけません。別の決済手段を選択するか、ショップにお問い合わせください。',
         'cli_binary_missing' => 'KCP CLIバイナリ不足: :path',
         'cli_binary_not_executable' => 'KCP CLIバイナリ実行権限不足 — 管理者の対応が必要です (sudo chmod 755 :path)',
+        'escrow_delivery_rejected' => 'NHN KCPがエスクロー配送登録を拒否しました。',
+        'cancel_rejected' => 'NHN KCPが決済キャンセルを拒否しました。',
+        'escrow_delivery_failed' => 'エラーが発生したため、エスクロー配送登録を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
     ],
     'claim' => [
         'invalid_callback' => 'クレーム決済承認に必要なコールバックパラメーターがありません。',

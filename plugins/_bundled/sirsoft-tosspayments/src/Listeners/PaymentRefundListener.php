@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
+use Plugins\Sirsoft\Tosspayments\Exceptions\TossPaymentsApiException;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 
 /**
@@ -233,7 +234,9 @@ class PaymentRefundListener implements HookListenerInterface
                 'success' => false,
                 'handled' => true,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 쇼핑몰이 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->refundFailureReason($e),
                 'transaction_id' => null,
             ];
         }
@@ -532,5 +535,24 @@ class PaymentRefundListener implements HookListenerInterface
         return method_exists($order, 'pgTaxableAmount')
             ? $order->pgTaxableAmount()
             : (float) ($order->total_tax_amount ?? 0);
+    }
+
+    /**
+     * 환불 실패 결과에 실을 사유를 고릅니다.
+     *
+     * 토스페이먼츠가 돌려준 거절 사유는 운영자·구매자가 조치에 쓰는 정보라 그대로 싣는다. 통신 예외(연결·시간 초과)
+     * 원문에는 결제대행사 API 주소와 cURL 오류 문구가, DB 예외 원문에는 SQL·DB 접속 정보가 담기므로 운영 모드에서는
+     * 일반 문구로 바꾼다(원문은 호출 측이 서버 로그에 남긴다). 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
+     *
+     * @param  \Throwable  $e  환불 중 잡은 예외
+     * @return string 결과에 실을 사유
+     */
+    private function refundFailureReason(\Throwable $e): string
+    {
+        if (($e instanceof TossPaymentsApiException && $e->getPgCode() !== null) || config('app.debug')) {
+            return $e->getMessage();
+        }
+
+        return __('sirsoft-tosspayments::messages.refund.pg_failed');
     }
 }

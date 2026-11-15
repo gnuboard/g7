@@ -11,6 +11,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\PayKginicis\Exceptions\KgInicisApiException;
+use Plugins\Sirsoft\PayKginicis\Exceptions\KgInicisRejectedException;
 
 class KgInicisApiService
 {
@@ -623,7 +624,7 @@ class KgInicisApiService
                 'result_msg' => $result['resultMsg'] ?? '',
                 'tid' => $tid,
             ]);
-            throw new KgInicisApiException($result['resultMsg'] ?? 'KG Inicis CBT refund failed');
+            throw new KgInicisRejectedException(($result['resultMsg'] ?? '') !== '' ? $result['resultMsg'] : __('sirsoft-pay_kginicis::messages.refund.pg_rejected'));
         }
 
         HookManager::doAction('sirsoft-pay_kginicis.payment.after_cbt_refund', $tid, $result);
@@ -867,7 +868,7 @@ class KgInicisApiService
                 'result_msg' => $result['resultMsg'] ?? '',
                 'tid' => $tid,
             ]);
-            throw new KgInicisApiException($result['resultMsg'] ?? 'KG Inicis cancel failed');
+            throw new KgInicisRejectedException(($result['resultMsg'] ?? '') !== '' ? $result['resultMsg'] : __('sirsoft-pay_kginicis::messages.refund.pg_rejected'));
         }
 
         // 훅: 결제 취소 완료 후 (외부 소비자 후처리 확장 지점)
@@ -1147,7 +1148,7 @@ class KgInicisApiService
                 'tid' => $receiptTid,
             ]);
 
-            throw new KgInicisApiException($result['resultMsg'] ?? 'KG Inicis cash receipt cancel failed');
+            throw new KgInicisRejectedException(($result['resultMsg'] ?? '') !== '' ? $result['resultMsg'] : __('sirsoft-pay_kginicis::messages.cash_receipt.cancel_rejected'));
         }
 
         return $result;

@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-11-14
+
+### Added
+
+- 주문 취소·환불 중 결제대행사 환불 호출이 오류로 끝났을 때 보이는 안내(`refund.pg_failed` 「決済代行会社との通信中にエラーが発生しました。…」) 일본어 번역을 추가했습니다.
+- 현금영수증 발급·취소가 결제대행사 오류로 끝났을 때의 안내(`cash_receipt.pg_failed`) 일본어 번역을 추가했습니다.
+
 ## [1.0.4] - 2026-10-10
 
 ### Added

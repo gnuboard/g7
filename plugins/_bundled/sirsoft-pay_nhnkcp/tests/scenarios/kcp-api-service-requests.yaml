@@ -28,6 +28,7 @@ effects:
   - cancel_payment_sends_the_refund_account_for_a_settled_virtual_account
   - cancel_payment_omits_the_refund_account_when_none_is_given
   - register_escrow_delivery_uses_test_site_cd_when_escrow_test_site_cd_is_empty
+  - register_escrow_delivery_throws_rejected_exception_on_non_0000_res_cd
   - cancel_payment_throws_on_non_0000_res_cd
   - cancel_payment_throws_on_cli_fallback_error
   - cli_debug_logs_do_not_include_raw_response_or_site_key

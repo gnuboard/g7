@@ -472,7 +472,7 @@
                   <refetch-data-source dataSourceId="kginicis_escrow_delivery"/>
                 </success>
                 <fail>
-                  <set-state target="local" :_dncf_processing="false" _dncf_error="{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"/>
+                  <set-state target="local" :_dncf_processing="false" _dncf_error="{{Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"/>
                 </fail>
                 <body/>
               </api-call>

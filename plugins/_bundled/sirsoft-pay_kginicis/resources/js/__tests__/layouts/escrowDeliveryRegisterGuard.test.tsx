@@ -116,3 +116,52 @@ describe('에스크로 배송 등록', () => {
     expect(t.getState()._local[ERROR_KEY]).toBe('송장번호를 입력하세요.');
   });
 });
+
+/** 구매거절확인 버튼 — 배송 등록과 같은 결함(실패 문맥에 없는 `response` 를 읽어 PG 사유가 늘 일반 문구로 가려짐, #858) */
+const denyConfirmButton = flattenNodes(extension).find(
+  (n) => n.name === 'Button' && JSON.stringify(actionsOf(n)).includes('/escrow-deny-confirm'),
+) as any;
+
+/**
+ * 구매거절확인 버튼을 띄운다.
+ */
+async function mountDenyConfirm() {
+  utils = createLayoutTest({ version: '1.0.0', layout_name: 'escrow_deny_confirm', components: [denyConfirmButton] } as any, {
+    initialState: { _local: {} },
+    initialData: { route: { orderNumber: 'ORD-1' }, order: { data: { abilities: { can_update: true } } } },
+    routeParams: { orderNumber: 'ORD-1' },
+  });
+  await utils.render();
+  return utils;
+}
+
+describe('에스크로 구매거절확인', () => {
+  /**
+   * @scenario flow=escrow_deny_confirm
+   * @effects escrow_deny_confirm_shows_server_reason
+   */
+  it('PG 가 거절하면 서버가 준 사유를 그대로 보인다', async () => {
+    expect(denyConfirmButton).toBeTruthy();
+    const t = await mountDenyConfirm();
+    stubFailure(502, { success: false, message: '실패했습니다.', errors: { message: ['[PG] 구매거절 상태가 아닙니다.'] } });
+
+    await t.triggerAction(actionsOf(denyConfirmButton)[0]);
+
+    expect(t.getState()._local._dncf_error).toBe('[PG] 구매거절 상태가 아닙니다.');
+    expect(t.getState()._local._dncf_processing).toBe(false);
+  });
+
+  /**
+   * @scenario flow=escrow_deny_confirm
+   * @effects escrow_deny_confirm_shows_server_reason
+   */
+  it('서버 문구가 없으면 일반 안내로 떨어진다', async () => {
+    const t = await mountDenyConfirm();
+    stubFailure(500, { success: false, message: '실패했습니다.' });
+
+    await t.triggerAction(actionsOf(denyConfirmButton)[0]);
+
+    expect(t.getState()._local._dncf_error).not.toBe('[PG] 구매거절 상태가 아닙니다.');
+    expect(t.getState()._local._dncf_error).toBeTruthy();
+  });
+});

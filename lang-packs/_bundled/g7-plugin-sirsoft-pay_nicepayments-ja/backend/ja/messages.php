@@ -12,10 +12,14 @@ return [
         'vbank_refund_invalid_payment' => '返金可能なNICEペイメンツ仮想口座入金完了決済ではありません。',
         'vbank_refund_amount_mismatch' => '要求された返金金額がDBのキャンセル可能金額と一致していません。',
         'vbank_refund_already_processing' => '既に仮想口座返金処理が進行中です。',
+        'escrow_delivery_rejected' => 'NICEペイメンツがエスクロー配送登録を拒否しました。',
+        'cancel_rejected' => 'NICEペイメンツが決済キャンセルを拒否しました。',
+        'escrow_delivery_failed' => 'エラーが発生したため、エスクロー配送登録を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
     ],
     'refund' => [
         'missing_tid' => '取引ID(TID)がないため返金を進めることができません。',
         'default_reason' => '購入者返金リクエスト',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生しました。しばらくしてからもう一度お試しください。',
     ],
     'defaults' => [
         'vbank_refund_msg' => '仮想口座返金',

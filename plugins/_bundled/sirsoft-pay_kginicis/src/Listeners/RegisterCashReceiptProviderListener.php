@@ -8,6 +8,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
@@ -20,6 +21,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
  */
 class RegisterCashReceiptProviderListener implements HookListenerInterface
 {
+    use DescribesRefundFailure;
     use SanitizesPgResponse;
 
     /**
@@ -180,7 +182,9 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
             return [
                 'success' => false,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보·구매자 응답에 그대로 보인다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->pgFailureReason($e, 'cash_receipt.pg_failed'),
                 'receipt_key' => null,
                 'receipt_url' => null,
                 'issue_number' => null,
@@ -233,7 +237,9 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
             return [
                 'success' => false,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보·구매자 응답에 그대로 보인다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->pgFailureReason($e, 'cash_receipt.pg_failed'),
                 'receipt_key' => $receiptKey,
                 'raw_response' => null,
             ];

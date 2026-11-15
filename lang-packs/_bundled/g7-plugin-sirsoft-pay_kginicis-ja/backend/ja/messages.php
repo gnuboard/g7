@@ -10,6 +10,8 @@ return [
     'refund' => [
         'missing_tid' => 'トランザクション ID（TID）がないため、返金を進めることができません。',
         'default_reason' => '購入者返金要求',
+        'pg_rejected' => 'KGイニシスが決済キャンセルを拒否しました。',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生しました。しばらくしてからもう一度お試しください。',
         'admin_cancel_reason' => '管理者による取消',
     ],
     'cbt_connectivity' => [
@@ -41,6 +43,8 @@ return [
     'cash_receipt' => [
         'provider_name' => 'KGイニシス',
         'cancel_reason' => '現金領収証の発行取消',
+        'cancel_rejected' => 'KGイニシスが現金領収証の取消を拒否しました。',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生したため、現金領収証を処理できませんでした。しばらくしてからもう一度お試しください。',
     ],
     'escrow' => [
         'invoice_required' => '送り状番号を入力してください。',
@@ -50,6 +54,11 @@ return [
         'confirm_page_title' => 'エスクロー購入確定',
         'confirm_preparing' => 'エスクロー購入確定画面を準備しています...',
         'confirm_redirecting' => 'エスクロー購入確定ページへ移動しています...',
+        'delivery_rejected' => '配送登録に失敗しました。',
+        'delivery_failed' => 'エラーが発生したため、エスクロー配送登録を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
+        'deny_confirm_already_done' => '購入拒否の確認はすでに完了しています。',
+        'deny_confirm_rejected' => '購入拒否の確認に失敗しました。',
+        'deny_confirm_failed' => 'エラーが発生したため、購入拒否の確認を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
     ],
     'cbt_cvs' => [
         'simulate_success' => '入金シミュレーションが完了しました。',

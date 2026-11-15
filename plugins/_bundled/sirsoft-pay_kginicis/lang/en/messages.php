@@ -12,6 +12,8 @@ return [
     'cash_receipt' => [
         'provider_name' => 'KG Inicis',
         'cancel_reason' => 'Cash receipt issuance cancelled',
+        'cancel_rejected' => 'KG Inicis rejected the cash receipt cancellation.',
+        'pg_failed' => 'An error occurred while communicating with the payment gateway, so the cash receipt could not be processed. Please try again later.',
     ],
     'escrow' => [
         'confirm_login_required' => 'Please log in and start the purchase decision again from the order details.',
@@ -21,6 +23,11 @@ return [
         'invoice_required' => 'Please enter the tracking number.',
         'courier_required' => 'Please select a courier.',
         'default_confirmer' => 'Administrator',
+        'delivery_rejected' => 'Failed to register the delivery.',
+        'delivery_failed' => 'An error occurred and the escrow delivery registration could not be completed. Please try again later, and check the server log if it keeps failing.',
+        'deny_confirm_already_done' => 'The purchase rejection has already been confirmed.',
+        'deny_confirm_rejected' => 'Failed to confirm the purchase rejection.',
+        'deny_confirm_failed' => 'An error occurred and the purchase rejection confirmation could not be completed. Please try again later, and check the server log if it keeps failing.',
     ],
     'claim' => [
         'invalid_callback' => 'The callback parameters required to approve the claim payment are missing.',
@@ -34,6 +41,8 @@ return [
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',
         'default_reason' => 'Buyer refund request',
+        'pg_rejected' => 'KG Inicis rejected the payment cancellation.',
+        'pg_failed' => 'An error occurred while communicating with the payment gateway. Please try again later.',
         'admin_cancel_reason' => 'Cancelled by administrator',
     ],
     'cbt_connectivity' => [

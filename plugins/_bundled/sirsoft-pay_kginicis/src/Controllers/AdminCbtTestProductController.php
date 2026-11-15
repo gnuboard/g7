@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
@@ -97,7 +98,10 @@ class AdminCbtTestProductController extends AdminBaseController
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return ResponseHelper::error('common.failed', 500, ['detail' => $e->getMessage()]);
+            // 배열 errors 는 운영 모드 500 차단을 거치지 않는다 — DB 예외 원문(SQL·DB 접속 정보)은 일반 문구로 바꾼다(#858)
+            return ResponseHelper::error('common.failed', 500, [
+                'detail' => SafeExceptionMessage::for($e, ['plugin' => 'sirsoft-pay_kginicis', 'action' => 'cbt_test_product']),
+            ]);
         }
     }
 }

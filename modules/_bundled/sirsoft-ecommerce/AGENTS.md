@@ -447,6 +447,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | PG 호출 뒤에 같은 트랜잭션에서 장부를 쓰기 | 되돌릴 수 있는 쓰기를 모두 끝낸 뒤 PG 를 마지막에 부르고, 완료는 그 행 UPDATE 1회 | PG 성공 뒤 쓰기가 실패하면 장부만 롤백되고 돈은 나간다 — NICE·KG·KCP 는 멱등키가 없어 재실행이 이중 환불이 된다 |
 | `DB::transaction(..., attempts>1)` 로 환불 실행 감싸기 | attempts 1 | 교착 재시도가 클로저를 다시 돌려 PG 를 두 번 부른다 |
 | 레이아웃·확장 조각의 메뉴·목록 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 헤더 통화·배송 국가 목록이 이렇게 가운데로 갔다 |
+| 현금영수증·결제 실패 이력의 사유 칸(`error_message`)에 프로바이더 예외 원문을 그대로 저장 | `CashReceiptService::providerExceptionResult()` — 운영 모드는 `cash_receipt.errors.issue_failed`·`cancel_failed`, 원문은 서버 로그(디버그 모드만 원문). 결제 플러그인은 결제대행사 거절 사유만 원문으로 넘긴다 | 이력 사유는 `CashReceiptResource` 로 관리자 주문 상세와 구매자 응답에 그대로 보인다 — 결제대행사 API 주소·cURL 문구·서버 경로가 화면에 나간다(#858) |
 <!-- @intent END -->
 
 ### 환불 후 주문 헤더 동기화 계약 (S3-D17)

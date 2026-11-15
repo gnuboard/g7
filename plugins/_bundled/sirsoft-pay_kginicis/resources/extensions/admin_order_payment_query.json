@@ -2788,7 +2788,7 @@
                                                         "params": {
                                                             "target": "local",
                                                             "_dncf_processing": false,
-                                                            "_dncf_error": "{{response?.errors?.message?.[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"
+                                                            "_dncf_error": "{{Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_error'}}"
                                                         }
                                                     }
                                                 }

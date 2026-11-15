@@ -78,7 +78,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
         // 이미 구매거절확인 완료된 경우
         if (isset($meta['escrow_deny_confirm'])) {
             return ResponseHelper::error('common.failed', 422, [
-                'message' => ['이미 구매거절확인이 완료되었습니다.'],
+                'message' => [__('sirsoft-pay_kginicis::messages.escrow.deny_confirm_already_done')],
             ]);
         }
 
@@ -109,7 +109,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
                 ]);
 
                 return ResponseHelper::error('common.failed', 502, [
-                    'message' => [$pgResponse['resultMsg'] ?? '구매거절확인에 실패했습니다.'],
+                    'message' => [($pgResponse['resultMsg'] ?? '') !== '' ? $pgResponse['resultMsg'] : __('sirsoft-pay_kginicis::messages.escrow.deny_confirm_rejected')],
                 ]);
             }
 
@@ -141,13 +141,17 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             ]);
 
         } catch (\Exception $e) {
+            // PG 거절(resultCode != 00)은 위에서 resultMsg 로 답했다. 여기 오는 것은 통신 실패·HTTP 오류·DB 예외라
+            // 원문(API 주소·cURL 문구·SQL)은 서버 로그에만 남기고 응답에는 일반 문구를 싣는다(#858).
             Log::error('KG Inicis: escrow deny confirm exception', [
                 'order_number' => $orderNumber,
+                'exception_class' => $e::class,
                 'error' => $e->getMessage(),
             ]);
 
             return ResponseHelper::error('common.failed', 500, [
-                'message' => [$e->getMessage()],
+                // 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다
+                'message' => [config('app.debug') ? $e->getMessage() : __('sirsoft-pay_kginicis::messages.escrow.deny_confirm_failed')],
             ]);
         }
     }

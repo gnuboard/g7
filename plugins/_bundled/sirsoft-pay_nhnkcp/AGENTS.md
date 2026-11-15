@@ -156,6 +156,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 스크립트가 주소 정규식·DOM 폴링으로 남의 화면을 찾아 글자를 고치거나 버튼을 붙이기, `window.fetch`·`history.pushState` 덮어쓰기, `localStorage.getItem('auth_token')` 으로 Bearer 붙이기 | 표시는 레이아웃 조각(`resources/extensions`)이 자기 데이터 소스로 그린다. 요청은 `G7Core.api`, 상태는 `G7Core.state.get()`·`subscribe()` 와 공개 상태 계약(`_global.guestOrderToken`)으로만 | 엔진이 내부를 바꾸면 조용히 깨지고, 덮어쓰기는 확장끼리 서로를 감싸 순서에 따라 동작이 바뀐다. 제목·버튼 글자로 찾으면 다른 언어 화면에서 빠진다(#639). 가드: `extension-private-core-internals` |
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지·라벨을 넣기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → 라벨은 `children._patch`(by: id)로 text 만, 배지는 `children._append` | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
+| 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | KCP 거절은 `NhnKcpRejectedException` 의 사유(res_msg)만 싣고, 그 밖은 번역된 일반 문구 + 서버 로그(디버그 모드만 원문) | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — CLI 실행 실패 문구의 서버 절대 경로, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
+| 결제 환불 리스너 결과 `error_message` 에 예외 원문을 그대로 싣기 | `refundFailureReason()` — 거절(`NhnKcpRejectedException`)만 res_msg, 그 밖은 `refund.pg_failed` + 서버 로그(디버그 모드만 원문) | 쇼핑몰이 이 값을 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 — CLI 실행 실패 문구의 서버 절대 경로가 구매자 화면까지 간다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -163,10 +165,10 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 55개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| PHPUnit | 57개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
 | Vitest | 34개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 55개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 56개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

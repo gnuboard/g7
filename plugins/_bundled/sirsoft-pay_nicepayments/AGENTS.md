@@ -144,6 +144,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
+| 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | 결제대행사 거절은 `NicePayRejectedException` 의 사유(ResultMsg)만 싣고, 그 밖은 번역된 일반 문구 + 서버 로그(디버그 모드만 원문) | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — 통신 예외의 결제대행사 API 주소·cURL 문구, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
+| 결제 환불 리스너 결과 `error_message` 에 예외 원문을 그대로 싣기 | `refundFailureReason()` — 거절(`NicePayRejectedException`)만 ResultMsg, 그 밖은 `refund.pg_failed` + 서버 로그(디버그 모드만 원문) | 쇼핑몰이 이 값을 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 — 통신 예외의 API 주소·cURL 문구가 구매자 화면까지 간다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -151,10 +153,10 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 39개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
+| PHPUnit | 41개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
 | Vitest | 30개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 48개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 49개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
