@@ -139,8 +139,10 @@ class CoreUpdateService
             $path = base_path($relative);
             $entry = ['path' => $relative, 'mkdir' => false, 'chown_changed' => 0, 'chown_failed' => 0, 'gw_changed' => 0, 'gw_failed' => 0];
 
+            $targetPerms = self::targetPermsForWritableDirectory($relative, $perms);
+
             if (! File::isDirectory($path)) {
-                if (! @mkdir($path, $perms, true) && ! File::isDirectory($path)) {
+                if (! @mkdir($path, $targetPerms, true) && ! File::isDirectory($path)) {
                     $msg = sprintf('[ensureWritableDirectories] mkdir 실패 — %s', $relative);
                     $log('warning', $msg);
                     $warnings[] = $msg;
@@ -148,9 +150,9 @@ class CoreUpdateService
 
                     continue;
                 }
-                @chmod($path, $perms);
+                @chmod($path, $targetPerms);
                 $entry['mkdir'] = true;
-                $log('info', sprintf('[ensureWritableDirectories] mkdir + perms 0%o — %s', $perms, $relative));
+                $log('info', sprintf('[ensureWritableDirectories] mkdir + perms 0%o — %s', $targetPerms, $relative));
             }
 
             if ($owner !== false) {
@@ -174,15 +176,18 @@ class CoreUpdateService
                 }
             }
 
-            // perms 정상화 (루트가 g-w 등으로 생성됐을 때 reference perms 로 강제)
+            // perms 정상화 (루트가 g-w 등으로 생성됐을 때 reference perms 로 강제).
+            // 웹서버가 직접 내주는 public/ 아래 경로는 other 읽기·진입을 남기고, 이미 있던 other 비트는
+            // 지우지 않는다(targetPermsForWritableDirectory).
             $currentPerms = @fileperms($path) & 0777;
-            if ($currentPerms !== false && $currentPerms !== $perms) {
-                if (! @chmod($path, $perms)) {
-                    $msg = sprintf('[ensureWritableDirectories] chmod 실패 — %s. 수동: sudo chmod %o %s', $relative, $perms, $path);
+            $targetPerms = self::targetPermsForWritableDirectory($relative, $perms, $currentPerms);
+            if ($currentPerms !== $targetPerms) {
+                if (! @chmod($path, $targetPerms)) {
+                    $msg = sprintf('[ensureWritableDirectories] chmod 실패 — %s. 수동: sudo chmod %o %s', $relative, $targetPerms, $path);
                     $log('warning', $msg);
                     $warnings[] = $msg;
                 } else {
-                    $log('info', sprintf('[ensureWritableDirectories] perms 보정 %o → %o — %s', $currentPerms, $perms, $relative));
+                    $log('info', sprintf('[ensureWritableDirectories] perms 보정 %o → %o — %s', $currentPerms, $targetPerms, $relative));
                 }
             }
 
@@ -202,6 +207,41 @@ class CoreUpdateService
         }
 
         return ['reference' => $reference, 'processed' => $processed, 'warnings' => $warnings];
+    }
+
+    /**
+     * 쓰기 보장 디렉토리에 적용할 권한을 정합니다.
+     *
+     * 기준 권한은 확장 디렉토리(modules 등)에서 오므로 0770 처럼 other 비트가 없을 수 있다. 그 값을
+     * 웹서버가 직접 내주는 `public/` 아래 경로(`public/build/ext` 정적 게시본)에 그대로 강제하면,
+     * php-fpm 계정과 다른 계정으로 도는 웹서버(Apache `www-data` 등)가 그 폴더에 들어가지 못해
+     * 정적 자산이 전부 403 이 된다. 그래서 `public/` 아래 경로에는 other 읽기·진입(`o+rx`)을 남긴다.
+     * 그 밖의 경로(storage·bootstrap/cache·확장 디렉토리)는 기준 권한을 따른다.
+     *
+     * 이미 있는 디렉토리의 other 비트는 지우지 않는다. 운영자가 쓰기 보장 목록에 `storage` 처럼 웹서버가
+     * 심링크로 내주는 경로(`public/storage` → `storage/app/public`)의 상위를 넣었을 때, 0770 기준이 그 경로의
+     * other 진입 권한을 지워 `/storage/**` 가 403 이 되는 것을 막는다. 쓰기 보장의 목적은 그룹 쓰기이므로
+     * other 비트를 좁힐 이유가 없다.
+     *
+     * @param  string  $relative  base_path() 기준 상대 경로
+     * @param  int  $referencePerms  기준 권한 (예: 0770)
+     * @param  int|null  $currentPerms  디렉토리의 현재 권한 (새로 만들 때는 null)
+     * @return int 적용할 권한
+     */
+    public static function targetPermsForWritableDirectory(string $relative, int $referencePerms, ?int $currentPerms = null): int
+    {
+        $normalized = ltrim(str_replace('\\', '/', $relative), '/');
+        $target = $referencePerms;
+
+        if ($normalized === 'public' || str_starts_with($normalized, 'public/')) {
+            $target |= 0005;
+        }
+
+        if ($currentPerms !== null) {
+            $target |= ($currentPerms & 0007);
+        }
+
+        return $target;
     }
 
     /**

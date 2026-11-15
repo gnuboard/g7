@@ -105,6 +105,14 @@ HTACCESS;
             return;
         }
 
+        // 퍼미션은 umask 를 따른다 — 0640·0600 이면 웹서버가 규칙 파일을 읽지 못해 /storage 전체가 403 이 된다.
+        // 모든 계정의 읽기 권한을 더한다(다른 비트는 그대로).
+        clearstatcache(true, $path);
+        $perms = @fileperms($path);
+        if ($perms !== false && ($perms & 0044) !== 0044) {
+            @chmod($path, ($perms & 0777) | 0044);
+        }
+
         $this->matchDirectoryOwnership($path, $directory);
 
         $context->logger->info('[7.1.6] 공개 디스크 보호 규칙 파일 생성: storage/app/public/.htaccess');
