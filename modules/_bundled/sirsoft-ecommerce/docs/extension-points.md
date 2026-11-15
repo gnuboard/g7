@@ -83,15 +83,15 @@
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | — | `src/Services/CashReceiptService.php:145` |
 | `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1232` |
 | `sirsoft-ecommerce.category-image.after_delete` | action | — | `src/Services/CategoryImageService.php:302` 외 1곳 |
-| `sirsoft-ecommerce.category-image.after_reorder` | action | — | `src/Services/CategoryImageService.php:364` |
-| `sirsoft-ecommerce.category-image.after_update` | action | — | `src/Services/CategoryImageService.php:440` |
+| `sirsoft-ecommerce.category-image.after_reorder` | action | — | `src/Services/CategoryImageService.php:418` |
+| `sirsoft-ecommerce.category-image.after_update` | action | — | `src/Services/CategoryImageService.php:494` |
 | `sirsoft-ecommerce.category-image.after_upload` | action | — | `src/Services/CategoryImageService.php:144` |
 | `sirsoft-ecommerce.category-image.before_delete` | action | — | `src/Services/CategoryImageService.php:278` 외 1곳 |
-| `sirsoft-ecommerce.category-image.before_reorder` | action | — | `src/Services/CategoryImageService.php:359` |
-| `sirsoft-ecommerce.category-image.before_update` | action | — | `src/Services/CategoryImageService.php:427` |
+| `sirsoft-ecommerce.category-image.before_reorder` | action | — | `src/Services/CategoryImageService.php:413` |
+| `sirsoft-ecommerce.category-image.before_update` | action | — | `src/Services/CategoryImageService.php:481` |
 | `sirsoft-ecommerce.category-image.before_upload` | action | — | `src/Services/CategoryImageService.php:73` |
 | `sirsoft-ecommerce.category-image.filter_reorder_validation_rules` | filter | — | `src/Http/Requests/Admin/ReorderCategoryImagesRequest.php:36` |
-| `sirsoft-ecommerce.category-image.filter_update_data` | filter | — | `src/Services/CategoryImageService.php:430` |
+| `sirsoft-ecommerce.category-image.filter_update_data` | filter | — | `src/Services/CategoryImageService.php:484` |
 | `sirsoft-ecommerce.category-image.filter_upload_file` | filter | — | `src/Services/CategoryImageService.php:76` |
 | `sirsoft-ecommerce.category-image.filter_upload_validation_rules` | filter | — | `src/Http/Requests/Admin/UploadCategoryImageRequest.php:66` |
 | `sirsoft-ecommerce.category.after_create` | action | — | `src/Services/CategoryService.php:180` |
@@ -1682,6 +1682,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `cancel-pending-orders` | `0 0 * * *` | 입금 기한 만료 주문 취소 |
 | `prune-expired-carts` | `0 0 * * *` | 만료 장바구니 삭제 |
 | `prune-temp-product-images` | `0 0 * * *` | 임시 상품 이미지 삭제 |
+| `prune-temp-category-images` | `0 0 * * *` | 임시 카테고리 이미지 삭제 |
 | `prune-temp-orders` | `0 * * * *` | 만료 임시 주문 삭제 |
 | `earn-mileage` | `0 * * * *` | 지연 마일리지 적립 |
 | `expire-mileage` | `0 0 * * *` | 마일리지 소멸 |
@@ -1695,9 +1696,9 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
-12개 스케줄이 이 모듈의 **시간 축 동작 전부**입니다(7.2.0 부터 설치·업데이트 때 코어 스케줄 관리에 등록되고, 운영자는 관리자 > 스케줄 관리 또는 이커머스 설정의 「스케줄」 탭에서 켜고 끕니다). 이 중 5개는 실행 조건(`enabled_condition`, `module_setting` · `truthy`)이 모듈 설정 토글에 묶여 있어 그 설정이 꺼져 있으면 실행되지 않습니다 —
+14개 스케줄이 이 모듈의 **시간 축 동작 전부**입니다(7.2.0 부터 설치·업데이트 때 코어 스케줄 관리에 등록되고, 운영자는 관리자 > 스케줄 관리 또는 이커머스 설정의 「스케줄」 탭에서 켜고 끕니다). 이 중 5개는 실행 조건(`enabled_condition`, `module_setting` · `truthy`)이 모듈 설정 토글에 묶여 있어 그 설정이 꺼져 있으면 실행되지 않습니다 —
 `cancel-pending-orders`(주문 설정의 미입금 자동취소) · 마일리지 4종(마일리지 사용/소멸/소멸
-알림/잔액 교정). `aggregate-stats`(대시보드 집계)는 설정 화면이 없는 config 값 `dashboard.scheduler_enabled` 를 커맨드 안에서만 확인하고 스케줄 조건은 두지 않습니다. 임시 데이터 정리 3종과 클레임 정리 3종은 조건 없이 상시 동작하며 보존
+알림/잔액 교정). `aggregate-stats`(대시보드 집계)는 설정 화면이 없는 config 값 `dashboard.scheduler_enabled` 를 커맨드 안에서만 확인하고 스케줄 조건은 두지 않습니다. 임시 데이터 정리 4종과 클레임 정리 3종은 조건 없이 상시 동작하며 보존
 기간을 커맨드 안에서 판정합니다. 조건이 가리키는 설정 키가 없으면 선언한 `default`(이 모듈은 `true`)로 **켜진 것으로
 간주**되므로, 새 토글을 도입할 때는 설정 기본값을 먼저 넣어야 의도한 초기 상태가 됩니다.
 
@@ -1705,6 +1706,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 |---|---|
 | `cancel-pending-orders` | 입금하지 않은 주문이 재고를 계속 점유합니다 |
 | `prune-expired-carts` · `prune-temp-orders` · `prune-temp-product-images` | 임시 데이터가 무한히 쌓입니다 (`prune-temp-product-images` 는 이름과 달리 저장하지 않았거나 본문에서 빠진 본문 미디어도 같은 보존기간으로 지웁니다) |
+| `prune-temp-category-images` | 새 카테고리 폼에서 올리고 저장하지 않은 임시 이미지(행·파일·썸네일)가 무한히 쌓입니다 |
 | `earn-mileage` | "배송완료 N일 후 적립" 같은 지연 적립이 영영 이루어지지 않습니다 |
 | `expire-mileage` · `notify-expiring-mileage` | 소멸 기한이 지난 마일리지가 계속 사용 가능하고, 사전 안내가 나가지 않습니다 |
 | `reconcile-mileage-balance` | 표시용 잔액 캐시가 원장과 어긋난 채 남습니다 (원장이 SSoT 이므로 금전 판정 자체는 안전합니다) |
@@ -1715,6 +1717,13 @@ _등록하는 브로드캐스트 채널이 없습니다._
 이 중 **재고와 금전에 직접 영향을 주는 것은 `cancel-pending-orders` 와 마일리지 3종**입니다.
 서버에 스케줄러가 등록되지 않은 설치에서는 이 넷이 침묵하는 것이 유일한 증상이며, 오류가 나지
 않으므로 운영자가 알아채기 어렵습니다.
+
+**이미 쌓인 임시 카테고리 이미지(1.4.0 이전 업로드)**: `prune-temp-category-images` 는 1.4.0 에서 생겼으므로 그 전에
+새 카테고리 폼에서 올리고 저장하지 않은 이미지가 남아 있을 수 있습니다. 업데이트 뒤 첫 자정 실행부터 보존기간(2일)이 지난
+것을 한 회차에 500건씩 오래된 순으로 지우고, 남은 것은 다음 날 이어 지웁니다. 쌓인 양은
+`php artisan sirsoft-ecommerce:prune-temp-category-images --dry-run` 으로 먼저 보고, 하루씩 기다리지 않고 한 번에 비우려면
+`--limit` 을 늘려 직접 실행합니다(예: `--limit=5000`). 대상은 `temp_key` 가 남고 `category_id` 가 빈 행(폼에서 뺀 소프트 삭제
+행 포함)뿐이라 저장된 카테고리의 이미지는 건드리지 않습니다. 파일은 저장소 드라이버로 지우므로 그 이미지의 썸네일도 함께 지워집니다.
 
 새 스케줄을 추가할 때는 `command` 와 함께 **`schedule` 키를 반드시 선언**합니다 — 이 키가
 없으면 코어 스케줄 등록부가 그 항목을 건너뛰는데, 예외도 경고도 남지 않아 "등록했는데 돌지

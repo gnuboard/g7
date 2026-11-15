@@ -90,7 +90,7 @@ class CategoryImageService
         // 읽어 **축소 전 크기**를 돌려준다. `getimagesize()` 는 파일을 직접 읽으므로
         // width/height 만 축소본을 가리키고 크기만 어긋난다 — 한 행의 두 값이 서로 다른
         // 파일을 가리키는 상태다. 형제 넷(코어 2 · 게시판 · 페이지)은 같은 사유로 이미 이
-        // 처리를 갖는다 (12차 G3 라운드 D3 — 11차가 형제 절반에만 적용했다).
+        // 처리를 갖는다.
         clearstatcache(true, $file->getRealPath());
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
@@ -190,7 +190,7 @@ class CategoryImageService
      *
      * @deprecated 캐시 계약(ETag·304)이 실리지 않는 죽은 통로다 — 컨트롤러는 `getFileInfo()`
      *             메타를 `streamedFileResponseFromMeta()` 에 넘긴다. 생산 호출부는 0 이고 테스트만
-     *             남아 있다. 새 코드는 `getFileInfo()` 를 쓴다 (17차 G3 라운드 B-19).
+     *             남아 있다. 새 코드는 `getFileInfo()` 를 쓴다.
      *
      * @param  string  $hash  이미지 해시
      * @return StreamedResponse|null 이미지 스트림 또는 null
@@ -204,8 +204,8 @@ class CategoryImageService
      * 이미지 서빙 정보 조회 (스트림 + 검증자 메타)
      *
      * 캐싱 헤더·검증자 비교·304 는 코어 단일 지점이 만든다 — 이 서비스는 코어 형제
-     * (`App\Services\AttachmentService::getFileInfo()`)와 같은 형태의 서빙 정보만 돌려준다
-     * (14차 G3 라운드).
+     * (`App\Services\AttachmentService::getFileInfo()`)와 같은 형태의 서빙 정보만
+     * 돌려준다.
      *
      * @param  string  $hash  이미지 해시
      * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int, thumbnail_source: ThumbnailSource|null}|null 서빙 정보 또는 null
@@ -219,7 +219,7 @@ class CategoryImageService
         }
 
         // 서빙 정보(스트림 + 검증자 메타)는 `ServesImageWithRowValidators` 단일 지점이 만든다
-        // (형제 두 이미지 서비스와 같은 계약 — 11차 G3 라운드 B11-12 · 14차 코어 지점 경유).
+        // (형제 두 이미지 서비스와 같은 계약, 코어 단일 지점 경유).
         $info = $this->imageServeInfo($image);
 
         if (! $info) {
@@ -345,6 +345,60 @@ class CategoryImageService
         }
 
         return $deleted;
+    }
+
+    /**
+     * 카테고리에 연결되지 않은 채 보존기간이 지난 임시 이미지를 파일째 정리합니다.
+     *
+     * 새 카테고리 폼에서 올리고 저장하지 않고 닫은 업로드는 `temp_key` 만 남고 `category_id` 가
+     * 비어 있다. 카테고리를 저장하면 `linkTempImages()` 가 `temp_key` 를 비우므로 이 상태가
+     * 보존기간 넘게 이어졌다면 끝내 저장되지 않은 것이다. 폼에서 뺀 임시 이미지(소프트 삭제,
+     * 파일은 이미 지워짐)도 같은 조건이라 행까지 함께 걷는다.
+     *
+     * 파일은 행 disk 의 저장소 드라이버로 지운다 — 드라이버가 그 원본의 썸네일도 함께 지운다.
+     * 파일 삭제에 실패한 행은 남겨 다음 회차에 다시 시도한다(행을 먼저 지우면 파일이 고아가 된다).
+     * 날짜 디렉토리(`category/{Y/m/d}`)는 저장된 카테고리 이미지와 함께 쓰므로 지우지 않는다.
+     *
+     * `category-image.before_delete`/`after_delete` 훅은 부르지 않는다 — 그 훅은 카테고리에 속한 이미지를
+     * 운영자가 지울 때의 계약이고, 여기 대상은 어떤 카테고리에도 속한 적 없는 폼 세션 부산물이다(상품 임시
+     * 이미지 정리 `ProductImageService::pruneTempUploads()` 와 같은 판단). 파생본과 원본 공개 주소(CDN) 무효화는
+     * 저장소 드라이버의 삭제 연동(`SyncsThumbnails`, 퍼지 훅 `core.thumbnail.after_purge`)이 맡는다.
+     *
+     * @param  int  $days  보존기간(일)
+     * @param  int  $limit  한 번에 처리할 최대 건수
+     * @param  bool  $dryRun  true 면 대상 건수만 센다
+     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
+     */
+    public function pruneTempUploads(int $days, int $limit, bool $dryRun = false): array
+    {
+        $images = $this->repository->findStaleTempImages(now()->subDays($days), $limit);
+
+        $result = ['scanned' => $images->count(), 'deleted' => 0, 'failed' => 0];
+
+        if ($dryRun) {
+            return $result;
+        }
+
+        foreach ($images as $image) {
+            $rowStorage = $this->storageForRow($image->disk);
+
+            if ($rowStorage->exists('images', $image->path) && ! $rowStorage->delete('images', $image->path)) {
+                Log::warning('임시 카테고리 이미지 파일 삭제 실패 — 기록 보존', [
+                    'image_id' => $image->id,
+                    'disk' => $image->disk,
+                    'path' => $image->path,
+                ]);
+
+                $result['failed']++;
+
+                continue;
+            }
+
+            $this->repository->forceDeleteById($image->id);
+            $result['deleted']++;
+        }
+
+        return $result;
     }
 
     /**

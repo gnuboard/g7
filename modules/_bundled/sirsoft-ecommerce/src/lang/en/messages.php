@@ -1590,6 +1590,11 @@ return [
             'dry_run' => 'To delete: :count (past retention, days: :days)',
             'done' => 'Claim temporary attachment cleanup complete: targets :scanned / deleted :deleted / failed :failed',
         ],
+        'prune_temp_category_images' => [
+            'retention_disabled' => 'Cleanup was skipped because the temporary image retention period is less than 1 day.',
+            'dry_run' => 'Unlinked temporary category images past retention (days: :days): :count',
+            'done' => 'Deleted :deleted of :scanned temporary category images past retention (days: :days). (Failed: :failed)',
+        ],
         'prune_temp_product_images' => [
             'retention_disabled' => 'Cleanup was skipped because the temporary image retention period is less than 1 day.',
             'dry_run' => 'Unlinked temporary product images past retention (days: :days): :count',
