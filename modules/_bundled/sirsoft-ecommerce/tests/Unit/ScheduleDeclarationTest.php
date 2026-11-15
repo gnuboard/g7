@@ -49,6 +49,7 @@ class ScheduleDeclarationTest extends ModuleTestCase
             'cancel-pending-orders' => ['sirsoft-ecommerce:cancel-pending-orders', '0 0 * * *', null, ['module_setting:order_settings.auto_cancel_expired']],
             'prune-expired-carts' => ['sirsoft-ecommerce:prune-expired-carts', '0 0 * * *', null, []],
             'prune-temp-product-images' => ['sirsoft-ecommerce:prune-temp-product-images', '0 0 * * *', null, []],
+            'prune-temp-category-images' => ['sirsoft-ecommerce:prune-temp-category-images', '0 0 * * *', null, []],
             'prune-temp-orders' => ['sirsoft-ecommerce:prune-temp-orders', '0 * * * *', null, []],
             'earn-mileage' => ['sirsoft-ecommerce:earn-mileage', '0 * * * *', null, ['module_setting:mileage.enabled']],
             'expire-mileage' => ['sirsoft-ecommerce:expire-mileage', '0 0 * * *', null, ['module_setting:mileage.expiry_enabled']],

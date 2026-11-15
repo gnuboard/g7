@@ -340,7 +340,7 @@ null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview:
 | 레이아웃 확장 | 16개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
-| 스케줄 | 13개 | [스케줄](docs/extension-points.md#스케줄) |
+| 스케줄 | 14개 | [스케줄](docs/extension-points.md#스케줄) |
 | 알림 정의 | 57개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
@@ -474,10 +474,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 783개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 785개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 319개 | `vitest.config.ts` |
 | Playwright | 84개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 497개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 498개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

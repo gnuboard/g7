@@ -4222,6 +4222,16 @@ class Module extends AbstractModule
                 'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'prune-temp-category-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '임시 카테고리 이미지 삭제', 'en' => 'Prune temporary category images'],
+                // 카테고리를 저장하면 temp_key 가 비워지므로 남아 있으면 끝내 저장되지 않은 폼 세션 부산물이다 (보존기간은 커맨드 옵션, #876)
+                'description' => ['ko' => '새 카테고리 폼에서 올리고 저장하지 않은 임시 이미지를 지웁니다.', 'en' => 'Deletes temporary images uploaded in the new category form that were never saved.'],
+                'command' => 'sirsoft-ecommerce:prune-temp-category-images',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+            ],
+            [
                 'name' => 'prune-temp-orders',
                 'type' => 'artisan',
                 'label' => ['ko' => '만료 임시 주문 삭제', 'en' => 'Prune expired temporary orders'],

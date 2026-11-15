@@ -28,6 +28,7 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExportsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PrunePendingClaimImagesCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempCategoryImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempProductImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -300,6 +301,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         PruneExpiredTempOrdersCommand::class,
         PrunePendingClaimImagesCommand::class,
         PruneTempProductImagesCommand::class,
+        PruneTempCategoryImagesCommand::class,
         PruneExportsCommand::class,
         ReconcileMileageBalanceCommand::class,
     ];

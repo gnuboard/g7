@@ -58,7 +58,11 @@ class CoreUpdateWebFlowTest extends TestCase
     }
 
     /**
-     * 테스트가 심은 실행 상태 파일과 적용 목록 파일을 지워 다음 테스트로 상태가 새지 않게 한다.
+     * 테스트가 심은 실행 상태 파일과 적용 목록 파일, 업데이트 진행 표시를 지워 다음 테스트로 상태가 새지 않게 한다.
+     *
+     * `advance` 단계 실행은 웹 요청 하나 동안만 산다는 전제로 `G7_UPDATE_IN_PROGRESS` 를 켜고 끄지 않는다.
+     * 시험은 같은 프로세스가 이어지므로 남겨 두면 뒤 시험의 코어 버전 판정이 「업데이트 중」으로 바뀐다
+     * (확장 자동 비활성화의 낮은 버전 안전망이 돌지 않는다).
      *
      * @return void 반환값 없음
      */
@@ -69,6 +73,9 @@ class CoreUpdateWebFlowTest extends TestCase
                 @unlink($path);
             }
         }
+
+        putenv('G7_UPDATE_IN_PROGRESS');
+        unset($_ENV['G7_UPDATE_IN_PROGRESS'], $_SERVER['G7_UPDATE_IN_PROGRESS']);
 
         parent::tearDown();
     }

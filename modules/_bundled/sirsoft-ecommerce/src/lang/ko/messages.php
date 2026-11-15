@@ -1579,6 +1579,11 @@ return [
             'dry_run' => '삭제 대상 :count건 (보존기간 :days일 초과)',
             'done' => '클레임 임시 첨부 정리 완료: 대상 :scanned건 / 삭제 :deleted건 / 실패 :failed건',
         ],
+        'prune_temp_category_images' => [
+            'retention_disabled' => '임시 이미지 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.',
+            'dry_run' => '보존기간(:days일) 경과 미연결 임시 카테고리 이미지: :count건',
+            'done' => '보존기간(:days일) 경과 임시 카테고리 이미지 :scanned건 중 :deleted건을 삭제했습니다. (실패 :failed건)',
+        ],
         'prune_temp_product_images' => [
             'retention_disabled' => '임시 이미지 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.',
             'dry_run' => '보존기간(:days일) 경과 미연결 임시 상품 이미지: :count건',

@@ -1445,6 +1445,11 @@ return [
             'dry_run' => '削除対象 :count件 (保持期間 :days日超過)',
             'done' => 'クレーム一時添付ファイルのクリーンアップが完了しました: 対象 :scanned件 / 削除 :deleted件 / 失敗 :failed件',
         ],
+        'prune_temp_category_images' => [
+            'retention_disabled' => '一時画像の保持期間が1日未満のため、クリーンアップを実行しませんでした。',
+            'dry_run' => '保持期間(:days日)を過ぎた未連結の一時カテゴリ画像: :count件',
+            'done' => '保持期間(:days日)を過ぎた一時カテゴリ画像:scanned件のうち:deleted件を削除しました。(失敗:failed件)',
+        ],
         'prune_temp_product_images' => [
             'retention_disabled' => '一時画像の保持期間が1日未満のため、クリーンアップを実行しませんでした。',
             'dry_run' => '保持期間(:days日)を過ぎた未連結の一時商品画像: :count件',

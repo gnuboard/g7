@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
@@ -99,6 +100,32 @@ class CategoryImageRepository implements CategoryImageRepositoryInterface
     public function deleteByCategoryId(int $categoryId): int
     {
         return $this->model->where('category_id', $categoryId)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findStaleTempImages(Carbon $threshold, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->withTrashed()
+            ->whereNotNull('temp_key')
+            ->whereNull('category_id')
+            ->where('created_at', '<', $threshold)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'temp_key', 'disk', 'path', 'created_at', 'deleted_at']);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function forceDeleteById(int $id): bool
+    {
+        $image = $this->model->newQuery()->withTrashed()->find($id);
+
+        return $image?->forceDelete() ?? false;
     }
 
     /**
