@@ -29,6 +29,9 @@ class VisitRepository implements VisitRepositoryInterface
      * 한쪽이 롤백됩니다. 간격 잠금이 바로 중복 방문을 막는 장치이므로 없애지 않고, 호출자가
      * 트랜잭션을 다시 시도합니다(`VisitService::STORE_ATTEMPTS`).
      *
+     * 방문자 키 잠금(`VisitorStoreLock`)을 쥔 적재는 이 메서드 대신 `findOpenVisitWithRowLock()`
+     * 을 씁니다. 이 메서드는 그 잠금을 쓸 수 없을 때(파일 캐시·잠금 대기 초과 등)의 경로입니다.
+     *
      * @param  string  $visitorKey  방문자 키
      * @param  Carbon  $since  이 시각 이후에 활동이 있어야 같은 방문으로 본다
      * @return AnalyticsVisit|null 이어지는 방문 (없으면 null)
@@ -39,6 +42,62 @@ class VisitRepository implements VisitRepositoryInterface
             ->where('visitor_key', $visitorKey)
             ->where('last_action_at', '>=', $since)
             ->orderByDesc('last_action_at')
+            ->lockForUpdate()
+            ->first();
+    }
+
+    /**
+     * 아직 이어지는 방문을 잠금 없이 찾고, 찾은 행만 기본키로 잠급니다.
+     *
+     * 호출자가 방문자 키 잠금(`VisitorStoreLock`)으로 같은 방문자의 적재를 이미 한 줄로 세웠을
+     * 때만 씁니다. 그때는 같은 방문자의 다른 적재가 끼어들지 않으므로 「방문 없음」을 지키는
+     * 간격 잠금이 필요 없고, 갱신할 행 하나만 잠그면 됩니다 — 범위 잠금이 만들던 교착이 생기지
+     * 않습니다.
+     *
+     * 첫 조회는 쓰기 연결로 읽습니다(읽기 복제본은 방금 확정된 방문을 아직 모를 수 있다).
+     * 행 잠금은 조건 없이 기본키로만 걸어 InnoDB 가 다른 색인의 간격을 잠그지 않게 하고, 조건은
+     * 잠근 뒤의 최신 값으로 다시 확인합니다. 호출자는 트랜잭션 안에서 불러야 합니다.
+     *
+     * @param  string  $visitorKey  방문자 키
+     * @param  Carbon  $since  이 시각 이후에 활동이 있어야 같은 방문으로 본다
+     * @return AnalyticsVisit|null 이어지는 방문 (없거나 잠그는 사이 조건을 벗어났으면 null)
+     */
+    public function findOpenVisitWithRowLock(string $visitorKey, Carbon $since): ?AnalyticsVisit
+    {
+        $id = AnalyticsVisit::query()
+            ->useWritePdo()
+            ->where('visitor_key', $visitorKey)
+            ->where('last_action_at', '>=', $since)
+            ->orderByDesc('last_action_at')
+            ->value('id');
+
+        if ($id === null) {
+            return null;
+        }
+
+        $visit = $this->lockRow((int) $id);
+
+        if ($visit === null
+            || $visit->visitor_key !== $visitorKey
+            || $visit->last_action_at === null
+            || $visit->last_action_at->lessThan($since)
+        ) {
+            return null;
+        }
+
+        return $visit;
+    }
+
+    /**
+     * 방문 행 하나를 기본키로 잠근 채 다시 읽습니다.
+     *
+     * @param  int  $id  방문 ID
+     * @return AnalyticsVisit|null 잠근 방문 (사라졌으면 null)
+     */
+    private function lockRow(int $id): ?AnalyticsVisit
+    {
+        return AnalyticsVisit::query()
+            ->whereKey($id)
             ->lockForUpdate()
             ->first();
     }
@@ -65,6 +124,49 @@ class VisitRepository implements VisitRepositoryInterface
             ->first();
 
         if ($visit === null) {
+            return null;
+        }
+
+        $visit->fill(['visitor_key' => $newKey, 'visitor_key_type' => 'cookie'])->save();
+
+        return $visit;
+    }
+
+    /**
+     * 서버 폴백이 임시 키로 만든 방문을 잠금 없이 찾고, 찾은 행만 기본키로 잠가 이어받습니다.
+     *
+     * 호출자가 임시 키와 새 쿠키 키를 모두 방문자 키 잠금(`VisitorStoreLock`)으로 쥐었을 때만
+     * 씁니다. 같은 임시 키를 노리는 다른 첫 비콘(쿠키 없는 탭 두 개)과 그 임시 키로 적재하는
+     * 서버 폴백이 그 잠금 뒤에 줄을 서므로, 한 방문이 두 키로 갈리지 않습니다. 잠근 뒤 조건을
+     * 최신 값으로 다시 확인합니다 — 그사이 다른 경로가 이어받았으면 이어받지 않습니다.
+     *
+     * @param  string  $provisionalKey  서버 폴백이 쓴 임시 키
+     * @param  string  $newKey  응답에 심은 쿠키 값
+     * @param  Carbon  $since  이 시각 이후에 활동이 있어야 이어받는다
+     * @return AnalyticsVisit|null 이어받은 방문 (없으면 null)
+     */
+    public function adoptServerVisitWithRowLock(string $provisionalKey, string $newKey, Carbon $since): ?AnalyticsVisit
+    {
+        $id = AnalyticsVisit::query()
+            ->useWritePdo()
+            ->where('visitor_key', $provisionalKey)
+            ->where('visitor_key_type', VisitorRecognizer::KEY_TYPE_SERVER)
+            ->where('last_action_at', '>=', $since)
+            ->orderByDesc('last_action_at')
+            ->value('id');
+
+        if ($id === null) {
+            return null;
+        }
+
+        $visit = $this->lockRow((int) $id);
+
+        if ($visit === null
+            || $visit->visitor_key !== $provisionalKey
+            || $visit->visitor_key_type !== VisitorRecognizer::KEY_TYPE_SERVER
+            || $visit->last_action_at === null
+            || $visit->last_action_at->lessThan($since)
+        ) {
             return null;
         }
 

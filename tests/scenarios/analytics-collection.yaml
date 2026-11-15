@@ -20,6 +20,8 @@ description: |
   적용 지점:
     - `app/Analytics/**` 순수 로직(제외 판정·방문자 식별·환경/유입 분류·URL 정규화).
     - `app/Services/Analytics/VisitService` 가 트랜잭션 안에서 방문을 잠그고 적재한다.
+    - 공유 캐시(DB·Redis·Memcached)면 `VisitorStoreLock` 이 같은 방문자의 적재를 한 줄로 세우고
+      열린 방문은 기본키 행 잠금만 건다. 그 밖에는 범위 잠금 + 재시도(#841).
     - 방문 묶기: 같은 방문자 키 + 마지막 활동이 창(기본 30분) 안.
     - 서버 폴백과 첫 비콘이 같은 페이지를 두 번 세지 않도록 60초 안의 행을 병합한다.
 
@@ -48,6 +50,11 @@ axes:
   # (방문 1건이 잡 1개가 되지 않도록 — #682 S3 라운드 6), 활동 로그 같은 리스너는 큐로 간다.
   dispatch: [sync, queue]
   visit_state: [new, open, timed_out, max_actions]
+  # 같은 방문자의 적재를 방문자 키 잠금으로 한 줄로 세우는가 (#841) — 캐시 저장소가 정한다
+  store_lock: [database, redis, file, array]
+  lock_state: [free, held, store_error]
+  transaction: [none, outer]
+  concurrency: [same_visitor, different_visitors]
   merge: [within_window, outside_window, different_url]
   init: [true, false]
   prev_time_spent: [present, absent]
@@ -96,6 +103,22 @@ effects:
   - deadlocked_store_is_retried_into_the_same_visit
   - deadlock_retries_are_bounded_and_logged_once
   - deadlock_inside_outer_transaction_is_not_retried
+  # 방문자 키 잠금 (#841) — 공유 캐시(DB·Redis)면 같은 방문자의 적재를 한 줄로 세워 범위 잠금 교착을 없앤다
+  - shared_cache_store_serializes_same_visitor_stores
+  - local_cache_store_keeps_range_lock_with_retry
+  - lock_wait_timeout_falls_back_to_range_lock
+  - lock_store_error_falls_back_to_range_lock
+  - outer_transaction_keeps_range_lock
+  - first_beacon_locks_the_provisional_key_too
+  - row_lock_lookup_locks_only_the_primary_key
+  - store_lock_is_released_after_commit
+  - concurrent_same_visitor_beacons_never_deadlock
+  - concurrent_different_visitors_make_one_visit_each
+  # 처음 보는 이름을 여럿이 동시에 사전에 넣으면 진 쪽은 잠금 읽기로 다시 읽어 비콘을 버리지 않는다
+  - concurrent_dictionary_insert_inside_store_keeps_the_beacon
+  # 재조회는 잠금 읽기라 적재 트랜잭션의 스냅샷에 묶이지 않는다 — 다른 연결이 먼저 확정한 이름·솔트를 읽는다
+  - dictionary_reread_inside_transaction_sees_row_committed_elsewhere
+  - daily_salt_reread_inside_transaction_sees_salt_committed_elsewhere
   - previous_pageview_dwell_time_is_confirmed_by_next_request
   - dwell_time_is_capped_at_configured_maximum
   - bounce_flag_releases_on_second_pageview
@@ -210,6 +233,9 @@ test_files:
   - tests/Unit/Analytics/CollectFailureReasonTest.php
   - tests/Feature/Analytics/VisitServiceTest.php
   - tests/Feature/Analytics/VisitServiceDeadlockRetryTest.php
+  - tests/Feature/Analytics/VisitServiceStoreLockTest.php
+  - tests/Feature/Analytics/VisitServiceConcurrencyTest.php
+  - tests/Feature/Analytics/UniqueRaceRereadTest.php
   - tests/Feature/Analytics/ActionNameRepositoryTest.php
   - tests/Feature/Analytics/CollectControllerTest.php
   - tests/Feature/Analytics/CollectResolutionTest.php
