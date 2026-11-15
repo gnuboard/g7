@@ -58,6 +58,9 @@ class ExtensionStaticCacheService
     /** 게시 트리 디렉토리 권한 — umask 무력화 대상 */
     private const PUBLISH_DIR_MODE = 0775;
 
+    /** 게시 파일 권한 — 웹서버 계정이 읽을 수 있어야 한다(umask 무력화 대상) */
+    private const PUBLISH_FILE_MODE = 0664;
+
     /**
      * 게시 루트 확보 실패 사유 → 운영자가 읽는 요약.
      *
@@ -1370,6 +1373,8 @@ class ExtensionStaticCacheService
             );
         }
 
+        $this->hardenFile($target);
+
         $files[] = $this->relativePath($target, $tmp);
     }
 
@@ -1456,6 +1461,24 @@ class ExtensionStaticCacheService
                 "Truncated write: {$absolutePath} ({$written} of {$expected} bytes)"
             );
         }
+
+        $this->hardenFile($absolutePath);
+    }
+
+    /**
+     * 게시 파일의 퍼미션을 umask 와 무관하게 정합화합니다.
+     *
+     * 게시 트리는 웹서버가 PHP 를 거치지 않고 직접 내준다. 파일 퍼미션을 umask 에 맡기면 umask 0027·0077 인
+     * 실행에서 0640·0600 이 되어, PHP 와 다른 계정으로 도는 웹서버가 파일마다 403 을 내고 버전 디렉토리의
+     * `.htaccess` 를 읽지 못하면 그 디렉토리 전체가 403(`Server unable to read htaccess file`)이 된다.
+     * 디렉토리(02775)와 짝을 맞춰 0664 로 명시한다.
+     *
+     * @param  string  $absolutePath  게시 파일 절대 경로
+     * @return void 반환값 없음
+     */
+    private function hardenFile(string $absolutePath): void
+    {
+        @chmod($absolutePath, self::PUBLISH_FILE_MODE);
     }
 
     /**

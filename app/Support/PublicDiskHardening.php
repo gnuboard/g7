@@ -169,6 +169,8 @@ final class PublicDiskHardening
         }
 
         if ((! file_exists($path) || is_writable($path)) && @file_put_contents($path, $content, LOCK_EX) !== false) {
+            self::ensureWebReadable($path);
+
             return true;
         }
 
@@ -189,7 +191,29 @@ final class PublicDiskHardening
             return false;
         }
 
+        self::ensureWebReadable($path);
+
         return true;
+    }
+
+    /**
+     * 규칙 파일에 모든 계정의 읽기 권한을 더합니다.
+     *
+     * 파일 퍼미션은 프로세스 umask 를 따른다 — umask 0027·0077 인 실행에서 0640·0600 이 되면, PHP 와 다른
+     * 계정으로 도는 웹서버가 규칙 파일을 읽지 못하고 Apache 가 공개 디스크(`/storage/**`) 전체를 403
+     * (`Server unable to read htaccess file`)으로 막는다. 다른 비트는 건드리지 않는다.
+     *
+     * @param  string  $path  규칙 파일 경로
+     * @return void 반환값 없음
+     */
+    private static function ensureWebReadable(string $path): void
+    {
+        clearstatcache(true, $path);
+        $perms = @fileperms($path);
+
+        if ($perms !== false && ($perms & 0044) !== 0044) {
+            @chmod($path, ($perms & 0777) | 0044);
+        }
     }
 
     /**
