@@ -144,7 +144,7 @@ return [
         'thumbnails:pregenerate' => 'Generate thumbnails for images that are already uploaded (existing thumbnails are skipped)',
         'thumbnails:prune' => 'Clean up thumbnail files whose preset changed or whose original is gone',
         'trusted-proxy:status' => 'Check the reverse proxy trust settings (TRUSTED_PROXIES)',
-        'user:reset-password' => 'Reset a member password from the server terminal (admin account recovery without mail)',
+        'user:reset-password' => 'Reset a member password from the server terminal (admin account recovery without mail; omit the email for the super administrator)',
         'vendor-bundle:build-all' => 'Build the vendor bundles of the core and every _bundled module and plugin at once',
         'vendor-bundle:verify-all' => 'Verify the vendor bundle integrity of the core and every _bundled module and plugin at once',
     ],

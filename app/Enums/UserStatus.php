@@ -68,6 +68,20 @@ enum UserStatus: string
     }
 
     /**
+     * 로그인을 허용하는 상태 값인지 판정합니다.
+     *
+     * 휴면은 "막을 상태" 가 아니라 "되돌릴 상태" 라서 통과 목록에 든다. 로그인 경로(`AuthService`)와
+     * 터미널 비밀번호 재설정의 「바꿔도 로그인 불가」 경고가 이 한 곳을 함께 읽어 어휘가 갈라지지 않게 한다.
+     *
+     * @param  string|null  $value  사용자 상태 값
+     * @return bool 로그인 허용 여부
+     */
+    public static function allowsLogin(?string $value): bool
+    {
+        return in_array($value, [self::Active->value, self::Dormant->value], true);
+    }
+
+    /**
      * 상태의 번역 키를 반환합니다.
      *
      * @return string 번역 키

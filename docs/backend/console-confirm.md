@@ -141,6 +141,7 @@ if (! $this->option('force')) {
 없는 명령은 터미널에서 실행해 질문에 답하라고 안내한다. 되돌릴 수 없는 삭제(`analytics:purge` 등)의 필수 동의
 표식(`--confirm`)은 비대화형 동의가 아니다. 이 규칙을 따르는 명령: `core:update`, `module:update`, `plugin:update`,
 `template:update`, `module:uninstall`, `plugin:uninstall`, `template:uninstall`, `language-pack:uninstall`,
+`user:reset-password`(이메일을 생략해 최고관리자를 대상으로 할 때 — 확인 생략 옵션 대신 이메일 지정을 안내),
 `analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`,
 `settings:migrate-to-json`.
 

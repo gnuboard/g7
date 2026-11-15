@@ -838,6 +838,16 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
+     * 탈퇴하지 않은 최고관리자 전원을 가입 순으로 조회합니다.
+     *
+     * @return Collection<int, User> 최고관리자 목록 (없으면 빈 컬렉션)
+     */
+    public function getSuperAdmins(): Collection
+    {
+        return User::superAdmins()->active()->orderBy('id')->get();
+    }
+
+    /**
      * 특정 권한 identifier 를 가진 역할에 소속된 모든 사용자를 조회합니다.
      *
      * "권한을 가진 자" 기준이므로 권한이 회수되면 자동으로 결과에서 제외됩니다.

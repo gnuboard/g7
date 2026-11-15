@@ -139,7 +139,7 @@ return [
         'thumbnails:pregenerate' => 'アップロード済みの画像のサムネイルを事前に作成します (既にあるサムネイルはスキップ)',
         'thumbnails:prune' => '規格が変わったか元画像がなくなったサムネイルファイルを整理します',
         'trusted-proxy:status' => 'リバースプロキシの信頼設定（TRUSTED_PROXIES）の状態を点検します',
-        'user:reset-password' => '会員のパスワードをサーバーのターミナルで再設定します（メールなしで管理者アカウントを復旧）',
+        'user:reset-password' => '会員のパスワードをサーバーのターミナルで再設定します（メールなしで管理者アカウントを復旧、メールアドレスを省略すると最高管理者）',
         'vendor-bundle:build-all' => 'コア + すべての _bundled モジュール/プラグインの vendor バンドルを一括ビルドします',
         'vendor-bundle:verify-all' => 'コア + すべての _bundled モジュール/プラグインの vendor バンドルの整合性を一括検証します',
     ],

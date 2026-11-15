@@ -1248,18 +1248,15 @@ class AuthService
     /**
      * 로그인을 허용하는 상태인지 판정합니다.
      *
-     * 휴면은 "막을 상태" 가 아니라 "되돌릴 상태" 라서 통과 목록에 든다 — 판정을 한 곳에 두어
-     * 비밀번호 경로·2FA 완료 경로·재발송 경로가 같은 어휘를 쓰게 한다.
+     * 판정은 `UserStatus::allowsLogin()` 한 곳에 둔다 — 비밀번호 경로·2FA 완료 경로·재발송 경로와
+     * 터미널 비밀번호 재설정 경고가 같은 어휘를 쓴다.
      *
      * @param  string|null  $status  사용자 상태 값
      * @return bool 로그인 허용 여부
      */
     private function isLoginAllowedStatus(?string $status): bool
     {
-        return in_array($status, [
-            UserStatus::Active->value,
-            UserStatus::Dormant->value,
-        ], true);
+        return UserStatus::allowsLogin($status);
     }
 
     /**

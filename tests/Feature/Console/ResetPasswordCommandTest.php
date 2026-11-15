@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Console;
 
+use App\Console\Commands\User\ResetPasswordCommand;
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\PasswordChangeService;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -284,5 +287,181 @@ class ResetPasswordCommandTest extends TestCase
 
         $this->assertFalse($definition->hasOption('password'));
         $this->assertSame(['email'], array_keys($definition->getArguments()));
+    }
+
+    /**
+     * 이메일을 생략하면 단 하나의 최고관리자를 대상으로 보여 주고, 확인을 받은 뒤 그 계정만 재설정한다 (#790).
+     *
+     * 회귀 성격: 비밀번호를 잊은 최고관리자는 설치 때 넣은 이메일도 기억하지 못해 이 명령을 쓸 수 없었다(tinker 로 우회).
+     *
+     * @effects reset_password_without_email_targets_single_super_admin_after_confirm
+     *
+     * @return void 반환값 없음
+     */
+    public function test_without_email_resets_single_super_admin_after_confirm(): void
+    {
+        $super = $this->onlySuperAdmins(1)[0];
+        putenv('G7_RESET_PASSWORD=Super-Passw0rd!Strong');
+
+        $this->artisan('user:reset-password')
+            ->expectsOutputToContain(__('user.commands.reset_password.super_admin_target', ['email' => $super->email]))
+            ->expectsQuestion(__('user.commands.reset_password.confirm_super_admin').' (yes/no) [no]', 'yes')
+            ->assertExitCode(0);
+
+        $this->assertTrue(Hash::check('Super-Passw0rd!Strong', $super->fresh()->password), '최고관리자 비밀번호가 바뀌어야 한다');
+        $this->assertTrue(Hash::check('Old-Passw0rd!x', $this->user->fresh()->password), '최고관리자가 아닌 회원은 그대로');
+    }
+
+    /**
+     * 확인에 「아니오」로 답하면 아무것도 바꾸지 않고 의도한 취소(0)로 끝난다.
+     *
+     * @effects reset_password_without_email_declined_changes_nothing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_without_email_declined_changes_nothing(): void
+    {
+        $super = $this->onlySuperAdmins(1)[0];
+        putenv('G7_RESET_PASSWORD=Super-Passw0rd!Strong');
+
+        $this->artisan('user:reset-password')
+            ->expectsQuestion(__('user.commands.reset_password.confirm_super_admin').' (yes/no) [no]', 'no')
+            ->expectsOutputToContain(__('user.commands.reset_password.aborted'))
+            ->assertExitCode(0);
+
+        $this->assertTrue(Hash::check('Old-Passw0rd!x', $super->fresh()->password), '거절했는데 비밀번호가 바뀌었다');
+        $this->assertSame(1, $super->fresh()->tokens()->count(), '거절했는데 로그아웃됐다');
+    }
+
+    /**
+     * 최고관리자가 여럿이면 고르게 하고, 고른 계정만 재설정한다.
+     *
+     * @effects reset_password_without_email_chooses_among_super_admins
+     *
+     * @return void 반환값 없음
+     */
+    public function test_without_email_chooses_among_super_admins(): void
+    {
+        [$first, $second] = $this->onlySuperAdmins(2);
+        putenv('G7_RESET_PASSWORD=Super-Passw0rd!Strong');
+
+        $this->artisan('user:reset-password')
+            ->expectsChoice(__('user.commands.reset_password.choose_super_admin'), $second->email, [$first->email, $second->email])
+            ->expectsQuestion(__('user.commands.reset_password.confirm_super_admin').' (yes/no) [no]', 'yes')
+            ->assertExitCode(0);
+
+        $this->assertTrue(Hash::check('Super-Passw0rd!Strong', $second->fresh()->password), '고른 계정이 바뀌어야 한다');
+        $this->assertTrue(Hash::check('Old-Passw0rd!x', $first->fresh()->password), '고르지 않은 계정은 그대로');
+    }
+
+    /**
+     * 확인에 답할 수 없는 실행(--no-interaction, 콘솔 없는 원격 명령)은 대상을 추측하지 않는다 —
+     * 최고관리자 이메일을 보여 주고 다시 실행할 명령을 안내한 뒤 실패(1)로 끝난다.
+     *
+     * @effects reset_password_without_email_unanswerable_lists_super_admins_and_fails
+     *
+     * @return void 반환값 없음
+     */
+    public function test_without_email_unanswerable_lists_super_admins_and_fails(): void
+    {
+        $super = $this->onlySuperAdmins(1)[0];
+        putenv('G7_RESET_PASSWORD=Super-Passw0rd!Strong');
+
+        $this->artisan('user:reset-password', ['--no-interaction' => true])
+            ->expectsOutputToContain(__('user.commands.reset_password.super_admin_unconfirmable'))
+            ->expectsOutputToContain('- '.$super->email)
+            ->expectsOutputToContain('php artisan user:reset-password '.$super->email)
+            ->assertExitCode(1);
+        $this->assertTrue(Hash::check('Old-Passw0rd!x', $super->fresh()->password));
+
+        // `--no-interaction` 없이도 콘솔이 없는 실행(Windows 원격 명령 등)은 같은 길로 간다
+        $this->app[Kernel::class]->registerCommand(new class extends ResetPasswordCommand
+        {
+            /**
+             * 응답을 받을 수 없는 실행으로 판정합니다.
+             *
+             * @return bool 늘 false
+             */
+            protected function canPromptForAnswer(): bool
+            {
+                return false;
+            }
+        });
+        $this->artisan('user:reset-password')
+            ->expectsOutputToContain(__('user.commands.reset_password.super_admin_unconfirmable'))
+            ->assertExitCode(1);
+        $this->assertTrue(Hash::check('Old-Passw0rd!x', $super->fresh()->password));
+    }
+
+    /**
+     * 최고관리자가 없으면(탈퇴한 최고관리자만 있는 경우 포함) 이메일을 지정하라고 하고 실패한다.
+     *
+     * @effects reset_password_without_email_fails_when_no_super_admin
+     *
+     * @return void 반환값 없음
+     */
+    public function test_without_email_fails_when_no_super_admin(): void
+    {
+        $withdrawn = $this->onlySuperAdmins(1)[0];
+        $withdrawn->forceFill(['status' => UserStatus::Withdrawn->value, 'withdrawn_at' => now()])->save();
+        putenv('G7_RESET_PASSWORD=Super-Passw0rd!Strong');
+
+        $this->artisan('user:reset-password')
+            ->expectsOutputToContain(__('user.commands.reset_password.no_super_admin'))
+            ->assertExitCode(1);
+    }
+
+    /**
+     * 회원 상태 때문에 비밀번호를 바꿔도 로그인할 수 없으면(차단 등) 그 이유를 경고한다. 상태는 바꾸지 않는다.
+     *
+     * @effects reset_password_warns_when_status_still_blocks_login
+     *
+     * @return void 반환값 없음
+     */
+    public function test_warns_when_status_still_blocks_login(): void
+    {
+        putenv('G7_RESET_PASSWORD=Env-Passw0rd!Strong');
+
+        // 로그인이 막히는 상태(사용 중지·차단·인증 대기)는 경고하고, 상태는 바꾸지 않는다
+        foreach ([UserStatus::Inactive, UserStatus::Blocked, UserStatus::PendingVerification] as $blocked) {
+            $this->user->forceFill(['status' => $blocked->value])->save();
+
+            $this->artisan('user:reset-password', ['email' => $this->user->email])
+                ->expectsOutputToContain(__('user.commands.reset_password.status_blocks_login', ['status' => $blocked->label()]))
+                ->assertExitCode(0);
+            $this->assertSame($blocked->value, (string) $this->user->fresh()->getRawOriginal('status'), $blocked->value.' 상태는 바꾸지 않는다');
+        }
+
+        // 로그인이 되는 상태(활성·휴면)에는 경고가 없다 — 판정은 로그인 경로와 같은 UserStatus::allowsLogin()
+        foreach ([UserStatus::Active, UserStatus::Dormant] as $allowed) {
+            $this->user->forceFill(['status' => $allowed->value])->save();
+            $this->artisan('user:reset-password', ['email' => $this->user->email])
+                ->doesntExpectOutputToContain(__('user.commands.reset_password.status_blocks_login', ['status' => $allowed->label()]))
+                ->assertExitCode(0);
+        }
+    }
+
+    /**
+     * 시험용 최고관리자만 남긴다 — 기존 최고관리자는 이 트랜잭션 안에서만 내려 둔다(롤백으로 복원).
+     *
+     * @param  int  $count  만들 최고관리자 수
+     * @return array<int, User> 만든 최고관리자 (가입 순, 각자 로그인 토큰 1개)
+     */
+    private function onlySuperAdmins(int $count): array
+    {
+        User::query()->where('is_super', true)->update(['is_super' => false]);
+
+        $supers = [];
+        for ($i = 0; $i < $count; $i++) {
+            $super = User::factory()->create([
+                'email' => 'super-'.$i.'-'.bin2hex(random_bytes(4)).'@example.test',
+                'password' => Hash::make('Old-Passw0rd!x'),
+            ]);
+            $super->forceFill(['is_super' => true])->save();
+            $super->createToken('s');
+            $supers[] = $super;
+        }
+
+        return $supers;
     }
 }
