@@ -51,8 +51,10 @@ class SaltRepository implements SaltRepositoryInterface
             ]);
         } catch (UniqueConstraintViolationException $e) {
             // 같은 순간에 다른 요청이 그날 솔트를 만들었다. 먼저 만든 쪽 값을 써야
-            // 같은 날 방문자 키가 두 갈래로 갈라지지 않는다.
-            $raced = AnalyticsSalt::query()->find($date);
+            // 같은 날 방문자 키가 두 갈래로 갈라지지 않는다. 트랜잭션 안에서 불리면 일반
+            // 조회는 그 트랜잭션의 스냅샷을 읽어 방금 확정된 행을 보지 못하므로 잠금 읽기로
+            // 최신 확정 값을 읽는다(기본키 일치라 그 행 하나만 잠근다).
+            $raced = AnalyticsSalt::query()->sharedLock()->find($date);
 
             if (! $raced) {
                 throw $e;
