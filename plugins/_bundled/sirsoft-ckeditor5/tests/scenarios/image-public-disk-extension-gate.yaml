@@ -1,0 +1,18 @@
+feature: 에디터 이미지 — 공개 자산 디스크에는 내보낼 확장자만 (#891)
+
+description: |
+  저장 확장자가 「공개 디스크로 내보낼 확장자」 밖이면 플러그인 기본 디스크에 저장하고 서버를 거치는 주소로 내려보낸다.
+  직접 주소는 경로 확장자가 목록 안일 때만 발급한다(기존 행 포함). 저장 확장자는 내용에서만 정한다.
+
+axes:
+  case:
+    - editor__not_exportable
+    - editor__exportable
+    - editor__legacy_row_not_exportable
+
+effects:
+  - non_exportable_image_stays_on_default_disk_with_api_url
+  - exportable_image_keeps_direct_url
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/ImagePublicDiskExtensionGateTest.php

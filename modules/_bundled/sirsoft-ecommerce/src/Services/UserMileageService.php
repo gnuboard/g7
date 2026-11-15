@@ -204,12 +204,18 @@ class UserMileageService
      * @param  int  $userId  사용자 ID
      * @param  int  $orderAmount  주문 금액 (사용 한도 계산용)
      * @param  string|null  $currency  통화 코드 (null 시 기본통화)
+     * @param  int|null  $productTotal  상품 합계 (판매가 × 수량 합, 쿠폰·배송비 반영 전 — 「사용 가능 최소 상품 합계」 판정용. null 이면 판정하지 않음)
      * @return int 사용 가능한 최대 마일리지
      */
-    public function getMaxUsable(int $userId, int $orderAmount, ?string $currency = null): int
+    public function getMaxUsable(int $userId, int $orderAmount, ?string $currency = null, ?int $productTotal = null): int
     {
         // 기본 통화 사용 규칙 미설정 시 마일리지 사용 불가 (M2)
         if (! $this->isMileageUsable()) {
+            return 0;
+        }
+
+        // 상품 합계가 기준에 못 미치면 사용 자체가 불가 — 안내값도 0 (검증과 같은 기준)
+        if ($this->isBelowMinProductTotal($productTotal)) {
             return 0;
         }
 
@@ -248,12 +254,12 @@ class UserMileageService
      *
      * @param  int  $paymentAmount  결제 금액 (정률 상한 계산 기준, 마일리지 차감 전)
      * @param  string|null  $currency  통화 코드 (null 시 기본통화)
-     * @return array{min_use_amount: int, use_unit: int, max_use_amount: int} 사용 정책
+     * @return array{min_use_amount: int, use_unit: int, max_use_amount: int, min_product_total_for_use: int} 사용 정책
      */
     public function getUsagePolicy(int $paymentAmount, ?string $currency = null): array
     {
         if (! $this->isMileageUsable()) {
-            return ['min_use_amount' => 0, 'use_unit' => 1, 'max_use_amount' => 0];
+            return ['min_use_amount' => 0, 'use_unit' => 1, 'max_use_amount' => 0, 'min_product_total_for_use' => 0];
         }
 
         $rule = $this->currencyRule($currency ?? $this->defaultCurrency());
@@ -262,7 +268,36 @@ class UserMileageService
             'min_use_amount' => (int) ($rule['min_use_amount'] ?? 0),
             'use_unit' => max(1, (int) ($rule['use_unit'] ?? 1)),
             'max_use_amount' => $this->resolveAllowedUseAmount($rule, $paymentAmount),
+            // 상품 합계가 이 금액 미만이면 사용 불가 (꺼져 있으면 0)
+            'min_product_total_for_use' => $this->minProductTotalForUse(),
         ];
+    }
+
+    /**
+     * 「사용 가능 최소 상품 합계」 기준을 반환합니다.
+     *
+     * @return int 기준 상품 합계 (꺼져 있으면 0)
+     */
+    private function minProductTotalForUse(): int
+    {
+        if (! (bool) $this->settings->getSetting('mileage.min_product_total_for_use_enabled', false)) {
+            return 0;
+        }
+
+        return max(0, (int) $this->settings->getSetting('mileage.min_product_total_for_use', 0));
+    }
+
+    /**
+     * 상품 합계가 「사용 가능 최소 상품 합계」에 못 미치는지 판정합니다.
+     *
+     * @param  int|null  $productTotal  상품 합계 (null 이면 판정하지 않음)
+     * @return bool 기준 미만이면 true
+     */
+    private function isBelowMinProductTotal(?int $productTotal): bool
+    {
+        $min = $this->minProductTotalForUse();
+
+        return $min > 0 && $productTotal !== null && $productTotal < $min;
     }
 
     /**
@@ -298,8 +333,14 @@ class UserMileageService
                 'max_use_type' => (string) ($rule['max_use_type'] ?? 'percent'),
                 'max_use_percent' => (float) ($rule['max_use_percent'] ?? 100),
                 'max_use_value' => (int) ($rule['max_use_value'] ?? 0),
+                // 주문 시점의 「사용 가능 최소 상품 합계」 (꺼져 있으면 0)
+                'min_product_total_for_use' => $this->minProductTotalForUse(),
                 MileageRounding::UNIT_KEY => $earnRounding['unit'],
                 MileageRounding::METHOD_KEY => $earnRounding['method'],
+            ],
+            // 적립 정책 — 재계산(부분취소 등)은 설정을 다시 읽지 않고 이 값을 따른다
+            'earn_policy' => [
+                'no_earn_when_points_used' => (bool) $this->settings->getSetting('mileage.no_earn_when_points_used', false),
             ],
             // 판정 근거 — 이 결제금액에 이 정책을 적용해 아래 상한이 나왔고, 그 안에서 사용됐다.
             'payment_amount_basis' => $paymentAmount,
@@ -315,11 +356,12 @@ class UserMileageService
      * @param  int  $usePoints  사용 요청 마일리지
      * @param  int  $paymentAmount  결제 금액 (마일리지 차감 전)
      * @param  string|null  $currency  통화 코드 (null 시 기본통화 — canUse/getMaxUsable 과 동일 기준)
+     * @param  int|null  $productTotal  상품 합계 (판매가 × 수량 합, 쿠폰·배송비 반영 전 — null 이면 「사용 가능 최소 상품 합계」를 판정하지 않음)
      * @return int 검증/보정된 사용 마일리지
      *
      * @throws MileageValidationException 검증 실패 시
      */
-    public function validateUsage(int $userId, int $usePoints, int $paymentAmount, ?string $currency = null): int
+    public function validateUsage(int $userId, int $usePoints, int $paymentAmount, ?string $currency = null, ?int $productTotal = null): int
     {
         if ($usePoints <= 0) {
             return 0;
@@ -334,6 +376,15 @@ class UserMileageService
 
         $currency = $currency ?? $this->defaultCurrency();
         $rule = $this->currencyRule($currency);
+
+        // 상품 합계가 기준 미만이면 마일리지 종류·금액과 무관하게 사용 불가
+        if ($this->isBelowMinProductTotal($productTotal)) {
+            throw new MileageValidationException(
+                __('sirsoft-ecommerce::exceptions.mileage.below_min_product_total', [
+                    'amount' => ecommerce_format_price($this->minProductTotalForUse(), $currency),
+                ])
+            );
+        }
 
         $minUse = (int) ($rule['min_use_amount'] ?? 0);
         if ($usePoints < $minUse) {
@@ -794,23 +845,17 @@ class UserMileageService
         }
 
         return DB::transaction(function () use ($userId, $dto) {
-            $expiresAt = $this->resolveAdminEarnExpiry($dto);
-
-            $tx = $this->ledger->createTransaction([
-                'user_id' => $userId,
-                'currency' => $dto->currency,
-                'type' => MileageTransactionTypeEnum::ADMIN_EARN->value,
-                'amount' => $dto->amount,
-                'remaining_amount' => $dto->amount,
-                'balance_after' => $this->ledger->getBalanceByCurrency($userId, $dto->currency) + $dto->amount,
-                'granted_by' => $dto->grantedBy,
-                'memo' => $dto->memo,
-                'expires_at' => $expiresAt,
-                'description' => $dto->description
+            $tx = $this->recordEarnLot(
+                $userId,
+                $dto->currency,
+                MileageTransactionTypeEnum::ADMIN_EARN,
+                $dto->amount,
+                $dto->grantedBy,
+                $dto->memo,
+                $this->resolveAdminEarnExpiry($dto),
+                $dto->description
                     ?? __('sirsoft-ecommerce::activity_log.description.mileage_admin_earn', ['amount' => ecommerce_format_price($dto->amount, $dto->currency)]),
-            ]);
-
-            $this->cache->recalculateForUser($userId, $dto->currency);
+            );
 
             $this->logActivity('mileage.admin_earn', [
                 'loggable' => $tx,
@@ -821,6 +866,129 @@ class UserMileageService
 
             return $tx;
         });
+    }
+
+    /**
+     * 시스템 지급 (가입 적립 등 — 지급자 없는 적립)
+     *
+     * 관리자 지급과 달리 로그인한 관리자의 권한 범위를 검사하지 않는다 — 가입 요청처럼 관리자가 없는
+     * 흐름에서 부른다. 원장에는 지급자 없음(`granted_by` NULL)으로 남고, 유효기간은 환경설정을 따른다.
+     *
+     * @param  int  $userId  대상 사용자 ID
+     * @param  MileageTransactionTypeEnum  $type  적립 유형 (적립계만)
+     * @param  int  $amount  지급 금액 (기본 통화)
+     * @param  string  $memo  메모 (지급 사유)
+     * @return MileageTransaction|null 생성된 지급 거래 (적립 유형이 아니거나 금액이 0 이하이거나 탈퇴 회원이면 null)
+     */
+    public function systemEarn(int $userId, MileageTransactionTypeEnum $type, int $amount, string $memo): ?MileageTransaction
+    {
+        // 적립 유형이 아니거나 금액이 없거나 탈퇴 회원이면 지급하지 않는다
+        if (! $type->isEarning() || $amount <= 0 || $this->isWithdrawnUser($userId)) {
+            return null;
+        }
+
+        $currency = $this->defaultCurrency();
+
+        return DB::transaction(function () use ($userId, $type, $amount, $memo, $currency) {
+            $descriptionKey = 'sirsoft-ecommerce::activity_log.description.mileage_'.$type->value;
+            $params = ['amount' => ecommerce_format_price($amount, $currency)];
+
+            $tx = $this->recordEarnLot(
+                $userId,
+                $currency,
+                $type,
+                $amount,
+                null,
+                $memo,
+                $this->resolveEarnExpiry(),
+                __($descriptionKey, $params),
+            );
+
+            $this->logActivity('mileage.'.$type->value, [
+                'loggable' => $tx,
+                'description_key' => $descriptionKey,
+                'description_params' => $params,
+                'properties' => ['granted_by' => null, 'currency' => $currency],
+            ]);
+
+            return $tx;
+        });
+    }
+
+    /**
+     * 가입 적립금을 지급합니다 (한 회원에 한 번).
+     *
+     * 환경설정이 꺼져 있거나 금액이 0 이면 아무것도 하지 않는다. 같은 회원에 가입 적립 거래가
+     * 이미 있으면 건너뛴다 — 가입 훅과 활성화 훅이 모두 와도 한 건이다.
+     *
+     * @param  int  $userId  대상 사용자 ID
+     * @return MileageTransaction|null 생성된 지급 거래 (지급하지 않았으면 null)
+     */
+    public function grantSignupMileage(int $userId): ?MileageTransaction
+    {
+        if (! (bool) $this->settings->getSetting('mileage.enabled', false)
+            || ! (bool) $this->settings->getSetting('mileage.signup_earn_enabled', false)) {
+            return null;
+        }
+
+        $amount = (int) $this->settings->getSetting('mileage.signup_earn_amount', 0);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($userId, $amount) {
+            if ($this->ledger->existsForUserByTypeForUpdate($userId, MileageTransactionTypeEnum::SIGNUP_EARN->value)) {
+                return null;
+            }
+
+            return $this->systemEarn(
+                $userId,
+                MileageTransactionTypeEnum::SIGNUP_EARN,
+                $amount,
+                __('sirsoft-ecommerce::enums.mileage_transaction_type.signup_earn')
+            );
+        });
+    }
+
+    /**
+     * 적립 lot 한 건을 원장에 기록하고 잔액 캐시를 다시 계산합니다. (호출자가 트랜잭션을 연다)
+     *
+     * @param  int  $userId  대상 사용자 ID
+     * @param  string  $currency  통화 코드
+     * @param  MileageTransactionTypeEnum  $type  적립 유형
+     * @param  float|int  $amount  지급 금액
+     * @param  int|null  $grantedBy  지급한 관리자 ID (시스템 지급이면 null)
+     * @param  string|null  $memo  메모
+     * @param  Carbon|null  $expiresAt  만료일 (무기한이면 null)
+     * @param  string  $description  거래 설명
+     * @return MileageTransaction 생성된 지급 거래
+     */
+    private function recordEarnLot(
+        int $userId,
+        string $currency,
+        MileageTransactionTypeEnum $type,
+        float|int $amount,
+        ?int $grantedBy,
+        ?string $memo,
+        ?Carbon $expiresAt,
+        string $description,
+    ): MileageTransaction {
+        $tx = $this->ledger->createTransaction([
+            'user_id' => $userId,
+            'currency' => $currency,
+            'type' => $type->value,
+            'amount' => $amount,
+            'remaining_amount' => $amount,
+            'balance_after' => $this->ledger->getBalanceByCurrency($userId, $currency) + $amount,
+            'granted_by' => $grantedBy,
+            'memo' => $memo,
+            'expires_at' => $expiresAt,
+            'description' => $description,
+        ]);
+
+        $this->cache->recalculateForUser($userId, $currency);
+
+        return $tx;
     }
 
     /**

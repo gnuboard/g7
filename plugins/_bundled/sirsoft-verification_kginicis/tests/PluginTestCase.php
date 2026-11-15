@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\AssertNoDuplicateInicisIdentity;
+use Plugins\Sirsoft\VerificationKginicis\Listeners\ClaimInicisIdentityOnRegistering;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CompleteInicisRecordAfterRegister;
@@ -194,6 +195,11 @@ abstract class PluginTestCase extends TestCase
         );
         HookListenerRegistrar::register(
             AssertNoDuplicateInicisIdentity::class,
+            'plugin:sirsoft-verification_kginicis',
+        );
+        // 1.1.4 — 가입 트랜잭션 안 동일인 선점 (plugin.php getHookListeners() 와 같은 목록)
+        HookListenerRegistrar::register(
+            ClaimInicisIdentityOnRegistering::class,
             'plugin:sirsoft-verification_kginicis',
         );
         HookListenerRegistrar::register(

@@ -1,0 +1,23 @@
+feature: 확장 공개 설정 필터 훅 — 프론트엔드로 나가는 모듈·플러그인 설정에서 키를 더 뺀다 (7.1.6)
+
+description: |
+  ModuleSettingsService·PluginSettingsService 의 getAllActiveSettings() 는 frontend_schema 로 공개 키를 고른 뒤
+  core.module_settings.filter_frontend_settings / core.plugin_settings.filter_frontend_settings 필터를 거친다.
+  확장은 운영자 설정에 따라 공개 키를 더 뺄 수 있다. 리스너가 배열이 아닌 값을 돌려주면 필터 전 값을 쓴다.
+
+axes:
+  owner: [module, plugin]
+  listener_result: [array_with_removed_key, non_array, empty_array]
+
+exclusions:
+  - { owner: plugin, listener_result: non_array, reason: "플러그인 쪽 방어는 모듈과 같은 is_array 한 줄 — module 칸이 덮는다" }
+  - { owner: plugin, listener_result: empty_array, reason: "빈 결과 제외는 기존 ! empty() 갈래 — module 칸이 덮는다" }
+
+effects:
+  - listener_receives_settings_and_identifier
+  - removed_key_absent_from_frontend_settings
+  - non_array_result_is_ignored
+  - emptied_extension_is_dropped
+
+test_files:
+  - tests/Unit/Services/ModuleSettingsFrontendFilterHookTest.php

@@ -362,8 +362,7 @@ return [
         'validation' => [
             'file_required' => 'アップロードするファイルを選択してください。',
             'file_invalid' => '正しいファイルではありません。',
-            'file_image' => '画像ファイルのみアップロードできます。',
-            'file_mimes' => 'サポートされている画像形式ではありません (jpg, jpeg, png, gif, webp, svg)。',
+            'file_extensions' => 'アップロードできないファイル形式です。許可されている形式: :extensions',
             'file_max' => 'ファイルサイズは最大 :max MB までです。',
             'layout_name_max' => 'レイアウト名は最大 150 文字までです。',
         ],

@@ -28,7 +28,7 @@
 | [content-media.md](content-media.md) | `content-media` | 3 |
 | [claim-reasons.md](claim-reasons.md) | `claim-reasons` | 8 |
 | [claims.md](claims.md) | `claims` | 5 |
-| [coupons.md](coupons.md) | `coupons` | 4 |
+| [coupons.md](coupons.md) | `coupons` | 5 |
 | [currency.md](currency.md) | `currency` | 2 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
 | [extra-fee-templates.md](extra-fee-templates.md) | `extra-fee-templates` | 10 |
@@ -48,7 +48,7 @@
 | [products.md](products.md) | `products` | 31 |
 | [promotion-coupons.md](promotion-coupons.md) | `promotion-coupons` | 9 |
 | [review-image.md](review-image.md) | `review-image` | 1 |
-| [reviews.md](reviews.md) | `reviews` | 12 |
+| [reviews.md](reviews.md) | `reviews` | 13 |
 | [settings.md](settings.md) | `settings` | 10 |
 | [shipping-carriers.md](shipping-carriers.md) | `shipping-carriers` | 7 |
 | [shipping-country.md](shipping-country.md) | `shipping-country` | 2 |

@@ -1,0 +1,34 @@
+feature: 관리자 상품 후기 관리 API (Admin ProductReviewController)
+
+description: |
+  관리자 후기 관리 API 의 목록·상세·상태 변경·판매자 답변·답변 삭제·후기 삭제·일괄 처리 계약을 고정한다.
+  이 Feature 테스트는 매니페스트 없이 존재했고(이미지 download URL 직렬화 두 건만
+  file-serving-parent-state-gate.yaml 이 소유), KVE-2026-3187~3195 보안 작업이 이 파일을 고치며 함께 등재한다.
+
+  - 인증이 없으면 401, 기능별 권한(reviews.read·reviews.update·reviews.delete)이 없으면 403.
+  - 없는 후기 ID 는 404, 잘못된 입력(상태 값·답변 길이·일괄 대상·일괄 동작)은 422.
+  - 후기 삭제·일괄 삭제는 소프트 삭제다.
+  - 서비스 계층의 작성 자격·답변 시각 기록 규칙은 member-review-write-and-reply.yaml 이 단위로 다룬다.
+
+# axis 의미: 컨트롤러의 처리 동작. 응답 분기(성공·401·403·404·422)는 동작마다 갈리는 값이 달라 효과로 둔다.
+axes:
+  operation: [list, show, update_status, save_reply, delete_reply, delete_review, bulk]
+
+effects:
+  - admin_review_list_returns_paginated_reviews              # 목록 응답에 data·meta(페이지 정보)
+  - admin_review_list_filters_by_status_rating_reply_status  # status·rating·reply_status 필터가 결과를 거른다
+  - admin_review_api_requires_authentication                 # 비로그인은 401
+  - admin_review_api_enforces_permission_per_action          # 읽기·수정·삭제 권한이 없으면 403
+  - admin_review_detail_returns_requested_review             # 상세 응답이 요청한 후기
+  - admin_review_missing_review_returns_404                  # 없는 후기 ID 의 상세·삭제는 404
+  - admin_review_status_change_persisted                     # 단건 상태 변경(숨김·전시)이 저장된다
+  - admin_review_invalid_input_rejected_with_422             # 잘못된 상태 값·빈 답변·2001자 답변·일괄 입력 오류는 422
+  - admin_review_reply_saved_with_first_reply_timestamp      # 첫 답변은 내용·작성 관리자·replied_at 기록, reply_updated_at 없음
+  - admin_review_reply_edit_records_updated_timestamp        # 기존 답변 수정은 reply_updated_at 기록
+  - admin_review_reply_cleared_on_delete                     # 답변 삭제는 내용·작성자·두 시각을 비운다
+  - admin_review_soft_deleted_on_delete                      # 후기 삭제는 소프트 삭제
+  - admin_review_bulk_status_change_applies_to_every_id      # 일괄 상태 변경이 모든 대상에 반영, updated_count
+  - admin_review_bulk_delete_soft_deletes_every_id           # 일괄 삭제가 모든 대상을 소프트 삭제, deleted_count
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductReviewControllerTest.php

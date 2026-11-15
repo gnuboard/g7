@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Support\OutboundUrlValidator;
+use App\Support\SiteLoopback;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -307,50 +308,6 @@ class DataSourceResolver
      */
     private function loopbackTransport(string $fullUrl): array
     {
-        $parts = parse_url($fullUrl);
-        $host = strtolower((string) ($parts['host'] ?? ''));
-
-        if ($host === '') {
-            return [];
-        }
-
-        $literal = trim($host, '[]');
-        if (filter_var($literal, FILTER_VALIDATE_IP) !== false) {
-            return $this->isLoopbackIp($literal) ? ['verify' => false] : [];
-        }
-
-        $addresses = gethostbynamel($host);
-        if (! is_array($addresses) || $addresses === []) {
-            return [];
-        }
-
-        foreach ($addresses as $address) {
-            if (! $this->isLoopbackIp($address)) {
-                return [];
-            }
-        }
-
-        $ports = array_unique(array_filter([$parts['port'] ?? null, 80, 443]));
-
-        return [
-            'verify' => false,
-            'curl' => [
-                CURLOPT_RESOLVE => array_map(
-                    static fn (int $port): string => "{$host}:{$port}:{$addresses[0]}",
-                    $ports,
-                ),
-            ],
-        ];
-    }
-
-    /**
-     * IP 가 루프백 대역(127.0.0.0/8, ::1)인지 판정합니다.
-     *
-     * @param  string  $ip  IP 주소
-     * @return bool 루프백이면 true
-     */
-    private function isLoopbackIp(string $ip): bool
-    {
-        return $ip === '::1' || str_starts_with($ip, '127.');
+        return SiteLoopback::transportOptions($fullUrl);
     }
 }

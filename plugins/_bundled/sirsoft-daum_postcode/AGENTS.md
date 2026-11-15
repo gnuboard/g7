@@ -87,7 +87,8 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 가까운 `[data-postcode-anchor]` → 버튼 조각 컨테이너에서 몇 단계 위의 입력 칸을 가진 조상(확장점 래퍼 div 가 한 겹
 더 있어 컨테이너의 부모는 아직 「우편번호 칸 + 버튼」 줄 안이다) → 컨테이너의 부모 순으로 기준 요소를 정해 그 바로
 뒤에 폭 100% 영역을 넣고 embed 합니다. 높이는 `onresize` 로 따라가고, 주소 선택·닫기 단추·같은 버튼 재클릭에 걷습니다.
-영역은 엔진 밖에서 만든 DOM 이라 Tailwind 클래스 대신 자체 `<style>`(다크 모드 `html.dark` 규칙 포함)을 한 번 싣습니다.
+영역은 엔진 밖에서 만든 DOM 이라 Tailwind 클래스 대신 플러그인 CSS 파일(`resources/css/main.css` → `dist/css/plugin.css`,
+다크 모드 `.dark` 규칙 포함)의 자체 클래스로 꾸밉니다(1.2.1 — 종전의 `<style>` 요소·`style` 속성 문자열은 엄격한 스타일 정책에서 막힌다).
 이벤트가 없으면 PC 는 레이어, 모바일은 전체 화면으로 띄웁니다. 전체 화면(`fullscreen`, 모바일 선택지)은 화면 전체를
 덮는 창(제목 + 닫기)에 100% 높이로 embed 하고 선택·닫기·ESC 로 닫습니다 — 뒤로 가기는 가로채지 않습니다(엔진 라우터가 모든
 popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 레이어·전체 화면이 열려 있는 동안 ESC 는 그 창 몫이라
@@ -95,7 +96,9 @@ popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 
 배송지 등록 창(템플릿 Modal) 안에서 연 검색 창에 ESC 를 누르면 아래 창까지 닫히던 결함의 대책이며, 템플릿 창 구현에 기대지
 않습니다. 초점이 카카오 검색 iframe(다른 출처) 안에 있으면 키 입력이 페이지에 오지 않아 ESC 로 닫을 수 없습니다(닫기 단추로 닫힘).
 기존 설치의 단일 `display_mode` 는 1.2.0 업그레이드 스텝이
-`display_mode_pc` 로 옮기고 `display_mode_mobile` 을 `inline` 으로 둡니다. 레이어는 `min(설정px, 100vw - 32px)` × `min(설정px, 100vh - 96px)` 로 화면에 맞춥니다.
+`display_mode_pc` 로 옮기고 `display_mode_mobile` 을 `inline` 으로 둡니다. 레이어는 `min(설정px, 100vw - 32px)` × `min(설정px, 100vh - 96px)` 로 화면에 맞춥니다 —
+이 규칙은 CSS 파일의 `#daum-postcode-layer` 에 있고 핸들러는 설정값만 CSS 변수(`--dp-width`·`--dp-height`)로 넘깁니다. 여백 32·96 은
+핸들러 상수(`LAYER_VIEWPORT_GUTTER_X`·`_Y`)와 CSS 파일 두 곳에 있어 테스트(`postcode-no-inline-style.test.ts`)가 같은 값임을 묶습니다.
 
 **SDK 확보 실패**: `postcodeSdk.ts` 가 스크립트 로드에 `onerror` 를 걸어 실패를 감지하고,
 `G7Core.assets.notifyFailure` 로 사용자에게 사실과 재시도 통로를 제시합니다. 필드는 편집
@@ -168,6 +171,7 @@ popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 
 | 쓸 칸을 코드에 고정 | `targetFields`·설정 `target_fields` 로 소비처가 고르게 | 사이트·화면마다 필드 구성이 다르다 |
 | 화면 위에 띄운 창(레이어·전체 화면)의 ESC 를 `document` 버블 리스너로 받기 | `captureEscapeWhileOpen` — window 캡처에서 받아 전파 중단, 닫히면 리스너 해제 | 템플릿 Modal 도 document 에서 ESC 를 받아, 창 안에서 연 검색 창에 ESC 한 번이면 아래 창까지 닫혀 입력이 사라진다 |
 | 자산 URL 을 문자열로 조립 | `G7Core.asset.plugin` | 확장자를 정적 location 이 가로채는 서버에서 조립한 URL 만 404 가 된다 |
+| 검색 창 DOM 에 `<style>` 요소·`setAttribute('style', …)`·HTML 문자열의 `style="…"` 로 스타일 싣기 | 고정 규칙은 `resources/css/main.css`, 실행 중 값은 `el.style.x = …`·`el.style.setProperty()` | 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 앞의 셋이 막혀 검색 창이 무스타일로 뜬다. 뒤의 둘은 막히지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -176,9 +180,9 @@ popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 3개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
-| Vitest | 12개 | `vitest.config.ts` |
+| Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

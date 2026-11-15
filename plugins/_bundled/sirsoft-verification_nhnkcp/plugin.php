@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\VerificationNhnkcp;
 use App\Extension\AbstractPlugin;
 use App\Services\SettingsService;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\AssertNoDuplicateKcpIdentity;
+use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ClaimKcpIdentityOnRegistering;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CompleteKcpRecordAfterRegister;
@@ -144,6 +145,7 @@ class Plugin extends AbstractPlugin
      *  - CompleteKcpRecordAfterRegister: 비로그인 가입 PII 흡수
      *  - CleanKcpRecordOnUserWithdraw / CleanKcpRecordOnUserDelete: PII 파기
      *  - AssertNoDuplicateKcpIdentity: 가입 직전 동일인 차단
+     *  - ClaimKcpIdentityOnRegistering: 가입 트랜잭션 안 동일인 선점(1.1.4 — 동시 가입 경합 차단)
      *  - ValidateKcpSettingsListener: 라이브 모드 조건부 required filter
      *
      * @return array<class-string>
@@ -156,6 +158,7 @@ class Plugin extends AbstractPlugin
             CleanKcpRecordOnUserWithdraw::class,
             CleanKcpRecordOnUserDelete::class,
             AssertNoDuplicateKcpIdentity::class,
+            ClaimKcpIdentityOnRegistering::class,
             ValidateKcpSettingsListener::class,
             ProvideNecessaryStorageKeysListener::class,
         ];

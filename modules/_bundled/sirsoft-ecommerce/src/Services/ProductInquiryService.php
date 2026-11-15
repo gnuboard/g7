@@ -14,6 +14,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\AuthorNameMasker;
 use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
 use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
@@ -664,19 +665,8 @@ class ProductInquiryService
             return $name;
         }
 
-        $chars = mb_str_split($name);
-        $len = count($chars);
-
-        if ($len === 1) {
-            return $name;
-        }
-
-        if ($len === 2) {
-            return $chars[0].'*';
-        }
-
-        // 3자 이상: 첫 글자 + 중간 전체 마스킹 + 마지막 글자
-        return $chars[0].str_repeat('*', $len - 2).$chars[$len - 1];
+        // 가림 규칙은 상품 후기와 같은 함수 한 곳에 둔다
+        return AuthorNameMasker::mask($name);
     }
 
     /**

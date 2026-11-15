@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
+use App\Contracts\Extension\CacheInterface;
+use App\Contracts\Extension\ChallengeDeliveryAwareProviderInterface;
 use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Contracts\Extension\MailFallbackAwareProviderInterface;
 use App\Contracts\Extension\UserScopedIdentityProviderInterface;
@@ -21,8 +23,11 @@ use App\Exceptions\Auth\AccountLockedException;
 use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
+use App\Exceptions\Auth\TwoFactorResendCooldownException;
+use App\Exceptions\Auth\TwoFactorResendNotSupportedException;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Support\LocaleTag;
 use Carbon\Carbon;
@@ -150,7 +155,13 @@ class AuthService
         // 사전 잠금 체크 — 잠긴 계정은 Auth::attempt 자체를 시도하지 않는다.
         // (실패 카운트가 0 으로 리셋된 잠금 상태에서 Failed 이벤트가 다시
         //  카운트를 올려 재잠금 시각을 갱신하는 부작용 방지)
-        $this->assertNotLocked($this->userRepository->findByEmail($email));
+        $account = $this->userRepository->findByEmail($email);
+        $this->assertNotLocked($account);
+
+        // 가입되지 않은 주소도 같은 횟수 실패 뒤에는 같은 잠금 응답을 받는다 (가입 여부 비노출).
+        if ($account === null) {
+            $this->assertUnknownEmailNotLocked($email);
+        }
 
         if (! Auth::attempt(['email' => $email, 'password' => $password])) {
             // 실패 카운트 증가/잠금 처리는 HandleFailedLoginListener 에서 담당
@@ -446,7 +457,7 @@ class AuthService
      * 초기화해 흔적도 남지 않습니다.
      *
      * @param  User|null  $user  검사 대상 사용자 (없으면 검사 대상 아님)
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws AccountLockedException 계정이 잠겨 있을 때
      */
@@ -468,6 +479,28 @@ class AuthService
         throw new AccountLockedException(
             lockedUntil: $user->locked_until,
             remainingMinutes: $remaining,
+        );
+    }
+
+    /**
+     * 가입되지 않은 주소가 잠금 흉내 상태면 가입 계정과 같은 잠금 예외를 던집니다.
+     *
+     * @param  string  $email  로그인에 쓰인 이메일
+     * @return void 반환값 없음
+     *
+     * @throws AccountLockedException 그 주소의 실패가 임계 횟수에 이르렀을 때
+     */
+    private function assertUnknownEmailNotLocked(string $email): void
+    {
+        $lock = app(UnknownEmailLockService::class)->lockState($email);
+
+        if ($lock === null) {
+            return;
+        }
+
+        throw new AccountLockedException(
+            lockedUntil: $lock['locked_until'],
+            remainingMinutes: $lock['remaining_minutes'],
         );
     }
 
@@ -685,6 +718,7 @@ class AuthService
      * @return array 로그인 결과 (user, token, token_type) 또는 비밀번호 변경 단계 안내
      *
      * @throws ValidationException 검증 실패 또는 challenge 불일치
+     * @throws AccountLockedException 계정이 잠겨 있거나 이번 오답으로 잠겼을 때
      * @throws PasswordChangeUnavailableException 변경 단계를 열 수 없을 때
      */
     public function completeTwoFactor(string $challengeId, array $input, string $guard = 'user'): array
@@ -701,12 +735,22 @@ class AuthService
             ]);
         }
 
+        // 잠긴 계정의 코드는 평가하지 않는다 — 평가하면 잠긴 동안에도 맞혀 보기·challenge 소모가 일어난다(KVE-2026-3195, 7.1.6)
+        $challengeUser = $this->resolveChallengeUser($challengeId);
+        $this->assertNotLocked($challengeUser);
+
         $result = $identity->verify($challengeId, $input, [
             'origin_type' => 'route',
             'origin_identifier' => 'auth.login',
         ]);
 
         if (! $result->success) {
+            // 2단계 오답도 로그인 실패 횟수에 합산한다 — 기존 계정 잠금·잠김 안내·비밀번호 재설정 해제 경로를 그대로 탄다
+            if ($challengeUser !== null && in_array($result->failureCode, ['INVALID_CODE', 'MAX_ATTEMPTS'], true)) {
+                $this->recordTwoFactorFailure($challengeUser, $challengeId);
+                $this->assertNotLocked($this->userRepository->findById((int) $challengeUser->getKey()));
+            }
+
             throw ValidationException::withMessages([
                 'code' => [__('auth.two_factor_failed')],
             ]);
@@ -755,6 +799,8 @@ class AuthService
      * @throws ValidationException challenge 가 재발송 대상이 아닐 때
      * @throws AccountLockedException 계정이 잠겨 있을 때
      * @throws TwoFactorDeliveryFailedException 인증번호를 보내지 못했을 때
+     * @throws TwoFactorResendNotSupportedException 코드를 보내지 않는 수단(인증 앱)일 때
+     * @throws TwoFactorResendCooldownException 메일 재발송 대기 시간이 남았을 때
      */
     public function resendTwoFactorChallenge(string $challengeId, ?User &$resolvedUser = null): array
     {
@@ -792,15 +838,126 @@ class AuthService
 
         $resolvedUser = $user;
 
+        // 재발송은 같은 수단으로 다시 발급한다 — 원 challenge 의 프로바이더를 그대로 쓰고,
+        // 그 사이 사용할 수 없게 됐으면(플러그인 비활성화 등) 현재 해석 결과로 되돌린다.
+        // 명시 수단을 쓸 수 없으면 발행 단계가 예외를 던지므로(폴백 없음), 여기서 미리 가려 현재 해석 결과로 바꾼다.
+        $providerId = $this->loginProviderStillUsable((string) $log->provider_id)
+            ? (string) $log->provider_id
+            : $this->resolveTwoFactorProviderId($user);
+
+        // 코드를 보내지 않는 수단(인증 앱)은 재발송하지 않는다 — 새 challenge 가 시도 상한을 0 으로 되돌리는 통로였다(KVE-2026-3195, D3)
+        if (! $this->challengeDeliversCode($log, $providerId)) {
+            throw new TwoFactorResendNotSupportedException;
+        }
+
+        // 메일 재발송은 공개 인증 요청과 같은 대기 시간을 지킨다 — 연타로 메일을 쏟아내지 못하게(KVE 동형 A2)
+        if ($providerId === self::MAIL_PROVIDER_ID) {
+            $remaining = app(IdentityVerificationService::class)->cooldownRemaining(
+                IdentityVerificationPurpose::Login->value,
+                $user,
+                $providerId,
+            );
+
+            if ($remaining > 0) {
+                throw new TwoFactorResendCooldownException($remaining);
+            }
+        }
+
         app(IdentityVerificationService::class)->cancel($log->id);
 
-        // 재발송은 같은 수단으로 다시 발급한다 — 원 challenge 의 프로바이더를 그대로 쓰고,
-        // 그 사이 사용할 수 없게 됐으면(자격증명 삭제 등) 현재 해석 결과로 되돌린다.
         return $this->startTwoFactorChallenge(
             $user,
             (string) $user->email,
-            $log->provider_id ?: $this->resolveTwoFactorProviderId($user),
+            $providerId,
         );
+    }
+
+    /**
+     * 로그인 challenge 의 대상 회원을 돌려줍니다 (코드 평가 전 잠금 확인용).
+     *
+     * @param  string  $challengeId  challenge ID
+     * @return User|null 대상 회원 (없으면 null)
+     */
+    private function resolveChallengeUser(string $challengeId): ?User
+    {
+        $log = $this->identityLogRepository->findById($challengeId);
+
+        if ($log === null || $log->user_id === null) {
+            return null;
+        }
+
+        return $this->userRepository->findById((int) $log->user_id);
+    }
+
+    /**
+     * 로그인 2단계 오답을 로그인 실패로 기록합니다 (실패 횟수·잠금·활동 로그는 `core.auth.login_failed` 구독자가 맡는다).
+     *
+     * 회원 id 를 문맥에 실어, 이메일이 비었거나 바뀐 회원도 미가입 주소 경로로 새지 않고 그 회원에 쌓이게 한다.
+     *
+     * @param  User  $user  대상 회원
+     * @param  string  $challengeId  challenge ID
+     * @return void 반환값 없음
+     */
+    private function recordTwoFactorFailure(User $user, string $challengeId): void
+    {
+        HookManager::doAction('core.auth.login_failed', (string) $user->email, [
+            'stage' => 'two_factor',
+            'user_id' => (int) $user->getKey(),
+            'challenge_id' => $challengeId,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'attempted_at' => now(),
+        ]);
+    }
+
+    /**
+     * 원 challenge 의 수단을 로그인 2단계 재발송에 그대로 쓸 수 있는지 판정합니다.
+     *
+     * 그 사이 플러그인이 꺼졌거나 로그인 목적을 지원하지 않게 됐으면 false — 명시 수단으로 발행하면
+     * 다른 수단으로 바꾸지 않고 예외를 던지므로, 호출자는 현재 해석 결과로 바꿔 발행한다.
+     *
+     * @param  string  $providerId  원 challenge 의 수단 id (빈 문자열이면 false)
+     * @return bool 등록돼 있고 로그인 목적을 지원하면 true
+     */
+    private function loginProviderStillUsable(string $providerId): bool
+    {
+        if ($providerId === '') {
+            return false;
+        }
+
+        $manager = app(IdentityVerificationManager::class);
+
+        return $manager->has($providerId)
+            && $manager->get($providerId)->supportsPurpose(IdentityVerificationPurpose::Login->value);
+    }
+
+    /**
+     * challenge 의 수단이 코드를 보내는 수단인지 판정합니다.
+     *
+     * 보조 계약(`ChallengeDeliveryAwareProviderInterface`)을 구현한 수단은 그 답을 따르고, 구현하지 않은 구버전 수단은
+     * 채널이 `app` 일 때만 「보내지 않음」으로 본다.
+     *
+     * @param  IdentityVerificationLog  $log  원 challenge
+     * @param  string|null  $providerId  재발송할 수단
+     * @return bool 코드를 보내면 true
+     */
+    private function challengeDeliversCode(IdentityVerificationLog $log, ?string $providerId): bool
+    {
+        if ((string) $log->channel === 'app') {
+            return false;
+        }
+
+        $manager = app(IdentityVerificationManager::class);
+
+        if ($providerId !== null && $providerId !== '' && $manager->has($providerId)) {
+            $provider = $manager->get($providerId);
+
+            if ($provider instanceof ChallengeDeliveryAwareProviderInterface) {
+                return $provider->deliversChallengeCode();
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -812,7 +969,7 @@ class AuthService
      *
      * @param  User  $user  대상 사용자
      * @param  string  $plainTextToken  방금 발급한 평문 토큰 ({id}|{token} 형식)
-     * @return void
+     * @return void 반환값 없음
      */
     public function revokeIssuedSession(User $user, string $plainTextToken): void
     {
@@ -998,6 +1155,15 @@ class AuthService
                 $user->roles()->sync([$userRole->id]);
             }
 
+            // 가입 트랜잭션 안 훅 — 동일인 선점처럼 「가입과 함께 성공하거나 함께 취소」되어야 하는 기록을 확장이 남긴다
+            // (KVE-2026-3192). 동기 구독만 의미가 있고(큐 구독은 커밋 뒤로 밀린다), 구독자가 예외를 던지면 가입 전체가 롤백된다.
+            HookManager::doAction(
+                'core.auth.registering',
+                $user,
+                Arr::except($data, ['password', 'password_confirmation']),
+                ['signup_stage' => 'in_transaction'],
+            );
+
             $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
 
             return [$user, $token];
@@ -1031,7 +1197,7 @@ class AuthService
      * 사용자를 로그아웃시키고 현재 디바이스의 인증 토큰만 삭제합니다.
      *
      * @param  User  $user  로그아웃할 사용자
-     * @return void
+     * @return void 반환값 없음
      */
     public function logout(User $user): void
     {
@@ -1115,7 +1281,7 @@ class AuthService
      * 모든 디바이스에서 사용자를 로그아웃시킵니다.
      *
      * @param  User  $user  로그아웃할 사용자
-     * @return void
+     * @return void 반환값 없음
      */
     public function logoutFromAllDevices(User $user): void
     {
@@ -1124,35 +1290,66 @@ class AuthService
 
         // 사용자의 모든 토큰 삭제
         $user->tokens()->delete();
+
+        // web 세션도 함께 끊는다 — 토큰만 지우면 남은 세션 쿠키로 인증되는 경로가 남는다(KVE-2026-3187 동형)
+        $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
+
+        if (request()->hasSession() && request()->session()->isStarted()) {
+            Auth::guard('web')->logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+        }
     }
 
     /**
      * 비밀번호 찾기 요청을 처리합니다.
      *
+     * 가입 여부를 응답으로 알려 주지 않는다 — 가입되지 않은 주소도 예외 없이 끝나고, 컨트롤러는 같은 응답을
+     * 돌려준다. 응답 시간으로도 갈리지 않게 세 경로(미가입 · 재요청 대기 중 · 발송)가 같은 해시 연산을 한 번씩
+     * 하고, 메일 발송·활동 기록을 일으키는 훅은 응답을 보낸 뒤에 발화한다.
+     *
+     * 같은 주소로 `auth.passwords.users.throttle`(초) 안에 다시 요청하면 토큰을 바꾸지 않고 메일도 다시 보내지
+     * 않는다 — 남의 주소로 재설정 메일을 계속 보내는 것을 막는다.
+     *
+     * 관리자 화면에서 온 요청이어도 관리자가 아닌 계정에는 일반 재설정 주소를 보낸다.
+     *
      * @param  string  $email  사용자 이메일
      * @param  string|null  $redirectPrefix  리다이렉트 경로 접두사 (예: 'admin')
-     * @return void
-     *
-     * @throws ValidationException 등록되지 않은 이메일일 때
+     * @return void 반환값 없음
      */
     public function forgotPassword(string $email, ?string $redirectPrefix = null): void
     {
         $user = $this->userRepository->findByEmail($email);
 
+        // 토큰 생성 (64자 랜덤 문자열) — 해시 연산은 어느 경로에서나 한 번 한다(응답 시간 균일).
+        $token = Str::random(64);
+        $tokenHash = Hash::make($token);
+
         if (! $user) {
-            throw ValidationException::withMessages([
-                'email' => [__('auth.email_not_registered')],
-            ]);
+            return;
         }
 
-        // 토큰 생성 (64자 랜덤 문자열)
-        $token = Str::random(64);
+        // 재요청 대기 — 직전 발송에서 정해진 시간이 지나지 않았으면 조용히 끝낸다.
+        $cooldownSeconds = (int) config('auth.passwords.users.throttle', 60);
+        $existing = $this->passwordResetTokenRepository->findByEmail($user->email);
+
+        if ($cooldownSeconds > 0
+            && $existing?->created_at !== null
+            && $existing->created_at->copy()->addSeconds($cooldownSeconds)->isFuture()
+        ) {
+            return;
+        }
 
         // 기존 토큰 삭제 후 새 토큰 저장 (해시로 저장)
-        $this->passwordResetTokenRepository->updateOrCreateByEmail($email, [
-            'token' => Hash::make($token),
+        $this->passwordResetTokenRepository->updateOrCreateByEmail($user->email, [
+            'token' => $tokenHash,
             'created_at' => now(),
         ]);
+
+        // 관리자 화면 주소는 관리자 계정에만 보낸다.
+        if ($redirectPrefix === 'admin' && ! $user->isAdmin()) {
+            $redirectPrefix = null;
+        }
 
         // 리셋 URL 생성 (extract_data 필터에서 사용)
         $resetPath = $redirectPrefix
@@ -1163,10 +1360,31 @@ class AuthService
             'email' => $user->email, // audit:allow resource-member-email-ungated 재설정 메일 URL 쿼리(응답 아님)
         ]);
 
-        // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리
-        HookManager::doAction('core.auth.after_reset_password_request', $user, [
-            'reset_url' => $resetUrl,
-        ]);
+        // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리.
+        // 응답을 보낸 뒤에 발화한다: 발송 시간이 응답 시간에 실리면 가입 주소만 느려진다.
+        defer(static function () use ($user, $resetUrl): void {
+            HookManager::doAction('core.auth.after_reset_password_request', $user, [
+                'reset_url' => $resetUrl,
+            ]);
+        });
+    }
+
+    /**
+     * 토큰 기록이 없을 때 대신 비교할 해시를 반환합니다.
+     *
+     * 가입되지 않은 주소·토큰을 받은 적 없는 주소도 토큰이 틀린 주소와 같은 비용의 해시 비교를 하게 한다.
+     * 해시 한 개를 만들어 캐시에 두고 다시 쓴다(매번 만들면 그 경로만 더 느려진다).
+     * 재설정 요청 검증의 토큰 사전확인도 같은 해시를 쓴다.
+     *
+     * @return string 비교용 해시
+     */
+    public function resetTokenDecoyHash(): string
+    {
+        return (string) app(CacheInterface::class)->remember(
+            'auth.reset_token_decoy_hash',
+            static fn (): string => Hash::make(Str::random(64)),
+            2592000
+        );
     }
 
     /**
@@ -1178,18 +1396,14 @@ class AuthService
      */
     public function validateResetToken(string $token, string $email): array
     {
-        // 1. 사용자 존재 확인
+        // 1·2. 사용자와 토큰 레코드 조회 — 가입되지 않은 주소와 토큰 기록이 없는 주소는 토큰이 틀린 것과
+        //      같은 문구로 답한다(계정 존재를 알려 주지 않는다). 해시 비교도 같은 횟수로 한다.
         $user = $this->userRepository->findByEmail($email);
-        if (! $user) {
-            return [
-                'valid' => false,
-                'error' => __('auth.email_not_registered'),
-            ];
-        }
+        $record = $user ? $this->passwordResetTokenRepository->findByEmail($email) : null;
 
-        // 2. 토큰 레코드 조회
-        $record = $this->passwordResetTokenRepository->findByEmail($email);
         if (! $record) {
+            Hash::check($token, $this->resetTokenDecoyHash());
+
             return [
                 'valid' => false,
                 'error' => __('auth.reset_token_invalid'),
@@ -1225,24 +1439,20 @@ class AuthService
      * @param  string  $token  비밀번호 재설정 토큰
      * @param  string  $email  사용자 이메일
      * @param  string  $password  새로운 비밀번호
-     * @return void
+     * @return void 반환값 없음
      *
-     * @throws ValidationException 등록되지 않은 이메일이거나 토큰이 유효하지 않을 때
+     * @throws ValidationException 토큰이 유효하지 않을 때 (가입되지 않은 이메일도 같은 오류)
      */
     public function resetPassword(string $token, string $email, string $password): void
     {
+        // 가입되지 않은 주소와 토큰 기록이 없는 주소는 토큰이 틀린 것과 같은 필드·문구로 답한다
+        // (계정 존재를 알려 주지 않는다). 해시 비교도 같은 횟수로 한다.
         $user = $this->userRepository->findByEmail($email);
-
-        if (! $user) {
-            throw ValidationException::withMessages([
-                'email' => [__('auth.email_not_registered')],
-            ]);
-        }
-
-        // 토큰 조회
-        $record = $this->passwordResetTokenRepository->findByEmail($email);
+        $record = $user ? $this->passwordResetTokenRepository->findByEmail($email) : null;
 
         if (! $record) {
+            Hash::check($token, $this->resetTokenDecoyHash());
+
             throw ValidationException::withMessages([
                 'token' => [__('auth.reset_token_invalid')],
             ]);
@@ -1271,11 +1481,18 @@ class AuthService
         // 재설정 실행 본문(잠금 해제·변경 기록·모든 기기 로그아웃·완료 훅)은 터미널 재설정과 같은 서비스가 소유한다.
         // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로 남아 재사용된다(보안) —
         // 토큰 삭제를 같은 트랜잭션에 묶는다.
+        // 지운 행이 1 이 아니면 다른 요청이 같은 링크를 먼저 썼다 — 예외로 이 요청의 비밀번호 변경까지 되돌린다(KVE 동형 O6).
         $this->passwordResetService->resetByOperator(
             $user,
             $password,
             PasswordChangeSource::Reset,
-            insideTransaction: static fn () => $record->delete(),
+            insideTransaction: function () use ($record): void {
+                if ($this->passwordResetTokenRepository->deleteMatching($record) !== 1) {
+                    throw ValidationException::withMessages([
+                        'token' => [__('auth.reset_token_invalid')],
+                    ]);
+                }
+            },
         );
     }
 
@@ -1288,7 +1505,7 @@ class AuthService
      * @param  User  $user  가입 완료된 사용자
      * @param  array  $data  요청 데이터
      * @param  Carbon  $agreedAt  동의 일시
-     * @return void
+     * @return void 반환값 없음
      */
     private function recordConsents(User $user, array $data, Carbon $agreedAt): void
     {

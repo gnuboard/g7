@@ -155,7 +155,7 @@ class UpdateTemplateCommand extends Command
             if (! $force && ! $this->unifiedConfirm(__('templates.commands.update.confirm_question'), false)) {
                 $this->info(__('templates.commands.update.aborted'));
 
-                return Command::SUCCESS;
+                return $this->confirmAbortExitCode();
             }
 
             // 업데이트 실행

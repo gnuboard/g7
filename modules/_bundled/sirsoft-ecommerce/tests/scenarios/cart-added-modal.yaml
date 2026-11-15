@@ -13,7 +13,7 @@ axes:
   surface:
     - modal           # partials/shop/detail/_modal_cart_added.g7.html
     - show_layout     # shop/show.g7.html (modals 등록·init_actions)
-    - purchase_card   # partials/shop/detail/_purchase_card.g7.html (담기 onSuccess)
+    - purchase_card   # partials/shop/detail/_purchase_card.g7.html 장바구니 단추 → shop/show.g7.html 이름 붙은 액션 purchaseAddToCart (담기 onSuccess, 7.1.6)
 
 effects:
   - cart_added_modal_structure_and_text               # Modal id·다국어 제목·문구·체크 아이콘·다크 모드 색

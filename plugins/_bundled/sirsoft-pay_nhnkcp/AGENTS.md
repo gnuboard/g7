@@ -154,6 +154,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 스크립트가 주소 정규식·DOM 폴링으로 남의 화면을 찾아 글자를 고치거나 버튼을 붙이기, `window.fetch`·`history.pushState` 덮어쓰기, `localStorage.getItem('auth_token')` 으로 Bearer 붙이기 | 표시는 레이아웃 조각(`resources/extensions`)이 자기 데이터 소스로 그린다. 요청은 `G7Core.api`, 상태는 `G7Core.state.get()`·`subscribe()` 와 공개 상태 계약(`_global.guestOrderToken`)으로만 | 엔진이 내부를 바꾸면 조용히 깨지고, 덮어쓰기는 확장끼리 서로를 감싸 순서에 따라 동작이 바뀐다. 제목·버튼 글자로 찾으면 다른 언어 화면에서 빠진다(#639). 가드: `extension-private-core-internals` |
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지·라벨을 넣기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → 라벨은 `children._patch`(by: id)로 text 만, 배지는 `children._append` | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
+| PC 결제 프레임 페이지(`KcpFrameController`)에 `<style>` 블록·`style="…"` 속성으로 모양 싣기 | 규칙은 `assets/bridge/kcp-frame.css`(빌드 대상 아님), `<head>` 에서 `BridgeScript::stylesheetTag()` 로 싣는다 | 스타일 보안 정책(`style-src 'self'`)에서 인라인 스타일이 막혀 투명 프레임에 여백이 생긴다. `<head>` 의 `<link>` 는 렌더를 막아 배경이 깜빡이지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

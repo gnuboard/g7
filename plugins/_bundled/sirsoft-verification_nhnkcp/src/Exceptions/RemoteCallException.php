@@ -2,6 +2,9 @@
 
 namespace Plugins\Sirsoft\VerificationNhnkcp\Exceptions;
 
+use App\Helpers\ResponseHelper;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 use Throwable;
 
@@ -31,5 +34,26 @@ class RemoteCallException extends RuntimeException
             $httpStatus,
             $previous,
         );
+    }
+
+    /**
+     * 잡히지 않고 API 응답까지 올라온 통신 실패를 503 으로 답합니다.
+     *
+     * 거래등록(본인인증 시작)은 코어 컨트롤러를 거쳐 호출되므로 플러그인이 직접 잡을 자리가 없다. 그대로 두면
+     * 일시적인 KCP 장애가 500(서버 오류)으로 보인다 — 다시 시도하라는 안내와 함께 503 으로 돌려준다(1.1.4).
+     * 웹 요청은 프레임워크 기본 처리에 맡긴다.
+     *
+     * @param  Request  $request  현재 요청
+     * @return JsonResponse|null API 요청이면 503 응답, 아니면 null(기본 처리)
+     */
+    public function render(Request $request): ?JsonResponse
+    {
+        if (! $request->expectsJson() && ! $request->is('api/*')) {
+            return null;
+        }
+
+        return ResponseHelper::error('sirsoft-verification_nhnkcp::exceptions.remote_call_failed', 503, [
+            'failure_code' => 'REMOTE_CALL_FAILED',
+        ]);
     }
 }

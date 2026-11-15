@@ -9,6 +9,8 @@ use App\Extension\Consent\ConsentManager;
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
+use App\Rules\ConnectionEndpointUrl;
+use App\Rules\ConnectionHost;
 use App\Rules\ContentCustomTagsRule;
 use App\Rules\CspSourceHost;
 use App\Rules\EmbedCustomProviderRule;
@@ -114,6 +116,8 @@ class SaveSettingsRequest extends FormRequest
         'auth_token_lifetime',
         'max_login_attempts',
         'login_lockout_time',
+        'password_reset_rate_limit_per_minute',
+        'register_rate_limit_per_minute',
         // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다(#736 S2 실측).
         'password_min_length',
         'password_repeated_chars_length',
@@ -182,6 +186,7 @@ class SaveSettingsRequest extends FormRequest
         ]);
 
         $this->normalizeAllowedExtensions();
+        $this->normalizeNonEmptyExtensionLists();
         $this->normalizeIpRestrictionLists();
         $this->normalizeCspHostList();
         $this->normalizePrivacyIntegerFields();
@@ -404,6 +409,7 @@ class SaveSettingsRequest extends FormRequest
      *
      * 앞뒤 공백 제거·소문자화·빈 항목 제거·중복 제거(순서 유지). 형식 판정은 규칙
      * ({@see CspSourceHost})이 맡는다 — 여기서는 같은 호스트가 대소문자만 달라 두 번 저장되지 않게 한다.
+     * 스크립트 호스트와 스타일 호스트(7.1.6) 두 키를 같은 방식으로 다룬다.
      *
      * @return void 입력을 제자리에서 고친다
      */
@@ -411,32 +417,44 @@ class SaveSettingsRequest extends FormRequest
     {
         $security = $this->input('security');
 
-        if (! is_array($security) || ! is_array($security['csp_extra_script_hosts'] ?? null)) {
+        if (! is_array($security)) {
             return;
         }
 
-        $hosts = [];
+        $changed = false;
 
-        foreach ($security['csp_extra_script_hosts'] as $host) {
-            if ($host === null) {
+        foreach (['csp_extra_script_hosts', 'csp_extra_style_hosts'] as $key) {
+            if (! is_array($security[$key] ?? null)) {
                 continue;
             }
 
-            if (is_string($host)) {
-                $host = strtolower(trim($host));
+            $hosts = [];
 
-                if ($host === '') {
+            foreach ($security[$key] as $host) {
+                if ($host === null) {
                     continue;
+                }
+
+                if (is_string($host)) {
+                    $host = strtolower(trim($host));
+
+                    if ($host === '') {
+                        continue;
+                    }
+                }
+
+                if (! in_array($host, $hosts, true)) {
+                    $hosts[] = $host;
                 }
             }
 
-            if (! in_array($host, $hosts, true)) {
-                $hosts[] = $host;
-            }
+            $security[$key] = $hosts;
+            $changed = true;
         }
 
-        $security['csp_extra_script_hosts'] = $hosts;
-        $this->merge(['security' => $security]);
+        if ($changed) {
+            $this->merge(['security' => $security]);
+        }
     }
 
     /**
@@ -493,6 +511,103 @@ class SaveSettingsRequest extends FormRequest
         $upload['allowed_extensions'] = AllowedExtensions::normalize($upload['allowed_extensions']);
 
         $this->merge(['upload' => $upload]);
+    }
+
+    /**
+     * 비울 수 없는 확장자 목록 설정 — 「카테고리.키」 목록
+     *
+     * 일반 허용 확장자(`upload.allowed_extensions`)와 달리 빈 목록이 "제한 없음" 을 뜻하지 않는다.
+     *
+     * @var array<int, string>
+     */
+    private const NON_EMPTY_EXTENSION_LISTS = [
+        'upload.layout_attachment_extensions',
+        'drivers.public_asset_extensions',
+    ];
+
+    /**
+     * 비울 수 없는 확장자 목록 설정을 소문자 확장자 배열로 정규화합니다.
+     *
+     * 화면은 콤마로 구분한 한 줄 텍스트를, API 직접 호출은 배열을 보낸다. 키가 없으면(그 항목을 모르는
+     * 화면의 저장) 건드리지 않는다. null 은 그대로 두고 사후 검사가 판정한다 — 화면에서 칸을 비우면
+     * 빈 문자열이 null 로 바뀌어 들어온다.
+     *
+     * @return void 반환값 없음
+     */
+    private function normalizeNonEmptyExtensionLists(): void
+    {
+        foreach (self::NON_EMPTY_EXTENSION_LISTS as $dotted) {
+            [$category, $key] = explode('.', $dotted, 2);
+            $values = $this->input($category, []);
+
+            if (! is_array($values) || ! array_key_exists($key, $values) || $values[$key] === null) {
+                continue;
+            }
+
+            if (! is_string($values[$key]) && ! is_array($values[$key])) {
+                continue;
+            }
+
+            $values[$key] = AllowedExtensions::normalize($values[$key]);
+
+            $this->merge([$category => $values]);
+        }
+    }
+
+    /**
+     * 비울 수 없는 확장자 목록 설정이 빈 목록으로 저장되지 않게 검사합니다.
+     *
+     * 빈 배열은 `nullable` 규칙에서 검사를 건너뛰므로 사후 검사로 잡는다.
+     *
+     * @param  Validator  $validator  검증기 인스턴스
+     * @return void 검증기에 오류를 직접 더한다
+     */
+    private function validateNonEmptyExtensionLists(Validator $validator): void
+    {
+        foreach (self::NON_EMPTY_EXTENSION_LISTS as $dotted) {
+            [$category, $key] = explode('.', $dotted, 2);
+            $values = $this->input($category, []);
+
+            if (! is_array($values) || ! array_key_exists($key, $values)) {
+                continue;
+            }
+
+            // 칸을 비운 저장은 빈 문자열이 null 로 바뀌어 들어온다. 그 탭을 저장할 때만 빈 값으로 보고,
+            // 다른 탭 저장에 딸려 온 null 은 "그 항목을 모르는 저장" 으로 넘긴다.
+            $empty = $values[$key] === [] || $values[$key] === ''
+                || ($values[$key] === null && $this->input('_tab') === $category);
+
+            if ($empty) {
+                $validator->errors()->add($dotted, __('validation.settings.'.$key.'_required'));
+            }
+        }
+    }
+
+    /**
+     * 비울 수 없는 확장자 목록 설정의 형식 규칙을 반환합니다(문자열 또는 배열, 합쳐서 500자 이하).
+     *
+     * @return array<int, mixed> 검증 규칙 배열
+     */
+    private function getExtensionListRules(): array
+    {
+        return [
+            'nullable',
+            function ($attribute, $value, $fail) {
+                if (is_array($value)) {
+                    $value = implode(',', array_filter($value, 'is_scalar'));
+                }
+
+                if (! is_string($value)) {
+                    $fail(__('validation.settings.allowed_extensions_invalid_type'));
+
+                    return;
+                }
+
+                if (strlen($value) > 500) {
+                    $fail(__('validation.settings.allowed_extensions_max'));
+                }
+            },
+        ];
     }
 
     /**
@@ -596,14 +711,14 @@ class SaveSettingsRequest extends FormRequest
 
             // 메일 설정
             'mail.mailer' => $this->getTabRules($tab, 'mail', [Rule::in(self::SUPPORTED_MAILERS)]),
-            'mail.host' => $this->getMailerRules($tab, 'smtp', 'string|max:255'),
+            'mail.host' => $this->getMailerRules($tab, 'smtp', ['string', 'max:255', new ConnectionHost]),
             'mail.port' => $this->getMailerRules($tab, 'smtp', 'integer|min:1|max:65535'),
             'mail.username' => ['nullable', 'string', 'max:255'],
             'mail.password' => ['nullable', 'string', 'max:255'],
             'mail.encryption' => ['nullable', Rule::in(self::SUPPORTED_ENCRYPTIONS)],
             'mail.mailgun_domain' => $this->getMailerRules($tab, 'mailgun', 'string|max:255'),
             'mail.mailgun_secret' => $this->getMailerRules($tab, 'mailgun', 'string|max:255'),
-            'mail.mailgun_endpoint' => ['nullable', 'string', 'max:255'],
+            'mail.mailgun_endpoint' => ['nullable', 'string', 'max:255', new ConnectionHost],
             'mail.ses_key' => $this->getMailerRules($tab, 'ses', 'string|max:255'),
             'mail.ses_secret' => $this->getMailerRules($tab, 'ses', 'string|max:255'),
             'mail.ses_region' => $this->getMailerRules($tab, 'ses', 'string|max:255'),
@@ -613,6 +728,7 @@ class SaveSettingsRequest extends FormRequest
             // 업로드 설정
             'upload.max_file_size' => $this->getTabRules($tab, 'upload', 'integer|min:'.config('core.settings_limits.upload_max_file_size_min', 1).'|max:'.config('core.settings_limits.upload_max_file_size_max', 1024)),
             'upload.allowed_extensions' => $this->getAllowedExtensionsRules($tab),
+            'upload.layout_attachment_extensions' => $this->getExtensionListRules(),
             'upload.image_max_width' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_max_width_min', 100), 'max:'.config('core.settings_limits.upload_image_max_width_max', 10000)],
             'upload.image_max_height' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_max_height_min', 100), 'max:'.config('core.settings_limits.upload_image_max_height_max', 10000)],
             'upload.image_quality' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_quality_min', 1), 'max:'.config('core.settings_limits.upload_image_quality_max', 100)],
@@ -661,6 +777,8 @@ class SaveSettingsRequest extends FormRequest
             'security.auth_token_lifetime' => $this->getSecurityTabAuthTokenRules($tab),
             'security.max_login_attempts' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_max_login_attempts_min', 0), 'max:'.config('core.settings_limits.security_max_login_attempts_max', 100)],
             'security.login_lockout_time' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_login_lockout_time_min', 0), 'max:'.config('core.settings_limits.security_login_lockout_time_max', 1440)],
+            'security.password_reset_rate_limit_per_minute' => $this->securityIntegerRules('password_reset_rate_limit_per_minute'),
+            'security.register_rate_limit_per_minute' => $this->securityIntegerRules('register_rate_limit_per_minute'),
             // 비밀번호 정책 — 저장 규칙이 없어 whitelist 에서 탈락하던 고아 설정을 배선.
             // 경계값은 config('core.settings_limits') 가 SSoT — 설정 화면도 같은 값을 받아 쓴다.
             'security.password_min_length' => [
@@ -716,6 +834,12 @@ class SaveSettingsRequest extends FormRequest
             'security.csp_mode' => ['nullable', 'string', Rule::in(CspPolicyBuilder::MODES)],
             'security.csp_extra_script_hosts' => ['nullable', 'array', 'max:'.self::CSP_HOST_LIST_MAX],
             'security.csp_extra_script_hosts.*' => [new CspSourceHost],
+            // 스타일 정책 (7.1.6). 미전송(옛 화면)은 기본값(끔·basic·빈 목록) 유지.
+            // `.env G7_CSP_STYLE_MODE` 탈출구도 저장값을 바꾸지 않고 적용 시점에만 우선한다.
+            'security.csp_style_mode' => ['nullable', 'string', Rule::in(CspPolicyBuilder::MODES)],
+            'security.csp_style_level' => ['nullable', 'string', Rule::in(CspPolicyBuilder::LEVELS)],
+            'security.csp_extra_style_hosts' => ['nullable', 'array', 'max:'.self::CSP_HOST_LIST_MAX],
+            'security.csp_extra_style_hosts.*' => [new CspSourceHost],
 
             // 캐시 설정 (advanced 탭)
             'advanced.cache_enabled' => $this->getTabRules($tab, 'advanced', 'boolean'),
@@ -761,15 +885,15 @@ class SaveSettingsRequest extends FormRequest
             'drivers.s3_region' => ['nullable', 'string', 'max:64', self::S3_REGION_FORMAT],
             'drivers.s3_access_key' => ['nullable', 'string', 'max:255'],
             'drivers.s3_secret_key' => ['nullable', 'string', 'max:255'],
-            'drivers.s3_url' => ['nullable', 'url', 'max:500'],
-            'drivers.s3_endpoint' => ['nullable', 'url', 'max:500'],
+            'drivers.s3_url' => ['nullable', 'url', 'max:500', new ConnectionEndpointUrl(allowPath: true)],
+            'drivers.s3_endpoint' => ['nullable', 'url', 'max:500', new ConnectionEndpointUrl],
             'drivers.s3_use_path_style' => ['nullable', 'boolean'],
             'drivers.cache_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')]),
-            'drivers.redis_host' => ['nullable', 'string', 'max:255'],
+            'drivers.redis_host' => ['nullable', 'string', 'max:255', new ConnectionHost(allowSocketAndTls: true)],
             'drivers.redis_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_port_min', 1), 'max:'.config('core.settings_limits.drivers_redis_port_max', 65535)],
             'drivers.redis_password' => ['nullable', 'string', 'max:255'],
             'drivers.redis_database' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_database_min', 0), 'max:'.config('core.settings_limits.drivers_redis_database_max', 15)],
-            'drivers.memcached_host' => ['nullable', 'string', 'max:255'],
+            'drivers.memcached_host' => ['nullable', 'string', 'max:255', new ConnectionHost(allowSocketAndTls: true)],
             'drivers.memcached_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_memcached_port_min', 1), 'max:'.config('core.settings_limits.drivers_memcached_port_max', 65535)],
             'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')]),
             'drivers.session_lifetime' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_session_lifetime_min', 1), 'max:'.config('core.settings_limits.drivers_session_lifetime_max', 43200)], // 1분 ~ 30일
@@ -785,11 +909,11 @@ class SaveSettingsRequest extends FormRequest
             'drivers.websocket_app_id' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_key' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_secret' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
-            'drivers.websocket_host' => ['nullable', 'string', 'max:255'],
+            'drivers.websocket_host' => ['nullable', 'string', 'max:255', new ConnectionHost],
             'drivers.websocket_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_port_max', 65535)],
             'drivers.websocket_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.websocket_verify_ssl' => ['nullable', 'boolean'],
-            'drivers.websocket_server_host' => ['nullable', 'string', 'max:255'],
+            'drivers.websocket_server_host' => ['nullable', 'string', 'max:255', new ConnectionHost],
             'drivers.websocket_server_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_server_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_server_port_max', 65535)],
             'drivers.websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.search_engine_driver' => ['nullable', Rule::in($this->getSupportedSearchEngineDrivers())],
@@ -799,6 +923,7 @@ class SaveSettingsRequest extends FormRequest
             // 공개 자산 디스크 — 코어 3종(none/public/s3) + 플러그인 훅 등록 디스크.
             // 카탈로그가 동적(플러그인 훅)이라 정적 Rule::in 불가 → 레지스트리 조회 closure
             'drivers.public_asset_disk' => $this->getPublicAssetDiskRules(),
+            'drivers.public_asset_extensions' => $this->getExtensionListRules(),
 
             // 본인인증(IDV) provider 기술 파라미터 — 정책 분기는 IdentityPolicy 로 흡수됨
             'identity.default_provider' => ['nullable', 'string', 'max:100'],
@@ -1114,6 +1239,7 @@ class SaveSettingsRequest extends FormRequest
             $this->validatePrivacyDormantThresholds($validator);
             $this->validatePasswordExpiryThresholds($validator);
             $this->validateQueueWorkers($validator);
+            $this->validateNonEmptyExtensionLists($validator);
         });
     }
 
@@ -1575,6 +1701,12 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_remind_days.integer' => __('validation.settings.password_policy_integer'),
             'security.password_expiry_remind_days.min' => __('validation.settings.password_policy_min'),
             'security.password_expiry_remind_days.max' => __('validation.settings.password_policy_max'),
+            'security.password_reset_rate_limit_per_minute.integer' => __('validation.settings.rate_limit_per_minute_range'),
+            'security.password_reset_rate_limit_per_minute.min' => __('validation.settings.rate_limit_per_minute_range'),
+            'security.password_reset_rate_limit_per_minute.max' => __('validation.settings.rate_limit_per_minute_range'),
+            'security.register_rate_limit_per_minute.integer' => __('validation.settings.rate_limit_per_minute_range'),
+            'security.register_rate_limit_per_minute.min' => __('validation.settings.rate_limit_per_minute_range'),
+            'security.register_rate_limit_per_minute.max' => __('validation.settings.rate_limit_per_minute_range'),
             'security.password_expiry_batch_size.integer' => __('validation.settings.password_policy_integer'),
             'security.password_expiry_batch_size.min' => __('validation.settings.password_policy_min'),
             'security.password_expiry_batch_size.max' => __('validation.settings.password_policy_max'),
@@ -1601,6 +1733,10 @@ class SaveSettingsRequest extends FormRequest
             'security.csp_mode.in' => __('validation.settings.csp_mode_in'),
             'security.csp_extra_script_hosts.array' => __('validation.settings.csp_extra_script_hosts_array'),
             'security.csp_extra_script_hosts.max' => __('validation.settings.csp_extra_script_hosts_max', ['max' => self::CSP_HOST_LIST_MAX]),
+            'security.csp_style_mode.in' => __('validation.settings.csp_style_mode_in'),
+            'security.csp_style_level.in' => __('validation.settings.csp_style_level_in'),
+            'security.csp_extra_style_hosts.array' => __('validation.settings.csp_extra_style_hosts_array'),
+            'security.csp_extra_style_hosts.max' => __('validation.settings.csp_extra_style_hosts_max', ['max' => self::CSP_HOST_LIST_MAX]),
 
             // 캐시 설정
             'advanced.cache_enabled.required' => __('validation.settings.cache_enabled_required'),
@@ -1834,6 +1970,7 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_rules.*' => __('validation.attributes.ip_restriction_rules'),
             'security.admin_allowed_ips.*' => __('validation.attributes.admin_allowed_ips'),
             'security.csp_extra_script_hosts.*' => __('validation.attributes.csp_extra_script_hosts'),
+            'security.csp_extra_style_hosts.*' => __('validation.attributes.csp_extra_style_hosts'),
             'security.ip_restriction_rules.*.ips.*' => __('validation.attributes.ip_restriction_rule_ips'),
             '_tab' => __('validation.attributes.settings_tab'),
             // notifications
@@ -1865,6 +2002,7 @@ class SaveSettingsRequest extends FormRequest
             // upload
             'upload.max_file_size' => __('validation.attributes.max_file_size'),
             'upload.allowed_extensions' => __('validation.attributes.allowed_extensions'),
+            'upload.layout_attachment_extensions' => __('validation.attributes.layout_attachment_extensions'),
             'upload.image_max_width' => __('validation.attributes.image_max_width'),
             'upload.image_max_height' => __('validation.attributes.image_max_height'),
             'upload.image_quality' => __('validation.attributes.image_quality'),
@@ -1921,6 +2059,8 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_action' => __('validation.attributes.password_expiry_action'),
             'security.password_expiry_remind_days' => __('validation.attributes.password_expiry_remind_days'),
             'security.password_expiry_batch_size' => __('validation.attributes.password_expiry_batch_size'),
+            'security.password_reset_rate_limit_per_minute' => __('validation.attributes.password_reset_rate_limit_per_minute'),
+            'security.register_rate_limit_per_minute' => __('validation.attributes.register_rate_limit_per_minute'),
             'security.activity_log_retention_days' => __('validation.attributes.activity_log_retention_days'),
             'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
             'security.two_factor_scope' => __('validation.attributes.two_factor_scope'),
@@ -1930,6 +2070,9 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_rules' => __('validation.attributes.ip_restriction_rules'),
             'security.csp_mode' => __('validation.attributes.csp_mode'),
             'security.csp_extra_script_hosts' => __('validation.attributes.csp_extra_script_hosts'),
+            'security.csp_style_mode' => __('validation.attributes.csp_style_mode'),
+            'security.csp_style_level' => __('validation.attributes.csp_style_level'),
+            'security.csp_extra_style_hosts' => __('validation.attributes.csp_extra_style_hosts'),
             'security.ip_restriction_rules.*.pattern' => __('validation.attributes.ip_restriction_rule_pattern'),
             'security.ip_restriction_rules.*.ips' => __('validation.attributes.ip_restriction_rule_ips'),
             'security.ip_restriction_rules.*.memo' => __('validation.attributes.ip_restriction_rule_memo'),
@@ -1994,6 +2137,7 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_level' => __('validation.attributes.log_level'),
             'drivers.log_days' => __('validation.attributes.log_days'),
             'drivers.public_asset_disk' => __('validation.attributes.public_asset_disk'),
+            'drivers.public_asset_extensions' => __('validation.attributes.public_asset_extensions'),
         ];
 
         // 규칙을 더한 확장이 같은 자리에서 라벨도 더한다 (rules() 의 훅과 짝).

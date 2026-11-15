@@ -16,7 +16,10 @@ use App\Models\IdentityVerificationLog;
 interface KcpIdentityLogQueryRepositoryInterface
 {
     /**
-     * verified 상태의 IDV 로그를 token + purpose 로 조회한다 (consumed_at 무관).
+     * 아직 쓰지 않았고 만료되지 않은 verified IDV 로그를 token + purpose 로 조회한다.
+     *
+     * 1.1.4 부터 소비·만료된 결과는 돌려주지 않는다(KVE 동형 B6) — 가입 경로는 코어 `IdentityTokenAcceptanceService` 로
+     * 같은 요청에서 인정한 결과를 받는다.
      *
      * @param  string  $token  verification_token
      * @param  string  $purpose  IDV purpose

@@ -1,0 +1,23 @@
+feature: 코어 업데이트 실패 안내 — 확정 전·후 구분
+
+description: |
+  코어 업데이트는 새 버전을 기록하고 백업을 지운 뒤에도 캐시 재생성·기록 저장·번들 확장 질문을 이어 간다.
+  이 「확정 뒤」 구간의 오류는 되돌릴 것이 없다 — 지워진 백업에서 「복원 완료」라고 안내하거나, 번들 배치 기록을
+  옛 상태로 되돌리거나, 성공 기록과 실패 기록을 둘 다 남기면 안 된다. 대신 업데이트가 적용됐다는 사실과 끝내지
+  못한 단계, 손으로 마저 끝내는 명령을 안내하고 실패 종료코드로 끝난다.
+
+  진행 막대를 만들기 전에 난 오류는 원래 메시지 그대로 알려야 한다(정리 코드가 없는 막대를 건드려 가리지 않는다).
+  백업 경로는 있는데 디렉토리가 없으면 복원을 건너뛴다고 알린다.
+
+axes:
+  failure_point: [before_progress_bar, after_commit, before_commit_backup_missing]
+
+effects:
+  - early_failure_shows_original_error                              # 막대 생성 전 오류도 원래 메시지 그대로
+  - post_commit_failure_reports_applied_version_and_manual_steps    # 적용 버전 + 단계 + 실재 명령 안내
+  - post_commit_failure_leaves_site_open_with_success_log           # 유지보수 해제 + 성공 기록 하나만
+  - post_commit_failure_skips_restore_and_record_rollback           # 확정 뒤에는 복원·기록 되돌림·실패 기록 앞에서 빠져나감
+  - missing_backup_is_not_reported_as_restored                      # 없는 백업을 복원했다고 하지 않음
+
+test_files:
+  - tests/Feature/Console/CoreUpdatePostCommitFailureTest.php

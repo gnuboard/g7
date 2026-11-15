@@ -151,6 +151,7 @@ return [
         'auth_reset_password' => 'パスワードリセット',
         'auth_record_consents' => '利用規約同意記録',
         'auth_login_failed' => 'ログイン失敗 (:email)',
+        'auth_two_factor_failed' => '2段階認証失敗 (:email)',
         'auth_account_locked' => 'アカウントロック (:attempts回失敗、:minutes分ブロック)',
         'auth_account_locked_permanently' => 'アカウント無期限ロック (:attempts回失敗、管理者による解除またはパスワード再設定が必要)',
         'auth_account_unlocked' => 'アカウントロック解除 (:email)',

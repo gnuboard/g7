@@ -29,6 +29,11 @@ export default defineConfig({
                 // JS 파일명 패턴
                 entryFileNames: 'js/plugin.iife.js',
                 chunkFileNames: 'js/[name]-[hash].js',
+                // 엔트리가 import 하는 CSS 는 plugin.json 의 assets.css 가 가리키는 경로로 내보낸다
+                assetFileNames: (info) => {
+                    if (info.name && info.name.endsWith('.css')) return 'css/plugin.css';
+                    return 'assets/[name][extname]';
+                },
             },
         },
 

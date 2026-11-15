@@ -9,6 +9,7 @@ use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Support\AtomicBootstrapCache;
 use App\Support\BootDeferredLog;
+use App\Support\CacheSelfHeal;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -134,6 +135,8 @@ class HookCacheManager
 
         if (! $this->isCached()) {
             self::$memo = false;
+            // 파일이 없으면 매 요청 스캔 폴백만 하고 다시 만들지 않았다 — 요청 끝에 한 번 굽는다 (7.1.6)
+            $this->scheduleRegenerationWhenMissing();
 
             return null;
         }
@@ -191,6 +194,37 @@ class HookCacheManager
         self::$memo = $data;
 
         return $data;
+    }
+
+    /**
+     * 훅 캐시 파일이 없을 때, 운영 중인 사이트의 웹 요청이면 요청 끝에 다시 굽도록 예약합니다.
+     *
+     * 개발 환경은 훅 캐시 없이 돌리는 것이 의도다(굽고 나면 코어 리스너 변경이 캐시에 가려진다) — 그래서 운영 환경의
+     * 웹 요청에서만 한다. 실패가 되풀이되지 않게 표식 파일로 잠시 쉬고, root 프로세스는 만들지 않는다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function scheduleRegenerationWhenMissing(): void
+    {
+        if (! $this->isSelfHealContext()) {
+            return;
+        }
+
+        if (! CacheSelfHeal::claim('hooks', CacheSelfHeal::EXTENSION_BACKOFF_SECONDS)) {
+            return;
+        }
+
+        $this->scheduleRegeneration();
+    }
+
+    /**
+     * 없는 훅 캐시를 스스로 만들어도 되는 실행인지 (운영 중인 사이트의 웹 요청).
+     *
+     * @return bool 만들어도 되면 true
+     */
+    protected function isSelfHealContext(): bool
+    {
+        return CacheSelfHeal::isProductionWebRequest(app());
     }
 
     /**

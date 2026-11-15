@@ -449,8 +449,20 @@
                                                         {
                                                             "comment": "배송사 + 운송장 (모바일)",
                                                             "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{!!item.carrier_name && !!item.tracking_url}}",
+                                                            "props": {
+                                                                "href": "{{item.tracking_url}}",
+                                                                "target": "_blank",
+                                                                "rel": "noopener noreferrer",
+                                                                "className": "text-xs text-indigo-600 dark:text-indigo-400 hover:underline break-all"
+                                                            },
+                                                            "text": "{{item.carrier_name}} {{item.tracking_number ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{!!item.carrier_name}}",
+                                                            "if": "{{!!item.carrier_name && !item.tracking_url}}",
                                                             "props": {
                                                                 "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
@@ -916,8 +928,20 @@
                                                         },
                                                         {
                                                             "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{!!item.tracking_number && !!item.tracking_url}}",
+                                                            "props": {
+                                                                "href": "{{item.tracking_url}}",
+                                                                "target": "_blank",
+                                                                "rel": "noopener noreferrer",
+                                                                "className": "text-indigo-600 dark:text-indigo-400 hover:underline break-all"
+                                                            },
+                                                            "text": "{{item.tracking_number}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{!!item.tracking_number}}",
+                                                            "if": "{{!!item.tracking_number && !item.tracking_url}}",
                                                             "props": {
                                                                 "className": "text-blue-600 dark:text-blue-400"
                                                             },

@@ -155,7 +155,8 @@
     "empty": "이 카테고리에 상품이 없습니다.",
     "product_count": "{{count}}개의 상품",
     "select": "카테고리 선택",
-    "all_in": "{{name}} 전체"
+    "all_in": "{{name}} 전체",
+    "chips_label": "상품 분류"
   },
   "filter": {
     "title": "필터",
@@ -251,7 +252,9 @@
     "filter_rating_3": "⭐⭐⭐ 3점",
     "filter_rating_2": "⭐⭐ 2점",
     "filter_rating_1": "⭐ 1점",
-    "filter_reset": "필터 초기화"
+    "filter_reset": "필터 초기화",
+    "category_path": "분류 경로",
+    "buy_sheet_title": "옵션 선택"
   },
   "cart": {
     "title": "장바구니",
@@ -324,7 +327,8 @@
     "min_qty_item": "최소 구매 수량은 {{limit}}개입니다. (요청: {{requested}}개)",
     "restricted_item": "구매 권한이 없는 상품입니다.",
     "sold_out": "품절",
-    "go_to_cart": "장바구니로 이동"
+    "go_to_cart": "장바구니로 이동",
+    "checkout_with_count": "주문하기 ({{count}})"
   },
   "checkout": {
     "title": "주문서 작성",
@@ -500,7 +504,8 @@
     "refund_bank_select": "은행 선택",
     "refund_bank_account_placeholder": "계좌번호 (- 없이 입력)",
     "refund_bank_holder_placeholder": "예금주",
-    "refund_bank_partial_notice": "셋 중 하나라도 입력하면 나머지도 입력해야 합니다."
+    "refund_bank_partial_notice": "셋 중 하나라도 입력하면 나머지도 입력해야 합니다.",
+    "mileage_min_product_total": "상품 합계 {{amount}} 이상 구매 시 마일리지를 사용할 수 있습니다."
   },
   "order_complete": {
     "page_title": "주문 완료",
@@ -587,7 +592,8 @@
     "go_login": "로그인",
     "confirm_title": "쿠폰 다운로드",
     "confirm_message": "이 쿠폰을 다운로드하시겠습니까?",
-    "fetch_failed": "쿠폰 목록을 불러오는데 실패했습니다."
+    "fetch_failed": "쿠폰 목록을 불러오는데 실패했습니다.",
+    "download_all": "모두 받기"
   },
   "wishlist": {
     "title": "찜 목록",
@@ -633,5 +639,35 @@
     "page_description": "비회원 주문의 교환·반품·취소/환불을 신청합니다.",
     "edit_page_title": "비회원 신청 내용 수정"
   },
-  "order_permission_denied": "주문 권한이 없어 주문할 수 없습니다. 판매자에게 문의해 주세요."
+  "order_permission_denied": "주문 권한이 없어 주문할 수 없습니다. 판매자에게 문의해 주세요.",
+  "related_products": "이 상품은 어떠세요?",
+  "product_rail": {
+    "roledescription": "상품 줄"
+  },
+  "reviews": {
+    "title": "리뷰 모아보기",
+    "total_count": "총 {{count}}건",
+    "photo_only": "사진 후기만",
+    "rating_filter": "별점",
+    "rating_all": "전체 별점",
+    "rating_n": "별점 {{n}}점",
+    "rating_one": "별점 1점",
+    "sort": {
+      "latest": "최신순",
+      "oldest": "오래된 순",
+      "rating_high": "별점 높은 순",
+      "rating_low": "별점 낮은 순"
+    },
+    "empty": "아직 등록된 후기가 없습니다.",
+    "empty_filtered": "조건에 맞는 후기가 없습니다."
+  },
+  "exclude_sold_out": "품절 제외",
+  "product_card": {
+    "add_to_cart": "장바구니 담기: {{name}}",
+    "wishlist": "찜하기: {{name}}"
+  },
+  "quick_option": {
+    "title": "옵션 선택",
+    "view_detail": "상세 보기"
+  }
 }

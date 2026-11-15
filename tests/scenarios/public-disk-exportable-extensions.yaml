@@ -1,0 +1,74 @@
+feature: 공개 디스크로 내보낼 확장자와 직접 주소 보호 규칙 (#891)
+
+description: |
+  공개 디스크의 파일은 서버(PHP)를 거치지 않고 직접 주소로 나간다. 그 응답에는 애플리케이션이 헤더를 붙일 수 없다.
+
+  방어 지점:
+    - 디스크 선택·직접 주소 발급·저장 드라이버의 최후 관문이 같은 확장자 목록(PublicAssetDisk)을 본다.
+      관문은 Laravel public 디스크와 코어 전역 공개 자산 디스크가 대상이고, 걸리면 거부(false)하고 경고 로그를 남긴다.
+      공개 자산 디스크가 일반 첨부 디스크와 같은 저장 공간이면(둘 다 객체 저장소) 관문이 일반 첨부를 막지 않는다 —
+      직접 주소는 여전히 목록 안 확장자에만 나간다.
+    - 객체 저장소(S3)에 쓸 때는 Content-Type(내용 기준)과, 이미지가 아니면 Content-Disposition: attachment 를 싣는다.
+    - 공개 디스크 루트에 웹서버 규칙 파일(.htaccess)을 자동으로 둔다(nosniff, 비이미지 내려받기 강제 + sandbox,
+      헤더 모듈 부재 시 차단, PHP 실행 차단). 7.1.6 업그레이드 스텝, 링크 보장 함수, 드라이버 탭 저장이 만든다.
+    - 드라이버 탭 저장 뒤 직접 주소의 응답 헤더를 스스로 점검하고, 걸리지 않았을 때만 화면이 경고한다.
+    - root(sudo) 로 실행된 업데이트가 만든 규칙 파일은 공개 디스크 디렉터리의 소유자·그룹으로 맞춘다(업데이트의
+      소유권 스냅샷은 시작 시점에 없던 이 파일에 닿지 않는다). 파일을 고쳐 쓸 수 없으면 임시 파일로 바꿔 넣고,
+      그래도 못 쓰면 저장 결과에 쓰기 실패를 남겨 드라이버 탭이 따로 경고한다(헤더는 옛 규칙으로도 붙는다).
+
+  S3 실응답·nginx·mod_headers 부재는 로컬에서 재현할 수 없어 단위 시험으로 잠근다.
+
+axes:
+  case:
+    - extension_list__configured
+    - disk_selection__not_exportable
+    - direct_url__not_exportable
+    - write_guard__not_exportable
+    - write_guard__operator_added
+    - write_guard__exportable
+    - write_guard__shared_with_attachment_disk
+    - object_storage_metadata__operator_added
+    - object_storage_metadata__exportable
+    - webserver_rules__not_exportable
+    - webserver_rules__operator_added
+    - webserver_rules__exportable
+    - self_check__not_exportable
+    - self_check__exportable
+    - upgrade_step__not_exportable
+    - settings_save__operator_added
+    - settings_save__exportable
+    - exportable_extensions_field
+
+effects:
+  - exportable_list_falls_back_to_default_when_empty
+  - non_exportable_file_stays_on_private_disk_with_proxy_url
+  - direct_url_refused_for_non_exportable_extension
+  - write_guard_targets_public_and_global_public_asset_disk
+  - operator_added_extension_is_exported
+  - write_guard_refuses_and_logs
+  - exportable_and_private_disk_writes_unaffected
+  - write_guard_allows_attachment_disk_shared_with_public_asset_disk
+  - object_storage_put_carries_content_type_and_attachment
+  - webserver_rules_cover_nosniff_attachment_sandbox_and_php_block
+  - webserver_rules_follow_exportable_setting
+  - webserver_rules_written_and_refreshed_idempotently
+  - self_check_reports_ok_only_with_nosniff_and_attachment
+  - self_check_unknown_when_site_unreachable
+  - self_check_result_cleared_when_public_disk_not_used
+  - upgrade_writes_webserver_rules_once
+  - webserver_rules_owned_by_directory_owner
+  - webserver_rules_replaced_when_file_not_writable
+  - drivers_save_reports_rules_write_failure
+  - drivers_tab_warns_when_rules_write_failed
+  - drivers_save_refreshes_rules_and_runs_self_check
+  - drivers_tab_warns_only_when_self_check_fails
+  - drivers_tab_shows_exportable_extensions_field
+
+test_files:
+  - tests/Unit/Support/PublicAssetDiskExtensionTest.php
+  - tests/Unit/Extension/Storage/PublicDiskWriteGuardTest.php
+  - tests/Unit/Support/PublicDiskHardeningTest.php
+  - tests/Unit/Support/PublicDiskHardeningProbeTest.php
+  - tests/Unit/Upgrades/WritePublicDiskHtaccessTest.php
+  - tests/Unit/Listeners/PublicDiskHardeningListenerTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-drivers-public-disk-hardening.test.tsx

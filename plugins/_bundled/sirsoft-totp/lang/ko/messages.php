@@ -18,16 +18,41 @@ return [
         'already_enrolled' => '이미 인증 앱이 등록되어 있습니다. 먼저 해제한 뒤 다시 등록해주세요.',
         'invalid_code' => '코드가 올바르지 않습니다. 인증 앱의 현재 코드나 백업 코드를 확인해주세요.',
         'not_enrolled' => '등록된 인증 앱이 없습니다.',
+        'password_incorrect' => '현재 비밀번호가 올바르지 않습니다.',
+        'too_many_attempts' => '코드 확인을 너무 많이 시도했습니다. :seconds초 후 다시 시도해주세요.',
+        'confirm_conflict' => '다른 화면에서 등록이 먼저 확정되었거나 새 시크릿이 발급되었습니다. 화면을 새로 고친 뒤 다시 진행해주세요.',
     ],
 
     'validation' => [
         'code_required' => '코드를 입력해주세요.',
         'code_invalid' => '코드 형식이 올바르지 않습니다.',
         'code_attribute' => '인증 코드',
+        'current_password_required' => '현재 비밀번호를 입력해주세요.',
+        'current_password_max' => '현재 비밀번호는 255자를 넘을 수 없습니다.',
+        'current_password_attribute' => '현재 비밀번호',
     ],
 
     'permissions' => [
         'credentials_delete' => '회원 인증 앱 등록 해제',
+    ],
+
+    // 보안 알림(1.0.3) — 변경한 주체 표기
+    'notifications' => [
+        'actor_self' => '본인',
+        'actor_admin' => '관리자',
+        'actor_console' => '서버 관리 명령',
+    ],
+
+    // 알림 템플릿 편집기 「사용 가능한 변수」 설명 — common: 변수 키별 기본값
+    'notification_variables' => [
+        'common' => [
+            'name' => '수신자(계정 주인) 이름',
+            'app_name' => '사이트 이름',
+            'occurred_at' => '변경 시각',
+            'ip_address' => '요청 IP',
+            'actor_label' => '변경한 주체(본인·관리자·서버 셸)',
+            'security_url' => '인증 앱 설정 화면 주소',
+        ],
     ],
     // 콘솔 명령 출력
     'console' => [

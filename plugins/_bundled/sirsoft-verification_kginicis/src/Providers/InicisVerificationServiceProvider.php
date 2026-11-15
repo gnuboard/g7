@@ -7,6 +7,8 @@ use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CompleteInicisRecordAfterRegister;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisChallengeMappingRepository;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisChallengeMappingRepositoryInterface;
+use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityClaimRepository;
+use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityClaimRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityLogQueryRepository;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepository;
@@ -35,6 +37,7 @@ class InicisVerificationServiceProvider extends BasePluginServiceProvider
         InicisIdentityRecordRepositoryInterface::class => InicisIdentityRecordRepository::class,
         InicisChallengeMappingRepositoryInterface::class => InicisChallengeMappingRepository::class,
         InicisIdentityLogQueryRepositoryInterface::class => InicisIdentityLogQueryRepository::class,
+        InicisIdentityClaimRepositoryInterface::class => InicisIdentityClaimRepository::class,
     ];
 
     /**
@@ -48,6 +51,13 @@ class InicisVerificationServiceProvider extends BasePluginServiceProvider
         CompleteInicisRecordAfterRegister::class,
     ];
 
+    /**
+     * 플러그인 서비스를 컨테이너에 등록합니다.
+     *
+     * 부모가 Repository 바인딩·캐시 격리를 마친 뒤, 게이트웨이(싱글턴)와 콜백 해석기·마이페이지 카드 서비스를 바인딩합니다.
+     *
+     * @return void 반환값 없음
+     */
     public function register(): void
     {
         parent::register();

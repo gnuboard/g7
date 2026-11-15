@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Totp\Identity;
 
+use App\Contracts\Extension\ChallengeDeliveryAwareProviderInterface;
 use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Contracts\Extension\MailFallbackAwareProviderInterface;
 use App\Contracts\Extension\UserScopedIdentityProviderInterface;
@@ -33,7 +34,7 @@ use Plugins\Sirsoft\Totp\Support\Totp;
  *
  * @since 1.0.0
  */
-class TotpIdentityProvider implements IdentityVerificationInterface, MailFallbackAwareProviderInterface, UserScopedIdentityProviderInterface
+class TotpIdentityProvider implements ChallengeDeliveryAwareProviderInterface, IdentityVerificationInterface, MailFallbackAwareProviderInterface, UserScopedIdentityProviderInterface
 {
     /** 프로바이더 식별자 */
     public const PROVIDER_ID = 'totp';
@@ -252,35 +253,33 @@ class TotpIdentityProvider implements IdentityVerificationInterface, MailFallbac
             return VerificationResult::failure($challengeId, self::PROVIDER_ID, 'WRONG_PROVIDER', 'identity.errors.wrong_provider');
         }
 
-        $status = $log->status instanceof IdentityVerificationStatus ? $log->status->value : (string) $log->status;
-
-        if (in_array($status, [
-            IdentityVerificationStatus::Verified->value,
-            IdentityVerificationStatus::Expired->value,
-            IdentityVerificationStatus::Cancelled->value,
-        ], true)) {
+        // 진행 중(requested·sent)인 challenge 만 확인한다 — 실패(잠금)·취소·만료·확인 완료는 맞는 코드라도 거부(코어 7.1.6 와 같은 규칙)
+        if (! in_array($log->status, [IdentityVerificationStatus::Requested, IdentityVerificationStatus::Sent], true)) {
             return VerificationResult::failure($challengeId, self::PROVIDER_ID, 'INVALID_STATE', 'identity.errors.invalid_state');
         }
 
         if ($log->isExpired()) {
-            $this->logRepository->updateById($log->id, [
-                'status' => IdentityVerificationStatus::Expired->value,
-            ]);
+            $this->logRepository->expireIfPending($log);
 
             return VerificationResult::failure($challengeId, self::PROVIDER_ID, 'EXPIRED', 'identity.errors.expired');
         }
 
-        if ($log->attempts >= $log->max_attempts) {
-            return VerificationResult::failure($challengeId, self::PROVIDER_ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts');
+        // 시도 횟수는 DB 가 상한 안에서만 올린다 — 읽은 값 + 1 저장은 동시 오답이 서로를 덮었다(KVE-2026-3190 인증 앱 변종)
+        $attempts = $this->logRepository->incrementAttemptsIfAllowed($log->id);
+
+        if ($attempts === null) {
+            $current = $this->logRepository->findById($log->id);
+            $stillPending = $current !== null
+                && in_array($current->status, [IdentityVerificationStatus::Requested, IdentityVerificationStatus::Sent], true);
+
+            return $stillPending
+                ? VerificationResult::failure($challengeId, self::PROVIDER_ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts')
+                : VerificationResult::failure($challengeId, self::PROVIDER_ID, 'INVALID_STATE', 'identity.errors.invalid_state');
         }
 
         $credential = $log->user_id === null
             ? null
             : $this->credentials->findConfirmedByUserId((int) $log->user_id);
-
-        $this->logRepository->updateById($log->id, [
-            'attempts' => $log->attempts + 1,
-        ]);
 
         $provided = trim((string) ($input['code'] ?? ''));
         $matched = $credential !== null && $this->matchCredential($credential, $provided);
@@ -289,10 +288,8 @@ class TotpIdentityProvider implements IdentityVerificationInterface, MailFallbac
             // 이번 오답으로 max_attempts 에 도달하면 잠금(Failed)으로 전환하고 MAX_ATTEMPTS 로
             // 답한다 — 메일 프로바이더와 같은 이유(막 소진된 응답에서 안내하지 않으면 그 문구가
             // 사용자에게 영영 도달하지 못한다).
-            if (($log->attempts + 1) >= $log->max_attempts) {
-                $this->logRepository->updateById($log->id, [
-                    'status' => IdentityVerificationStatus::Failed->value,
-                ]);
+            if ($attempts >= (int) $log->max_attempts) {
+                $this->logRepository->markFailedIfPending($log->id);
 
                 return VerificationResult::failure($challengeId, self::PROVIDER_ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts');
             }
@@ -303,11 +300,14 @@ class TotpIdentityProvider implements IdentityVerificationInterface, MailFallbac
         $verifiedAt = Carbon::now();
         $verificationToken = $this->generateVerificationToken($log->purpose, $log->target_hash);
 
-        $this->logRepository->updateById($log->id, [
+        // 진행 중일 때만 확인 완료로 바꾼다 — 같은 challenge 를 동시에 확인해도 토큰은 하나다(코어 7.1.6 동형 O3)
+        if (! $this->logRepository->markVerifiedIfPending($log->id, [
             'status' => IdentityVerificationStatus::Verified->value,
             'verified_at' => $verifiedAt,
             'verification_token' => $verificationToken,
-        ]);
+        ])) {
+            return VerificationResult::failure($challengeId, self::PROVIDER_ID, 'INVALID_STATE', 'identity.errors.invalid_state');
+        }
 
         return VerificationResult::success(
             challengeId: $challengeId,
@@ -344,9 +344,8 @@ class TotpIdentityProvider implements IdentityVerificationInterface, MailFallbac
                 return false;
             }
 
-            $this->credentials->update($credential, ['last_used_timestep' => $step]);
-
-            return true;
+            // 「더 클 때만」 올린다 — 같은 코드를 동시에 낸 두 요청 중 한쪽만 통과한다(KVE-2026-3193)
+            return $this->credentials->advanceTimestep((int) $credential->getKey(), $step);
         }
 
         // 6자리 숫자가 아니면 백업 코드로 본다. 길이 하한을 두어 오타난 TOTP 가 백업 코드
@@ -355,16 +354,8 @@ class TotpIdentityProvider implements IdentityVerificationInterface, MailFallbac
             return false;
         }
 
-        $remaining = $credential->matchBackupCode($provided);
-
-        if ($remaining === null) {
-            return false;
-        }
-
-        // 백업 코드는 1회용 — 맞은 항목을 뺀 목록으로 즉시 덮어쓴다.
-        $this->credentials->update($credential, ['backup_codes' => $remaining]);
-
-        return true;
+        // 백업 코드는 1회용 — 행 잠금 안에서 대조·소진한다(목록을 통째로 덮어쓰면 동시 사용이 둘 다 통과했다)
+        return $this->credentials->consumeBackupCode((int) $credential->getKey(), $provided);
     }
 
     /**
@@ -381,11 +372,20 @@ class TotpIdentityProvider implements IdentityVerificationInterface, MailFallbac
             return false;
         }
 
-        $this->logRepository->updateById($log->id, [
-            'status' => IdentityVerificationStatus::Cancelled->value,
-        ]);
+        // 진행 중일 때만 취소한다 — 확인을 마친 challenge 를 취소로 덮지 않는다
+        return $this->logRepository->markCancelledIfPending($log->id);
+    }
 
-        return true;
+    /**
+     * 인증 앱은 코드를 보내지 않는다 — 사용자의 기기가 만든다.
+     *
+     * 코어는 이 답으로 로그인 2단계 재발송을 거부한다(재발송이 새 challenge 로 시도 상한을 되돌리는 통로였다 — KVE-2026-3195).
+     *
+     * @return bool 항상 false
+     */
+    public function deliversChallengeCode(): bool
+    {
+        return false;
     }
 
     /**

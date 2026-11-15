@@ -24,6 +24,7 @@ import { Textarea } from '../basic/Textarea';
 import { H3 } from '../basic/H3';
 import { Label } from '../basic/Label';
 import type { EditorAttrs } from '../../types';
+import { applyDeferredStyles, sanitizeDeferred } from '../../support/inlineStyleDeferral';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -120,10 +121,15 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   useEffect(() => {
     // 초기값 설정 (dangerouslySetInnerHTML 대신 직접 설정). 정화 없이 넣으면 초기값의 <script>·on* 이
     // 편집 영역에서 살아나는 XSS 싱크가 된다(#158 부수 결함) — HtmlContent 와 같은 DOMPurify 로 거른다.
+    // 초기값의 style 속성은 엄격한 스타일 정책(`style-src-attr 'none'`)에서 innerHTML 로 들어가면 막힌다. 코어 본문 서식 지연
+    // 장치(G7Core.inlineStyle)가 있으면 정화 → innerHTML → `el.style.cssText` 대입 순서로 입히고, 없으면(옛 코어) 종전 그대로다 (공개 #163).
     if (editorRef.current && !editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = DOMPurify.sanitize(initialValue ?? '', {
-        FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
-      });
+      const purifyConfig = { FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'] };
+      const deferred = sanitizeDeferred(initialValue ?? '', purifyConfig);
+      editorRef.current.innerHTML = deferred ?? (DOMPurify.sanitize(initialValue ?? '', purifyConfig) as unknown as string);
+      if (deferred !== null) {
+        applyDeferredStyles(editorRef.current);
+      }
     }
   }, [initialValue]);
 

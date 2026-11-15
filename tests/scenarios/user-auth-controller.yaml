@@ -1,0 +1,88 @@
+feature: 사용자 인증 API 엔드포인트 회귀 묶음
+
+description: |
+  사용자 인증 컨트롤러(가입·로그인·로그아웃·토큰 갱신·내 정보·비밀번호 찾기·재설정·토큰 확인)의 엔드포인트별
+  요청 검증·응답 계약을 고정하는 기존 기능 시험 묶음이다. 가입 연락처 필드는 auth-register-contact-fields,
+  계정 존재 비노출과 요청 제한은 auth-account-enumeration 시나리오가 따로 소유한다.
+
+  7.1.6 에서 바뀐 계약: 가입되지 않은 주소의 비밀번호 찾기는 가입 주소와 같은 200, 재설정은 토큰이 틀린 것과
+  같은 필드(token) 오류. 같은 주소의 재요청은 60초가 지나야 토큰이 갱신된다.
+
+axes:
+  endpoint:
+    - login
+    - register
+    - logout
+    - refresh
+    - current_user
+    - forgot_password
+    - reset_password
+    - validate_reset_token
+
+effects:
+  - user_auth_login_succeeds_with_valid_credentials
+  - user_auth_login_returns_token_and_user
+  - user_auth_login_fails_with_invalid_email
+  - user_auth_login_fails_with_invalid_password
+  - user_auth_login_validates_email_required
+  - user_auth_login_validates_password_required
+  - user_auth_login_validates_email_format
+  - user_auth_register_creates_user_successfully
+  - user_auth_register_stores_consent_records
+  - user_auth_register_stores_consent_without_version
+  - user_auth_register_stores_ip_address_in_consent
+  - user_auth_register_nickname_is_optional
+  - user_auth_register_stores_language_preference
+  - user_auth_register_stores_mobile_and_phone
+  - user_auth_register_mobile_and_phone_are_optional
+  - user_auth_register_validates_mobile_format
+  - user_auth_register_assigns_user_role_automatically
+  - user_auth_register_validates_name_required
+  - user_auth_register_validates_agree_terms_required
+  - user_auth_register_validates_agree_privacy_required
+  - user_auth_register_validates_email_unique
+  - user_auth_register_validates_password_confirmed
+  - user_auth_register_validates_password_min_length
+  - user_auth_register_validates_password_min_8_characters
+  - user_auth_register_accepts_password_with_exactly_8_characters
+  - user_auth_register_stores_country_from_accept_language
+  - user_auth_register_stores_ip_address
+  - user_auth_register_sends_welcome_notification
+  - user_auth_register_stores_null_country_with_empty_accept_language
+  - user_auth_logout_invalidates_current_token
+  - user_auth_logout_returns_401_without_authentication
+  - user_auth_logout_all_devices_invalidates_all_tokens
+  - user_auth_refresh_returns_new_token
+  - user_auth_refresh_returns_401_without_authentication
+  - user_auth_user_returns_authenticated_user_info
+  - user_auth_user_returns_401_without_authentication
+  - user_auth_auth_user_returns_authenticated_user_info
+  - user_auth_auth_user_returns_401_without_authentication
+  - user_auth_auth_logout_invalidates_token
+  - user_auth_auth_logout_returns_401_without_authentication
+  - user_auth_auth_user_returns_is_admin_false_for_regular_user
+  - user_auth_auth_user_returns_is_admin_true_for_admin_user
+  - user_auth_forgot_password_sends_email
+  - user_auth_forgot_password_returns_same_success_for_unregistered_email
+  - user_auth_forgot_password_validates_email_format
+  - user_auth_forgot_password_updates_existing_token
+  - user_auth_forgot_password_accepts_redirect_prefix_admin
+  - user_auth_forgot_password_rejects_invalid_redirect_prefix
+  - user_auth_forgot_password_works_without_redirect_prefix
+  - user_auth_reset_password_succeeds
+  - user_auth_reset_password_fails_with_invalid_token
+  - user_auth_reset_password_fails_with_expired_token
+  - user_auth_reset_password_fails_with_unregistered_email
+  - user_auth_reset_password_fails_with_password_mismatch
+  - user_auth_reset_password_fails_when_no_token_exists
+  - user_auth_validate_reset_token_succeeds_with_valid_token
+  - user_auth_validate_reset_token_fails_with_invalid_token
+  - user_auth_validate_reset_token_fails_with_expired_token
+  - user_auth_validate_reset_token_fails_with_unregistered_email
+  - user_auth_validate_reset_token_fails_when_no_token_exists
+  - user_auth_validate_reset_token_validates_token_required
+  - user_auth_validate_reset_token_validates_email_required
+  - user_auth_validate_reset_token_validates_email_format
+
+test_files:
+  - tests/Feature/Api/Auth/UserAuthControllerTest.php

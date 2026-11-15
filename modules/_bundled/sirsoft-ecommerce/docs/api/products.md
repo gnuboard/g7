@@ -2621,6 +2621,7 @@ HTTP/1.1 200
 | min_price | query | integer | 아니오 | min 0 | 판매가 범위 필터 하한 (판매가가 이 값 이상인 상품) |
 | max_price | query | integer | 아니오 | min 0 | 판매가 범위 필터 상한 (판매가가 이 값 이하인 상품) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
+| exclude_sold_out | query | string | 아니오 | `0`, `1` | 품절 제외. `1` 이면 판매상태가 「품절」이거나 활성 옵션 재고가 모두 0 인 상품을 뺍니다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.product.public_list_validation_rules`, `sirsoft-ecommerce.product.public_list_validation_messages`).
 
@@ -2740,7 +2741,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 쇼핑몰 프런트용 공개 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPublicList()`가 전시상태 visible이고 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다. 카테고리/브랜드/검색어/가격 범위 필터와 `sort`(latest/sales/reviews/price_asc/price_desc) 정렬을 지원하고(reviews 는 노출 리뷰 수 내림차순, 같으면 최신 등록순) 결과는 `ProductCollection`으로 페이지네이션됩니다. 확장은 `sirsoft-ecommerce.product.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다.
+**설명** 쇼핑몰 프런트용 공개 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPublicList()`가 전시상태 visible이고 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다. 카테고리/브랜드/검색어/가격 범위 필터와 `sort`(latest/sales/reviews/price_asc/price_desc) 정렬을 지원하고(reviews 는 노출 리뷰 수 내림차순, 같으면 최신 등록순) 결과는 `ProductCollection`으로 페이지네이션됩니다. 확장은 `sirsoft-ecommerce.product.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다. 목록의 각 상품에는 카드 단추용 값이 실립니다 — `is_wishlisted`(보는 회원의 찜 여부, 비회원은 `false`), `options_count`(활성 옵션 수), `has_additional_options`(추가옵션 그룹 유무). 인기·신상품·최근 본·관련 상품 응답과 통합검색 상품 결과에도 같은 값이 실립니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/new
@@ -3080,7 +3081,7 @@ Accept: application/json
 
 <!-- @generated:end -->
 
-**설명** 상품 상세 아래 「이 상품은 어떠세요?」 목록용 관련 상품을 조회합니다. `ProductService::getRelatedProducts()`가 기준 상품의 대표 분류(없으면 첫 분류)와 그 하위 분류 상품을 먼저, 모자라면 상위 분류 → 그 위 분류 순으로 채워 `ProductListResource` 컬렉션으로 반환합니다. 기준 상품·숨긴 상품·앞 단계에서 고른 상품은 다시 고르지 않으며, 분류가 없으면 빈 배열입니다. 단계 안 순서는 환경설정 `product_display.related_order`(`random` 기본, `sales`, `reviews`, `latest`)를 따르고, 고른 상품 ID 는 `product_display.related_cache_hours`(기본 24, 0 이면 캐시 안 함) 동안 코어 캐시 드라이버에 둡니다(태그 `sirsoft-ecommerce.related_products`, 설정 저장 시 비움). 상품 정보 자체는 매번 읽으므로 그 사이 숨긴 상품은 빠집니다.
+**설명** 상품 상세 아래 「이 상품은 어떠세요?」 목록용 관련 상품을 조회합니다. `ProductService::getRelatedProducts()`가 기준 상품의 대표 분류(없으면 첫 분류)와 그 하위 분류 상품을 먼저, 모자라면 상위 분류 → 그 위 분류 순으로 채워 `ProductListResource` 컬렉션으로 반환합니다. 기준 상품·숨긴 상품·앞 단계에서 고른 상품은 다시 고르지 않으며, 분류가 없으면 빈 배열입니다. 단계 안 순서는 환경설정 `product_display.related_order`(`random` 기본, `sales`, `reviews`, `latest`)를 따르고, 고른 상품 ID 는 `product_display.related_cache_hours`(기본 24, 0 이면 캐시 안 함) 동안 코어 캐시 드라이버에 둡니다(태그 `sirsoft-ecommerce.related_products`, 설정 저장 시 비움). 상품 정보 자체는 매번 읽으므로 그 사이 숨긴 상품은 빠집니다. 확장은 `sirsoft-ecommerce.product.related_validation_rules` 로 파라미터를, `before_related_list`·`filter_related_list_result`·`after_related_list` 훅으로 결과를 다룰 수 있습니다. 기준 상품이 숨김·삭제 상태면 `404` 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/recent
@@ -3653,7 +3654,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등)은 `ProductInquiryOperationException` 으로 422 를 반환하며, 예외가 들고 있는 다국어 키로 해석한 사유가 응답 문구에 포함됩니다. 그 밖의 예외는 서버 결함으로 보아 500 입니다.
+**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등)은 `ProductInquiryOperationException` 으로 422 를 반환하며, 예외가 들고 있는 다국어 키로 해석한 사유가 응답 문구에 포함됩니다. 그 밖의 예외는 서버 결함으로 보아 500 입니다. 상품이 숨김·삭제 상태면 본문 검증보다 먼저 `404` 로 답합니다. 회원당 분당 요청 제한(`throttle:sirsoft-ecommerce.inquiry-write`)이 걸려 있어 넘으면 `429` 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/{product}/reviews
@@ -3802,6 +3803,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 상품의 공개 리뷰 목록과 별점 통계를 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductReviewService::getProductReviews()`가 정렬(`sort`)·포토리뷰만(`photo_only`)·별점(`rating`)·옵션(`option_filters`) 필터를 적용해 리뷰를 페이지네이션하고 별점 분포(`rating_stats`)와 선택 가능한 옵션 필터, 총 개수를 함께 반환합니다. `option_filters`는 JSON 문자열로 전달되면 서버에서 배열로 파싱되며, 상품 상세의 리뷰 탭에 사용됩니다. 확장은 `sirsoft-ecommerce.review.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다.
+**설명** 상품의 공개 리뷰 목록과 별점 통계를 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductReviewService::getProductReviews()`가 정렬(`sort`)·포토리뷰만(`photo_only`)·별점(`rating`)·옵션(`option_filters`) 필터를 적용해 리뷰를 페이지네이션하고 별점 분포(`rating_stats`)와 선택 가능한 옵션 필터, 총 개수를 함께 반환합니다. `option_filters`는 JSON 문자열로 전달되면 서버에서 배열로 파싱되며, 상품 상세의 리뷰 탭에 사용됩니다. 확장은 `sirsoft-ecommerce.review.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다. 작성자 이름(`author_name`·`user.name`)은 환경설정 「리뷰 설정 → 작성자 이름 가림」이 「가운데 가림」(기본)이면 가려서 싣고, 회원 식별자(`user_id`·`user.uuid`)는 싣지 않습니다. 상품이 숨김·삭제 상태면 `404` 입니다.
 
 

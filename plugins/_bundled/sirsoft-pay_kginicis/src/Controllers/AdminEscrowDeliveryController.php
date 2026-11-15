@@ -11,6 +11,7 @@ use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
+use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
@@ -32,6 +34,10 @@ class AdminEscrowDeliveryController extends AdminBaseController
 {
     use GuardsOrderScope;
     use SanitizesPgResponse;
+    use SerializesPaymentCallbacks;
+
+    /** 배송등록 주문 잠금 문맥 (SerializesPaymentCallbacks 잠금 키 구분자) */
+    public const LOCK_CONTEXT = 'escrow-delivery';
 
     /** 택배사 코드 → 택배사명 매핑 (KG 이니시스 공식 코드표 — EscrowDeliveryRegisterRequest 의 허용값 SSoT) */
     public const COURIER_CODES = [
@@ -138,6 +144,11 @@ class AdminEscrowDeliveryController extends AdminBaseController
      * 형식·길이·택배사 코드 검증은 EscrowDeliveryRegisterRequest 가 담당한다
      * (종전 인라인 한글 하드코딩 메시지를 다국어 키로 이관).
      *
+     * 같은 주문의 배송등록은 주문 단위 잠금(`escrow-delivery`)으로 한 번에 하나만 처리한다. 더블클릭·재시도로
+     * 두 요청이 겹치면 둘 다 "아직 등록 전"을 보고 PG 에 신규 등록(I)을 두 번 보내기 때문이다. 결제 메타는
+     * 잠금을 잡은 뒤 다시 읽어, 앞선 요청이 이미 등록했으면 신규 등록(I)을 409 로 거절한다(변경 U 는 허용).
+     * 잠금을 기다리다 시간이 다 되면 다른 요청이 처리 중이므로 409(`messages.errors.escrow_in_progress`)를 돌려준다.
+     *
      * @param  EscrowDeliveryRegisterRequest  $request  배송 등록 폼
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse
@@ -148,6 +159,30 @@ class AdminEscrowDeliveryController extends AdminBaseController
             return $denied;
         }
 
+        try {
+            $lock = $this->acquireOrderCallbackLock(self::LOCK_CONTEXT, $orderNumber);
+        } catch (LockTimeoutException) {
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.errors.escrow_in_progress', 409, [
+                'message' => [__('sirsoft-pay_kginicis::messages.errors.escrow_in_progress')],
+            ]);
+        }
+
+        try {
+            return $this->registerUnderLock($request, $orderNumber);
+        } finally {
+            $this->releaseOrderCallbackLock($lock);
+        }
+    }
+
+    /**
+     * 주문 잠금을 잡은 상태에서 결제 메타를 다시 읽고 배송등록을 PG 에 전송·기록합니다.
+     *
+     * @param  EscrowDeliveryRegisterRequest  $request  배송 등록 폼
+     * @param  string  $orderNumber  주문번호
+     * @return JsonResponse 등록 결과 응답
+     */
+    private function registerUnderLock(EscrowDeliveryRegisterRequest $request, string $orderNumber): JsonResponse
+    {
         $invoice = trim((string) $request->validated('invoice'));
         $exCode = trim((string) $request->validated('ex_code'));
 
@@ -158,6 +193,14 @@ class AdminEscrowDeliveryController extends AdminBaseController
         }
 
         $report = $request->validated('report') ?? 'I';
+
+        // 잠금 안에서 다시 읽은 메타 기준 — 이미 등록된 건에 신규 등록(I)을 또 보내지 않는다 (변경 U 는 정상 경로)
+        $currentMeta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
+        if ($report === 'I' && ! empty($currentMeta['escrow_delivery'])) {
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.errors.escrow_delivery_already_registered', 409, [
+                'message' => [__('sirsoft-pay_kginicis::messages.errors.escrow_delivery_already_registered')],
+            ]);
+        }
         $charge = $request->validated('charge') ?? 'SH';
         $price = (int) round((float) $payment->paid_amount_local);
         $exName = self::COURIER_CODES[$exCode];

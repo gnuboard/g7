@@ -7,20 +7,11 @@
     안내를 둔다: 20초 뒤 CSS 애니메이션으로 보이게 하고, 셸이 도착하면 `<html>` 에 붙이는
     `g7-shell-ok` 클래스로 숨긴다. 새로고침은 `<a href="">`(현재 주소 재요청)라 스크립트가 필요 없다.
 
-    @param $part 'style'(<head> 안) | 'notice'(<body> 안)
+    규칙(`#g7-shell-stall …`)은 정적 파일 `g7-core.css` 에 있다. 이 뷰에 스타일 블록을 두면
+    엄격한 스타일 정책에서 막혀, 숨김 규칙이 사라지고 안내가 정상 화면 아래에 늘 보인다(#163).
 --}}
-@if(($part ?? '') === 'style')
-        <style>
-            #g7-shell-stall{position:fixed;left:0;right:0;bottom:0;z-index:2147483647;visibility:hidden;padding:16px 24px;background:#fff7ed;border-top:1px solid #fdba74;color:#7c2d12;font:14px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center}
-            #g7-shell-stall a{color:#1d4ed8;font-weight:600;margin-left:8px}
-            html:not(.g7-shell-ok) #g7-shell-stall{animation:g7ShellStall 0s 20s forwards}
-            html.g7-shell-ok #g7-shell-stall{display:none}
-            @keyframes g7ShellStall{to{visibility:visible}}
-        </style>
-@else
         <div id="g7-shell-stall" role="alert">
             <strong>{{ __('errors.bootstrap.title') }}</strong>
             {{ __('errors.bootstrap.message') }}
             <a href="">{{ __('errors.bootstrap.reload') }}</a>
         </div>
-@endif

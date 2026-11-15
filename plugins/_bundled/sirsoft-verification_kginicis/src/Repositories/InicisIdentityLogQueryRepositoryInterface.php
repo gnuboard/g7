@@ -19,11 +19,14 @@ use App\Models\IdentityVerificationLog;
 interface InicisIdentityLogQueryRepositoryInterface
 {
     /**
-     * verified 상태의 IDV 로그를 token + purpose 로 조회한다 (consumed_at 무관).
+     * 아직 쓰지 않았고 만료되지 않은 verified IDV 로그를 token + purpose 로 조회한다.
+     *
+     * 1.1.4 부터 소비·만료된 결과는 돌려주지 않는다(KVE 동형 B6) — 가입 경로는 코어 `IdentityTokenAcceptanceService` 로
+     * 같은 요청에서 인정한 결과를 받는다.
      *
      * @param  string  $token  verification_token
      * @param  string  $purpose  IDV purpose (signup / password_reset / sensitive_action 등)
-     * @return IdentityVerificationLog|null  매칭 로그 또는 null
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
      */
     public function findVerifiedLogForToken(string $token, string $purpose): ?IdentityVerificationLog;
 
@@ -38,7 +41,7 @@ interface InicisIdentityLogQueryRepositoryInterface
      * 다른 IDV provider 발행 로그는 각자의 listener 책임 영역.
      *
      * @param  int  $userId  탈퇴/삭제 사용자 id
-     * @return int  익명화된 row 수
+     * @return int 익명화된 row 수
      */
     public function anonymizeUserId(int $userId): int;
 
@@ -51,7 +54,7 @@ interface InicisIdentityLogQueryRepositoryInterface
      *
      * @param  string  $logId  대상 로그 id (uuid)
      * @param  array<string, mixed>  $patch  병합할 metadata 키 (예: ['matched_field' => 'di_hash'])
-     * @return bool  업데이트 성공 여부
+     * @return bool 업데이트 성공 여부
      */
     public function appendMetadata(string $logId, array $patch): bool;
 }

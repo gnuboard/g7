@@ -14,7 +14,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useEditorTemplateAssets } from '../../hooks/useEditorTemplateAssets';
+import { useEditorTemplateAssets, editorAssetStyleKey } from '../../hooks/useEditorTemplateAssets';
+import { getCssText, has as hasRules } from '../../../../style/RuntimeStyleSheet';
 import { ComponentRegistry } from '../../../ComponentRegistry';
 
 describe('useEditorTemplateAssets', () => {
@@ -34,12 +35,18 @@ describe('useEditorTemplateAssets', () => {
     if (typeof document !== 'undefined') {
       document.querySelectorAll('[data-g7le-asset]').forEach((n) => n.remove());
     }
+    // 런타임 시트 레지스트리도 비운다 — 표식 요소만 지우면 다음 테스트가 「이미 붙음」으로 판정한다
+    (window as any).__g7RuntimeStyles?.clear();
   });
 
   afterEach(() => {
     ComponentRegistry.resetInstance();
   });
 
+  /**
+   * @scenario case=layout_editor_asset_regression
+   * @effects editor_asset_loading_baseline_unchanged
+   */
   it('편집 자산 매니페스트 + components.json + lang 순차 fetch', async () => {
     fetchSpy.mockImplementation(async (url: string) => {
       if (url.includes('/editor-assets')) {
@@ -87,6 +94,7 @@ describe('useEditorTemplateAssets', () => {
     expect(assetCall).toBeDefined();
   });
 
+  /** @effects editor_asset_loading_baseline_unchanged */
   it('editor-assets fetch 실패 시 error 메시지 + 인스턴스 null', async () => {
     fetchSpy.mockResolvedValue({ ok: false, status: 500, statusText: 'Server Error', json: async () => ({}) });
 
@@ -101,6 +109,7 @@ describe('useEditorTemplateAssets', () => {
     expect(result.current.translationEngine).toBeNull();
   });
 
+  /** @effects editor_asset_loading_baseline_unchanged */
   it('Sanctum 토큰이 있으면 editor-assets 호출에 Bearer 헤더 부착', async () => {
     window.localStorage.setItem('auth_token', 'tok-abc');
     fetchSpy.mockResolvedValue({
@@ -122,7 +131,11 @@ describe('useEditorTemplateAssets', () => {
 
   //  결함C 회귀 — 권한 가드된 admin CSS 엔드포인트는 `<link>` 가 Authorization 헤더를
   // 못 실어 500(Route[login])으로 떨어지므로, Bearer fetch → `<style>` 로 주입해야 한다.
-  it('권한 가드 admin CSS 는 Bearer fetch → <style> 주입 (link 아님)', async () => {
+  /**
+   * @scenario case=layout_editor_asset_regression
+   * @effects editor_guarded_css_via_runtime_sheet
+   */
+  it('권한 가드 admin CSS 는 Bearer fetch → 런타임 시트로 주입 (link 아님)', async () => {
     window.localStorage.setItem('auth_token', 'tok-css');
     const adminCssUrl = '/api/admin/templates/sirsoft-basic/editor/component-styles.css?v=1';
     fetchSpy.mockImplementation(async (url: string) => {
@@ -148,18 +161,25 @@ describe('useEditorTemplateAssets', () => {
     const { result } = renderHook(() => useEditorTemplateAssets('sirsoft-basic', 'ko'));
     await waitFor(() => expect(result.current.isReady).toBe(true), { timeout: 3000 });
 
-    // <style> 로 주입됨 (link 아님)
-    const styleEl = document.querySelector(`style[data-g7le-asset="${adminCssUrl}"]`);
+    // 런타임 시트로 붙음 (link 아님) — 표식 요소가 같은 속성을 달고 head 에 남는다
+    const key = editorAssetStyleKey(adminCssUrl);
+    const markerEl = document.querySelector(`[data-g7le-asset="${adminCssUrl}"]`);
     const linkEl = document.querySelector(`link[data-g7le-asset="${adminCssUrl}"]`);
-    expect(styleEl).not.toBeNull();
+    expect(hasRules(key)).toBe(true);
+    expect(markerEl).not.toBeNull();
+    expect(markerEl?.id).toBe(key);
     expect(linkEl).toBeNull();
-    expect(styleEl?.textContent).toContain('.g7le-preview-dark');
+    expect(getCssText(key)).toContain('.g7le-preview-dark');
 
     // CSS fetch 에 Bearer 헤더 부착
     const cssCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('/editor/component-styles.css'));
     expect(cssCall?.[1]?.headers?.Authorization).toBe('Bearer tok-css');
   });
 
+  /**
+   * @scenario case=layout_editor_asset_regression
+   * @effects editor_public_css_stays_link
+   */
   it('공개/외부 CSS 는 <link> 로 주입 (Bearer fetch 안 함)', async () => {
     const publicCssUrl = '/api/templates/assets/sirsoft-basic/css/components.css?v=1';
     fetchSpy.mockImplementation(async (url: string) => {
@@ -192,6 +212,7 @@ describe('useEditorTemplateAssets', () => {
   // 편집기 독립 TranslationEngine 은 cacheVersion 기본 0
   // 이라 버전 없이 lang 을 fetch 해 stale(신규 다국어 키 누락) 응답을 받던 결함.
   // config.json(비캐시)의 최신 cache_version 을 읽어 그 버전으로 lang 을 fetch 해야 한다.
+  /** @effects new_state_label_resolves_via_cache_busted_lang_fetch */
   it('config.json 의 최신 cache_version 으로 lang 을 ?v= 붙여 fetch 한다 (캐시 무효화 구멍 차단)', async () => {
     const CV = 1780399682;
     fetchSpy.mockImplementation(async (url: string) => {
@@ -223,6 +244,7 @@ describe('useEditorTemplateAssets', () => {
     expect(String(langCall![0])).toContain(`v=${CV}`);
   });
 
+  /** @effects editor_asset_loading_baseline_unchanged */
   it('config.json 조회 실패 시 cacheVersion 없이도 디그레이드 동작 (lang fetch 는 수행)', async () => {
     fetchSpy.mockImplementation(async (url: string) => {
       if (url.includes('/editor-assets')) {
@@ -301,6 +323,7 @@ describe('useEditorTemplateAssets', () => {
       document.querySelectorAll('[data-g7le-asset]').forEach((n) => n.remove());
     });
 
+    /** @effects editor_asset_loading_baseline_unchanged */
     it('미신뢰 외부 src 는 주입하지 않고 오류로 끝난다', async () => {
       mockManifest(['https://cdn.evil.com/x.js']);
 
@@ -312,6 +335,7 @@ describe('useEditorTemplateAssets', () => {
       ).toBe(0);
     });
 
+    /** @effects editor_asset_loading_baseline_unchanged */
     it('same-origin src 는 주입된다 (과차단 없음)', async () => {
       mockManifest(['/api/templates/assets/sirsoft-basic/js/components.iife.js']);
 

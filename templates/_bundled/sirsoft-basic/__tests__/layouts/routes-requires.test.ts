@@ -59,9 +59,9 @@ describe('routes.json requires (#822)', () => {
 
     // @scenario surface=routes
     // @effects routes_require_their_module
-    it('쇼핑 경로 12개와 쇼핑 마이페이지 9개는 sirsoft-ecommerce 를 요구한다', () => {
+    it('쇼핑 경로 13개와 쇼핑 마이페이지 9개는 sirsoft-ecommerce 를 요구한다', () => {
         const shop = routes.filter((r) => r.path.startsWith(SHOP_PREFIX));
-        expect(shop).toHaveLength(12);
+        expect(shop).toHaveLength(13);
         [...shop, ...SHOP_MYPAGE_PATHS.map(route)].forEach((r) =>
             expect(r.requires, r.path).toEqual({ modules: ['sirsoft-ecommerce'] }),
         );
@@ -91,8 +91,8 @@ describe('routes.json requires (#822)', () => {
         const rest = routes.filter((r) => !guarded.has(r.path) && !r.path.startsWith(SHOP_PREFIX));
         expect(rest.map((r) => r.path)).toEqual(expect.arrayContaining(['/', '/login', '/register', '/users/:userId', '/search', '/mypage/profile', '/mypage/notifications']));
         rest.forEach((r) => expect(r.requires, r.path).toBeUndefined());
-        // 표의 행 수 합계 = 9 + 12 + 9 + 1 + 1 = 32
-        expect(routes.filter((r) => r.requires).length).toBe(32);
+        // 표의 행 수 합계 = 9 + 13 + 9 + 1 + 1 = 33 (쇼핑 경로에 리뷰 모아보기 추가)
+        expect(routes.filter((r) => r.requires).length).toBe(33);
     });
 
     // @scenario surface=routes

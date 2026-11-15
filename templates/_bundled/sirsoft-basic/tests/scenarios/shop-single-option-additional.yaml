@@ -1,0 +1,40 @@
+feature: 옵션 하나 상품의 추가옵션 고르기와 담기
+
+description: |
+  옵션이 하나뿐인 상품(수량 선택기로 사는 상품)에서 추가옵션을 고르고 직접 입력 글자를 넣어 담거나 바로 산다.
+
+  - 고른 옵션 줄이 없으므로 추가옵션은 상품 하나에 붙는다 — 화면 상태 noOptionAdditionalSelections·
+    noOptionAdditionalCustomTexts 에 두고, 합계 noOptionTotalMultiCurrency 는 (단가 + 추가 금액) × 수량이다.
+  - 담기·바로구매 본문이 이 선택을 싣는다. 필수 미선택·직접 입력 빈칸이면 요청 대신 경고한다.
+  - 하단 구매바는 아직 다 고르지 않았거나, 추가옵션이 있는데 시트를 한 번도 열지 않았으면 시트를 연다.
+  - 상품을 옮기거나 담은 뒤에는 앞 선택과 합계를 지운다.
+  시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10]
+  # c01: 추가옵션을 고르면 선택이 남고 합계에 추가 금액이 수량만큼 더해진다(통화별)
+  # c02: 직접 입력 값을 고르고 글자를 넣으면 남고, 선택을 풀면 지운다
+  # c03: 수량을 바꿔도 고른 추가옵션 금액이 합계에 남는다
+  # c04: 추가옵션 인자가 없으면 수량 × 단가 그대로다(종전 동작)
+  # c05: 수량 칸 아래에 그룹마다 선택 칸이 있고, 직접 입력 값을 고르면 글자 칸이 보인다
+  # c06: 수량을 바꿀 때도 고른 추가옵션을 넘겨 합계에 남긴다
+  # c07: 담기·바로구매 본문이 고른 추가옵션과 직접 입력 글자를 싣는다
+  # c08: 필수 미선택·직접 입력 빈칸이면 요청 대신 경고한다
+  # c09: 하단 구매바가 다 고르지 않았거나 시트를 한 번도 열지 않았으면 시트를 연다
+  # c10: 상품을 옮길 때·담은 뒤·담김 창에서 계속 둘러볼 때 앞 선택과 합계를 지운다
+
+effects:
+  - single_option_additional_selection_is_stored_and_priced
+  - single_option_custom_text_is_kept_and_cleared
+  - single_option_quantity_change_keeps_additional_price
+  - single_option_quantity_without_additional_unchanged
+  - single_option_additional_fields_rendered
+  - single_option_quantity_passes_additional_selection
+  - single_option_request_carries_additional_selection
+  - single_option_guards_required_and_custom_text
+  - single_option_bar_opens_sheet
+  - single_option_selection_reset_on_navigate_and_after_add
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/productOptionsSingleOptionAdditional.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-single-option-additional.test.tsx

@@ -37,6 +37,8 @@
             "privacy_officer_email": "",
             "mail_order_number": "",
             "telecom_number": "",
+            "hosting_provider": "",
+            "show_business_footer": true,
             "public_asset_disk": ""
         },
         "language_currency": {
@@ -541,7 +543,8 @@
         "review_settings": {
             "write_deadline_days": 90,
             "max_images": 5,
-            "max_image_size_mb": 10
+            "max_image_size_mb": 10,
+            "author_name_masking": "middle"
         },
         "product_display": {
             "related_order": "random",
@@ -586,7 +589,12 @@
             "expiry_enabled": true,
             "expiry_days": 365,
             "expiry_notification_enabled": true,
-            "expiry_notification_days_before": 7
+            "expiry_notification_days_before": 7,
+            "signup_earn_enabled": false,
+            "signup_earn_amount": 0,
+            "no_earn_when_points_used": false,
+            "min_product_total_for_use_enabled": false,
+            "min_product_total_for_use": 0
         },
         "privacy_retention": {
             "enabled": false,
@@ -645,10 +653,31 @@
             }
         }
     },
+    "public_api_schema": {
+        "_comment": "비회원도 부를 수 있는 공개 설정 API(settings/shipping·payment·review·checkout)가 돌려주는 키. 여기에 없는 키는 응답에 싣지 않는다. frontend_schema(모든 화면의 페이지 소스에 싣는 값)와 따로 둔다 — 입금 계좌·결제수단 목록을 모든 화면에 싣지 않기 위해서다.",
+        "shipping": [
+            "default_country",
+            "available_countries",
+            "international_shipping_enabled"
+        ],
+        "order_settings": [
+            "payment_methods",
+            "banks",
+            "bank_accounts",
+            "auto_cancel_days",
+            "default_pg_provider",
+            "cash_receipt_provider"
+        ],
+        "review_settings": [
+            "write_deadline_days",
+            "max_images",
+            "max_image_size_mb"
+        ]
+    },
     "frontend_schema": {
         "basic_info": {
             "expose": true,
-            "_comment": "route_path, no_route만 프론트엔드(user-side routes.json, _user_base.json)에서 참조",
+            "_comment": "route_path·no_route 는 사용자 화면 경로 계산에, 법정 사업자 항목(상호·대표자·주소·전화·전자우편·사업자등록번호·통신판매업 신고번호·호스팅 제공자)은 사용자 화면 푸터에 쓴다. show_business_footer 가 꺼지면 사업자 항목은 응답에서 빠진다",
             "fields": {
                 "shop_name": {
                     "expose": false
@@ -660,13 +689,13 @@
                     "expose": true
                 },
                 "company_name": {
-                    "expose": false
+                    "expose": true
                 },
                 "business_number": {
-                    "expose": false
+                    "expose": true
                 },
                 "ceo_name": {
-                    "expose": false
+                    "expose": true
                 },
                 "business_type": {
                     "expose": false
@@ -675,22 +704,22 @@
                     "expose": false
                 },
                 "zipcode": {
-                    "expose": false
+                    "expose": true
                 },
                 "base_address": {
-                    "expose": false
+                    "expose": true
                 },
                 "detail_address": {
-                    "expose": false
+                    "expose": true
                 },
                 "phone": {
-                    "expose": false
+                    "expose": true
                 },
                 "fax": {
                     "expose": false
                 },
                 "email": {
-                    "expose": false
+                    "expose": true
                 },
                 "privacy_officer": {
                     "expose": false
@@ -699,10 +728,16 @@
                     "expose": false
                 },
                 "mail_order_number": {
-                    "expose": false
+                    "expose": true
                 },
                 "telecom_number": {
                     "expose": false
+                },
+                "hosting_provider": {
+                    "expose": true
+                },
+                "show_business_footer": {
+                    "expose": true
                 },
                 "public_asset_disk": {
                     "expose": false
@@ -770,6 +805,9 @@
                 },
                 "max_image_size_mb": {
                     "expose": false
+                },
+                "author_name_masking": {
+                    "expose": false
                 }
             }
         },
@@ -783,9 +821,15 @@
         },
         "mileage": {
             "expose": true,
-            "_comment": "enabled 만 노출 — 마이페이지 탭 바가 적립금 탭을 세울지 판단하는 유일한 근거",
+            "_comment": "enabled 는 마이페이지 탭 바가 적립금 탭을 세울지 판단하는 근거, 최소 상품 합계 두 칸은 주문서 적립금 입력의 안내용",
             "fields": {
                 "enabled": {
+                    "expose": true
+                },
+                "min_product_total_for_use_enabled": {
+                    "expose": true
+                },
+                "min_product_total_for_use": {
                     "expose": true
                 }
             }

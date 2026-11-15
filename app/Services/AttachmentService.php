@@ -80,6 +80,9 @@ class AttachmentService
         // 저장 경로 생성 (날짜별 디렉토리).
         // 확장자는 클라이언트가 보낸 파일명이 아니라 MIME 추론값을 우선 사용한다 —
         // 파일명 확장자는 사용자가 임의로 바꿀 수 있어 저장 확장자의 근거가 될 수 없다.
+        // audit:allow stored-filename-client-extension 내용 추론값(`extension()`)이 우선이고, 추론하지 못할 때만
+        // 이름 확장자를 쓴다. 그 이름 확장자는 업로드 요청이 허용 목록(`extensions:`)·내용(AttachmentFileContent)으로
+        // 교차 검증한 값이다.
         $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
         $storedFilename = Str::uuid().($extension !== '' ? '.'.$extension : '');
         // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값

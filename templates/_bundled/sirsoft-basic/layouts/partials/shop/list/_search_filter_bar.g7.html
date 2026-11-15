@@ -1,6 +1,6 @@
 <!-- 목록 위의 검색·정렬 줄. 모든 조건이 URL 쿼리로 나가므로 이 조각은 목록을 직접 다시 받지 않는다 —
      주소가 바뀌면 목록 데이터소스가 알아서 따라온다. -->
-<partial description="검색 바 + 정렬 바 (검색 입력, 총 상품 수, 초기화, 정렬)">
+<partial description="검색 바 + 정렬 줄 (검색 입력, 총 상품 수, 초기화, 품절 제외, 정렬)">
   <div class="space-y-4">
     <!-- 검색 영역 — 최근 검색어 검색창(상품 검색 범위 sirsoft-ecommerce.products, 분류 화면 검색줄과 목록을 함께 쓴다).
          입력칸은 주소의 keyword 를 보이기만 하고 기록하지 않는다 — 제출(Enter·검색 단추·목록 항목)할 때 검색창이 기록한다.
@@ -13,38 +13,7 @@
         </navigate>
       </on>
     </recent-search-combobox>
-    <!-- 정렬 바 (총 상품 수 + 초기화 + 정렬) -->
-    <div class="flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50">
-      <!-- 총 상품 수 -->
-      <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
-      <!-- 오른쪽: 초기화 버튼 + 정렬 -->
-      <div class="flex items-center gap-2">
-        <!-- 전체 초기화 버튼 (필터 적용 시에만 표시) -->
-        <button type="button" data-if="{{!!query.category || !!query.keyword}}" class="h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-          <on type="click">
-            <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색어·카테고리·정렬·페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다 -->
-            <navigate path="{{_global.shopBase}}/products">
-              <query/>
-            </navigate>
-          </on>
-          $t:shop.reset_all
-        </button>
-        <!-- 정렬 Select -->
-        <select name="sort" aria-label="$t:common.sort_order" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
-          <options>
-            <option value="latest">$t:shop.sort.latest</option>
-            <option value="sales">$t:shop.sort.sales</option>
-            <option value="reviews">$t:shop.sort.reviews</option>
-            <option value="price_asc">$t:shop.sort.price_asc</option>
-            <option value="price_desc">$t:shop.sort.price_desc</option>
-          </options>
-          <on type="change">
-            <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
-              <query sort="{{$event.target.value}}" page="1"/>
-            </navigate>
-          </on>
-        </select>
-      </div>
-    </div>
+    <!-- 정렬 줄(총 상품 수·초기화·품절 제외·정렬) — 분류 화면과 같이 쓰는 조각 -->
+    <include src="partials/shop/list/_sort_bar.g7.html"/>
   </div>
 </partial>

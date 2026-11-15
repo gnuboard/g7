@@ -232,7 +232,7 @@
                             "if": "{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}",
                             "actions": [
                                 {
-                                    "comment": "다시 보내기 — 새 인증 건이 발급되므로 건 번호·만료·시도 횟수를 응답값으로 갈아 끼우고 앞서 친 코드도 비운다(옛 코드가 남아 있으면 새 코드와 헷갈린다). 30초 대기는 응답을 기다리지 않고 먼저 걸어 연타를 막되, 실패하면 곧바로 풀어 다시 누를 수 있게 한다.",
+                                    "comment": "다시 보내기 — 새 인증 건이 발급되므로 건 번호·만료·시도 횟수를 응답값으로 갈아 끼우고 앞서 친 코드도 비운다(옛 코드가 남아 있으면 새 코드와 헷갈린다). 60초 대기(서버의 재요청 제한과 같은 값)는 응답을 기다리지 않고 먼저 걸어 연타를 막되, 실패하면 곧바로 풀어 다시 누를 수 있게 한다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -241,7 +241,7 @@
                                             "params": {
                                                 "target": "global",
                                                 "identityChallenge.resending": true,
-                                                "identityChallenge.resendCooldown": 30,
+                                                "identityChallenge.resendCooldown": 60,
                                                 "identityChallenge.error": null,
                                                 "identityChallenge.code": ""
                                             }

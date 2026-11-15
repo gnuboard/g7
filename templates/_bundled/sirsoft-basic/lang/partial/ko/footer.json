@@ -10,5 +10,15 @@
   "terms": "이용약관",
   "privacy": "개인정보처리방침",
   "refund": "취소/반품/교환 정책",
-  "powered_by": "Powered by 그누보드7"
+  "powered_by": "Powered by 그누보드7",
+  "business": {
+    "company_name": "상호",
+    "ceo_name": "대표자",
+    "address": "사업장 주소",
+    "phone": "전화",
+    "email": "전자우편",
+    "business_number": "사업자등록번호",
+    "mail_order_number": "통신판매업 신고번호",
+    "hosting_provider": "호스팅 서비스 제공자"
+  }
 }

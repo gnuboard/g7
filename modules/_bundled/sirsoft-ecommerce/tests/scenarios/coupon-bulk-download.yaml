@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 요청 모양과 결과 축이 짝으로만 의미가 있어(번호 없음 → 전체, 잘못된 요청 → 거부) 전수 곱이 아니라 경로별로 잠근다.
+
+feature: 쿠폰 일괄 받기 API
+
+description: |
+  POST user/coupons/bulk-download — 받을 수 있는 쿠폰을 한 번에 받는다. coupon_ids(최대 50)를 주거나, 주지 않으면
+  그 회원이 받을 수 있는 쿠폰 전체가 대상이다. 쿠폰마다 단건 받기와 같은 검사·잠금·훅을 거치고, 한 장 실패가
+  나머지를 막지 않는다. 이미 한 장 이상 받은 쿠폰은 더 받지 않는다. 받은 장이 없어도 200 이고 쿠폰별 사유 코드를 싣는다.
+  「이미 받은 수」는 쿠폰 수와 무관하게 한 번의 집계로 읽는다. 단건 받기와 같은 요청 제한을 나눠 쓴다.
+
+axes:
+  request: [explicit_ids, no_ids, invalid]
+  outcome: [mixed, all_downloadable, over_limit, none_issued, rejected, query_count, concurrent_limit, english_plural]
+
+effects:
+  - bulk_issues_downloadable_coupons
+  - bulk_skips_already_downloaded
+  - bulk_reports_reason_codes
+  - bulk_partial_success_returns_200
+  - bulk_without_ids_downloads_all_downloadable
+  - bulk_without_ids_fills_limit_with_not_yet_downloaded
+  - bulk_none_issued_still_returns_200
+  - bulk_requires_login
+  - bulk_rejects_invalid_ids
+  - bulk_counts_issued_in_one_query
+  - bulk_reports_limit_exceeded_when_raced
+  - bulk_english_message_picks_singular_or_plural
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Coupon/CouponBulkDownloadTest.php

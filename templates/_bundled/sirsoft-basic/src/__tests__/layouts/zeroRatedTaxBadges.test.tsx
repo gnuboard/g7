@@ -20,9 +20,13 @@ import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 import itemsJson from '../../../layouts/partials/mypage/orders/_items.json';
 import priceMobileJson from '../../../layouts/partials/shop/detail/_price_mobile.json';
 import infoSummaryJson from '../../../layouts/partials/shop/detail/_info_summary.json';
-import purchaseCardJson from '../../../layouts/partials/shop/detail/_purchase_card.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../../../__tests__/helpers/inlineNamedActions';
+import purchaseCardJsonRaw from '../../../layouts/partials/shop/detail/_purchase_card.json';
+const purchaseCardJson = inlineNamedActions(purchaseCardJsonRaw);
 import checkoutSummaryJson from '../../../layouts/partials/shop/_checkout_summary.json';
-import cartSummaryJson from '../../../layouts/partials/shop/_cart_summary.json';
+import cartSummaryJsonRaw from '../../../layouts/partials/shop/_cart_summary.json';
+const cartSummaryJson = inlineNamedActions(cartSummaryJsonRaw, 'shop/cart.json');
 
 const TestDiv: React.FC<any> = ({ className, children, 'data-testid': testId }) => (
     <div className={className} data-testid={testId}>{children}</div>

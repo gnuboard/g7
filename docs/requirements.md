@@ -33,6 +33,57 @@
 - Laravel은 `public/index.php`를 진입점으로 사용
 - Apache 사용 시 `.htaccess` 파일이 URL 리라이팅 처리
 
+#### 1.2.1 `/storage` 와 S3 공개 디스크 하드닝
+
+공개 디스크의 파일(`storage/app/public` → `/storage/…`, 또는 S3 공개 버킷·CDN)은 PHP 를 거치지 않고 웹서버·객체 저장소가 직접 내려보낸다. 그 응답에는 애플리케이션이 헤더를 붙일 수 없으므로, 웹서버·CDN 이 다음을 보장해야 한다.
+
+| 보호 | 내용 |
+| --- | --- |
+| 형식 추측 금지 | 모든 응답에 `X-Content-Type-Options: nosniff` |
+| 비이미지 내려받기 강제 | 래스터 이미지(jpg·jpeg·png·gif·webp·avif) 외의 파일은 `Content-Disposition: attachment` + `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` |
+| 실행 차단 | `/storage` 아래의 `.php`·`.phtml`·`.phar`·`.pht` 는 실행도 응답도 하지 않는다 |
+
+애플리케이션 쪽 방어는 이것과 별개로 동작한다 — 업로드한 파일의 저장 확장자는 파일 내용으로 정하고, 환경설정 > 드라이버의 「공개 디스크로 내보낼 확장자」 밖의 파일은 공개 디스크에 저장하지 않는다(서버를 거치는 주소로 제공).
+
+**Apache (2.4+)** — 별도 작업이 필요 없다. 공개 디스크 루트에 규칙 파일 `storage/app/public/.htaccess` 가 자동으로 만들어진다(코어 업데이트 시, 환경설정 > 드라이버 저장 시). 전제 조건:
+
+- 사이트 디렉터리에 `AllowOverride All`(최소 `FileInfo`)이 허용돼 있어야 한다([INSTALL.md](../INSTALL.md) 의 가상 호스트 예시). 규칙 파일은 `Header`·`RewriteRule` 만 쓰므로 사이트의 `public/.htaccess` 가 이미 요구하는 범위를 넘지 않는다.
+- `mod_headers` 가 켜져 있어야 헤더가 붙는다. 꺼져 있으면 규칙 파일이 비이미지 파일의 직접 접근을 403 으로 막는다(이미지는 그대로 제공). 이 403 과 PHP 파일 차단은 `mod_rewrite` 규칙으로 낸다.
+- 이 파일은 자동 생성물이다. 직접 고치면 설정 저장 때 다시 만들어진다(손으로 만든 기존 파일은 `.htaccess.g7-backup` 으로 보관).
+- 웹서버 계정이 `storage/app/public` 폴더에 쓸 수 있어야 설정 저장 때 이 파일을 다시 만든다. 코어 업데이트를 root(sudo)로 실행해도 파일은 그 폴더의 소유자·그룹으로 맞춰진다. 다시 만들지 못하면 드라이버 탭에 「웹서버 보호 규칙 파일을 지금 설정으로 바꾸지 못했습니다」 경고가 뜬다.
+
+**Nginx** — `.htaccess` 를 읽지 않으므로 서버 블록에 같은 규칙을 넣는다.
+
+```nginx
+location ^~ /storage/ {
+    # PHP 실행·응답 차단
+    location ~* \.(php\d?|phtml|phar|pht)$ {
+        return 403;
+    }
+
+    # 래스터 이미지는 그대로
+    location ~* \.(jpe?g|png|gif|webp|avif)$ {
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
+    # 그 밖의 파일은 내려받기로만
+    location ~* ^/storage/.+$ {
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Content-Disposition "attachment" always;
+        add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox" always;
+    }
+}
+```
+
+`^~` 를 빼지 않는다 — 없으면 `.php` 요청을 PHP-FPM 으로 넘기는 서버 수준의 `location ~ \.php$` 블록이 `/storage/` 보다 먼저 일치해 그 안의 PHP 파일이 실행된다. 「공개 디스크로 내보낼 확장자」 에서 이미지 형식을 빼거나 더했다면 두 번째 블록의 목록도 같이 맞춘다.
+
+**S3 공개 버킷·CDN** — 업로드할 때 객체에 `Content-Type`(파일 내용 기준)이 기록되고, 이미지가 아닌 파일에는 `Content-Disposition: attachment` 가 함께 기록된다. `X-Content-Type-Options` 와 `Content-Security-Policy` 는 객체 메타데이터로 줄 수 없으므로 CDN 응답 헤더 정책으로 건다.
+
+- CloudFront: 「응답 헤더 정책」 을 만들어 배포의 동작(behavior)에 연결한다. 보안 헤더에서 `X-Content-Type-Options` 를 켜고, 사용자 지정 헤더에 `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` 를 추가한다. 이미지에도 같은 CSP 가 붙지만 이미지 표시에는 영향이 없다.
+- 다른 CDN·프록시도 같은 두 헤더를 응답에 덧붙이는 기능을 쓴다.
+
+**적용 확인** — 공개 자산 디스크를 로컬 공개 디스크(`public`)로 두고 환경설정 > 드라이버를 저장하면 `/storage` 직접 주소의 응답 헤더를 자동으로 점검한다. 보호 헤더가 없으면 드라이버 탭에 경고가 표시된다(저장은 그대로 된다). 서버가 자기 사이트 주소에 접속할 수 없는 환경에서는 점검 결과가 표시되지 않는다.
+
 ### 1.3 PHP
 
 | 항목 | 요구사항 |

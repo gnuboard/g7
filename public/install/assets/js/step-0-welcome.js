@@ -126,9 +126,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const verifyData = await verifyResp.json();
         if (verifyData && verifyData.matched === false) {
             const banner = document.getElementById('session-cookie-blocked-banner');
-            if (banner) {
-                banner.style.display = '';
-            }
+            // 초기 숨김이 hidden 클래스라 클래스를 떼야 보인다
+            installerShow(banner);
         }
     } catch (e) {
         // 네트워크 오류 / endpoint 미존재 — silent (Step 0 진행 자체에는 영향 없음)

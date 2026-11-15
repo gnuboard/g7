@@ -1,0 +1,21 @@
+feature: 코어 업데이트 _pending vendor 구성 — 모드별 결과
+
+description: |
+  코어 업데이트는 새 버전의 PHP 의존성을 _pending 안에서 먼저 구성한다. vendor-bundle.zip 을 풀거나(bundled)
+  composer install 을 돌린다(composer). 결과(전략·패키지 수)는 업데이트 로그
+  「_pending vendor 설치 완료 (strategy: …, packages: N)」 로 운영자에게 보인다.
+
+  composer 전략은 패키지 수를 설치를 마친 vendor/composer/installed.json 에서 센다 — 종전에는 늘 0 이었다.
+  파일을 읽을 수 없으면 0 으로 두고 설치 성공 판정은 바꾸지 않는다.
+
+axes:
+  mode: [bundled, composer]
+
+effects:
+  - bundled_mode_extracts_vendor_from_bundle                 # vendor-bundle.zip 을 풀어 vendor 구성
+  - bundled_mode_without_bundle_throws                       # 번들이 없으면 VendorInstallException
+  - composer_mode_reports_installed_package_count            # installed.json 의 패키지 수를 결과에 실음
+  - composer_mode_reports_zero_without_installed_json        # 설치 정보 파일이 없으면 0, 설치는 성공
+
+test_files:
+  - tests/Unit/Services/CoreUpdateServiceVendorModeTest.php

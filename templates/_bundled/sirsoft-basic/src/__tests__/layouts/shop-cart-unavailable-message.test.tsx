@@ -5,10 +5,15 @@
  * 배경: 판매중지·구매수량 한도 초과 담기 시 백엔드는 422 + errors.message(구체 안내)를
  * 내려보내는데, 상품 상세의 담기/바로구매 onError 토스트가 상단 generic message 만 노출해
  * "구매할 수 없는 상품이 있습니다"만 보이던 결함. error.errors?.message 우선 fallback 으로 정정.
+ *
+ * @scenario-manifest tests/scenarios/shop-cart-unavailable-message.yaml
  */
 
 import { describe, it, expect } from 'vitest';
-import detailPurchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../../../__tests__/helpers/inlineNamedActions';
+import detailPurchaseCardRaw from '../../../layouts/partials/shop/detail/_purchase_card.json';
+const detailPurchaseCard = inlineNamedActions(detailPurchaseCardRaw);
 
 /**
  * JSON 트리에서 조건을 만족하는 모든 노드를 수집한다.
@@ -47,10 +52,14 @@ function errorToasts(layout: any): any[] {
 describe('상품 상세 담기/바로구매 실패 토스트 (U13②/U4/A25)', () => {
     const detailToasts = errorToasts(detailPurchaseCard);
 
+    // @scenario case=c01
+    // @effects purchase_failure_shows_specific_reason
     it('상세 구매 카드에 error 토스트가 존재한다', () => {
         expect(detailToasts.length).toBeGreaterThan(0);
     });
 
+    // @scenario case=c02
+    // @effects purchase_failure_shows_specific_reason
     it('모든 error 토스트가 error.errors?.message 를 우선 사용한다 (구체 안내)', () => {
         detailToasts.forEach((toast) => {
             expect(toast.params.message).toContain('error.errors?.message');
@@ -58,6 +67,8 @@ describe('상품 상세 담기/바로구매 실패 토스트 (U13②/U4/A25)', (
         });
     });
 
+    // @scenario case=c03
+    // @effects purchase_failure_shows_specific_reason
     it('error 토스트가 generic message 만 단독 참조하지 않는다 (회귀 가드)', () => {
         detailToasts.forEach((toast) => {
             expect(toast.params.message).not.toBe('{{error.message}}');

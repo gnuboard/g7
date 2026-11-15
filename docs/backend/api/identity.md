@@ -431,8 +431,8 @@ HTTP/1.1 200
 | key | body | string | 예 | max 120 | 정책 식별자 (고유, 예: core.profile.password_change) |
 | scope | body | string | 예 | — | 조회 범위 한정 키 |
 | target | body | string | 예 | max 255 | 매칭 대상 (scope 에 따라 라우트명/URI 패턴, 훅 이름, 또는 custom key) |
-| purpose | body | string | 예 | max 64 | 이 정책이 요구하는 인증 목적 |
-| provider_id | body | string | 아니오 | max 64 | provider 식별자 |
+| purpose | body | string | 예 | max 64 | 이 정책이 요구하는 인증 목적. 등록된 목적만 받는다(7.1.6, 위반 시 `validation.identity_policy.purpose_unknown`) |
+| provider_id | body | string | 아니오 | max 64 | **인정할 본인인증 수단**(7.1.6). 지정하면 그 수단으로 받은 인증 결과만 정책을 통과하고(정확히 일치), 비우면(null) 어떤 수단의 결과든 인정하며 인증 창은 목적의 기본 수단으로 시작한다. 등록돼 있고 `purpose` 를 지원하는 수단만 저장된다 — 미등록이면 `validation.identity_policy.provider_id_unknown`, 목적 미지원이면 `validation.identity_policy.provider_purpose_unsupported` |
 | grace_minutes | body | integer | 예 | min 0, max 43200 | 재인증 유예 시간(분) — 최근 N분 이내 동일 목적 인증 성공 시 재인증 생략 (0=매번 요구) |
 | enabled | body | boolean | 아니오 | — | 사용 여부 |
 | priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (작을수록 우선) |
@@ -481,7 +481,7 @@ _단건 응답: `data` 객체의 필드 (생성된 정책을 `PolicyResource` �
 | scope | string | `route` | 정책 적용 범위 (route / hook / custom — IdentityPolicyScope) |
 | target | string | `api.me.password.update` | 매칭 대상 (라우트명/URI 패턴, 훅 이름, 또는 custom key) |
 | purpose | string | `sensitive_action` | 이 정책이 요구하는 인증 목적 |
-| provider_id | null | `null` | 강제할 프로바이더 ID (미지정 시 null → 목적 기본 프로바이더 사용) |
+| provider_id | null | `null` | 인정할 프로바이더 ID (null → 어떤 수단이든 인정, 인증 창은 목적 기본 수단으로 시작) |
 | grace_minutes | integer | `30` | 재인증 유예 시간(분) — 0=매번 요구 |
 | enabled | boolean | `true` | 정책 사용 여부 |
 | priority | integer | `100` | 정책 우선순위 (작을수록 우선) |
@@ -612,12 +612,12 @@ HTTP/1.1 200
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
 | enabled | body | boolean | 아니오 | — | 사용 여부 |
 | grace_minutes | body | integer | 아니오 | min 0, max 43200 | 재인증 유예 시간(분) — 최근 N분 이내 동일 목적 인증 성공 시 재인증 생략 (0=매번 요구) |
-| provider_id | body | string | 아니오 | max 64 | provider 식별자 |
+| provider_id | body | string | 아니오 | max 64 | **인정할 본인인증 수단**(7.1.6 — 저장 절과 같은 의미·검증). 실효 목적(입력한 `purpose`, 없으면 현재 정책의 목적)을 지원해야 한다. 단, 현재 저장된 값과 같은 값은 수단 플러그인이 꺼졌거나 제거됐어도 받아 준다 — 그런 정책도 「끄기」 저장은 할 수 있어야 하기 때문이다 |
 | fail_mode | body | string | 아니오 | — | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만 남기고 통과, IdentityPolicyFailMode) |
 | key | body | string | 아니오 | max 120 | 정책 식별자 (admin 정책만 변경 가능, 선언형 정책은 확장 지점 식별자라 변경 차단) |
 | scope | body | string | 아니오 | — | 조회 범위 한정 키 |
 | target | body | string | 아니오 | max 255 | 매칭 대상 (admin 정책만 변경 가능, 선언형 정책은 변경 차단) |
-| purpose | body | string | 아니오 | max 64 | 이 정책이 요구하는 인증 목적 |
+| purpose | body | string | 아니오 | max 64 | 이 정책이 요구하는 인증 목적. 등록된 목적만 받는다(7.1.6, 위반 시 `validation.identity_policy.purpose_unknown`) |
 | priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (작을수록 우선) |
 | conditions | body | array | 아니오 | — | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON) |
 | applies_to | body | string | 아니오 | — | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두, IdentityPolicyAppliesTo) |
@@ -1078,11 +1078,11 @@ Location: https://example.com/checkout?verification_token=eyJ0eXAiOiJKV1Qi...&ch
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| purpose | body | string | 예 | max 64 | 인증 목적 (signup/password_reset/self_update/sensitive_action/login 또는 모듈 정의 목적) |
+| purpose | body | string | 예 | max 64 | 인증 목적 (signup/password_reset/self_update/sensitive_action 또는 확장이 등록한 목적). 등록된 목적만 받으며(7.1.6) `login` 은 이 공개 요청으로 시작할 수 없다(로그인 2단계는 로그인 API 가 발행) — 위반 시 422 `identity.errors.purpose_unknown` |
 | target | body | array | 아니오 | — | 비로그인 게스트의 인증 대상 (target.email 또는 target.phone — 로그인 사용자는 본인으로 자동 설정) |
 | target.email | body | email | 아니오 | max 255 | 이메일 주소 |
 | target.phone | body | string | 아니오 | max 32 | 전화번호 |
-| provider_id | body | string | 아니오 | max 64 | provider 식별자 |
+| provider_id | body | string | 아니오 | max 64 | provider 식별자. 등록된 수단이고 `purpose` 를 지원해야 한다(7.1.6). `policy_key` 가 가리키는 정책이 수단을 지정했으면 생략 시 그 수단으로 발급되고, 다른 수단을 주면 422 `identity.errors.provider_policy_mismatch` |
 | policy_key | body | string | 아니오 | max 120 | 428 응답(`verification.policy_key`)이 알려 준 정책 키. 그 정책이 있고 켜져 있으며 `purpose` 와 목적이 같을 때만 출처 정책으로 쓰여 정책별 문구로 발송되고 이력의 `origin_policy_key` 에 남는다. 그 밖의 값은 무시(목적 문구) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.request_validation_rules`).
@@ -1156,11 +1156,14 @@ HTTP/1.1 201
 | 401 | Unauthenticated | Bearer 토큰을 보냈으나 만료/무효인 경우 (비회원은 헤더 생략 가능) |
 | 403 | Forbidden | 요구 권한(`core.identity.request`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 비로그인 상태에서 `target.email`·`target.phone` 이 모두 비어 있는 경우 (`인증 대상(이메일·전화번호)이 필요합니다.`), 선택한 프로바이더가 해당 목적을 지원하지 않는 경우(`선택된 프로바이더는 이 목적을 지원하지 않습니다.`), 프로바이더 사용 불가(`본인인증 프로바이더를 사용할 수 없습니다.`) |
+| 422 | Unprocessable Entity | (7.1.6) 등록되지 않은 `purpose`·공개 요청의 `login`(`purpose_unknown`), 미등록 수단·목적 미지원 수단(`provider_id` 필드 오류), 정책이 지정한 수단과 다른 `provider_id`(`identity.errors.provider_policy_mismatch` — `errors.provider_id`) |
+| 429 | Too Many Requests | 같은 수신 이메일·같은 목적으로 60초 안에 다시 요청한 경우 (`방금 인증 메일을 보냈습니다. N초 후 다시 요청할 수 있습니다.` — `Retry-After` 헤더에 남은 초). challenge 는 만들어지지 않는다 |
+| 503 | Service Unavailable | `policy_key` 정책이 지정한 수단을 지금 쓸 수 없는 경우(플러그인 꺼짐·제거 — `identity.errors.policy_provider_unavailable`, `errors.failure_code=POLICY_PROVIDER_UNAVAILABLE`, `errors.policy_key`, 7.1.6). 다른 수단으로 대신 발급하지 않는다 |
 | 502 | Bad Gateway | challenge 는 만들어졌으나 **코드 전달이 실패**한 경우 (`인증 코드를 보내지 못했습니다. 잠시 후 다시 시도하시거나 다른 인증 수단을 이용해주세요.`) |
 
 <!-- @generated:end -->
 
-**설명** 본인인증 challenge(인증 시도) 를 시작합니다. `auth:sanctum` + `core.identity.request` 권한이 필요합니다. 로그인 사용자는 인증 대상이 자동으로 본인이 되며, 비로그인 게스트(Mode B 가입 흐름) 는 `target.email` 또는 `target.phone` 을 반드시 제공해야 하고 없으면 422(missing_target) 를 반환합니다. `provider_id` 미지정 시 목적에 매핑된 기본 프로바이더가 선택됩니다. `IdentityVerificationService::start` 가 IP·User-Agent 등 컨텍스트와 함께 challenge 를 생성하고 성공 시 201 로 challenge 리소스(render_hint 등 포함) 를 반환합니다. 확장은 `core.identity.request_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다.
+**설명** 본인인증 challenge(인증 시도) 를 시작합니다. `auth:sanctum` + `core.identity.request` 권한이 필요합니다. 로그인 사용자는 인증 대상이 자동으로 본인이 되며, 비로그인 게스트(Mode B 가입 흐름) 는 `target.email` 또는 `target.phone` 을 반드시 제공해야 하고 없으면 422(missing_target) 를 반환합니다. `provider_id` 미지정 시 목적에 매핑된 기본 프로바이더가 선택됩니다. `IdentityVerificationService::start` 가 IP·User-Agent 등 컨텍스트와 함께 challenge 를 생성하고 성공 시 201 로 challenge 리소스(render_hint 등 포함) 를 반환합니다. 확장은 `core.identity.request_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다. 메일 프로바이더로 같은 수신 이메일·같은 목적의 인증 메일을 60초 안에 다시 요청하면 새 challenge 를 만들지 않고 429 와 남은 시간을 돌려줍니다(7.1.6 — 한 주소에 인증 메일을 계속 보내는 것 방지). 직전 발송이 실패로 끝났으면 바로 다시 요청할 수 있고, 로그인 2단계 인증·가입 직후 자동 발송처럼 서버가 직접 발행하는 경로는 이 대기의 대상이 아닙니다.
 
 **발송 실패는 성공으로 포장하지 않습니다(#599 세션A).** challenge 생성과 코드 전달은 다른 일이라, 전달이 실패해도 challenge 행은 남습니다. 그대로 201 을 주면 화면이 「전송된 코드를 입력하세요」와 카운트다운을 띄워 사용자가 오지 않을 코드를 기다리게 됩니다. 그래서 생성 직후 `IdentityVerificationService::getStatus()`(공개 폴링과 같은 판정)로 상태를 확인하고, `failed` 이면 **502** 와 `identity.errors.challenge_dispatch_failed` 를 반환합니다. 요청 자체는 올바르고 권한도 있으므로 4xx 가 아니라 바깥 전달 경로의 실패를 뜻하는 5xx 를 씁니다.
 

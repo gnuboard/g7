@@ -2632,6 +2632,7 @@ HTTP/1.1 201
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.attachments.upload`)이 없거나, 게시판의 파일 업로드 설정이 꺼진 경우 (`이 게시판에서는 파일 업로드가 비활성화되어 있습니다.`) |
 | 404 | Not Found | 게시판 슬러그에 해당하는 게시판이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 글 번호(`post_id`)와 비밀번호(`password`)를 함께 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`Retry-After` 헤더에 남은 초, 1.2.4) |
 | 500 | Internal Server Error | 파일 저장 중 예외 (`파일 업로드에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -2970,6 +2971,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write`)이 없는 경우 |
 | 404 | Not Found | 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | `password` 누락 등 검증 실패 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 같은 IP 에서 비밀번호 확인 요청이 분당 10회를 넘은 경우 — 비밀글·스레드·글 수정용·댓글 비밀번호 확인을 합산한다 (`Retry-After` 헤더에 남은 초) |
 | 500 | Internal Server Error | 검증 처리 중 예외 |
 
 <!-- @generated:end -->
@@ -3002,6 +3004,7 @@ HTTP/1.1 200
 | data.url | string | `"/api/modules/sirsoft-board/boards/free/content-media/Xk2pQ9rT0aLm?expires=…&signature=…"` | 서명된 서빙 주소(편집 중 미리보기). 글 저장 때 서명 쿼리는 떼어 정식 주소로 저장한다 |
 
 - 상태: `201` 성공 · `401/403` 업로드 권한 없음 · `403` `post_id` 의 글을 고칠 수 없음 · `404` 게시판·글 없음 · `422` 정책 밖 파일(`errors.file`)·임시 키 없음·같은 임시 키 업로드가 문서당 최대 개수의 2배 초과(`errors.code = content_media_limit_exceeded`)
+- `post_id` 와 함께 비회원 글 비밀번호(`password`)를 실어 보낸 요청은 비밀번호 확인 요청과 합산해 같은 IP 분당 10회까지만 받는다(초과 시 `429`, 1.2.4). 비밀번호가 없는 업로드는 세지 않는다.
 - 비회원 응답에는 소유 쿠키 `g7_board_guest_upload`(경로 `/api/modules/sirsoft-board`, httpOnly)가 붙는다 — 첨부 업로드와 같은 쿠키다.
 - 「파일 첨부 사용」(`use_file_upload`)은 보지 않는다. 정책은 게시판 `content_media_policy`, 비어 있으면 그 게시판 첨부 정책(동영상·오디오는 코어 「본문 콘텐츠」 스위치를 따름).
 - 코어 공용 훅 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 가 발화한다(1.2.3, 코어 7.1.5). 필터가 돌려준 파일이 정책 밖이면 `422`. 게시판 첨부 훅(`sirsoft-board.attachment.*`)은 발화하지 않는다.
@@ -3476,6 +3479,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 429 | Too Many Requests | 글 번호(`post_id`)와 비밀번호(`password`)를 함께 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`Retry-After` 헤더에 남은 초, 1.2.4) |
 
 <!-- @generated:end -->
 
@@ -3620,7 +3624,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.destroy -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\PostController@destroy`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
 
 **요청 파라미터**
 
@@ -3666,6 +3670,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write\|sirsoft-board.{slug}.manager`)이 없거나, 작성자 본인·게시판 관리자·비회원 글 검증(토큰/비밀번호) 중 어느 조건도 만족하지 않는 경우 (`게시글 삭제 권한이 없습니다.`) |
 | 404 | Not Found | 활성 게시판 또는 게시글이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터(`password`/`verification_token`/`force_delete`)가 형식 검증을 위반한 경우 (`error.errors` 에 필드별 메시지) / 게시판의 답글 삭제 정책(`reply_delete_policy`)이 `block` 이고 살아 있는 답글이 있는 경우 (`답글이 달린 글은 삭제할 수 없습니다. 답글을 먼저 삭제해 주세요.` — `sirsoft-board::validation.post.delete.has_replies`) |
+| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 | 500 | Internal Server Error | 삭제 처리 중 예외 (`게시글 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -3930,7 +3935,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.update -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.update`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\PostController@update`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
 
 **요청 파라미터**
 
@@ -4131,6 +4136,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write\|sirsoft-board.{slug}.manager`)이 없는 경우, 수정 권한(작성자·관리자·비회원 검증)이 없는 경우(`게시글 수정 권한이 없습니다.`), 공지 지정 권한 없이 공지 여부를 바꾸려는 경우(`게시글을 공지로 지정할 권한이 없습니다.`), 비밀글 기능이 꺼진 게시판에서 일반글을 비밀글로 바꾸려는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 
 <!-- @generated:end -->
 
@@ -4506,6 +4512,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우 |
 | 404 | Not Found | 활성 게시판 또는 게시글이 없는 경우 |
 | 422 | Unprocessable Entity | `password` 누락 등 검증 실패 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 같은 IP 에서 비밀번호 확인 요청이 분당 10회를 넘은 경우 — 비밀글·스레드·글 수정용·댓글 비밀번호 확인을 합산한다 (`Retry-After` 헤더에 남은 초) |
 | 500 | Internal Server Error | 검증 처리 중 예외 (`비밀번호 검증에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4743,7 +4750,7 @@ HTTP/1.1 201
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.comments.destroy -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.comments.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\CommentController@destroy`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
 
 **요청 파라미터**
 
@@ -4789,6 +4796,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write\|sirsoft-board.{slug}.manager`)이 없거나, 게시판의 댓글 기능이 꺼진 경우, 또는 작성자 본인·게시판 관리자·비회원 댓글 비밀번호 확인 중 어느 조건도 만족하지 않는 경우 (`댓글 삭제 권한이 없습니다.`) |
 | 404 | Not Found | 게시판 또는 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | `password` 가 형식 검증(문자열, 4~20자)을 위반한 경우 (`error.errors.password` — 배열 주입 차단), `status` 가 `published` 가 아닌 경우 (`error.errors.status`) |
+| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 | 500 | Internal Server Error | 삭제 처리 중 예외 (`댓글 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4800,7 +4808,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.comments.update -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.comments.update`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\CommentController@update`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
 
 **요청 파라미터**
 
@@ -4910,6 +4918,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write\|sirsoft-board.{slug}.manager`)이 없거나, 게시판의 댓글 기능이 꺼진 경우, 또는 작성자 본인·게시판 관리자·비회원 댓글 비밀번호 확인 중 어느 조건도 만족하지 않는 경우 (`댓글 수정 권한이 없습니다.`) |
 | 404 | Not Found | 게시판 또는 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 | 500 | Internal Server Error | 수정 처리 중 예외 (`댓글 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->

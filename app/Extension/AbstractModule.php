@@ -18,6 +18,7 @@ use App\Support\ExtensionIntegrations;
 use App\Support\PublicAssetDisk;
 use App\Support\SearchScopes;
 use App\Support\StateContracts;
+use App\Support\TrustedStyleHosts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -1111,6 +1112,30 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 신뢰하는 외부 스타일시트 호스트 목록을 반환합니다.
+     *
+     * module.json 의 `trusted_style_hosts` 배열에서 읽습니다. 이 모듈이 싣는 외부 스크립트(결제사 결제창 등)가
+     * 자기 호스트에서 불러오는 CSS 파일의 호스트를 선언합니다. 코어는 켜진 확장의 선언을 모아
+     * ({@see TrustedStyleHosts}) 스타일 정책(`style-src`)의 허용 호스트에 더합니다. 확장이 직접 쓰는
+     * CSS 는 선언하지 않고 동봉해 같은 사이트에서 싣습니다.
+     *
+     * @return array<int, string> 신뢰 호스트명 목록 (예: ['stdpay.example.com'])
+     */
+    public function getTrustedStyleHosts(): array
+    {
+        $hosts = $this->loadManifest()['trusted_style_hosts'] ?? [];
+
+        if (! is_array($hosts)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
+            fn ($host) => $host !== ''
+        ));
+    }
+
+    /**
      * 레이아웃 확장 파일 경로 반환
      *
      * @return string extensions 디렉토리 경로
@@ -1574,11 +1599,19 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
      * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
      *
+     * 저장할 파일의 확장자를 함께 주면 그 확장자가 「공개 디스크로 내보낼 확장자」 안일 때만 디스크
+     * 이름을 돌려줍니다 (7.1.6). 확장자를 주지 않으면 종전과 같습니다.
+     *
      * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
+     * @param  string|null  $extension  저장할 파일의 확장자 (null 이면 확장자 판정 없음)
      * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
      */
-    protected function resolvePublicAssetDisk(?string $override = null): ?string
+    protected function resolvePublicAssetDisk(?string $override = null, ?string $extension = null): ?string
     {
+        if ($extension !== null) {
+            return PublicAssetDisk::resolveForExtension($extension, $override);
+        }
+
         return PublicAssetDisk::resolve($override);
     }
 

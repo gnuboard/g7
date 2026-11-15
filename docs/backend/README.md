@@ -40,7 +40,7 @@
 | [benchmark.md](benchmark.md) | 성능 계측 시스템 (Benchmark) | `g7:bench` 가 5축(list/screen/write/batch/boot)을 ... |
 | [broadcasting.md](broadcasting.md) | Broadcasting (실시간 이벤트) | Laravel Reverb 사용 (WebSocket) |
 | [console-confirm.md](console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) | 콘솔 커맨드의 yes/no 프롬프트는 $this->unifiedConfirm() 사용... |
-| [content-security-policy.md](content-security-policy.md) | 콘텐츠 보안 정책 (Content Security Policy) | 환경설정 > 보안 > 「콘텐츠 보안 정책(CSP)」 — 끔(기본) / 점검만 / 강제 |
+| [content-security-policy.md](content-security-policy.md) | 콘텐츠 보안 정책 (Content Security Policy) | 환경설정 > 보안 > 「콘텐츠 보안 정책(CSP)」 — 스크립트 정책과 스타일 정책을... |
 | [controllers.md](controllers.md) | 컨트롤러 계층 구조 | AdminBaseController / AuthBaseController / Publ... |
 | [core-config.md](core-config.md) | 코어 설정 (config/core.php) | config/core.php = 코어 권한/역할/메뉴/메일템플릿의 SSoT (Sing... |
 | [core-update-system.md](core-update-system.md) | 코어 업데이트 시스템 (Core Update System) | 코어 업그레이드 스텝: upgrades/ 디렉토리 (프로젝트 루트), 네임스페이스 A... |
@@ -64,6 +64,7 @@
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |
+| [server-migration.md](server-migration.md) | 서버 이전 안내 | 옮길 것: DB 덤프 · storage/app (설정 JSON·업로드) · .env ... |
 | [service-provider.md](service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈... |

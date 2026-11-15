@@ -182,6 +182,20 @@ describe(`${EXT_ID} 레이아웃·라우트의 다국어 키`, () => {
 
   /**
    * @scenario source=layout_and_route
+   * @effects notification_partials_in_scope
+   */
+  it('보안 알림 카드와 알림 모달 partial 이 판정 모집단(설정 화면에서 닿는 파일)에 든다', () => {
+    // 고아 partial 은 판정에서 빠지므로, include·modal src 경로가 어긋나면 새 키가 검사 없이 지나간다 — 닿음을 따로 단언한다
+    const htmls = sourceFiles().filter((f) => f.endsWith('.g7.html'));
+    const reach = reachable(htmls);
+    const dir = path.join(EXT_ROOT, 'resources/layouts/admin/partials/plugin_settings');
+    for (const name of ['_notifications_card', '_modal_notification_template_edit', '_modal_notification_template_preview', '_modal_notification_definition_reset']) {
+      expect(reach.has(path.resolve(dir, `${name}.g7.html`).toLowerCase()), name).toBe(true);
+    }
+  });
+
+  /**
+   * @scenario source=layout_and_route
    * @effects dynamic_and_orphan_excluded
    */
   it('동적 키와 고아 partial 은 판정에서 뺀다', () => {

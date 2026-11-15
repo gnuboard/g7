@@ -20,6 +20,18 @@ export type { BrandMarkProps, BrandMarkData } from './BrandMark';
 export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
+// 가로 상품 줄 컨테이너 — 자식 카드를 감싸 손가락 넘김·이전/다음 단추로 넘긴다
+export { ProductRail } from './ProductRail';
+export type { ProductRailProps } from './ProductRail';
+// 분류 칩 줄 컨테이너 — 자식 칩의 폭을 재서 한 줄·두 줄 배치를 정한다
+export { ChipRows } from './ChipRows';
+export type { ChipRowsProps } from './ChipRows';
+// 좁은 화면 하단 구매바 — 가격과 구매 단추를 화면 아래에 고정한다
+export { MobileBuyBar } from './MobileBuyBar';
+export type { MobileBuyBarProps } from './MobileBuyBar';
+// 좁은 화면 바텀시트 — 화면 레이아웃 안에 두는 대화 상자 컨테이너
+export { BottomSheet } from './BottomSheet';
+export type { BottomSheetProps } from './BottomSheet';
 
 // 게시판 관련 컴포넌트
 export { default as RichTextEditor } from './RichTextEditor';
@@ -87,6 +99,10 @@ export const compositeComponents = {
   ImageGallery: () => import('./ImageGallery'),
   ProductImageViewer: () => import('./ProductImageViewer'),
   QuantitySelector: () => import('./QuantitySelector'),
+  ProductRail: () => import('./ProductRail'),
+  ChipRows: () => import('./ChipRows'),
+  MobileBuyBar: () => import('./MobileBuyBar'),
+  BottomSheet: () => import('./BottomSheet'),
 
   // 게시판
   RichTextEditor: () => import('./RichTextEditor'),

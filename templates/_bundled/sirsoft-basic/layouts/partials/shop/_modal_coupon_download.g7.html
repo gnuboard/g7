@@ -18,6 +18,46 @@
     </div>
     <!-- 쿠폰 카드 그리드 -->
     <div data-if="{{(_global.couponDownloadModal?.coupons?.data ?? []).length > 0}}" class="flex flex-col">
+      <!-- 모두 받기 — 받지 않은 쿠폰이 하나라도 있을 때만. 상품 상세에서 연 창은 그 상품의 쿠폰 번호만 보내고,
+           주문서에서 연 창은 목록을 쪽 단위로 받아 오므로 번호 없이 보내 서버가 받을 수 있는 전부를 발급한다 -->
+      <div data-if="{{(_global.couponDownloadModal?.coupons?.data ?? []).some(c => !c.is_downloaded)}}" class="flex justify-end mb-3">
+        <button type="button" data-ref="coupon_download_all" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!!_global.couponDownloadModal?.downloadingAll}}">
+          <on type="click">
+            <!-- 진행 중 표시 → 일괄 받기 요청 → 결과를 목록에 반영하고 안내한다(실패해도 진행 중 표시는 푼다) -->
+            <sequence>
+              <set-state target="global" :couponDownloadModal.downloadingAll="true"/>
+              <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/bulk-download" auth_mode="required" method="POST" body="{{_global.couponDownloadModal?.scope === 'product' ? { coupon_ids: (_global.couponDownloadModal?.coupons?.data ?? []).filter(c => !c.is_downloaded &amp;&amp; c.coupon_id != null).map(c => c.coupon_id) } : {}}}">
+                <success>
+                  <!-- 받은 쿠폰과 이미 받았다고 답한 쿠폰을 받음으로 표시한다(발급 한도 등으로 건너뛴 쿠폰은 그대로) -->
+                  <set-state target="global" :couponDownloadModal.downloadingAll="false" couponDownloadModal.coupons="{{Object.assign({}, _global.couponDownloadModal?.coupons, { data: (_global.couponDownloadModal?.coupons?.data ?? []).map(c => (response.data?.results ?? []).some(r => r.coupon_id === c.coupon_id &amp;&amp; (r.status === 'issued' || r.reason_code === 'already_downloaded')) ? Object.assign({}, c, { is_downloaded: true }) : c) })}}"/>
+                  <refetch-data-source dataSourceId="productDownloadableCoupons"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <!-- 주문서 갱신 — 단건 받기와 같은 조건 -->
+                <conditions>
+                  <when if="{{!!(_local.checkout ?? $parent._local.checkout)}}">
+                    <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="required" method="PUT" body="{{_local.checkout ?? $parent._local.checkout}}">
+                      <success>
+                        <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </when>
+                </conditions>
+                </success>
+                <fail>
+                  <set-state target="global" :couponDownloadModal.downloadingAll="false"/>
+                  <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.download_failed'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{!_global.couponDownloadModal?.downloadingAll}}" name="download" size="sm"/>
+          <icon data-if="{{!!_global.couponDownloadModal?.downloadingAll}}" name="spinner" size="sm" class="animate-spin"/>
+          <span>$t:shop.coupon_download.download_all</span>
+        </button>
+      </div>
       <!-- 2열 그리드 (모바일 1열) - 무한스크롤 영역 -->
       <div class="relative grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
         <on type="scroll">
@@ -45,7 +85,7 @@
           <!-- 할인 금액/비율 -->
           <div class="mb-2">
             <!-- 정율 할인 -->
-            <span data-if="{{coupon.discount_type === 'rate'}}" class="text-xl font-bold text-blue-600 dark:text-blue-400">{{coupon.discount_value}}%</span>
+            <span data-if="{{coupon.discount_type === 'rate'}}" class="text-xl font-bold text-blue-600 dark:text-blue-400">{{Number(coupon.discount_value)}}%</span>
             <!-- 정액 할인 — 선택 통화 환산 (A1-④, formatted 가 기호 포함) -->
             <span data-if="{{coupon.discount_type === 'fixed' &amp;&amp; coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}" class="text-xl font-bold text-blue-600 dark:text-blue-400">{{coupon.multi_currency_discount_value?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted}}</span>
             <!-- 정액 할인 — 폴백(환산 부재 시 기본통화 숫자 + 단위) -->

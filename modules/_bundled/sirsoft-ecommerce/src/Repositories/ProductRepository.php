@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
-use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\Category;
@@ -77,7 +76,7 @@ class ProductRepository implements ProductRepositoryInterface
     public function streamVisibleForSitemap(int $chunkSize = 500): iterable
     {
         return $this->model->newQuery()
-            ->where('display_status', ProductDisplayStatus::VISIBLE->value)
+            ->visible()
             ->select(['id', 'updated_at'])
             ->orderBy('id')
             ->lazyById($chunkSize);
@@ -627,7 +626,12 @@ class ProductRepository implements ProductRepositoryInterface
         // 리뷰 건수·평점은 파생 테이블 조인으로 한 번에 얻는다. 목록 경로는 지연 조인을
         // 쓰므로 집계를 outer 에서만 붙인다 (아래 outerUsing).
         $query = $this->model->newQuery()
-            ->where('display_status', 'visible');
+            ->visible();
+
+        // 품절 제외 — 판정 기준은 Product::scopeInStock 한 곳
+        if (self::wantsInStockOnly($filters)) {
+            $query->inStock();
+        }
 
         // 지연 조인 outer 전용 관계 (inner 는 id 만 훑으므로 with() 를 걸지 않는다)
         $listRelations = ['images', 'categories', 'brand', 'activeLabelAssignments.label'];
@@ -752,7 +756,7 @@ class ProductRepository implements ProductRepositoryInterface
         // 두면 LIMIT 이 있어도 전 상품에 대해 집계가 실행된다.
         $query = $this->model->newQuery()
             ->with(['images', 'categories', 'activeLabelAssignments.label'])
-            ->where('display_status', 'visible');
+            ->visible();
 
         $this->joinReviewAggregate($query);
 
@@ -791,7 +795,7 @@ class ProductRepository implements ProductRepositoryInterface
             // 단계마다 그 분류와 하위 분류 상품(분류 화면과 같은 범위)에서 고른다. 앞 단계에서 고른 상품과 지금 상품은 뺀다.
             $categoryIds = Category::selfAndDescendantIds((int) $tierCategoryId);
             $query = $this->model->newQuery()
-                ->where($productsTable.'.display_status', 'visible')
+                ->visible()
                 ->whereNotIn($productsTable.'.id', [...$picked, $product->id])
                 ->whereHas('categories', fn ($q) => $q->whereIn('ecommerce_product_categories.category_id', $categoryIds));
 
@@ -981,7 +985,7 @@ class ProductRepository implements ProductRepositoryInterface
     {
         $query = $this->model->newQuery()
             ->with(['images', 'categories', 'activeLabelAssignments.label'])
-            ->where('display_status', 'visible');
+            ->visible();
 
         return $this->joinReviewAggregate($query)
             ->orderBy($this->model->getTable().'.created_at', 'desc')
@@ -1000,7 +1004,7 @@ class ProductRepository implements ProductRepositoryInterface
 
         $query = $this->model->newQuery()
             ->with(['images', 'categories', 'activeLabelAssignments.label'])
-            ->where('display_status', 'visible')
+            ->visible()
             ->whereIn($this->model->getTable().'.id', $ids);
 
         // 다른 목록 경로와 같은 집계를 붙인다. 붙이지 않으면 평점·리뷰 수 별칭이 아예 없어
@@ -1016,14 +1020,15 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10): BoundedPage
+    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10, array $filters = []): BoundedPage
     {
         $page = (int) floor($offset / max(1, $limit)) + 1;
 
         // FULLTEXT(name/description) 매칭 + 보조필드(product_code/id) 매칭의 합집합.
         // 통합검색도 관리자 검색과 동일하게 상품코드/ID 로 상품을 찾을 수 있어야 한다.
         $query = $this->model->newQuery()
-            ->where('display_status', ProductDisplayStatus::VISIBLE->value)
+            ->visible()
+            ->when(self::wantsInStockOnly($filters), fn ($q) => $q->inStock())
             // audit:allow list-repository-eager-load-vs-resource reason: 통합검색 결과는 Resource 가
             // 아니라 SearchProductsListener 가 직렬화한다 — 그 안에서 primaryCategory 를 행마다
             // 읽으므로(`$product->primaryCategory->first()`) 여기서 미리 로드하지 않으면 N+1 이 된다
@@ -1059,10 +1064,12 @@ class ProductRepository implements ProductRepositoryInterface
         array $sortKeys,
         ?int $categoryId = null,
         int $perPage = 10,
-        ?string $cursor = null
+        ?string $cursor = null,
+        array $filters = []
     ): CursorPaginator {
         $query = $this->model->newQuery()
-            ->where('display_status', ProductDisplayStatus::VISIBLE->value)
+            ->visible()
+            ->when(self::wantsInStockOnly($filters), fn ($q) => $q->inStock())
             ->with(['images', 'primaryCategory', 'brand', 'activeLabelAssignments.label'])
             ->when($categoryId !== null, fn ($q) => $q->whereHas('categories', fn ($c) => $c->where('ecommerce_categories.id', $categoryId)));
 
@@ -1128,11 +1135,12 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function countByKeyword(string $keyword, ?int $categoryId = null): BoundedCount
+    public function countByKeyword(string $keyword, ?int $categoryId = null, array $filters = []): BoundedCount
     {
         // searchByKeyword 와 동일한 매칭 조건(FULLTEXT ∪ 보조필드)으로 total 산출.
         $query = $this->model->newQuery()
-            ->where('display_status', ProductDisplayStatus::VISIBLE->value)
+            ->visible()
+            ->when(self::wantsInStockOnly($filters), fn ($q) => $q->inStock())
             ->when($categoryId !== null, fn ($q) => $q->whereHas('categories', fn ($c) => $c->where('ecommerce_categories.id', $categoryId)));
 
         $this->applyKeywordMatch($query, $keyword);
@@ -1140,6 +1148,19 @@ class ProductRepository implements ProductRepositoryInterface
         // 배지용 건수 — 상한을 걸어 대량 매칭에서도 비용이 일정하다.
         // 상한에 걸리면 값이 잘리므로 정확도를 함께 돌려준다.
         return BoundedPaginator::count($query, PaginationLimits::resultCap('search'));
+    }
+
+    /**
+     * 공개 목록·검색 필터가 품절 제외를 요청했는지 판정합니다.
+     *
+     * @param  array  $filters  필터 배열 (exclude_sold_out)
+     * @return bool 품절 제외 요청이면 true
+     */
+    private static function wantsInStockOnly(array $filters): bool
+    {
+        $value = $filters['exclude_sold_out'] ?? null;
+
+        return $value === true || $value === 1 || $value === '1';
     }
 
     /**
@@ -1271,8 +1292,9 @@ class ProductRepository implements ProductRepositoryInterface
             return false;
         }
 
-        // 옵션이 없는 상품은 동기화 불필요
-        if (! $product->has_options) {
+        // 옵션 없는 상품(has_options=false)도 기본 옵션 한 개로 재고를 차감한다 — 건너뛰면 주문·취소 뒤
+        // 상품 재고 칸만 옛 값으로 남는다. 옵션 행이 아예 없는 상품만 그대로 둔다(합계가 0 으로 덮이지 않게).
+        if (! $product->has_options && ! $product->options()->exists()) {
             return true;
         }
 

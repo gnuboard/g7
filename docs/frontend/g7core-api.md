@@ -57,7 +57,8 @@
 | UI 알림 | `G7Core.toast` | 토스트 알림 표시 | 현재 문서 |
 | 모달 | `G7Core.modal` | 모달 열기/닫기 | 현재 문서 |
 | 네비게이션 | `G7Core.navigation` | 페이지 전환 상태 | 현재 문서 |
-| 스타일 | `G7Core.style` | Tailwind 클래스 병합 | 현재 문서 |
+| 스타일 | `G7Core.style` | Tailwind 클래스 병합, 런타임 CSS 규칙(`setRules`·`remove`·`has`, engine-v1.91.0) | 현재 문서 |
+| 본문 서식 지연 | `G7Core.inlineStyle` | 본문 HTML 의 `style` 속성을 화면에 붙인 뒤 입히는 장치 — 엄격한 스타일 정책 대응 (engine-v1.91.0) | [확장 자산 — 인라인 스타일](../extension/module-assets.md) |
 | 플러그인 | `G7Core.plugin` | 플러그인 설정 조회 | 현재 문서 |
 | 모듈 | `G7Core.module` | 모듈 설정 조회 | 현재 문서 |
 | 다국어 | `G7Core.locale`, `G7Core.t` | 로케일 관리, 번역 | [고급 API](g7core-api-advanced.md) |
@@ -698,6 +699,20 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 | `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 — 엔진 충돌 그룹 표에 든 클래스만 판정([한계](#지원-범위와-한계)) | `string` |
 | `conditionalClass(conditions)` | 조건부 클래스 적용 | `string` |
 | `joinClasses(...classes)` | 여러 클래스 문자열 결합 | `string` |
+| `setRules(key, css, opts?)` | 런타임 CSS 규칙 묶음을 문서에 붙인다(같은 `key` 는 교체). `<style>` 요소를 만들지 않아 엄격한 스타일 정책에서도 적용된다 (engine-v1.91.0) | `{ key, mode, remove() }` |
+| `remove(key)` | 규칙 묶음 제거 (engine-v1.91.0) | `void` |
+| `has(key)` | 규칙 묶음이 붙어 있는지 (engine-v1.91.0) | `boolean` |
+
+런타임 규칙 3종은 화면이 뜬 뒤에 정해지는 CSS 규칙(대상 id 가 실행 중에 정해지는 덮개 등)에만 씁니다. 고정된 규칙은 확장의 CSS
+자산(`assets.css`)에, 요소 하나의 값은 `el.style.x = …`·CSS 변수에 둡니다. 규칙은 생성형 스타일시트
+(`document.adoptedStyleSheets`)로 붙고 `<head>` 에 같은 id 의 표식 요소(`<meta id="{key}" data-g7-runtime-style>`)가 남습니다.
+생성형 스타일시트가 없는 구형 브라우저에서는 `<style id="{key}">` 로 붙습니다(이 경우 스타일 정책을 강제하면 적용되지 않습니다).
+`key` 는 확장 식별자로 시작하게 지어 다른 확장·코어(`g7-` 로 시작)와 겹치지 않게 합니다.
+
+```typescript
+const handle = G7Core.style.setRules('my-plugin-overlay', '#my-target::after{content:"";position:absolute;inset:0}');
+handle.remove();
+```
 
 ### mergeClasses
 

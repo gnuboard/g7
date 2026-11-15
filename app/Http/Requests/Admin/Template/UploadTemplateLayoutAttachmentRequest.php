@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin\Template;
 
 use App\Extension\HookManager;
+use App\Rules\AttachmentFileContent;
+use App\Support\TemplateLayoutAttachmentPolicy;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -30,16 +32,36 @@ class UploadTemplateLayoutAttachmentRequest extends FormRequest
      */
     public function rules(): array
     {
-        // 배경 이미지 등 — 이미지 파일만 허용. 최대 크기는 첨부 설정 재사용(MB→KB).
+        // 최대 크기는 첨부 설정 재사용(MB→KB).
         $maxSize = config('attachment.max_file_size', 10240);
 
+        // 허용 형식은 이름 확장자와 파일 내용을 함께 본다 — 한쪽만 보면 내용은 이미지이고 이름만
+        // `.html` 인 파일, 또는 이름만 이미지인 다른 형식이 통과한다.
+        $allowed = $this->allowedExtensions();
+
         $rules = [
-            'file' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,gif,webp,svg', 'max:'.$maxSize],
+            'file' => [
+                'required',
+                'file',
+                'extensions:'.implode(',', $allowed),
+                new AttachmentFileContent($allowed),
+                'max:'.$maxSize,
+            ],
             'layout_name' => ['nullable', 'string', 'max:150'],
         ];
 
         // 모듈/플러그인이 검증 규칙을 동적으로 확장할 수 있도록 훅 제공
         return HookManager::applyFilters('core.template_layout_attachment.upload_validation_rules', $rules, $this);
+    }
+
+    /**
+     * 이 요청의 템플릿에 허용된 레이아웃 첨부 확장자를 반환합니다.
+     *
+     * @return array<int, string> 허용 확장자 목록 (소문자, 비어 있지 않음)
+     */
+    private function allowedExtensions(): array
+    {
+        return TemplateLayoutAttachmentPolicy::allowedExtensions((string) $this->route('identifier'));
     }
 
     /**
@@ -52,8 +74,9 @@ class UploadTemplateLayoutAttachmentRequest extends FormRequest
         return [
             'file.required' => __('templates.layout_attachments.validation.file_required'),
             'file.file' => __('templates.layout_attachments.validation.file_invalid'),
-            'file.image' => __('templates.layout_attachments.validation.file_image'),
-            'file.mimes' => __('templates.layout_attachments.validation.file_mimes'),
+            'file.extensions' => __('templates.layout_attachments.validation.file_extensions', [
+                'extensions' => implode(', ', $this->allowedExtensions()),
+            ]),
             'file.max' => __('templates.layout_attachments.validation.file_max', [
                 'max' => (int) (config('attachment.max_file_size', 10240) / 1024),
             ]),

@@ -436,22 +436,25 @@
                                             },
                                             "children": [
                                                 {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "if": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode === 'html'}}",
+                                                    "comment": "본문은 공통정보 관리 화면의 보기 패널과 같은 표시기로 그린다 — HTML 은 정화해 그리고, 텍스트는 줄바꿈을 살린다",
+                                                    "type": "extension_point",
+                                                    "name": "html_content",
                                                     "props": {
-                                                        "className": "prose prose-sm dark:prose-invert max-w-none",
-                                                        "dangerouslySetInnerHTML": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}"
-                                                    }
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "if": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode !== 'html'}}",
-                                                    "props": {
-                                                        "className": "text-body whitespace-pre-wrap"
+                                                        "content": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}",
+                                                        "isHtml": "{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}",
+                                                        "className": "prose prose-sm dark:prose-invert max-w-none"
                                                     },
-                                                    "text": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}"
+                                                    "default": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "HtmlContent",
+                                                            "props": {
+                                                                "content": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}",
+                                                                "isHtml": "{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}",
+                                                                "className": "prose prose-sm dark:prose-invert max-w-none"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }

@@ -405,6 +405,12 @@ class ModuleSettingsService
             // frontend_schema 기반으로 expose: true인 필드만 필터링
             $settings = $this->filterByFrontendSchema($settings, $frontendSchema);
 
+            // 확장이 공개 설정에서 키를 더 뺄 수 있는 지점 (배열이 아닌 반환값은 버린다)
+            $filtered = HookManager::applyFilters('core.module_settings.filter_frontend_settings', $settings, $identifier);
+            if (is_array($filtered)) {
+                $settings = $filtered;
+            }
+
             // 필터링 후 설정이 있는 경우만 결과에 포함
             if (! empty($settings)) {
                 $result[$identifier] = $settings;

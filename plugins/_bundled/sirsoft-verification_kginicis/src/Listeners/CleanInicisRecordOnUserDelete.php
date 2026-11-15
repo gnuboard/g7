@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\VerificationKginicis\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityClaimRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepositoryInterface;
 
@@ -29,10 +30,12 @@ class CleanInicisRecordOnUserDelete implements HookListenerInterface
     /**
      * @param  InicisIdentityRecordRepositoryInterface  $recordRepository  본 plugin record Repository
      * @param  InicisIdentityLogQueryRepositoryInterface  $logQueryRepository  log anonymize 용 Repository
+     * @param  InicisIdentityClaimRepositoryInterface|null  $claimRepository  동일인 선점표 (1.1.4, 미주입이면 컨테이너에서 해석)
      */
     public function __construct(
         protected readonly InicisIdentityRecordRepositoryInterface $recordRepository,
         protected readonly InicisIdentityLogQueryRepositoryInterface $logQueryRepository,
+        protected readonly ?InicisIdentityClaimRepositoryInterface $claimRepository = null,
     ) {}
 
     /**
@@ -57,6 +60,7 @@ class CleanInicisRecordOnUserDelete implements HookListenerInterface
      * 코어 `core.user.before_delete` 는 삭제될 User 모델을 그대로 전달한다.
      *
      * @param  mixed  ...$args  [$user] — 삭제 직전의 User 모델
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -75,6 +79,8 @@ class CleanInicisRecordOnUserDelete implements HookListenerInterface
         DB::transaction(function () use ($userId) {
             $this->recordRepository->deleteByUserId($userId);
             $this->logQueryRepository->anonymizeUserId($userId);
+            // 동일인 선점도 함께 푼다(1.1.4) — 탈퇴 후 같은 명의로 다시 가입하는 현행 허용을 유지한다.
+            ($this->claimRepository ?? app(InicisIdentityClaimRepositoryInterface::class))->releaseByUserId($userId);
         });
     }
 }

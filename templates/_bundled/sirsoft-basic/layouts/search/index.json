@@ -37,7 +37,7 @@
             "id": "searchResults",
             "label_key": "$t:editor.data_source.searchResults",
             "type": "api",
-            "endpoint": "/api/search?q={{query?.q}}&type={{query?.type ?? 'all'}}&board_slug={{query?.board_slug ?? ''}}&sort={{query?.sort ?? 'relevance'}}&page={{query?.page ?? 1}}&cursor={{query?.cursor ?? ''}}&per_page={{(query?.type === 'products') ? 12 : 10}}",
+            "endpoint": "/api/search?q={{query?.q}}&type={{query?.type ?? 'all'}}&board_slug={{query?.board_slug ?? ''}}&sort={{query?.sort ?? 'relevance'}}&page={{query?.page ?? 1}}&cursor={{query?.cursor ?? ''}}&exclude_sold_out={{query?.exclude_sold_out ?? ''}}&per_page={{(query?.type === 'products') ? 12 : 10}}",
             "method": "GET",
             "auth_mode": "optional",
             "auto_fetch": true,

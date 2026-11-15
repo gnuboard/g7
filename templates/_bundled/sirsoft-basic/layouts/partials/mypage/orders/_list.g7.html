@@ -232,6 +232,12 @@
               <!-- 적립 예정 마일리지 (있을 때만) -->
               <p data-if="{{(order.total_earned_points_amount ?? 0) > 0 &amp;&amp; order.status !== 'cancelled' &amp;&amp; !order.is_partially_cancelled}}" class="text-xs text-blue-600 dark:text-blue-400">$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}</p>
             </div>
+            <!-- 배송 조회 — 송장 조회 주소가 있는 주문만. 택배사 조회 화면을 새 창으로 연다 -->
+            <a data-if="{{!!order.shipping?.tracking_url}}" href="{{order.shipping?.tracking_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2">
+              <responsive on="portable" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2"/>
+              <icon name="truck" size="sm"/>
+              <span>$t:mypage.orders.track_shipping</span>
+            </a>
             <a href="/mypage/orders/{{order.order_number}}" :mergeQuery="true" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
               <responsive on="portable" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"/>
               <on type="click">

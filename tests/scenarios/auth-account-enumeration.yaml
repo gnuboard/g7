@@ -1,0 +1,71 @@
+feature: 계정 존재 비노출과 인증 주변 요청 제한 (#891)
+
+description: |
+  가입 여부에 따라 응답(상태·필드·문구·응답 시간)이 갈리면 주소 목록을 넣어 가입 계정을 골라낼 수 있고, 요청 제한이
+  없으면 그것을 자동으로 돌리거나 한 주소에 메일을 계속 보낼 수 있다.
+
+  계약:
+    - 비밀번호 찾기: 가입되지 않은 주소도 같은 200·같은 문구. 메일·활동 기록 훅은 응답 뒤에 발화한다.
+      같은 주소의 60초 안 재요청은 토큰을 바꾸지 않고 메일도 다시 보내지 않는다. 관리자 화면에서 온 요청이어도
+      관리자가 아닌 계정에는 일반 재설정 주소를 보낸다.
+    - 재설정·토큰 확인: 가입되지 않은 주소와 토큰이 틀린 주소가 같은 필드(token)·같은 문구.
+    - 요청 제한(같은 IP·분당, 보안 환경설정 1~1000): 찾기 / 재설정·확인 / 가입 세 카운터.
+    - 로그인: 가입되지 않은 주소도 같은 횟수 실패 뒤 같은 423. 기록은 캐시에만, 무기한 설정에서도 최대 24시간,
+      확장 필터 미호출. 가입 계정의 잠금 동작은 그대로.
+    - 공개 인증번호 요청: 같은 수신 주소·같은 목적 60초 안 재요청은 429 + 남은 시간 + Retry-After.
+      서비스가 직접 발행하는 경로(로그인 2단계 인증·가입 직후 발송)는 대상이 아니다.
+
+  회원가입의 중복 이메일 안내는 그대로 둔다(가입 흐름 유지) — 요청 제한만 건다.
+
+axes:
+  case:
+    - forgot_password__unknown
+    - forgot_password__malformed
+    - forgot_password__known_within_cooldown
+    - forgot_password__known_after_cooldown
+    - forgot_password__non_admin_via_admin_screen
+    - reset_and_validate__unknown
+    - forgot_password__rate_limited
+    - reset_and_validate__rate_limited
+    - register__rate_limited
+    - forgot_password__known
+    - login__unknown
+    - login__unknown_then_registered
+    - login__unknown_limit_disabled
+    - login__unknown_permanent_setting
+    - login__known
+    - identity_challenge__same_target_within_cooldown
+    - identity_challenge__other_purpose_or_target
+    - identity_challenge__same_target_after_cooldown
+    - identity_challenge__previous_dispatch_failed
+    - identity_challenge__internal_issue_path
+
+effects:
+  - unknown_and_known_account_get_identical_response
+  - unknown_and_known_account_cost_the_same_hash_comparisons
+  - only_format_errors_return_422
+  - repeat_request_within_cooldown_sends_nothing
+  - request_after_cooldown_renews_token
+  - non_admin_gets_user_reset_link_from_admin_screen
+  - per_ip_rate_limit_returns_429_with_retry_after
+  - verify_counter_is_independent_from_forgot_counter
+  - rate_limit_follows_security_setting
+  - notification_hook_fires_after_response_with_request_context
+  - response_end_does_not_wait_for_deferred_work
+  - unknown_email_locks_like_a_registered_account
+  - unknown_email_lock_expires_with_the_lockout_time
+  - unknown_email_counter_cleared_on_register
+  - unknown_email_counter_off_when_login_limit_disabled
+  - unknown_email_lock_capped_at_24_hours
+  - unknown_email_path_ignores_extension_filters
+  - registered_account_lock_behaviour_unchanged
+  - identity_challenge_repeat_returns_429_without_new_challenge
+  - identity_challenge_cooldown_scoped_to_target_and_purpose
+  - identity_challenge_allowed_after_cooldown
+  - identity_challenge_failed_dispatch_does_not_start_cooldown
+  - internal_challenge_paths_are_not_cooled_down
+
+test_files:
+  - tests/Feature/Api/Auth/PasswordResetEnumerationTest.php
+  - tests/Feature/Auth/UnknownEmailLockParityTest.php
+  - tests/Feature/Identity/IdentityChallengeCooldownTest.php

@@ -1,0 +1,24 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 표면마다 가격 축의 의미가 달라(요청 규칙은 0·음수, 모델·목록·주문은 0 만) 전수 곱이 아니라 표면별 경로를 잠근다.
+
+feature: 0원 상품 허용
+
+description: |
+  상품 등록·수정·일괄 수정이 정가·판매가 0 을 받는다(음수는 거부). 일괄 가격 변경과 0원 결제 흐름은 이미 0 을 다뤘고
+  등록 규칙만 어긋나 있었다. 0원 상품의 할인율은 0, 가격 낮은 순 목록에서 맨 앞, 0원 주문은 무료 결제수단으로 결제완료.
+
+axes:
+  surface: [store_request, bulk_request, product_model, public_list, order_flow]
+  price: [zero, negative]
+
+effects:
+  - store_accepts_zero_price
+  - store_rejects_negative_price
+  - bulk_accepts_zero_price
+  - bulk_rejects_negative_price
+  - zero_price_discount_rate_is_zero
+  - zero_price_product_sorts_first_by_price_asc
+  - zero_total_order_is_paid_with_free_method
+  - zero_total_order_records_free_even_if_card_selected
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Product/ZeroPriceProductTest.php

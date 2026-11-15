@@ -155,7 +155,8 @@
     "empty": "このカテゴリに商品がありません。",
     "product_count": "{{count}}個の商品",
     "select": "カテゴリ選択",
-    "all_in": "{{name}}全体"
+    "all_in": "{{name}}全体",
+    "chips_label": "商品カテゴリ"
   },
   "filter": {
     "title": "フィルター",
@@ -251,7 +252,9 @@
     "filter_rating_2": "⭐⭐ 2点",
     "filter_rating_1": "⭐ 1点",
     "filter_reset": "フィルターをリセット",
-    "no_purchasable_option": "現在、購入可能なオプションがない商品です。"
+    "no_purchasable_option": "現在、購入可能なオプションがない商品です。",
+    "category_path": "カテゴリパス",
+    "buy_sheet_title": "オプション選択"
   },
   "cart": {
     "title": "カート",
@@ -324,7 +327,8 @@
     "min_qty_item": "最小購入数量は{{limit}}個です。(要望: {{requested}}個)",
     "restricted_item": "購入権限がない商品です。",
     "sold_out": "品切れ",
-    "go_to_cart": "カートに移動"
+    "go_to_cart": "カートに移動",
+    "checkout_with_count": "注文する（{{count}}）"
   },
   "checkout": {
     "title": "注文書作成",
@@ -500,7 +504,8 @@
     "refund_bank_account_placeholder": "口座番号(ハイフンなしで入力)",
     "refund_bank_holder_placeholder": "預金者",
     "refund_bank_partial_notice": "3つのいずれかを入力すると、残りも入力する必要があります。",
-    "no_payment_methods": "現在選択できる決済方法がありません。ショップにお問い合わせください。"
+    "no_payment_methods": "現在選択できる決済方法がありません。ショップにお問い合わせください。",
+    "mileage_min_product_total": "商品合計 {{amount}} 以上のご購入でマイレージをご利用いただけます。"
   },
   "order_complete": {
     "page_title": "注文完了",
@@ -587,7 +592,8 @@
     "go_login": "ログイン",
     "confirm_title": "クーポンダウンロード",
     "confirm_message": "このクーポンをダウンロードしますか？",
-    "fetch_failed": "クーポンリストの読み込みに失敗しました。"
+    "fetch_failed": "クーポンリストの読み込みに失敗しました。",
+    "download_all": "すべて受け取る"
   },
   "wishlist": {
     "title": "お気に入りリスト",
@@ -633,5 +639,35 @@
     "page_description": "非会員注文の交換·返品·キャンセル·返金を申請します。",
     "edit_page_title": "非会員申請内容編集"
   },
-  "order_permission_denied": "注文権限がないため注文できません。販売者にお問い合わせください。"
+  "order_permission_denied": "注文権限がないため注文できません。販売者にお問い合わせください。",
+  "related_products": "こちらの商品はいかがですか？",
+  "product_rail": {
+    "roledescription": "商品カルーセル"
+  },
+  "reviews": {
+    "title": "レビュー一覧",
+    "total_count": "全 {{count}} 件",
+    "photo_only": "写真レビューのみ",
+    "rating_filter": "評価",
+    "rating_all": "すべての評価",
+    "rating_n": "評価 {{n}}点",
+    "rating_one": "評価 1点",
+    "sort": {
+      "latest": "最新順",
+      "oldest": "古い順",
+      "rating_high": "評価が高い順",
+      "rating_low": "評価が低い順"
+    },
+    "empty": "まだ登録されたレビューはありません。",
+    "empty_filtered": "条件に合うレビューはありません。"
+  },
+  "exclude_sold_out": "品切れを除く",
+  "product_card": {
+    "add_to_cart": "カートに追加: {{name}}",
+    "wishlist": "お気に入りに追加: {{name}}"
+  },
+  "quick_option": {
+    "title": "オプション選択",
+    "view_detail": "詳細表示"
+  }
 }

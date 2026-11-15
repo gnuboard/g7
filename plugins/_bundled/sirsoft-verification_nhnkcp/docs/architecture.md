@@ -42,6 +42,15 @@ Listener (RegisterKcpProviderListener 등)
 한국 법상 나이라 생일과 오늘을 모두 `Asia/Seoul` 날짜로 셉니다(서버 UTC 날짜로 세면 한국 시간
 0~9시에 생일을 맞은 사람이 하루 늦게 성인이 됩니다). 마이페이지 카드의 `verified_at` 은 보는 사람
 시간대 문자열입니다.
+
+**1인 1계정 판정은 두 단계입니다(1.1.4).** 가입 전 리스너(`AssertNoDuplicateKcpIdentity`)는 record·선점표를 조회해
+이미 가입한 명의를 먼저 안내하지만, 가입 트랜잭션 밖이라 같은 명의로 동시에 가입하면 둘 다 통과할 수 있습니다. 그래서
+최종 판정은 코어가 가입 트랜잭션 안에서 발행하는 `core.auth.registering` 의 동기 구독자(`ClaimKcpIdentityOnRegistering`)가
+**선점표(`nhnkcp_identity_claims`, `(hash_type, hash)` 유니크)에 자리를 잡는 것**으로 합니다 — 자리를 못 잡으면 예외로 가입
+전체(회원·동의 이력)가 롤백되고, 「어느 식별값이 겹쳤는지」 감사 기록만 롤백 뒤에 남깁니다. 선점표는 탈퇴·삭제 리스너가
+같은 트랜잭션에서 비워 탈퇴 후 재가입은 그대로 허용됩니다. 선점표를 KCP·이니시스가 따로 갖는 것은 판정 키·해시·파기
+수명주기를 각 플러그인이 소유하기 때문입니다(교차 차단은 하지 않음). 정책이 KCP 를 지정했는데 다른 수단의 결과로 가입하려
+하면 가입 전 리스너가 거부합니다.
 <!-- @intent END -->
 
 ## 디렉토리
@@ -61,6 +70,7 @@ Listener (RegisterKcpProviderListener 등)
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
+| `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |

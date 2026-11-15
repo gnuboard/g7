@@ -1,0 +1,25 @@
+feature: 장바구니 쓰기·체크아웃·비회원 주문 변경 요청 제한 (#891)
+
+description: |
+  세 묶음에 이름 있는 제한기를 둔다. 한도는 모듈 설정(rate_limits: 장바구니 쓰기 120·체크아웃 30·비회원 주문 변경 20,
+  분당). 로그인 회원은 회원 단위로, 비회원은 IP 단위로 센다. 조회는 세지 않는다. 비회원 클레임 블록은 자기 제한기를
+  그대로 쓴다. 비회원 주문 변경 묶음에는 환불 예상 계산이, 체크아웃 묶음에는 결제창을 닫을 때 남기는 결제 취소 기록이 들어 있다.
+
+axes:
+  case:
+    - cart_write__guest
+    - checkout__guest
+    - guest_order_write__guest
+    - payment_cancel_record__guest
+    - cart_write__member
+    - guest_claims_unchanged__guest
+    - defaults__guest
+
+effects:
+  - bundle_limit_returns_429_with_translated_message
+  - member_and_guest_counters_are_separate
+  - guest_claim_limiter_unchanged
+  - limits_come_from_module_config_defaults
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/EcommerceRateLimitTest.php

@@ -1,15 +1,15 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-11-01T05:53:21+00:00",
+    "generated_at": "2026-11-14T11:04:59+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "core",
     "composer_json_sha256": "dd923c873c069bf44a4a68a7da6b133914007ef46b48a089c8d6b2730e3f3606",
-    "composer_lock_sha256": "728a77d75202c0d274bff51e53df4de8a7fac12cd2880309bb06647c3da7f059",
-    "zip_sha256": "878a6346912d6bd998ad1e20d7f604c7e620b0aacd51f8ac3d19a4207a19800d",
-    "zip_size": 17254536,
+    "composer_lock_sha256": "fe642c85e425a36ae3832226ccb515168a8564f955dddb94ba011f498431eaa7",
+    "zip_sha256": "2ade5cb01c64c6933e1564b9d8391caf8a32c74b378ddf3e438171424de1e832",
+    "zip_size": 17334790,
     "package_count": 107,
     "php_requirement": "^8.2",
-    "g7_version": "7.1.4",
+    "g7_version": "7.1.6",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -18,7 +18,7 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.402.5",
+            "version": "3.403.6",
             "type": "library"
         },
         {
@@ -108,7 +108,7 @@
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "2.13.2",
+            "version": "2.13.3",
             "type": "library"
         },
         {
@@ -118,37 +118,37 @@
         },
         {
             "name": "jaybizzle/crawler-detect",
-            "version": "v1.4.2",
+            "version": "v1.4.3",
             "type": "library"
         },
         {
             "name": "laravel/framework",
-            "version": "v12.70.2",
+            "version": "v12.72.0",
             "type": "library"
         },
         {
             "name": "laravel/prompts",
-            "version": "v0.3.26",
+            "version": "v0.3.27",
             "type": "library"
         },
         {
             "name": "laravel/reverb",
-            "version": "v1.12.0",
+            "version": "v1.13.0",
             "type": "library"
         },
         {
             "name": "laravel/sanctum",
-            "version": "v4.3.3",
+            "version": "v4.4.0",
             "type": "library"
         },
         {
             "name": "laravel/scout",
-            "version": "v11.9.0",
+            "version": "v11.10.0",
             "type": "library"
         },
         {
             "name": "laravel/serializable-closure",
-            "version": "v2.1.0",
+            "version": "v2.2.0",
             "type": "library"
         },
         {
@@ -188,12 +188,12 @@
         },
         {
             "name": "league/uri",
-            "version": "7.9.1",
+            "version": "7.10.0",
             "type": "library"
         },
         {
             "name": "league/uri-interfaces",
-            "version": "7.9.1",
+            "version": "7.10.0",
             "type": "library"
         },
         {
@@ -238,7 +238,7 @@
         },
         {
             "name": "nunomaduro/termwind",
-            "version": "v2.4.0",
+            "version": "v2.4.1",
             "type": "library"
         },
         {
@@ -363,7 +363,7 @@
         },
         {
             "name": "symfony/console",
-            "version": "v7.4.22",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
@@ -373,7 +373,7 @@
         },
         {
             "name": "symfony/deprecation-contracts",
-            "version": "v3.7.1",
+            "version": "v3.8.1",
             "type": "library"
         },
         {
@@ -388,37 +388,37 @@
         },
         {
             "name": "symfony/event-dispatcher-contracts",
-            "version": "v3.7.1",
+            "version": "v3.8.1",
             "type": "library"
         },
         {
             "name": "symfony/filesystem",
-            "version": "v7.4.21",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
             "name": "symfony/finder",
-            "version": "v7.4.22",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
             "name": "symfony/http-client",
-            "version": "v7.4.22",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
             "name": "symfony/http-client-contracts",
-            "version": "v3.7.3",
+            "version": "v3.8.1",
             "type": "library"
         },
         {
             "name": "symfony/http-foundation",
-            "version": "v7.4.22",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
             "name": "symfony/http-kernel",
-            "version": "v7.4.22",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
@@ -498,12 +498,12 @@
         },
         {
             "name": "symfony/routing",
-            "version": "v7.4.22",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
             "name": "symfony/service-contracts",
-            "version": "v3.7.3",
+            "version": "v3.8.1",
             "type": "library"
         },
         {
@@ -513,12 +513,12 @@
         },
         {
             "name": "symfony/translation",
-            "version": "v7.4.22",
+            "version": "v7.4.23",
             "type": "library"
         },
         {
             "name": "symfony/translation-contracts",
-            "version": "v3.7.1",
+            "version": "v3.8.1",
             "type": "library"
         },
         {

@@ -8,6 +8,7 @@ use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
@@ -168,16 +169,7 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             ->where('product_id', $productId)
             ->where('status', ReviewStatus::VISIBLE->value);
 
-        // 포토리뷰만 보기 (문자열 'false' 방어: truthy 값만 적용)
-        $photoOnly = $filters['photo_only'] ?? false;
-        if ($photoOnly === true || $photoOnly === '1' || $photoOnly === 'true') {
-            $query->whereHas('images');
-        }
-
-        // 별점 필터
-        if (! empty($filters['rating'])) {
-            $query->where('rating', (int) $filters['rating']);
-        }
+        $this->applyPublicReviewFilters($query, $filters);
 
         // 옵션 필터 (키-값별 product_option_id IN 방식)
         if (! empty($filters['option_filters']) && is_array($filters['option_filters'])) {
@@ -206,17 +198,10 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             }
         }
 
-        // 정렬 — 선택지가 닫힌 집합이라 match 로 충분하다
-        $sort = match ($filters['sort'] ?? 'created_at_desc') {
-            'rating_desc' => [['column' => 'rating', 'direction' => 'desc']],
-            'rating_asc' => [['column' => 'rating', 'direction' => 'asc']],
-            default => [['column' => 'created_at', 'direction' => 'desc']],
-        };
-
         return $this->paginateWithDeferredJoin(
             query: $query,
             columns: ['*'],
-            sort: $sort,
+            sort: $this->resolvePublicReviewSort($filters),
             perPage: $perPage,
             // 리뷰 첨부 이미지는 로드한다 — 상품 상세의 리뷰 탭이 실제로 그린다.
             //
@@ -234,6 +219,73 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             withCount: ['images as image_count'],
             resultCap: PaginationLimits::resultCap('shop.product_reviews'),
         );
+    }
+
+    /**
+     * 전체 공개 후기 목록 조회 (리뷰 모아보기, 페이지네이션)
+     *
+     * 노출 상태 후기 중 전시 중이고 삭제되지 않은 상품의 것만 돌려준다.
+     *
+     * @param  array  $filters  필터 조건 (sort, photo_only, rating, per_page)
+     * @return LengthAwarePaginator 페이지네이션된 후기 목록
+     */
+    public function paginatePublicFeed(array $filters = []): LengthAwarePaginator
+    {
+        $query = $this->model->newQuery()
+            ->where('status', ReviewStatus::VISIBLE->value)
+            // 숨긴 상품·삭제한 상품의 후기는 모아보기에 싣지 않는다 (SoftDeletes 는 관계 조건이 걸러 준다)
+            ->whereHas('product', fn ($product) => $product->visible());
+
+        $this->applyPublicReviewFilters($query, $filters);
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $this->resolvePublicReviewSort($filters),
+            perPage: (int) ($filters['per_page'] ?? 10),
+            // 상품 요약(이름·대표 이미지)을 카드 위에 그린다 — images 를 함께 읽어 줄마다 다시 묻지 않게 한다
+            relations: ['user', 'images', 'product.images'],
+            withCount: ['images as image_count'],
+            resultCap: PaginationLimits::resultCap('shop.product_reviews'),
+        );
+    }
+
+    /**
+     * 공개 후기 목록 공통 필터(사진 후기만·별점)를 적용합니다.
+     *
+     * @param  Builder  $query  대상 쿼리
+     * @param  array  $filters  필터 조건
+     * @return void 반환값 없음
+     */
+    protected function applyPublicReviewFilters(Builder $query, array $filters): void
+    {
+        // 포토리뷰만 보기 (문자열 'false' 방어: truthy 값만 적용)
+        $photoOnly = $filters['photo_only'] ?? false;
+        if ($photoOnly === true || $photoOnly === '1' || $photoOnly === 'true') {
+            $query->whereHas('images');
+        }
+
+        // 별점 필터
+        if (! empty($filters['rating'])) {
+            $query->where('rating', (int) $filters['rating']);
+        }
+    }
+
+    /**
+     * 공개 후기 목록의 정렬 기준을 돌려줍니다.
+     *
+     * @param  array  $filters  필터 조건 (sort)
+     * @return array<int, array{column: string, direction: string}> 정렬 기준
+     */
+    protected function resolvePublicReviewSort(array $filters): array
+    {
+        // 선택지가 닫힌 집합이라 match 로 충분하다
+        return match ($filters['sort'] ?? 'created_at_desc') {
+            'rating_desc' => [['column' => 'rating', 'direction' => 'desc']],
+            'rating_asc' => [['column' => 'rating', 'direction' => 'asc']],
+            'created_at_asc' => [['column' => 'created_at', 'direction' => 'asc']],
+            default => [['column' => 'created_at', 'direction' => 'desc']],
+        };
     }
 
     /**

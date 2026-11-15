@@ -2,7 +2,9 @@
     "editor": {
         "data_source": {
             "totpEnrollment": "Authenticator enrollment status",
-            "totpSettings": "Authenticator app settings"
+            "totpSettings": "Authenticator app settings",
+            "totpNotificationChannels": "Security notification channels",
+            "totpNotificationDefinitions": "Authenticator app security notifications"
         }
     },
     "admin": {
@@ -15,6 +17,9 @@
                 "step_install": "Install an authenticator app on your phone (Google Authenticator, Authy, 1Password, and so on).",
                 "step_scan": "Scan the QR code shown here with the app, or enter the key by hand.",
                 "step_confirm": "Enter the 6-digit code shown in the app to finish enrolling.",
+                "password_label": "Current password",
+                "password_placeholder": "Enter your current password",
+                "password_hint": "To confirm it is you, setup asks for your current password again.",
                 "start": "Start setup"
             },
             "enroll": {
@@ -73,6 +78,47 @@
             "save": "Save settings",
             "saving": "Saving...",
             "saved": "Authenticator app settings saved."
+        },
+        "notifications": {
+            "title": "Security notifications",
+            "description": "Tells the account owner when a member enrolls or removes an authenticator app or regenerates backup codes. Choose the delivery channels and wording for each notification.",
+            "channels": "Delivery channels",
+            "channel_template_missing": "No template for this channel — nothing will be sent",
+            "save_channels": "Save channels",
+            "cancel": "Cancel",
+            "edit_template": "Edit template",
+            "reset": "Restore defaults",
+            "empty": "No security notifications are registered.",
+            "forbidden": "You do not have permission to view notification settings, so the security notification list could not be loaded.",
+            "load_failed": "The security notification list could not be loaded. Please reopen this page in a moment.",
+            "reset_success": "Notification has been reset to default.",
+            "reset_failed": "Failed to reset notification.",
+            "save_success": "Notification settings saved successfully.",
+            "save_error": "Failed to save notification settings.",
+            "reset_modal": {
+                "title": "Reset to Default",
+                "confirm_message": "All channel templates of this notification will be restored to defaults.",
+                "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+                "target_label": "Target:",
+                "btn_confirm": "Reset",
+                "btn_confirming": "Resetting..."
+            },
+            "edit_modal": {
+                "title": "Edit Notification Template",
+                "type_label": "Type:",
+                "channel_label": "Channel:",
+                "subject": "Subject",
+                "body": "Body",
+                "variables_title": "Available Variables",
+                "btn_preview": "Preview",
+                "validation_error": "Please check the input fields."
+            },
+            "preview_modal": {
+                "title": "Notification Preview",
+                "rendered_subject": "Rendered Subject",
+                "rendered_body": "Rendered Body",
+                "btn_close": "Close"
+            }
         }
     },
     "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."

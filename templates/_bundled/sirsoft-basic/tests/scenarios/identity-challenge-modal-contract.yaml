@@ -1,0 +1,37 @@
+feature: 본인인증 공통 모달 구조 계약
+
+description: |
+  본인인증 공통 모달 레이아웃이 지켜야 하는 구조 계약 — 모달 구성, 확인·취소·재전송 액션, 입력 상태 표기.
+  
+  이 시험들은 시나리오 연결 규칙이 생기기 전에 쓰였다. 재전송 대기를 서버의 재요청 제한(60초)에 맞추며
+  기대값 한 줄을 고칠 때 기존 케이스를 시험 하나 = 시나리오 하나로 연결했다(2026-11-11). 각 case 는 아래 주석의
+  시험 이름과 짝이다. 취소 흐름의 서버 연동 케이스는 `tests/scenarios/idv-permission-guard.yaml` 이 소유한다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20]
+  # c01: id 가 identity-challenge-modal
+  # c02: Modal composite 컴포넌트
+  # c03: backdrop/escape/closeButton 으로 자동 닫기 차단 (verify 또는 명시 cancel 만 허용)
+  # c04: 외부 IDV 플러그인 진입점 (identity_provider_ui:provider) 단일 슬롯만 존재 — text_code/link 는 plain Div 로 이동
+  # c05: 외부 provider 슬롯은 코어 mail/미지정 케이스에서 마운트되지 않는다 (if 가드)
+  # c06: 코어 OTP 입력 Div 는 코어 mail/미지정 + text_code 케이스에 if 가드로 노출된다
+  # c07: 재전송/확인 버튼 if 가드는 mail provider 인 경우에도 노출되어야 한다 (회귀: signup_before_submit 정책 provider_id NULL 시 코어 mail 인증에서 버튼 사라지던 버그)
+  # c08: verify 엔드포인트 호출이 존재한다
+  # c09: verify onSuccess 안에 resolveIdentityChallenge(verified, token) 가 있다
+  # c10: verify onSuccess 가 closeModal 도 호출한다
+  # c11: cancelled 통보 액션이 존재한다
+  # c12: 재전송 버튼이 POST /api/identity/challenges 를 호출한다
+  # c13: 재전송 sequence 의 첫 setState 가 identityChallenge.code 를 즉시 빈 문자열로 초기화한다
+  # c14: code Input 이 존재한다
+  # c15: 비표준 events 래퍼를 사용하지 않는다
+  # c16: onChange 가 setState(target=global) 로 identityChallenge.code 를 갱신한다
+  # c17: 모든 setState 가 target=global 사용
+  # c18: setState 키들이 identityChallenge.* dot notation 사용
+  # c19: _user_base.g7.html 의 modals 배열에 _identity_challenge_modal 이 포함되어 있다
+  # c20: 풀페이지 verify onSuccess 도 resolveIdentityChallenge { verified } 를 호출 (defaultLauncher 폴백 일관성)
+
+effects:
+  - user_identity_challenge_modal_contract
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/identity-challenge-modal.test.tsx
