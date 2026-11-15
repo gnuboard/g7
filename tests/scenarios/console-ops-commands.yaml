@@ -62,6 +62,13 @@ effects:
   - reset_password_console_skips_web_reset_guard_hook
   - reset_password_prints_extension_notices_from_filter
   - reset_password_reports_failure_without_change
+  # 5.2a 이메일 없이 최고관리자 재설정 (#790)
+  - reset_password_without_email_targets_single_super_admin_after_confirm
+  - reset_password_without_email_declined_changes_nothing
+  - reset_password_without_email_chooses_among_super_admins
+  - reset_password_without_email_unanswerable_lists_super_admins_and_fails
+  - reset_password_without_email_fails_when_no_super_admin
+  - reset_password_warns_when_status_still_blocks_login
   - reset_service_rolls_back_with_inside_transaction_failure
   - reset_service_fires_before_hook_only_for_mail_reset
   - reset_service_require_change_only_when_requested

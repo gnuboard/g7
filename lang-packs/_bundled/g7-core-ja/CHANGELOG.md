@@ -8,6 +8,7 @@
 
 ### Added
 
+- 터미널 비밀번호 재설정(`user:reset-password`)을 이메일 없이 실행해 최고관리자를 고를 때의 안내·확인·취소 문구와, 재설정 뒤에도 회원 상태 때문에 로그인할 수 없다는 경고(`user.commands.reset_password.*` 8개)의 일본어 번역을 추가하고, 명령 설명에 「이메일을 생략하면 최고관리자」를 덧붙였습니다.
 - 템플릿 설치·업데이트 결과의 「첫 화면에 미리 실을 설정(`expose`) 선언」 경고 문구(`extensions.warnings.expose_not_array`·`expose_missing_engine_keys`)의 일본어 번역을 추가했습니다.
 - 환경설정 > 드라이버 「웹서버 파일 위임」의 선택지 이름(`settings.drivers.file_delegation.*`), 설정 점검 결과 문구(`settings.driver_test.file_delegation.*`), 저장 검증 문구와 항목 이름(`validation.settings.file_delegation_*`·`validation.attributes.file_delegation*`)의 일본어 번역을 추가했습니다 (#878).
 - 스케줄 실행 이력의 「거절됨」 상태와 거절 사유 3종(`schedule.result.rejected`, `schedule.reject_reason.*`)의 일본어 번역을 추가했습니다.

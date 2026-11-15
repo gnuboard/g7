@@ -523,10 +523,23 @@ php g7-install --reinstall --drop-existing-tables \
 
 | 명령 | 용도 |
 |------|------|
-| `php artisan user:reset-password 이메일` | 메일 없이 관리자 비밀번호 재설정 (비밀번호는 `G7_RESET_PASSWORD`·`--password-file`·숨김 입력·`--generate`) |
+| `php artisan user:reset-password [이메일]` | 메일 없이 관리자 비밀번호 재설정. 이메일을 생략하면 최고관리자가 대상 (비밀번호는 `G7_RESET_PASSWORD`·`--password-file`·숨김 입력·`--generate`) |
 | `php artisan settings:get [키]` · `settings:set 키 값` | 환경설정 조회·지정 (관리자 화면 저장과 같은 검증, `--plugin=`·`--module=`) |
 | `php artisan module:install 식별자 --with-dependencies` | 의존 확장까지 함께 설치·활성화 (`plugin:install`·`template:install` 도 같음) |
 | `php artisan module:install 식별자 --with-language-packs=all` | 그 확장의 번들 언어팩을 함께 설치·활성화 (`plugin:install`·`template:install` 도 같음). 값은 `none`(기본, 설치 안 함) · `all`(관리자 설치 창에 보이는 후보 전부) · 쉼표로 나눈 언어팩 식별자(후보에 없는 식별자가 있으면 설치하지 않고 실패). 언어팩 설치는 확장 설치 뒤에 하며, 언어팩 하나가 실패해도 확장 설치는 되돌리지 않고 경고만 냅니다 |
+
+### 최고관리자 비밀번호를 잊었을 때
+
+메일 재설정을 쓸 수 없거나 이메일도 기억나지 않으면 서버 터미널(SSH, Docker 는 `docker compose exec -it 서비스명 bash`)에서 프로젝트 루트로 가 실행합니다. DB 를 직접 고치지 마세요 — 비밀번호 정책 검사, 잠금 해제, 모든 기기 로그아웃, 활동 로그가 빠집니다.
+
+```bash
+php artisan user:reset-password
+```
+
+- 이메일 없이 실행하면 최고관리자 계정(여럿이면 목록에서 고름)을 보여 주고 「이 계정의 비밀번호를 재설정할까요?」에 `yes` 로 답하면 새 비밀번호를 두 번 입력받습니다. 이메일을 알면 `php artisan user:reset-password 이메일` 로 바로 지정합니다.
+- 로그인 실패로 잠긴 상태도 함께 풀리고, 모든 기기에서 로그아웃됩니다. 새 비밀번호로 관리자 로그인(`/admin/login`)하세요.
+- 질문에 답할 수 없는 실행(`--no-interaction`, 콘솔 없는 원격 명령)은 아무것도 바꾸지 않고 최고관리자 이메일을 보여 줍니다. 그 이메일을 지정하고 비밀번호는 환경변수 `G7_RESET_PASSWORD` 나 `--password-file` 로 넘깁니다.
+- 인증 앱(2단계 인증)도 잃었다면 결과에 나오는 인증 앱 초기화 명령을 이어서 실행합니다.
 
 ### Docker Compose 로 설치
 

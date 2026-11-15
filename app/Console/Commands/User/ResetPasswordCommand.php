@@ -2,10 +2,13 @@
 
 namespace App\Console\Commands\User;
 
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\PasswordChangeSource;
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Models\User;
 use App\Rules\PasswordNotReused;
 use App\Rules\PasswordPolicy;
 use App\Services\PasswordResetService;
@@ -23,11 +26,16 @@ use Throwable;
  * 비밀번호는 명령줄 인자로 받지 않는다(프로세스 목록·셸 기록에 남는다) — 환경변수 G7_RESET_PASSWORD,
  * --password-file, 숨김 입력, --generate 만. 셸 접근이 곧 권한이다(totp:reset 과 같은 관례).
  *
+ * 이메일을 생략하면 최고관리자가 대상이다(#790) — 비밀번호를 잊은 최고관리자는 설치 때 넣은 이메일도
+ * 기억하지 못하는 일이 많다. 한 명이면 그 계정, 여럿이면 터미널에서 고르게 하고(답할 수 없는 실행은 목록을
+ * 보여 주고 실패), 답할 수 있는 실행은 대상을 보여 준 뒤 확인을 받는다.
+ *
  * 확장이 덧붙일 안내(예: 2단계 인증 초기화 명령)는 filter 훅 `core.auth.console_password_reset_notices`
  * 로 받는다 — 코어는 어느 확장이 설치돼 있는지 묻지 않는다.
  */
 class ResetPasswordCommand extends Command
 {
+    use HasUnifiedConfirm;
     use LocalizesDescription;
 
     /**
@@ -36,7 +44,7 @@ class ResetPasswordCommand extends Command
      * @var string
      */
     protected $signature = 'user:reset-password
-        {email : 비밀번호를 재설정할 회원 이메일}
+        {email? : 비밀번호를 재설정할 회원 이메일 (생략하면 최고관리자)}
         {--password-file= : 새 비밀번호를 담은 파일 (끝 개행 하나만 제거)}
         {--generate : 정책을 만족하는 무작위 비밀번호를 만들어 한 번만 출력 (다음 로그인 때 변경 강제)}
         {--require-change : 다음 로그인 때 비밀번호를 바꾸도록 강제}';
@@ -50,12 +58,21 @@ class ResetPasswordCommand extends Command
      */
     public function handle(UserRepositoryInterface $users, PasswordResetService $resetService): int
     {
-        $email = (string) $this->argument('email');
-        $user = $users->findByEmail($email);
-        if (! $user) {
-            $this->error('❌ '.__('user.commands.reset_password.not_found', ['email' => $email]));
+        $email = trim((string) $this->argument('email'));
+        if ($email === '') {
+            $picked = $this->pickSuperAdmin($users);
+            if (! $picked instanceof User) {
+                return $picked;
+            }
+            $user = $picked;
+            $email = (string) $user->email;
+        } else {
+            $user = $users->findByEmail($email);
+            if (! $user) {
+                $this->error('❌ '.__('user.commands.reset_password.not_found', ['email' => $email]));
 
-            return self::FAILURE;
+                return self::FAILURE;
+            }
         }
 
         $generated = (bool) $this->option('generate');
@@ -100,8 +117,80 @@ class ResetPasswordCommand extends Command
                 $this->line('   '.$notice);
             }
         }
+        $this->warnIfLoginStillBlocked($user);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * 이메일 없이 실행했을 때 대상 최고관리자를 고른다.
+     *
+     * 한 명이면 그 계정, 여럿이면 선택을 받는다. 바꿀 계정을 보여 준 뒤 확인을 받는다 — 확인에 답할 수 없는 실행
+     * (`--no-interaction`, 콘솔 없는 원격 명령)은 대상을 추측하지 않고 최고관리자 이메일 목록과 다시 실행할 명령을
+     * 보여 준 뒤 실패로 끝낸다.
+     *
+     * @param  UserRepositoryInterface  $users  회원 저장소
+     * @return User|int 대상 회원, 또는 진행하지 않을 때의 종료 코드
+     */
+    private function pickSuperAdmin(UserRepositoryInterface $users): User|int
+    {
+        $supers = $users->getSuperAdmins();
+        if ($supers->isEmpty()) {
+            $this->error('❌ '.__('user.commands.reset_password.no_super_admin'));
+
+            return self::FAILURE;
+        }
+
+        if (! $this->canAnswerConfirmation()) {
+            $this->error('❌ '.__('user.commands.reset_password.super_admin_unconfirmable'));
+            foreach ($supers as $super) {
+                $this->line('   - '.$super->email);
+            }
+            $this->line(__('user.commands.reset_password.super_admin_rerun_hint', [
+                'command' => 'php artisan user:reset-password '.$supers->first()->email,
+            ]));
+
+            return self::FAILURE;
+        }
+
+        if ($supers->count() === 1) {
+            $user = $supers->first();
+        } else {
+            $chosen = (string) $this->choice(
+                __('user.commands.reset_password.choose_super_admin'),
+                $supers->pluck('email')->all(),
+            );
+            $user = $supers->firstWhere('email', $chosen);
+        }
+
+        $this->line(__('user.commands.reset_password.super_admin_target', ['email' => $user->email]));
+        if (! $this->unifiedConfirm(__('user.commands.reset_password.confirm_super_admin'), false)) {
+            $this->info(__('user.commands.reset_password.aborted'));
+
+            return self::SUCCESS; // 대화형에서 운영자가 직접 답한 「아니오」는 의도한 취소라 0
+        }
+
+        return $user;
+    }
+
+    /**
+     * 비밀번호를 바꿔도 회원 상태 때문에 로그인이 막히면 알린다 (사용 중지·차단·인증 대기·탈퇴).
+     *
+     * 상태는 이 명령이 바꾸지 않는다 — 재설정은 비밀번호만 다룬다. 운영자가 「바꿨는데 왜 안 되지」에서 멈추지 않게 이유만 보인다.
+     * 판정은 로그인 경로와 같은 `UserStatus::allowsLogin()` 이다.
+     *
+     * @param  User  $user  재설정한 회원
+     * @return void 반환값 없음
+     */
+    private function warnIfLoginStillBlocked(User $user): void
+    {
+        $status = $user->status instanceof UserStatus ? $user->status->value : (string) $user->status;
+        if (UserStatus::allowsLogin($status)) {
+            return;
+        }
+
+        $label = UserStatus::tryFrom($status)?->label() ?? $status;
+        $this->warn(__('user.commands.reset_password.status_blocks_login', ['status' => $label]));
     }
 
     /**

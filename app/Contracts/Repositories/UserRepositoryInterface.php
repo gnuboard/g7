@@ -151,6 +151,15 @@ interface UserRepositoryInterface
     public function findSuperAdmin(): ?User;
 
     /**
+     * 탈퇴하지 않은 최고관리자 전원을 가입 순으로 조회합니다.
+     *
+     * 터미널 비밀번호 재설정이 이메일 없이 대상(최고관리자)을 고를 때 쓴다 — 최고관리자는 여럿일 수 있다.
+     *
+     * @return Collection<int, User> 최고관리자 목록 (없으면 빈 컬렉션)
+     */
+    public function getSuperAdmins(): Collection;
+
+    /**
      * 특정 권한 identifier 를 가진 역할에 소속된 모든 사용자를 조회합니다.
      *
      * @param  string  $permissionIdentifier  권한 identifier

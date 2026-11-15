@@ -144,7 +144,7 @@ return [
         'thumbnails:pregenerate' => '이미 올라와 있는 이미지의 썸네일을 미리 만듭니다 (이미 있는 썸네일은 건너뜀)',
         'thumbnails:prune' => '규격이 바뀌었거나 원본이 없어진 썸네일 파일을 정리합니다',
         'trusted-proxy:status' => '리버스 프록시 신뢰 설정(TRUSTED_PROXIES) 상태를 점검합니다',
-        'user:reset-password' => '회원 비밀번호를 서버 터미널에서 재설정합니다 (메일 없이 관리자 계정 복구)',
+        'user:reset-password' => '회원 비밀번호를 서버 터미널에서 재설정합니다 (메일 없이 관리자 계정 복구, 이메일을 생략하면 최고관리자)',
         'vendor-bundle:build-all' => '코어 + 모든 _bundled 모듈/플러그인의 vendor 번들을 일괄 빌드합니다',
         'vendor-bundle:verify-all' => '코어 + 모든 _bundled 모듈/플러그인의 vendor 번들 무결성을 일괄 검증합니다',
     ],
