@@ -689,6 +689,15 @@
     },
     "hdr_search_history_scope": {
       "label": "最近の検索語の範囲"
+    },
+    "pr_title": {
+      "label": "リストのタイトル"
+    },
+    "pr_icon": {
+      "label": "タイトルアイコン"
+    },
+    "pc_show_actions": {
+      "label": "カート・お気に入りボタン"
     }
   },
   "component": {
@@ -744,7 +753,11 @@
     "theme_toggle": "テーマ切り替え",
     "notification_center": "通知センター",
     "visitor_counter": "訪問者カウンター",
-    "recent_search_combobox": "最近の検索語付き検索ボックス"
+    "recent_search_combobox": "最近の検索語付き検索ボックス",
+    "product_rail": "横並び商品リスト",
+    "chip_rows": "カテゴリチップ列",
+    "mobile_buy_bar": "下部購入バー",
+    "bottom_sheet": "ボトムシート"
   },
   "action": {
     "go_to_page": {
@@ -1206,6 +1219,8 @@
     "visitor_summary": "訪問者サマリー",
     "claimable": "クレーム申請可能商品",
     "claims": "クレーム申請履歴",
-    "claim": "クレーム申請書"
+    "claim": "クレーム申請書",
+    "relatedProducts": "こちらの商品はいかがですか？",
+    "reviewFeed": "すべてのレビュー"
   }
 }

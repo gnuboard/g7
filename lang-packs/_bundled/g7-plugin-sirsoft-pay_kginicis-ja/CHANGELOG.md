@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.3] - 2026-11-15
+
+### Added
+
+- KG이니시스 결제 1.2.4 의 에스크로 관리자 요청 안내 문구 일본어 번역을 추가했습니다 — 같은 주문의 에스크로 요청을 다른 곳에서 처리하고 있을 때(`messages.errors.escrow_in_progress`), 배송등록이 이미 끝났을 때(`escrow_delivery_already_registered`), 구매거절확인이 이미 끝났을 때(`escrow_deny_already_confirmed`).
+
 ## [1.2.2] - 2026-11-01
 
 ### Added

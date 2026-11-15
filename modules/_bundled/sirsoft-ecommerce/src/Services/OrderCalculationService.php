@@ -833,6 +833,15 @@ class OrderCalculationService
             ? MileageRounding::fromOrderSnapshot($input->mileagePolicySnapshot)
             : MileageRounding::normalize($this->resolveMileageCurrencyRule($input));
 
+        // 「적립금을 쓴 주문은 구매 적립 없음」 정책. 재계산은 주문 스냅샷의 정책·사용액을, 새 주문은
+        // 지금 설정과 이번 계산의 실제 사용액을 본다 — 절사 기준과 같은 이유로 설정을 과거 주문에 소급하지 않는다.
+        // 스냅샷에 키가 없는 옛 주문은 정책이 없던 것으로 본다.
+        $noEarnForThisOrder = $input?->mileagePolicySnapshot !== null
+            ? (bool) ($input->mileagePolicySnapshot['earn_policy']['no_earn_when_points_used'] ?? false)
+                && (float) ($input->mileagePolicySnapshot['used_points'] ?? 0) > 0
+            : (bool) $this->settingsService->getSetting('mileage.no_earn_when_points_used', false)
+                && (float) ($pointsUsageResult['actual_points'] ?? array_sum($pointsUsageResult['points_by_option'] ?? [])) > 0;
+
         // 같은 상품옵션 라인이 여럿이면(상태·클레임 분할 뒤 재계산) 결과는 키 하나로 합쳐진다. 정액 적립은
         // 키 전체 수량에 곱해야 한다 — 라인 수량을 키에 대입하면 마지막 라인 수량만 남는다(S-Q26-c).
         $keyQuantity = [];
@@ -857,6 +866,13 @@ class OrderCalculationService
             // mileage_value/mileage_type 은 상품 옵션(상품 등록 당시) 속성이므로,
             // 전역 OFF 면 상품옵션 명시 적립률·기본 적립률 모두 계산 대상에서 제외된다 (정책 확정).
             if (! (bool) $this->settingsService->getSetting('mileage.enabled', false)) {
+                $pointsPerItem[$optionId] = 0;
+
+                continue;
+            }
+
+            // 적립금을 쓴 주문은 적립하지 않는 정책이면 모든 항목 0
+            if ($noEarnForThisOrder) {
                 $pointsPerItem[$optionId] = 0;
 
                 continue;

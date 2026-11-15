@@ -116,7 +116,7 @@ trait BundledExtensionUpdatePrompt
         // 전역 레이아웃 전략
         $globalStrategy = 'overwrite';
         if (! $force) {
-            $answer = $this->choice(
+            $answer = $this->unifiedChoice(
                 __('extensions.commands.bundled_update.strategy_question'),
                 [
                     'overwrite' => __('extensions.commands.bundled_update.strategy_options.overwrite'),
@@ -193,7 +193,7 @@ trait BundledExtensionUpdatePrompt
             return $strategies;
         }
 
-        if (! $this->unifiedConfirm(__('extensions.commands.bundled_update.override_confirm'), false)) {
+        if (! $this->unifiedConfirm(__('extensions.commands.bundled_update.override_confirm'), false, optional: true)) {
             return $strategies;
         }
 
@@ -211,7 +211,7 @@ trait BundledExtensionUpdatePrompt
         $overrideStrategy = $globalStrategy === 'overwrite' ? 'keep' : 'overwrite';
 
         $this->info(__('extensions.commands.bundled_update.override_notice', ['strategy' => $overrideStrategy]));
-        $selected = $this->ask(__('extensions.commands.bundled_update.override_ask'), '');
+        $selected = $this->unifiedAsk(__('extensions.commands.bundled_update.override_ask'), '');
 
         if (trim((string) $selected) === '') {
             return $strategies;
@@ -625,7 +625,7 @@ trait BundledExtensionUpdatePrompt
         $this->newLine();
         $this->line('  '.__('search.index.rebuild_cost_warning'));
 
-        return $this->unifiedConfirm(__('search.index.rebuild_after_bulk_confirm'), false);
+        return $this->unifiedConfirm(__('search.index.rebuild_after_bulk_confirm'), false, optional: true);
     }
 
     /**

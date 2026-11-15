@@ -257,6 +257,26 @@ describe('sirsoftBasicIdentityLauncher — 전역 상태 구독 해제', () => {
     expect(g7.identity.redirectExternally).toHaveBeenCalled();
   });
 
+  // @scenario surface=fullpage_guest_target
+  // @effects fallback_stash_carries_resolved_target
+  it('전체화면으로 폴백할 때 해석한 인증 대상을 넘겨 세션 보관함에 함께 남긴다 (폼에서 얻은 대상 포함)', async () => {
+    const g7 = {
+      ...makeG7Core({ _local: { passwordResetForm: { email: 'reset@example.test' } } }),
+      dispatch: vi.fn(async (action: { handler: string }) => {
+        if (action.handler === 'openModal') throw new Error('modal missing');
+      }),
+    };
+    (window as any).G7Core = g7;
+
+    // 428 이 대상을 싣지 않은 흐름 — launcher 가 비밀번호 재설정 폼에서 대상을 얻는다
+    await sirsoftBasicIdentityLauncher({ ...basePayload, purpose: 'password_reset' } as any);
+
+    expect(sentTarget()).toEqual({ email: 'reset@example.test' });
+    const redirected = g7.identity.redirectExternally.mock.calls[0]?.[0] as Record<string, any>;
+    expect(redirected.target).toEqual({ email: 'reset@example.test' });
+    expect(redirected.redirect_url).toContain('/identity/challenge?challenge_id=ch_1');
+  });
+
   // @scenario surface=identity_launcher_subscription
   // @effects state_subscription_released
   it('subscribe 가 해제 함수를 돌려주지 않는 구 코어에서도 오류 없이 끝난다', async () => {

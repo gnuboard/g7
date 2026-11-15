@@ -2,9 +2,11 @@
 
 namespace Plugins\Sirsoft\Totp\Http\Controllers;
 
+use App\Exceptions\CannotModifySuperAdminException;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Models\User;
+use App\Support\UserGradeGuard;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\Totp\Services\TotpEnrollmentService;
 
@@ -41,12 +43,19 @@ class TotpAdminCredentialController extends AdminBaseController
      * 식별자는 uuid 다 — 라우트-모델 바인딩이 `User::getRouteKeyName()` 을 따르므로
      * 없는 회원이면 프레임워크가 404 를 낸다(컨트롤러가 다시 조회하지 않는다).
      *
+     * 슈퍼관리자가 아닌 운영자는 슈퍼관리자의 인증 앱을 풀 수 없다(1.0.3, KVE 동형) — 코어 회원 수정·삭제와 같은
+     * 상한(`UserGradeGuard`)을 따르며, 위반은 코어 예외 렌더러가 403 으로 낸다.
+     *
      * @param  User  $user  대상 회원 (uuid 바인딩)
      * @return JsonResponse 초기화 결과
+     *
+     * @throws CannotModifySuperAdminException 운영자가 상위 등급 회원을 초기화하려 할 때
      */
     public function destroy(User $user): JsonResponse
     {
         $target = $user;
+
+        UserGradeGuard::assertActorMayModify($target, $this->getCurrentUser());
 
         $removed = $this->enrollmentService->adminReset($target, $this->getCurrentUser()?->id, request()->ip());
 

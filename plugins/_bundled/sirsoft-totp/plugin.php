@@ -12,6 +12,7 @@ use Plugins\Sirsoft\Totp\Listeners\ConsolePasswordResetNoticeListener;
 use Plugins\Sirsoft\Totp\Listeners\ExtendLoginPurposeChannels;
 use Plugins\Sirsoft\Totp\Listeners\RegisterTotpProviderListener;
 use Plugins\Sirsoft\Totp\Listeners\TotpAdminResetActivityLogListener;
+use Plugins\Sirsoft\Totp\Listeners\TotpNotificationDataListener;
 use Plugins\Sirsoft\Totp\Listeners\UserTotpEnrollmentInfoListener;
 
 /**
@@ -109,6 +110,7 @@ class Plugin extends AbstractPlugin
      *  - TotpAdminResetActivityLogListener: 관리자 강제 해제를 활동 로그에 기록
      *  - UserTotpEnrollmentInfoListener: 관리자 회원 상세 응답에 인증 앱 등록 여부(해제 권한자에게만)
      *  - ConsolePasswordResetNoticeListener: 터미널 비밀번호 재설정 결과에 인증 앱 초기화 안내(등록 회원만)
+     *  - TotpNotificationDataListener: 등록·해제·백업 코드 재발급 보안 알림의 치환 변수와 기본 정의 복원(1.0.3)
      *
      * @return array<class-string> 리스너 클래스 목록
      */
@@ -122,25 +124,141 @@ class Plugin extends AbstractPlugin
             TotpAdminResetActivityLogListener::class,
             UserTotpEnrollmentInfoListener::class,
             ConsolePasswordResetNoticeListener::class,
+            TotpNotificationDataListener::class,
         ];
     }
 
     /**
      * 플러그인이 제공하는 훅 정보 반환.
      *
-     * @return array<string, mixed> 훅 정의 배열
+     * 목록 형식(`name` 키)으로 선언한다 — 확장 문서 생성기가 이 형식에서 유형·설명·인자를 읽는다
+     * (코어 PluginManager 는 키 형식도 같은 목록으로 정규화하므로 화면 표시는 같다).
+     *
+     * @return array<int, array<string, mixed>> 훅 정의 목록
      */
     public function getHooks(): array
     {
         return [
-            'sirsoft-totp.credential.admin_reset' => [
+            [
+                'name' => 'sirsoft-totp.credential.admin_reset',
                 'type' => 'action',
                 'description' => [
                     'ko' => '관리자가 회원의 인증 앱 등록을 강제 해제한 직후 발행. 인자: (User $user, array $context)',
                     'en' => 'Fired right after an administrator forcibly removes a member authenticator app enrollment. Arguments: (User $user, array $context)',
                     'ja' => '管理者が会員の認証アプリ登録を強制解除した直後に発行。引数: (User $user, array $context)',
                 ],
+                'parameters' => [
+                    'user' => 'User - 등록이 해제된 회원',
+                    'context' => 'array - actor_id(해제한 관리자, 명령이면 null)·ip_address',
+                ],
             ],
+            [
+                'name' => 'sirsoft-totp.credential.enrolled',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '회원이 첫 코드를 확인해 인증 앱 등록을 확정한 직후 발행(1.0.3). 인자: (User $user, array $context — ip_address·user_agent·occurred_at)',
+                    'en' => 'Fired right after a member confirms authenticator app enrollment with the first code (1.0.3). Arguments: (User $user, array $context — ip_address, user_agent, occurred_at)',
+                    'ja' => '会員が最初のコードを確認して認証アプリ登録を確定した直後に発行(1.0.3)。引数: (User $user, array $context — ip_address・user_agent・occurred_at)',
+                ],
+                'parameters' => [
+                    'user' => 'User - 인증 앱을 등록한 회원',
+                    'context' => 'array - ip_address·user_agent·occurred_at',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-totp.credential.disabled',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '회원이 현재 코드를 확인해 인증 앱 등록을 직접 해제한 직후 발행(1.0.3). 인자: (User $user, array $context — ip_address·user_agent·occurred_at·by_admin=false)',
+                    'en' => 'Fired right after a member removes their own authenticator app enrollment with a current code (1.0.3). Arguments: (User $user, array $context — ip_address, user_agent, occurred_at, by_admin=false)',
+                    'ja' => '会員が現在のコードを確認して認証アプリ登録を自ら解除した直後に発行(1.0.3)。引数: (User $user, array $context — ip_address・user_agent・occurred_at・by_admin=false)',
+                ],
+                'parameters' => [
+                    'user' => 'User - 인증 앱 등록을 해제한 회원',
+                    'context' => 'array - ip_address·user_agent·occurred_at',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-totp.backup_codes.regenerated',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '회원이 현재 코드를 확인해 백업 코드를 새로 발급한 직후 발행(1.0.3, 이전 코드는 전부 무효). 인자: (User $user, array $context — ip_address·user_agent·occurred_at)',
+                    'en' => 'Fired right after a member regenerates backup codes with a current code (1.0.3; all previous codes become invalid). Arguments: (User $user, array $context — ip_address, user_agent, occurred_at)',
+                    'ja' => '会員が現在のコードを確認してバックアップコードを再発行した直後に発行(1.0.3、以前のコードはすべて無効)。引数: (User $user, array $context — ip_address・user_agent・occurred_at)',
+                ],
+                'parameters' => [
+                    'user' => 'User - 백업 코드를 재발급한 회원',
+                    'context' => 'array - ip_address·user_agent·occurred_at',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 인증 앱 보안 알림 정의 3종 (1.0.3, KVE-2026-3194).
+     *
+     * 등록·해제(본인 해제·관리자 강제 해제·서버 셸 `totp:reset`)·백업 코드 재발급을 계정 이메일로 알린다 —
+     * 세션을 훔친 쪽이 2단계 인증을 바꿔도 계정 주인이 알아챌 수 있게 한다. 운영자는 관리자 알림 설정에서 끄고 켠다.
+     * 치환 변수는 `TotpNotificationDataListener` 가 채운다.
+     *
+     * @return array<int, array<string, mixed>> 알림 정의 목록
+     */
+    public function getNotificationDefinitions(): array
+    {
+        $variables = [
+            ['key' => 'name', 'description' => '수신자(계정 주인) 이름'],
+            ['key' => 'app_name', 'description' => '사이트 이름'],
+            ['key' => 'occurred_at', 'description' => '변경 시각'],
+            ['key' => 'ip_address', 'description' => '요청 IP'],
+            ['key' => 'actor_label', 'description' => '변경한 주체(본인·관리자·서버 셸)'],
+            ['key' => 'security_url', 'description' => '인증 앱 설정 화면 주소'],
+        ];
+        $notice = [
+            'ko' => "\n\n본인이 아니면 즉시 비밀번호를 바꾸고 관리자에게 알려 주세요.\n변경한 주체: {actor_label}\n요청 IP: {ip_address}\n\n설정 확인: {security_url}",
+            'en' => "\n\nIf this was not you, change your password right away and tell the site administrator.\nChanged by: {actor_label}\nRequest IP: {ip_address}\n\nReview settings: {security_url}",
+        ];
+        $definition = fn (string $type, array $hooks, array $name, array $description, array $subject, array $lead) => [
+            'type' => $type,
+            'hook_prefix' => 'sirsoft-totp',
+            'name' => $name,
+            'description' => $description,
+            'channels' => ['mail'],
+            'hooks' => $hooks,
+            'audience' => 'customer',
+            'variables' => $variables,
+            'templates' => [[
+                'channel' => 'mail',
+                'recipients' => [['type' => 'trigger_user']],
+                'subject' => $subject,
+                'body' => ['ko' => $lead['ko'].$notice['ko'], 'en' => $lead['en'].$notice['en']],
+            ]],
+        ];
+
+        return [
+            $definition(
+                'totp_enrolled',
+                ['sirsoft-totp.credential.enrolled'],
+                ['ko' => '인증 앱 등록 알림', 'en' => 'Authenticator app enrolled'],
+                ['ko' => '회원이 인증 앱 등록을 확정하면 계정 이메일로 알립니다.', 'en' => 'Notifies the account email when a member confirms authenticator app enrollment.'],
+                ['ko' => '[{app_name}] 인증 앱이 등록되었습니다', 'en' => '[{app_name}] An authenticator app was enrolled'],
+                ['ko' => '{name}님, {occurred_at}에 계정에 인증 앱이 등록되었습니다.', 'en' => 'Hello {name}, an authenticator app was enrolled on your account at {occurred_at}.'],
+            ),
+            $definition(
+                'totp_disabled',
+                ['sirsoft-totp.credential.disabled', 'sirsoft-totp.credential.admin_reset'],
+                ['ko' => '인증 앱 해제 알림', 'en' => 'Authenticator app removed'],
+                ['ko' => '인증 앱 등록이 해제되면(본인 해제·관리자 강제 해제 포함) 계정 이메일로 알립니다.', 'en' => 'Notifies the account email when authenticator app enrollment is removed (including removal by an administrator).'],
+                ['ko' => '[{app_name}] 인증 앱이 해제되었습니다', 'en' => '[{app_name}] Your authenticator app was removed'],
+                ['ko' => '{name}님, {occurred_at}에 계정의 인증 앱 등록이 해제되었습니다. 이제 로그인할 때 인증 앱 코드를 묻지 않습니다.', 'en' => 'Hello {name}, the authenticator app enrollment on your account was removed at {occurred_at}. Sign-in no longer asks for an authenticator code.'],
+            ),
+            $definition(
+                'totp_backup_codes_regenerated',
+                ['sirsoft-totp.backup_codes.regenerated'],
+                ['ko' => '백업 코드 재발급 알림', 'en' => 'Backup codes regenerated'],
+                ['ko' => '회원이 백업 코드를 새로 발급하면 계정 이메일로 알립니다.', 'en' => 'Notifies the account email when a member regenerates backup codes.'],
+                ['ko' => '[{app_name}] 백업 코드가 재발급되었습니다', 'en' => '[{app_name}] Your backup codes were regenerated'],
+                ['ko' => '{name}님, {occurred_at}에 계정의 백업 코드가 새로 발급되었습니다. 이전 백업 코드는 더 이상 쓸 수 없습니다.', 'en' => 'Hello {name}, new backup codes were issued for your account at {occurred_at}. The previous backup codes no longer work.'],
+            ),
         ];
     }
 

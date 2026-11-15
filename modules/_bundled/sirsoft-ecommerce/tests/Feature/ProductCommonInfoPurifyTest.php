@@ -113,6 +113,66 @@ class ProductCommonInfoPurifyTest extends ModuleTestCase
     }
 
     /**
+     * 편집기가 만든 서식(정렬·들여쓰기·줄 간격·표·병합 셀·이미지 크기)은 저장에서 남고, 위험한 스타일 값만 지운다.
+     *
+     * 종전 허용 목록은 `style` 을 `span` 에만 받아, HTML 로 작성한 공통정보·상품 설명에서 가운데 정렬한 문단이
+     * 저장하면 왼쪽 정렬로 돌아갔다(글자색만 남음). 표의 병합 셀(`colspan`·`rowspan`)과 줄인 이미지 크기도 지워졌다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=create_html
+     *
+     * @effects editor_formatting_kept_on_store, dangerous_style_values_removed
+     */
+    public function test_editor_formatting_is_kept_and_dangerous_style_values_are_removed(): void
+    {
+        config(['g7_settings.core.content' => ContentHtmlPolicy::defaults()]);
+
+        $commonInfo = app(ProductCommonInfoService::class)->createCommonInfo([
+            'name' => ['ko' => '서식', 'en' => 'Formatting'],
+            'content' => ['ko' => '<p style="text-align:center;">가운데</p>'
+                .'<p style="margin-left:80px;line-height:2.5;letter-spacing:3px;">들여쓰기</p>'
+                .'<p><span style="color:hsl(0,75%,60%);background-color:rgb(255,255,0);font-size:22px;">색</span></p>'
+                .'<h2 style="text-align:right;">제목</h2>'
+                .'<ul><li style="text-align:center;">항목</li></ul>'
+                .'<figure class="table"><table style="background-color:#eef;border:3px double #f00;width:60%;"><tbody>'
+                .'<tr><td style="background-color:#0f0;border:2px dashed #00f;padding:12px;vertical-align:top;" colspan="2">병합</td></tr>'
+                .'<tr><td rowspan="2">가</td><td>나</td></tr><tr><td>다</td></tr></tbody></table></figure>'
+                .'<figure class="image image_resized" style="width:50%;"><img src="/a.png" alt="a"></figure>'
+                .'<p><img src="/b.png" alt="b" style="width:120px;float:right;"></p>'
+                .'<p style="position:fixed;top:0;left:0;z-index:9999;text-align:center;">덮기</p>'
+                .'<div style="background-image:url(https://evil.example/t.gif);width:10px;">추적</div>'
+                .'<p style="width:expression(alert(1));">식</p>'],
+            'content_mode' => 'html',
+            'is_default' => false,
+            'is_active' => true,
+        ]);
+        $stored = (string) $commonInfo->content['ko'];
+
+        // 남는 서식
+        $this->assertMatchesRegularExpression('#<p style="text-align:center;?">가운데</p>#', $stored);
+        foreach (['margin-left:80px', 'line-height:2.5', 'letter-spacing:3px'] as $declaration) {
+            $this->assertMatchesRegularExpression('#<p style="[^"]*'.preg_quote($declaration, '#').'[^"]*">들여쓰기</p>#', $stored, $declaration);
+        }
+        $this->assertMatchesRegularExpression('#<span style="[^"]*color:hsl\(0,75%,60%\)[^"]*background-color:rgb\(255,255,0\)[^"]*font-size:22px[^"]*">색</span>#', $stored);
+        $this->assertMatchesRegularExpression('#<h2 style="text-align:right;?">제목</h2>#', $stored);
+        $this->assertMatchesRegularExpression('#<li style="text-align:center;?">항목</li>#', $stored);
+        $this->assertMatchesRegularExpression('#<table style="[^"]*background-color:\#eef[^"]*border:3px double \#f00[^"]*width:60%[^"]*">#', $stored);
+        $this->assertMatchesRegularExpression('#<td style="[^"]*background-color:\#0f0[^"]*border:2px dashed \#00f[^"]*padding:12px[^"]*vertical-align:top[^"]*" colspan="2">병합</td>#', $stored);
+        $this->assertStringContainsString('<td rowspan="2">가</td>', $stored);
+        $this->assertMatchesRegularExpression('#<figure class="image image_resized" style="width:50%;?"><img#', $stored);
+        $this->assertMatchesRegularExpression('#<img src="/b\.png" alt="b" style="[^"]*width:120px[^"]*float:right[^"]*"#', $stored);
+
+        // 지우는 값 — 화면을 덮는 배치, 외부 주소를 부르는 배경, 스크립트 식
+        foreach (['position', 'z-index', 'top:0', 'url(', 'evil.example', 'expression', 'background-image'] as $forbidden) {
+            $this->assertStringNotContainsString($forbidden, $stored, "{$forbidden} 는 저장에서 지운다");
+        }
+        $this->assertMatchesRegularExpression('#<p style="text-align:center;?">덮기</p>#', $stored, '위험한 선언만 지우고 정렬은 남긴다');
+        $this->assertMatchesRegularExpression('#<div style="width:10px;?">추적</div>#', $stored);
+        $this->assertStringContainsString('<p>식</p>', $stored);
+    }
+
+    /**
      * 정화할 본문.
      *
      * @param  string  $word  문단 앞 글자

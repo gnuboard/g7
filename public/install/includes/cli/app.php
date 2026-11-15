@@ -663,6 +663,9 @@ if (! function_exists('g7_install_cli_main')) {
                 return g7_cli_fail($out, [['key' => 'cli_error_another_cli_running', 'params' => []]], G7_CLI_EXIT_CONFLICT);
             }
             $finalize = installer_finalize_env();
+            if ($finalize['success'] && ! empty($finalize['runtime_cleanup_failed'])) {
+                $out->warn(lang('runtime_cleanup_failed_warning'));
+            }
 
             return $finalize['success'] ? G7_CLI_EXIT_OK : g7_cli_fail($out, [['key' => 'cli_error_finalize_failed', 'params' => []]], G7_CLI_EXIT_FAILED);
         }

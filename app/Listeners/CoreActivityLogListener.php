@@ -689,11 +689,17 @@ class CoreActivityLogListener implements HookListenerInterface
      */
     public function handleAuthLoginFailed(string $email, array $context = []): void
     {
-        $this->logActivity('auth.login_failed', [
-            'description_key' => 'activity_log.description.auth_login_failed',
+        // 로그인 2단계 오답은 같은 실패 훅으로 오지만(7.1.6) 문구와 대상 회원을 구분해 남긴다
+        $twoFactor = ($context['stage'] ?? null) === 'two_factor';
+
+        $this->logActivity('auth.login_failed', array_filter([
+            'description_key' => $twoFactor
+                ? 'activity_log.description.auth_two_factor_failed'
+                : 'activity_log.description.auth_login_failed',
             'description_params' => ['email' => $email],
             'ip_address' => $context['ip_address'] ?? null,
-        ]);
+            'user_id' => $twoFactor && isset($context['user_id']) ? (int) $context['user_id'] : null,
+        ], static fn ($value) => $value !== null));
     }
 
     /**

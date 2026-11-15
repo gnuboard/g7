@@ -82,7 +82,10 @@
                                     "params": {
                                         "target": "$parent._local",
                                         "currentSelection": null,
-                                        "additionalOptions": null
+                                        "additionalOptions": null,
+                                        "noOptionAdditionalSelections": null,
+                                        "noOptionAdditionalCustomTexts": null,
+                                        "noOptionAdditionalMultiCurrencyTotal": null
                                     }
                                 },
                                 {
@@ -92,7 +95,11 @@
                                         "selectedOptionItems": [],
                                         "currentSelection": {},
                                         "noOptionQuantity": 1,
-                                        "additionalOptions": {}
+                                        "additionalOptions": {},
+                                        "noOptionAdditionalSelections": {},
+                                        "noOptionAdditionalCustomTexts": {},
+                                        "noOptionAdditionalTotal": 0,
+                                        "noOptionTotalMultiCurrency": null
                                     }
                                 },
                                 {

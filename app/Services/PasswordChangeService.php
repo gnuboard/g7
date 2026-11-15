@@ -83,6 +83,13 @@ class PasswordChangeService
             ->when($keepTokenId !== null, fn ($query) => $query->whereKeyNot($keepTokenId))
             ->delete();
 
+        // web 세션도 같은 규칙으로 끊는다 — 현재 기기를 남길 때는 지금 쓰는 세션만 남긴다(KVE-2026-3187 동형).
+        // 본인 변경·관리자 지정·메일 재설정·터미널 재설정이 모두 이 한 곳을 지난다.
+        $this->userRepository->deleteSessionsByUserIds(
+            [$userId],
+            $keepTokenId !== null ? $this->currentSessionId() : null,
+        );
+
         $context = [
             'source' => $source->value,
             'actor_id' => $actor?->getKey() ?? $userId,
@@ -141,6 +148,26 @@ class PasswordChangeService
         }
 
         return null;
+    }
+
+    /**
+     * 지금 요청의 web 세션 ID 를 반환합니다 (본인 변경 시 남길 세션).
+     *
+     * 세션을 열지 않은 요청(Bearer 전용 API·콘솔)은 null 이다.
+     *
+     * @return string|null 세션 ID
+     */
+    private function currentSessionId(): ?string
+    {
+        $request = request();
+
+        if (! $request->hasSession()) {
+            return null;
+        }
+
+        $id = $request->session()->getId();
+
+        return is_string($id) && $id !== '' ? $id : null;
     }
 
     /**

@@ -177,6 +177,25 @@
     },
     "table": {
       "label": "Table"
+    },
+    "product_rail": {
+      "label": "Product Rail",
+      "default_title": "Product rail title",
+      "default_body": "Place product cards here"
+    },
+    "chip_rows": {
+      "label": "Category chip rows",
+      "default_body": "Place category chips (links) here"
+    },
+    "mobile_buy_bar": {
+      "label": "Mobile buy bar",
+      "default_price": "$0",
+      "default_primary": "Checkout"
+    },
+    "bottom_sheet": {
+      "label": "Bottom sheet",
+      "default_title": "Sheet title",
+      "default_body": "Place the sheet content here"
     }
   }
 }

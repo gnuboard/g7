@@ -7,6 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
+use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CouponOperationException;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
@@ -323,7 +324,12 @@ class CouponService
                     $issued++;
                 } catch (\Exception $e) {
                     ConcurrencyErrors::rethrowIfConcurrencyError($e);
-                    $skipped[] = ['user_id' => $userId, 'reason' => $e->getMessage()];
+                    // 사유는 코드(reason)와 문구(message)로 나눠 싣는다 — 쿠폰 일괄 받기와 같은 사유 코드 체계
+                    $skipped[] = [
+                        'user_id' => $userId,
+                        'reason' => $e instanceof CouponNotIssuableException ? $e->getReason() : 'operation_failed',
+                        'message' => $e->getMessage(),
+                    ];
                 }
             }
 

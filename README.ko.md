@@ -6,7 +6,7 @@
 엔터프라이즈급 기반을, 최소한의 토큰으로
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.1.5-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.1.6-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -619,7 +619,7 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 |------|------|
 | GitHub | [github.com/gnuboard/g7](https://github.com/gnuboard/g7) |
 | SIR 커뮤니티 | [sir.kr](https://sir.kr) |
-| 문의 | minsup@sir.kr |
+| 문의 | jjh621@sir.kr |
 
 ---
 

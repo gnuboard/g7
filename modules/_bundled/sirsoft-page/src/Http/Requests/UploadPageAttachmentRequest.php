@@ -4,6 +4,7 @@
 
 namespace Modules\Sirsoft\Page\Http\Requests;
 
+use App\Support\AllowedExtensions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Page\Models\PageAttachment;
@@ -58,6 +59,17 @@ class UploadPageAttachmentRequest extends FormRequest
         $fileRules = ['required', 'file', 'max:'.$maxSizeKb];
         // 목록이 비면 형식 제한 없음 — 빈 규칙을 붙이면 전 파일이 거부된다
         if ($allowedTypes !== []) {
+            // 이름 확장자도 같은 설정에서 파생해 함께 좁힌다 — 내용(MIME)만 보면 내용은 이미지이고
+            // 이름만 `.html` 인 파일이 통과한다. 이름 확장자를 알 수 없는 형식(확장자 표에 없는 MIME,
+            // 임의 이진 파일)이 하나라도 허용돼 있으면 이름 검사는 생략한다 — 그 형식의 정상 파일이
+            // 이름 때문에 거부되지 않게. 저장 파일명은 어느 경우든 내용 기준이다.
+            $allowedExtensions = AllowedExtensions::coversEveryMimeType($allowedTypes)
+                ? AllowedExtensions::fromMimeTypes($allowedTypes)
+                : [];
+            if ($allowedExtensions !== []) {
+                $fileRules[] = 'extensions:'.implode(',', $allowedExtensions);
+            }
+
             $fileRules[] = 'mimetypes:'.implode(',', $allowedTypes);
         }
 
@@ -83,6 +95,7 @@ class UploadPageAttachmentRequest extends FormRequest
             'file.max' => __('sirsoft-page::validation.attachment.file.max'),
             'file.mimes' => __('sirsoft-page::validation.attachment.file.mimes'),
             'file.mimetypes' => __('sirsoft-page::validation.attachment.file.mimetypes'),
+            'file.extensions' => __('sirsoft-page::validation.attachment.file.mimetypes'),
         ];
     }
 

@@ -10,8 +10,8 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `core.auth.after_register` | action | — | `src/Listeners/CompleteInicisRecordAfterRegister.php:64` |
-| `core.user.after_withdraw` | action | — | `src/Listeners/CleanInicisRecordOnUserWithdraw.php:18` |
-| `core.user.before_delete` | action | — | `src/Listeners/CleanInicisRecordOnUserDelete.php:23` |
+| `core.user.after_withdraw` | action | — | `src/Listeners/CleanInicisRecordOnUserWithdraw.php:19` |
+| `core.user.before_delete` | action | — | `src/Listeners/CleanInicisRecordOnUserDelete.php:24` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -30,6 +30,7 @@
 |---|---|---|---|---|
 | `core.auth.after_register` | action (미선언) | `CompleteInicisRecordAfterRegister` | `handle` | 50 |
 | `core.auth.before_register` | action (미선언) | `AssertNoDuplicateInicisIdentity` | `handle` | 20 |
+| `core.auth.registering` | action (미선언) | `ClaimInicisIdentityOnRegistering` | `handle` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterInicisProviderListener` | `register` | 20 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateInicisSettingsListener` | `addLiveModeRules` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanInicisRecordOnUserWithdraw` | `handle` | 50 |
@@ -51,6 +52,7 @@ FK 제약(1451)으로 사용자 삭제 자체가 실패해야 하므로, 비동�
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `AssertNoDuplicateInicisIdentity` | 1개 | 명시 등록 | ✅ | `src/Listeners/AssertNoDuplicateInicisIdentity.php` |
+| `ClaimInicisIdentityOnRegistering` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimInicisIdentityOnRegistering.php` |
 | `CleanInicisRecordOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanInicisRecordOnUserDelete.php` |
 | `CleanInicisRecordOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanInicisRecordOnUserWithdraw.php` |
 | `CompleteInicisRecordAfterRegister` | 1개 | 명시 등록 | ✅ | `src/Listeners/CompleteInicisRecordAfterRegister.php` |

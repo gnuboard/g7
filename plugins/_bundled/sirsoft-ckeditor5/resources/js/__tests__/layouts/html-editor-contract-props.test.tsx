@@ -100,7 +100,8 @@ describe('html_editor mediaUpload 계약', () => {
         expect(config.toolbar.items).toContain('g7VideoUpload');
         expect(config.toolbar.items).not.toContain('g7AudioUpload');
         expect(config.image.upload.types).toEqual(['jpeg', 'png']);
-        expect(config.extraPlugins).toHaveLength(2);
+        // 업로드 어댑터 + 업로드 단추 + 편집 화면 스타일 플러그인(항상 붙음)
+        expect(config.extraPlugins).toHaveLength(3);
     });
 
     /**
@@ -111,7 +112,8 @@ describe('html_editor mediaUpload 계약', () => {
         const config = await mount({ mediaUpload: { ...CONTRACT, policy: { ...CONTRACT.policy, image: { ...CONTRACT.policy.image, enabled: false }, video: { ...CONTRACT.policy.video, enabled: false } } } });
 
         expect(config.toolbar.items).not.toContain('uploadImage');
-        expect(config.extraPlugins).toBeUndefined();
+        // 업로드 플러그인은 없다 — 편집 화면 스타일 플러그인(항상 붙음)만 남는다
+        expect(config.extraPlugins.map((plugin: { name: string }) => plugin.name)).toEqual(['EditingViewCssomStyle']);
     });
 
     /**

@@ -6,6 +6,8 @@ use App\Exceptions\Auth\AccountLockedException;
 use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
+use App\Exceptions\Auth\TwoFactorResendCooldownException;
+use App\Exceptions\Auth\TwoFactorResendNotSupportedException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
@@ -213,6 +215,12 @@ class AuthController extends AuthBaseController
             );
 
             return $this->success($this->twoFactorRequiredMessageKey($data), $data);
+        } catch (TwoFactorResendNotSupportedException $e) {
+            // 인증 앱처럼 코드를 보내지 않는 수단은 재발송이 없다 — 화면에는 버튼이 없고 API 응답으로만 알린다(7.1.6)
+            return $this->error('auth.two_factor_resend_not_supported', 422);
+        } catch (TwoFactorResendCooldownException $e) {
+            return $this->error('auth.two_factor_resend_cooldown', 429, null, ['seconds' => $e->retryAfterSeconds])
+                ->header('Retry-After', (string) $e->retryAfterSeconds);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
         } catch (TwoFactorEnrollmentRequiredException $e) {
@@ -352,7 +360,15 @@ class AuthController extends AuthBaseController
                 $validated['redirect_prefix'] ?? null
             );
 
-            return $this->success('auth.password_reset_email_sent');
+            $response = $this->success('auth.password_reset_email_sent');
+
+            // 메일·알림은 응답을 보낸 뒤에 나가지만, 요청을 일찍 끝낼 수 없는 실행 환경(PHP-FPM 이 아닌
+            // CGI·모듈 방식)에서는 웹서버가 그 작업이 끝날 때까지 응답의 끝을 알리지 않아 가입 주소만
+            // 늦게 끝난다. 본문 길이를 알리고 프록시 버퍼링을 꺼서, 받는 쪽이 본문을 다 받은 순간 끝나게 한다.
+            $response->headers->set('Content-Length', (string) strlen((string) $response->getContent()));
+            $response->headers->set('X-Accel-Buffering', 'no');
+
+            return $response;
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'auth.password_reset_failed');
         }

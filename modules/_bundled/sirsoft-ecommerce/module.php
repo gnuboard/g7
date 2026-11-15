@@ -34,6 +34,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceScopeLedgerListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\GrantSignupMileageListener;
 use Modules\Sirsoft\Ecommerce\Listeners\InjectAppConfigDeviceListener;
 use Modules\Sirsoft\Ecommerce\Listeners\IssueCashReceiptOnDepositListener;
 use Modules\Sirsoft\Ecommerce\Listeners\MergeCartOnLoginListener;
@@ -52,6 +53,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\SeoProductDetailRegenerateListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
+use Modules\Sirsoft\Ecommerce\Listeners\StripBusinessInfoWhenHiddenListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SystemActorContextListener;
@@ -3713,6 +3715,8 @@ class Module extends AbstractModule
     public function getHookListeners(): array
     {
         return [
+            GrantSignupMileageListener::class,
+            StripBusinessInfoWhenHiddenListener::class,
             SyncProductFromOptionListener::class,
             SyncOptionGroupsListener::class,
             ProductActivityLogListener::class,

@@ -1,169 +1,136 @@
 /**
  * @file shop-product-sections-responsive.test.tsx
- * @description 인기상품/신상품/최근본상품 섹션 모바일 반응형 테스트
+ * @description 인기·신상품·최근 본·관련 상품 줄이 같은 가로 줄 컨테이너(ProductRail)를 쓰는지 잠근다.
  *
  * 테스트 대상:
  * - templates/.../partials/shop/list/_popular_products.json
  * - templates/.../partials/shop/list/_new_products.json
  * - templates/.../partials/shop/list/_recent_products.json
+ * - templates/.../partials/shop/list/_related_products.json
+ * - templates/.../shop/show.json (관련 상품 데이터소스·줄 순서)
  *
  * 검증 항목:
- * - 카드 너비: 모바일 2개/줄 + 데스크톱 4개/줄 클래스 공존
- * - 다음 버튼: portable responsive에서 +2 기준 비활성화
- * - responsive 속성 portable 프리셋 사용
+ * - 네 조각의 루트가 ProductRail composite 이고, 자식이 ProductCard 반복이다
+ * - 옛 단추형 구조(격리 상태·scrollIntoView·카드 id·grid 트랙)가 레이아웃에 남아 있지 않다
+ *   (넘기기와 한 화면 카드 수는 컴포넌트가 맡는다 — ProductRail.test.tsx)
+ * - 줄이 비면 통째로 그리지 않는다 (루트 조건)
+ * - 상품 상세가 관련 상품을 회원·비회원 모두에게, 인기 줄 앞에 싣는다
+ *
  *
  * @vitest-environment jsdom
+ *
+ * @scenario-manifest tests/scenarios/shop-product-rail.yaml
  */
 
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// ========== JSON 파일 로드 ==========
+const layoutsDir = path.resolve(__dirname, '../../layouts');
 
-const partialsDir = path.resolve(__dirname, '../../layouts/partials/shop/list');
-
-function loadPartial(filename: string) {
-  const filePath = path.join(partialsDir, filename);
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+function loadJson(relative: string): any {
+  return JSON.parse(fs.readFileSync(path.join(layoutsDir, relative), 'utf-8'));
 }
 
-const popularProducts = loadPartial('_popular_products.json');
-const newProducts = loadPartial('_new_products.json');
-const recentProducts = loadPartial('_recent_products.json');
-
-// ========== 헬퍼 함수 ==========
+const RAILS: Array<{ file: string; source: string; title: string }> = [
+  { file: '_popular_products.json', source: 'popularProducts', title: '$t:shop.popular_products' },
+  { file: '_new_products.json', source: 'newProducts', title: '$t:shop.new_products' },
+  { file: '_recent_products.json', source: 'recentProducts', title: '$t:shop.recent_products' },
+  { file: '_related_products.json', source: 'relatedProducts', title: '$t:shop.related_products' },
+];
 
 /**
- * 중첩된 children에서 iteration이 있는 카드 컨테이너를 찾는다
+ * 노드 트리에서 조건에 맞는 노드를 모두 모은다.
  */
-function findIterationCard(layout: any): any {
-  if (layout.iteration) return layout;
-  if (layout.children) {
-    for (const child of layout.children) {
-      const found = findIterationCard(child);
-      if (found) return found;
-    }
+function collect(node: any, match: (n: any) => boolean, out: any[] = []): any[] {
+  if (!node || typeof node !== 'object') return out;
+  if (Array.isArray(node)) {
+    node.forEach((n) => collect(n, match, out));
+    return out;
   }
-  return null;
+  if (match(node)) out.push(node);
+  Object.values(node).forEach((v) => collect(v, match, out));
+  return out;
 }
 
-/**
- * 중첩된 children에서 grid 스크롤 컨테이너를 찾는다
- */
-function findScrollContainer(layout: any): any {
-  if (layout.props?.className?.includes('grid-flow-col')) return layout;
-  if (layout.children) {
-    for (const child of layout.children) {
-      const found = findScrollContainer(child);
-      if (found) return found;
-    }
-  }
-  return null;
-}
+describe.each(RAILS)('상품 줄 조각 $file', ({ file, source, title }) => {
+  const partial = loadJson(`partials/shop/list/${file}`);
+  const rails = collect(partial, (n) => n.name === 'ProductRail');
 
-/**
- * 중첩된 children에서 responsive 속성이 있는 Button을 찾는다 (다음 버튼)
- */
-function findNextButton(layout: any): any {
-  if (layout.name === 'Button' && layout.responsive?.['0-639']) return layout;
-  if (layout.children) {
-    for (const child of layout.children) {
-      const found = findNextButton(child);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-// ========== 테스트 ==========
-
-describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', () => {
-  const partials = [
-    { name: '인기상품', layout: popularProducts },
-    { name: '신상품', layout: newProducts },
-    { name: '최근본상품', layout: recentProducts },
-  ];
-
-  /**
-   * 기본 disabled 식에서 «세는 대상» 표현식을 뽑아낸다.
-   * 데이터소스 이름을 테스트에 박아 두면 바인딩 경로가 바뀔 때마다 stale 이 되므로,
-   * 브레이크포인트 오버라이드가 기본값과 «같은 컬렉션» 을 보는지만 확인한다.
-   */
-  function countedCollection(nextBtn: any): string {
-    const match = /\(_isolated\.scrollIdx \+ 4\) >= \((.*)\.length\)/.exec(nextBtn.props.disabled);
-    expect(match, `기본 disabled 식에서 대상 컬렉션을 찾지 못함: ${nextBtn.props.disabled}`).not.toBeNull();
-    return match![1];
-  }
-
-  describe.each(partials)('$name 섹션', ({ layout }) => {
-    describe('grid 기반 카드 크기 반응형', () => {
-      it('컨테이너가 grid grid-flow-col을 사용해야 한다', () => {
-        const container = findScrollContainer(layout);
-        expect(container).not.toBeNull();
-        expect(container.props.className).toContain('grid');
-        expect(container.props.className).toContain('grid-flow-col');
-      });
-
-      it('모바일 auto-cols 50%, sm 33.333%, lg 25%가 적용되어야 한다', () => {
-        const container = findScrollContainer(layout);
-        expect(container.props.className).toContain('auto-cols-[calc(50%_-_8px)]');
-        expect(container.props.className).toContain('sm:auto-cols-[calc(33.333%_-_11px)]');
-        expect(container.props.className).toContain('lg:auto-cols-[calc(25%_-_12px)]');
-      });
-
-      it('카드에 별도 너비 클래스가 없어야 한다 (grid가 제어)', () => {
-        const card = findIterationCard(layout);
-        expect(card.props.className ?? '').not.toContain('w-[');
-        expect(card.props.className ?? '').not.toContain('flex-none');
-      });
-    });
-
-    describe('다음 버튼 responsive 오버라이드', () => {
-      it('모바일(0-639)에서 +2 기준 disabled 조건이 있어야 한다', () => {
-        const nextBtn = findNextButton(layout);
-        expect(nextBtn).not.toBeNull();
-        expect(nextBtn.responsive['0-639'].props.disabled).toContain('+ 2');
-      });
-
-      it('태블릿(640-1023)에서 +3 기준 disabled 조건이 있어야 한다', () => {
-        const nextBtn = findNextButton(layout);
-        expect(nextBtn.responsive['640-1023'].props.disabled).toContain('+ 3');
-      });
-
-      it('데스크톱 기본값은 +4 기준이어야 한다', () => {
-        const nextBtn = findNextButton(layout);
-        expect(nextBtn.props.disabled).toContain('+ 4');
-        expect(nextBtn.props.className).toContain('+ 4');
-      });
-
-      it('모바일 disabled 가 기본값과 같은 컬렉션을 세야 한다', () => {
-        const nextBtn = findNextButton(layout);
-        expect(nextBtn.responsive['0-639'].props.disabled).toContain(countedCollection(nextBtn));
-      });
-
-      it('태블릿 disabled 가 기본값과 같은 컬렉션을 세야 한다', () => {
-        const nextBtn = findNextButton(layout);
-        expect(nextBtn.responsive['640-1023'].props.disabled).toContain(countedCollection(nextBtn));
-      });
-    });
+  // @scenario case=c06
+  // @effects rails_share_product_rail_container
+  it('루트가 ProductRail 이고 제목·넘김 단추 이름을 넘긴다', () => {
+    expect(rails).toHaveLength(1);
+    const rail = rails[0];
+    expect(rail.type).toBe('composite');
+    expect(rail.props.title).toBe(title);
+    expect(rail.props.prevLabel).toBe('$t:common.prev');
+    expect(rail.props.nextLabel).toBe('$t:common.next');
+    expect(rail.props.roleDescription).toBe('$t:shop.product_rail.roledescription');
   });
 
-  describe('공통 구조 검증', () => {
-    it.each(partials)('$name: 컨테이너가 overflow-x-hidden이어야 한다', ({ layout }) => {
-      const container = findScrollContainer(layout);
-      expect(container).not.toBeNull();
-      expect(container.props.className).toContain('overflow-x-hidden');
-    });
+  // @scenario case=c07
+  // @effects rails_share_product_rail_container
+  it('자식이 그 줄 데이터의 ProductCard 반복이다', () => {
+    const rail = rails[0];
+    const repeated = collect(rail.children, (n) => !!n.iteration);
+    expect(repeated).toHaveLength(1);
+    expect(JSON.stringify(repeated[0].iteration)).toContain(`${source}.data`);
+    const cards = collect(repeated[0], (n) => n.name === 'ProductCard');
+    expect(cards).toHaveLength(1);
+    expect(cards[0].props.product).toBe('{{product}}');
+    expect(cards[0].props.shopBase).toContain('_global.shopBase');
+  });
 
-    it.each(partials)('$name: isolatedState에 scrollIdx가 정의되어야 한다', ({ layout }) => {
-      expect(layout.isolatedState).toBeDefined();
-      expect(layout.isolatedState.scrollIdx).toBe(0);
-    });
+  // @scenario case=c08
+  // @effects rails_hide_when_empty
+  it('줄이 비면 통째로 그리지 않는다', () => {
+    const rail = rails[0];
+    expect(String(rail.if ?? '')).toContain(`${source}.data`);
+    expect(String(rail.if ?? '')).toContain('length > 0');
+  });
 
-    it.each(partials)('$name: if 조건으로 데이터 없을 때 비노출 처리되어야 한다', ({ layout }) => {
-      expect(layout.if).toBeDefined();
-      expect(layout.if).toContain('.length > 0');
-    });
+  // @scenario case=c09
+  // @effects rails_have_no_legacy_button_scroll
+  it('옛 단추형 구조가 레이아웃에 남아 있지 않다', () => {
+    const text = JSON.stringify(partial);
+    expect(text).not.toContain('isolatedState');
+    expect(text).not.toContain('_isolated');
+    expect(text).not.toContain('scrollIntoView');
+    expect(text).not.toContain('grid-flow-col');
+    expect(collect(partial, (n) => typeof n.props?.id === 'string' && /-product-/.test(n.props.id))).toHaveLength(0);
+  });
+});
+
+describe('상품 상세의 관련 상품 줄', () => {
+  const show = loadJson('shop/show.json');
+
+  // @scenario case=c10
+  // @effects related_rail_loaded_on_product_detail
+  it('관련 상품 데이터소스가 회원·비회원 모두에게 8개까지 받고 실패해도 빈 목록이다', () => {
+    const source = (show.data_sources ?? []).find((d: any) => d.id === 'relatedProducts');
+    expect(source).toBeTruthy();
+    expect(source.endpoint).toBe('/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/related?limit=8');
+    expect(source.auth_mode).toBe('optional');
+    expect(source.loading_strategy).toBe('progressive');
+    expect(source.fallback).toEqual({ data: [] });
+  });
+
+  // @scenario case=c11
+  // @effects related_rail_loaded_on_product_detail
+  it('검색 로봇용 렌더에도 관련 상품이 실리고, 관련 줄이 인기 줄 앞에 온다', () => {
+    expect(show.meta.seo.data_sources).toContain('relatedProducts');
+
+    const text = JSON.stringify(show);
+    const related = text.indexOf('_related_products');
+    const popular = text.indexOf('_popular_products');
+    expect(related).toBeGreaterThan(-1);
+    expect(popular).toBeGreaterThan(related);
+  });
+
+  // @scenario case=c12
+  // @effects rails_have_no_legacy_button_scroll
+  it('쓰이지 않던 계산값(popularItems)을 지웠다', () => {
+    expect(JSON.stringify(show)).not.toContain('popularItems');
   });
 });

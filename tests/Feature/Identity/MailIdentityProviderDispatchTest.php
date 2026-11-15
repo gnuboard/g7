@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Identity;
 
+use App\Extension\IdentityVerification\IdentityVerificationManager;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -95,6 +96,8 @@ class MailIdentityProviderDispatchTest extends TestCase
     public function test_unknown_purpose_falls_back_to_provider_default(): void
     {
         // 코어가 정의하지 않은 purpose 로 challenge 요청 → identity.default 정의로 폴백
+        // 공개 요청은 등록된 목적만 받는다(7.1.6) — 확장이 등록하지만 알림 정의는 두지 않은 목적을 흉내 낸다
+        app(IdentityVerificationManager::class)->registerPurpose('adult_verification', ['label' => '성인 인증'], 'plugin', 'test-plugin');
         $response = $this->postJson('/api/identity/challenges', [
             'purpose' => 'adult_verification',
             'target' => ['email' => 'fallback@example.com'],

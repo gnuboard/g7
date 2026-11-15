@@ -78,6 +78,15 @@ interface MileageTransactionRepositoryInterface
     public function existsEarnForOption(int $orderOptionId): bool;
 
     /**
+     * 회원에게 그 유형의 거래가 있는지 잠금 조회로 확인합니다. (「한 회원에 한 번」 지급용 — 트랜잭션 안에서 부른다)
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $type  거래 유형 값
+     * @return bool 있으면 true
+     */
+    public function existsForUserByTypeForUpdate(int $userId, string $type): bool;
+
+    /**
      * 해당 주문옵션의 구매 적립(purchase_earn) 총액을 반환합니다 (금액 델타 멱등 기준).
      *
      * 관리자 수동 지급(admin_earn)·복원(refund_restore/order_cancel_restore)은 제외하고

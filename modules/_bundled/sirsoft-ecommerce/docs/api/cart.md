@@ -1008,3 +1008,13 @@ HTTP/1.1 200
 **설명** 장바구니 아이템(`id`)의 수량만 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@updateQuantity`가 `CartService::updateQuantity()`로 수량을 반영한 뒤 프론트가 별도 refetch 없이 화면을 갱신할 수 있도록 `index`와 동일한 전체 목록·계산 결과(`items`·`calculation`)를 함께 반환합니다. 수량 상한은 관리자 환경설정의 장바구니 수량 상한(기본 99)을 따르며, 재고 부족·판매 중지·구매수량 한도 위반은 사유별 422, 항목/권한 문제는 404/403으로 매핑됩니다. 장바구니의 수량 증감(+/-) 컨트롤에 사용합니다. 비회원인데 cart_key가 없거나 형식(`ck_`+32자)이 틀리면 400을 반환합니다(조회·담기와 같은 판정 — 키 없는 요청이 주인 없는 행을 고치지 못하게).
 
 
+## 요청 제한 (1.3.5+)
+
+장바구니 **쓰기** 라우트는 한 제한기(`sirsoft-ecommerce.cart-write`, 기본 분당 120회)로 합산한다.
+
+| 대상 | 라우트 |
+| --- | --- |
+| 센다 | `POST /cart/key` · `POST /cart/merge` · `POST /cart` · `PATCH /cart/{id}/quantity` · `PUT /cart/{id}/option` · `DELETE /cart/{id}` · `DELETE /cart` · `DELETE /cart/all` |
+| 세지 않는다 | `GET /cart` · `POST /cart/query` · `GET /cart/count` (조회) |
+
+한도는 모듈 설정 `rate_limits`(`config/ecommerce.php`)의 분당 횟수이고, 로그인 회원은 회원 단위로·비회원은 IP 단위로 센다 — 같은 IP 의 회원끼리, 회원과 비회원끼리 서로의 한도를 깎지 않는다. 넘으면 `429` 와 `Retry-After` 헤더(남은 초)를 돌려준다 (문구는 로그인 요청 제한과 같은 `auth.too_many_attempts`).

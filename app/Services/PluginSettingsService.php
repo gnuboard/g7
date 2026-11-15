@@ -424,6 +424,12 @@ class PluginSettingsService
                 $settings = $this->excludeSensitiveFields($settings, $schema);
             }
 
+            // 확장이 공개 설정에서 키를 더 뺄 수 있는 지점 (배열이 아닌 반환값은 버린다)
+            $filtered = HookManager::applyFilters('core.plugin_settings.filter_frontend_settings', $settings, $identifier);
+            if (is_array($filtered)) {
+                $settings = $filtered;
+            }
+
             if (! empty($settings)) {
                 $result[$identifier] = $settings;
             }

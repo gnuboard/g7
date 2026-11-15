@@ -57,7 +57,8 @@ describe('A1-④ — 쿠폰 모달 다통화 환산', () => {
   // @effects download_modal_rate_stays_percent
   it('정률(rate) 할인은 % 표시를 유지한다(통화 무관)', () => {
     expect(modalText).toContain("coupon.discount_type === 'rate'");
-    expect(modalText).toContain('{{coupon.discount_value}}%');
+    // 소수 끝 0(10.00)이 붙지 않게 숫자로 바꿔 그린다
+    expect(modalText).toContain('{{Number(coupon.discount_value)}}%');
   });
 
   // @scenario surface=download_modal

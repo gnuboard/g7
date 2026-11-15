@@ -7,7 +7,7 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 193개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 196개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -17,9 +17,9 @@
 | `errors` | 6개 |
 | `mypage` | 15개 |
 | `page` | 1개 |
-| `partials` | 144개 |
+| `partials` | 146개 |
 | `search` | 1개 |
-| `shop` | 11개 |
+| `shop` | 12개 |
 | `users` | 2개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
@@ -179,6 +179,7 @@
 | `_modal_cart_option_change` | `partials` | partial | - |
 | `_modal_cart_unavailable` | `partials` | partial | - |
 | `_modal_coupon_download` | `partials` | partial | - |
+| `_modal_quick_option` | `partials` | partial | - |
 | `_modal_temp_order_not_found` | `partials` | partial | - |
 | `_admin_edit_link` | `partials` | partial | - |
 | `_header` | `partials` | partial | - |
@@ -192,17 +193,18 @@
 | `_modal_review_image` | `partials` | partial | - |
 | `_price_mobile` | `partials` | partial | - |
 | `_purchase_card` | `partials` | partial | - |
-| `_review_avatar` | `partials` | partial | - |
+| `_purchase_options` | `partials` | partial | - |
+| `_review_card` | `partials` | partial | - |
 | `_tab_detail` | `partials` | partial | - |
 | `_tab_qna` | `partials` | partial | - |
 | `_tab_reviews` | `partials` | partial | - |
-| `_category_breadcrumb` | `partials` | partial | - |
-| `_category_filter` | `partials` | partial | - |
 | `_new_products` | `partials` | partial | - |
 | `_popular_products` | `partials` | partial | - |
 | `_product_grid` | `partials` | partial | - |
 | `_recent_products` | `partials` | partial | - |
+| `_related_products` | `partials` | partial | - |
 | `_search_filter_bar` | `partials` | partial | - |
+| `_sort_bar` | `partials` | partial | - |
 | `index` | `search` | 화면 | `_user_base` |
 | `cart` | `shop` | 화면 | `_user_base` |
 | `category` | `shop` | 화면 | `_user_base` |
@@ -214,6 +216,7 @@
 | `index` | `shop` | 화면 | `_user_base` |
 | `order_complete` | `shop` | 화면 | `_user_base` |
 | `reorder` | `shop` | 화면 | `_user_base` |
+| `reviews` | `shop` | 화면 | `_user_base` |
 | `show` | `shop` | 화면 | `_user_base` |
 | `posts` | `users` | 화면 | `_user_base` |
 | `show` | `users` | 화면 | `_user_base` |
@@ -305,6 +308,7 @@
 | `/board/:slug/:id` | `board/show` | - |
 | `/board/:slug/:id/edit` | `board/form` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products` | `shop/index` | - |
+| `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/reviews` | `shop/reviews` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/category/:slug` | `shop/category` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products/:product_code` | `shop/show` | - |
 | `/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/cart` | `shop/cart` | - |
@@ -377,6 +381,8 @@
 
 라우트를 바꾸면 `php artisan template:update sirsoft-basic --force` 로 반영합니다. 빌드는
 필요 없습니다.
+
+**전체 화면 본인인증의 [다시 보내기] 는 정책·수단을 싣는다**(가입·비밀번호 찾기, 코어 7.1.6~): `auth/identity_challenge` 는 상태 조회(`GET /api/identity/challenges/{id}`) 성공 시 응답의 `provider_id`·`policy_key` 를 `_local.provider_id`·`_local.policy_key` 에 담고, 재전송 요청 본문 2곳(코드 입력형·링크형)에 함께 싣습니다. 코어 7.1.6 은 정책이 지정한 수단으로 받은 인증만 인정하고 정책 키가 있으면 그 수단으로만 발급하므로(다른 수단이면 422), 이 두 값을 빼면 다시 보낸 인증이 기본 수단(메일)으로 발급되어 정책을 통과하지 못합니다. 잠금: `__tests__/layouts/identity-challenge-target-and-policy.test.ts`.
 <!-- @intent END -->
 
 ## 확장 오버라이드
@@ -603,10 +609,11 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _popular_products.g7.html (인기 상품)
 │   │       ├── _new_products.g7.html (신상품)
 │   │       ├── _recent_products.g7.html (최근 본 상품)
-│   │       ├── _category_filter.g7.html (카테고리 필터)
-│   │       ├── _category_breadcrumb.g7.html (카테고리 경로)
+│   │       ├── _related_products.g7.html (관련 상품 가로 줄)
+│   │       ├── _sort_bar.g7.html (정렬 줄 — 목록·분류 공용)
 │   │       └── _search_filter_bar.g7.html (검색/필터 바)
 │   ├── category.g7.html (카테고리 상품)
+│   ├── reviews.g7.html (리뷰 모아보기 — 전체 상품 후기, 조건은 주소 쿼리)
 │   ├── show.g7.html (상품 상세)
 │   │   └── partials/shop/detail/
 │   │       ├── _header.g7.html (상품 헤더)
@@ -616,7 +623,8 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _tab_detail.g7.html (상세 탭)
 │   │       ├── _tab_reviews.g7.html (리뷰 탭)
 │   │       ├── _tab_qna.g7.html (Q&A 탭)
-│   │       ├── _review_avatar.g7.html (리뷰 아바타)
+│   │       ├── _review_card.g7.html (후기 카드 — 리뷰 탭·리뷰 모아보기 공용)
+│   │       ├── _purchase_options.g7.html (구매 옵션 — 구매 카드·바텀시트 공용)
 │   │       ├── _modal_cart_added.g7.html (장바구니 추가 확인)
 │   │       ├── _modal_coupon_download_confirm.g7.html (쿠폰 다운로드 확인)
 │   │       ├── _modal_login_required.g7.html (로그인 필요)
@@ -632,6 +640,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _cart_summary.g7.html (장바구니 요약)
 │   │       ├── _modal_cart_delete_confirm.g7.html (삭제 확인)
 │   │       ├── _modal_cart_option_change.g7.html (옵션 변경)
+│   │       ├── _modal_quick_option.g7.html (상품 카드 옵션 선택 창 — 바탕 레이아웃이 선언, 목록 화면 공용)
 │   │       ├── _modal_cart_unavailable.g7.html (품절 안내)
 │   │       └── _modal_temp_order_not_found.g7.html (임시주문 없음)
 │   ├── checkout.g7.html (결제)
@@ -973,9 +982,8 @@ extends: _user_base
 data_sources: [products (상품 API), categories (카테고리)]
 slots.content:
   └── Container
-      ├── _category_breadcrumb.g7.html (경로)
       ├── _search_filter_bar.g7.html (검색/정렬)
-      ├── _category_filter.g7.html (카테고리 사이드)
+      ├── _sort_bar.g7.html (정렬 줄)
       ├── _product_grid.g7.html (상품 그리드, ProductCard iteration)
       ├── _popular_products.g7.html (인기 상품)
       ├── _new_products.g7.html (신상품)

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
+use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -28,9 +29,12 @@ class PublicProductRelatedRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];
+
+        // 훅을 통한 validation rules 확장
+        return HookManager::applyFilters('sirsoft-ecommerce.product.related_validation_rules', $rules, $this);
     }
 
     /**

@@ -873,6 +873,40 @@
                                             ]
                                         },
                                         {
+                                            "comment": "배송 조회 — 송장 조회 주소가 있는 주문만. 택배사 조회 화면을 새 창으로 연다",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{!!order.shipping?.tracking_url}}",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "href": "{{order.shipping?.tracking_url}}",
+                                                "target": "_blank",
+                                                "rel": "noopener noreferrer",
+                                                "className": "inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "truck",
+                                                        "size": "sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:mypage.orders.track_shipping"
+                                                }
+                                            ]
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "A",
                                             "responsive": {

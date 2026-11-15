@@ -29,6 +29,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CanvasOverlayProps, OverlayBox } from '../../spec/canvasOverlayRegistry';
 import type { EditorNode } from '../../utils/layoutTreeUtils';
 import { TABLE_INPLACE } from '../../utils/overlayZIndex';
+import { ensureEmptyCellStyle } from '../../utils/editorRuntimeStyles';
 import {
   treeToGrid,
   cellRefAt,
@@ -97,24 +98,12 @@ const CORE_PLUS_BAND = 44;
 // 빈 셀 클릭 타겟 최소 크기(px) — 오버레이 셀-픽 영역 보장(셀 DOM 보정과 별개 안전망).
 const MIN_CELL_PICK = 18;
 
-/**
- * 편집기 캔버스에서만 빈 표 셀이 1px 로 찌부러지지 않도록 최소 크기를 부여하는 1회 주입 CSS.
- *  `.g7le-preview-frame` 안의 셀에만
- * 적용되며 저장 content·런타임 사용자 페이지에는 영향이 없다. 내용이 있는 셀은 이미 이 크기를
- * 초과하므로 무영향이고, 표 frame 전체 크기(상단 여백 등)와도 무관하다 — 캔버스 크기 출렁임의
- * 원인은 본 CSS 가 아니라 PreviewCanvas 의 VH_EXPAND 로직이었다(2026-06-06 측정으로 분리 확인).
- */
-const EMPTY_CELL_STYLE_ID = 'g7le-table-inplace-empty-cell-style';
-function ensureEmptyCellStyle(): void {
-  if (typeof document === 'undefined') return;
-  if (document.getElementById(EMPTY_CELL_STYLE_ID)) return;
-  const el = document.createElement('style');
-  el.id = EMPTY_CELL_STYLE_ID;
-  el.textContent =
-    '.g7le-preview-frame td[data-editor-name],.g7le-preview-frame th[data-editor-name]{min-width:56px;height:38px;}' +
-    '.g7le-preview-frame table[data-editor-name]{min-width:120px;}';
-  document.head.appendChild(el);
-}
+// 편집기 캔버스에서만 빈 표 셀이 1px 로 찌부러지지 않도록 최소 크기를 부여하는 1회 주입 CSS 는
+// `ensureEmptyCellStyle`(editorRuntimeStyles, 키 `g7le-table-inplace-empty-cell-style`)가 붙인다 —
+// <style> 요소를 만들지 않는다(엄격한 스타일 정책 호환). `.g7le-preview-frame` 안의 셀에만
+// 적용되며 저장 content·런타임 사용자 페이지에는 영향이 없다. 내용이 있는 셀은 이미 이 크기를
+// 초과하므로 무영향이고, 표 frame 전체 크기(상단 여백 등)와도 무관하다 — 캔버스 크기 출렁임의
+// 원인은 본 CSS 가 아니라 PreviewCanvas 의 VH_EXPAND 로직이었다(2026-06-06 측정으로 분리 확인).
 
 export function TableInplaceOverlay({
   node,

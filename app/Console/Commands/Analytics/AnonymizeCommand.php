@@ -61,7 +61,7 @@ class AnonymizeCommand extends Command
             && ! $this->unifiedConfirm(__('analytics.console.anonymize.confirm'))) {
             $this->info(__('analytics.console.anonymize.cancelled'));
 
-            return self::SUCCESS;
+            return $this->confirmAbortExitCode();
         }
 
         $run = $service->anonymize([

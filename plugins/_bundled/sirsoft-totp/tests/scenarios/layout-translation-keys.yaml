@@ -12,6 +12,7 @@ axes:
 effects:
   - layout_translation_keys_resolve_in_all_locales
   - dynamic_and_orphan_excluded
+  - notification_partials_in_scope   # 보안 알림 카드·알림 모달 partial 4종이 설정 화면에서 닿아 판정 모집단에 든다(경로가 어긋나 고아로 빠지면 새 키가 검사 없이 지나간다)
 
 test_files:
   - plugins/_bundled/sirsoft-totp/resources/js/__tests__/layouts/layout-translation-keys.test.ts

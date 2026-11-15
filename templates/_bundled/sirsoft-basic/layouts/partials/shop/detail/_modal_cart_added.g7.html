@@ -18,8 +18,8 @@
           <!-- 계속 둘러보기 — 이미 담긴 뒤이므로 구매 카드에 쌓아 둔 선택을 비워야 한다. 안 그러면 같은 것을 한 번 더 담게 된다 -->
           <sequence>
             <!-- 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) -->
-            <set-state target="$parent._local" :currentSelection="null" :additionalOptions="null"/>
-            <set-state target="$parent._local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}"/>
+            <set-state target="$parent._local" :currentSelection="null" :additionalOptions="null" :noOptionAdditionalSelections="null" :noOptionAdditionalCustomTexts="null" :noOptionAdditionalMultiCurrencyTotal="null"/>
+            <set-state target="$parent._local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :noOptionAdditionalSelections="{}" :noOptionAdditionalCustomTexts="{}" :noOptionAdditionalTotal="0" :noOptionTotalMultiCurrency="null"/>
             <close-modal/>
           </sequence>
         </on>

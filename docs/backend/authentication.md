@@ -122,6 +122,42 @@ G7은 **슬라이딩 만료(Sliding Expiration)** 방식으로 토큰 만료 시
 - **기본값**: 30분
 - **범위**: 0~3600분 (0은 무한대)
 
+### 연장은 조건부 UPDATE 로만 (7.1.6)
+
+미들웨어는 컨트롤러가 실행된 **뒤**에 만료 시각을 늘립니다. 그 사이 컨트롤러가 같은 토큰을 지웠다면(로그아웃·토큰 갱신)
+그 토큰 객체를 `save()` 하면 Eloquent 가 지워진 행을 INSERT 로 되살립니다 — 로그아웃한 옛 토큰이 계속 통하던
+KVE-2026-3187 의 원인입니다. 그래서 연장은 `UserRepositoryInterface::extendTokenExpiration($tokenId, $expiresAt)`
+(`WHERE id = ?` UPDATE, 0행이면 `false`)로만 하고, 메모리의 토큰이 이미 지워졌으면(`! $token->exists`) 건너뜁니다.
+연장에 성공했을 때만 메모리 값과 세션 수명을 맞춥니다. 요청 뒤에 토큰을 고치는 다른 코드도 `save()` 대신 조건부 갱신을 씁니다.
+
+### 토큰을 폐기하면 web 세션도 지운다 (7.1.6)
+
+모든 기기 로그아웃, 비밀번호 변경 기록 지점(`PasswordChangeService::recordChange()` — 본인 변경·관리자 지정·메일 재설정·
+터미널 재설정 공통), Active 외 상태 전환(정지·휴면·탈퇴·삭제), 비밀번호 만료의 강제 폐기는 토큰 삭제 옆에서
+`UserRepositoryInterface::deleteSessionsByUserIds($ids, $exceptSessionId)` 로 그 회원의 web 세션도 지웁니다. 본인이
+비밀번호를 바꾸며 현재 토큰을 남기는 경우는 현재 세션을 제외합니다.
+
+- 세션 드라이버가 `database` 일 때만 `sessions` 표에서 지웁니다. 다른 드라이버(`file`·`redis`·`cookie` 등)는 회원별로
+  세션을 찾을 수 없어 0 을 돌려주고 debug 로그만 남깁니다 — 그런 사이트는 세션 수명(`session.lifetime`)이 끝날 때까지
+  web 세션이 남습니다.
+- API 그룹은 `auth:sanctum` 이 세션보다 먼저 판정하므로 남은 세션으로 API 가 열리지는 않습니다. 남은 세션이 쓰이는 곳은
+  web 그룹(`Auth::user()` 를 읽는 미들웨어 등)입니다.
+
+### 로그인 2단계 오답·재발송 규칙 (7.1.6)
+
+- 2단계 코드 오답(`INVALID_CODE`·`MAX_ATTEMPTS`)은 `core.auth.login_failed` 를 `stage = 'two_factor'` 문맥(`user_id`·
+  `challenge_id` 포함)으로 발행해 **비밀번호 오답과 같은 로그인 실패 횟수**에 더합니다. 그래서 같은 잠금 기준·잠김 안내(423)·
+  「비밀번호 찾기로 해제」가 그대로 적용됩니다. 잠긴 계정은 코드를 확인하기 전에 423 입니다. 활동 로그 문구는
+  `activity_log.description.auth_two_factor_failed`.
+- 실패 횟수는 `UserRepository::incrementFailedAttempts()` 의 단일 UPDATE(`failed_login_attempts = CASE … + 1 END`)로
+  셉니다 — 읽고 +1 해 저장하던 방식은 동시 오답에서 횟수를 잃어 잠금을 피할 수 있었습니다.
+- 재발송(`…/login/two-factor/resend`): 수단이 코드를 보내지 않으면(`ChallengeDeliveryAwareProviderInterface::deliversChallengeCode()`
+  가 `false`, 또는 challenge 채널이 `app`) 422 `auth.two_factor_resend_not_supported`, 메일은 직전 발송 뒤 60초 안이면 429
+  `auth.two_factor_resend_cooldown`(`Retry-After`)입니다.
+- 현재 비밀번호 재확인(`/api/me/verify-password`, 확장의 비밀번호 재확인)은 `PasswordReconfirmationService::attempt()` 를
+  씁니다 — 회원 단위 키 `password-reconfirm:{userId}`, 상한 `security.max_login_attempts`, 대기 `security.login_lockout_time` 분.
+  상한을 넘으면 비밀번호를 계산하기 전에 `PasswordReconfirmThrottledException`(429)입니다.
+
 ### 구현 파일
 
 - **미들웨어**: `app/Http/Middleware/RefreshTokenExpiration.php`

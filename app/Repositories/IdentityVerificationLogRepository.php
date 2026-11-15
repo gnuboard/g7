@@ -65,6 +65,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      * @param  int|null  $userId  사용자 ID (null 가능)
      * @param  string|null  $targetHash  대상 해시 (null 가능)
      * @param  int  $withinMinutes  조회 범위 (분)
+     * @param  string|null  $providerId  정책이 지정한 인증 수단 (null 이면 수단 무관)
      * @return IdentityVerificationLog|null 가장 최근 검증 로그 또는 null
      */
     public function findRecentVerified(
@@ -72,11 +73,13 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
         ?int $userId,
         ?string $targetHash,
         int $withinMinutes,
+        ?string $providerId = null,
     ): ?IdentityVerificationLog {
         $query = IdentityVerificationLog::query()
             ->where('purpose', $purpose)
             ->where('status', IdentityVerificationStatus::Verified->value)
-            ->where('verified_at', '>=', Carbon::now()->subMinutes(max(0, $withinMinutes)));
+            ->where('verified_at', '>=', Carbon::now()->subMinutes(max(0, $withinMinutes)))
+            ->when($providerId !== null, fn ($q) => $q->where('provider_id', $providerId));
 
         if ($userId !== null) {
             $query->where('user_id', $userId);
@@ -87,6 +90,32 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
         }
 
         return $query->orderByDesc('verified_at')->first();
+    }
+
+    /**
+     * 같은 프로바이더·수신 대상·목적으로 주어진 시각 이후에 발행된 가장 최근 challenge 를 찾습니다.
+     * 발송이 실패로 끝난 challenge 는 제외합니다.
+     *
+     * @param  string  $providerId  프로바이더 id
+     * @param  string  $targetHash  수신 대상 sha256 해시
+     * @param  string  $purpose  IDV 목적
+     * @param  \DateTimeInterface  $since  이 시각 이후 발행분만
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findLatestRequestedSince(
+        string $providerId,
+        string $targetHash,
+        string $purpose,
+        \DateTimeInterface $since,
+    ): ?IdentityVerificationLog {
+        return IdentityVerificationLog::query()
+            ->where('provider_id', $providerId)
+            ->where('target_hash', $targetHash)
+            ->where('purpose', $purpose)
+            ->where('status', '!=', IdentityVerificationStatus::Failed->value)
+            ->where('created_at', '>', $since)
+            ->orderByDesc('created_at')
+            ->first();
     }
 
     /**
@@ -166,6 +195,128 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             ->update(['status' => IdentityVerificationStatus::Expired->value]);
 
         return $affected > 0;
+    }
+
+    /**
+     * 진행 중 challenge 의 시도 횟수를 상한 안에서만 1 올립니다.
+     *
+     * @param  string  $id  challenge id
+     * @return int|null 올린 뒤 시도 횟수 (올리지 못했으면 null)
+     */
+    public function incrementAttemptsIfAllowed(string $id): ?int
+    {
+        $affected = IdentityVerificationLog::query()
+            ->whereKey($id)
+            ->whereColumn('attempts', '<', 'max_attempts')
+            ->whereIn('status', [
+                IdentityVerificationStatus::Requested->value,
+                IdentityVerificationStatus::Sent->value,
+            ])
+            ->increment('attempts');
+
+        if ($affected === 0) {
+            return null;
+        }
+
+        return (int) IdentityVerificationLog::query()->whereKey($id)->value('attempts');
+    }
+
+    /**
+     * 진행 중이고 아직 확인되지 않은 challenge 만 확인 완료로 바꿉니다.
+     *
+     * @param  string  $id  challenge id
+     * @param  array<string, mixed>  $attributes  함께 저장할 값
+     * @return bool 이번 호출이 바꿨으면 true
+     */
+    public function markVerifiedIfPending(string $id, array $attributes): bool
+    {
+        return IdentityVerificationLog::query()
+            ->whereKey($id)
+            ->whereIn('status', [
+                IdentityVerificationStatus::Requested->value,
+                IdentityVerificationStatus::Sent->value,
+                IdentityVerificationStatus::Processing->value,
+            ])
+            ->whereNull('verified_at')
+            ->update($attributes) > 0;
+    }
+
+    /**
+     * 진행 중인 challenge 만 실패(잠금)로 바꿉니다.
+     *
+     * @param  string  $id  challenge id
+     * @return bool 이번 호출이 바꿨으면 true
+     */
+    public function markFailedIfPending(string $id): bool
+    {
+        return IdentityVerificationLog::query()
+            ->whereKey($id)
+            ->whereIn('status', [
+                IdentityVerificationStatus::Requested->value,
+                IdentityVerificationStatus::Sent->value,
+            ])
+            ->update(['status' => IdentityVerificationStatus::Failed->value]) > 0;
+    }
+
+    /**
+     * 진행 중인 challenge 만 취소로 바꿉니다.
+     *
+     * @param  string  $id  challenge id
+     * @return bool 이번 호출이 바꿨으면 true
+     */
+    public function markCancelledIfPending(string $id): bool
+    {
+        return IdentityVerificationLog::query()
+            ->whereKey($id)
+            ->whereIn('status', [
+                IdentityVerificationStatus::Requested->value,
+                IdentityVerificationStatus::Sent->value,
+                IdentityVerificationStatus::Processing->value,
+            ])
+            ->update(['status' => IdentityVerificationStatus::Cancelled->value]) > 0;
+    }
+
+    /**
+     * 확인 완료·미소비·미만료 결과만 소비로 표시합니다.
+     *
+     * @param  string  $id  challenge id
+     * @param  \DateTimeInterface  $consumedAt  소비 시각
+     * @return bool 이번 호출이 소비했으면 true
+     */
+    public function consumeIfUnconsumed(string $id, \DateTimeInterface $consumedAt): bool
+    {
+        return IdentityVerificationLog::query()
+            ->whereKey($id)
+            ->where('status', IdentityVerificationStatus::Verified->value)
+            ->whereNull('consumed_at')
+            ->where('expires_at', '>', Carbon::now())
+            ->update(['consumed_at' => $consumedAt]) > 0;
+    }
+
+    /**
+     * 이 요청이 남긴 소비 표시만 되돌립니다.
+     *
+     * @param  string  $id  challenge id
+     * @param  \DateTimeInterface  $consumedAt  소비할 때 쓴 시각
+     * @return bool 되돌렸으면 true
+     */
+    public function releaseConsumption(string $id, \DateTimeInterface $consumedAt): bool
+    {
+        return IdentityVerificationLog::query()
+            ->whereKey($id)
+            ->where('consumed_at', $consumedAt)
+            ->update(['consumed_at' => null]) > 0;
+    }
+
+    /**
+     * challenge 를 행 잠금으로 읽습니다.
+     *
+     * @param  string  $id  challenge id
+     * @return IdentityVerificationLog|null 조회 결과
+     */
+    public function findByIdForUpdate(string $id): ?IdentityVerificationLog
+    {
+        return IdentityVerificationLog::query()->whereKey($id)->lockForUpdate()->first();
     }
 
     /**

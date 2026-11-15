@@ -67,6 +67,9 @@ class PathGuardTest extends TestCase
             '구분자 혼용' => ['C:\\x\\layouts', 'C:/x/layouts/a.json', true],
             '드라이브 대소문자 차이' => ['C:/x/layouts', 'c:/x/layouts/a.json', true],
             'Windows 형제 폴더' => ['C:\\x\\layouts', 'C:\\x\\layouts-evil\\a.json', false],
+            // symfony/filesystem 7.4.23 미만은 `x://` 앞을 루트로 보고 그 뒤 `..` 를 접어 밖의 경로를 안으로 판정했다
+            '스킴 꼴 조각 뒤 .. 로 빠져나감' => ['/srv/x/layouts', '/srv/x/layouts/../../etc/x://../passwd', false],
+            '하위 폴더의 스킴 꼴 조각 뒤 .. 로 빠져나감' => ['/srv/x/layouts', '/srv/x/layouts/a/x://../../../../etc/passwd', false],
         ];
     }
 

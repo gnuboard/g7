@@ -89,6 +89,7 @@ return [
         'base_currency_rule_missing' => '基本通貨のマイレージ使用単位が設定されていないため、マイレージを使用できません。',
         'insufficient_for_payment_complete' => '会員のマイレージ残高が不足しているため、注文（:order_number）の状態を変更できません。この注文で差し引くマイレージ:amountが必要です。「使用マイレージを差し引く」をオフにすると差し引かずに変更できます。',
         'insufficient_for_payment_complete_bulk' => 'マイレージ残高が不足している注文が:count件あるため、一括変更を行いませんでした。（注文番号：:order_numbers）',
+        'below_min_product_total' => '商品合計 :amount 以上のご購入でマイレージをご利用いただけます。',
     ],
     'product_unavailable' => '現在販売していない商品です。',
     'min_purchase_qty_not_met' => '最小購入数量は:limit個です。(リクエスト::requested個)',

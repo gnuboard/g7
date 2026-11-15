@@ -34,6 +34,7 @@ use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\Support\LifecycleWarnings;
+use App\Extension\Support\StatusRestore;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
@@ -3706,11 +3707,13 @@ class TemplateManager implements TemplateManagerInterface
             // 판정돼 같은 업데이트를 다시 시도할 수도 없다. 파일을 되돌리지 못했으면(백업 삭제 뒤 실패·복원 실패) 새 버전
             // 파일에 맞춰 버전 칸을 그대로 둔다 — 반대 방향 불일치를 만들지 않는다. 업그레이드 스텝은 멱등이 규정이라
             // (upgrade-step-guide 원칙 4) 다시 시도할 때 처음부터 돌아도 안전하다.
-            $this->templateRepository->updateByIdentifier($identifier, [
+            // 이 쓰기가 실패하면(실패 원인이 DB 연결 고갈일 때 흔하다) 확장이 「업데이트 중」에 남고 그 예외가 아래의
+            // 원래 실패를 가린다 — 연결을 다시 맺고 한 번 더 시도하고, 그래도 안 되면 기록만 남기고 원래 예외로 넘어간다.
+            StatusRestore::run(fn () => $this->templateRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
                 ...($filesRestored && $recordedColumns !== [] ? Arr::only($record->getRawOriginal(), $recordedColumns) : []),
-            ]);
+            ]), 'template', $identifier);
 
             // 실패 경로도 bump 한다 — 백업 복원이 실패했거나 부분 반영된 디스크가 남을 수
             // 있어, 게시본을 새 버전으로 다시 굽는 쪽이 옛 게시본을 그대로 두는 쪽보다

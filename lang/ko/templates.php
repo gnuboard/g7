@@ -400,8 +400,7 @@ return [
         'validation' => [
             'file_required' => '업로드할 파일을 선택해 주세요.',
             'file_invalid' => '올바른 파일이 아닙니다.',
-            'file_image' => '이미지 파일만 업로드할 수 있습니다.',
-            'file_mimes' => '지원하는 이미지 형식이 아닙니다 (jpg, jpeg, png, gif, webp, svg).',
+            'file_extensions' => '올릴 수 없는 파일 형식입니다. 허용 형식: :extensions',
             'file_max' => '파일 크기는 최대 :max MB까지 허용됩니다.',
             'layout_name_max' => '레이아웃 이름은 최대 150자까지 허용됩니다.',
         ],

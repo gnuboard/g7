@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (630)
+- [코어](#코어) (635)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -123,6 +123,7 @@
 | `core.auth.password_expiry_notice` | action | 2 |  |
 | `core.auth.record_consents` | action | 4 |  |
 | `core.auth.register_validation_rules` | filter | 2 |  |
+| `core.auth.registering` | action | 3 |  |
 | `core.auth.reset_password_validation_rules` | filter | 2 |  |
 | `core.auth.two_factor_requested` | action | 2 |  |
 | `core.auth.two_factor_resend_validation_rules` | filter | 2 |  |
@@ -141,6 +142,7 @@
 | `core.content_media.before_delete` | action | 2 |  |
 | `core.content_media.before_upload` | action | 2 |  |
 | `core.content_media.filter_upload_file` | filter | 2 |  |
+| `core.csp.trusted_style_hosts` | filter | 1 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
 | `core.custom_translation.index_validation_rules` | filter | 2 |  |
@@ -342,6 +344,7 @@
 | `core.module_settings.before_delete_directory` | action | 1 |  |
 | `core.module_settings.before_reset` | action | 1 |  |
 | `core.module_settings.before_save` | action | 2 |  |
+| `core.module_settings.filter_frontend_settings` | filter | 2 |  |
 | `core.module_settings.filter_save_data` | filter | 2 |  |
 | `core.modules.activated` | action | 1 |  |
 | `core.modules.after_activate` | action | 2 |  |
@@ -442,6 +445,7 @@
 | `core.plugin_settings.before_delete_directory` | action | 1 |  |
 | `core.plugin_settings.before_reset` | action | 1 |  |
 | `core.plugin_settings.before_save` | action | 2 |  |
+| `core.plugin_settings.filter_frontend_settings` | filter | 2 |  |
 | `core.plugin_settings.filter_save_data` | filter | 2 |  |
 | `core.plugin_settings.update_rules` | filter | 3 | 호환용 옛 이름 → `core.plugin_settings.update_validation_rules` |
 | `core.plugin_settings.update_validation_rules` | filter | 3 |  |
@@ -572,6 +576,7 @@
 | `core.template.update_validation_rules` | filter | 2 |  |
 | `core.template_layout_attachment.after_upload` | action | 1 |  |
 | `core.template_layout_attachment.before_upload` | action | 3 |  |
+| `core.template_layout_attachment.filter_allowed_extensions` | filter | 2 |  |
 | `core.template_layout_attachment.filter_upload_file` | filter | 1 |  |
 | `core.template_layout_attachment.list_validation_rules` | filter | 2 |  |
 | `core.template_layout_attachment.upload_validation_rules` | filter | 2 |  |

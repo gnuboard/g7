@@ -3,6 +3,7 @@
 namespace App\Rules;
 
 use App\Support\OutboundProxy;
+use App\Support\OutboundUrlValidator;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
@@ -25,6 +26,7 @@ class ValidOutboundProxyUrl implements ValidationRule
      * @param  string  $attribute  검증 대상 필드명
      * @param  mixed  $value  검증 대상 값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -44,6 +46,13 @@ class ValidOutboundProxyUrl implements ValidationRule
             $fail(__('validation.settings.outbound_proxy_invalid', [
                 'schemes' => implode(', ', OutboundProxy::ALLOWED_SCHEMES),
             ]));
+
+            return;
+        }
+
+        // 링크로컬·클라우드 메타데이터 주소와 숫자로 감춘 IP 표기는 프록시가 될 수 없다 (사내 IP 의 프록시는 정상 구성).
+        if (OutboundUrlValidator::isRefusedConnectionUrl($value)) {
+            $fail(__('validation.settings.host_blocked'));
         }
     }
 }

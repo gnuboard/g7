@@ -1,0 +1,25 @@
+feature: 품절 제외 보기와 공용 정렬 줄
+
+description: |
+  상품 목록·분류·통합검색의 상품 탭에서 품절 상품을 빼고 본다. 체크 상태는 주소의 질의로 읽고 쓰고,
+  상품 데이터소스가 그 값을 서버로 넘긴다. 총 상품 수·초기화·품절 제외·정렬을 담은 줄은 목록과 분류 화면이 같은 조각을 쓴다.
+  시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06]
+  # c01: 전체 목록(검색·정렬 줄 조각 경유)과 분류 화면이 같은 조각을 include 하고 인라인 정렬 select 가 없다
+  # c02: 정렬은 보던 화면 주소에 남아 다른 조건을 지키며 1쪽으로 이동하고 정렬 값 다섯 개가 그대로다
+  # c03: 품절 제외 체크가 주소 쿼리를 읽고 같은 화면 주소로 1쪽 이동한다
+  # c04: 초기화 단추가 품절 제외도 조건으로 보고 보던 화면 주소로 조건을 모두 비운다
+  # c05: 전체 목록과 분류 화면의 상품 데이터소스가 품절 제외 쿼리를 API 로 넘긴다
+  # c06: 검색 API 주소에 실리고, 상품 탭에 체크가 있어 검색 조건을 지키며 첫 쪽으로 이동한다
+
+effects:
+  - sort_bar_partial_is_shared
+  - exclude_sold_out_check_reads_and_writes_query
+  - reset_button_counts_exclude_sold_out
+  - product_datasources_pass_exclude_sold_out
+  - search_products_tab_has_exclude_sold_out
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-exclude-sold-out.test.ts

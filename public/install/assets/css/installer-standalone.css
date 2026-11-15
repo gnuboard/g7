@@ -1,0 +1,95 @@
+/*
+ * 설치 마법사 독립 화면 전용 스타일
+ *
+ * index.php 의 화면 틀(installer.css) 없이 혼자 출력되는 두 화면이 쓴다.
+ *   - 안내 후 이동 화면: includes/functions.php showAlertAndRedirect()  → body.standalone-redirect
+ *   - 403 화면: views/403-forbidden.php                                   → body.standalone-forbidden
+ *
+ * 종전에는 각 화면이 <style> 블록을 직접 출력했다. 웹서버가 `Content-Security-Policy: style-src 'self'` 를
+ * 걸면 <style> 요소가 막혀 무스타일로 보이므로 파일로 옮겼다. 두 화면의 규칙이 섞이지 않게 body 클래스로 가둔다.
+ */
+
+/* ── 안내 후 이동 화면 ─────────────────────────────────────────── */
+body.standalone-redirect {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background: #f8fafc;
+    color: #111827;
+}
+
+.standalone-redirect main {
+    max-width: 480px;
+    padding: 32px;
+    text-align: center;
+}
+
+.standalone-redirect p {
+    line-height: 1.6;
+}
+
+.standalone-redirect .hint {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.standalone-redirect a {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+/* ── 403 화면 ──────────────────────────────────────────────────── */
+body.standalone-forbidden {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f5f5f5;
+}
+
+.standalone-forbidden .error-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    text-align: center;
+}
+
+.standalone-forbidden h1 {
+    color: #e74c3c;
+    margin-top: 0;
+}
+
+.standalone-forbidden p {
+    color: #666;
+    line-height: 1.6;
+}
+
+.standalone-forbidden .back-button {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.standalone-forbidden .back-button:hover {
+    background-color: #2980b9;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.standalone-forbidden { background-color: #1e293b; }
+    .standalone-forbidden .error-container { background: #334155; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+    .standalone-forbidden h1 { color: #f87171; }
+    .standalone-forbidden p { color: #cbd5e1; }
+    .standalone-forbidden .back-button { background-color: #60a5fa; }
+    .standalone-forbidden .back-button:hover { background-color: #3b82f6; }
+}

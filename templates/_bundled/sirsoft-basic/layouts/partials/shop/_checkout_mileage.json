@@ -96,6 +96,17 @@
             "name": "Div",
             "children": [
                 {
+                    "comment": "상품 합계가 운영자가 정한 기준에 못 미치면 마일리지를 쓸 수 없다 — 그 기준을 알려 준다",
+                    "id": "mileage_min_product_total_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(checkoutData.data.mileage?.usage_policy?.min_product_total_for_use ?? 0) > 0 && (checkoutData.data.calculation?.summary?.subtotal ?? 0) < (checkoutData.data.mileage?.usage_policy?.min_product_total_for_use ?? 0)}}",
+                    "props": {
+                        "className": "text-xs text-amber-700 dark:text-amber-400 mb-2"
+                    },
+                    "text": "$t:shop.checkout.mileage_min_product_total|amount={{(checkoutData.data.mileage?.usage_policy?.min_product_total_for_use ?? 0).toLocaleString()}}"
+                },
+                {
                     "comment": "최대 사용 가능 안내",
                     "type": "basic",
                     "name": "Div",

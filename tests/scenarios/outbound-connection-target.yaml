@@ -1,0 +1,51 @@
+feature: 관리자가 정하는 서버 연결 대상의 주소 관문 (#891)
+
+description: |
+  연결 테스트(웹소켓·S3·Redis·Memcached·메일·프록시)는 서버가 관리자가 넣은 주소로 직접 요청을 보낸다.
+  호스트 칸에 경로를 섞어 다른 주소를 만들거나, 링크로컬·클라우드 메타데이터 주소를 넣거나, 응답의 리다이렉트로
+  다른 곳에 닿게 할 수 있었다.
+
+  계약:
+    - 호스트 칸은 호스트명·IP 만(경로·쿼리·계정 정보·공백·포트 금지). 캐시 서버 칸은 소켓 절대 경로와 TLS 접두를 받는다.
+    - 링크로컬·메타데이터 주소는 「허용되지 않는 주소」 로 막는다. 숫자 대역·호스트명 목록 대조만 하고 이름 해석은 하지 않는다.
+    - localhost·사내 IP 는 정상 구성이라 그대로 허용한다.
+    - 연결 테스트는 리다이렉트를 따라가지 않는다.
+    - 각 탭 저장에도 같은 검사를 한다. 서비스는 연결 직전에 한 번 더 본다.
+    - 연결을 시도한 뒤의 실패 사유 원문은 그대로 보여 준다.
+
+axes:
+  case:
+    - metadata_address
+    - private_or_public_address
+    - name_resolving_to_metadata
+    - path_injection
+    - socket_or_tls_prefix
+    - path_injection__connection_test
+    - metadata_address__connection_test
+    - redirecting_endpoint__connection_test
+    - redirecting_endpoint__storage_test
+    - redirecting_endpoint__proxy_test
+    - path_injection__settings_save
+    - metadata_address__mail
+    - metadata_address__proxy
+    - private_or_public_address__connection_test
+    - numeric_disguised_address__url_field
+
+effects:
+  - metadata_and_link_local_hosts_detected
+  - private_and_public_hosts_stay_allowed
+  - no_dns_resolution_in_metadata_check
+  - host_field_rejects_path_query_userinfo
+  - socket_path_and_tls_prefix_allowed_only_for_cache_hosts
+  - metadata_target_is_refused_without_connecting
+  - connection_test_does_not_follow_redirects
+  - settings_save_applies_the_same_host_rules
+  - mail_host_follows_the_same_host_rules
+  - proxy_url_refuses_metadata_host
+  - url_fields_refuse_numeric_disguised_hosts
+
+test_files:
+  - tests/Unit/Support/OutboundMetadataHostTest.php
+  - tests/Unit/Rules/ConnectionHostTest.php
+  - tests/Feature/Security/ConnectionTargetGuardTest.php
+  - tests/Unit/Services/DriverConnectionTesterS3RedirectTest.php

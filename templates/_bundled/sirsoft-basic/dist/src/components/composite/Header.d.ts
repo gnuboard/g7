@@ -55,6 +55,10 @@ interface HeaderProps {
      * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
      */
     shopProductsHref?: string;
+    /**
+     * 봇 화면(seo-config header_nav)의 「리뷰」 링크 주소(예: "/shop/reviews") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다)
+     */
+    shopReviewsHref?: string;
     /** 추가 CSS 클래스 */
     className?: string;
     /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */

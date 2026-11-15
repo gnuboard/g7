@@ -31,8 +31,8 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
             </div>
 
             <!-- 상대경로 명령어 -->
-            <p class="fix-guide-hint" id="file-setup-relative-hint" style="display:none;"><?= htmlspecialchars(lang('or_relative_path')) ?></p>
-            <div class="code-box" id="file-setup-relative-box" style="display:none;">
+            <p class="fix-guide-hint hidden" id="file-setup-relative-hint"><?= htmlspecialchars(lang('or_relative_path')) ?></p>
+            <div class="code-box hidden" id="file-setup-relative-box">
                 <pre id="file-setup-command-relative"></pre>
                 <button class="btn-copy" data-action="copySetupCommandRelative"><?= htmlspecialchars(lang('copy_command')) ?></button>
             </div>
@@ -49,7 +49,7 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
 <div class="installer-container installer-container-wide">
     <div class="installer-header-with-abort">
         <h1 id="installer-title" class="installer-title"><?= htmlspecialchars(lang('installation_title')) ?></h1>
-        <button id="abort-installation-btn" class="btn-abort" data-action="abortInstallation" style="display: none;">
+        <button id="abort-installation-btn" class="btn-abort hidden" data-action="abortInstallation">
             <svg class="abort-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -174,18 +174,18 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
     </div>
 
     <!-- 설치 시작 버튼 (초기 상태, 설치 시작 후 숨김) -->
-    <div id="installation-start-section" class="installation-start-section" style="display: none;">
+    <div id="installation-start-section" class="installation-start-section hidden">
         <button id="start-installation-btn" class="btn btn-primary btn-lg" type="button" data-action="onStartInstallationClick">
             <?= htmlspecialchars(lang('start_installation_button')) ?>
         </button>
     </div>
 
-    <div class="alert alert-warning" id="install-warning" style="display: none;">
+    <div class="alert alert-warning hidden" id="install-warning">
         ⚠ <?= htmlspecialchars(lang('do_not_close_page')) ?>
     </div>
 
     <!-- 설치 진행 상황 카드 -->
-    <div class="requirement-card" id="installation-progress-card" style="display: none;">
+    <div class="requirement-card hidden" id="installation-progress-card">
         <div class="requirement-card-header" id="installation-card-header" data-action="toggleInstallationCard">
             <h3 class="requirement-card-title">
                 <?= htmlspecialchars(lang('progress_status')) ?>
@@ -201,7 +201,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                     <span id="overall-percentage" class="progress-percentage">0%</span>
                 </div>
                 <div class="progress-bar-bg">
-                    <div id="overall-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+                    <div id="overall-progress-bar" class="progress-bar-fill"></div>
                 </div>
                 <p id="current-task" class="progress-status"><?= htmlspecialchars(lang('preparing')) ?></p>
             </div>

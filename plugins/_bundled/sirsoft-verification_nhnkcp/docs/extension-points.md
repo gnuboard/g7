@@ -22,6 +22,7 @@ _이 확장은 훅을 발행하지 않습니다._
 |---|---|---|---|---|
 | `core.auth.after_register` | action (미선언) | `CompleteKcpRecordAfterRegister` | `handle` | 50 |
 | `core.auth.before_register` | action (미선언) | `AssertNoDuplicateKcpIdentity` | `handle` | 20 |
+| `core.auth.registering` | action (미선언) | `ClaimKcpIdentityOnRegistering` | `handle` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterKcpProviderListener` | `register` | 20 |
 | `core.plugin_settings.filter_save_data` | filter | `ValidateKcpSettingsListener` | `normalizeLiveSiteCd` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateKcpSettingsListener` | `addLiveModeRules` | 10 |
@@ -46,6 +47,7 @@ _이 확장은 훅을 발행하지 않습니다._
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `AssertNoDuplicateKcpIdentity` | 1개 | 명시 등록 | ✅ | `src/Listeners/AssertNoDuplicateKcpIdentity.php` |
+| `ClaimKcpIdentityOnRegistering` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimKcpIdentityOnRegistering.php` |
 | `CleanKcpRecordOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserDelete.php` |
 | `CleanKcpRecordOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserWithdraw.php` |
 | `CompleteKcpRecordAfterRegister` | 1개 | 명시 등록 | ✅ | `src/Listeners/CompleteKcpRecordAfterRegister.php` |

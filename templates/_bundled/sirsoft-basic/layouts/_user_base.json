@@ -1758,6 +1758,52 @@
                                     ]
                                 },
                                 {
+                                    "id": "mobile_drawer_reviews_link",
+                                    "type": "basic",
+                                    "name": "A",
+                                    "actions": [
+                                        {
+                                            "comment": "리뷰 모아보기로 — 서랍을 닫고 이동한다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "mobileMenuOpen": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{_global.shopBase}}/reviews"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "href": "{{_global.shopBase}}/reviews",
+                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "star",
+                                                "size": "md"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:user.nav.reviews"
+                                        }
+                                    ]
+                                },
+                                {
                                     "type": "basic",
                                     "name": "A",
                                     "actions": [
@@ -2354,6 +2400,7 @@
                         "notificationCount": "{{_global.notificationCount ?? 0}}",
                         "shopBase": "{{_global.shopBase ?? '/shop'}}",
                         "shopProductsHref": "{{_global.shopBase ?? '/shop'}}/products",
+                        "shopReviewsHref": "{{_global.shopBase ?? '/shop'}}/reviews",
                         "boards": "{{boards.data ?? []}}",
                         "maxVisibleBoards": 5,
                         "boardEnabled": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
@@ -2406,6 +2453,7 @@
                     "type": "composite",
                     "name": "Footer",
                     "props": {
+                        "businessInfo": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && _global.modules?.['sirsoft-ecommerce']?.basic_info?.show_business_footer !== false ? (_global.modules?.['sirsoft-ecommerce']?.basic_info ?? null) : null}}",
                         "boardEnabled": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
                         "pageEnabled": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
@@ -2436,6 +2484,10 @@
         {
             "comment": "알림 전체 삭제 확인 창 — 헤더와 모바일 드로어의 알림센터가 공유한다(둘 다 onDeleteAll 에서 이 이름을 연다).",
             "partial": "partials/_modal_notification_delete_all_confirm.json"
+        },
+        {
+            "comment": "상품 카드의 옵션 선택 창 — 카드가 목록·검색·가로 상품 줄 등 여러 화면에 나오므로 상속원에 한 번만 둔다(쇼핑몰이 꺼져 있으면 창 본문을 그리지 않는다).",
+            "partial": "partials/shop/_modal_quick_option.json"
         }
     ]
 }

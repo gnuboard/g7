@@ -2,7 +2,7 @@
  * 찜(위시리스트) 레이아웃 구조 검증 테스트
  *
  * @description
- * - _header.json 찜 버튼 구조 및 중복 클릭 방지 검증
+ * - _header.json 찜 버튼 구조 및 중복 클릭 방지 검증 (클릭 동작은 show.json 이름 붙은 액션으로 해석해 검증)
  * - wishlist.json 데이터소스 및 API 엔드포인트 검증
  * - _list.json 찜 목록 그리드, 삭제 버튼, 빈 목록 표시 검증
  *
@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 
 import headerPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_header.json';
+import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
 import wishlistLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/mypage/wishlist.json';
 import wishlistListPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/mypage/wishlist/_list.json';
 import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
@@ -53,6 +54,26 @@ function findHandlerInActions(actions: any[] | undefined, handler: string): any 
         }
     }
     return null;
+}
+
+/**
+ * 액션의 `actionRef` 를 상품 상세(show.json)의 `named_actions` 로 해석한다.
+ *
+ * 엔진(ActionDispatcher.resolveActionRef)과 같은 규칙이다 — 이름 붙은 정의 위에 인라인 속성을 덮는다.
+ * 7.1.6(#898)에서 찜 토글이 제목 옆 단추 안에서 이름 붙은 액션 `toggleProductWishlist` 로 옮겨졌다
+ * (좁은 화면 하단 구매바의 찜 단추와 같이 쓴다 — show.g7.html `<action name="toggleProductWishlist">`).
+ * 동작 계약은 그대로이므로 해석한 정의에서 같은 것을 단언한다.
+ *
+ * @param action 이벤트 액션 (actionRef 를 가질 수 있음)
+ * @returns 해석된 액션 (참조 대상이 없으면 null)
+ */
+function resolveActionRef(action: any): any | null {
+    if (!action?.actionRef) return action ?? null;
+    const named = (showLayout as any).named_actions?.[action.actionRef];
+    if (!named) return null;
+    const { actionRef: _ref, ...inline } = action;
+
+    return { ...named, ...inline };
 }
 
 describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
@@ -99,8 +120,8 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
      * @effects wishlist_toggle_branches_guest_and_member
      */
     it('찜 버튼 클릭 액션이 conditions 핸들러로 비회원/회원 분기되어야 함', () => {
-        const click = wishlistButton.actions?.find((a: any) => a.type === 'click');
-        expect(click).toBeDefined();
+        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
+        expect(click, '찜 단추 클릭 액션(또는 그 이름 붙은 액션)이 있어야 한다').toBeTruthy();
         expect(click.handler).toBe('conditions');
         expect(asArray(click?.conditions).length > 0).toBe(true);
         expect(asArray(click?.conditions).length).toBeGreaterThanOrEqual(2);
@@ -111,7 +132,7 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
      * @effects wishlist_toggle_calls_api_and_restores_loading
      */
     it('회원 분기 sequence 첫 setState 가 wishlistLoading=true 로 설정해야 함', () => {
-        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
+        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
         const setState = findHandlerInActions([click], 'setState');
         expect(setState).toBeDefined();
         expect(setState.params.wishlistLoading).toBe(true);
@@ -122,7 +143,7 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
      * @effects wishlist_toggle_calls_api_and_restores_loading
      */
     it('회원 분기에서 apiCall 로 wishlist/toggle API 가 호출되어야 함', () => {
-        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
+        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
         const apiCall = findHandlerInActions([click], 'apiCall');
         expect(apiCall).toBeDefined();
         expect(apiCall.target).toContain('/wishlist/toggle');
@@ -134,7 +155,7 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
      * @effects wishlist_toggle_calls_api_and_restores_loading
      */
     it('apiCall onSuccess 에서 wishlistLoading 을 false 로 복원해야 함', () => {
-        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
+        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
         const apiCall = findHandlerInActions([click], 'apiCall');
         const setStateOnSuccess = asArray(apiCall?.onSuccess).find((a: any) => a.handler === 'setState');
         expect(setStateOnSuccess).toBeDefined();
@@ -146,7 +167,7 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
      * @effects wishlist_toggle_calls_api_and_restores_loading
      */
     it('apiCall onError 에서 wishlistLoading 을 false 로 복원해야 함', () => {
-        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
+        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
         const apiCall = findHandlerInActions([click], 'apiCall');
         const setStateOnError = asArray(apiCall?.onError).find((a: any) => a.handler === 'setState');
         expect(setStateOnError).toBeDefined();
@@ -158,7 +179,7 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
      * @effects wishlist_toggle_calls_api_and_restores_loading
      */
     it('apiCall 에 auth_mode: required 가 설정되어 있어야 함', () => {
-        const click = asArray(wishlistButton?.actions).find((a: any) => a.type === 'click');
+        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
         const apiCall = findHandlerInActions([click], 'apiCall');
         // auth_required boolean → auth_mode: 'required' 표준 표기로 통일됨
         expect(apiCall.auth_mode).toBe('required');

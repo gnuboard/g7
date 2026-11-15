@@ -1128,6 +1128,7 @@ Exit codes: 0 done (with warnings the last line is [g7-install-warnings]) · 1 i
     'cli_aborted' => 'Installation aborted. Continue with php g7-install --resume',
     'cli_failed_resume_hint' => 'After fixing the cause, continue with php g7-install --resume (completed tasks are skipped).',
     'cli_finalize_failed_warning' => 'Finalizing .env failed and the installer runtime file remains — finalize again with php g7-install --resume.',
+    'runtime_cleanup_failed_warning' => 'Could not remove the leftover installer file — delete storage/installer/runtime.php manually.',
     'cli_resuming' => 'resuming',
     'cli_chown_done' => ':count ownership changes → :user::group',
     'cli_chown_failed' => ':count ownership changes failed — change them with the command below.',

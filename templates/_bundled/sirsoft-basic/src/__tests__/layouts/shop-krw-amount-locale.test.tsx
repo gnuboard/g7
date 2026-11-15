@@ -16,7 +16,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { formatCurrencyHandler } from '../../handlers/formatCurrency';
 import { updateSelectedItemQuantityHandler } from '../../handlers/productOptions';
-import purchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../../../__tests__/helpers/inlineNamedActions';
+import purchaseCardRaw from '../../../layouts/partials/shop/detail/_purchase_card.json';
+const purchaseCard = inlineNamedActions(purchaseCardRaw);
 import cartOptionChange from '../../../layouts/partials/shop/_modal_cart_option_change.json';
 import checkoutDiscount from '../../../layouts/partials/shop/_checkout_discount.json';
 

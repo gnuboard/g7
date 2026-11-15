@@ -1,0 +1,385 @@
+{
+    "comment": "리뷰 모아보기 — 전시 중인 모든 상품의 후기를 한 화면에 모아 보여 준다. 정렬·사진 후기만·별점·쪽수는\n     전부 URL 쿼리에 산다(뒤로가기와 링크 공유가 같은 화면을 되살린다). 작성자 이름 가림은 서버가 한다.\n     조건을 바꾸면 바탕 레이아웃의 로딩 덮개가 새 목록(`reviewFeed`)이 올 때까지 남는다(`transition-overlay` 의 `wait-for`).\n     기다릴 소스가 없으면 덮개가 렌더 직후 걷혀, 덮개가 두 번 반짝인 뒤 앞 목록이 응답 전까지 그대로 보였다.",
+    "version": "1.0.0",
+    "layout_name": "shop/reviews",
+    "extends": "_user_base",
+    "meta": [],
+    "data_sources": [
+        {
+            "id": "reviewFeed",
+            "label_key": "$t:editor.data_source.reviewFeed",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/reviews",
+            "method": "GET",
+            "auth_mode": "optional",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "sort": "{{query.sort ?? 'created_at_desc'}}",
+                "photo_only": "{{query.photo_only ?? ''}}",
+                "rating": "{{query.rating ?? ''}}",
+                "page": "{{query.page ?? 1}}",
+                "per_page": 10
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "후기 목록. 조건을 전부 URL 쿼리에서 읽으므로 `navigate` 로 쿼리만 바꿔도 다시 받는다. 비회원도 볼 수 있다"
+        }
+    ],
+    "permissions": [],
+    "transition_overlay": {
+        "wait_for": [
+            "reviewFeed"
+        ]
+    },
+    "init_actions": [
+        {
+            "comment": "별 다섯 개를 그리는 반복용 목록 — 후기 카드 조각이 읽는다",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "starList": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                ]
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-8"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6"
+                        },
+                        "text": "$t:shop.reviews.title"
+                    },
+                    {
+                        "comment": "필터 줄: 총 건수 + 사진 후기만 + 별점 + 정렬",
+                        "id": "review_feed_filters",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex flex-wrap items-center justify-between gap-3 py-3 mb-4 bg-gray-50 dark:bg-gray-800/50"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-semibold text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "$t:shop.reviews.total_count|count={{reviewFeed?.data?.reviews?.meta?.total ?? 0}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Checkbox",
+                                                "actions": [
+                                                    {
+                                                        "comment": "사진 후기만 — 쪽수는 1쪽으로 돌린다(빈 값은 주소에서 빠진다)",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "{{route.path}}",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "photo_only": "{{$event.target.checked ? '1' : ''}}",
+                                                                "page": ""
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "id": "review_feed_photo_only",
+                                                    "name": "photo_only",
+                                                    "checked": "{{query.photo_only === '1'}}",
+                                                    "autoBinding": false,
+                                                    "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:shop.reviews.photo_only"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "별점 필터 — 「전체」는 빈 값이라 주소에서 빠지고, 쪽수는 1쪽으로 돌린다",
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{route.path}}",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "rating": "{{$event.target.value}}",
+                                                        "page": ""
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "name": "rating",
+                                            "aria-label": "$t:shop.reviews.rating_filter",
+                                            "value": "{{query.rating ?? ''}}",
+                                            "className": "h-9 w-28",
+                                            "options": [
+                                                {
+                                                    "value": "",
+                                                    "label": "$t:shop.reviews.rating_all"
+                                                },
+                                                {
+                                                    "value": "5",
+                                                    "label": "$t:shop.reviews.rating_n|n=5"
+                                                },
+                                                {
+                                                    "value": "4",
+                                                    "label": "$t:shop.reviews.rating_n|n=4"
+                                                },
+                                                {
+                                                    "value": "3",
+                                                    "label": "$t:shop.reviews.rating_n|n=3"
+                                                },
+                                                {
+                                                    "value": "2",
+                                                    "label": "$t:shop.reviews.rating_n|n=2"
+                                                },
+                                                {
+                                                    "value": "1",
+                                                    "label": "$t:shop.reviews.rating_one"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "정렬을 바꾸면 쪽수는 1쪽으로 돌린다(다른 필터는 주소에 그대로 남는다)",
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{route.path}}",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "sort": "{{$event.target.value}}",
+                                                        "page": ""
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "name": "sort",
+                                            "aria-label": "$t:common.sort_order",
+                                            "value": "{{query.sort ?? 'created_at_desc'}}",
+                                            "className": "h-9 w-32",
+                                            "options": [
+                                                {
+                                                    "value": "created_at_desc",
+                                                    "label": "$t:shop.reviews.sort.latest"
+                                                },
+                                                {
+                                                    "value": "created_at_asc",
+                                                    "label": "$t:shop.reviews.sort.oldest"
+                                                },
+                                                {
+                                                    "value": "rating_desc",
+                                                    "label": "$t:shop.reviews.sort.rating_high"
+                                                },
+                                                {
+                                                    "value": "rating_asc",
+                                                    "label": "$t:shop.reviews.sort.rating_low"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "목록·빈 안내·쪽 번호 묶음 — 새 목록을 받는 동안 흐리게 둔다. 덮개(wait-for)가 걷힌 뒤 새 목록이 그려지기까지의\n           짧은 틈에 앞 목록이 또렷하게 비치지 않게 한다",
+                        "id": "review_feed_list",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "reviewFeed"
+                        },
+                        "children": [
+                            {
+                                "comment": "후기 목록 — 카드 위에 그 후기가 달린 상품(대표 이미지·이름, 상세로 가는 링크)을 보인다",
+                                "type": "basic",
+                                "name": "Div",
+                                "iteration": {
+                                    "source": "{{reviewFeed?.data?.reviews?.data ?? []}}",
+                                    "item_var": "review"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "A",
+                                        "if": "{{!!review.product}}",
+                                        "actions": [
+                                            {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 후기 목록에서 상품 상세로 나가는 이동 — 후기 목록의 정렬·쪽 조건을 상품 상세로 가져가지 않는다",
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{_global.shopBase}}/products/{{review.product?.product_code}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "{{_global.shopBase}}/products/{{review.product?.product_code}}",
+                                            "className": "flex items-center gap-3 mb-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Img",
+                                                "if": "{{!!review.product?.thumbnail_url}}",
+                                                "props": {
+                                                    "src": "{{review.product?.thumbnail_url}}",
+                                                    "alt": "",
+                                                    "className": "w-10 h-10 shrink-0 rounded object-cover border border-gray-200 dark:border-gray-700"
+                                                }
+                                            },
+                                            {
+                                                "comment": "그림을 올리지 않은 상품 — 깨진 그림 대신 같은 크기의 아이콘 칸",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!review.product?.thumbnail_url}}",
+                                                "props": {
+                                                    "className": "w-10 h-10 shrink-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "image",
+                                                            "size": "sm",
+                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-medium truncate"
+                                                },
+                                                "text": "{{review.product?.name}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "partial": "partials/shop/detail/_review_card.json"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "후기 없음 — 필터가 걸려 있을 때와 아닐 때 문구가 다르다",
+                                "id": "review_feed_empty",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{reviewFeed !== undefined && (reviewFeed?.data?.reviews?.data ?? []).length === 0}}",
+                                "props": {
+                                    "className": "text-center py-12 text-gray-800 dark:text-gray-300"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "comment-dots",
+                                            "size": "3x",
+                                            "className": "mx-auto mb-3 opacity-50"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!!query.photo_only || !!query.rating}}",
+                                        "text": "$t:shop.reviews.empty_filtered"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!query.photo_only && !query.rating}}",
+                                        "text": "$t:shop.reviews.empty"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "composite",
+                                "name": "Pagination",
+                                "actions": [
+                                    {
+                                        "comment": "쪽 번호만 바꾸고 필터·정렬은 주소에 그대로 둔다",
+                                        "event": "onPageChange",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{route.path}}",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "pageHref": "{{route.path}}?page={page}",
+                                    "pageHrefMergeQuery": true,
+                                    "currentPage": "{{reviewFeed?.data?.reviews?.meta?.current_page ?? 1}}",
+                                    "totalPages": "{{reviewFeed?.data?.reviews?.meta?.last_page ?? null}}",
+                                    "hasMorePages": "{{reviewFeed?.data?.reviews?.meta?.has_more_pages ?? false}}",
+                                    "className": "mt-6 flex justify-center"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "후기 사진을 크게 보는 창 — 후기 카드의 사진 단추가 연다",
+            "partial": "partials/shop/detail/_modal_review_image.json"
+        }
+    ]
+}

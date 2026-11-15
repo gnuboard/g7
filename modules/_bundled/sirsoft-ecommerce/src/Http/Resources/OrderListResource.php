@@ -149,6 +149,10 @@ class OrderListResource extends BaseApiResource
                     'shipping_method_label' => $this->resolveSnapshotMethodLabel($shipping),
                     'carrier_name' => $shipping?->carrier?->getLocalizedName(),
                     'tracking_number' => $shipping?->tracking_number,
+                    // 송장 조회 주소 — 주문 상세와 같은 규칙. 송장·택배사가 없으면 null
+                    'tracking_url' => ($shipping?->carrier !== null && ! empty($shipping->tracking_number))
+                        ? $shipping->carrier->buildTrackingUrl((string) $shipping->tracking_number)
+                        : null,
                 ];
             }),
 

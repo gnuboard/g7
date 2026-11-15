@@ -7,6 +7,8 @@ use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\IdentityVerificationLog;
+use App\Services\IdentityPolicyService;
+use Illuminate\Support\Facades\Log;
 
 /**
  * IDV 검증 성공 시 pending_verification 사용자를 active 로 전환합니다.
@@ -20,9 +22,11 @@ class ActivateUserOnIdentityVerified implements HookListenerInterface
 {
     /**
      * @param  UserRepositoryInterface  $userRepository  사용자 Repository
+     * @param  IdentityPolicyService  $policyService  정책 해석 Service (지정 수단 확인 — 7.1.6)
      */
     public function __construct(
         protected UserRepositoryInterface $userRepository,
+        protected IdentityPolicyService $policyService,
     ) {}
 
     /**
@@ -66,6 +70,20 @@ class ActivateUserOnIdentityVerified implements HookListenerInterface
 
         $user = $this->userRepository->findById((int) $log->user_id);
         if (! $user || $user->status !== UserStatus::PendingVerification->value) {
+            return;
+        }
+
+        // 가입 후 정책에 인증 수단이 지정돼 있으면 그 수단으로 받은 인증만 계정을 활성화한다(KVE 동형 B5).
+        $policy = $this->policyService->resolve('hook', 'core.auth.after_register', ['signup_stage' => 'after_create']);
+        $requiredProviderId = $policy !== null && $policy->enabled ? $this->policyService->requiredProviderId($policy) : null;
+        if ($requiredProviderId !== null && (string) ($result->providerId ?? '') !== $requiredProviderId) {
+            Log::info('[IDV] 가입 후 정책의 지정 수단과 다른 인증이라 계정을 활성화하지 않습니다', [
+                'user_id' => $user->id,
+                'policy_key' => $policy->key,
+                'required_provider' => $requiredProviderId,
+                'result_provider' => $result->providerId ?? null,
+            ]);
+
             return;
         }
 

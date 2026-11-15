@@ -676,3 +676,6 @@ dark:hover:text-slate-300 dark:hover:text-slate-800
 hover:-translate-y-0.5 md:h-20 md:w-20 md:rounded-2xl min-h-12 sm:flex-shrink-0
 /* NHN KCP 모의입금 도구(user_order_show 조각) 다크 모드 */
 dark:border-orange-700 dark:bg-orange-900/40 dark:hover:bg-orange-900/50
+/* 상점 화면 보강(배송 조회·쿠폰 모두 받기·적립금 기준 안내·옵션 선택 창) */
+dark:bg-gray-700/50 dark:bg-green-900/30 dark:bg-indigo-900/30 dark:hover:bg-blue-900/50 dark:hover:bg-indigo-900/50
+dark:text-amber-400 dark:text-indigo-300 dark:text-indigo-400 hover:opacity-80 space-y-0.5

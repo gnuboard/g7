@@ -14,6 +14,7 @@ use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\PluginManager;
+use App\Extension\Support\LifecycleWarnings;
 use App\Extension\Vendor\VendorMode;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -159,7 +160,7 @@ class UpdatePluginCommand extends Command
             if (! $force && ! $this->unifiedConfirm(__('plugins.commands.update.confirm_question'), false)) {
                 $this->info(__('plugins.commands.update.aborted'));
 
-                return Command::SUCCESS;
+                return $this->confirmAbortExitCode();
             }
 
             // 업데이트 실행
@@ -223,8 +224,15 @@ class UpdatePluginCommand extends Command
                     'layout_strategy' => $layoutStrategy,
                 ]);
 
-                // 검색 인덱스 재생성은 운영자가 선택했을 때만 수행한다 (인덱스 잠금·재색인 비용)
-                $this->handleSearchIndexRebuild();
+                // 검색 인덱스 재생성은 운영자가 선택했을 때만 수행한다 (인덱스 잠금·재색인 비용).
+                // 여기서 난 오류는 업데이트 실패가 아니다 — 업데이트는 이미 끝났다. 바깥 catch 로 보내면 ❌ 와 함께
+                // 「업데이트 실패」로 끝나므로, 경고 목록에 넣어 「완료했지만 경고 있음」(종료코드 1)으로 알린다.
+                try {
+                    $this->handleSearchIndexRebuild();
+                } catch (\Throwable $searchError) {
+                    LifecycleWarnings::current()->add('search_index', $identifier, $searchError->getMessage());
+                    Log::warning('플러그인 업데이트 뒤 검색 인덱스 재생성 실패', ['plugin' => $identifier, 'error' => $searchError->getMessage()]);
+                }
 
                 return Command::SUCCESS;
             }

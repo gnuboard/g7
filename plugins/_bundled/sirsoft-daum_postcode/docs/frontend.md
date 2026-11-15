@@ -86,6 +86,7 @@ SDK 가 막힌 환경에서 필드가 잠긴 채 남아 주소를 아예 입력�
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
@@ -93,8 +94,14 @@ SDK 가 막힌 환경에서 필드가 잠긴 채 남아 주소를 아예 입력�
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-커밋되는 산출물은 `dist/js/plugin.iife.js` 하나이며, 동봉 제3자 자산은 없습니다 — **Daum SDK
+커밋되는 산출물은 `dist/js/plugin.iife.js` 와 `dist/css/plugin.css` 둘이며, 동봉 제3자 자산은 없습니다 — **Daum SDK
 는 동봉하지 않고 외부 호스트에서 로드**하기 때문입니다.
+
+`dist/css/plugin.css` 는 엔트리가 import 하는 `resources/css/main.css` 를 빌드가 뽑아낸 것이고, `plugin.json` 의
+`assets.css` 가 그 경로를 선언합니다(1.2.1). 주소 검색 창(펼치기 영역·전체 화면 창·레이어)의 모양과 다크 모드 짝이 여기
+있습니다. 핸들러는 `<style>` 요소나 `style` 속성 문자열을 만들지 않습니다 — 엄격한 스타일 정책
+(`style-src 'self'; style-src-attr 'none'`)에서 둘 다 막혀 검색 창이 무스타일로 뜨기 때문입니다. 실행 중에 정해지는 값
+(펼치기 영역 높이, 레이어 설정 크기 `--dp-width`·`--dp-height`)은 `el.style.x = …`·`el.style.setProperty()` 로 싣습니다.
 
 그 예외의 근거는 대상이 라이브러리가 아니라 **서비스**라는 점입니다. 자체 호스팅해도 Daum
 서버와 통신하지 않으면 주소 데이터를 얻을 수 없습니다. manifest 에 `trusted_script_hosts` 와

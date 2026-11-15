@@ -38,8 +38,10 @@ axes:
     - media_source_routes
     - element_categories
     - runtime_same_tab_e2e
+    - figure_size_style         # 편집기에서 줄인 이미지(figure style width)
 
 effects:
+  - figure_size_style_kept             # figure 의 style(이미지 크기 비율)이 저장·표시·봇 화면에서 유지된다
   - php_js_patterns_identical
   - presets_resolve_id_and_player
   - foreign_host_rejected

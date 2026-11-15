@@ -42,7 +42,7 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.shipping');
 
-            $shippingSettings = $this->settingsService->getSettings('shipping');
+            $shippingSettings = $this->settingsService->getPublicCategorySettings('shipping');
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -80,7 +80,10 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.payment');
 
-            $orderSettings = $this->settingsService->getPublicPaymentSettings();
+            $orderSettings = $this->settingsService->getPublicCategorySettings(
+                'order_settings',
+                $this->settingsService->getPublicPaymentSettings()
+            );
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -119,7 +122,7 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.review');
 
-            $reviewSettings = $this->settingsService->getSettings('review_settings');
+            $reviewSettings = $this->settingsService->getPublicCategorySettings('review_settings');
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -155,8 +158,11 @@ class EcommerceSettingsController extends PublicBaseController
         try {
             $this->logApiUsage('settings.checkout');
 
-            $shippingSettings = $this->settingsService->getSettings('shipping');
-            $orderSettings = $this->settingsService->getPublicPaymentSettings();
+            $shippingSettings = $this->settingsService->getPublicCategorySettings('shipping');
+            $orderSettings = $this->settingsService->getPublicCategorySettings(
+                'order_settings',
+                $this->settingsService->getPublicPaymentSettings()
+            );
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',

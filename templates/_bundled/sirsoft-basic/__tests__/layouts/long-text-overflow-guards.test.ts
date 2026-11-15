@@ -480,7 +480,8 @@ describe('실측 발견 — 상품 상세의 운영자 입력 이름 (2026-10-13
     expectTokens(findOne(header, textHas('category_name'), '상품 카테고리 이름'), ['block', 'truncate'], '상품 카테고리 이름');
     const summary = loadLayout('partials/shop/detail/_info_summary.json');
     expectTokens(findOne(summary, (n) => typeof n.text === 'string' && n.text.includes('group.name_localized'), '옵션 요약 이름'), ['shrink-0', 'truncate'], '옵션 요약 이름');
-    const purchase = loadLayout('partials/shop/detail/_purchase_card.json');
+    // 옵션 선택 영역은 구매 카드와 바텀시트가 같이 쓰는 조각이다
+    const purchase = loadLayout('partials/shop/detail/_purchase_options.json');
     expectTokens(findOne(purchase, (n) => n.name === 'Label' && typeof n.text === 'string' && n.text.includes('group.name_localized'), '옵션 선택 라벨'), ['break-words'], '옵션 선택 라벨');
   });
 });
@@ -492,14 +493,19 @@ describe('실측 발견 — 하위 카테고리 칩 (2026-10-13 Chrome MCP)', ()
    * @scenario case=shop_category_long_name
    * @effects narrow_label_ellipsis_with_cap
    */
-  it('칩 래퍼·단추는 max-w-full, 칩 이름은 min-w-0 truncate', () => {
+  it('칩은 폭 상한(16rem), 칩 이름은 min-w-0 truncate, 칩 줄은 가로로 넘기는 ChipRows 안', () => {
+    // 칩 줄이 두 줄 + 가로 넘김(ChipRows)으로 바뀌면서 칩 폭 기준이 「줄 폭」에서 「고정 상한」으로 바뀌었다 —
+    // 가로로 넘기는 줄 안에서는 줄 폭이 칩들의 합이라 max-w-full 이 상한 구실을 하지 못한다.
+    // 긴 이름이 화면을 넘기지 않는다는 보장은 그대로다: 칩은 16rem 을 넘지 않고, 넘치는 줄은 ChipRows 가 안에서 넘긴다.
     const layout = loadLayout('shop/category.json');
     const name = findOne(layout, (n) => n.text === '{{sub?.name_localized}}', '하위 카테고리 칩 이름');
     expectTokens(name, ['min-w-0', 'truncate'], '하위 카테고리 칩 이름');
     const chip = findOne(layout, (n) => ['A', 'Button'].includes(n.name) && (n.children ?? []).includes(name), '하위 카테고리 칩');
-    expectTokens(chip, ['max-w-full'], '하위 카테고리 칩');
+    expectTokens(chip, ['max-w-[16rem]'], '하위 카테고리 칩');
     const wrap = findOne(layout, (n) => (n.children ?? []).includes(chip), '하위 카테고리 칩 래퍼');
-    expectTokens(wrap, ['max-w-full'], '하위 카테고리 칩 래퍼');
+    expectTokens(wrap, ['shrink-0'], '하위 카테고리 칩 래퍼');
+    const rows = findOne(layout, (n) => (n.children ?? []).includes(wrap), '하위 카테고리 칩 줄');
+    expect(rows.name).toBe('ChipRows');
   });
 });
 
