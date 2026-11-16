@@ -57,6 +57,9 @@ class TemplateResource extends BaseApiResource
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
+            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
+            'integrity_status' => $this->getValue('integrity_status'),
+            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'latest_version' => $this->getValue('latest_version'),
             'file_version' => $this->getValue('file_version'),
             'github_url' => $this->getValue('github_url'),
@@ -132,6 +135,9 @@ class TemplateResource extends BaseApiResource
             'latest_version' => $this->getValue('latest_version'),
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
+            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
+            'integrity_status' => $this->getValue('integrity_status'),
+            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'file_version' => $this->getValue('file_version'),
             'type' => $this->getValue('type'),
             'status' => $this->getValue('status'),

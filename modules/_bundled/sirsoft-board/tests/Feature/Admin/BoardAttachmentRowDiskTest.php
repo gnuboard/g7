@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Contracts\Extension\StorageInterface;
+use App\Extension\ModuleManager;
 use App\Extension\Storage\ModuleStorageDriver;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
@@ -14,7 +16,9 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
@@ -208,5 +212,49 @@ class BoardAttachmentRowDiskTest extends ModuleTestCase
 
         $this->assertNull(Board::find($boardId));
         $this->assertSame(0, Attachment::withTrashed()->where('board_id', $boardId)->count());
+    }
+
+    /**
+     * 첨부·글·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따르고, `.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 고정이면 선택을 무시한다(#916 D7).
+     *
+     * @scenario case=private_attachment_selection
+     *
+     * @return void 반환값 없음
+     */
+    public function test_services_follow_private_attachment_selection_unless_env_pinned(): void
+    {
+        Config::set('sirsoft-board.attachment.disk_explicit', null);
+        Config::set('core.storage.private_attachment_disk', '');
+        foreach ([AttachmentService::class, BoardService::class, BoardContentMediaService::class] as $class) {
+            $this->assertSame('modules', $this->injectedDisk(app($class)), $class.' 「기본」');
+        }
+
+        Config::set('core.storage.private_attachment_disk', 'board_alt');
+        foreach ([AttachmentService::class, BoardService::class, BoardContentMediaService::class] as $class) {
+            $this->assertSame('board_alt', $this->injectedDisk(app($class)), $class.' 선택');
+        }
+
+        Config::set('sirsoft-board.attachment.disk_explicit', 'modules');
+        $this->assertSame('modules', $this->injectedDisk(app(AttachmentService::class)), 'env 고정이 선택보다 우선');
+        $this->assertSame(['env' => 'SIRSOFT_BOARD_ATTACHMENT_DISK', 'disk' => 'modules'], app(ModuleManager::class)->getModule('sirsoft-board')?->getPrivateAttachmentDiskPin());
+    }
+
+    /**
+     * 서비스에 주입된 스토리지의 디스크를 읽습니다(클래스 계층의 StorageInterface 속성).
+     *
+     * @param  object  $service  서비스
+     * @return string 디스크 이름
+     */
+    private function injectedDisk(object $service): string
+    {
+        for ($class = new \ReflectionClass($service); $class !== false; $class = $class->getParentClass()) {
+            foreach ($class->getProperties() as $property) {
+                $value = $property->getValue($service);
+                if ($value instanceof StorageInterface) {
+                    return $value->getDisk();
+                }
+            }
+        }
+        $this->fail('주입된 스토리지를 찾지 못했습니다: '.$service::class);
     }
 }

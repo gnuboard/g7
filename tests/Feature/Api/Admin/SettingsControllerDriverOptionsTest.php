@@ -163,9 +163,9 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
         $data = $response->json('data.available_drivers');
 
-        // 11개 카테고리 존재 (search 는 폴백 가드 편입으로 추가 — A5b, image 는 이미지 처리 엔진 — #869,
-        // file_delegation 은 웹서버 파일 위임 — #878)
-        $this->assertCount(11, $data);
+        // 12개 카테고리 존재 (search 는 폴백 가드 편입으로 추가 — A5b, image 는 이미지 처리 엔진 — #869,
+        // file_delegation 은 웹서버 파일 위임 — #878, private_attachment 는 비공개 첨부 저장소 — #916)
+        $this->assertCount(12, $data);
 
         // 각 카테고리에 최소 1개 이상의 드라이버 존재
         foreach ($data as $category => $drivers) {

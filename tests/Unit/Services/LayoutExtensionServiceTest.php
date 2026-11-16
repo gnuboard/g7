@@ -9,6 +9,7 @@ use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Traits\ValidatesLayoutFiles;
 use App\Models\LayoutExtension;
 use App\Models\Plugin;
 use App\Models\Template;
@@ -244,6 +245,376 @@ class LayoutExtensionServiceTest extends TestCase
 
         // 조각의 데이터 소스는 셀이 아니라 레이아웃에 병합된다 — 행마다 다시 부르지 않는다
         $this->assertContains('pay_test_map', array_column($result['data_sources'], 'id'));
+    }
+
+    /**
+     * 첨부 업로더 확장점에 업로더 플러그인을 replace 로 주입하는 조각 행을 만든다(#916).
+     *
+     * @return void 반환값 없음
+     */
+    private function createAttachmentUploaderReplacement(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'attachment_uploader',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-test',
+            'content' => [
+                'extension_point' => 'attachment_uploader',
+                'mode' => 'replace',
+                'components' => [
+                    [
+                        'id' => 'vendor_uploader',
+                        'type' => 'composite',
+                        'name' => 'sirsoft-test.VendorUploader',
+                        'props' => [
+                            'contract' => '{{extensionPointProps.uploader}}',
+                            'onDone' => '{{extensionPointCallbacks.onUploadComplete}}',
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * 첨부 업로더 확장점 노드 — 기본 업로더를 default 로, 계약을 props.uploader 로, 기본 업로더 이벤트와 같은 액션을 callbacks 로 둔다.
+     *
+     * @return array<string, mixed> 확장점 노드
+     */
+    private function attachmentUploaderSlot(): array
+    {
+        return [
+            'id' => 'file_uploader_slot',
+            'type' => 'extension_point',
+            'name' => 'attachment_uploader',
+            'props' => [
+                'className' => 'contents',
+                'uploader' => [
+                    'version' => 1,
+                    'mode' => 'upload',
+                    'endpoints' => ['upload' => '/api/x/attachments', 'delete' => '/api/x/attachments/:id', 'reorder' => null],
+                    'triggerEvent' => 'upload:x_attachments',
+                    'initialFiles' => '{{_local.form?.attachments ?? []}}',
+                ],
+            ],
+            'callbacks' => [
+                'onUploadComplete' => ['handler' => 'setState', 'params' => ['target' => 'local', 'form.attachments' => '{{$event}}']],
+            ],
+            'default' => [
+                [
+                    'id' => 'file_uploader',
+                    'type' => 'composite',
+                    'name' => 'FileUploader',
+                    'props' => ['uploadTriggerEvent' => 'upload:x_attachments'],
+                    'actions' => [
+                        ['event' => 'onUploadComplete', 'handler' => 'setState', 'params' => ['target' => 'local', 'form.attachments' => '{{$args[0]}}']],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 업로더 플러그인이 replace 로 주입하면 기본 업로더가 걷히고, 주입 노드가 계약과 콜백을 받는다(#916 ③).
+     *
+     * @scenario case=attachment_uploader_replace
+     *
+     * @effects attachment_uploader_replace_removes_default, attachment_uploader_injected_receives_contract_and_callbacks
+     *
+     * @return void 반환값 없음
+     */
+    public function test_attachment_uploader_replace_removes_default_and_passes_contract(): void
+    {
+        $this->createAttachmentUploaderReplacement();
+        $slot = $this->attachmentUploaderSlot();
+
+        $result = $this->service->applyExtensions(['layout_name' => 'admin_x_form', 'components' => [$slot], 'data_sources' => []], $this->template->id);
+        $children = $result['components'][0]['children'];
+
+        $this->assertCount(1, $children, 'replace 는 기본 업로더를 남기지 않는다');
+        $this->assertSame('vendor_uploader', $children[0]['id']);
+        $this->assertNotContains('FileUploader', array_column($children, 'name'));
+        $this->assertSame($slot['props']['uploader'], $children[0]['extensionPointProps']['uploader'], '계약 객체가 그대로 전달된다');
+        $this->assertSame($slot['callbacks'], $children[0]['extensionPointCallbacks'], '콜백 액션은 평가 없이 그대로 전달된다');
+    }
+
+    /**
+     * 주입이 없으면 기본 업로더(default)가 그대로 children 이 된다 — 저장 흐름의 업로드 신호도 그대로다(#916 ③).
+     *
+     * @scenario case=attachment_uploader_without_injection
+     *
+     * @effects attachment_uploader_default_kept_without_injection
+     *
+     * @return void 반환값 없음
+     */
+    public function test_attachment_uploader_keeps_default_without_injection(): void
+    {
+        $slot = $this->attachmentUploaderSlot();
+
+        $result = $this->service->applyExtensions(['layout_name' => 'admin_x_form', 'components' => [$slot], 'data_sources' => []], $this->template->id);
+        $children = $result['components'][0]['children'];
+
+        $this->assertSame($slot['default'], $children);
+        $this->assertSame('upload:x_attachments', $children[0]['props']['uploadTriggerEvent']);
+        $this->assertArrayNotHasKey('extensionPointProps', $children[0], 'default 노드는 확장점 props 를 받지 않는다(이중 기재 이유)');
+    }
+
+    /**
+     * 끌어 정렬 목록(`sortable`)의 행 템플릿(`itemTemplate`) 안 확장점도 채워진다(#916 ③).
+     *
+     * 게시판 설정의 반응 유형 표는 행마다 아이콘 업로더를 두는데, 그 행 템플릿은 `children`·props 가 아니라 노드의
+     * `itemTemplate` 에 실린다. 처리기가 그 자리를 따라가지 않으면 확장점에 default 도 안 채워져 업로더가 빈 칸이 된다.
+     *
+     * @scenario case=attachment_uploader_in_sortable_item_template
+     *
+     * @effects extension_point_inside_sortable_item_template_is_filled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_point_inside_sortable_item_template_is_filled(): void
+    {
+        $slot = $this->attachmentUploaderSlot();
+        $layout = [
+            'layout_name' => 'admin_board_settings',
+            'components' => [
+                [
+                    'id' => 'reaction_rows',
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'sortable' => ['source' => '{{_local.rows}}', 'itemVar' => 'row'],
+                    'itemTemplate' => ['type' => 'basic', 'name' => 'Div', 'children' => [$slot]],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        $kept = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame($slot['default'], $kept['components'][0]['itemTemplate']['children'][0]['children'] ?? null, '주입이 없으면 행 템플릿 안에서도 기본 업로더가 그려진다');
+
+        $this->createAttachmentUploaderReplacement();
+        $replaced = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame('vendor_uploader', $replaced['components'][0]['itemTemplate']['children'][0]['children'][0]['id'] ?? null);
+    }
+
+    /**
+     * 반응형 재정의(`responsive.{구간}.children`) 안 확장점도 채워진다(#916 ③ 브라우저 실측 회귀).
+     *
+     * 게시판 설정의 반응 유형은 좁은 화면에서 `<responsive on="portable">` 로 카드 목록을 그리고, 카드마다 아이콘 업로더
+     * 확장점을 둔다. 처리기가 `children`·props·`itemTemplate` 만 따라가면 이 확장점은 `default` 를 children 으로 받지 못해
+     * 좁은 화면에서 업로더가 빈 칸이 된다(2026-11-16 실측: 카드 2곳 file input 0, 넓은 표 2곳은 정상).
+     *
+     * @scenario case=attachment_uploader_in_responsive_override
+     *
+     * @effects extension_point_inside_responsive_override_is_filled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_point_inside_responsive_override_is_filled(): void
+    {
+        $slot = $this->attachmentUploaderSlot();
+        $layout = [
+            'layout_name' => 'admin_board_settings',
+            'components' => [
+                [
+                    'id' => 'reaction_list',
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'children' => [],
+                    'responsive' => [
+                        'portable' => [
+                            'children' => [
+                                ['type' => 'basic', 'name' => 'Div', 'children' => [$slot]],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        $kept = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame($slot['default'], $kept['components'][0]['responsive']['portable']['children'][0]['children'][0]['children'] ?? null, '주입이 없으면 반응형 재정의 안에서도 기본 업로더가 그려진다');
+
+        $this->createAttachmentUploaderReplacement();
+        $replaced = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame('vendor_uploader', $replaced['components'][0]['responsive']['portable']['children'][0]['children'][0]['children'][0]['id'] ?? null);
+    }
+
+    /**
+     * 번들 레이아웃의 첨부 업로더 확장점 전부가 서비스 단계에서 replace 를 받는다 — 기본 업로더가 걷히고 같은 업로드 신호 이름을 넘긴다(#916 ③).
+     *
+     * 모집단은 손으로 적지 않는다. 번들 템플릿·모듈·플러그인 레이아웃 JSON 을 모두 훑어 확장점을 가진 파일과 그 수를 먼저 세고,
+     * 서비스를 거친 결과에서 같은 수의 확장점이 주입 노드를 받았는지 본다. 처리기가 따라가지 않는 자리(모달 갈래·정렬 행 템플릿·
+     * 반응형 재정의 등)에 확장점이 놓이면 그 파일의 수가 줄어 red 가 된다.
+     *
+     * @scenario case=attachment_uploader_bundled_layouts
+     *
+     * @effects attachment_uploader_replace_removes_default, attachment_uploader_injected_receives_contract_and_callbacks, extension_point_inside_sortable_item_template_is_filled, extension_point_inside_responsive_override_is_filled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundled_attachment_uploader_slots_accept_replacement(): void
+    {
+        $this->createAttachmentUploaderReplacement();
+
+        ['own' => $own, 'cases' => $cases] = $this->bundledAttachmentUploaderLayouts();
+        // #916 에서 21곳(14파일)을 감쌌다 — 훑기 경로가 틀려 모집단이 줄면 빈 통과가 되지 않게 하한을 둔다
+        $this->assertGreaterThanOrEqual(21, array_sum($own), '번들 레이아웃의 attachment_uploader 확장점이 21개보다 적다 — 훑기 경로가 틀렸다');
+        $this->assertGreaterThan(count($own), count($cases), '조각을 포함하는 레이아웃(반응형 재정의·탭 등)이 모집단에 없다 — partial 펼치기가 틀렸다');
+
+        foreach ($cases as $relative => ['json' => $json, 'slots' => $expectedSlots]) {
+            // 화면 레이아웃은 부모 슬롯(`slots.*`)·`components`·`modals` 에, 조각은 루트 노드 하나로 실린다 — 모두 서비스 입력으로 편다
+            $components = [];
+            foreach ($json['slots'] ?? [] as $list) {
+                $components = array_merge($components, $list);
+            }
+            $components = array_merge($components, $json['components'] ?? []);
+            if (! isset($json['slots']) && ! isset($json['components'])) {
+                $components = [$json];
+            }
+            $layout = ['layout_name' => 'bundled', 'components' => $components, 'modals' => $json['modals'] ?? [], 'data_sources' => []];
+            $result = $this->service->applyExtensions($layout, $this->template->id);
+
+            $slots = [];
+            $uploaders = 0;
+            $walk = function ($node) use (&$walk, &$slots, &$uploaders): void {
+                if (! is_array($node)) {
+                    return;
+                }
+                if (($node['name'] ?? null) === 'FileUploader') {
+                    $uploaders++;
+                }
+                if (($node['type'] ?? null) === 'extension_point' && ($node['name'] ?? null) === 'attachment_uploader') {
+                    $slots[] = $node;
+                }
+                foreach ($node as $key => $child) {
+                    if ($key !== 'default') {
+                        $walk($child);
+                    }
+                }
+            };
+            $walk([$result['components'], $result['modals'] ?? []]);
+
+            $this->assertCount($expectedSlots, $slots, "{$relative}: 서비스를 거친 결과의 확장점 수가 원본과 같다");
+            $this->assertSame(0, $uploaders, "{$relative}: replace 뒤 children 에 기본 업로더가 남지 않는다");
+            foreach ($slots as $slot) {
+                $where = $relative.'#'.($slot['id'] ?? '(id 없음)');
+                $this->assertSame('vendor_uploader', $slot['children'][0]['id'] ?? null, "{$where}: 주입 노드가 자리를 차지한다");
+                $this->assertSame($slot['props']['uploader'], $slot['children'][0]['extensionPointProps']['uploader'] ?? null, "{$where}: 계약 객체가 그대로 전달된다");
+                $this->assertSame(
+                    $slot['default'][0]['props']['uploadTriggerEvent'] ?? null,
+                    $slot['children'][0]['extensionPointProps']['uploader']['triggerEvent'] ?? null,
+                    "{$where}: 저장 흐름의 업로드 신호 이름이 계약에 같다"
+                );
+            }
+        }
+    }
+
+    /**
+     * 번들 템플릿·모듈·플러그인 레이아웃 중 attachment_uploader 확장점이 그려지는 문서와, partial 을 펼친 뒤의 확장점 수.
+     *
+     * 확장점을 직접 가진 JSON 과, 그런 조각을 `partial` 로 포함하는(직간접) JSON 을 모두 모은다. 포함 문서는 설치 때와 같은
+     * 해석기(`ValidatesLayoutFiles::resolveAllPartials`)로 펼쳐, 조각이 반응형 재정의·정렬 행 템플릿 같은 자리에 들어간 실제
+     * 모양으로 서비스에 넣는다 — 조각만 따로 넣으면 그 자리를 따라가지 않는 처리기도 통과한다.
+     * 조각(`resources/extensions`)은 다른 자리에 붙는 주입물이라 빼고, 시험·빌드 산출 디렉터리도 뺀다.
+     *
+     * @return array{own: array<string, int>, cases: array<string, array{json: array, slots: int}>} own = 확장점을 직접 가진 파일별 수, cases = 펼친 문서와 그 수
+     */
+    private function bundledAttachmentUploaderLayouts(): array
+    {
+        $roots = array_merge(
+            glob(base_path('templates/_bundled/*/layouts'), GLOB_ONLYDIR) ?: [],
+            glob(base_path('modules/_bundled/*/resources/layouts'), GLOB_ONLYDIR) ?: [],
+            glob(base_path('plugins/_bundled/*/resources/layouts'), GLOB_ONLYDIR) ?: [],
+        );
+        $count = function ($node) use (&$count): int {
+            if (! is_array($node)) {
+                return 0;
+            }
+            $n = (($node['type'] ?? null) === 'extension_point' && ($node['name'] ?? null) === 'attachment_uploader') ? 1 : 0;
+            foreach ($node as $child) {
+                $n += $count($child);
+            }
+
+            return $n;
+        };
+        $norm = fn (string $path): string => str_replace('\\', '/', realpath($path) ?: $path);
+        $relative = fn (string $path): string => ltrim(str_replace($norm(base_path()), '', $path), '/');
+
+        // 1) 레이아웃 JSON 전부와 각 문서의 partial 참조(문서 폴더 기준, 없으면 `partials/` 는 layouts 루트 기준)
+        $texts = [];
+        $refs = [];
+        foreach ($roots as $root) {
+            $rootPosix = $norm($root);
+            foreach (File::allFiles($root) as $file) {
+                $path = $norm($file->getPathname());
+                if ($file->getExtension() !== 'json' || preg_match('#/(node_modules|dist|__tests__)/#', $path)) {
+                    continue;
+                }
+                $texts[$path] = (string) file_get_contents($path);
+                preg_match_all('/"partial"\s*:\s*"([^"]+)"/', $texts[$path], $m);
+                $refs[$path] = array_map(function (string $ref) use ($path, $rootPosix, $norm): string {
+                    $local = dirname($path).'/'.$ref;
+
+                    return $norm((str_starts_with($ref, 'partials/') && ! is_file($local)) ? $rootPosix.'/'.$ref : $local);
+                }, $m[1]);
+            }
+        }
+
+        // 2) 확장점을 직접 가진 문서 → 그 문서를 포함하는 문서로 고정점까지 넓힌다
+        $own = [];
+        $reaching = [];
+        foreach ($texts as $path => $text) {
+            if (str_contains($text, '"attachment_uploader"') && ($n = $count(json_decode($text, true))) > 0) {
+                $own[$relative($path)] = $n;
+                $reaching[$path] = true;
+            }
+        }
+        do {
+            $grew = false;
+            foreach ($refs as $path => $targets) {
+                if (isset($reaching[$path])) {
+                    continue;
+                }
+                foreach ($targets as $target) {
+                    if (isset($reaching[$target])) {
+                        $reaching[$path] = $grew = true;
+                        break;
+                    }
+                }
+            }
+        } while ($grew);
+
+        // 3) 설치 때와 같은 해석기로 partial 을 펼치고 확장점 수를 센다
+        $resolver = new class
+        {
+            use ValidatesLayoutFiles;
+
+            /**
+             * JSON 문서 하나의 partial 참조를 펼칩니다.
+             *
+             * @param  array  $data  문서 내용
+             * @param  string  $basePath  문서 폴더
+             * @return array 펼친 문서
+             */
+            public function resolve(array $data, string $basePath): array
+            {
+                return $this->resolveAllPartials($data, $basePath, 0, [], true);
+            }
+        };
+        $cases = [];
+        foreach (array_keys($reaching) as $path) {
+            $json = $resolver->resolve(json_decode($texts[$path], true), dirname($path));
+            $cases[$relative($path)] = ['json' => $json, 'slots' => $count($json)];
+        }
+        ksort($own);
+        ksort($cases);
+
+        return ['own' => $own, 'cases' => $cases];
     }
 
     /**

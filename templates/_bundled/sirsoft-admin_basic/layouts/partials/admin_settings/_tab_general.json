@@ -331,87 +331,195 @@
                                     "text": "$t:admin.settings.general.site_logo_desc"
                                 },
                                 {
-                                    "id": "site_logo_uploader",
-                                    "type": "composite",
-                                    "name": "FileUploader",
-                                    "actions": [
+                                    "comment": "첨부 업로더 확장점(#916) — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
+                                    "id": "site_logo_uploader_slot",
+                                    "type": "extension_point",
+                                    "name": "attachment_uploader",
+                                    "props": {
+                                        "className": "contents",
+                                        "uploader": {
+                                            "version": 1,
+                                            "mode": "upload",
+                                            "endpoints": {
+                                                "upload": "/api/admin/attachments",
+                                                "delete": "/api/admin/attachments/:id",
+                                                "reorder": "/api/admin/attachments/reorder"
+                                            },
+                                            "fields": {},
+                                            "policy": {
+                                                "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                                "maxFiles": 5,
+                                                "maxConcurrentUploads": 1,
+                                                "imageCompression": {
+                                                    "maxSizeMB": 1,
+                                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"
+                                                }
+                                            },
+                                            "collection": "site_logo",
+                                            "attachmentable": {
+                                                "type": null,
+                                                "id": null
+                                            },
+                                            "triggerEvent": "upload:site_logo",
+                                            "initialFiles": "{{settings?.data?.general?.site_logo ?? []}}",
+                                            "disabled": "{{!!_computed.isReadOnly}}",
+                                            "autoUpload": false,
+                                            "ui": {
+                                                "confirmBeforeRemove": true
+                                            },
+                                            "context": {
+                                                "owner": "core",
+                                                "purpose": "site_logo"
+                                            }
+                                        }
+                                    },
+                                    "default": [
                                         {
-                                            "comment": "파일을 고른 것만으로 **아직 올라가지 않는다**(`autoUpload=false`) — 저장 버튼이 보내는\n                   신호를 받아야 올린다. 여기서는 \"고친 것이 있다\" 표시만 켜 저장 버튼을 풀어 준다.\n                   고른 파일이 없어지는 경우까지 표시를 켜지 않도록 조건을 단다.",
-                                            "type": "change",
-                                            "event": "onFilesChange",
+                                            "id": "site_logo_uploader",
+                                            "type": "composite",
+                                            "name": "FileUploader",
+                                            "actions": [
+                                                {
+                                                    "comment": "파일을 고른 것만으로 **아직 올라가지 않는다**(`autoUpload=false`) — 저장 버튼이 보내는\n                       신호를 받아야 올린다. 여기서는 \"고친 것이 있다\" 표시만 켜 저장 버튼을 풀어 준다.\n                       고른 파일이 없어지는 경우까지 표시를 켜지 않도록 조건을 단다.",
+                                                    "type": "change",
+                                                    "event": "onFilesChange",
+                                                    "handler": "setState",
+                                                    "if": "{{$args[0] && $args[0].length > 0}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드가 끝나면 올라간 파일을 폼 값에 **덧붙인다**(덮어쓰지 않는다) — 이미 있던 로고를\n                       남긴 채 새 것을 더하는 화면이라 그렇다.",
+                                                    "type": "change",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_logo": "{{[...(_local.form?.general?.site_logo ?? []), ...$args[0]]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "같은 완료 이벤트를 **두 번 받는다** — 위는 값 갱신, 여기는 알림.\n                       갈라 둔 것은 값 갱신이 실패해도 알림이 뜨지 않게 하려는 것이 아니라, 한 블록에\n                       섞으면 어느 쪽이 화면 표시이고 어느 쪽이 상태 변경인지 읽기 어렵기 때문이다.",
+                                                    "type": "custom",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드 실패 — 업로더가 준 문구를 그대로 띄운다(크기·확장자 제한은 업로드 탭이 정한다).",
+                                                    "type": "custom",
+                                                    "event": "onUploadError",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "뺀 파일을 폼 값에서도 걸러 낸다 — 화면에서만 사라지고 저장 값에 남으면 다음 저장에\n                       되살아난다. 실제 삭제는 저장 시점에 정해진다.",
+                                                    "type": "change",
+                                                    "event": "onRemove",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_logo": "{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "위 제거와 같은 이벤트의 알림 몫이다(완료 이벤트를 둘로 나눈 것과 같은 이유).",
+                                                    "type": "custom",
+                                                    "event": "onRemove",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "collection": "site_logo",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "maxFiles": 5,
+                                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                                "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                                "initialFiles": "{{settings?.data?.general?.site_logo ?? []}}",
+                                                "autoUpload": false,
+                                                "uploadTriggerEvent": "upload:site_logo",
+                                                "confirmBeforeRemove": true,
+                                                "imageCompression": {
+                                                    "maxSizeMB": 1,
+                                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "callbacks": {
+                                        "onFilesChange": {
+                                            "comment": "고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(기본 업로더와 같다)",
                                             "handler": "setState",
-                                            "if": "{{$args[0] && $args[0].length > 0}}",
+                                            "if": "{{$event && $event.length > 0}}",
                                             "params": {
                                                 "target": "local",
                                                 "hasChanges": true
                                             }
                                         },
-                                        {
-                                            "comment": "업로드가 끝나면 올라간 파일을 폼 값에 **덧붙인다**(덮어쓰지 않는다) — 이미 있던 로고를\n                   남긴 채 새 것을 더하는 화면이라 그렇다.",
-                                            "type": "change",
-                                            "event": "onUploadComplete",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.general.site_logo": "{{[...(_local.form?.general?.site_logo ?? []), ...$args[0]]}}"
-                                            }
+                                        "onUploadComplete": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "올라간 파일을 폼 값에 반영하고 성공을 알린다(기본 업로더와 같다)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_logo": "{{[...(_local.form?.general?.site_logo ?? []), ...$event]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                }
+                                            ]
                                         },
-                                        {
-                                            "comment": "같은 완료 이벤트를 **두 번 받는다** — 위는 값 갱신, 여기는 알림.\n                   갈라 둔 것은 값 갱신이 실패해도 알림이 뜨지 않게 하려는 것이 아니라, 한 블록에\n                   섞으면 어느 쪽이 화면 표시이고 어느 쪽이 상태 변경인지 읽기 어렵기 때문이다.",
-                                            "type": "custom",
-                                            "event": "onUploadComplete",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:attachment.upload_success"
-                                            }
-                                        },
-                                        {
-                                            "comment": "업로드 실패 — 업로더가 준 문구를 그대로 띄운다(크기·확장자 제한은 업로드 탭이 정한다).",
-                                            "type": "custom",
-                                            "event": "onUploadError",
+                                        "onUploadError": {
+                                            "comment": "업로드 실패 사유를 그대로 띄운다",
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{$args[0]}}"
+                                                "message": "{{$event}}"
                                             }
                                         },
-                                        {
-                                            "comment": "뺀 파일을 폼 값에서도 걸러 낸다 — 화면에서만 사라지고 저장 값에 남으면 다음 저장에\n                   되살아난다. 실제 삭제는 저장 시점에 정해진다.",
-                                            "type": "change",
-                                            "event": "onRemove",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.general.site_logo": "{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "위 제거와 같은 이벤트의 알림 몫이다(완료 이벤트를 둘로 나눈 것과 같은 이유).",
-                                            "type": "custom",
-                                            "event": "onRemove",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:attachment.deleted"
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "collection": "site_logo",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "maxFiles": 5,
-                                        "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
-                                        "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
-                                        "initialFiles": "{{settings?.data?.general?.site_logo ?? []}}",
-                                        "autoUpload": false,
-                                        "uploadTriggerEvent": "upload:site_logo",
-                                        "confirmBeforeRemove": true,
-                                        "imageCompression": {
-                                            "maxSizeMB": 1,
-                                            "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 800}}"
+                                        "onRemove": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "뺀 파일을 폼 값에서 걸러 내고 알린다 — 실제 삭제는 저장 때 정해진다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_logo": "{{(_local.form?.general?.site_logo ?? []).filter(item => (item.hash || item.id) !== $event)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     }
                                 }
@@ -440,84 +548,189 @@
                                     "text": "$t:admin.settings.general.site_favicon_desc"
                                 },
                                 {
-                                    "id": "site_favicon_uploader",
-                                    "type": "composite",
-                                    "name": "FileUploader",
-                                    "actions": [
+                                    "comment": "첨부 업로더 확장점(#916) — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
+                                    "id": "site_favicon_uploader_slot",
+                                    "type": "extension_point",
+                                    "name": "attachment_uploader",
+                                    "props": {
+                                        "className": "contents",
+                                        "uploader": {
+                                            "version": 1,
+                                            "mode": "upload",
+                                            "endpoints": {
+                                                "upload": "/api/admin/attachments",
+                                                "delete": "/api/admin/attachments/:id",
+                                                "reorder": "/api/admin/attachments/reorder"
+                                            },
+                                            "fields": {},
+                                            "policy": {
+                                                "accept": ".ico,.png,.svg,.gif,.jpg,.jpeg,.webp",
+                                                "maxSize": 1,
+                                                "maxFiles": 1,
+                                                "maxConcurrentUploads": 1,
+                                                "imageCompression": null
+                                            },
+                                            "collection": "site_favicon",
+                                            "attachmentable": {
+                                                "type": null,
+                                                "id": null
+                                            },
+                                            "triggerEvent": "upload:site_favicon",
+                                            "initialFiles": "{{settings?.data?.general?.site_favicon ?? []}}",
+                                            "disabled": "{{!!_computed.isReadOnly}}",
+                                            "autoUpload": false,
+                                            "ui": {
+                                                "confirmBeforeRemove": true
+                                            },
+                                            "context": {
+                                                "owner": "core",
+                                                "purpose": "site_favicon"
+                                            }
+                                        }
+                                    },
+                                    "default": [
                                         {
-                                            "comment": "고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(로고 칸과 같다).",
-                                            "type": "change",
-                                            "event": "onFilesChange",
+                                            "id": "site_favicon_uploader",
+                                            "type": "composite",
+                                            "name": "FileUploader",
+                                            "actions": [
+                                                {
+                                                    "comment": "고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(로고 칸과 같다).",
+                                                    "type": "change",
+                                                    "event": "onFilesChange",
+                                                    "handler": "setState",
+                                                    "if": "{{$args[0] && $args[0].length > 0}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "파비콘은 1개라 덧붙이지 않고 **교체**한다 — 이전 값은 저장 때 서버가 파기한다.",
+                                                    "type": "change",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_favicon": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "올리기를 마쳤다 — 성공 안내만 띄운다(값 교체는 위 change 블록이 한다)",
+                                                    "type": "custom",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드 실패 — 서버 문구(형식·1MB·SVG 안전 검사)를 그대로 띄운다",
+                                                    "type": "custom",
+                                                    "event": "onUploadError",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "파비콘을 뺐다 — 목록에서 그 파일을 걸러 내고 저장 버튼을 풀어 준다. 서버 파기는 저장 때 한다",
+                                                    "type": "change",
+                                                    "event": "onRemove",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_favicon": "{{(_local.form?.general?.site_favicon ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "뺀 것을 알린다 — 저장해야 확정된다",
+                                                    "type": "custom",
+                                                    "event": "onRemove",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "collection": "site_favicon",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "maxFiles": 1,
+                                                "maxSize": 1,
+                                                "accept": ".ico,.png,.svg,.gif,.jpg,.jpeg,.webp",
+                                                "initialFiles": "{{settings?.data?.general?.site_favicon ?? []}}",
+                                                "autoUpload": false,
+                                                "uploadTriggerEvent": "upload:site_favicon",
+                                                "confirmBeforeRemove": true
+                                            }
+                                        }
+                                    ],
+                                    "callbacks": {
+                                        "onFilesChange": {
+                                            "comment": "고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(기본 업로더와 같다)",
                                             "handler": "setState",
-                                            "if": "{{$args[0] && $args[0].length > 0}}",
+                                            "if": "{{$event && $event.length > 0}}",
                                             "params": {
                                                 "target": "local",
                                                 "hasChanges": true
                                             }
                                         },
-                                        {
-                                            "comment": "파비콘은 1개라 덧붙이지 않고 **교체**한다 — 이전 값은 저장 때 서버가 파기한다.",
-                                            "type": "change",
-                                            "event": "onUploadComplete",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.general.site_favicon": "{{$args[0]}}"
-                                            }
+                                        "onUploadComplete": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "올라간 파일을 폼 값에 반영하고 성공을 알린다(기본 업로더와 같다)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_favicon": "{{$event}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                }
+                                            ]
                                         },
-                                        {
-                                            "comment": "올리기를 마쳤다 — 성공 안내만 띄운다(값 교체는 위 change 블록이 한다)",
-                                            "type": "custom",
-                                            "event": "onUploadComplete",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:attachment.upload_success"
-                                            }
-                                        },
-                                        {
-                                            "comment": "업로드 실패 — 서버 문구(형식·1MB·SVG 안전 검사)를 그대로 띄운다",
-                                            "type": "custom",
-                                            "event": "onUploadError",
+                                        "onUploadError": {
+                                            "comment": "업로드 실패 사유를 그대로 띄운다",
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{$args[0]}}"
+                                                "message": "{{$event}}"
                                             }
                                         },
-                                        {
-                                            "comment": "파비콘을 뺐다 — 목록에서 그 파일을 걸러 내고 저장 버튼을 풀어 준다. 서버 파기는 저장 때 한다",
-                                            "type": "change",
-                                            "event": "onRemove",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.general.site_favicon": "{{(_local.form?.general?.site_favicon ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "뺀 것을 알린다 — 저장해야 확정된다",
-                                            "type": "custom",
-                                            "event": "onRemove",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:attachment.deleted"
-                                            }
+                                        "onRemove": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "뺀 파일을 폼 값에서 걸러 내고 알린다 — 실제 삭제는 저장 때 정해진다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.general.site_favicon": "{{(_local.form?.general?.site_favicon ?? []).filter(item => (item.hash || item.id) !== $event)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ]
                                         }
-                                    ],
-                                    "props": {
-                                        "collection": "site_favicon",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "maxFiles": 1,
-                                        "maxSize": 1,
-                                        "accept": ".ico,.png,.svg,.gif,.jpg,.jpeg,.webp",
-                                        "initialFiles": "{{settings?.data?.general?.site_favicon ?? []}}",
-                                        "autoUpload": false,
-                                        "uploadTriggerEvent": "upload:site_favicon",
-                                        "confirmBeforeRemove": true
                                     }
                                 },
                                 {

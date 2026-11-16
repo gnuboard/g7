@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
  *    CDN 퍼지도 원본 단위 와일드카드 하나로 보낸다.
  *
  * 저장 위치는 원본 분류별로 따로다 — 완전 공개 원본은 `upload.thumbnail_disk_public`(공개·CDN 디스크 가능),
- * 권한이 걸린 원본은 `upload.thumbnail_disk_gated`(비공개 고정).
+ * 권한이 걸린 원본은 `upload.thumbnail_disk_gated`(비공개 디스크만 — `thumbnails`·`s3`·비공개 첨부 저장소 디스크, 늘 스트림).
  */
 class ThumbnailStore
 {
@@ -30,7 +30,12 @@ class ThumbnailStore
     /** 비공개 기본 썸네일 디스크 */
     public const PRIVATE_DISK = 'thumbnails';
 
-    /** @var list<string> 권한 원본의 썸네일 디스크로 허용하는 디스크 (스트림으로만 낸다) */
+    /**
+     * @var list<string> 권한 원본의 썸네일 디스크로 늘 허용하는 코어 디스크 (스트림으로만 낸다)
+     *
+     * 실제 허용 목록은 여기에 비공개 첨부 저장소 카탈로그 디스크를 더한 `ThumbnailDiskOptions::ids('gated')` 다.
+     * 이 상수는 그 판정의 출발점이자 판정이 실패했을 때의 폴백이다.
+     */
     public const GATED_ALLOWED_DISKS = ['thumbnails', 's3'];
 
     /** 저장 위치 종류: 공개 */
@@ -53,7 +58,8 @@ class ThumbnailStore
     /**
      * 원본 분류의 썸네일 디스크 이름
      *
-     * 권한 원본에 공개 자산 디스크가 설정돼 있으면(저장 검증을 우회한 설정 파일 편집 등) 비공개 디스크로 강제하고 경고를 남긴다.
+     * 권한 원본에 허용 목록 밖 디스크(공개 자산 디스크, 꺼진 플러그인 디스크 등)가 설정돼 있으면(저장 검증을 우회한 설정 파일
+     * 편집, 저장 뒤 플러그인 비활성화) 비공개 디스크로 강제하고 경고를 남긴다.
      *
      * @param  bool  $gated  권한 원본인지
      * @return string 디스크 이름
@@ -63,8 +69,20 @@ class ThumbnailStore
         if ($gated) {
             $disk = (string) config('core.thumbnail.disk_gated', self::PRIVATE_DISK);
 
-            if (! in_array($disk, self::GATED_ALLOWED_DISKS, true)) {
-                Log::warning('권한이 걸린 이미지의 썸네일 디스크로 공개 디스크가 설정돼 비공개 디스크로 바꿔 씁니다', ['disk' => $disk]);
+            if ($disk === self::PRIVATE_DISK || $disk === '') {
+                return self::PRIVATE_DISK;
+            }
+
+            // 화면 선택지·저장 검증과 같은 판정(thumbnails·s3·비공개 첨부 저장소 카탈로그 − 공개 자산 디스크)을 쓴다.
+            // 판정은 드라이버 카탈로그 필터만 돌고 이 저장소를 다시 부르지 않는다. 판정이 실패하면 코어 기본 목록으로 좁힌다.
+            try {
+                $allowed = app(ThumbnailDiskOptions::class)->ids(self::KIND_GATED);
+            } catch (\Throwable) {
+                $allowed = self::GATED_ALLOWED_DISKS;
+            }
+
+            if (! in_array($disk, $allowed, true)) {
+                Log::warning('권한이 걸린 이미지의 썸네일 디스크로 허용되지 않는 디스크(공개 자산 디스크, 쓸 수 없는 디스크)가 설정돼 비공개 디스크로 바꿔 씁니다', ['disk' => $disk]);
 
                 return self::PRIVATE_DISK;
             }

@@ -1,8 +1,8 @@
 {
-    "comment": "언어팩을 새로 들여오는 창. 길이 둘이고 탭으로 가른다 — 파일(ZIP)을 올리거나 GitHub 주소를 주거나.\n  두 갈래는 **보내는 방식까지 다르다**(파일은 폼 전송, 주소는 JSON)라서 아래 설치 버튼이\n  지금 탭에 맞춰 주소·형식·본문을 통째로 갈아 끼운다.\n  깔린 뒤에는 목록을 다시 받고 확장을 새로 읽는다 — 새 언어 자원이 곧바로 쓰이게 하려는 것이다.\n  실패는 토스트가 아니라 창 위쪽 붉은 띠와 각 칸 아래 문구로 보여 준다(고칠 자리가 이 창 안에 있다).",
+    "comment": "언어팩을 새로 들여오는 창. 길이 셋이고 탭으로 가른다 — 파일(ZIP)을 올리거나, GitHub 주소를 주거나, ZIP 주소(URL)를 주거나.\n  갈래마다 **보내는 방식까지 다르다**(파일은 폼 전송, 주소 둘은 JSON)라서 아래 설치 버튼이\n  지금 탭에 맞춰 주소·형식·본문을 통째로 갈아 끼운다.\n  깔린 뒤에는 목록을 다시 받고 확장을 새로 읽는다 — 새 언어 자원이 곧바로 쓰이게 하려는 것이다.\n  실패는 토스트가 아니라 창 위쪽 붉은 띠와 각 칸 아래 문구로 보여 준다(고칠 자리가 이 창 안에 있다).\n  패키지 무결성(#916): 파일 탭에는 서명 파일(.sig.json), URL 탭에는 서명 파일 주소 칸이 있다(둘 다 선택 — 주소를 짐작해 따로 받지 않는다).\n  미서명(409)·서명 불일치(422) 거절은 공용 안내 조각이 그리고, 정책이 허용하면 설치 버튼이 「미서명으로 계속」으로 바뀌어\n  같은 요청에 `allow_unsigned=1` 만 더해 다시 보낸다.",
     "meta": {
         "is_partial": true,
-        "description": "언어팩 설치 모달 (ZIP/GitHub 2-tab) — 모듈 설치 모달 UX 패턴 동일",
+        "description": "언어팩 설치 모달 (ZIP/GitHub/URL 3-tab) — 모듈 설치 모달 UX 패턴 동일",
         "editor_label": "$t:admin.modal_label.admin_language_pack_list.language_pack_install_modal"
     },
     "id": "language_pack_install_modal",
@@ -27,10 +27,17 @@
                                     "target": "global",
                                     "languagePackUploadFile": null,
                                     "languagePackUploadFileName": null,
+                                    "languagePackUploadSignature": null,
+                                    "languagePackUploadSignatureName": null,
                                     "languagePackGithubUrl": null,
+                                    "languagePackUrl": null,
+                                    "languagePackChecksum": null,
+                                    "languagePackSignatureUrl": null,
                                     "languagePackInstallError": null,
                                     "languagePackInstallErrors": null,
-                                    "languagePackInstallTab": "file_upload"
+                                    "languagePackInstallTab": "file_upload",
+                                    "packageIntegrity": null,
+                                    "packageIntegrityMessage": null
                                 }
                             },
                             {
@@ -57,7 +64,7 @@
                 "name": "Button",
                 "actions": [
                     {
-                        "comment": "지금 탭에 따라 보낼 곳·형식·본문이 통째로 갈린다(파일은 폼 전송, 주소는 JSON). 성공 갈래에서만 값들을 비우므로 실패하면 고쳐서 다시 누를 수 있다.",
+                        "comment": "지금 탭에 따라 보낼 곳·형식·본문이 통째로 갈린다(파일은 폼 전송, 주소 둘은 JSON). 성공 갈래에서만 값들을 비우므로 실패하면 고쳐서 다시 누를 수 있다.\n               미서명 거절(409)을 정책이 허용한 뒤의 클릭은 「미서명으로 계속」이다 — 본문은 그대로 두고 `allow_unsigned=1` 만 더한다.\n               거절 기록은 여기서 미리 지우지 않는다(같은 클릭의 본문이 그 기록으로 `allow_unsigned` 를 정한다).",
                         "type": "click",
                         "handler": "sequence",
                         "actions": [
@@ -72,12 +79,12 @@
                             },
                             {
                                 "handler": "apiCall",
-                                "target": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? '/api/admin/language-packs/install-from-file' : '/api/admin/language-packs/install-from-github'}}",
+                                "target": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? '/api/admin/language-packs/install-from-file' : (_global.languagePackInstallTab === 'url' ? '/api/admin/language-packs/install-from-url' : '/api/admin/language-packs/install-from-github')}}",
                                 "auth_required": true,
                                 "params": {
                                     "method": "POST",
                                     "contentType": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
-                                    "body": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? { file: _global.languagePackUploadFile } : { github_url: _global.languagePackGithubUrl }}}"
+                                    "body": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? { file: _global.languagePackUploadFile, signature: _global.languagePackUploadSignature ?? null, allow_unsigned: _global.packageIntegrity?.can_continue === true ? 1 : null, integrity_aware: 1 } : (_global.languagePackInstallTab === 'url' ? { url: _global.languagePackUrl, checksum: _global.languagePackChecksum || null, signature_url: _global.languagePackSignatureUrl || null, allow_unsigned: _global.packageIntegrity?.can_continue === true ? 1 : null, integrity_aware: 1 } : { github_url: _global.languagePackGithubUrl, allow_unsigned: _global.packageIntegrity?.can_continue === true ? 1 : null, integrity_aware: 1 })}}"
                                 },
                                 "onSuccess": [
                                     {
@@ -87,10 +94,17 @@
                                             "isLanguagePackInstalling": false,
                                             "languagePackUploadFile": null,
                                             "languagePackUploadFileName": null,
+                                            "languagePackUploadSignature": null,
+                                            "languagePackUploadSignatureName": null,
                                             "languagePackGithubUrl": null,
+                                            "languagePackUrl": null,
+                                            "languagePackChecksum": null,
+                                            "languagePackSignatureUrl": null,
                                             "languagePackInstallError": null,
                                             "languagePackInstallErrors": null,
-                                            "languagePackInstallTab": "file_upload"
+                                            "languagePackInstallTab": "file_upload",
+                                            "packageIntegrity": null,
+                                            "packageIntegrityMessage": null
                                         }
                                     },
                                     {
@@ -98,6 +112,23 @@
                                         "params": {
                                             "type": "success",
                                             "message": "$t:admin.language_packs.messages.install_success"
+                                        }
+                                    },
+                                    {
+                                        "comment": "설치된 언어팩의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 들였으면 그 사실을 알린다",
+                                        "handler": "toast",
+                                        "if": "{{response?.data?.integrity_status === 'verified'}}",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:admin.package_integrity.result_unsigned"
                                         }
                                     },
                                     {
@@ -128,13 +159,35 @@
                                     }
                                 ],
                                 "onError": {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isLanguagePackInstalling": false,
-                                        "languagePackInstallError": "{{error.message}}",
-                                        "languagePackInstallErrors": "{{error.errors}}"
-                                    }
+                                    "comment": "무결성 거절(표지로 가른다 — 같은 409 를 작업 잠금도 쓴다)은 위쪽 공용 안내 조각이 그리게 거절 내용을 담고, 붉은 띠는 비운다",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isLanguagePackInstalling": false,
+                                                    "packageIntegrity": "{{error.errors?.integrity ?? null}}",
+                                                    "packageIntegrityMessage": "{{error.message}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isLanguagePackInstalling": false,
+                                                    "languagePackInstallError": "{{error.message}}",
+                                                    "languagePackInstallErrors": "{{error.errors}}",
+                                                    "packageIntegrity": null,
+                                                    "packageIntegrityMessage": null
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             }
                         ]
@@ -142,8 +195,8 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : !_global.languagePackGithubUrl)}}"
+                    "className": "{{_global.packageIntegrity?.can_continue === true ? 'flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed' : 'flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                    "disabled": "{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : (_global.languagePackInstallTab === 'url' ? !_global.languagePackUrl : !_global.languagePackGithubUrl))}}"
                 },
                 "children": [
                     {
@@ -168,7 +221,7 @@
                     {
                         "type": "basic",
                         "name": "Span",
-                        "text": "{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}"
+                        "text": "{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.language_packs.actions.install')}}"
                     }
                 ]
             }
@@ -265,6 +318,9 @@
             ]
         },
         {
+            "partial": "partials/_package_integrity_notice.json"
+        },
+        {
             "id": "language_pack_install_tabs",
             "type": "composite",
             "name": "TabNavigation",
@@ -278,7 +334,9 @@
                         "target": "global",
                         "languagePackInstallTab": "{{$args[0]}}",
                         "languagePackInstallError": null,
-                        "languagePackInstallErrors": null
+                        "languagePackInstallErrors": null,
+                        "packageIntegrity": null,
+                        "packageIntegrityMessage": null
                     }
                 }
             ],
@@ -295,6 +353,11 @@
                         "id": "github",
                         "label": "$t:admin.language_packs.install_modal.tabs.github",
                         "iconName": "code-branch"
+                    },
+                    {
+                        "id": "url",
+                        "label": "$t:admin.language_packs.install_modal.tabs.url",
+                        "iconName": "link"
                     }
                 ]
             }
@@ -340,7 +403,9 @@
                                                 "languagePackUploadFile": "{{$event.target.value}}",
                                                 "languagePackUploadFileName": "{{$event.target.value?.name}}",
                                                 "languagePackInstallError": null,
-                                                "languagePackInstallErrors": null
+                                                "languagePackInstallErrors": null,
+                                                "packageIntegrity": null,
+                                                "packageIntegrityMessage": null
                                             }
                                         }
                                     ],
@@ -361,6 +426,73 @@
                                 "className": "form-error-xs mt-1"
                             },
                             "text": "{{Array.isArray(_global.languagePackInstallErrors?.file) ? _global.languagePackInstallErrors.file[0] : _global.languagePackInstallErrors?.file}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "language_pack_signature_file_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.package_integrity.signature_file_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "FileInput",
+                                    "actions": [
+                                        {
+                                            "comment": "서명 파일 선택(선택 사항) — 고르면 설치 요청에 `signature` 로 함께 실린다. 다시 고르는 것도 지난 거절을 지우는 신호다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "languagePackUploadSignature": "{{$event.target.value}}",
+                                                "languagePackUploadSignatureName": "{{$event.target.value?.name}}",
+                                                "languagePackInstallError": null,
+                                                "languagePackInstallErrors": null,
+                                                "packageIntegrity": null,
+                                                "packageIntegrityMessage": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "accept": ".json",
+                                        "className": "{{_global.languagePackInstallErrors?.signature ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
+                                        "buttonText": "$t:common.browse",
+                                        "placeholder": "$t:admin.package_integrity.no_signature_selected"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.languagePackInstallErrors?.signature}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{Array.isArray(_global.languagePackInstallErrors?.signature) ? _global.languagePackInstallErrors.signature[0] : _global.languagePackInstallErrors?.signature}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.package_integrity.signature_file_hint"
                         }
                     ]
                 },
@@ -455,7 +587,9 @@
                                                 "target": "global",
                                                 "languagePackGithubUrl": "{{$event.target.value}}",
                                                 "languagePackInstallError": null,
-                                                "languagePackInstallErrors": null
+                                                "languagePackInstallErrors": null,
+                                                "packageIntegrity": null,
+                                                "packageIntegrityMessage": null
                                             }
                                         }
                                     ],
@@ -513,6 +647,263 @@
                                                 "className": "text-info-soft"
                                             },
                                             "text": "$t:admin.language_packs.install_modal.github_requirements"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1 text-sm font-mono text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
+                                            },
+                                            "text": "language-pack.json"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "ZIP 주소(URL) 갈래(#916) — 서버의 URL 설치 API 에 주소·체크섬(선택)·서명 파일 주소(선택)를 JSON 으로 보낸다.\n         서명 파일 주소를 비우면 서버는 짐작해 받지 않고 미서명으로 다룬다.",
+            "id": "language_pack_url_tab",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.languagePackInstallTab === 'url'}}",
+            "props": {
+                "className": "mt-4 space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.language_packs.install_modal.url_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "주소가 바뀌면 지난 오류·거절은 이 주소의 것이 아니다 — 함께 지운다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "languagePackUrl": "{{$event.target.value}}",
+                                                "languagePackInstallError": null,
+                                                "languagePackInstallErrors": null,
+                                                "packageIntegrity": null,
+                                                "packageIntegrityMessage": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "url",
+                                        "placeholder": "https://example.com/language-pack.zip",
+                                        "value": "{{_global.languagePackUrl ?? ''}}",
+                                        "className": "{{_global.languagePackInstallErrors?.url ? 'input-error' : ''}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.languagePackInstallErrors?.url}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{Array.isArray(_global.languagePackInstallErrors?.url) ? _global.languagePackInstallErrors.url[0] : _global.languagePackInstallErrors?.url}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.language_packs.install_modal.url_hint"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.language_packs.install_modal.checksum_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "체크섬(선택) — 받은 ZIP 과 대조할 값. 고치면 지난 오류를 지운다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "languagePackChecksum": "{{$event.target.value}}",
+                                                "languagePackInstallError": null,
+                                                "languagePackInstallErrors": null,
+                                                "packageIntegrity": null,
+                                                "packageIntegrityMessage": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "placeholder": "sha256",
+                                        "value": "{{_global.languagePackChecksum ?? ''}}",
+                                        "className": "{{_global.languagePackInstallErrors?.checksum ? 'input-error font-mono' : 'font-mono'}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.languagePackInstallErrors?.checksum}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{Array.isArray(_global.languagePackInstallErrors?.checksum) ? _global.languagePackInstallErrors.checksum[0] : _global.languagePackInstallErrors?.checksum}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.language_packs.install_modal.checksum_hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "language_pack_signature_url_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.package_integrity.signature_url_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "서명 파일 주소(선택) — 같은 요청에 `signature_url` 로 실린다. 고치면 지난 거절을 지운다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "languagePackSignatureUrl": "{{$event.target.value}}",
+                                                "languagePackInstallError": null,
+                                                "languagePackInstallErrors": null,
+                                                "packageIntegrity": null,
+                                                "packageIntegrityMessage": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "url",
+                                        "placeholder": "https://example.com/language-pack.zip.sig.json",
+                                        "value": "{{_global.languagePackSignatureUrl ?? ''}}",
+                                        "className": "{{_global.languagePackInstallErrors?.signature_url ? 'input-error' : ''}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.languagePackInstallErrors?.signature_url}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{Array.isArray(_global.languagePackInstallErrors?.signature_url) ? _global.languagePackInstallErrors.signature_url[0] : _global.languagePackInstallErrors?.signature_url}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.package_integrity.signature_url_hint"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "info-circle",
+                                        "className": "text-blue-500 mt-0.5",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-info-soft"
+                                            },
+                                            "text": "$t:admin.language_packs.install_modal.url_requirements"
                                         },
                                         {
                                             "type": "basic",

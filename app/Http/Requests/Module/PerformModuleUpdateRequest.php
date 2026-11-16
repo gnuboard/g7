@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Module;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\HasPackageIntegrityRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -14,6 +15,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class PerformModuleUpdateRequest extends FormRequest
 {
+    use HasPackageIntegrityRules;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -44,6 +47,9 @@ class PerformModuleUpdateRequest extends FormRequest
             'layout_source' => ['nullable', 'string', 'in:auto,json'],
         ];
 
+        // 패키지 무결성 입력 — 미서명 계속(allow_unsigned) (7.2.0)
+        $rules = array_merge($rules, $this->packageIntegrityRules());
+
         return HookManager::applyFilters('core.module.perform_update_validation_rules', $rules, $this);
     }
 
@@ -54,10 +60,20 @@ class PerformModuleUpdateRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        return $this->packageIntegrityMessages() + [
             'layout_strategy.in' => __('modules.errors.invalid_layout_strategy'),
             'vendor_mode.in' => __('modules.errors.invalid_vendor_mode'),
             'layout_source.in' => __('modules.errors.invalid_layout_source'),
         ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓸 칸 이름 라벨을 돌려줍니다.
+     *
+     * @return array<string, string> 라벨
+     */
+    public function attributes(): array
+    {
+        return $this->packageIntegrityAttributes();
     }
 }

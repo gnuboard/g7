@@ -36,6 +36,13 @@ function findComponentsByName(node: any, name: string): any[] {
         }
     }
 
+    // 확장점의 기본 노드(default)도 검색 — 업로더는 attachment_uploader 확장점의 default 안에 있다
+    if (node.type === 'extension_point' && Array.isArray(node.default)) {
+        for (const child of node.default) {
+            results.push(...findComponentsByName(child, name));
+        }
+    }
+
     // slots 내부도 검색
     if (node.slots) {
         for (const slotChildren of Object.values(node.slots)) {
@@ -59,6 +66,13 @@ function findById(node: any, id: string): any | null {
 
     if (node.children && Array.isArray(node.children)) {
         for (const child of node.children) {
+            const found = findById(child, id);
+            if (found) return found;
+        }
+    }
+
+    if (node.type === 'extension_point' && Array.isArray(node.default)) {
+        for (const child of node.default) {
             const found = findById(child, id);
             if (found) return found;
         }

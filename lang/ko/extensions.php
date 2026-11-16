@@ -182,6 +182,47 @@ return [
     ],
 
     'commands' => [
+        // extension:trust-key, extension:keygen, extension:sign 명령 출력 (#916)
+        'trust_key' => [
+            'invalid_action' => '동작은 add·remove·list 중 하나여야 합니다.',
+            'public_key_missing' => 'add 에는 공개키(base64) 인자가 필요합니다.',
+            'key_id_missing' => 'remove 에는 key_id 인자가 필요합니다.',
+            'added' => '신뢰 키를 추가했습니다: :key (vendor: :vendors)',
+            'removed' => '신뢰 키를 삭제했습니다: :key',
+            'not_found' => '신뢰 키를 찾을 수 없습니다: :key',
+            'empty' => '등록된 제작자 키가 없습니다.',
+            'builtin_empty' => '코어 내장 신뢰 키가 비어 있습니다 — 공식 서명 패키지도 「신뢰하지 않는 키」로 차단됩니다.',
+            'header_source' => '출처',
+            'header_key_id' => 'key_id',
+            'header_label' => '서명자',
+            'header_vendors' => 'vendor 범위',
+            'header_status' => '상태',
+            'source_builtin' => '내장',
+            'source_vendor' => '제작자',
+            'all_vendors' => '(모든 vendor)',
+        ],
+        'keygen' => [
+            'created' => '서명 키를 만들었습니다.',
+            'key_file' => '비밀키 파일: :path (권한 0600 — 저장소·배포 파일에 넣지 마세요)',
+            'public_key' => '공개키: :key',
+            'key_id' => 'key_id: :key',
+            'register_hint' => '사이트 운영자는 이 공개키를 환경설정 > 보안 「확장 신뢰 키」 또는 php artisan extension:trust-key add 로 등록합니다.',
+            'file_exists' => '같은 경로에 파일이 이미 있습니다: :path',
+            'write_failed' => '키 파일을 쓰지 못했습니다: :path',
+            'sodium_missing' => '이 PHP 에는 sodium 확장이 없어 키를 만들 수 없습니다.',
+        ],
+        'sign' => [
+            'signed' => '서명 파일을 만들었습니다: :path',
+            'zip_built' => '패키지 ZIP 을 만들었습니다: :path',
+            'path_not_found' => '경로를 찾을 수 없습니다: :path',
+            'identity_not_found' => '패키지 manifest(module.json·plugin.json·template.json·language-pack.json 또는 코어 config/app.php)에서 식별자·버전을 읽지 못했습니다.',
+            'invalid_type' => '--type 은 module·plugin·template·language_pack·core 중 하나여야 합니다.',
+            'key_not_found' => '키 파일을 찾을 수 없습니다: :path',
+            'key_invalid' => '키 파일 형식이 올바르지 않습니다: :path',
+            'key_missing' => '--key 로 비밀키 파일 경로를 지정하세요.',
+            'zip_failed' => 'ZIP 파일을 만들지 못했습니다: :path',
+            'upload_hint' => '릴리스에 ZIP 과 서명 파일(.sig.json)을 함께 올리세요.',
+        ],
         // 설치 명령의 연쇄 설치 옵션 (--with-dependencies · --with-language-packs)
         'cascade' => [
             'dependency_unmet' => '의존 확장 미충족: :identifier (필요 :required, 현재 :state)',

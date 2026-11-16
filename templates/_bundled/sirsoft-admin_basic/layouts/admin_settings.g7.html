@@ -338,6 +338,14 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 확장 신뢰 키(#916) — 보안 탭에서만 받는다. 코어 내장 키(읽기 전용)·제작자 키·sodium 유무를 한 번에 준다.
+       키 추가·삭제는 탭 저장과 분리된 전용 API 라 끝나면 이 소스만 다시 받는다(설정 폼 `settings` 는 건드리지 않는다).
+       받지 못하면 data 를 null 로 두어 카드가 빈 목록 대신 「불러오지 못했다」를 보인다. -->
+  <data-source id="extensionTrustKeys" label_key="$t:editor.data_source.extensionTrustKeys" type="api" endpoint="/api/admin/extension-trust-keys" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="null"/>
+    </fallback>
+  </data-source>
   <!-- 회원 항목 정의(#490) — 회원 탭에서만 받는다. 가입 항목 표의 행(`fields`), 낡은 표 판정용 정의 버전(`fields_version`),
        「항목 추가」에서 고를 유형(`types`), 이 집합을 바꿀 권한(`abilities.can_update`), 표 위 경고(`notices`)를 한 번에 준다.
        표의 스위치·순서·추가·수정·삭제는 저장하자마자 이 소스만 다시 받는다(설정 폼 `settings` 는 건드리지 않는다).
@@ -675,6 +683,7 @@
     <wait-for>settings</wait-for>
     <wait-for>systemInfo</wait-for>
     <wait-for>appKey</wait-for>
+    <wait-for>extensionTrustKeys</wait-for>
     <wait-for>notificationDefinitions</wait-for>
     <wait-for>availableChannels</wait-for>
     <wait-for>identityProviders</wait-for>
@@ -994,6 +1003,10 @@
   <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
   <!-- IP 접근 제한 규칙 추가·편집 겸용 창(보안 탭) — 서버에 저장하지 않고 설정 폼의 규칙 배열만 고친다. -->
   <modal src="partials/admin_settings/_modal_ip_restriction_rule_form.g7.html"/>
+  <!-- 확장 신뢰 키 추가 창(보안 탭, #916) — 공개키·서명자 이름·vendor 범위와 본인 비밀번호를 받아 전용 API 로 바로 저장한다(탭 저장과 분리). -->
+  <modal src="partials/admin_settings/_modal_extension_trust_key_add.g7.html"/>
+  <!-- 확장 신뢰 키 삭제 확인 창(보안 탭, #916) — 제작자 키 행의 [삭제]가 연다. 본인 비밀번호를 다시 받는다. -->
+  <modal src="partials/admin_settings/_modal_extension_trust_key_delete.g7.html"/>
   <!-- 외부 영상 서비스 추가·수정 겸용 창(본문 콘텐츠 탭, #883) — 서버에 저장하지 않고 설정 폼의 서비스 배열만 고친다. -->
   <modal src="partials/admin_settings/_modal_embed_provider_form.g7.html"/>
   <!-- 인증 정책 등록·수정 겸용 창. -->

@@ -4,9 +4,16 @@ namespace App\Extension;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\PhpExtensionRequirementException;
+use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\SafeArchiveExtractor;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Integrity\PackageReleaseNotFoundException;
+use App\Extension\Integrity\PackageVerification;
 use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
@@ -2195,6 +2202,112 @@ PHP;
     }
 
     /**
+     * GitHub 태그 릴리스에서 확장 업데이트 패키지를 받아 검증하고 풀어 둡니다 (7.2.0).
+     *
+     * 릴리스에 `{identifier}-{version}.zip` + `.sig.json` 짝이 있으면 그 자산을 받아 서명을 검증하고, 없으면 미서명 —
+     * 정책(운영자 확인·차단 스위치)이 허락할 때만 태그 zipball 을 받는다. 풀어 둔 뒤 manifest 식별자·버전을 서명과
+     * 대조한다. 업데이트 백업·상태 변경보다 **먼저** 부른다 — 미서명 확인(409)이 아무것도 바꾸지 않은 채로 끝나게 한다.
+     *
+     * 호출자는 돌려받은 `temp_dir` 을 정리해야 한다(예외 시에는 이 메서드가 정리).
+     *
+     * @param  string  $type  확장 종류 (module|plugin|template)
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $githubUrl  확장 GitHub 주소
+     * @param  string  $version  받을 버전
+     * @param  string  $manifestName  manifest 파일 이름
+     * @param  PackageIntegrityOptions  $options  운영자 선택
+     * @param  string  $token  GitHub 토큰
+     * @return array{temp_dir: string, extracted_dir: string, verification: PackageVerification} 받은 패키지
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     * @throws \RuntimeException 주소 오류·릴리스 없음·다운로드·해제 실패 시
+     */
+    public function acquireGithubUpdate(
+        string $type,
+        string $identifier,
+        string $githubUrl,
+        string $version,
+        string $manifestName,
+        PackageIntegrityOptions $options,
+        string $token = '',
+    ): array {
+        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
+            throw new \RuntimeException(__('settings.core_update.invalid_github_url'));
+        }
+
+        [$owner, $repo] = [$matches[1], $matches[2]];
+        $tempDir = storage_path('app/temp/'.$type.'_update_'.uniqid());
+        // 부모 storage/app/temp 소유권까지 맞춘다 — sudo 코어 업데이트가 최초 생성자면 root 로 굳는다(#651)
+        ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
+
+        try {
+            try {
+                $acquired = app(PackageAcquirer::class)->fromGithubRelease(
+                    $owner, $repo, $version, $token,
+                    PackageExpectation::forExtension($type, $identifier, $version),
+                    $options,
+                    $tempDir.DIRECTORY_SEPARATOR.'download',
+                );
+            } catch (PackageReleaseNotFoundException $e) {
+                // 확장 업데이트 문맥의 종전 문장을 유지한다 — 「추출 실패」가 아니라 「릴리스를 찾지 못함」
+                throw new \RuntimeException(__('settings.core_update.extension_release_not_found', [
+                    'repository' => $owner.'/'.$repo,
+                    'version' => $version,
+                ]), 0, $e);
+            }
+
+            $extractedDir = $this->extractFromZip($acquired->zipPath, $tempDir);
+            File::delete($acquired->zipPath);
+
+            $manifestPath = $extractedDir.DIRECTORY_SEPARATOR.$manifestName;
+            $manifest = File::exists($manifestPath) ? json_decode(File::get($manifestPath), true) : null;
+            $verification = app(PackageAcquirer::class)->confirmManifest($acquired->verification, is_array($manifest) ? $manifest : [], $options);
+
+            return ['temp_dir' => $tempDir, 'extracted_dir' => $extractedDir, 'verification' => $verification];
+        } catch (\Throwable $e) {
+            if (File::isDirectory($tempDir)) {
+                File::deleteDirectory($tempDir);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * 외부 ZIP 업데이트 소스를 검증하고 스테이징 전단계까지 준비합니다 (7.2.0 — `prepareZipSource` + 서명 검증).
+     *
+     * 서명 파일은 `$options->signaturePath`, 없으면 ZIP 옆 `{zip}.sig.json` 을 자동으로 쓴다. 바이트 검증은 해제 전,
+     * manifest 대조는 해제 뒤에 한다.
+     *
+     * @param  string  $type  확장 종류 (module|plugin|template)
+     * @param  string  $zipPath  외부 ZIP 경로
+     * @param  string  $identifier  기대 식별자
+     * @param  string  $manifestName  manifest 파일 이름
+     * @param  PackageIntegrityOptions  $options  운영자 선택
+     * @return array{temp_dir: string, extracted_dir: string, to_version: string, manifest: array, verification: PackageVerification} 준비 결과
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     * @throws \RuntimeException 추출·manifest 오류 시
+     */
+    public function prepareVerifiedZipSource(string $type, string $zipPath, string $identifier, string $manifestName, PackageIntegrityOptions $options): array
+    {
+        $acquirer = app(PackageAcquirer::class);
+        $verification = $acquirer->verifyLocalZip($zipPath, PackageExpectation::forExtension($type, $identifier), $options);
+
+        $prepared = $this->prepareZipSource($zipPath, $identifier, $manifestName);
+
+        try {
+            $prepared['verification'] = $acquirer->confirmManifest($verification, $prepared['manifest'], $options);
+        } catch (\Throwable $e) {
+            if (File::isDirectory($prepared['temp_dir'])) {
+                File::deleteDirectory($prepared['temp_dir']);
+            }
+            throw $e;
+        }
+
+        return $prepared;
+    }
+
+    /**
      * 외부 ZIP 파일을 추출하여 소스 디렉토리 경로를 반환합니다.
      *
      * GitHub zipball 처럼 owner-repo-hash/ 래퍼 디렉토리로 감싼 경우와
@@ -2301,7 +2414,7 @@ PHP;
     public function prepareZipSource(string $zipPath, string $identifier, string $manifestName): array
     {
         $tempDir = storage_path('app/temp/ext_zip_'.uniqid());
-        File::ensureDirectoryExists($tempDir);
+        ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
 
         try {
             $extractedDir = $this->extractFromZip($zipPath, $tempDir);

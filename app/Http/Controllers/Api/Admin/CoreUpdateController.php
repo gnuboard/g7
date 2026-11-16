@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\CoreUpdate\CoreUpdateOptions;
 use App\CoreUpdate\CoreUpdateOrchestrator;
 use App\Exceptions\CoreUpdateOperationException;
+use App\Exceptions\PackageIntegrityException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\CoreUpdate\StartCoreUpdateRequest;
 use App\Http\Requests\Extension\ChangelogRequest;
@@ -120,6 +121,9 @@ class CoreUpdateController extends AdminBaseController
             );
 
             return $this->success('settings.core_update.web.started', $this->withScreenHints($status));
+        } catch (PackageIntegrityException $e) {
+            // 미서명 배포본 확인 필요(409 — 같은 요청을 allow_unsigned=1 로 다시 보내면 계속)·서명 불일치·미신뢰 키(422), 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (CoreUpdateOperationException $e) {
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {

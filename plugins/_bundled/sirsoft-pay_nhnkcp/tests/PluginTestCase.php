@@ -16,7 +16,11 @@ use Illuminate\Routing\CompiledRouteCollection;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\TestingSeeder;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
@@ -351,6 +355,97 @@ abstract class PluginTestCase extends TestCase
         }
 
         return $user;
+    }
+
+    /**
+     * 이커머스 결제 계약 mock 이 돌려줄 주문 DTO 를 만듭니다. (저장하지 않음)
+     *
+     * 기본값은 결제 행이 없는 원화 결제대기 주문이다. 필드 이름은 `OrderRecord` 생성자 인자와 같다.
+     *
+     * @param  array<string, mixed>  $overrides  바꿀 필드
+     * @return OrderRecord 주문 DTO
+     */
+    protected function makeOrderRecord(array $overrides = []): OrderRecord
+    {
+        return new OrderRecord(...array_merge([
+            'id' => 0,
+            'orderNumber' => 'ORD-KCP-RECORD',
+            'userId' => null,
+            'orderStatus' => OrderStatusEnum::PENDING_ORDER,
+            'currency' => 'KRW',
+            'currencySnapshot' => [],
+            'totalAmount' => 0.0,
+            'totalDueAmount' => 0.0,
+            'paymentFailureCode' => null,
+            'paymentFailureMessage' => null,
+            'paymentFailedAt' => null,
+            'hasActiveOptions' => true,
+            'ordererName' => null,
+            'ordererEmail' => null,
+            'ordererPhone' => null,
+            'payment' => null,
+        ], $overrides));
+    }
+
+    /**
+     * 이커머스 결제 계약 mock 이 돌려줄 결제 행 DTO 를 만듭니다. (저장하지 않음)
+     *
+     * 기본값은 이 PG(`nhnkcp`)의 카드 결제대기 행이다. 필드 이름은 `PaymentRecord` 생성자 인자와 같다.
+     *
+     * @param  array<string, mixed>  $overrides  바꿀 필드
+     * @return PaymentRecord 결제 행 DTO
+     */
+    protected function makePaymentRecord(array $overrides = []): PaymentRecord
+    {
+        $status = $overrides['paymentStatus'] ?? PaymentStatusEnum::READY;
+
+        return new PaymentRecord(...array_merge([
+            'id' => 0,
+            'orderId' => 0,
+            'orderNumber' => null,
+            'pgProvider' => 'nhnkcp',
+            'paymentMethod' => 'card',
+            'paymentStatus' => $status,
+            'transactionId' => null,
+            'merchantOrderId' => null,
+            'isEscrow' => false,
+            'paymentMeta' => [],
+            'embeddedPgProvider' => null,
+            'receiptUrl' => null,
+            'paymentDevice' => null,
+            'paymentName' => null,
+            'currency' => 'KRW',
+            'paidAmountLocal' => 0.0,
+            'cancelledAmount' => 0.0,
+            'mcCancelledAmount' => [],
+            'cancelHistory' => [],
+            'paidAt' => null,
+            'cancelledAt' => null,
+            'cardName' => null,
+            'cardNumberMasked' => null,
+            'cardApprovalNumber' => null,
+            'cardInstallmentMonths' => null,
+            'isInterestFree' => null,
+            'vbankCode' => null,
+            'vbankName' => null,
+            'vbankNumber' => null,
+            'vbankHolder' => null,
+            'vbankDueAt' => null,
+            'vbankIssuedAt' => null,
+            'buyerName' => null,
+            'buyerEmail' => null,
+            'buyerPhone' => null,
+            'refundBankCode' => null,
+            'refundBankAccount' => null,
+            'refundBankHolder' => null,
+            'isPaid' => $status === PaymentStatusEnum::PAID,
+            'isWaitingDeposit' => $status === PaymentStatusEnum::WAITING_DEPOSIT,
+            'isVirtualAccount' => ($overrides['paymentMethod'] ?? 'card') === 'vbank',
+            'isFullyCancelled' => false,
+            'cancellableAmount' => 0.0,
+            'cancelledLocalAmount' => 0.0,
+            'createdAt' => null,
+        ], $overrides));
     }
 
     /**

@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Unit\Positions;
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\Log;
 use Mockery;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Contracts\BoardDirectory;
 use Plugins\Sirsoft\HeroSection\Contracts\TargetResolverInterface;
 use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Support\Targets\BoardTargetResolver;
@@ -73,6 +73,21 @@ class PositionRegistryTest extends PluginTestCase
     }
 
     /**
+     * 모듈이 켜져 있어도 조회 계약이 없는 옛 판(게시판 1.3.0·이커머스 1.4.0 미만)이면 동적 위치를 넣지 않는다 — 해석기가 계약으로만
+     * 대상을 찾으므로, 넣으면 위치를 고를 때 해석기 생성이 실패한다(#916).
+     *
+     * @scenario case=builtin_dynamic_positions_follow_modules
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dynamic_positions_need_module_contracts(): void
+    {
+        $this->pinActiveModules(['sirsoft-board', 'sirsoft-ecommerce'], contractsBound: false);
+
+        $this->assertSame(['home_hero', 'shop_hero'], array_keys(app(PositionRegistry::class)->all()));
+    }
+
+    /**
      * 제3 확장이 같은 필터로 더한 위치도 등록되고, 정렬 순서(order)대로 탭에 선다. 이름은 언어별 객체도 받는다.
      *
      * @scenario case=third_party_position_added
@@ -131,7 +146,7 @@ class PositionRegistryTest extends PluginTestCase
     public function test_dynamic_position_resolver_is_built_from_container(): void
     {
         $this->pinActiveModules(['sirsoft-board']);
-        $this->app->instance(BoardRepositoryInterface::class, Mockery::mock(BoardRepositoryInterface::class));
+        $this->app->instance(BoardDirectory::class, Mockery::mock(BoardDirectory::class));
 
         $registry = app(PositionRegistry::class);
 

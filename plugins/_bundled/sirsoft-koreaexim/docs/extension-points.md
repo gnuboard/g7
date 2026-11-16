@@ -10,7 +10,7 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-koreaexim.notification.extract_data` | filter | 실패 알림 변수 | 선언 (호출 위치 미확인) |
-| `sirsoft-koreaexim.update.failed` | action | 환율 갱신 실패 | `src/Services/ExchangeRateUpdateService.php:231` |
+| `sirsoft-koreaexim.update.failed` | action | 환율 갱신 실패 | `src/Services/ExchangeRateUpdateService.php:239` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

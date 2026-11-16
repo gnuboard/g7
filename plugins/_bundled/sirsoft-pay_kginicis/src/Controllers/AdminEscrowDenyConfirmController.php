@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회·기록을 이커머스 공개 결제 계약으로 바꾼 내부 전환 (#916)
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\MetaEncoding;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentFilters;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\EscrowDenyConfirmRequest;
@@ -45,9 +46,11 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
      * 의존성을 주입받습니다.
      *
      * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      */
     public function __construct(
         private readonly KgInicisApiService $apiService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
     }
@@ -59,7 +62,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
      *
      * @param  EscrowDenyConfirmRequest  $request  구매거절확인 폼
      * @param  string  $orderNumber  주문번호
-     * @return JsonResponse
+     * @return JsonResponse 구매거절확인 결과
      */
     public function confirm(EscrowDenyConfirmRequest $request, string $orderNumber): JsonResponse
     {
@@ -73,7 +76,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             return ResponseHelper::error('common.failed', 404, null);
         }
 
-        $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
+        $meta = $payment->paymentMeta;
 
         // 이미 구매거절확인 완료된 경우
         if (isset($meta['escrow_deny_confirm'])) {
@@ -86,14 +89,14 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
 
         Log::info('KG Inicis: escrow deny confirm requested', [
             'order_number' => $orderNumber,
-            'tid' => $payment->transaction_id,
+            'tid' => $payment->transactionId,
         ]);
 
         try {
             $this->apiService->useEscrowCredentials(true);
 
             $pgResponse = $this->apiService->denyConfirmEscrow([
-                'originalTid' => $payment->transaction_id,
+                'originalTid' => $payment->transactionId,
                 'dcnfName' => $dcnfName,
             ]);
 
@@ -113,26 +116,31 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
                 ]);
             }
 
-            // payment_meta에 구매거절확인 이력 저장
-            $meta['pg_response_sanitized'] = true;
-            $meta['escrow_deny_confirm'] = [
+            // payment_meta에 구매거절확인 이력 저장 — 결제 행 잠금 아래 다시 확인해 이미 기록된 이력은 덮어쓰지 않는다
+            $record = [
                 // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
                 'confirmed_at' => now()->toDateTimeString(),
                 'dcnf_name' => $dcnfName,
                 'pg_response' => $sanitizedPgResponse,
             ];
-
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-            DB::table((new OrderPayment)->getTable())
-                ->where('id', $payment->id)
-                ->update([
-                    'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                    'updated_at' => now(),
+            $saved = $this->bridge->mutatePaymentMetaWithLock(
+                $orderNumber,
+                'kginicis',
+                fn (array $current): ?array => isset($current['escrow_deny_confirm'])
+                    ? null
+                    : array_merge($current, ['pg_response_sanitized' => true, 'escrow_deny_confirm' => $record]),
+                MetaEncoding::UnescapedUnicode,
+            );
+            if ($saved === null) {
+                Log::warning('KG Inicis: escrow deny confirm already recorded by a concurrent request', [
+                    'order_number' => $orderNumber,
+                    'tid' => $payment->transactionId,
                 ]);
+            }
 
             Log::info('KG Inicis: escrow deny confirm completed', [
                 'order_number' => $orderNumber,
-                'tid' => $payment->transaction_id,
+                'tid' => $payment->transactionId,
             ]);
 
             return ResponseHelper::success('common.success', [
@@ -160,22 +168,14 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
      * 주문번호의 KG이니시스 에스크로 결제 레코드를 찾습니다.
      *
      * @param  string  $orderNumber  주문번호
-     * @return object|null 결제 레코드 (없으면 null)
+     * @return PaymentRecord|null 결제 레코드 (없으면 null)
      */
-    private function findEscrowPayment(string $orderNumber): ?object
+    private function findEscrowPayment(string $orderNumber): ?PaymentRecord
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        return DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('p.pg_provider', 'kginicis')
-            ->where('p.is_escrow', true)
-            ->whereNotNull('p.transaction_id')
-            ->select([
-                'p.id',
-                'p.transaction_id',
-                'p.payment_meta',
-            ])
-            ->first();
+        return $this->bridge->findPaymentByOrderNumber(
+            'kginicis',
+            $orderNumber,
+            new PaymentFilters(escrow: true, hasTransactionId: true),
+        );
     }
 }

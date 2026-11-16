@@ -1,0 +1,26 @@
+# 시나리오 매니페스트 — 관리자 FileUploader 의 업로더 계약 reorder 해석 (#916 ③)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_file_uploader_reorder_endpoint
+
+description: |
+  첨부 업로더 확장점(attachment_uploader)의 계약은 생성 화면에서 `endpoints.reorder` 를 null 로 넘긴다(정렬 없음).
+  관리자 템플릿 FileUploader 는 `apiEndpoints` 에 reorder 키가 있으면 그 값을 쓰고(null·빈 문자열 → 정렬 요청 안 함),
+  키가 없을 때만 코어 정렬 주소를 기본값으로 쓴다. 레이아웃 주입 동작은 코어 `tests/scenarios/attachment-uploader-extension-point.yaml` 이 소유한다.
+  관리자 템플릿 레이아웃의 확장점 콜백(`callbacks`)은 기본 업로더의 이벤트 처리와 같은 식이어야 한다 — 대체 업로더를 끼운
+  사이트에서만 저장값이 갈라지지 않게 한다.
+
+axes:
+  case: [admin_reorder_key_missing_uses_default, admin_reorder_key_null_or_empty, admin_component_passes_null_reorder, admin_drag_with_null_reorder, admin_drag_with_reorder_endpoint, admin_layout_callbacks_match_default]
+
+effects:
+  - admin_uploader_reorder_default_only_when_key_absent  # reorder 키가 없을 때만 코어 정렬 주소를 기본값으로 쓴다
+  - admin_uploader_reorder_null_disables_reorder         # reorder 가 null·빈 문자열이면 정렬 주소가 없고, 컴포넌트도 null 을 그대로 넘긴다
+  - admin_uploader_reorder_null_sends_no_patch           # 정렬 주소가 없으면 끌어 옮겨도 PATCH 없이 onReorder 만 부른다
+  - admin_uploader_reorder_endpoint_sends_one_patch      # 정렬 주소가 있으면 PATCH 를 한 번 보낸다(대조군)
+  - admin_uploader_callbacks_match_default_actions       # 확장점 콜백의 setState 식이 기본 업로더의 같은 이벤트·같은 키 식과 같다($event ↔ $args[0])
+  - admin_uploader_callbacks_survive_missing_form_branch # 폼에 그 갈래가 아직 없어도 콜백 식이 기본 업로더처럼 빈 목록에서 시작한다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderReorderNull.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-uploader-callback-parity.test.ts

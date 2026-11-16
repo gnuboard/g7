@@ -4,8 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Helpers\PermissionHelper;
-use App\Models\User;
 use App\Models\ActivityLog;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -552,6 +552,22 @@ class ProductRepository implements ProductRepositoryInterface
             ->with(['activeOptions', 'categories', 'images'])
             ->where('product_code', $productCode)
             ->first();
+    }
+
+    /**
+     * 상품 코드 목록으로 상품을 한 번에 조회하고 상품 코드 키 맵으로 반환합니다(관계 적재 없음).
+     *
+     * @param  array<int, string>  $productCodes  상품 코드 목록
+     * @return Collection<string, Product> 상품 코드 => 상품
+     */
+    public function findByProductCodesKeyed(array $productCodes): Collection
+    {
+        $productCodes = array_values(array_unique(array_filter($productCodes, fn ($code) => is_string($code) && $code !== '')));
+        if ($productCodes === []) {
+            return new Collection;
+        }
+
+        return $this->model->newQuery()->whereIn('product_code', $productCodes)->get()->keyBy('product_code');
     }
 
     /**

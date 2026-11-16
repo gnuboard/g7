@@ -94,6 +94,10 @@ return [
             'public' => 'Public 디스크',
             's3' => 'Amazon S3',
         ],
+        'private_attachment' => [
+            'default' => '기본 (사이트 스토리지 드라이버를 따름)',
+            's3' => 'Amazon S3',
+        ],
         'file_delegation' => [
             'none' => '사용 안 함 (PHP 가 전송)',
             'x-sendfile' => 'X-Sendfile (Apache mod_xsendfile)',
@@ -763,5 +767,11 @@ return [
         'license_key_invalid' => 'MaxMind 라이선스 키가 올바르지 않습니다.',
         'connection_failed' => 'MaxMind 서버에 연결하지 못했습니다.',
         'update_failed' => 'GeoIP 데이터베이스를 갱신하지 못했습니다.',
+    ],
+
+    // 저장은 허용하되 알려야 할 저장소 조합 (#916)
+    'warnings' => [
+        'private_attachment_same_as_public_asset' => '비공개 첨부 저장소와 공개 자산 디스크가 같은 디스크(:disk)입니다. 버킷에 공개 읽기 정책이 있으면 비공개 원본도 버킷 주소로 직접 읽힐 수 있으니, 비공개 원본은 공개 정책이 없는 버킷이나 경로를 쓰세요.',
+        'gated_thumbnail_same_as_public_asset' => '권한이 걸린 이미지 썸네일과 공개 자산 디스크가 같은 S3 버킷(:disk)을 씁니다. 버킷에 공개 읽기 정책이 있으면 권한이 걸린 이미지의 썸네일도 버킷 주소로 직접 읽힐 수 있으니, 썸네일 경로(thumbnails/)에 공개 정책이 걸리지 않았는지 확인하세요.',
     ],
 ];

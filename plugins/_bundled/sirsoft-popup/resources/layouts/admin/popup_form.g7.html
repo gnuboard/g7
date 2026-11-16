@@ -222,32 +222,88 @@
                   <span class="g7pp-text-required">*</span>
                 </label>
                 <p class="g7pp-form-hint gpp:mb-2">$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|width2={{_computed.pcWidth * 2}}|height2={{_computed.pcHeight * 2}}|mb={{_computed.uploadMb}}</p>
-                <!-- 업로드는 임시 묶음에만 들어가고, 빼기는 화면에서만 뺀다 — 팝업 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다 -->
-                <file-uploader data-type="composite" data-ref="pc_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}" uploadParams="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}">
-                  <prop name="apiEndpoints">
-                    <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>
-                    <field name="delete" value=""/>
+                <!-- 첨부 업로더 확장점 — PC 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,
+                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다 -->
+                <extension-point name="attachment_uploader" data-ref="pc_image_uploader_slot" class="gpp:contents">
+                  <prop name="uploader">
+                    <field name="version" :value="1"/>
+                    <field name="mode" value="upload"/>
+                    <field name="endpoints">
+                      <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>
+                      <field name="delete" value=""/>
+                      <field name="reorder" :value="null"/>
+                    </field>
+                    <field name="fields" value="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}"/>
+                    <field name="policy">
+                      <field name="accept" value=".jpg,.jpeg,.png,.webp,.gif"/>
+                      <field name="maxSize" value="{{_computed.uploadMb}}"/>
+                      <field name="maxFiles" :value="1"/>
+                      <field name="maxConcurrentUploads" :value="1"/>
+                      <field name="imageCompression" :value="null"/>
+                    </field>
+                    <field name="collection" value="default"/>
+                    <field name="attachmentable">
+                      <field name="type" :value="null"/>
+                      <field name="id" :value="null"/>
+                    </field>
+                    <field name="triggerEvent" :value="null"/>
+                    <field name="initialFiles" value="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}"/>
+                    <field name="disabled" value="{{!!_local.isSaving}}"/>
+                    <field name="autoUpload" :value="true"/>
+                    <field name="context">
+                      <field name="owner" value="sirsoft-popup"/>
+                      <field name="purpose" value="popup_pc_image"/>
+                    </field>
                   </prop>
-                  <on type="change" event="onFilesChange">
+                  <callback name="onFilesChange">
                     <!-- PC 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다 -->
                     <sequence>
-                      <set-state target="local" pcUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state target="local" pcUploadBlocked="{{($event ?? []).some(f =&gt; f.status !== 'done')}}"/>
                       <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                     </sequence>
-                  </on>
-                  <on type="change" event="onUploadComplete">
+                  </callback>
+                  <callback name="onUploadComplete">
                     <!-- PC 업로드가 끝나면 그 임시 이미지를 PC 이미지로 담고 수정됨으로 둔다 -->
-                    <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
-                  </on>
-                  <on type="change" event="onUploadError">
+                    <set-state target="local" form.images.pc="{{$event?.[0] ?? null}}" :hasChanges="true"/>
+                  </callback>
+                  <callback name="onUploadError">
                     <!-- PC 업로드 실패 사유를 알린다 -->
-                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
-                  </on>
-                  <on type="change" event="onRemove">
+                    <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
+                  </callback>
+                  <callback name="onRemove">
                     <!-- PC 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다) -->
                     <set-state target="local" :form.images.pc="null" :hasChanges="true"/>
-                  </on>
-                </file-uploader>
+                  </callback>
+                  <default>
+                    <!-- 업로드는 임시 묶음에만 들어가고, 빼기는 화면에서만 뺀다 — 팝업 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다 -->
+                    <file-uploader data-type="composite" data-ref="pc_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}" uploadParams="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}">
+                      <prop name="apiEndpoints">
+                        <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>
+                        <field name="delete" value=""/>
+                        <field name="reorder" :value="null"/>
+                      </prop>
+                      <on type="change" event="onFilesChange">
+                        <!-- PC 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다 -->
+                        <sequence>
+                          <set-state target="local" pcUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                        </sequence>
+                      </on>
+                      <on type="change" event="onUploadComplete">
+                        <!-- PC 업로드가 끝나면 그 임시 이미지를 PC 이미지로 담고 수정됨으로 둔다 -->
+                        <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
+                      </on>
+                      <on type="change" event="onUploadError">
+                        <!-- PC 업로드 실패 사유를 알린다 -->
+                        <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                      </on>
+                      <on type="change" event="onRemove">
+                        <!-- PC 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다) -->
+                        <set-state target="local" :form.images.pc="null" :hasChanges="true"/>
+                      </on>
+                    </file-uploader>
+                  </default>
+                </extension-point>
                 <!-- 이미지는 잘리지 않게 담기므로 여백은 크기가 아니라 비율이 다를 때 생긴다 — 2배 크기(960×1040)는 경고하지 않고, 비율 차 2% 안은 같다고 본다 -->
                 <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="gpp:mt-2 gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300">$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + ':' + _computed.pcHeight}}</p>
                 <p data-if="{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}" class="g7pp-form-error">{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}</p>
@@ -259,31 +315,87 @@
                 </label>
                 <!-- 모바일 창 크기는 기기마다 달라 대략의 비율로 안내한다 — 하단 시트는 화면 너비 × 380px 안팎(거의 1:1), 화면 중앙은 좌우 24px 여백 × 420px 안팎(거의 4:5) -->
                 <p data-ref="mobile_image_hint" class="g7pp-form-hint gpp:mb-2">$t:sirsoft-popup.admin.form.image.mobile_hint|ratio={{_computed.mobileRatio}}|example={{_computed.mobileExample}}|mb={{_computed.uploadMb}}</p>
-                <file-uploader data-type="composite" data-ref="mobile_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}" uploadParams="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}">
-                  <prop name="apiEndpoints">
-                    <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>
-                    <field name="delete" value=""/>
+                <!-- 첨부 업로더 확장점 — 휴대폰 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,
+                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다 -->
+                <extension-point name="attachment_uploader" data-ref="mobile_image_uploader_slot" class="gpp:contents">
+                  <prop name="uploader">
+                    <field name="version" :value="1"/>
+                    <field name="mode" value="upload"/>
+                    <field name="endpoints">
+                      <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>
+                      <field name="delete" value=""/>
+                      <field name="reorder" :value="null"/>
+                    </field>
+                    <field name="fields" value="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}"/>
+                    <field name="policy">
+                      <field name="accept" value=".jpg,.jpeg,.png,.webp,.gif"/>
+                      <field name="maxSize" value="{{_computed.uploadMb}}"/>
+                      <field name="maxFiles" :value="1"/>
+                      <field name="maxConcurrentUploads" :value="1"/>
+                      <field name="imageCompression" :value="null"/>
+                    </field>
+                    <field name="collection" value="default"/>
+                    <field name="attachmentable">
+                      <field name="type" :value="null"/>
+                      <field name="id" :value="null"/>
+                    </field>
+                    <field name="triggerEvent" :value="null"/>
+                    <field name="initialFiles" value="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}"/>
+                    <field name="disabled" value="{{!!_local.isSaving}}"/>
+                    <field name="autoUpload" :value="true"/>
+                    <field name="context">
+                      <field name="owner" value="sirsoft-popup"/>
+                      <field name="purpose" value="popup_mobile_image"/>
+                    </field>
                   </prop>
-                  <on type="change" event="onFilesChange">
+                  <callback name="onFilesChange">
                     <!-- 모바일 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다 -->
                     <sequence>
-                      <set-state target="local" mobileUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state target="local" mobileUploadBlocked="{{($event ?? []).some(f =&gt; f.status !== 'done')}}"/>
                       <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                     </sequence>
-                  </on>
-                  <on type="change" event="onUploadComplete">
+                  </callback>
+                  <callback name="onUploadComplete">
                     <!-- 모바일 업로드가 끝나면 그 임시 이미지를 모바일 이미지로 담고 수정됨으로 둔다 -->
-                    <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
-                  </on>
-                  <on type="change" event="onUploadError">
+                    <set-state target="local" form.images.mobile="{{$event?.[0] ?? null}}" :hasChanges="true"/>
+                  </callback>
+                  <callback name="onUploadError">
                     <!-- 모바일 업로드 실패 사유를 알린다 -->
-                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
-                  </on>
-                  <on type="change" event="onRemove">
+                    <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
+                  </callback>
+                  <callback name="onRemove">
                     <!-- 모바일 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다) -->
                     <set-state target="local" :form.images.mobile="null" :hasChanges="true"/>
-                  </on>
-                </file-uploader>
+                  </callback>
+                  <default>
+                    <file-uploader data-type="composite" data-ref="mobile_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}" uploadParams="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}">
+                      <prop name="apiEndpoints">
+                        <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>
+                        <field name="delete" value=""/>
+                        <field name="reorder" :value="null"/>
+                      </prop>
+                      <on type="change" event="onFilesChange">
+                        <!-- 모바일 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다 -->
+                        <sequence>
+                          <set-state target="local" mobileUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                        </sequence>
+                      </on>
+                      <on type="change" event="onUploadComplete">
+                        <!-- 모바일 업로드가 끝나면 그 임시 이미지를 모바일 이미지로 담고 수정됨으로 둔다 -->
+                        <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
+                      </on>
+                      <on type="change" event="onUploadError">
+                        <!-- 모바일 업로드 실패 사유를 알린다 -->
+                        <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                      </on>
+                      <on type="change" event="onRemove">
+                        <!-- 모바일 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다) -->
+                        <set-state target="local" :form.images.mobile="null" :hasChanges="true"/>
+                      </on>
+                    </file-uploader>
+                  </default>
+                </extension-point>
                 <p data-if="{{_local.errors?.mobile_image_id}}" class="g7pp-form-error">{{_local.errors?.mobile_image_id?.[0] ?? ''}}</p>
               </div>
               <!-- 이미지 위 글 상자 — 사용자 레이어와 같은 프레임 위에서 끌어 놓는다. 위치·서식은 언어 공통, 글만 언어별.

@@ -1,0 +1,27 @@
+{
+    "_comment": "TEST ONLY — PHP(PackageSignatureFormat)와 Node(릴리스 도구)가 같은 바이트를 만드는지 대조하는 벡터",
+    "key_file": "TEST-glitter.signing-key.json",
+    "document": {
+        "package": {
+            "type": "plugin",
+            "identifier": "glitter-sample",
+            "version": "2.3.4"
+        },
+        "artifact": {
+            "filename": "glitter-sample-2.3.4.zip",
+            "size": 1234567,
+            "sha256": "abababababababababababababababababababababababababababababababab"
+        },
+        "signer": {
+            "key_id": "glitter:93a4eed863537167",
+            "label": "glitter"
+        },
+        "signed_at": "2026-11-20T00:00:00Z"
+    },
+    "signing_string": "G7-PACKAGE-SIG-V1\nplugin\nglitter-sample\n2.3.4\nglitter-sample-2.3.4.zip\n1234567\nabababababababababababababababababababababababababababababababab\n2026-11-20T00:00:00Z\nglitter:93a4eed863537167",
+    "signature": "USp0t9LVJdW+UH9ARr96ncAnmg62PU+pgpemSh/xfgjf2m61ecxeWxpDMOA01hwgcErAp2RMNRXasrcWr900AA==",
+    "artifact_fixture": {
+        "zip": "glitter-vector-1.0.0.zip",
+        "signature_file": "glitter-vector-1.0.0.zip.sig.json"
+    }
+}

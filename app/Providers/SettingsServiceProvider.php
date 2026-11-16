@@ -54,6 +54,7 @@ class SettingsServiceProvider extends ServiceProvider
         // 드라이버 계열은 부팅 때만 적용한다 — 큐 워커 도중에는 바꾸지 않고 저장 시 queue:restart 가 맡는다
         $this->applyDriverConfig($configRepository);
         $this->applyPublicAssetDiskConfig($configRepository);
+        $this->applyPrivateAttachmentDiskConfig($configRepository);
         $this->applyFileDelegationConfig($configRepository);
 
         // 코어 설정을 g7_settings.core prefix로 저장
@@ -530,6 +531,44 @@ class SettingsServiceProvider extends ServiceProvider
         $disk = (string) ($driverSettings['public_asset_disk'] ?? '');
 
         Config::set('core.storage.public_asset_disk', $disk === 'none' ? '' : $disk);
+    }
+
+    /**
+     * 비공개 첨부 저장소 설정을 적용합니다 (#916).
+     *
+     * 공개 자산 디스크(`applyPublicAssetDiskConfig`)와 같은 꼴이다 — testing 환경에서는 dev 공유 drivers.json 값이 테스트로
+     * 흘러들지 않도록 주입을 건너뛰고, 실제 주입·정규화는 `injectPrivateAttachmentDiskConfig()` 가 맡는다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function applyPrivateAttachmentDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        $this->injectPrivateAttachmentDiskConfig($configRepository);
+    }
+
+    /**
+     * drivers.private_attachment_disk 저장값을 core.storage.private_attachment_disk 로 주입합니다.
+     *
+     * 「기본」(`default`)·빈 값은 미설정('')으로 정규화한다 — 해석기(`PrivateAttachmentDisk`)가 지금까지의 디스크로 폴백한다.
+     * 플러그인 디스크가 아직 정의되지 않았어도(booted 전) 값은 그대로 둔다. 고아 디스크는 해석기가 쓰는 시점에 거른다(#916 A7).
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function injectPrivateAttachmentDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        // audit:allow env-priority-filter-wiring 이 지점이 drivers 에서 읽는 키는 private_attachment_disk 하나뿐이고
+        // 그 키는 EnvPriority::EXEMPT 다 (env 대응 없음 — 코어 첨부 env 는 ATTACHMENT_DISK 가 별도 축으로 우선한다).
+        $driverSettings = $configRepository->getCategory('drivers');
+
+        $disk = (string) ($driverSettings['private_attachment_disk'] ?? '');
+
+        Config::set('core.storage.private_attachment_disk', $disk === 'default' ? '' : $disk);
     }
 
     /**

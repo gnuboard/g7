@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnFactory;
@@ -18,8 +19,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderClaimException;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Plugins\Sirsoft\PayKginicis\Controllers\CbtCallbackController;
 use Plugins\Sirsoft\PayKginicis\Controllers\CbtCheckoutTokenController;
@@ -339,7 +338,7 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
         $api = $this->inicis();
         $api->shouldNotReceive('authorizePayment');
 
-        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(OrderProcessingService::class), $app->make(PluginSettingsService::class), $app->make(KgInicisApiService::class), $app->make(ClaimPaymentRepositoryInterface::class)) extends PaymentCallbackController
+        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(PaymentGatewayBridge::class), $app->make(PluginSettingsService::class), $app->make(KgInicisApiService::class)) extends PaymentCallbackController
         {
             /**
              * 락 대기 시간을 0초로 줄여 대기 초과를 즉시 재현합니다.
@@ -366,9 +365,10 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
     }
 
     /**
-     * 클레임 결제 공용 트레이트를 쓰는 컨트롤러가 Repository 를 생성자로 주입받는다.
+     * 클레임 결제 공용 트레이트를 쓰는 컨트롤러가 이커머스 공개 결제 계약을 생성자로 주입받는다.
      *
      * 수정 전: `HandlesClaimPaymentCallbacks::findClaimPayment()` 가 `app(ClaimPaymentRepositoryInterface::class)` 였다.
+     * 지금(#916)은 이커머스 내부 저장소 대신 공개 계약 `PaymentGatewayBridge` 를 주입받고, 트레이트는 서비스 로케이터를 쓰지 않는다.
      *
      * @return void 반환값 없음
      *
@@ -394,11 +394,12 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
                 (new \ReflectionClass($controller))->getConstructor()?->getParameters() ?? [],
             );
 
-            $this->assertContains(ClaimPaymentRepositoryInterface::class, $types, $controller);
+            $this->assertContains(PaymentGatewayBridge::class, $types, $controller);
         }
 
         $trait = (string) file_get_contents(dirname(__DIR__, 2).'/src/Concerns/HandlesClaimPaymentCallbacks.php');
         $this->assertStringNotContainsString('app(ClaimPaymentRepositoryInterface::class)', $trait);
+        $this->assertStringNotContainsString('app(PaymentGatewayBridge::class)', $trait);
     }
 
     /**

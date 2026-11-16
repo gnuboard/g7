@@ -9,7 +9,8 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Services\ProductService;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\Data\SimpleProductSpec;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\ProductProvisioner;
 use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
@@ -18,16 +19,20 @@ use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
  * Japan 결제 (CBT, JPPG) 검증을 위해 JPY 가격이 설정된 샘플 상품을
  * 한 번에 생성한다. 운영자가 admin 상품 폼에서 JPY 가격 필드를 일일이
  * 채울 필요를 줄여 CBT 테스트 진입 장벽을 낮춘다.
+ *
+ * 생성은 이커머스 공개 계약 {@see ProductProvisioner} 에 맡긴다(#916). 가격은 명세 통화 JPY 100 이다 —
+ * 상점 기본 통화가 KRW 여도 지금 환율로 기본 통화 가격을 역산해 저장하므로 결제 때 정확히 100엔이 된다
+ * (환율이 바뀌면 엔화 금액도 바뀐다. JPY 환율이 없는 상점이면 생성에 실패한다).
  */
 class AdminCbtTestProductController extends AdminBaseController
 {
     /**
      * 컨트롤러를 생성합니다.
      *
-     * @param  ProductService  $productService  테스트 상품을 생성하는 이커머스 상품 서비스
+     * @param  ProductProvisioner  $productProvisioner  테스트 상품을 생성하는 이커머스 공개 계약
      */
     public function __construct(
-        private readonly ProductService $productService,
+        private readonly ProductProvisioner $productProvisioner,
     ) {
         parent::__construct();
     }
@@ -44,54 +49,51 @@ class AdminCbtTestProductController extends AdminBaseController
             $timestamp = now()->format('YmdHis');
             $productCode = 'CBT-TEST-'.$timestamp;
 
-            // ProductService 가 currency_code 를 모듈 default_currency 로 자동 설정.
-            // 운영 환경의 default_currency 가 JPY 이면 selling_price 가 JPY 로 해석됨.
-            // name/description 은 AsUnicodeJson 캐스트 — 배열로 전달 (ko/en/ja 다국어)
-            // options 배열은 옵션 없는 상품도 default 1행 필수 — CartService 가 default option 을
-            // 못 찾으면 "존재하지 않는 옵션입니다" 예외를 던져 장바구니 담기가 실패한다.
-            $product = $this->productService->create([
-                'name' => [
+            // name/description 은 다국어 배열 그대로 저장된다 (ko/en/ja).
+            // 기본 옵션 1행은 계약이 만든다 — 옵션 없는 상품은 장바구니 담기가 「존재하지 않는 옵션입니다」로 실패한다.
+            $product = $this->productProvisioner->createSimpleProduct(new SimpleProductSpec(
+                name: [
                     'ko' => '[테스트] CBT 일본 결제',
                     'en' => '[Test] CBT Japan Payment',
                     'ja' => '[テスト] CBT 日本決済',
                 ],
-                'product_code' => $productCode,
-                'sku' => 'KGINICIS-'.$productCode,
-                'selling_price' => 100,    // 100엔 — CBT 테스트 최소 단위
-                'list_price' => 100,
-                'stock_quantity' => 9999,
-                'description' => [
+                productCode: $productCode,
+                sellingPrice: 100,    // 100엔 — CBT 테스트 최소 단위
+                stockQuantity: 9999,
+                sku: 'KGINICIS-'.$productCode,
+                listPrice: 100,
+                description: [
                     'ko' => 'KG 이니시스 일본 결제(CBT, JPPG) 테스트 전용 상품입니다.',
                     'en' => 'KG Inicis Japan Payment (CBT, JPPG) test product.',
                     'ja' => 'KG イニシス 日本決済 (CBT, JPPG) テスト用商品です。',
                 ],
-                'sales_status' => 'on_sale',
-                'display_status' => 'visible',
-                'options' => [
-                    [
-                        'option_code' => 'default',
-                        'option_values' => [],
-                        'option_name' => ['ko' => '기본', 'en' => 'Default', 'ja' => 'デフォルト'],
-                        'stock_quantity' => 9999,
-                        'is_default' => true,
-                        'is_active' => true,
-                    ],
-                ],
-            ]);
+                salesStatus: 'on_sale',
+                displayStatus: 'visible',
+                defaultOptionName: ['ko' => '기본', 'en' => 'Default', 'ja' => 'デフォルト'],
+                defaultOptionCode: 'default',
+                currency: 'JPY',
+            ));
 
             Log::info('KG Inicis CBT: test product created', [
                 'product_id' => $product->id,
-                'product_code' => $product->product_code,
+                'product_code' => $product->productCode,
+                'stored_selling_price' => $product->storedSellingPrice,
+                'stored_currency' => $product->storedCurrency,
             ]);
 
             return ResponseHelper::success('common.success', [
                 'product_id' => $product->id,
-                'product_code' => $product->product_code,
+                'product_code' => $product->productCode,
                 'admin_url' => '/admin/ecommerce/products/'.$product->id.'/edit',
                 // 상점 주소는 운영자 설정이라 리터럴로 두면 주소를 바꾼 상점에서 없는 페이지를 가리킨다.
                 // 화면과 같은 상품 코드 주소(#792 W12) — 화면 주소 래퍼로 「사용자 화면 URL」·주소 필터를 따른다
-                'shop_url' => EcommerceScreenUrl::product((string) $product->product_code).'?locale=ja',
+                'shop_url' => EcommerceScreenUrl::product($product->productCode).'?locale=ja',
             ]);
+        } catch (\InvalidArgumentException $e) {
+            // 쇼핑몰 통화 설정에 엔화가 없거나 환율이 없다 — 100엔 상품 가격을 정할 수 없으니 원인을 알리고 멈춘다
+            Log::warning('KG Inicis CBT: test product needs JPY currency', ['error' => $e->getMessage()]);
+
+            return ResponseHelper::error('sirsoft-pay_kginicis::messages.cbt_test_product.jpy_required', 422);
         } catch (\Throwable $e) {
             Log::error('KG Inicis CBT: test product creation failed', [
                 'error' => $e->getMessage(),

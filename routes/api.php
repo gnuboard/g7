@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
 use App\Http\Controllers\Api\Admin\CoreUpdateController as AdminCoreUpdateController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\ExtensionRecoveryController as AdminExtensionRecoveryController;
+use App\Http\Controllers\Api\Admin\ExtensionTrustKeyController as AdminExtensionTrustKeyController;
 use App\Http\Controllers\Api\Admin\FieldDefinitionController as AdminFieldDefinitionController;
 use App\Http\Controllers\Api\Admin\FrontendConfigController as AdminFrontendConfigController;
 use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
@@ -37,16 +38,16 @@ use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Api\Admin\MemberFieldController as AdminMemberFieldController;
 use App\Http\Controllers\Api\Admin\MemberNotificationController as AdminMemberNotificationController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
-use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 // Auth Controllers (Authenticated Users)
+use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
-use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
 // Identity Verification
+use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Api\Admin\NotificationDefinitionController as AdminNotificationDefinitionController;
 use App\Http\Controllers\Api\Admin\NotificationLogController as AdminNotificationLogController;
 use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotificationTemplateController;
-use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 // Public Controllers
+use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
 use App\Http\Controllers\Api\Admin\PrivacyManualRunController as AdminPrivacyManualRunController;
@@ -933,6 +934,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');
+    });
+
+    // 확장 신뢰 키 (환경설정 > 보안 「확장 신뢰 키」, 7.2.0) — 추가·삭제는 탭 일괄 저장과 분리하고 같은 요청에서 본인을 다시 확인한다.
+    Route::prefix('extension-trust-keys')->group(function () {
+        Route::get('/', [AdminExtensionTrustKeyController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.extension-trust-keys.index');
+        Route::post('/', [AdminExtensionTrustKeyController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.extension-trust-keys.store');
+        Route::delete('{trustKey}', [AdminExtensionTrustKeyController::class, 'destroy'])->whereNumber('trustKey')->middleware('permission:admin,core.settings.update')->name('api.admin.extension-trust-keys.destroy');
     });
 
     // 관리자 공개 설정 — 관리자 셸(window.G7Config)과 같은 값(#792 D8). 관리자 그룹 인증만 요구한다

@@ -5,6 +5,7 @@ namespace App\Thumbnails\Providers;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Helpers\InlineMediaPolicy;
 use App\Models\Attachment;
+use App\Support\PrivateAttachmentDisk;
 use App\Thumbnails\Contracts\ThumbnailSourceProvider;
 use App\Thumbnails\DTO\ThumbnailSource;
 
@@ -53,11 +54,21 @@ class CoreAttachmentSourceProvider implements ThumbnailSourceProvider
     }
 
     /**
-     * {@inheritDoc}
+     * 디스크 위 경로가 코어 첨부 원본인지 판정합니다.
+     *
+     * 코어 첨부 디스크는 종전 규칙(`attachment.disk`)과 지금의 업로드 디스크(`PrivateAttachmentDisk::forCore()` —
+     * `ATTACHMENT_DISK` env 명시 > 「비공개 첨부 저장소」 선택 > 종전 규칙) 둘이다. 업로드 디스크를 빠뜨리면 선택한 디스크에
+     * 올린 새 첨부가 「모르는 원본」이 되어 등록 시 미리 생성이 조용히 빠진다(#916).
+     *
+     * @param  string  $disk  원본 디스크
+     * @param  string  $path  디스크 위 전체 경로
+     * @return bool 코어 첨부 원본이면 true
      */
     public function matches(string $disk, string $path): bool
     {
-        return $disk === (string) config('attachment.disk', 'attachments')
+        $coreDisks = [(string) config('attachment.disk', 'attachments'), PrivateAttachmentDisk::forCore()];
+
+        return in_array($disk, $coreDisks, true)
             && preg_match(self::PATH_PATTERN, ltrim($path, '/')) === 1;
     }
 

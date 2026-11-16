@@ -175,8 +175,11 @@ export interface FileUploaderProps {
     upload?: string;
     /** 파일 삭제 API - :id를 실제 ID로 치환 (기본값: /api/admin/attachments/:id) */
     delete?: string;
-    /** 순서 변경 API (기본값: /api/admin/attachments/reorder) */
-    reorder?: string;
+    /**
+     * 순서 변경 API. 키가 없으면 /api/admin/attachments/reorder, 키가 있고 `null`·빈 문자열이면 정렬 요청을 보내지 않는다
+     * (정렬 API 가 없는 화면·생성 화면).
+     */
+    reorder?: string | null;
   };
   /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
   id?: string;
@@ -196,5 +199,6 @@ export interface FileUploaderRef {
 export interface ApiEndpoints {
   upload: string;
   delete: string;
-  reorder: string;
+  /** null 이면 정렬 요청을 보내지 않는다 */
+  reorder: string | null;
 }

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Models;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
@@ -31,10 +32,17 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
         parent::setUp();
+
+        // isActive() 는 사이트 시간대의 오늘(siteToday)로 판정하고 이 시험은 now()(UTC) 날짜로 기간을 만든다.
+        // 두 날짜가 갈리는 시각(한국 시간 0~9시)에는 「내일 시작」이 오늘이 되어 실패하므로, 어느 시간대에서도
+        // 같은 날짜인 UTC 정오 무렵으로 시각을 고정한다.
+        $this->travelTo(now()->setTime(3, 0));
 
         // ProductLabelAssignment 클래스가 로드되어 있지 않으면 테스트 스킵
         if (! class_exists($this->assignmentClass)) {
@@ -60,7 +68,7 @@ class ProductLabelAssignmentTest extends TestCase
     /**
      * 테스트용 ProductLabel 생성
      *
-     * @param array $overrides 오버라이드할 속성
+     * @param  array  $overrides  오버라이드할 속성
      * @return mixed ProductLabel 인스턴스
      */
     private function createLabel(array $overrides = []): mixed
@@ -77,7 +85,7 @@ class ProductLabelAssignmentTest extends TestCase
     /**
      * 테스트용 Product 생성
      *
-     * @param array $overrides 오버라이드할 속성
+     * @param  array  $overrides  오버라이드할 속성
      * @return mixed Product 인스턴스
      */
     private function createProduct(array $overrides = []): mixed
@@ -97,7 +105,7 @@ class ProductLabelAssignmentTest extends TestCase
     /**
      * 테스트용 ProductLabelAssignment 생성
      *
-     * @param array $overrides 오버라이드할 속성
+     * @param  array  $overrides  오버라이드할 속성
      * @return mixed ProductLabelAssignment 인스턴스
      */
     private function createAssignment(array $overrides = []): mixed
@@ -116,6 +124,12 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * start_date와 end_date가 date로 캐스팅되는지 테스트
+     *
+     * @scenario case=date_cast
+     *
+     * @effects dates_cast_to_date
+     *
+     * @return void 반환값 없음
      */
     public function test_dates_are_cast_to_date(): void
     {
@@ -132,14 +146,20 @@ class ProductLabelAssignmentTest extends TestCase
         ]);
 
         // Assert
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $assignment->start_date);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $assignment->end_date);
+        $this->assertInstanceOf(Carbon::class, $assignment->start_date);
+        $this->assertInstanceOf(Carbon::class, $assignment->end_date);
         $this->assertEquals('2025-01-15', $assignment->start_date->toDateString());
         $this->assertEquals('2025-06-30', $assignment->end_date->toDateString());
     }
 
     /**
      * isActive()가 날짜 범위 내일 때 true를 반환하는지 테스트
+     *
+     * @scenario case=within_range
+     *
+     * @effects active_within_date_range
+     *
+     * @return void 반환값 없음
      */
     public function test_is_active_returns_true_when_within_date_range(): void
     {
@@ -155,6 +175,12 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * isActive()가 시작일 이전일 때 false를 반환하는지 테스트
+     *
+     * @scenario case=before_start
+     *
+     * @effects inactive_before_start_date
+     *
+     * @return void 반환값 없음
      */
     public function test_is_active_returns_false_when_before_start_date(): void
     {
@@ -170,6 +196,12 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * isActive()가 종료일 이후일 때 false를 반환하는지 테스트
+     *
+     * @scenario case=after_end
+     *
+     * @effects inactive_after_end_date
+     *
+     * @return void 반환값 없음
      */
     public function test_is_active_returns_false_when_after_end_date(): void
     {
@@ -185,6 +217,12 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * isActive()가 날짜 제한 없을 때 true를 반환하는지 테스트
+     *
+     * @scenario case=unbounded
+     *
+     * @effects active_without_date_limits
+     *
+     * @return void 반환값 없음
      */
     public function test_is_active_returns_true_when_no_date_limits(): void
     {
@@ -200,6 +238,12 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * scopeCurrentlyActive가 활성 라벨만 필터링하는지 테스트
+     *
+     * @scenario case=active_scope
+     *
+     * @effects currently_active_scope_keeps_only_active
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_currently_active_filters_correctly(): void
     {
@@ -234,6 +278,12 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * product 관계가 정상 동작하는지 테스트
+     *
+     * @scenario case=relations
+     *
+     * @effects product_relation_resolves
+     *
+     * @return void 반환값 없음
      */
     public function test_product_relationship_works(): void
     {
@@ -256,6 +306,12 @@ class ProductLabelAssignmentTest extends TestCase
 
     /**
      * label 관계가 정상 동작하는지 테스트
+     *
+     * @scenario case=relations
+     *
+     * @effects label_relation_resolves
+     *
+     * @return void 반환값 없음
      */
     public function test_label_relationship_works(): void
     {

@@ -24,6 +24,7 @@ return [
     'defaults' => [
         'vbank_refund_msg' => '仮想口座返金',
     ],
+    'vbank_close_reason' => '入金前の注文キャンセル',
     'fields' => [
         'tid' => '取引ID(TID)',
         'moid' => '注文番号',
@@ -46,5 +47,14 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
+    ],
+    // 決済画面・決済代行会社連携 API のエラー応答メッセージ
+    'responses' => [
+        'amount_mismatch' => '決済金額が注文金額と一致しません。',
+        'currency_not_chargeable' => '決済通貨で請求額を計算できません。',
+        'escrow_payment_not_found' => '指定した取引番号のエスクロー決済が見つかりません。',
+        'order_not_found' => '注文が見つかりません。',
+        'ownership_verification_failed' => '注文の所有者確認に失敗しました。',
+        'too_many_requests' => 'リクエストが多すぎます。しばらくしてから再度お試しください。',
     ],
 ];

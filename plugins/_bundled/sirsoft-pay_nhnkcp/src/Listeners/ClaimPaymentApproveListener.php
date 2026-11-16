@@ -6,9 +6,9 @@ namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ReadsKcpApprovedAmount;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
@@ -55,6 +55,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         'cash_yn',
         'receipt_no',
     ];
+
+    /**
+     * @param  ClaimPaymentLookup  $claimPayments  이커머스 클레임 결제 계약 (결제 통화 청구액)
+     */
+    public function __construct(
+        private readonly ClaimPaymentLookup $claimPayments,
+    ) {}
 
     /**
      * 구독할 훅 매핑을 반환합니다.
@@ -118,9 +125,10 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         }
 
         // KCP 는 KRW 전용 — 승인 호출 전에 결제 통화를 확인한다 (주문 경로의 isKrwOrder 대응).
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        // 청구액은 이커머스 계약이 훅이 넘긴 결제 건(잠긴 행 그대로)으로 계산한다.
+        $charge = $this->claimPayments->resolveClaimCharge($payment);
 
-        if ($charge === null || strtoupper($charge['currency']) !== 'KRW') {
+        if ($charge === null || strtoupper($charge->currency) !== 'KRW') {
             return $this->failure('CURRENCY_NOT_SUPPORTED', __('sirsoft-pay_nhnkcp::messages.claim.currency_not_supported'));
         }
 
@@ -139,7 +147,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         // **뒤**에 금액 불일치로 거절하고, 그 거절의 보상(취소)은 서버 콜백 경로에만 있어 클라이언트
         // 승인 API 경로에서는 청구된 채 남는다(#599 validate 07 #8). 이 값은 브라우저가 보낸 것이라
         // **거절 쪽으로만** 쓴다 — 통과 근거는 승인 요청의 ordr_mony 와 승인 뒤 KCP 응답 금액이다.
-        $expectedAmount = (int) $charge['minor_unit_amount'];
+        $expectedAmount = $charge->minorUnitAmount;
         $callbackAmount = is_numeric($callback['good_mny'] ?? null) ? (int) $callback['good_mny'] : null;
 
         if ($callbackAmount !== $expectedAmount) {
@@ -282,13 +290,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
      */
     private function cancelIssuedQuietly(NhnKcpApiService $apiService, string $tno, ClaimPayment $payment): void
     {
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        $charge = $this->claimPayments->resolveClaimCharge($payment);
 
         $this->cancelApprovedQuietly(
             $apiService,
             $tno,
             $payment,
-            (int) ($charge['minor_unit_amount'] ?? round((float) $payment->amount)),
+            (int) ($charge?->minorUnitAmount ?? round((float) $payment->amount)),
             __('sirsoft-pay_nhnkcp::messages.claim.deposit_not_supported'),
         );
     }
@@ -372,8 +380,8 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         $amount = is_numeric($approveResult['paid_amount'] ?? null) ? (int) $approveResult['paid_amount'] : 0;
 
         if ($amount <= 0) {
-            $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
-            $amount = (int) ($charge['minor_unit_amount'] ?? round((float) $payment->amount));
+            $charge = $this->claimPayments->resolveClaimCharge($payment);
+            $amount = (int) ($charge?->minorUnitAmount ?? round((float) $payment->amount));
         }
 
         $cancelled = $this->cancelApprovedQuietly(

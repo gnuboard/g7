@@ -20,7 +20,7 @@
 | `EcommerceAttachment` | `ecommerce_attachments` | 14 | - | SoftDeletes |
 | `EcommerceStat` | `ecommerce_stats` | 4 | - | - |
 | `EcommerceUserProfile` | `ecommerce_user_profiles` | 3 | user→User | - |
-| `Export` | `ecommerce_exports` | 30 | requester→User, downloads→ExportDownload | SoftDeletes |
+| `Export` | `ecommerce_exports` | 31 | requester→User, downloads→ExportDownload | SoftDeletes |
 | `ExportDownload` | `ecommerce_export_downloads` | 6 | export→Export, user→User | - |
 | `ExtraFeeTemplate` | `ecommerce_shipping_policy_extra_fee_templates` | 7 | creator→User, updater→User | - |
 | `HasDirectAssetUrl` | (규약) | - | - | - |
@@ -166,6 +166,11 @@
 상품 옵션 파일에 `tax_status`(과세 종류)가 항목으로 있습니다. 주문 옵션의 `tax_status` 는 주문 시점에 기록한 값이라 그 칸이 없던
 시절의 행은 비어 있고, 상품 옵션의 `tax_status` 는 비어 있으면 상품 값을 따른다는 뜻입니다. 모델에 컬럼을 더하면 내보내기 선언
 (`Exports\Declarations\*Declaration`)의 `fields()` 나 `excluded()` 에도 반드시 함께 적습니다(선언 누락은 시험이 잡습니다).
+내보내기 파일 자체는 모듈 저장소 카테고리 `exports` 에 두며, 디스크는 환경설정 > 드라이버 「비공개 첨부 저장소」를 따릅니다(「기본」이면 `modules`).
+`ecommerce_exports.disk`(`2026_11_15_000001_add_disk_to_ecommerce_exports_table`)는 파일을 저장할 때의 디스크이고 `file_path` 처럼 화면·API 에
+싣지 않습니다(모델 hidden). 내려받기·삭제·만료 정리·모듈 제거는 지금 디스크가 아니라 이 컬럼의 디스크로 가므로, 저장소를 바꿔도 그 전에 만든 파일에
+닿습니다. 이 컬럼 전에 만든 행은 기본값 `modules` 로 채워집니다(그때는 언제나 `modules` 에 저장했으므로 백필 없음). 컬럼 값이 config 에서 사라진
+디스크면 주입 저장소로 대신해 「파일 없음」(404)이 됩니다 — 500 이 나지 않습니다.
 본문 미디어(1.3.4, `ContentMedia`)는 상품 설명·상품 공통 정보 편집기 본문에 넣은 이미지·동영상·오디오입니다. 이 모듈의 **범용 첨부 표
 `ecommerce_attachments`**(게시판 `board_attachments`·페이지 `page_attachments` 와 같은 모양, #887)에 `collection = content_media` 로 둡니다 —
 `EcommerceAttachment` 가 그 표의 범용 모델이고, `ContentMedia` 는 본문 미디어 컬렉션만 보는 범위 모델입니다(다른 쓰임새가 생기면 컬렉션을 나눠
@@ -287,7 +292,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 134개.
+마이그레이션 135개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -425,6 +430,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_11_02_000001_update_imported_review_fields_in_ecommerce_product_reviews_table.php` | - | - | ✅ |
 | `2026_11_10_000001_create_ecommerce_attachments_table.php` | `ecommerce_attachments` | `ecommerce_attachments` | ✅ |
 | `2026_11_10_000002_drop_ecommerce_content_media_table.php` | - | - | ✅ |
+| `2026_11_15_000001_add_disk_to_ecommerce_exports_table.php` | - | `ecommerce_exports` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -630,6 +636,8 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 | `OrderShippingRepository` | 구현 | 주문 배송 리포지토리 구현체 |
 | `OrderShippingRepositoryInterface` | 인터페이스 | 주문 배송 리포지토리 인터페이스 |
 | `PaginatesBuyerClaimList` | 구현 | 구매자 클레임 목록 페이지네이션 공용 트레이트 (회원 신청내역 · 비회원 주문상세 섹션) |
+| `PaymentGatewayRepository` | 구현 | 결제사 플러그인 공개 계약 구현 전용 저장소 (#916) |
+| `PaymentGatewayRepositoryInterface` | 인터페이스 | 결제사 플러그인 공개 계약(PaymentGatewayBridge) 구현 전용 저장소 (#916) |
 | `ProductAdditionalOptionValueRepository` | 구현 | 상품 추가옵션 선택지 Repository 구현체 |
 | `ProductAdditionalOptionValueRepositoryInterface` | 인터페이스 | 상품 추가옵션 선택지 Repository 인터페이스 |
 | `ProductCommonInfoRepository` | 구현 | 공통정보 Repository 구현체 |

@@ -488,7 +488,7 @@ class RequiredFieldsTest extends TestCase
         // 같은 컨트롤러의 두 주소가 모두 열려 있다 — 관문이 아니라 내 정보 저장의 검증(비어 있는 필수 항목)에 닿는다.
         foreach (['/api/me', '/api/user/profile'] as $uri) {
             $this->resetAuth();
-            $response = $this->putJson($uri, ['name' => '고친이름', 'email' => $user->email], $auth);
+            $response = $this->putJson($uri, ['name' => '고친이름', 'email' => $user->email, 'fields_version' => app(FieldRegistry::class)->version('core.user')], $auth);
             $assertNotBlocked($response, 'PUT '.$uri);
             $response->assertStatus(422)->assertJsonValidationErrors(['custom_fields.rf_demanded']);
         }

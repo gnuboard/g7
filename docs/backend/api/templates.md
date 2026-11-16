@@ -70,6 +70,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string | `1.0.4` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.4` | 설치된 파일의 manifest 버전 |
 | github_url | string | `https://github.com/gnuboard/g7-templa…` | GitHub 저장소 URL |
@@ -443,6 +445,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 템플릿이 설정 화면(`settings/template_settings.*`)을 공급할 때 true |
 | settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | update_source | string\|null | `null` | 업데이트 감지 출처 (`github` \| `bundled` \| null) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -569,6 +573,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | dependencies_met | boolean | `true` | 의존 확장이 모두 활성·버전 충족인지 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -656,6 +662,9 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 51200 | 업로드 파일 |
+| signature | body | file | 아니오 | max 64 (KB) | 서명 파일 `{zip}.sig.json` (7.2.0). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않으므로 서명을 확인하려면 이 칸으로 준다. 비우면 미서명 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.install_from_file_validation_rules`).
 
@@ -696,6 +705,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -757,6 +768,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 위반 또는 ZIP 처리 실패 (template.json 누락/무효, 이미 설치된 식별자, 잘못된 디렉토리명 등) |
 | 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -765,6 +778,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 
 
 **설명** 업로드된 ZIP 파일에서 템플릿을 설치합니다(TemplateService::installFromZipFile). 최대 50MB(51200KB)까지 허용합니다. `core.templates.install` 권한이 필요합니다.
+
+**패키지 서명(7.2.0)** `signature` 로 준 서명 파일로 ZIP 을 풀기 전에 검증하고, 푼 manifest 의 식별자·버전을 서명과 대조한다. 서명 파일을 주지 않으면 미서명이라 409 를 내고, 같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추고 설치 경로에 파일을 남기지 않는다. 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### POST /api/admin/templates/install-from-github
@@ -778,6 +793,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | github_url | body | string | 예 | — | GitHub 저장소 URL |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.install_from_github_validation_rules`).
 
@@ -815,6 +832,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `https://github.com/gnuboard/g7-template-basic` | manifest 에 선언된 GitHub 저장소 URL |
@@ -876,6 +895,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | 403 | Forbidden | 요구 권한(`core.templates.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 검증 위반 또는 설치 실패 (유효하지 않은 GitHub URL, 저장소 없음, 다운로드 실패, 이미 설치된 식별자 등) |
 | 409 | Conflict | 같은 템플릿에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예기치 못한 오류 |
 
@@ -884,6 +905,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 
 
 **설명** 지정한 GitHub 저장소 URL에서 템플릿을 내려받아 설치합니다(TemplateService::installFromGithub). `core.templates.install` 권한이 필요합니다.
+
+**패키지 서명(7.2.0)** 태그 릴리스만 받는다 — 최신 릴리스가 없으면 `main`·`master` 브랜치로 물러서지 않고 「릴리스를 찾을 수 없음」(`common.errors.github_release_not_found`)으로 실패한다. 릴리스에 `{identifier}-{version}.zip` 과 `.sig.json` 자산 짝이 있으면 그것을 받아 풀기 전에 검증하고, 짝이 없으면 미서명으로 다뤄 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 검증 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### DELETE /api/admin/templates/layout-attachments/{attachment}
@@ -1067,6 +1090,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
@@ -95017,6 +95042,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 (`github` \| `bundled`) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | type | string | `admin` | 템플릿 타입 (`admin` \| `user`) |
 | status | string | `active` | 템플릿 상태 |
@@ -97829,6 +97856,8 @@ _단건 응답: `data` 객체의 필드._
 | layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.perform_update_validation_rules`).
 
@@ -97867,6 +97896,8 @@ _단건 응답: `data` 객체의 필드 (업데이트 후 TemplateResource)._
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 (업데이트 직후 false) |
 | update_source | string\|null | `github` | 업데이트를 가져온 출처 (`github` \| `bundled`) |
+| integrity_status | string\|null | `null` | 패키지 서명 검증 결과 (7.2.0) — `verified`·`unsigned`·`unverifiable`·`bundled` 중 하나. 7.2.0 이전 설치처럼 기록이 없으면 null. 상세 창 「패키지 서명」 배지가 읽는다 ([검증 상태](../../extension/package-signing.md#검증-상태)) |
+| integrity_key_id | string\|null | `null` | 서명한 키의 key_id (`{label}:{16 hex}`, `verified` 일 때만. 그 밖에는 null) |
 | latest_version | string\|null | `1.0.1` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.1` | 설치된 파일의 manifest 버전 |
 | github_url | string\|null | `https://github.com/gnuboard/g7-template-basic` | GitHub 저장소 URL |
@@ -97931,12 +97962,16 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 또는 업데이트 실패 (미설치, 다운그레이드 차단, 다운로드 실패, 코어 버전 비호환 등 — `errors.template_name` 에 번역된 사유) |
 | 409 | Conflict | 같은 템플릿의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) · 7.1.5 부터 `errors.operation_in_progress: true` 를 싣고, 같은 확장의 설치·활성화·비활성화·제거가 진행 중이어도 같은 응답이다 |
+| 409 | Conflict | 미서명·검증 불가 패키지 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned=1` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false. 서명 자산이 없는 릴리스는 ZIP 을 받기 전에 이 응답을 낸다 ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — `errors.integrity.reason` 에 사유, 확인으로도 계속할 수 없다 (7.2.0) |
 | 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 업데이트 처리 중 예기치 못한 오류 |
 
 <!-- @generated:end -->
 
 **설명** 설치된 템플릿을 최신 버전으로 업데이트합니다. `layout_strategy`(overwrite: 레이아웃 전면 교체 / keep: 운영자 수정본에 새 버전 3자 병합)로 레이아웃 처리 방식을 결정하며, `force`로 강제 진행할 수 있습니다(TemplateService::performVersionUpdate). `core.templates.install` 권한이 필요합니다. `keep` 을 지정하면 운영자가 수정한 레이아웃·확장 조각에 새 버전을 3자 병합합니다 — 고친 부분(조각·최상위 키·data_sources 항목 단위)은 운영자 것, 손대지 않은 부분은 새 버전이고, 같은 곳을 양쪽이 고쳤으면 운영자 것을 남깁니다. 운영자가 고치지 않은 레이아웃은 파일 기준으로 갱신됩니다. 보고할 행이 있으면 성공 메시지 뒤에 「레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.」 요약이 붙고, 응답 `data.layout_sync` 에 `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[{kind, template, name, verdict, applied, conflicts}]}` 가 실립니다(규칙: docs/extension/extension-update-system.md §10). 성공 응답 메시지에는 대상 식별자와 적용된 버전이 채워집니다. 업데이트할 것이 없으면(현재 버전이 최신) 200 으로 응답하되 메시지는 `templates.no_update_available`(「업데이트할 내용이 없습니다」)입니다. 같은 템플릿의 업데이트는 한 번에 하나만 수행되며, 진행 중에 들어온 요청(버튼 연속 클릭 등)은 아무 단계도 거치지 않고 409 로 거절됩니다.
+
+**패키지 서명(7.2.0)** GitHub 출처는 그 판의 태그 릴리스 자산 짝으로 풀기 전에 검증하고, 짝이 없으면 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 번들 출처(`_bundled`)는 코어 배포본 서명이 덮으므로 검증하지 않고 `bundled` 로 기록한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추며 백업 전에 끝나 설치본을 건드리지 않는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
 
 ### GET /api/templates/assets/{identifier}

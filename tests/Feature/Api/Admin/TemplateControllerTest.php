@@ -1286,7 +1286,7 @@ class TemplateControllerTest extends TestCase
         $templateServiceMock = Mockery::mock(TemplateService::class);
         $templateServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->with('https://github.com/sirsoft/sample-template')
+            ->with('https://github.com/sirsoft/sample-template', \Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->andReturn([
                 'identifier' => 'sirsoft-sampletemplate',
                 'name' => 'Sample Template',

@@ -5,14 +5,23 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use App\Support\ExtensionStoragePath;
 use App\Support\SiteUrl;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
 
 class RegisterPgProviderListener implements HookListenerInterface
 {
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nhnkcp';
 
     private const LIVE_SITE_CD_PREFIX = 'SR';
+
+    /**
+     * 이커머스 결제 조회 계약을 주입받습니다.
+     *
+     * @param  PaymentLookup  $payments  이커머스 결제 조회 계약 (쇼핑몰 기본 PG)
+     */
+    public function __construct(
+        private readonly PaymentLookup $payments,
+    ) {}
 
     /**
      * 구독할 훅 매핑 반환
@@ -144,19 +153,13 @@ class RegisterPgProviderListener implements HookListenerInterface
     /**
      * 쇼핑몰 주문 설정의 기본 PG 가 NHN KCP 인지 판정합니다.
      *
-     * @return bool 주문 설정 파일의 default_pg_provider 가 nhnkcp 이면 true (파일이 없으면 false)
+     * 쇼핑몰 주문 설정은 이커머스 결제 계약(`PaymentLookup::defaultPgProvider`)으로 읽는다 — 저장 위치·형식은 이커머스가 정한다.
+     *
+     * @return bool 주문 설정의 기본 PG 가 nhnkcp 이면 true (설정이 없으면 false)
      */
     private function isNhnKcpDefaultPg(): bool
     {
-        $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
-
-        if (! file_exists($path)) {
-            return false;
-        }
-
-        $data = json_decode(file_get_contents($path), true);
-
-        return ($data['default_pg_provider'] ?? '') === 'nhnkcp';
+        return $this->payments->defaultPgProvider() === 'nhnkcp';
     }
 
     /**

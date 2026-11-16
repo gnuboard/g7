@@ -221,6 +221,23 @@ class CategoryRepository implements CategoryRepositoryInterface
     }
 
     /**
+     * slug 목록으로 카테고리를 한 번에 조회하고 slug 키 맵으로 반환합니다(관계와 집계 없음).
+     *
+     * @param  array<int, string>  $slugs  카테고리 slug 목록
+     * @return Collection<string, Category> slug => 카테고리(같은 slug 가 여럿이면 id 가 가장 작은 행)
+     */
+    public function findBySlugsKeyed(array $slugs): Collection
+    {
+        $slugs = array_values(array_unique(array_filter($slugs, fn ($slug) => is_string($slug) && $slug !== '')));
+        if ($slugs === []) {
+            return new Collection;
+        }
+
+        // id 내림차순으로 읽어 keyBy 가 마지막(가장 작은 id) 행을 남기게 한다
+        return $this->model->newQuery()->whereIn('slug', $slugs)->orderByDesc('id')->get()->keyBy('slug');
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function findPublicBySlug(string $slug): ?Category

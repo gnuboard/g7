@@ -33,6 +33,7 @@ return [
         'github_url_invalid' => 'Invalid GitHub URL format.',
         'github_api_failed' => 'GitHub API call failed.',
         'github_download_failed' => 'Failed to download from GitHub.',
+        'github_release_not_found' => 'The :repository repository has no tagged release. Branches (main, master) are not installed. Try again after the author publishes a release.',
         'github_archive_download_failed' => 'Failed to download archive. (:url)',
         'zip_file_not_found' => 'ZIP file not found.',
         'archive_php_extension_missing' => 'Extracting this archive requires these PHP extensions on the server: :extensions. Ask your server administrator to install them.',

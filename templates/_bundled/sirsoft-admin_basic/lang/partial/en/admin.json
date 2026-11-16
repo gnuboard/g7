@@ -5,6 +5,13 @@
       "with_label": "Real name: {{name}}"
     }
   },
+  "extension_public_api": {
+    "title": "Public API (PHP surface other extensions may use)",
+    "hint": "Other extensions should only use the namespaces and classes listed here plus public hooks. Anything else is internal and may change without notice.",
+    "namespaces": "Namespaces",
+    "classes": "Classes",
+    "readonly_models": "Read-only models (type hints and property reads only)"
+  },
   "extension_integrations": {
     "title": "Works together with",
     "hint": "When these extensions are installed, their features connect with this one. This extension works without them.",
@@ -27,6 +34,35 @@
     "deactivate_confirm": "Deactivate",
     "uninstall_notice": "The extensions below are integrated with this one — deleting it removes the menus and screens they use from it.",
     "notice_toast": "Extensions that work together: {{items}}"
+  },
+  "package_integrity": {
+    "signature_label": "Package signature",
+    "status_verified": "Signature verified: {{signer}}",
+    "status_unsigned": "Unsigned",
+    "status_unverifiable": "Cannot verify (sodium missing on server)",
+    "status_bundled": "Bundled original",
+    "status_none": "No record",
+    "unsigned_title": "This package is not signed",
+    "unverifiable_title": "This server cannot verify the signature",
+    "invalid_title": "Stopped because the signature does not match",
+    "untrusted_title": "This package is signed with an untrusted key",
+    "package": "Package: {{identifier}} {{version}}",
+    "signer_key": "Signing key: {{key}}",
+    "continue_hint": "Press \"Continue unsigned\" below only if you trust the author. The same request is sent again without signature verification.",
+    "blocked_hint": "\"Block unsigned packages\" is on in Settings > Security, so this cannot proceed. Use a signed package or turn the block off.",
+    "invalid_hint": "The package contents changed or the signature file belongs to another package. Download the ZIP and signature file again from the publisher.",
+    "untrusted_hint": "Check that the author key is registered under \"Extension trust keys\" in Settings > Security and that its vendor scope matches this identifier.",
+    "continue_unsigned": "Continue unsigned",
+    "result_verified": "Package signature verified (signer: {{signer}}).",
+    "result_unsigned": "Proceeded with a package whose signature was not verified.",
+    "signature_file_label": "Signature file (.sig.json, optional)",
+    "no_signature_selected": "No signature file selected.",
+    "signature_file_hint": "Choose the signature file published with the ZIP in the release (the ZIP name followed by .sig.json) to verify it before installing. Without it the package is treated as unsigned.",
+    "signature_url_label": "Signature file URL (optional)",
+    "signature_url_hint": "The https URL of the .sig.json file published with the ZIP. Leave it empty to treat the package as unsigned (no URL is guessed or requested).",
+    "core_signature_label": "Release signature",
+    "core_signature_available": "Signed",
+    "core_signature_missing": "Unsigned"
   },
   "sidebar": {
     "no_accessible_menus": "No accessible menus",
@@ -747,16 +783,22 @@
     },
     "install_modal": {
       "title": "Install Language Pack",
-      "description": "Install a language pack via ZIP file upload or GitHub URL.",
+      "description": "Install a language pack from a ZIP file, a GitHub URL or a ZIP URL.",
       "tabs": {
         "zip": "ZIP file",
-        "github": "GitHub"
+        "github": "GitHub",
+        "url": "URL"
       },
       "file_label": "ZIP file",
       "no_file_selected": "No file selected.",
       "file_requirements": "The following manifest file must be at the ZIP root.",
       "github_url_label": "GitHub URL",
-      "github_requirements": "Public repositories only. The following manifest file must be at the repository root."
+      "github_requirements": "Public repositories only. The following manifest file must be at the repository root.",
+      "url_label": "Package URL (https)",
+      "url_hint": "An https URL that serves the language pack ZIP directly.",
+      "checksum_label": "SHA-256 checksum (optional)",
+      "checksum_hint": "Enter the SHA-256 of the ZIP given by the publisher (64 hex characters) to check the downloaded file.",
+      "url_requirements": "The following manifest file must be at the root of the downloaded ZIP."
     },
     "installing": "Installing...",
     "messages": {
@@ -1018,7 +1060,7 @@
       "file_requirements": "Module package must include",
       "file_structure_hint": "file and follow Gnuboard7 module standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Download module from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the module from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -1253,7 +1295,7 @@
       "file_requirements": "Plugin package must include",
       "file_structure_hint": "file and follow Gnuboard7 plugin standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Downloads the plugin from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the plugin from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -1673,7 +1715,8 @@
       "queue_default": "Default",
       "overridden_badge": "Modified by operator",
       "owned_badge": "Registered by {{owner}} — name, type and command are locked",
-      "timezone_badge": "Timezone: {{timezone}}"
+      "timezone_badge": "Timezone: {{timezone}}",
+      "allow_unsigned_hint": "When registering install or update commands (such as module:update), add --allow-unsigned so they do not stop at unsigned packages."
     },
     "modals": {
       "create_title": "Register schedule",
@@ -2105,7 +2148,8 @@
           "purge_failed": "Could not purge thumbnails.",
           "purge_all": "Purge Both",
           "pregenerate": "Generate Thumbnails for Existing Images",
-          "cdn_purge_notice": "When public thumbnails are stored on a public storage (CDN), CDN cache invalidation on purge or original deletion is handled by a CDN plugin. Without one, copies left on the CDN may be served until they expire."
+          "cdn_purge_notice": "When public thumbnails are stored on a public storage (CDN), CDN cache invalidation on purge or original deletion is handled by a CDN plugin. Without one, copies left on the CDN may be served until they expire.",
+          "same_bucket_warning": "The public asset disk on the Drivers tab is also Amazon S3, so access-controlled image thumbnails share its bucket. If the bucket allows public reads, these thumbnails can also be read directly from the bucket URL. Make sure no public policy applies to the thumbnail path (thumbnails/)."
         },
         "purge_all_modal": {
           "title": "Purge All Thumbnails",
@@ -2464,6 +2508,28 @@
         "auto_hosts_empty": "No active extension declares an external script host.",
         "preview": "Policy preview",
         "preview_hint": "Based on saved values. Save first if you changed the mode or hosts."
+      },
+      "extension_trust": {
+        "title": "Extension trust keys",
+        "desc": "Public keys trusted when verifying extension, language pack and core package signatures. Built-in core keys ship with the core; author keys are added here. Adding and deleting keys take effect immediately, separately from the Save button.",
+        "block_unsigned": "Block unsigned packages",
+        "block_unsigned_desc": "When on, installing or updating packages that are unsigned or cannot be verified on this server is blocked (\"Continue unsigned\" is not offered). Press Save to apply.",
+        "sodium_missing": "The PHP sodium extension is missing on this server, so signatures cannot be verified. Signed packages are treated as \"cannot verify\" and follow the unsigned policy.",
+        "builtin_title": "Built-in core keys",
+        "builtin_hint": "These keys ship with the core and cannot be changed here.",
+        "builtin_empty": "There are no built-in core keys yet. They will ship with a core update.",
+        "vendor_title": "Author keys",
+        "vendor_empty": "No author keys registered.",
+        "add_key": "Add key",
+        "delete_key": "Delete",
+        "field_key_id": "Key ID",
+        "field_signer": "Signer",
+        "field_vendor_scope": "Vendor scope",
+        "field_created_at": "Added",
+        "status_active": "Active",
+        "status_retired": "Retired (no new signatures)",
+        "status_revoked": "Revoked",
+        "load_failed": "Failed to load the trust key list."
       }
     },
     "member": {
@@ -2822,6 +2888,16 @@
         "desc": "Configure the disk for serving fully public assets (product, category, review, and editor images, layout background images, etc.) via direct URLs. When disabled, the existing streaming method is used. Only files uploaded after enabling this get direct URLs, and those addresses stay in the saved layout.",
         "disk": "Disk",
         "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used."
+      },
+      "private_attachment": {
+        "title": "Private Attachment Storage",
+        "desc": "The disk for files the server sends after checking permissions (board, page and core attachments, claim images, post-body media, export files). With Default, the site storage driver is used as before. Only files uploaded after changing this go to the new disk; files already uploaded keep being served from their original disk.",
+        "disk": "Disk",
+        "same_disk_warning": "This is the same disk as the public asset storage. If the bucket allows public reads, private files can be read directly from the bucket URL. Use a bucket or path without a public policy.",
+        "s3_help": "When you choose S3, the S3 connection in the File Storage card above is used. Block public reads on the bucket.",
+        "pins_title": "Fixed by .env",
+        "pin_core": "Core attachments",
+        "pins_hint": "These use the disk set in .env and ignore the selection above. Remove the value from .env to make them follow the selection."
       },
       "file_delegation": {
         "title": "Web Server File Delegation",
@@ -3702,6 +3778,29 @@
       "language_packs": "You do not have permission to view language packs. The \"View Language Packs\" permission is required.",
       "identity_providers": "You do not have permission to view identity verification providers. The \"View IDV Providers\" permission is required.",
       "identity_policies": "You do not have permission to view identity verification policies. The \"View IDV Policies\" permission is required."
+    },
+    "extension_trust_key_modal": {
+      "add_title": "Add author trust key",
+      "add_desc": "Register a public key given by an extension author. Packages signed with this key are trusted only for identifiers within the vendor scope.",
+      "public_key": "Public key",
+      "public_key_placeholder": "Base64-encoded 32-byte Ed25519 public key",
+      "public_key_hint": "Paste the single-line public key the author generated with the extension:keygen command. The server computes the key ID.",
+      "label": "Signer name",
+      "label_placeholder": "e.g. glitter",
+      "label_hint": "Up to 32 letters, digits, underscores or hyphens, and it cannot start with sirsoft. It becomes the first part of the key ID.",
+      "vendor_scope": "Vendor scope",
+      "vendor_scope_placeholder": "e.g. glitter, glitter-labs",
+      "vendor_scope_hint": "Enter one or more vendors (the part before the hyphen in extension identifiers) whose signatures this key may vouch for, separated by commas. sirsoft is not allowed.",
+      "password_notice": "Changing trust keys changes which packages are trusted, so your password is confirmed again.",
+      "submit": "Add key",
+      "submitting": "Adding...",
+      "add_success": "Trust key added.",
+      "delete_title": "Delete author trust key",
+      "delete_confirm": "Delete the key {{key_id}}.",
+      "delete_warning": "Extensions signed with this key will be blocked as \"untrusted key\" from their next install or update.",
+      "delete_submit": "Delete",
+      "deleting": "Deleting...",
+      "delete_success": "Trust key deleted."
     }
   },
   "templates": {
@@ -3758,7 +3857,7 @@
       "file_requirements": "Template package must include",
       "file_structure_hint": "file and follow Gnuboard7 template standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Download template from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the template from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -3953,7 +4052,7 @@
       "file_requirements": "Template package must include",
       "file_structure_hint": "file and follow Gnuboard7 template standard structure.",
       "github_url_label": "GitHub Repository URL",
-      "github_url_hint": "Download template from the default branch of the GitHub repository.",
+      "github_url_hint": "Downloads the template from the latest tagged release of the GitHub repository. Repositories without a release are not installed.",
       "github_requirements": "The root directory must contain",
       "github_public_only": "file in the root directory."
     },
@@ -5405,7 +5504,9 @@
       "settings_thumbnail_pregenerate_modal": "Generate Thumbnails for Existing Images",
       "member_field_form_modal": "Add or Edit Member Field",
       "member_field_delete_modal": "Confirm Member Field Deletion",
-      "member_field_required_modal": "Confirm Making Member Field Required"
+      "member_field_required_modal": "Confirm Making Member Field Required",
+      "extension_trust_key_add_modal": "Add extension trust key modal",
+      "extension_trust_key_delete_modal": "Delete extension trust key modal"
     },
     "admin_template_list": {
       "template_activate_modal": "Activate Template",

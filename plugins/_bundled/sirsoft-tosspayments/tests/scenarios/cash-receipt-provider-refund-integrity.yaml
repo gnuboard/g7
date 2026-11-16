@@ -83,6 +83,7 @@ exclusions:
 # 후속 효과 체인
 effects:
   # 프로바이더 등록 (PG 비종속)
+  - cash_receipt_listener_subscribes_three_filter_hooks
   - provider_registered_without_overwriting_others
   - other_provider_request_passes_through_untouched
   # 발급
@@ -92,9 +93,13 @@ effects:
   - tax_free_amount_sent_with_issue
   - issue_response_mapped_to_receipt_key_and_issue_number
   - issue_failure_returns_result_without_throwing
+  # 구매자 연락처는 이커머스 공개 계약으로 읽는다(훅이 넘긴 주문 Model 의 관계를 읽지 않는다, #916)
+  - buyer_contact_read_through_ecommerce_contract
+  - buyer_contact_falls_back_per_field_from_payment_to_orderer
   # 취소 / 재발급
   - cancel_delegated_as_full_cancel_without_amount
   - cancel_uses_issue_tid_as_receipt_key
+  - cancel_failure_returns_result_without_throwing
   - amount_change_triggers_cancel_then_reissue
   # 환불 리스너의 진입 계약 — 무엇을 받아 언제 자기 일로 삼는가
   # 훅 이름·타입(filter)·메서드·우선순위가 선언대로여야 코어가 이 리스너를 부른다.

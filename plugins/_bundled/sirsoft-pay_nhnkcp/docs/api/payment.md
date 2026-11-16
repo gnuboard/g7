@@ -134,7 +134,7 @@ X-Guest-Order-Token: 1759999999|6f1c9a…(64자 HEX)
 
 **설명**
 
-PC 표준결제창에서 사용자가 결제를 완료하지 않고 창을 닫았을 때 프론트엔드가 이를 서버에 보고하는 엔드포인트다. `OrderProcessingService::failPayment()` 로 주문을 `USER_CANCEL` 사유로 실패 처리하고 취소 이력을 남기며, 간편결제 선택 정보가 있으면 결제 메타에 병합한다.
+PC 표준결제창에서 사용자가 결제를 완료하지 않고 창을 닫았을 때 프론트엔드가 이를 서버에 보고하는 엔드포인트다. 이커머스 공개 결제 계약(`PaymentLifecycle::markPaymentWindowClosed`)으로 주문을 `USER_CANCEL` 사유로 실패 처리하고 결제 취소 이력과 NHN KCP 실패 기록(결제 meta `failure_history` 등)을 남긴다.
 
 로그인을 강제하지는 않지만 **이 경로가 주문 상태를 바꾸는 유일한 결제창 경로**이므로 방어가 네 겹이다 — FormRequest 검증, `oid` 기준 IP별 분당 20회 레이트리밋, 주문 소유자 확인(회원 본인 로그인 / 비회원 조회 토큰), 주문 청구액과의 금액 대조.
 

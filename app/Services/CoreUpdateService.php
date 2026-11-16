@@ -7,6 +7,7 @@ use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
 use App\Exceptions\CoreUpdateOperationException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\AbstractUpgradeStep;
 use App\Extension\CoreVersionChecker;
@@ -24,6 +25,14 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\RootIndexShim;
 use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\Helpers\UpdateReservedPaths;
+use App\Extension\Integrity\AcquiredPackage;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Integrity\PackageReleaseNotFoundException;
+use App\Extension\Integrity\PackageVerification;
+use App\Extension\Integrity\PackageVerificationStatus;
+use App\Extension\Integrity\UnsignedPackagePolicy;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\UpgradeContext;
 use App\Extension\Vendor\EnvironmentDetector;
@@ -31,6 +40,7 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Support\CoreVersionDiskReader;
 use App\Support\ExecutionEnvironment;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\ScopedPermissionEnforcement;
@@ -754,6 +764,8 @@ class CoreUpdateService
             'current_version' => $currentVersion,
             'latest_version' => $latestVersion ?? $currentVersion,
             'github_url' => $githubUrl,
+            // 최신 릴리스에 서명 자산이 있는지 (7.2.0, 모르면 null) — 없으면 업데이트가 「미서명」 확인을 요구한다
+            'signature_available' => $result['signature_available'] ?? null,
         ];
     }
 
@@ -991,7 +1003,17 @@ class CoreUpdateService
             }
 
             if (is_array($data) && isset($data['tag_name'])) {
-                return ['version' => ltrim($data['tag_name'], 'v'), 'error' => null];
+                $version = ltrim($data['tag_name'], 'v');
+
+                // 릴리스에 서명 자산(g7-{version}.zip + .sig.json)이 함께 올라왔는지 — 확인 화면의 서명 배지 (7.2.0)
+                return [
+                    'version' => $version,
+                    'error' => null,
+                    'signature_available' => GithubHelper::findSignedAssetPair(
+                        array_values(array_filter((array) ($data['assets'] ?? []), 'is_array')),
+                        PackageExpectation::CORE_IDENTIFIER.'-'.$version
+                    ) !== null,
+                ];
             }
 
             // 치환 자리를 비워 두지 않는다 — 이 키는 `(HTTP :status — :message)` 를 싣고
@@ -1068,117 +1090,149 @@ class CoreUpdateService
     }
 
     /**
-     * GitHub에서 아카이브를 다운로드하여 _pending에 압축 해제합니다.
+     * GitHub 태그 릴리스에서 코어 배포본을 받아 서명을 검증하고 _pending 에 풉니다.
      *
-     * 추출: zipball + ZipArchive(PHP zip 확장, 필수) + 안전 해제(SafeArchiveExtractor).
-     * unzip 명령 폴백은 항목 이름 검사를 거치지 않아 7.1.3 에서 제거했다. 실패하면 에러.
+     * 릴리스에 `g7-{version}.zip` + `.sig.json` 이 있으면 그 자산을 받아 **코어 내장 키로만** 검증한다(제작자 키로 서명한
+     * 코어는 미신뢰). 서명 자산이 없으면 미서명 — `$integrity->allowUnsigned` 이고 「미서명 패키지 차단」이 꺼져 있을 때만
+     * 태그 zipball 을 받는다(7.2.0). 풀기는 `extractZipToPending()` 과 같은 길(ZipArchive + 안전 해제)이고, 푼 뒤
+     * `config/app.php` 의 버전을 서명된 버전과 대조한다.
      *
      * @param  string  $version  다운로드할 버전
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택 (null 이면 미서명은 거절)
      * @return string _pending 내 압축 해제된 경로
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     * @throws CoreUpdateOperationException 저장소 주소 오류·릴리스 없음·해제 실패 시
      */
-    public function downloadUpdate(string $version, ?\Closure $onProgress = null): string
+    public function downloadUpdate(string $version, ?\Closure $onProgress = null, ?PackageIntegrityOptions $integrity = null): string
     {
-        $githubUrl = config('app.update.github_url');
+        $integrity ??= PackageIntegrityOptions::none();
+        $downloadDir = storage_path('app/temp/core_download_'.uniqid());
+
+        $onProgress?->__invoke('download', __('settings.core_update.downloading'));
+
+        try {
+            $acquired = $this->acquireRelease($version, $downloadDir, $integrity);
+            $sourcePath = $this->extractZipToPending($acquired->zipPath, $onProgress);
+
+            try {
+                $this->confirmCoreIntegrity($acquired->verification, $sourcePath, $integrity);
+            } catch (PackageIntegrityException $e) {
+                $this->cleanupPending($sourcePath);
+                throw $e;
+            }
+
+            return $sourcePath;
+        } finally {
+            if (File::isDirectory($downloadDir)) {
+                File::deleteDirectory($downloadDir);
+            }
+        }
+    }
+
+    /**
+     * 코어 릴리스 패키지를 받아 해제 전 검증까지 합니다 (CLI·웹 공통).
+     *
+     * @param  string  $version  받을 버전
+     * @param  string  $destDir  내려받을 디렉토리
+     * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
+     * @return AcquiredPackage 받은 패키지
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     * @throws CoreUpdateOperationException 저장소 주소 오류·릴리스 없음·추출 수단 없음
+     */
+    public function acquireRelease(string $version, string $destDir, PackageIntegrityOptions $integrity): AcquiredPackage
+    {
+        $githubUrl = (string) config('app.update.github_url');
 
         if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
             throw new CoreUpdateOperationException('settings.core_update.invalid_github_url');
         }
 
-        $owner = $matches[1];
-        $repo = $matches[2];
-        $pendingPath = $this->createPendingDirectory();
-
-        $onProgress?->__invoke('download', __('settings.core_update.downloading'));
+        if ($this->buildExtractionStrategies() === []) {
+            throw new CoreUpdateOperationException('settings.core_update.no_extract_method_available');
+        }
 
         $token = (string) (config('app.update.github_token') ?? '');
-        $extractDir = $pendingPath.DIRECTORY_SEPARATOR.'extracted';
 
-        // 추출 전략: zipball(ZipArchive + 안전 해제)
-        $strategies = $this->buildExtractionStrategies();
-        $lastError = null;
-        $resolvedAny = false;
-
-        foreach ($strategies as $strategy) {
-            $archiveType = $strategy['archive_type'];
-            $extractMethod = $strategy['method'];
-            $label = $strategy['label'];
-
-            // GitHub URL 해석
-            $archiveUrl = GithubHelper::resolveArchiveUrl($owner, $repo, $version, $archiveType, $token);
-            if (! $archiveUrl) {
-                $onProgress?->__invoke('fallback', __('settings.core_update.archive_url_not_found', ['type' => $archiveType]));
-
-                continue;
-            }
-
-            $resolvedAny = true;
-
-            $extension = $archiveType === 'zipball' ? '.zip' : '.tar.gz';
-            $archivePath = $pendingPath.DIRECTORY_SEPARATOR.'core_update'.$extension;
-
-            try {
-                // 다운로드 (Http 파사드 sink 사용 → allow_url_fopen 의존 제거)
-                GithubHelper::downloadArchive($archiveUrl, $archivePath, $token);
-
-                $onProgress?->__invoke('extract', __('settings.core_update.extracting_with', ['method' => $label]));
-
-                // 추출 디렉토리 초기화
-                if (File::isDirectory($extractDir)) {
-                    File::deleteDirectory($extractDir);
-                }
-                File::ensureDirectoryExists($extractDir);
-
-                // 추출 시도
-                $this->$extractMethod($archivePath, $extractDir);
-
-                // GitHub 아카이브는 owner-repo-hash/ 형태로 압축해제됨
-                $extractedDirs = File::directories($extractDir);
-                if (empty($extractedDirs)) {
-                    throw new CoreUpdateOperationException('settings.core_update.extract_empty');
-                }
-
-                $sourcePath = $extractedDirs[0];
-
-                // 아카이브 파일 삭제
-                File::delete($archivePath);
-
-                $onProgress?->__invoke('validate', __('settings.core_update.validating'));
-                $this->validatePendingUpdate($sourcePath);
-
-                return $sourcePath;
-            } catch (\Exception $e) {
-                $lastError = $e;
-
-                // 아카이브 파일 정리
-                if (File::exists($archivePath)) {
-                    File::delete($archivePath);
-                }
-
-                // 추출 디렉토리 정리
-                if (File::isDirectory($extractDir)) {
-                    File::deleteDirectory($extractDir);
-                }
-
-                $onProgress?->__invoke('fallback', __('settings.core_update.extract_fallback', [
-                    'method' => $label,
-                    'error' => $e->getMessage(),
-                ]));
-            }
-        }
-
-        // 어느 전략도 아카이브 주소를 얻지 못했다 = 한 번도 내려받지 않았다(태그 없음·GitHub 연결 실패).
-        // 「추출 실패」로 알리면 원인을 추출 도구로 잘못 짚는다(7.1.1 출시 전).
-        if (! $resolvedAny && $strategies !== []) {
+        try {
+            return app(PackageAcquirer::class)->fromGithubRelease(
+                $matches[1], $matches[2], $version, $token, PackageExpectation::core($version), $integrity, $destDir
+            );
+        } catch (PackageReleaseNotFoundException) {
+            // 어느 태그로도 배포본 주소를 얻지 못했다 = 한 번도 내려받지 않았다(태그 없음·GitHub 연결 실패).
             throw new CoreUpdateOperationException('settings.core_update.release_not_found', ['version' => $version]);
         }
+    }
 
-        // 모든 전략 실패
-        throw new CoreUpdateOperationException(
-            'settings.core_update.all_extract_methods_failed',
-            [],
-            $lastError,
-        );
+    /**
+     * 착수 전에 릴리스의 서명 자산 유무로 미서명 정책을 묻습니다 (실제 검증은 내려받은 뒤).
+     *
+     * 유지보수 모드·백업 전에 「미서명이라 확인이 필요함」(409)을 알리려는 것이다. 서명 자산이 있으면 아무것도 하지 않는다.
+     *
+     * @param  string  $version  받을 버전
+     * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
+     * @return void 반환값 없음
+     *
+     * @throws PackageIntegrityException 서명 자산이 없고 계속할 수 없을 때
+     */
+    public function preflightReleaseIntegrity(string $version, PackageIntegrityOptions $integrity): void
+    {
+        $githubUrl = (string) config('app.update.github_url');
+        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
+            return;
+        }
+
+        $release = GithubHelper::fetchReleaseByTag($matches[1], $matches[2], $version, (string) (config('app.update.github_token') ?? ''));
+        if ($release['error'] !== null) {
+            // 확인할 수 없으면 착수 전에 막지 않는다 — 내려받을 때 같은 판정을 다시 한다
+            return;
+        }
+
+        if (GithubHelper::findSignedAssetPair($release['assets'] ?? [], PackageExpectation::CORE_IDENTIFIER.'-'.ltrim($version, 'vV')) !== null) {
+            return;
+        }
+
+        app(UnsignedPackagePolicy::class)->decide(PackageVerification::unsigned(), $integrity);
+    }
+
+    /**
+     * 운영자가 둔 코어 ZIP(`--zip`·웹 수동 ZIP)을 해제 전에 검증합니다.
+     *
+     * 서명 파일은 `$integrity->signaturePath`, 없으면 ZIP 옆 `{zip}.sig.json` 을 자동으로 쓴다.
+     *
+     * @param  string  $zipPath  코어 ZIP 경로
+     * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
+     * @return PackageVerification 정책을 통과한 검증 결과
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     */
+    public function verifyCoreZipIntegrity(string $zipPath, PackageIntegrityOptions $integrity): PackageVerification
+    {
+        return app(PackageAcquirer::class)->verifyLocalZip($zipPath, PackageExpectation::core(), $integrity);
+    }
+
+    /**
+     * 푼 배포본의 `config/app.php` 버전을 서명된 버전과 대조합니다 (해제 뒤·적용 전).
+     *
+     * @param  PackageVerification  $verification  해제 전 검증 결과
+     * @param  string  $sourcePath  푼 배포본 루트
+     * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
+     * @return PackageVerification 대조 결과
+     *
+     * @throws PackageIntegrityException 서명된 버전과 다를 때
+     */
+    public function confirmCoreIntegrity(PackageVerification $verification, string $sourcePath, PackageIntegrityOptions $integrity): PackageVerification
+    {
+        if ($verification->status === PackageVerificationStatus::Unsigned) {
+            return $verification;
+        }
+
+        // 버전 줄 해석은 CoreVersionDiskReader 한 곳이 소유한다 — 서명 도구(extension:sign)도 같은 규칙으로 읽는다
+        $version = CoreVersionDiskReader::shippedVersion($sourcePath.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php');
+
+        return app(PackageAcquirer::class)->confirmManifest($verification, ['version' => $version], $integrity);
     }
 
     /**
@@ -1416,33 +1470,33 @@ class CoreUpdateService
      *
      * @param  string  $version  대상 버전
      * @param  string  $pendingPath  격리 디렉토리
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택 (7.2.0, null 이면 미서명은 거절)
      * @return string 내려받은 ZIP 경로
      *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
      * @throws CoreUpdateOperationException 저장소 주소가 잘못됐거나 배포본을 찾지 못한 경우
      */
-    public function fetchReleaseArchive(string $version, string $pendingPath): string
+    public function fetchReleaseArchive(string $version, string $pendingPath, ?PackageIntegrityOptions $integrity = null): string
     {
-        $githubUrl = (string) config('app.update.github_url');
+        return $this->fetchVerifiedReleaseArchive($version, $pendingPath, $integrity ?? PackageIntegrityOptions::none())->zipPath;
+    }
 
-        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
-            throw new CoreUpdateOperationException('settings.core_update.invalid_github_url');
-        }
-
-        if ($this->buildExtractionStrategies() === []) {
-            throw new CoreUpdateOperationException('settings.core_update.no_extract_method_available');
-        }
-
-        $token = (string) (config('app.update.github_token') ?? '');
-        $archiveUrl = GithubHelper::resolveArchiveUrl($matches[1], $matches[2], $version, 'zipball', $token);
-
-        if (! $archiveUrl) {
-            throw new CoreUpdateOperationException('settings.core_update.release_not_found', ['version' => $version]);
-        }
-
-        $archivePath = $pendingPath.DIRECTORY_SEPARATOR.'core_update.zip';
-        GithubHelper::downloadArchive($archiveUrl, $archivePath, $token);
-
-        return $archivePath;
+    /**
+     * 코어 릴리스 배포본을 격리 디렉토리로 내려받고 해제 전 검증까지 합니다 (웹 — 풀기는 다음 요청, 7.2.0).
+     *
+     * 검증 결과는 호출부가 실행 상태에 실어 두었다가, 다 푼 뒤 `confirmCoreIntegrity()` 로 버전을 대조한다.
+     *
+     * @param  string  $version  대상 버전
+     * @param  string  $pendingPath  격리 디렉토리
+     * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
+     * @return AcquiredPackage 받은 패키지
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
+     * @throws CoreUpdateOperationException 저장소 주소가 잘못됐거나 배포본을 찾지 못한 경우
+     */
+    public function fetchVerifiedReleaseArchive(string $version, string $pendingPath, PackageIntegrityOptions $integrity): AcquiredPackage
+    {
+        return $this->acquireRelease($version, $pendingPath, $integrity);
     }
 
     /**

@@ -1791,6 +1791,7 @@
     "template_settings": "Template settings",
     "memberFieldDefs": "Member Field Definitions",
     "memberFields": "Member Fields",
-    "memberNicknameRecompute": "Nickname Duplicate Check Preparation Status"
+    "memberNicknameRecompute": "Nickname Duplicate Check Preparation Status",
+    "extensionTrustKeys": "Extension trust keys"
   }
 }

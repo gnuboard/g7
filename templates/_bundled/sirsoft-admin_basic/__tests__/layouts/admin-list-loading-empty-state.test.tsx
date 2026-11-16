@@ -485,6 +485,8 @@ describe('관리자 목록 — 전수', () => {
     { file: '_admin_base.json', match: 'admin_sidebar_empty', reason: '응답 성공(success === true)으로 이미 받은 뒤만 가른다' },
     { file: 'admin_user_detail.json', match: 'search_history_site_empty', reason: '회원 응답의 search_history 가 온 뒤에만 참(`!!user?.data?.search_history &&`) — 받는 중에는 거짓' },
     { file: 'admin_user_form.json', match: 'search_history_site_empty', reason: '회원 응답의 search_history 가 온 뒤에만 참(`!!user?.data?.search_history &&`) — 받는 중에는 거짓' },
+    { file: 'partials/admin_settings/_tab_security_extension_trust.json', match: 'extension_trust_builtin_empty', reason: '응답 data 가 온 뒤에만 참(`!!extensionTrustKeys?.data &&`) — 받는 중에는 거짓, 받기 실패는 load_failed 안내가 맡는다 (#916)' },
+    { file: 'partials/admin_settings/_tab_security_extension_trust.json', match: 'extension_trust_vendor_empty', reason: '응답 data 가 온 뒤에만 참(`!!extensionTrustKeys?.data &&`) — 받는 중에는 거짓, 받기 실패는 load_failed 안내가 맡는다 (#916)' },
   ];
 
   /**

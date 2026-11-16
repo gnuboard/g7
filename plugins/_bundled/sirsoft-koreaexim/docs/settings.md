@@ -67,7 +67,7 @@ GET status/runs/runs/{run}과 POST runs 네 경로를 제공합니다. POST의 d
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.4.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
@@ -75,5 +75,5 @@ GET status/runs/runs/{run}과 POST runs 네 경로를 제공합니다. POST의 d
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-이커머스 1.3.0의 제공자 선택·환율 적용 계약을 사용합니다. 먼저 모듈을 업데이트한 뒤 플러그인을 활성화해야 하며, 플러그인 제거가 기존 이커머스 통화값을 삭제하지 않습니다.
+이커머스 1.3.0의 제공자 선택과 1.4.0의 공개 환율 계약(`Contracts\Currency\ExchangeRateGateway`)을 사용하므로 이커머스 1.4.0 이상이 필요합니다. 먼저 모듈을 업데이트한 뒤 플러그인을 활성화해야 하며, 플러그인 제거가 기존 이커머스 통화값을 삭제하지 않습니다.
 <!-- @intent END -->

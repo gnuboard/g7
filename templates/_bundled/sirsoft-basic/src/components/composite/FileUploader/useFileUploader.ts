@@ -20,6 +20,13 @@ import { attachmentThumbUrl } from '../../../support/thumbnail';
 import { routePath } from '../../../support/apiUrl';
 import { secretContentHeaders } from '../../../support/secretContentHeaders';
 
+// Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함) — 개발 모드에서만 찍히는 경고용
+const logger = ((window as any).G7Core?.createLogger?.('Comp:FileUploader')) ?? {
+    log: (...args: unknown[]) => console.log('[Comp:FileUploader]', ...args),
+    warn: (...args: unknown[]) => console.warn('[Comp:FileUploader]', ...args),
+    error: (...args: unknown[]) => console.error('[Comp:FileUploader]', ...args),
+};
+
 /** 동봉한 browser-image-compression 버전 */
 const IMAGE_COMPRESSION_VERSION = '2.0.2';
 
@@ -396,6 +403,16 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   // 단일 파일 업로드
   const uploadSingleFile = useCallback(
     async (pendingFile: PendingFile): Promise<Attachment | null> => {
+      // 업로드 주소가 없다 — 사용자 템플릿에는 공용 첨부 API 가 없어 기본 주소를 두지 않는다. 요청을 보내지 않고 실패로 돌려
+      // 호출부의 catch 가 그 파일을 오류 상태로 두고 onUploadError 를 부르게 한다(저장 흐름은 failedCount 로 멈춘다).
+      if (!endpoints.upload) {
+        logger.warn('apiEndpoints.upload 가 없어 업로드하지 않았습니다 — 화면이 업로드 주소를 넘겨야 합니다.', {
+          collection,
+          file: pendingFile.original_filename,
+        });
+        throw new Error(t('attachment.upload_failed'));
+      }
+
       const formData = new FormData();
 
       // 압축된 Blob 또는 원본 파일

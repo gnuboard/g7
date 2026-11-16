@@ -3,6 +3,7 @@
 namespace App\Http\Requests\LanguagePack;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\HasPackageIntegrityRules;
 use App\Rules\LanguagePack\RequiresActivationPermission;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -11,6 +12,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class InstallFromGithubRequest extends FormRequest
 {
+    use HasPackageIntegrityRules;
+
     /**
      * 권한 체크는 라우트 미들웨어가 담당.
      *
@@ -38,6 +41,9 @@ class InstallFromGithubRequest extends FormRequest
             'auto_activate' => ['nullable', 'boolean', new RequiresActivationPermission],
         ];
 
+        // 패키지 무결성 입력 — 미서명 계속(allow_unsigned) (7.2.0)
+        $rules = array_merge($rules, $this->packageIntegrityRules());
+
         // 모듈/플러그인이 validation rules 를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.language_packs.install_from_github_validation_rules', $rules, $this);
     }
@@ -49,10 +55,20 @@ class InstallFromGithubRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        return $this->packageIntegrityMessages() + [
             'github_url.required' => __('language_packs.validation.github_url_required'),
             'github_url.url' => __('language_packs.validation.github_url_invalid'),
             'github_url.regex' => __('language_packs.validation.github_url_format'),
         ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓸 칸 이름 라벨을 돌려줍니다.
+     *
+     * @return array<string, string> 라벨
+     */
+    public function attributes(): array
+    {
+        return $this->packageIntegrityAttributes();
     }
 }

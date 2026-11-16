@@ -8,13 +8,13 @@ use App\Models\User;
 use App\Services\PluginSettingsService;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Support\Facades\Hash;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\OrderAccess;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 class UserReceiptControllerTest extends PluginTestCase
@@ -529,6 +529,65 @@ class UserReceiptControllerTest extends PluginTestCase
     }
 
     /**
+     * 결제 직후 쿠키(로그인 없이)로는 비회원 주문의 영수증을 받는다.
+     *
+     * @scenario viewer=guest_receipt_cookie, payment=domestic_card
+     *
+     * @effects receipt_cookie_opens_guest_order_receipt
+     *
+     * @return void 반환값 없음
+     */
+    public function test_receipt_cookie_opens_guest_order_receipt(): void
+    {
+        $this->mockPluginSettings();
+        $order = $this->createGuestOrder();
+        $this->createKginicisPayment($order, 'StdpayCARDINIpayTest20260605110631608279');
+
+        // JSON 요청은 withCredentials() 를 켜야 쿠키를 싣는다(브라우저의 credentials 요청과 같다).
+        $this->withCredentials()->withUnencryptedCookie('kginicis_receipt_token', $this->receiptCookieFor((string) $order->order_number))
+            ->getJson("/api/plugins/sirsoft-pay_kginicis/user/orders/{$order->order_number}/receipt")
+            ->assertOk()
+            ->assertJsonPath('data.receipt_type', 'inicis_receipt');
+    }
+
+    /**
+     * 결제 직후 쿠키만으로는 회원 주문의 영수증을 받을 수 없다 — 회원 주문은 로그인한 본인만 본다.
+     *
+     * 쿠키는 결제 콜백이 회원 주문에도 발급하지만, 로그인 없이 그 쿠키만 들고 오면 404 다(7.2.0 에서 좁힘 — 종전에는 200).
+     *
+     * @scenario viewer=member_order_receipt_cookie, payment=domestic_card
+     *
+     * @effects receipt_cookie_does_not_open_member_order_receipt
+     *
+     * @return void 반환값 없음
+     */
+    public function test_receipt_cookie_does_not_open_member_order_receipt(): void
+    {
+        $this->mockPluginSettings();
+        $owner = User::factory()->create();
+        $order = $this->createGuestOrder();
+        $order->update(['user_id' => $owner->id]);
+        $this->createKginicisPayment($order, 'StdpayCARDINIpayTest20260605110631608280');
+
+        $this->withCredentials()->withUnencryptedCookie('kginicis_receipt_token', $this->receiptCookieFor((string) $order->order_number))
+            ->getJson("/api/plugins/sirsoft-pay_kginicis/user/orders/{$order->order_number}/receipt")
+            ->assertNotFound();
+    }
+
+    /**
+     * 결제 콜백이 발급하는 것과 같은 영수증 쿠키 값을 만듭니다(주문번호|만료시각|서명).
+     *
+     * @param  string  $orderNumber  주문번호
+     * @return string 쿠키 값
+     */
+    private function receiptCookieFor(string $orderNumber): string
+    {
+        $expiresTs = time() + 300;
+
+        return $orderNumber.'|'.$expiresTs.'|'.hash_hmac('sha256', $orderNumber.'|'.$expiresTs, (string) config('app.key', ''));
+    }
+
+    /**
      * 결제를 마친 비회원 주문을 만듭니다.
      *
      * @return Order 비회원 주문
@@ -568,25 +627,17 @@ class UserReceiptControllerTest extends PluginTestCase
     }
 
     /**
-     * 주문의 비회원 조회 토큰을 발급합니다 — 전화번호 매칭(배송지 필요)을 우회하려고 서비스의 서명 규칙을 reflection 으로 직접 부른다.
+     * 주문의 비회원 조회 토큰을 발급합니다 — 이커머스 공개 계약의 토큰 발급(전화번호 매칭 없이 주문번호로 발급)을 쓴다.
      *
      * @param  Order  $order  비회원 주문
      * @return string 조회 토큰
      */
     private function issueGuestToken($order): string
     {
-        $svc = app(GuestOrderAuthService::class);
-        $rc = new \ReflectionClass($svc);
-        $signMethod = $rc->getMethod('sign');
-        $signMethod->setAccessible(true);
-        $suffixMethod = $rc->getMethod('passwordHashSuffix');
-        $suffixMethod->setAccessible(true);
+        $issued = app(OrderAccess::class)->issueGuestOrderToken((string) $order->order_number);
+        $this->assertNotNull($issued, '비회원 주문이면 토큰이 발급된다');
 
-        $expiresTs = time() + 1800;
-        $suffix = $suffixMethod->invoke($svc, $order);
-        $sig = $signMethod->invoke($svc, $order->order_number, (int) $order->id, $expiresTs, $suffix);
-
-        return $expiresTs.'|'.$sig;
+        return (string) $issued['token'];
     }
 
     /**

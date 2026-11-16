@@ -353,6 +353,73 @@
                                                             ]
                                                         }
                                                     ]
+                                                },
+                                                {
+                                                    "comment": "패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.\n                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다.",
+                                                    "id": "package_signature_field",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.package_integrity.signature_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedPlugin?.integrity_status === 'verified'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-green"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_verified|signer={{(_global.selectedPlugin?.integrity_key_id ?? '').split(':')[0]}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedPlugin?.integrity_status === 'unsigned'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_unsigned"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedPlugin?.integrity_status === 'unverifiable'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_unverifiable"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedPlugin?.integrity_status === 'bundled'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-blue"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_bundled"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!['verified', 'unsigned', 'unverifiable', 'bundled'].includes(_global.selectedPlugin?.integrity_status)}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-gray"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_none"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -833,6 +900,175 @@
                                                                 "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
                                                             },
                                                             "text": "$t:admin.extension_integrations.version_mismatch"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "다른 확장에 공개하는 PHP 표면 (#916) — manifest `public_api`. 선언이 없으면 절을 그리지 않는다.\n            옛 코어는 `public_api` 를 싣지 않으므로 `?.` 와 `?? []` 로 읽는다.",
+                                    "id": "public_api_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_global.selectedPlugin?.public_api}}",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "code",
+                                                        "className": "text-xl text-gray-500",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.extension_public_api.title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle mb-2"
+                                            },
+                                            "text": "$t:admin.extension_public_api.hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(_global.selectedPlugin?.public_api?.namespaces ?? []).length > 0}}",
+                                                    "props": {
+                                                        "className": "row-stack"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary text-sm font-medium"
+                                                            },
+                                                            "text": "$t:admin.extension_public_api.namespaces"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "_global.selectedPlugin.public_api.namespaces",
+                                                                "item_var": "fqcn"
+                                                            },
+                                                            "props": {
+                                                                "className": "p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading text-xs font-mono break-all"
+                                                                    },
+                                                                    "text": "{{fqcn}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(_global.selectedPlugin?.public_api?.classes ?? []).length > 0}}",
+                                                    "props": {
+                                                        "className": "row-stack"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary text-sm font-medium"
+                                                            },
+                                                            "text": "$t:admin.extension_public_api.classes"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "_global.selectedPlugin.public_api.classes",
+                                                                "item_var": "fqcn"
+                                                            },
+                                                            "props": {
+                                                                "className": "p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading text-xs font-mono break-all"
+                                                                    },
+                                                                    "text": "{{fqcn}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(_global.selectedPlugin?.public_api?.readonly_models ?? []).length > 0}}",
+                                                    "props": {
+                                                        "className": "row-stack"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary text-sm font-medium"
+                                                            },
+                                                            "text": "$t:admin.extension_public_api.readonly_models"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "_global.selectedPlugin.public_api.readonly_models",
+                                                                "item_var": "fqcn"
+                                                            },
+                                                            "props": {
+                                                                "className": "p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading text-xs font-mono break-all"
+                                                                    },
+                                                                    "text": "{{fqcn}}"
+                                                                }
+                                                            ]
                                                         }
                                                     ]
                                                 }

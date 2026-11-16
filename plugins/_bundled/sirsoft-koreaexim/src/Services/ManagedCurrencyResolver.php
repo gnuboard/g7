@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\Koreaexim\Services;
 
 use App\Helpers\TimezoneHelper;
-use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\ExchangeRateGateway;
 use Plugins\Sirsoft\Koreaexim\Enums\RateType;
 use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
 use Plugins\Sirsoft\Koreaexim\Repositories\Contracts\RateRunRepositoryInterface;
@@ -14,11 +14,11 @@ class ManagedCurrencyResolver
     /**
      * 처리에 필요한 의존 객체를 주입합니다.
      *
-     * @param  EcommerceSettingsService  $settings  settings 입력값
+     * @param  ExchangeRateGateway  $gateway  쇼핑몰 환율 반영 계약
      * @param  RateRunRepositoryInterface  $runs  runs 입력값
      * @param  ExchangeRateCalculator  $calculator  calculator 입력값
      */
-    public function __construct(private EcommerceSettingsService $settings, private RateRunRepositoryInterface $runs, private ExchangeRateCalculator $calculator) {}
+    public function __construct(private ExchangeRateGateway $gateway, private RateRunRepositoryInterface $runs, private ExchangeRateCalculator $calculator) {}
 
     /**
      * 최신 성공 스냅샷으로 현재 관리 대상 통화를 계산합니다.
@@ -28,7 +28,7 @@ class ManagedCurrencyResolver
     public function resolve(): array
     {
         $last = $this->runs->latestSuccessful();
-        $currency = $this->settings->getSettings('language_currency');
+        $currency = $this->currencySettings();
         $result = ['managed_codes' => [], 'unsupported_codes' => [], 'notice_key' => null,
             'last_updated_at' => TimezoneHelper::toUserTimezone($last?->finished_at), 'last_updated_at_formatted' => TimezoneHelper::toUserDateTimeString($last?->finished_at)];
         if (! plugin_setting('sirsoft-koreaexim', 'auth_key', '')) {
@@ -45,5 +45,17 @@ class ManagedCurrencyResolver
         }
 
         return $result;
+    }
+
+    /**
+     * 쇼핑몰 통화 설정을 계산기가 읽는 배열 모양으로 읽습니다(공개 계약 경유, #916).
+     *
+     * @return array{default_currency: string, rate_provider: string|null, currencies: array<int, array<string, mixed>>} 통화 설정
+     */
+    private function currencySettings(): array
+    {
+        $settings = $this->gateway->getCurrencySettings();
+
+        return ['default_currency' => $settings->defaultCurrency, 'rate_provider' => $settings->rateProvider, 'currencies' => $settings->currencies];
     }
 }

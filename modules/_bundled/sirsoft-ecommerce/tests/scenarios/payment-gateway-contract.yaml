@@ -1,0 +1,53 @@
+# 시나리오 매니페스트 — 이커머스 PG 결제 계약 PaymentGatewayBridge (#916 ②, 공개 #83 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: ecommerce_payment_gateway_contract
+
+description: |
+  PG 플러그인이 이커머스 내부 Model·테이블을 직접 조회·갱신하던 것을 공개 계약
+  `Contracts\Payment\PaymentGatewayBridge`(PaymentLookup·OrderAccess·ClaimPaymentLookup·PaymentLifecycle 묶음, VERSION 1)로
+  옮긴다. 조회는 결제사 범위를 강제하고, 쓰기는 트랜잭션·잠금 아래에서 행 결제사가 다르면 ProviderMismatch 로 막는다.
+
+  - 재결제 복구 `restoreForRetry`: 결제사별 현행 복구 결과를 특성화 녹화(RetryRestoreCharacterizationRecorderTest)해 두고
+    계약 결과가 DB 원문까지 같은지 대조한다. 전이 훅·활동 로그를 남기고, 결제 완료·부분 취소 이력·결제사·금액·접두가
+    틀리면 복구하지 않는다.
+  - 결제 완료·창 닫힘·가상계좌 발급·부가 정보(허용 목록)·meta 병합·주문 meta namespace·영수증 조회 소유 판정·
+    주문 DTO 과세 구분과 청구액·훅 인자 결제 행 DTO 를 계약으로 노출한다.
+  - API 문서 샘플(`PaymentSampleProvisioner`)은 Order::factory 대신 계약으로 샘플 행을 한 번만 만든다.
+
+  결제사별 전환 결과 대조는 각 PG 플러그인 `payment-gateway-contract.yaml` 이 소유한다.
+
+axes:
+  case: [bridge_and_sub_interfaces_resolve_to_same_instance, restore_for_retry_matches_recorded_legacy_bytes, restore_fires_transition_hooks_and_activity_log, restore_rejects_paid_and_partial_cancel_history, restore_provider_amount_and_prefix_guards, complete_payment_takes_over_pre_payment_row, complete_payment_without_takeover_and_with_guard, provider_mismatch_and_not_found, mark_payment_window_closed_sequence, vbank_issuance_and_failure_status_guard, record_pg_attributes_allow_list, merge_and_mutate_payment_meta_under_lock, order_meta_namespace_and_scrub, lookup_provider_scope, find_receipt_payment_requesters, order_record_tax_split_and_charge, describe_payment_matches_model_judgements, record_legacy_restore, sample_payment_is_idempotent, sample_payment_guards, payment_briefs_match_full_listing, buyer_contact_falls_back_per_field, contract_dtos_do_not_query, contract_exception_messages_translated]
+
+effects:
+  - payment_contract_sub_interfaces_share_one_instance           # 묶음 계약과 하위 인터페이스가 같은 구현 인스턴스로 풀리고 계약 판은 1
+  - retry_restore_meta_matches_legacy_recording                  # 계약 복구 결과가 결제사 현행 복구 녹화값과 DB 원문까지 같다(의도된 상품 상태 변화 하나 제외)
+  - retry_restore_fires_transition_hooks_and_logs                # 복구는 상태 전이·재결제 복구·상품 동기화 훅과 활동 로그를 남기고 재복구는 거부한다
+  - retry_restore_rejects_paid_or_partial_cancel_history         # 결제 완료·부분 취소 이력이면 복구 거부, 창 닫힘의 취소 이력은 막지 않는다
+  - retry_restore_guards_provider_amount_prefix                  # 행 결제사 불일치·금액 대조 실패·결제사 id 와 다른 접두는 복구하지 않는다
+  - complete_payment_takes_over_pre_payment_row_provider         # 결제 전 행은 결제사 id 가 달라도 완료하고 인수를 켜면 결제사 id·에스크로 여부를 같은 트랜잭션에서 쓴다
+  - complete_payment_honours_takeover_flag_and_guard             # 인수를 끄면 결제사 id 를 쓰지 않고, 판정 클로저가 사유를 돌려주면 처리하지 않는다
+  - payment_write_rejects_other_provider_settled_row             # 다른 결제사가 결제한 행에 쓰면 ProviderMismatch, 없는 주문이면 PaymentNotFound
+  - payment_write_accepts_declared_legacy_provider_id            # 결제사가 legacy_ids 로 선언한 옛 식별자 행은 그 결제사의 쓰기를 받는다
+  - window_closure_records_fail_cancel_failure_in_order          # 창 닫힘은 결제 실패 처리 → 취소 이력 → 결제사 실패 기록 순서, 결제 전 주문이 아니면 무동작
+  - vbank_issuance_waits_deposit_and_replaces_meta               # 가상계좌 발급은 입금 대기 전이·발급 정보 기록·meta 통째 교체, 실패 기록은 FAILED·CANCELLED 만
+  - pg_attributes_accept_allow_list_only                         # 부가 정보 컬럼은 허용 목록만 받고 meta 병합과 함께 쓰며 상태 컬럼은 거부
+  - payment_meta_merge_and_mutate_under_lock                     # meta 병합은 잠금 아래 최상위 키로 합치고 원문 바이트를 보존, 변형 클로저 null 이면 저장 안 함
+  - order_meta_own_namespace_and_scrub_keeps_updated_at          # 주문 meta 는 자기 namespace 만 읽고 쓰며 익명화 정리는 수정 시각을 바꾸지 않는다
+  - payment_lookup_returns_own_provider_rows                     # 결제 행 조회는 자기 결제사 행만, 주문번호 단건 조회는 결제 전 행도 보인다
+  - receipt_lookup_honours_requester_ownership                   # 영수증 조회는 회원 본인·비회원 토큰·결제사가 확인한 비회원을 구분한다
+  - order_record_tax_split_and_charge_match_services             # 주문 DTO 의 과세 구분·청구액이 서비스 계산과 같고 환율이 없으면 공개 예외
+  - describe_payment_mirrors_model_judgements                    # 훅 인자 결제 행을 조회 없이 DTO 로 바꾸고 판정 값은 Model 판정 메서드와 같다
+  - legacy_retry_restore_is_recorded_as_fixture                  # 결제사 현행 복구 코드를 돌려 결과를 특성화 픽스처로 녹화한다
+  - sample_payment_rows_exist_once                               # API 문서 샘플 주문·결제 행·배송지를 만들고 다시 불러도 늘지 않는다
+  - sample_payment_rejects_unknown_columns_and_missing_owner     # 허용 목록 밖 결제 행 컬럼은 거부하고 소유 회원이 없으면 null
+  - payment_briefs_match_full_listing_columns                      # 결제 행 요약 목록이 전체 목록과 범위, 조건, 세 칸 값이 같다
+  - buyer_contact_prefers_payment_then_orderer_per_field           # 구매자 연락처는 결제사 범위 없이 칸마다 결제 행 → 주문자 순
+  - contract_dtos_read_only_given_values                           # 주문과 클레임 결제 DTO 는 넘긴 값만 읽고 조회하지 않는다
+  - contract_exception_messages_come_from_language_files           # 공개 계약 예외 메시지는 언어 파일 문구이고 로케일을 따른다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/PaymentGatewayBridgeTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/RetryRestoreCharacterizationRecorderTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Contracts/PaymentSampleProvisionerTest.php

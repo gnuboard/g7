@@ -140,6 +140,7 @@
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`paytosspayments:` 유틸리티·`pay-tosspayments-*`)를 쓰면 `plugin:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 이커머스 주문·결제 행은 공개 결제 계약 `Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge`(생성자 주입)로만 조회·변경한다 — 새로 필요한 조회·쓰기가 계약에 없으면 이 플러그인에서 우회하지 말고 이커머스 계약에 메서드를 더한다. 변경 뒤 `extension-internal-symbol-reference` 정적 검사가 위반 0 이어야 한다
 - [ ] 승인 확인에서 금액 대조(`amount_mismatch`) 로직을 우회하거나 완화하지 않는다
 - [ ] 가상계좌 웹훅의 secret 대조(`webhook_secret_verify`)를 기본값 `true` 이외로 바꾸지 않는다 — 끄면 토스 노티 위조를 막을 수단이 사라진다
 - [ ] `order_sheet_mode` 관련 로직을 고칠 때 `RegisterPgProviderListener`(enabled_methods)와 `RegisterTossPaymentMethodsListener`(builtin 결제수단 주입) 양쪽을 함께 갱신 — 한쪽만 고치면 설정과 노출 목록이 어긋난다
@@ -154,6 +155,7 @@
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 이커머스 Service·Repository 를 주입하거나 `app()` 으로 꺼내기, `Order::query()`·`ClaimPayment::isClaimPaymentNumber()` 같은 Model 정적 호출, 훅이 넘긴 Model 의 `update()`·`fresh()`·`load()`·관계 빌더 호출, `ecommerce_*` 테이블 직접 조회 | 생성자로 주입한 `PaymentGatewayBridge` 의 계약 메서드(`findOrderByNumber`·`completePayment`·`markPaymentWindowClosed`·`onVbankAccountIssued`·`mergePaymentMeta` 등)와 결과 객체(`OrderRecord`·`PaymentRecord`). 훅 Model 은 속성 읽기만 | 이커머스가 공개하지 않은 내부 구현은 예고 없이 바뀐다. 공개 계약은 조회 범위(자기 결제사 행)와 잠금 순서를 이커머스가 책임진다 |
 | 콜백 URL의 `amount` 쿼리 파라미터를 그대로 신뢰해 결제 완료 처리 | 서버가 주문 금액을 재계산해 PG 응답 금액과 대조, 불일치 시 실패 처리 | 콜백은 브라우저를 거치므로 사용자가 쿼리 파라미터를 조작해 실제 결제 금액보다 낮은 금액으로 완료 처리를 유도할 수 있다 |
 | 가상계좌 웹훅의 secret 대조를 생략하거나 항상 통과 | `payment_meta.toss_secret`과 웹훅 본문의 secret을 항상 대조 | 토스는 notify IP 목록·서명을 제공하지 않아 secret 대조가 유일한 위조 방지 수단이다 — 생략하면 제3자가 임의 주문에 대해 위조 입금통보를 보낼 수 있다 |
 | `core.plugin_settings.before_save` 리스너에 `sync: true` 없이 등록 | 저장을 막아야 하는 검증 훅은 반드시 `sync: true` | 기본값(비동기 큐)이면 `ValidationException`이 워커 안에서 죽고 저장이 그대로 진행되어 검증이 무력화된다 |
@@ -174,7 +176,7 @@
 | PHPUnit | 33개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 14개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 28개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

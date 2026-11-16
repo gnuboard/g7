@@ -185,6 +185,14 @@ interface ProductRepositoryInterface
     public function findByProductCode(string $productCode): ?Product;
 
     /**
+     * 상품 코드 목록으로 상품을 한 번에 조회하고 상품 코드 키 맵으로 반환합니다(관계 적재 없음).
+     *
+     * @param  array<int, string>  $productCodes  상품 코드 목록
+     * @return Collection<string, Product> 상품 코드 => 상품
+     */
+    public function findByProductCodesKeyed(array $productCodes): Collection;
+
+    /**
      * 모든 관계를 포함하여 상품 조회 (폼 상세용)
      *
      * @param  int  $id  상품 ID

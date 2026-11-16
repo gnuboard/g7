@@ -6,6 +6,10 @@ use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\Data\CurrencySettings;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\Data\ExchangeRateApplyResult;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\ExchangeRateGateway;
+use Modules\Sirsoft\Ecommerce\Exceptions\ExchangeRateSaveException;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
 use Plugins\Sirsoft\Koreaexim\Enums\RunTrigger;
@@ -295,6 +299,59 @@ class UpdateExchangeRatesCommandTest extends PluginTestCase
         $this->travel(1)->hours();
         $this->assertNull($this->runUpdate(RunTrigger::Retry));
         Http::assertSentCount(1);
+    }
+
+    /**
+     * 쇼핑몰 통화 설정 저장이 실패해도 수동 실행이 예외로 끝나지 않고 「환율 저장 실패」 이력으로 남는다 — 관리자 「지금 갱신」이 500 이던 결함(#916).
+     * 그 실행은 재적용 원본이 되지 않는다(응답 원본을 싣지 않음).
+     *
+     * @effects manual_run_save_failure_recorded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_save_failure_is_recorded_instead_of_throwing(): void
+    {
+        Http::fake(['*' => Http::response($this->quotes())]);
+        $real = app(ExchangeRateGateway::class);
+        $this->app->instance(ExchangeRateGateway::class, new class($real) implements ExchangeRateGateway
+        {
+            /**
+             * 실제 계약을 감쌉니다.
+             *
+             * @param  ExchangeRateGateway  $real  실제 계약 구현
+             */
+            public function __construct(private ExchangeRateGateway $real) {}
+
+            /**
+             * 실제 통화 설정을 돌려줍니다.
+             *
+             * @return CurrencySettings 통화 설정
+             */
+            public function getCurrencySettings(): CurrencySettings
+            {
+                return $this->real->getCurrencySettings();
+            }
+
+            /**
+             * 저장 실패를 흉내 냅니다.
+             *
+             * @param  array<string, mixed>  $rates  환율
+             * @param  string  $source  제공자
+             * @return ExchangeRateApplyResult 결과
+             */
+            public function applyExchangeRates(array $rates, string $source): ExchangeRateApplyResult
+            {
+                throw new ExchangeRateSaveException;
+            }
+        });
+
+        $run = app(ExchangeRateUpdateService::class)->execute(RunTrigger::Manual);
+
+        $this->assertNotNull($run);
+        $this->assertSame(RunStatus::SaveFailed, $run->status);
+        $this->assertSame(__('sirsoft-ecommerce::exceptions.exchange_rate_save_failed'), $run->message);
+        $this->assertNull($run->raw_response);
+        $this->assertNotSame($run->id, app(RateRunRepositoryInterface::class)->latestSuccessful()?->id);
     }
 
     /**

@@ -92,4 +92,25 @@ return [
         // Field label for the PC payment frame request (#158) — validation failures return an empty 400.
         'sdk' => 'payment window SDK URL',
     ],
+    // Cancel reason sent to KCP when closing the virtual account of an order cancelled before deposit
+    'vbank_close_reason' => 'Order cancelled before deposit',
+    // Error messages of the payment screen and PG integration APIs
+    'responses' => [
+        'amount_mismatch' => 'Payment amount does not match the order amount.',
+        'claim_amount_mismatch' => 'Payment amount does not match the claim payment amount.',
+        'claim_approval_forbidden' => 'You cannot request a NHN KCP approval key for this claim payment.',
+        'order_approval_forbidden' => 'You cannot request a NHN KCP approval key for this order.',
+        'approval_key_failed' => 'Failed to prepare the NHN KCP payment. :reason',
+        'claim_deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
+        'claim_payment_not_found' => 'Claim payment not found.',
+        'claim_payment_not_payable' => 'This claim payment cannot be paid.',
+        'currency_not_chargeable' => 'The charge cannot be calculated in the payment currency.',
+        'guest_verification_failed' => 'Guest order verification failed.',
+        'krw_only' => 'NHN KCP supports KRW payments only.',
+        'order_not_found' => 'Order not found.',
+        'order_not_retryable' => 'This order cannot be paid again with NHN KCP.',
+        'ownership_verification_failed' => 'Order ownership verification failed.',
+        'too_many_requests' => 'Too many requests. Please try again later.',
+        'vbank_session_failed' => 'Failed to prepare the virtual account payment. Please try again later.',
+    ],
 ];

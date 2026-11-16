@@ -264,7 +264,7 @@ php artisan module:check-updates sirsoft-ecommerce
 #### 모듈 업데이트
 
 ```bash
-php artisan module:update [identifier] [--force] [--source=auto|bundled|github] [--layout-strategy=overwrite|keep] [--vendor-mode=auto|composer|bundled]
+php artisan module:update [identifier] [--force] [--source=auto|bundled|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite|keep] [--vendor-mode=auto|composer|bundled]
 ```
 
 **인수**:
@@ -273,12 +273,16 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 **옵션**:
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
 - `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음))
+- `--zip`: 외부 ZIP 파일을 소스로 사용 (GitHub·번들 우회, `--source` 와 함께 쓸 수 없음 — [extension-update-system.md](extension-update-system.md#외부-zip-직접-지정---zip))
+- `--signature` (7.2.0): `--zip` 의 서명 파일(`.sig.json`) 경로. 생략하면 ZIP 옆 `<zip>.sig.json` 을 자동으로 쓴다
+- `--allow-unsigned` (7.2.0): 미서명(또는 이 서버에서 검증할 수 없는) 패키지를 확인 없이 계속. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시
 - `--layout-strategy`: 운영자 수정 레이아웃·확장 조각 처리 (`overwrite` = 전체 덮어쓰기, `keep` = 고친 부분은 유지하고 손대지 않은 부분에 새 버전을 병합 — 결과 표 출력)
 - `--vendor-mode`: vendor 설치 방식 (`auto` 기본, `composer`, `bundled`)
 
 **수행 작업**:
 - 업데이트 가용 여부 확인 (없으면 info + SUCCESS, `--force` 시 무시하고 진행)
 - 확인 프롬프트 → 업데이트 실행 (`--force` 면 묻지 않음. 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 시작하지 않은 사유와 `--force` 안내를 출력하고 종료 코드 1, 터미널에서 「아니오」를 답하면 종료 코드 0)
+- GitHub·`--zip` 소스면 백업 전에 패키지 서명 검증 (7.2.0). 미서명이면 계속할지 한 번 더 묻고, 답할 수 없는 실행은 `--allow-unsigned` 없이 종료 코드 1 — `--force` 는 이 확인을 대신하지 않는다. 서명 불일치·신뢰하지 않는 키는 늘 실패. 상세: [패키지 서명](package-signing.md#artisan-명령)
 - 상태 가드 확인 → 백업 → status: Updating → 파일 교체 → 마이그레이션 → 업그레이드 스텝 → 복원
 - 실패 시 백업 복원 안내
 
@@ -303,6 +307,8 @@ php artisan module:update sirsoft-ecommerce
 php artisan module:update sirsoft-ecommerce --force  # 강제 재설치
 php artisan module:update sirsoft-ecommerce --source=bundled  # GitHub 장애/잘못된 태그 우회
 php artisan module:update sirsoft-ecommerce --source=github --force  # 긴급 핫픽스 태그로만 강제 설치
+php artisan module:update acme-shop --zip=/tmp/acme-shop-1.2.0.zip  # ZIP 옆 acme-shop-1.2.0.zip.sig.json 으로 서명 검증
+php artisan module:update acme-shop --force --allow-unsigned --no-interaction  # 예약 실행 — 미서명 판도 받는다
 ```
 
 #### 모듈 캐시 초기화

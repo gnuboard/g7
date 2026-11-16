@@ -71,7 +71,7 @@ class VbankCloseListener implements HookListenerInterface
                 $apiService->useStoredCredentials((bool) $meta['is_test_mode'], $mid);
             }
 
-            $apiService->cancelPayment($tid, (string) $order->order_number, $issuedAmount, __('sirsoft-ecommerce::messages.vbank_close_reason'), 0);
+            $apiService->cancelPayment($tid, (string) $order->order_number, $issuedAmount, __('sirsoft-pay_nicepayments::messages.vbank_close_reason'), 0);
 
             return ['handled' => true, 'success' => true, 'error_message' => null];
         } catch (\Throwable $e) {

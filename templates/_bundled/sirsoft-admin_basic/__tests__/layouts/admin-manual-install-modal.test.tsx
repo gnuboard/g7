@@ -419,8 +419,8 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(tabNav).toBeInTheDocument();
     expect(tabNav.getAttribute('data-variant')).toBe('underline');
 
-    // FileInput이 보여야 함 (file_upload 탭이 기본)
-    expect(screen.getByTestId('file-input')).toBeInTheDocument();
+    // FileInput이 보여야 함 (file_upload 탭이 기본) — ZIP 칸과 서명 파일(.sig.json, #916) 칸 두 개
+    expect(screen.getAllByTestId('file-input').map((el) => el.getAttribute('data-accept'))).toEqual(['.zip', '.json']);
   });
 
   /**
@@ -463,8 +463,10 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     );
     await testUtils.render();
 
-    const fileInput = screen.getByTestId('file-input');
+    const [fileInput, signatureInput] = screen.getAllByTestId('file-input');
     expect(fileInput.className).toContain('border-red-500');
+    // 서명 파일 칸(#916)은 자기 오류(signature)가 없으면 붉지 않다
+    expect(signatureInput.className).not.toContain('border-red-500');
   });
 
   /**

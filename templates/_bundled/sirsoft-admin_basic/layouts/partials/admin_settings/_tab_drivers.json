@@ -146,7 +146,7 @@
                             "id": "s3_settings",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3'}}",
+                            "if": "{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3' || _local.form?.drivers?.private_attachment_disk === 's3'}}",
                             "props": {
                                 "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
                             },
@@ -879,6 +879,214 @@
                                 "className": "text-sm text-gray-500 dark:text-gray-400 mt-2"
                             },
                             "text": "$t:admin.settings.drivers.public_asset.s3_help"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "비공개 첨부 저장소 (#916) — 권한 확인 뒤 서버가 내려주는 원본(코어·게시판·페이지 첨부, 클레임 이미지, 본문 미디어, 내보내기 파일)의 디스크.\n         「기본」이면 지금까지처럼 사이트 스토리지 드라이버를 따른다. 플러그인이 비공개 디스크를 등록하면 선택지에 붙는다(available_drivers.private_attachment).\n         공개 자산과 같은 디스크를 고르면 저장은 되지만 버킷 공개 정책 위험을 알린다(D5). `.env` 로 디스크를 고정한 주체는 선택을 따르지 않으므로\n         `_meta.private_attachment.pins` 로 안내한다(D7). 옛 코어는 `_meta.private_attachment` 를 싣지 않으므로 `?.` 와 `?? []` 로 읽는다.",
+            "id": "card_private_attachment_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.drivers.private_attachment.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.drivers.private_attachment.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_private_attachment_disk",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.drivers.private_attachment.disk"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-64"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "w-full"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "drivers.private_attachment_disk",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "w-full",
+                                                "error": "{{_local.errors?.['drivers.private_attachment_disk']?.[0] ?? ''}}",
+                                                "options": "{{(_local.form?.available_drivers?.private_attachment ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['drivers.private_attachment_disk']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['drivers.private_attachment_disk']?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "id": "unavailable_driver_notice_private_attachment",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.form?.drivers?.private_attachment_disk && !(_local.form?.available_drivers?.private_attachment ?? []).some(d => d.id === _local.form?.drivers?.private_attachment_disk)}}",
+                                            "props": {
+                                                "className": "text-warning-soft mt-2",
+                                                "data-testid": "driver-unavailable-private_attachment"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.common.unavailable_saved_value_prefix"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-mono"
+                                                    },
+                                                    "text": "{{_local.form?.drivers?.private_attachment_disk ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.drivers.common.unavailable_saved_value_suffix"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "private_attachment_same_disk_warning",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!['', 'default'].includes(_local.form?.drivers?.private_attachment_disk ?? '') && !['', 'none'].includes(_local.form?.drivers?.public_asset_disk ?? '') && _local.form?.drivers?.private_attachment_disk === _local.form?.drivers?.public_asset_disk}}",
+                            "props": {
+                                "className": "text-warning-soft",
+                                "data-testid": "private-attachment-same-disk-warning"
+                            },
+                            "text": "$t:admin.settings.drivers.private_attachment.same_disk_warning"
+                        },
+                        {
+                            "id": "private_attachment_s3_help",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?.drivers?.private_attachment_disk === 's3'}}",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:admin.settings.drivers.private_attachment.s3_help"
+                        },
+                        {
+                            "id": "private_attachment_pins",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.form?._meta?.private_attachment?.pins ?? []).length > 0}}",
+                            "props": {
+                                "className": "row-stack",
+                                "data-testid": "private-attachment-pins"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary text-sm font-medium"
+                                    },
+                                    "text": "$t:admin.settings.drivers.private_attachment.pins_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_local.form._meta.private_attachment.pins",
+                                        "item_var": "pin"
+                                    },
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{pin.owner === 'core'}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.drivers.private_attachment.pin_core"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{pin.owner !== 'core'}}",
+                                            "props": {
+                                                "className": "text-heading font-mono"
+                                            },
+                                            "text": "{{pin.owner}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
+                                            },
+                                            "text": "{{pin.env}}={{pin.disk}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle text-sm"
+                                    },
+                                    "text": "$t:admin.settings.drivers.private_attachment.pins_hint"
+                                }
+                            ]
                         }
                     ]
                 }

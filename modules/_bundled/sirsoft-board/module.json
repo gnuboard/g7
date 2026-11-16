@@ -19,6 +19,12 @@
     "integrations": {
         "modules": ["sirsoft-ecommerce"]
     },
+    "public_api": {
+        "version": 1,
+        "namespaces": [
+            "Modules\\Sirsoft\\Board\\Contracts"
+        ]
+    },
     "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
     "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md",
     "assets": {

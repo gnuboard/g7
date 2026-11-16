@@ -48,7 +48,7 @@
         "posix": ["posix_getpwuid", "posix_getgrgid", "posix_geteuid", "posix_getegid", "posix_getuid", "posix_getgid", "posix_kill", "posix_getpid", "posix_isatty"],
         "simplexml": ["simplexml_load_string", "simplexml_load_file", "SimpleXMLElement"],
         "libxml": ["libxml_use_internal_errors", "libxml_clear_errors", "libxml_get_errors"],
-        "sodium": ["sodium_crypto_secretbox", "sodium_crypto_secretbox_open", "sodium_crypto_box", "sodium_randombytes_buf"],
+        "sodium": ["sodium_crypto_secretbox", "sodium_crypto_secretbox_open", "sodium_crypto_box", "sodium_randombytes_buf", "sodium_crypto_sign_verify_detached", "sodium_crypto_sign_detached"],
         "phar": ["PharData", "Phar"],
         "xmlwriter": ["XMLWriter"],
         "zlib": ["gzencode", "gzdecode", "gzopen", "gzread", "gzwrite", "gzclose", "gzcompress", "gzuncompress", "gzdeflate", "gzinflate", "gzeof"],

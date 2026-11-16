@@ -180,12 +180,13 @@ function computedFor(context: Json): Json {
  * @returns 레이아웃 테스트 유틸
  */
 async function renderCards(
-  opts: { upload?: Json; savedUpload?: Json; errors?: Json; stats?: Json; meta?: Json; readOnly?: boolean; global?: Json; locale?: 'ko' | 'en' } = {}
+  opts: { upload?: Json; savedUpload?: Json; drivers?: Json; errors?: Json; stats?: Json; meta?: Json; readOnly?: boolean; global?: Json; locale?: 'ko' | 'en' } = {}
 ) {
   const savedUpload = opts.savedUpload ?? { thumbnail_disk_public: 'public', thumbnail_disk_gated: 'thumbnails' };
   const local = {
     form: {
       upload: { image_quality: 85, thumbnail_disk_public: 'public', thumbnail_disk_gated: 'thumbnails', thumbnail_presets_rows: ROWS, ...opts.upload },
+      drivers: { public_asset_disk: 'none', ...opts.drivers },
       _meta: {
         thumbnail_engine_available: true,
         thumbnail_disk_options: {
@@ -295,6 +296,29 @@ describe('업로드 탭 — 썸네일 카드 (#869)', () => {
     expect(screen.getByTestId('thumbnail-purge-all')).toBeDisabled();
     expect(screen.getByTestId('thumbnail-pregenerate-open')).toBeDisabled();
     expect(screen.getByTestId('thumbnail-storage-locked-hint')).toBeInTheDocument();
+  });
+
+  // @scenario surface=storage_rows
+  // @effects gated_same_bucket_warning_shown
+  it('권한 줄과 공개 자산 디스크가 둘 다 s3 일 때만 권한 줄 아래 같은 버킷 경고가 보인다', async () => {
+    const text = adminKo.settings.upload.thumbnail.storage.same_bucket_warning;
+    expect(text).toBeTruthy();
+
+    testUtils = await renderCards({ upload: { thumbnail_disk_gated: 's3' }, drivers: { public_asset_disk: 's3' } });
+    const warning = screen.getByTestId('thumbnail-same-bucket-warning-gated');
+    expect(warning).toHaveTextContent(text);
+    // 권한 줄 안에만 있다 — 공개 줄에는 그리지 않는다
+    expect(screen.getByTestId('thumbnail-location-gated')).toContainElement(warning);
+    expect(screen.getAllByTestId('thumbnail-same-bucket-warning-gated')).toHaveLength(1);
+    testUtils.cleanup();
+
+    // 한쪽만 s3 이면 없다
+    testUtils = await renderCards({ upload: { thumbnail_disk_gated: 's3' }, drivers: { public_asset_disk: 'public' } });
+    expect(screen.queryByTestId('thumbnail-same-bucket-warning-gated')).not.toBeInTheDocument();
+    testUtils.cleanup();
+
+    testUtils = await renderCards({ upload: { thumbnail_disk_gated: 'thumbnails' }, drivers: { public_asset_disk: 's3' } });
+    expect(screen.queryByTestId('thumbnail-same-bucket-warning-gated')).not.toBeInTheDocument();
   });
 
   // @scenario surface=storage_rows

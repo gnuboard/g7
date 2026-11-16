@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Concerns;
 
-use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\OrderAccess;
 
 /**
  * 관리자 PG 연동 경로의 주문 권한 범위(「본인만」·「소유역할」) 재적용
@@ -20,6 +18,9 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
  *
  * 거부는 예외가 아니라 403 응답으로 돌려준다 — 컨트롤러의 넓은 `catch (\Exception)` 에 삼켜져 500 으로
  * 위장되지 않게 하기 위해서다. 주문이 없으면 판정하지 않는다(부재 응답은 각 경로의 기존 계약을 따른다).
+ *
+ * 판정은 이커머스 공개 계약 {@see OrderAccess} 가 한다(#916). 호스트 요건: 생성자에서
+ * `PaymentGatewayBridge`(또는 `OrderAccess`)를 `$bridge` 로 주입받는다.
  */
 trait GuardsOrderScope
 {
@@ -32,10 +33,8 @@ trait GuardsOrderScope
      */
     protected function orderScopeDenial(string $orderNumber, string $permission): ?JsonResponse
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인은 이커머스 Repository 에 의존하지 않는다(모듈 버전 제약 연쇄) — 주문 모델 단건 조회만
-        $order = Order::query()->where('order_number', $orderNumber)->first();
-
-        if ($order === null || PermissionHelper::checkScopeAccess($order, $permission)) {
+        // 주문이 없으면(null) 판정하지 않는다 — 부재 응답은 각 경로의 기존 계약을 따른다.
+        if ($this->bridge->isOrderWithinScope($orderNumber, $permission) !== false) {
             return null;
         }
 
@@ -54,16 +53,8 @@ trait GuardsOrderScope
      */
     protected function transactionScopeDenial(string $tid, string $permission): ?JsonResponse
     {
-        if (PermissionHelper::getEffectiveScope($permission) === null) {
-            return null;
-        }
-
-        // audit:allow controller-direct-data-access reason: PG 플러그인은 이커머스 Repository 에 의존하지 않는다(모듈 버전 제약 연쇄) — 거래번호의 주문 단건 조회만
-        $order = Order::query()
-            ->whereIn('id', OrderPayment::query()->where('transaction_id', $tid)->select('order_id'))
-            ->first();
-
-        if ($order !== null && PermissionHelper::checkScopeAccess($order, $permission)) {
+        // 범위 「전체」 판정과 거래번호 → 주문 조회는 계약 안에서 한다(이 결제사 결제 행만 본다).
+        if ($this->bridge->isTransactionWithinScope('kginicis', $tid, $permission)) {
             return null;
         }
 
@@ -79,14 +70,6 @@ trait GuardsOrderScope
      */
     protected function orderNumbersWithinScope(array $orderNumbers, string $permission): array
     {
-        if ($orderNumbers === [] || PermissionHelper::getEffectiveScope($permission) === null) {
-            return $orderNumbers;
-        }
-
-        // audit:allow controller-direct-data-access reason: PG 플러그인은 이커머스 Repository 에 의존하지 않는다(모듈 버전 제약 연쇄) — 범위 필터는 코어 PermissionHelper 가 건다
-        $query = Order::query()->whereIn('order_number', $orderNumbers);
-        PermissionHelper::applyPermissionScope($query, $permission);
-
-        return $query->pluck('order_number')->map(fn ($number) => (string) $number)->all();
+        return $this->bridge->orderNumbersWithinScope($orderNumbers, $permission);
     }
 }

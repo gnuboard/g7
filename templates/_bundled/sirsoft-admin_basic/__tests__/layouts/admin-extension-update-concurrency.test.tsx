@@ -35,6 +35,11 @@ function findUpdateApiCall(node: unknown): Json | undefined {
   return undefined;
 }
 
+/** 오류 객체로 각 액션의 `if` 를 평가해 실제로 실행될 액션만 고르는 판정 함수를 만든다 */
+function runsWith(error: Json): (a: Json) => boolean {
+  return (a: Json) => a.if === undefined || Boolean(new Function('error', `return (${String(a.if).slice(2, -2)});`)(error));
+}
+
 describe('확장 업데이트 모달 — 동시 업데이트 409 · 업데이트할 것 없음 문구', () => {
   const cases = [
     { name: '모듈', modal: moduleUpdateModal, flag: 'isModuleUpdating', errorKey: 'moduleUpdateError', fallback: 'admin.modules.update_success' },
@@ -63,8 +68,8 @@ describe('확장 업데이트 모달 — 동시 업데이트 409 · 업데이트
   it.each(cases)('$name: 409 는 오류 상자 없이 안내 토스트만 띄우고 버튼을 푼다', ({ modal, flag, errorKey }) => {
     const call = findUpdateApiCall(modal);
     const onError = call!.onError as Json[];
-
-    const conflict = onError.filter((a) => a.if === '{{error.status === 409}}');
+    // 작업 잠금 409 — 패키지 무결성 거절(#916, 같은 409 를 쓴다)과는 응답 표지로 갈린다
+    const conflict = onError.filter(runsWith({ status: 409, message: '진행 중', errors: { operation_in_progress: true } }));
     const conflictState = conflict.find((a) => a.handler === 'setState');
     const conflictToast = conflict.find((a) => a.handler === 'toast');
 
@@ -86,9 +91,23 @@ describe('확장 업데이트 모달 — 동시 업데이트 409 · 업데이트
       .filter((a) => a.handler === 'toast' || (a.handler === 'setState' && errorKey in (a.params ?? {})))
       .forEach((a) => expect(a.if, `${a.handler} 에 409 분기 조건이 없습니다`).toBeDefined());
 
-    const failure = onError.filter((a) => a.if === '{{error.status !== 409}}');
+    const failure = onError.filter(runsWith({ status: 500, message: '실패', errors: {} }));
     expect(failure.find((a) => a.handler === 'setState')?.params).toMatchObject({ [flag]: false, [errorKey]: '{{error.message}}' });
     expect(failure.find((a) => a.handler === 'toast')?.params.type).toBe('error');
+  });
+
+  /**
+   * @scenario case=modal_409_and_message
+   * @effects update_modal_routes_integrity_409_to_panel_not_lock_notice
+   */
+  it.each(cases)('$name: 미서명 409(errors.package_unsigned)는 잠금 안내·오류 상자 없이 무결성 기록만 담는다 (#916)', ({ modal, flag, errorKey }) => {
+    const call = findUpdateApiCall(modal);
+    const onError = call!.onError as Json[];
+    const active = onError.filter(runsWith({ status: 409, message: '미서명', errors: { package_unsigned: true, integrity: { status: 'unsigned' } } }));
+
+    expect(active.some((a) => a.handler === 'toast')).toBe(false);
+    const state = active.find((a) => a.handler === 'setState');
+    expect(state?.params).toMatchObject({ [flag]: false, [errorKey]: null, packageIntegrity: '{{error.errors?.integrity ?? null}}' });
   });
 
   /**

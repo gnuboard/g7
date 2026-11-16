@@ -280,6 +280,73 @@
                                                     ]
                                                 },
                                                 {
+                                                    "comment": "패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.\n                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다.",
+                                                    "id": "package_signature_field",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.package_integrity.signature_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedTemplate?.integrity_status === 'verified'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-green"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_verified|signer={{(_global.selectedTemplate?.integrity_key_id ?? '').split(':')[0]}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedTemplate?.integrity_status === 'unsigned'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_unsigned"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedTemplate?.integrity_status === 'unverifiable'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_unverifiable"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_global.selectedTemplate?.integrity_status === 'bundled'}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-blue"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_bundled"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!['verified', 'unsigned', 'unverifiable', 'bundled'].includes(_global.selectedTemplate?.integrity_status)}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-gray"
+                                                                    },
+                                                                    "text": "$t:admin.package_integrity.status_none"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "children": [

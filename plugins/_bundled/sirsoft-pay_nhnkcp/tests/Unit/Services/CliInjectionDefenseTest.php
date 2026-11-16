@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Services;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 use Tests\PureTestCase;
@@ -212,5 +213,50 @@ class CliInjectionDefenseTest extends PureTestCase
     {
         $this->invokeAssertSafeCliValue('상품주문', 'cancel_msg');
         $this->assertTrue(true);
+    }
+
+    /**
+     * 셸 메타문자(명령 치환, 파이프, 리다이렉트, 명령 구분) 변종을 돌려줍니다.
+     *
+     * @return array<string, array{string}> 변종별 값
+     */
+    public static function shellMetacharProvider(): array
+    {
+        return [
+            'dollar_paren' => ['ORD$(id)'],
+            'pipe' => ['ORD|id'],
+            'redirect' => ['ORD>/tmp/g7_kcp_poc'],
+            'semicolon' => ['ORD;id'],
+        ];
+    }
+
+    /**
+     * 셸 메타문자는 값 검사에서 거부하지 않고, escapeshellarg 로 감싼 한 인수 안에 문자 그대로 남는다.
+     *
+     * 값 검사(assertSafeCliValue)는 따옴표·백틱·제어문자처럼 인용 자체를 깨는 문자만 거부한다. `$(`·`|`·`>`·`;` 는
+     * CLI 인수 묶음 전체를 escapeshellarg 로 감싸(NhnKcpApiService executeCli* 의 `escapeshellarg($args)`) 셸이
+     * 해석하지 못하게 한다 — 따옴표를 깰 수 없으니 인용 밖으로 나갈 수 없다.
+     *
+     * @param  string  $value  메타문자가 든 값
+     * @return void 반환값 없음
+     *
+     * @scenario context=approvePayment_ordrIdxx, threat=cli_injection, callback_state=cli_arg_unsafe
+     *
+     * @effects cli_shell_metachar_stays_inside_quoted_argument
+     */
+    #[DataProvider('shellMetacharProvider')]
+    public function test_shell_metachar_stays_inside_one_quoted_argument(string $value): void
+    {
+        $this->invokeAssertSafeCliValue($value, 'ordr_idxx');
+
+        $args = 'site_cd=T0000,ordr_idxx='.$value.',trace_no=';
+        $quoted = escapeshellarg($args);
+        $quote = PHP_OS_FAMILY === 'Windows' ? '"' : "'";
+
+        $this->assertStringStartsWith($quote, $quoted);
+        $this->assertStringEndsWith($quote, $quoted);
+        $this->assertStringContainsString($value, $quoted);
+        // 인용 문자는 감싼 양 끝에만 있다 — 값이 인용을 끊고 나가는 지점이 없다.
+        $this->assertSame(2, substr_count($quoted, $quote));
     }
 }

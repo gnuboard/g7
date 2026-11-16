@@ -695,9 +695,12 @@ describe('회원 폼과 상세의 항목 데이터소스, 묶음, 구획', () =>
       expect(byId(form.slots, `field_${key}`), `폼 field_${key}`).toBeUndefined();
       expect(byId(detail.slots, `field_${key}`), `상세 field_${key}`).toBeUndefined();
     }
-    // 저장 본문은 폼 상태 그대로다 — 항목 정의는 폼 상태에 섞이지 않는다
+    // 저장 본문은 폼 상태에 받은 정의 버전(fields_version)만 얹는다 — 항목 정의는 폼 상태에 섞이지 않는다.
+    // 정의 버전은 회원 항목을 그리는 화면이라는 표식이다(없으면 서버가 옛 화면으로 보고 운영자 추가 필수 항목을 건너뛴다).
     const save = flatten(actionsOf(byId(form.slots, 'footer_save_button')!)).find((node) => node.handler === 'apiCall')!;
-    expect(save.params.body).toBe('{{_local.form}}');
+    const sent = { name: '홍길동', custom_fields: { job: 'dev' } };
+    expect(evaluate(save.params.body, { _local: { form: sent }, memberFields: { data: { fields_version: 'v916' } } })).toEqual({ ...sent, fields_version: 'v916' });
+    expect(evaluate(save.params.body, { _local: { form: sent }, memberFields: undefined })).toEqual(sent);
     // 조각에 넘기는 문맥: 폼 상태 이름은 form, 오류가 글자로 오면 빈 객체
     expect(computed(form, 'memberFieldCtx', { _local: { errors: { name: ['x'] } } })).toEqual({ formKey: 'form', errors: { name: ['x'] }, disabled: false });
     expect(computed(form, 'memberFieldCtx', { _local: { errors: '서버 오류' } }).errors).toEqual({});

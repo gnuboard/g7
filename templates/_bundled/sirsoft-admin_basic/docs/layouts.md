@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 218개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 222개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 42개 |
 | `auth` | 1개 |
 | `errors` | 7개 |
-| `partials` | 168개 |
+| `partials` | 172개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -70,6 +70,7 @@
 | `_modal_license` | `partials` | partial | - |
 | `_modal_lifecycle_warnings` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_package_integrity_notice` | `partials` | partial | - |
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
 | `_modal_purge_all` | `partials` | partial | - |
@@ -159,6 +160,8 @@
 | `_modal_core_update_result` | `partials` | partial | - |
 | `_modal_cron_token_rotate` | `partials` | partial | - |
 | `_modal_embed_provider_form` | `partials` | partial | - |
+| `_modal_extension_trust_key_add` | `partials` | partial | - |
+| `_modal_extension_trust_key_delete` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
@@ -201,6 +204,7 @@
 | `_tab_security` | `partials` | partial | - |
 | `_tab_security_activity_log` | `partials` | partial | - |
 | `_tab_security_csp` | `partials` | partial | - |
+| `_tab_security_extension_trust` | `partials` | partial | - |
 | `_tab_security_ip_restriction` | `partials` | partial | - |
 | `_tab_security_password_policy` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
@@ -675,6 +679,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_password_expiry_run.g7.html (보안 — 비밀번호 만료 지금 실행 확인 창)
 │           ├── _tab_security_activity_log.g7.html (보안 > 활동 로그(접속기록) 보관 카드)
 │           ├── _tab_security_csp.g7.html (보안 > 콘텐츠 보안 정책(CSP) 카드 — 모드·추가 호스트·자동 포함 호스트·정책 미리보기)
+│           ├── _tab_security_extension_trust.g7.html (보안 > 확장 신뢰 키 카드 — 내장 키 읽기 전용, 제작자 키 목록·추가·삭제, 「미서명 패키지 차단」 스위치는 탭 저장)
+│           ├── _modal_extension_trust_key_add.g7.html (보안 — 제작자 키 추가 창, 공개키·서명자 이름·신뢰 vendor 와 비밀번호 재확인)
+│           ├── _modal_extension_trust_key_delete.g7.html (보안 — 제작자 키 삭제 확인 창, 비밀번호 재확인)
 │           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
 │           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
 │           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)
@@ -829,6 +836,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── partials/_modal_license.g7.html
 │   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키. `cause: declaration` 항목(확장 manifest 선언 형식 오류)은 「확장 개발자가 고칠 선언」 안내를 붙이고, 실패가 모두 그런 항목이면 제목·요약도 「확장 선언에 틀린 값이 있습니다」·버린 선언 건수(`declaration_title`·`declaration_summary`)로 바꾸고 「다시 실행」 대신 개발자에게 알리라는 문구 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
+│   ├── partials/_package_integrity_notice.g7.html (패키지 서명 확인 결과·미서명 경고 패널 — 모듈·플러그인·템플릿 설치·업데이트 창과 언어팩 설치·업데이트 창이 공유, 닫히면 결과 전역값을 지움)
 │   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트 부분 실패 경고 결과 창 — 대시보드·모듈·플러그인·언어팩·환경설정 공유)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │

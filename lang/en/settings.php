@@ -94,6 +94,10 @@ return [
             'public' => 'Public disk',
             's3' => 'Amazon S3',
         ],
+        'private_attachment' => [
+            'default' => 'Default (follow the site storage driver)',
+            's3' => 'Amazon S3',
+        ],
         'file_delegation' => [
             'none' => 'Disabled (PHP sends files)',
             'x-sendfile' => 'X-Sendfile (Apache mod_xsendfile)',
@@ -763,5 +767,11 @@ return [
         'license_key_invalid' => 'The MaxMind license key is invalid.',
         'connection_failed' => 'Could not connect to the MaxMind server.',
         'update_failed' => 'Failed to update the GeoIP database.',
+    ],
+
+    // 저장은 허용하되 알려야 할 저장소 조합 (#916)
+    'warnings' => [
+        'private_attachment_same_as_public_asset' => 'Private attachment storage and the public asset disk are the same disk (:disk). If the bucket allows public reads, private originals can be read directly from the bucket URL. Use a bucket or path without a public policy for private originals.',
+        'gated_thumbnail_same_as_public_asset' => 'Access-controlled image thumbnails and the public asset disk use the same S3 bucket (:disk). If the bucket allows public reads, thumbnails of access-controlled images can also be read directly from the bucket URL. Make sure no public policy applies to the thumbnail path (thumbnails/).',
     ],
 ];

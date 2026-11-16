@@ -1,0 +1,19 @@
+# 시나리오 매니페스트 — NHN KCP 의 이커머스 결제 계약 전환 대조 (#916 ②)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: nhnkcp_payment_gateway_contract
+
+description: |
+  KCP 재결제 복구는 이커머스 주문 상태를 직접 되돌리던 코드를 공개 계약 `PaymentLifecycle::restoreForRetry` 로 옮겼다.
+  전환 전 KCP 현행 복구 결과를 이커머스 `RetryRestoreCharacterizationRecorderTest` 가 녹화해 두고, 전환된 경로의 결과가
+  녹화 원문과 바이트 단위로 같은지 대조한다. 다른 것은 의도된 변화 하나(실패 처리로 취소된 주문 상품이 주문 대기로 돌아옴)다.
+  계약 자체의 동작은 이커머스 `payment-gateway-contract.yaml` 이 소유한다.
+
+axes:
+  case: [retry_restore_characterization]
+
+effects:
+  - kcp_retry_restore_matches_the_recorded_bytes  # 전환된 KCP 복구 결과가 녹화 원문과 같다(상품 상태만 의도대로 다르다)
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Characterization/RetryRestoreCharacterizationTest.php

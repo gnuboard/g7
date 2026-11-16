@@ -60,13 +60,13 @@ class DriverRegistryServiceTest extends TestCase
      * @return void 반환값 없음
      */
     #[Test]
-    public function it_returns_all_eleven_categories(): void
+    public function it_returns_all_twelve_categories(): void
     {
         $categories = $this->service->getCategories();
 
-        $this->assertCount(11, $categories);
+        $this->assertCount(12, $categories);
         $this->assertEquals(
-            ['storage', 'public_asset', 'file_delegation', 'cache', 'session', 'queue', 'log', 'websocket', 'mail', 'search', 'image'],
+            ['storage', 'public_asset', 'private_attachment', 'file_delegation', 'cache', 'session', 'queue', 'log', 'websocket', 'mail', 'search', 'image'],
             $categories
         );
     }
@@ -220,7 +220,10 @@ class DriverRegistryServiceTest extends TestCase
         $this->assertArrayHasKey('search', $all);
         $this->assertArrayHasKey('image', $all);
         $this->assertArrayHasKey('file_delegation', $all);
-        $this->assertCount(11, $all);
+        // 비공개 첨부 저장소(#916)
+        $this->assertArrayHasKey('private_attachment', $all);
+        $this->assertSame(['default', 's3'], array_column($all['private_attachment'], 'id'));
+        $this->assertCount(12, $all);
     }
 
     /**

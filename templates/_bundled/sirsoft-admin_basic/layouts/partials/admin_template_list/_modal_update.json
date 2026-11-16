@@ -1,5 +1,5 @@
 {
-    "comment": "템플릿 업데이트 창 — 모듈 업데이트 창과 같이 셋을 함께 다룬다.\n  ⑴ 코어 비호환 경고(강행 체크 전까지 실행 버튼 잠금) ⑵ 변경 이력 ⑶ 고친 레이아웃을 덮어쓸지 남길지.\n  ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 미리 받아 전역에 담아 준다**.",
+    "comment": "템플릿 업데이트 창 — 모듈 업데이트 창과 같이 셋을 함께 다룬다.\n  ⑴ 코어 비호환 경고(강행 체크 전까지 실행 버튼 잠금) ⑵ 변경 이력 ⑶ 고친 레이아웃을 덮어쓸지 남길지.\n  ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 미리 받아 전역에 담아 준다**.\n  패키지 무결성(#916): 새 판본이 미서명(409)·서명 불일치(422)로 거절되면 오류 상자 대신 공용 안내 조각이 사유를 그린다.\n  정책이 허용하면(`can_continue`) 실행 버튼이 「미서명으로 계속」으로 바뀌어 같은 본문에 `allow_unsigned=1` 만 더해 다시 보낸다.\n  작업 잠금 409(같은 확장의 업데이트가 진행 중)는 종전대로 안내 토스트다 — 둘은 상태 코드가 아니라 응답 표지로 가른다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 업데이트 확인 모달",
@@ -60,7 +60,9 @@
                                     "body": {
                                         "layout_strategy": "{{_global.templateLayoutStrategy ?? 'overwrite'}}",
                                         "force": "{{_global.templateForceUpdate === true}}",
-                                        "layout_source": "{{_global.templateLayoutSource ?? 'auto'}}"
+                                        "layout_source": "{{_global.templateLayoutSource ?? 'auto'}}",
+                                        "allow_unsigned": "{{_global.packageIntegrity?.can_continue === true ? 1 : null}}",
+                                        "integrity_aware": "1"
                                     }
                                 },
                                 "onSuccess": [
@@ -77,6 +79,23 @@
                                         "params": {
                                             "type": "success",
                                             "message": "{{response?.message ?? '$t:admin.templates.update_success'}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "새 판본의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 올렸으면 그 사실을 알린다",
+                                        "handler": "toast",
+                                        "if": "{{response?.data?.integrity_status === 'verified'}}",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "if": "{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:admin.package_integrity.result_unsigned"
                                         }
                                     },
                                     {
@@ -129,7 +148,7 @@
                                     {
                                         "comment": "409 = 같은 템플릿의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고\n                     안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다.",
                                         "handler": "setState",
-                                        "if": "{{error.status === 409}}",
+                                        "if": "{{error.status === 409 && !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
                                         "params": {
                                             "target": "global",
                                             "isTemplateUpdating": false
@@ -137,7 +156,7 @@
                                     },
                                     {
                                         "handler": "toast",
-                                        "if": "{{error.status === 409}}",
+                                        "if": "{{error.status === 409 && !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
                                         "params": {
                                             "type": "info",
                                             "message": "{{error.message}}"
@@ -145,19 +164,33 @@
                                     },
                                     {
                                         "handler": "setState",
-                                        "if": "{{error.status !== 409}}",
+                                        "if": "{{error.status !== 409 && !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
                                         "params": {
                                             "target": "global",
                                             "isTemplateUpdating": false,
-                                            "templateUpdateError": "{{error.message}}"
+                                            "templateUpdateError": "{{error.message}}",
+                                            "packageIntegrity": null,
+                                            "packageIntegrityMessage": null
                                         }
                                     },
                                     {
                                         "handler": "toast",
-                                        "if": "{{error.status !== 409}}",
+                                        "if": "{{error.status !== 409 && !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
                                         "params": {
                                             "type": "error",
                                             "message": "{{error.message}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "패키지 무결성 거절(#916, 응답 표지로 가른다) — 오류 상자·토스트 대신 위쪽 공용 안내 조각이 사유를 그린다",
+                                        "handler": "setState",
+                                        "if": "{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
+                                        "params": {
+                                            "target": "global",
+                                            "isTemplateUpdating": false,
+                                            "templateUpdateError": null,
+                                            "packageIntegrity": "{{error.errors?.integrity ?? null}}",
+                                            "packageIntegrityMessage": "{{error.message}}"
                                         }
                                     }
                                 ]
@@ -183,7 +216,7 @@
                     {
                         "type": "basic",
                         "name": "Span",
-                        "text": "{{_global.isTemplateUpdating ? '$t:admin.templates.updating' : '$t:admin.templates.actions.update'}}"
+                        "text": "{{_global.isTemplateUpdating ? '$t:admin.templates.updating' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.templates.actions.update')}}"
                     }
                 ]
             }
@@ -611,6 +644,9 @@
                     ]
                 }
             ]
+        },
+        {
+            "partial": "partials/_package_integrity_notice.json"
         },
         {
             "type": "basic",

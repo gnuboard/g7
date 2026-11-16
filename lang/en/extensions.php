@@ -182,6 +182,47 @@ return [
     ],
 
     'commands' => [
+        // extension:trust-key, extension:keygen, extension:sign 명령 출력 (#916)
+        'trust_key' => [
+            'invalid_action' => 'The action must be add, remove or list.',
+            'public_key_missing' => 'add requires a public key (base64) argument.',
+            'key_id_missing' => 'remove requires a key_id argument.',
+            'added' => 'Trust key added: :key (vendors: :vendors)',
+            'removed' => 'Trust key removed: :key',
+            'not_found' => 'Trust key not found: :key',
+            'empty' => 'No author keys are registered.',
+            'builtin_empty' => 'The built-in core trust key list is empty — even officially signed packages are blocked as "untrusted key".',
+            'header_source' => 'Source',
+            'header_key_id' => 'key_id',
+            'header_label' => 'Signer',
+            'header_vendors' => 'Vendor scope',
+            'header_status' => 'Status',
+            'source_builtin' => 'Built-in',
+            'source_vendor' => 'Author',
+            'all_vendors' => '(all vendors)',
+        ],
+        'keygen' => [
+            'created' => 'Signing key created.',
+            'key_file' => 'Secret key file: :path (mode 0600 — never commit it or ship it in a package)',
+            'public_key' => 'Public key: :key',
+            'key_id' => 'key_id: :key',
+            'register_hint' => 'Site operators register this public key in Settings > Security "Extension trust keys" or with php artisan extension:trust-key add.',
+            'file_exists' => 'A file already exists at: :path',
+            'write_failed' => 'Could not write the key file: :path',
+            'sodium_missing' => 'This PHP has no sodium extension, so a key cannot be created.',
+        ],
+        'sign' => [
+            'signed' => 'Signature file created: :path',
+            'zip_built' => 'Package ZIP created: :path',
+            'path_not_found' => 'Path not found: :path',
+            'identity_not_found' => 'Could not read the identifier and version from the package manifest (module.json, plugin.json, template.json, language-pack.json or the core config/app.php).',
+            'invalid_type' => '--type must be one of module, plugin, template, language_pack or core.',
+            'key_not_found' => 'Key file not found: :path',
+            'key_invalid' => 'The key file is not valid: :path',
+            'key_missing' => 'Specify the secret key file with --key.',
+            'zip_failed' => 'Could not create the ZIP file: :path',
+            'upload_hint' => 'Upload the ZIP and the signature file (.sig.json) together to the release.',
+        ],
         // Cascade options of the install commands (--with-dependencies · --with-language-packs)
         'cascade' => [
             'dependency_unmet' => 'Dependency not met: :identifier (requires :required, currently :state)',

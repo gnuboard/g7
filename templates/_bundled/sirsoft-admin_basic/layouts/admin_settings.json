@@ -578,6 +578,20 @@
             "comment": "애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다."
         },
         {
+            "id": "extensionTrustKeys",
+            "label_key": "$t:editor.data_source.extensionTrustKeys",
+            "type": "api",
+            "endpoint": "/api/admin/extension-trust-keys",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": null
+            },
+            "comment": "확장 신뢰 키(#916) — 보안 탭에서만 받는다. 코어 내장 키(읽기 전용)·제작자 키·sodium 유무를 한 번에 준다.\n       키 추가·삭제는 탭 저장과 분리된 전용 API 라 끝나면 이 소스만 다시 받는다(설정 폼 `settings` 는 건드리지 않는다).\n       받지 못하면 data 를 null 로 두어 카드가 빈 목록 대신 「불러오지 못했다」를 보인다."
+        },
+        {
             "id": "memberFieldDefs",
             "label_key": "$t:editor.data_source.memberFieldDefs",
             "type": "api",
@@ -975,6 +989,7 @@
             "settings",
             "systemInfo",
             "appKey",
+            "extensionTrustKeys",
             "notificationDefinitions",
             "availableChannels",
             "identityProviders",
@@ -2263,6 +2278,14 @@
         {
             "comment": "IP 접근 제한 규칙 추가·편집 겸용 창(보안 탭) — 서버에 저장하지 않고 설정 폼의 규칙 배열만 고친다.",
             "partial": "partials/admin_settings/_modal_ip_restriction_rule_form.json"
+        },
+        {
+            "comment": "확장 신뢰 키 추가 창(보안 탭, #916) — 공개키·서명자 이름·vendor 범위와 본인 비밀번호를 받아 전용 API 로 바로 저장한다(탭 저장과 분리).",
+            "partial": "partials/admin_settings/_modal_extension_trust_key_add.json"
+        },
+        {
+            "comment": "확장 신뢰 키 삭제 확인 창(보안 탭, #916) — 제작자 키 행의 [삭제]가 연다. 본인 비밀번호를 다시 받는다.",
+            "partial": "partials/admin_settings/_modal_extension_trust_key_delete.json"
         },
         {
             "comment": "외부 영상 서비스 추가·수정 겸용 창(본문 콘텐츠 탭, #883) — 서버에 저장하지 않고 설정 폼의 서비스 배열만 고친다.",

@@ -153,6 +153,7 @@ effects:
   - close_report_preserves_easy_pay_context_on_cancelled_order
   - close_report_ignores_order_when_payment_already_paid
   - close_report_ignores_order_that_is_no_longer_payable
+  - close_report_ignores_order_issued_by_another_pg
   - close_report_rejects_matching_buyer_contact_without_ownership
   - close_report_rejects_non_krw_order_without_failing_payment
   - close_report_rejects_unchargeable_payment_currency_without_server_error

@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\Koreaexim\Services;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
-use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\ExchangeRateGateway;
 use Plugins\Sirsoft\Koreaexim\Enums\RunTrigger;
 use Plugins\Sirsoft\Koreaexim\Models\KoreaeximRateRun;
 use Plugins\Sirsoft\Koreaexim\Repositories\Contracts\RateRunRepositoryInterface;
@@ -19,12 +19,12 @@ class RateRunService
      *
      * @param  RateRunRepositoryInterface  $runs  runs 입력값
      * @param  ManagedCurrencyResolver  $resolver  resolver 입력값
-     * @param  EcommerceSettingsService  $settings  settings 입력값
+     * @param  ExchangeRateGateway  $gateway  쇼핑몰 환율 반영 계약
      * @param  ExchangeRateUpdateService  $updates  updates 입력값
      * @param  UpdateScheduleResolver  $schedule  정기 갱신 시각 해석기 (코어 스케줄 행 기준)
      */
     public function __construct(private RateRunRepositoryInterface $runs, private ManagedCurrencyResolver $resolver,
-        private EcommerceSettingsService $settings, private ExchangeRateUpdateService $updates,
+        private ExchangeRateGateway $gateway, private ExchangeRateUpdateService $updates,
         private UpdateScheduleResolver $schedule) {}
 
     /**
@@ -49,7 +49,7 @@ class RateRunService
 
         return array_merge($this->resolver->resolve(), [
             'auto_manage' => $auto, 'auth_key_set' => (bool) plugin_setting('sirsoft-koreaexim', 'auth_key', ''),
-            'base_currency' => $this->settings->getSetting('language_currency.default_currency'),
+            'base_currency' => $this->gateway->getCurrencySettings()->defaultCurrency,
             'last_success_run' => $this->runs->latestSuccessful(), 'last_run' => $this->runs->latest(),
             'today_request_count' => $this->runs->sumTodayRequestCount(), 'quota_limit' => 1000,
             // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정

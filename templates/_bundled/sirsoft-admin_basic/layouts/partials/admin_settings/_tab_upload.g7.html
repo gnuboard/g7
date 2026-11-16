@@ -151,6 +151,8 @@
               <responsive on="desktop" class="w-1/5 shrink-0"/>
               <select name="upload.thumbnail_disk_{{loc.kind}}" aria-label="$t:common.row_cell|row={{$t('admin.settings.upload.thumbnail.storage.kinds.' + loc.kind)}}|column={{$t('admin.settings.upload.thumbnail.storage.disk')}}" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['upload.thumbnail_disk_' + loc.kind]?.[0] ?? ''}}" options="{{(_local.form?._meta?.thumbnail_disk_options?.[loc.kind] ?? [{id: 'thumbnails', label: $t('admin.settings.upload.thumbnail.storage.private_disk')}]).map(o => ({value: o.id, label: $localized(o.label)}))}}"/>
               <span data-if="{{_local.errors?.['upload.thumbnail_disk_' + loc.kind]}}" class="form-error">{{_local.errors?.['upload.thumbnail_disk_' + loc.kind]?.[0] ?? ''}}</span>
+              <!-- 같은 버킷 경고 — 권한이 걸린 이미지 썸네일과 드라이버 탭 「공개 자산 디스크」가 둘 다 s3 일 때만. 저장은 막지 않는다(저장 응답 warnings 와 같은 조건). -->
+              <p data-if="{{loc.kind === 'gated' &amp;&amp; (_local.form?.upload?.thumbnail_disk_gated ?? '') === 's3' &amp;&amp; (_local.form?.drivers?.public_asset_disk ?? '') === 's3'}}" class="text-warning-soft mt-2" data-testid="{{'thumbnail-same-bucket-warning-' + loc.kind}}">$t:admin.settings.upload.thumbnail.storage.same_bucket_warning</p>
             </div>
             <div data-testid="{{'thumbnail-usage-' + loc.kind}}" class="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300">
               <span data-if="{{loc.locked}}" class="text-warning-soft">$t:admin.settings.upload.thumbnail.storage.after_save</span>

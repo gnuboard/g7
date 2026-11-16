@@ -1,10 +1,31 @@
 import { translate } from '../../../utils/translate';
+import type { ApiEndpoints, FileUploaderProps } from './types';
 
 /**
  * FileUploader 유틸리티 함수
  *
  * @module composite/FileUploader/utils
  */
+
+/**
+ * 레이아웃이 넘긴 주소 묶음에 기본값을 채웁니다.
+ *
+ * 정렬 주소는 `reorder` 키가 **있으면** 그 값을 쓰고(`null`·빈 문자열이면 정렬 요청을 보내지 않는다), 키가 없을 때만
+ * 코어 첨부 정렬 주소로 떨어진다. 종전 `??` 는 `null` 도 기본값으로 바꿔, 정렬 API 가 없는 화면(카테고리·반응 아이콘·
+ * 배너·팝업)에서 끌어 옮기면 코어 정렬 API 로 요청이 나갔다.
+ *
+ * @param apiEndpoints 레이아웃이 넘긴 주소 묶음
+ * @returns 업로드·삭제·정렬 주소(정렬하지 않으면 reorder 가 null)
+ */
+export const resolveApiEndpoints = (apiEndpoints: FileUploaderProps['apiEndpoints']): ApiEndpoints => {
+  const hasReorderKey = apiEndpoints != null && Object.prototype.hasOwnProperty.call(apiEndpoints, 'reorder');
+
+  return {
+    upload: apiEndpoints?.upload ?? '/api/admin/attachments',
+    delete: apiEndpoints?.delete ?? '/api/admin/attachments/:id',
+    reorder: hasReorderKey ? (apiEndpoints?.reorder || null) : '/api/admin/attachments/reorder',
+  };
+};
 
 /**
  * 파일 크기를 읽기 쉬운 형식으로 변환합니다.

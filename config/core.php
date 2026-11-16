@@ -375,6 +375,9 @@ return [
     */
     'storage' => [
         'public_asset_disk' => '',
+        // 비공개 첨부 저장소(#916) — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
+        // 빈 문자열이면 「기본」(사이트 스토리지 드라이버를 따름). 관리자 환경설정(drivers.private_attachment_disk)에서 주입한다.
+        'private_attachment_disk' => '',
     ],
 
     /*

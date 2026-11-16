@@ -231,15 +231,18 @@ class RegisterFieldSetTest extends TestCase
         $grade = $this->custom('t490_grade', 'text', ['edit_scope' => 'admin_only']);
         $file = $this->custom('t490_file', 'file', ['required' => true]);
 
-        $missing = $this->register()->assertStatus(422)->assertJsonValidationErrors(['custom_fields.t490_text']);
+        // 회원 항목을 그리는 화면은 정의 버전을 싣는다 — 싣지 않은 요청의 옛 화면 호환은 LegacyMemberFieldScreenTest 가 잰다.
+        $version = app(FieldRegistry::class)->version('core.user');
+
+        $missing = $this->register(['fields_version' => $version])->assertStatus(422)->assertJsonValidationErrors(['custom_fields.t490_text']);
         $this->assertStringContainsString('직함', $missing->json('errors')['custom_fields.t490_text'][0], '오류 문구에 항목 이름이 아니라 키가 실렸다');
         $this->assertArrayNotHasKey('custom_fields.t490_file', $missing->json('errors'), '파일 항목이 가입에서 필수로 걸렸다');
 
-        $this->register(['custom_fields' => ['t490_text' => '팀장', 't490_job' => 'hacker']])
+        $this->register(['fields_version' => $version, 'custom_fields' => ['t490_text' => '팀장', 't490_job' => 'hacker']])
             ->assertStatus(422)->assertJsonValidationErrors(['custom_fields.t490_job']);
 
         $email = 'issue490+custom@example.com';
-        $this->register(['email' => $email, 'custom_fields' => [
+        $this->register(['email' => $email, 'fields_version' => $version, 'custom_fields' => [
             't490_text' => '팀장',
             't490_job' => 'student',
             't490_period' => ['start' => '2026-01-01', 'end' => '2026-01-31'],
@@ -284,8 +287,10 @@ class RegisterFieldSetTest extends TestCase
         $this->assertArrayNotHasKey('fields_version', $this->registrationData, '정의 버전이 가입 훅 페이로드에 실렸다');
         $this->assertSame('값', $this->registrationData['custom_fields']['t490_text'] ?? null, '추가 항목 값이 가입 훅 페이로드에 없다');
 
-        // 버전을 싣지 않은 요청(옛 화면, 외부 클라이언트)은 대조 없이 검증으로 간다.
-        $this->register()->assertStatus(422)->assertJsonValidationErrors(['custom_fields.t490_text']);
+        // 버전을 싣지 않은 요청(회원 항목을 모르는 옛 화면)은 대조 없이 옛 화면 호환으로 간다 — 운영자 추가 필수 항목을 건너뛰고
+        // 만들어지며 추가 정보 입력 대기 표시는 남기지 않는다(상세는 LegacyMemberFieldScreenTest).
+        $this->register(['email' => 'issue490+noversion@example.com'])->assertStatus(201);
+        $this->assertNull(User::where('email', 'issue490+noversion@example.com')->firstOrFail()->required_fields_deferred_at);
     }
 
     /**

@@ -20,7 +20,7 @@
 
 - **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.user.orders.receipt`
 - **컨트롤러**: `Plugins\Sirsoft\PayNhnkcp\Controllers\UserReceiptController@show`
-- **인증/권한**: `optional.sanctum` — 회원이면 본인 주문만. 비회원이면 `X-Guest-Order-Token` 헤더(코어 `GuestOrderAuthService`) 또는 결제 콜백 성공 직후 발급된 서명 쿠키 `nhnkcp_receipt_token`(주문번호·만료·서명 3분절) 중 하나로 소유를 증명한다
+- **인증/권한**: `optional.sanctum` — 회원이면 본인 주문만. 비회원이면 `X-Guest-Order-Token` 헤더(이커머스 공개 결제 계약 `OrderAccess::verifyGuestOrderToken` 이 검증) 또는 결제 콜백 성공 직후 발급된 서명 쿠키 `nhnkcp_receipt_token`(주문번호·만료·서명 3분절) 중 하나로 소유를 증명한다
 
 **경로 파라미터**
 

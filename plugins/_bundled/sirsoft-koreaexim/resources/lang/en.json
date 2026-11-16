@@ -65,7 +65,8 @@
     "bad_request": "Invalid request",
     "bad_response": "Invalid response",
     "network_error": "Network error",
-    "unsupported_base": "Unsupported base currency"
+    "unsupported_base": "Unsupported base currency",
+    "save_failed": "Rate save failed"
   },
   "RunTrigger": {
     "scheduled": "Scheduled",

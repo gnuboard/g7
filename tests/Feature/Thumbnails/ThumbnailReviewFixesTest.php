@@ -7,6 +7,7 @@ use App\Contracts\Extension\PluginManagerInterface;
 use App\Extension\HookManager;
 use App\Seo\Editor\SeoOgPreviewService;
 use App\Seo\SeoMetaResolver;
+use App\Support\ThumbnailDiskOptions;
 use App\Thumbnails\DTO\ThumbnailResult;
 use App\Thumbnails\DTO\ThumbnailSource;
 use App\Thumbnails\DTO\ThumbnailSpec;
@@ -318,6 +319,57 @@ class ThumbnailReviewFixesTest extends TestCase
 
         Config::set('core.thumbnail.disk_public', 'public');
         $this->assertSame('public', app(ThumbnailStore::class)->diskFor(false));
+    }
+
+    /**
+     * 권한 썸네일 디스크는 화면 선택지와 같은 판정을 쓴다 — thumbnails, s3, 비공개 첨부 저장소 카탈로그 디스크만 그대로 쓰고
+     * 공개 자산 디스크(public, 플러그인 공개 디스크), 정의 없는 디스크, 카탈로그 밖 디스크는 비공개 디스크로 쓴다.
+     * 판정이 실패하면 코어 기본 목록(thumbnails, s3)으로 좁힌다.
+     *
+     * @scenario serving_point=core_attachment, request_param=size
+     *
+     * @effects gated_thumbnail_disk_limited_to_allowlist
+     *
+     * @return void 반환값 없음
+     */
+    public function test_gated_disk_follows_thumbnail_disk_options(): void
+    {
+        Config::set('filesystems.disks.vault', ['driver' => 'local', 'root' => storage_path('framework/testing/disks/vault')]);
+        Config::set('filesystems.disks.cloudfront', ['driver' => 'local', 'root' => storage_path('framework/testing/disks/cloudfront'), 'url' => 'https://cdn.test']);
+        Config::set('filesystems.disks.ghost', null);
+        HookManager::addFilter('core.settings.available_private_attachment_drivers', function (array $drivers): array {
+            foreach (['vault', 'ghost', 'cloudfront'] as $id) {
+                $drivers[] = ['id' => $id, 'label' => ['ko' => $id, 'en' => $id], 'provider' => 'test-plugin'];
+            }
+
+            return $drivers;
+        });
+        HookManager::addFilter('core.settings.available_public_asset_drivers', function (array $drivers): array {
+            $drivers[] = ['id' => 'cloudfront', 'label' => ['ko' => 'CloudFront', 'en' => 'CloudFront'], 'provider' => 'test-plugin'];
+
+            return $drivers;
+        });
+
+        try {
+            $expected = ['thumbnails' => 'thumbnails', 's3' => 's3', 'vault' => 'vault', 'public' => 'thumbnails', 'cloudfront' => 'thumbnails', 'ghost' => 'thumbnails', 'settings' => 'thumbnails', '' => 'thumbnails'];
+
+            foreach ($expected as $configured => $resolved) {
+                Config::set('core.thumbnail.disk_gated', $configured);
+                $this->assertSame($resolved, app(ThumbnailStore::class)->diskFor(true), "설정값 '{$configured}'");
+            }
+
+            // 판정 실패 — 코어 기본 목록으로 좁힌다(플러그인 디스크는 비공개 디스크, s3 는 그대로)
+            $this->app->bind(ThumbnailDiskOptions::class, fn () => throw new RuntimeException('판정 실패'));
+
+            Config::set('core.thumbnail.disk_gated', 'vault');
+            $this->assertSame(ThumbnailStore::PRIVATE_DISK, app(ThumbnailStore::class)->diskFor(true));
+
+            Config::set('core.thumbnail.disk_gated', 's3');
+            $this->assertSame('s3', app(ThumbnailStore::class)->diskFor(true));
+        } finally {
+            HookManager::clearFilter('core.settings.available_private_attachment_drivers');
+            HookManager::clearFilter('core.settings.available_public_asset_drivers');
+        }
     }
 
     /**

@@ -13,6 +13,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\TemplateNotFoundException;
 use App\Exceptions\TemplateOperationException;
 use App\Extension\Helpers\ChangelogParser;
@@ -21,11 +22,14 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\TemplateLastActiveGuard;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Integrity\ExtensionIntegrityRecorder;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
 use App\Extension\Template\TemplateSettingsSchema;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
 use App\Models\Template;
-use App\Models\TemplateLayout;
 use App\Rules\AllowedTemplateFileType;
 use App\Services\Concerns\ResolvesExtensionAssetType;
 use App\Services\Concerns\SecuresExtensionAssetPath;
@@ -2431,19 +2435,28 @@ class TemplateService
      * `template.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
      *
      * @param  UploadedFile  $file  사용자가 업로드한 템플릿 ZIP 파일
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치 결과 (identifier/version/installed_at 포함)
      */
-    public function installFromZipFile(UploadedFile $file): array
+    public function installFromZipFile(UploadedFile $file, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/templates');
         $extractPath = $tempPath.'/'.uniqid('template_');
 
         try {
             File::ensureDirectoryExists($tempPath);
 
+            // 서명 검증(해제 전 바이트) — 업로드 임시 파일은 옆 서명 파일을 자동으로 찾지 않는다(서명 파일 칸으로만, 7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $verification = $acquirer->verifyLocalZip($file->getRealPath(), PackageExpectation::forExtension('template'), $integrity, autoSidecar: false);
+
             $result = ZipInstallHelper::extractAndValidate(
                 $file->getRealPath(), $extractPath, 'template.json', 'templates', UploadedFileName::original($file)
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -2456,7 +2469,11 @@ class TemplateService
             );
 
             try {
-                return $this->executeTemplateInstall($result['identifier']);
+                $info = $this->executeTemplateInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('template', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('templates/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -2467,6 +2484,9 @@ class TemplateService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (TemplateOperationException $e) {
             throw $e;
@@ -2486,15 +2506,18 @@ class TemplateService
      * GitHub 저장소에서 템플릿을 설치합니다.
      *
      * @param  string  $githubUrl  GitHub 저장소 URL
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치된 템플릿 정보
      *
      * @throws \RuntimeException 설치 실패 시
      */
-    public function installFromGithub(string $githubUrl): array
+    public function installFromGithub(string $githubUrl, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/templates');
         $extractPath = $tempPath.'/'.uniqid('template_');
         $zipPath = null;
+        $downloadDir = $tempPath.'/'.uniqid('download_');
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -2507,11 +2530,19 @@ class TemplateService
                 throw new TemplateOperationException('templates.errors.github_repo_not_found');
             }
 
-            $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
+            // 태그 릴리스만 받는다(브랜치 폴백 없음) — 서명 자산이 있으면 검증하고, 없으면 미서명 정책(운영자 확인)을 거친다 (7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $acquired = $acquirer->fromGithubRelease(
+                $owner, $repo, null, $token, PackageExpectation::forExtension('template'), $integrity, $downloadDir
+            );
+            $zipPath = $acquired->zipPath;
 
             $result = ZipInstallHelper::extractAndValidate(
                 $zipPath, $extractPath, 'template.json', 'templates'
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($acquired->verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -2524,7 +2555,11 @@ class TemplateService
             );
 
             try {
-                return $this->executeTemplateInstall($result['identifier']);
+                $info = $this->executeTemplateInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('template', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('templates/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -2535,6 +2570,9 @@ class TemplateService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (TemplateOperationException $e) {
             throw $e;
@@ -2548,6 +2586,9 @@ class TemplateService
             }
             if ($zipPath && File::exists($zipPath)) {
                 File::delete($zipPath);
+            }
+            if (File::isDirectory($downloadDir)) {
+                File::deleteDirectory($downloadDir);
             }
         }
     }
@@ -2795,17 +2836,19 @@ class TemplateService
      * @param  string  $templateName  업데이트할 템플릿 identifier
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
+     * @throws PackageIntegrityException 받은 패키지의 서명 검증이 업데이트를 멈췄을 때
      */
-    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false): array
+    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false, ?PackageIntegrityOptions $integrity = null): array
     {
         // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->templateManager->loadTemplates();
-            $result = $this->templateManager->updateTemplate($templateName, $force, null, $layoutStrategy);
+            $result = $this->templateManager->updateTemplate($templateName, $force, null, $layoutStrategy, integrity: $integrity);
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 
@@ -2818,6 +2861,9 @@ class TemplateService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 422 로 감싸지 않고 그대로 올린다(7.2.0)
             throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로

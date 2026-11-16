@@ -1,5 +1,5 @@
 {
-    "comment": "내 정보 수정 폼 본체. 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 profileFields)대로\n     공용 조각(partials/member/_member_fields)이 카드마다 그린다 — 어떤 칸을 받고 무엇이 필수이고 무엇이 잠겼는지는 환경설정 > 회원이 정한다.\n     값은 `user` 소스가 `initLocal` 로 채운 폼 상태(profileEditForm)에서 오고, 검증 오류는 서버가 돌려준 것을 칸 아래에 보여 준다.\n     아바타와 이메일, 표시 이름 종류 선택 칸은 이 조각이 직접 그리고, 모듈과 플러그인이 선언한 항목은 확장별 카드(computed profileExtensionGroups)로 그린다.\n     저장 본문은 폼 상태를 그대로 보내되 표시 이름 종류(display_name_kind)만 가려 싣는다 — 고를 권한이 없으면 싣지 않고, 전에 고른 종류가 허용에서 빠진 채 다시 고르지 않았으면 싣지 않는다\n     (서버가 허용하지 않는 종류를 받으면 저장 전체를 거절한다. 싣지 않으면 지금 값을 그대로 둔다). 빈 값은 「고르지 않음」으로 보낸다.",
+    "comment": "e2e:allow 이번 변경은 PUT /api/me 본문에 항목 정의 버전(fields_version)을 싣는 것뿐이다 — 본문 모양은 Vitest mypage-profile-dynamic-fields, 서버의 옛 화면 판정은 PHPUnit LegacyMemberFieldScreenTest 가 잠근다(화면 동작 불변).\n     내 정보 수정 폼 본체. 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 profileFields)대로\n     공용 조각(partials/member/_member_fields)이 카드마다 그린다 — 어떤 칸을 받고 무엇이 필수이고 무엇이 잠겼는지는 환경설정 > 회원이 정한다.\n     값은 `user` 소스가 `initLocal` 로 채운 폼 상태(profileEditForm)에서 오고, 검증 오류는 서버가 돌려준 것을 칸 아래에 보여 준다.\n     아바타와 이메일, 표시 이름 종류 선택 칸은 이 조각이 직접 그리고, 모듈과 플러그인이 선언한 항목은 확장별 카드(computed profileExtensionGroups)로 그린다.\n     저장 본문은 폼 상태를 그대로 보내되 표시 이름 종류(display_name_kind)만 가려 싣는다 — 고를 권한이 없으면 싣지 않고, 전에 고른 종류가 허용에서 빠진 채 다시 고르지 않았으면 싣지 않는다\n     (서버가 허용하지 않는 종류를 받으면 저장 전체를 거절한다. 싣지 않으면 지금 값을 그대로 둔다). 빈 값은 「고르지 않음」으로 보낸다.",
     "meta": {
         "is_partial": true,
         "_e2e_allow": "e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)",
@@ -347,12 +347,13 @@
                             }
                         },
                         {
+                            "comment": "저장 본문에는 받은 회원 항목의 정의 버전(fields_version)을 얹는다 — 회원 항목을 그리는 화면이라는 표식이다.\n             표식 없는 요청은 서버가 옛 화면(7.1.x)으로 보고 운영자 추가 필수 항목을 건너뛴다.",
                             "handler": "apiCall",
                             "target": "/api/me",
                             "auth_required": true,
                             "params": {
                                 "method": "PUT",
-                                "body": "{{Object.fromEntries(Object.entries(_local?.profileEditForm ?? {}).filter(function(entry) { return entry[0] !== 'display_name_kind' || (profileFields?.data?.display_name?.can_choose === true && (entry[1] == null || entry[1] === '' || (profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === entry[1]; }))); }))}}"
+                                "body": "{{Object.assign(Object.fromEntries(Object.entries(_local?.profileEditForm ?? {}).filter(function(entry) { return entry[0] !== 'display_name_kind' || (profileFields?.data?.display_name?.can_choose === true && (entry[1] == null || entry[1] === '' || (profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === entry[1]; }))); })), profileFields?.data?.fields_version ? { fields_version: profileFields.data.fields_version } : {})}}"
                             },
                             "onSuccess": [
                                 {

@@ -60,7 +60,12 @@ _Repository 가 없습니다._
 <!-- @generated:repositories END -->
 
 <!-- @intent START -->
-이 플러그인이 이커머스 `Order`/`OrderPayment`를 읽고 쓰는 지점(컨트롤러·리스너)은 모두
-이커머스가 이미 노출한 Eloquent 모델을 직접 참조합니다 — 자기 소유 테이블이 없는 상태에서
-남의 모델을 감싸는 Repository 를 새로 만드는 것은 위임만 하는 빈 계층입니다.
+이 플러그인이 이커머스 주문·결제 행을 읽고 쓰는 지점(컨트롤러·리스너)은 모두 이커머스 공개 결제 계약
+`Contracts\Payment\PaymentGatewayBridge` 를 거칩니다 — 조회는 결과 객체(`OrderRecord`·`PaymentRecord`·`ClaimPaymentRecord`)로
+받고, 결제완료·실패·가상계좌 발급·meta 저장은 계약 메서드가 잠금 아래 처리합니다. 훅이 넘긴 `Order`/`OrderPayment`/`ClaimPayment`
+Model 은 속성만 읽습니다. 자기 소유 테이블이 없으므로 이 플러그인에 Repository 를 둘 이유가 없습니다.
+
+결제 meta 를 쓰는 방식은 종전과 같습니다. 카드 결제완료와 가상계좌 발급은 meta 를 통째로 바꾸고, 입금통보는 현재 meta 에
+입금 정보를 얹으며, 결제창 닫힘 기록은 `failure_history`(최근 5건)와 실패 단계를 얹고, 환불 뒤 취소 장부는 최상위 키
+`pg_raw_response` 만 바꿉니다.
 <!-- @intent END -->

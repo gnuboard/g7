@@ -23,6 +23,7 @@ axes:
 effects:
   - storage_rows_show_usage_and_unlocked_purge        # 저장값과 같으면 사용량·비우기가 보이고 풀려 있다
   - unsaved_disk_locks_row_purge                      # 저장 전 디스크 줄은 「저장 후 집계」 + 규격 select·비우기 잠금
+  - gated_same_bucket_warning_shown                   # 권한 줄 디스크와 드라이버 탭 공개 자산 디스크가 둘 다 s3 일 때만 권한 줄 select 아래 같은 버킷 경고
   - remote_disk_not_counted_and_engine_missing_notice # 원격 디스크는 「집계 안 함」, 엔진 없음 안내 + 만들기 잠금
   - storage_rows_zero_usage_shown                     # 썸네일 0개: 두 줄 유지, 「0개 · 0 B」, 비우기·만들기 사용 가능
   - og_row_value_cells_locked                         # og 행 값 칸 전부 잠금 + 「SEO 탭에서 설정」

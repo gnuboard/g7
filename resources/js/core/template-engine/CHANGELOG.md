@@ -5,6 +5,12 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.95.1] - 2026-11-16
+
+### Fixed
+
+- 컴포넌트 정의를 담은 prop(Modal 고정 하단 `footer` 등) 안 단추 액션의 `$t:키|이름={{response…}}` 가 응답이 오기 전 렌더 문맥으로 미리 번역돼 인자 자리가 빈 글자로 굳던 문제를 고쳤습니다. 확장 설치 창의 서명 확인 토스트가 「(서명자: )」로 보였고, 같은 꼴의 연동 확장 안내·알림 템플릿 경고 수·게시판 일괄 적용 건수 토스트도 같은 결함군입니다. props 의 바인딩 단계(`DataBindingEngine.resolveObject`)와 반복 렌더(`RenderHelpers.resolveValue`)는 액션 정의를 건너뛰는데(engine-v1.56.0) 번역 단계(`DynamicRenderer.resolveTranslationsDeep`)만 그 안까지 내려갔습니다. 이제 번역 단계도 액션 정의를 번역하지 않고 원문 표식만 걷어(`stripRawDeep`, 반복 렌더 경로와 같음) 넘기며, 액션 안의 `$t:` 는 실행 시점에 디스패처가 번역합니다(toast·setError·showAlert·confirm, `$t:` 를 내는 식). 같은 prop 안 컴포넌트 정의의 글자는 종전처럼 번역됩니다. 결함은 응답 값을 번역 인자로 쓰는 footer 토스트가 생긴 7.1.4 부터 있었습니다 (DynamicRenderer.tsx `resolveTranslationsDeep`, 회귀: `__tests__/DynamicRenderer.propActionTranslation.test.tsx`, `templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-install-toast-footer.test.tsx`)
+
 ## [engine-v1.95.0] - 2026-11-13
 
 ### Added

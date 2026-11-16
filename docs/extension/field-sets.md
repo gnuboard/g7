@@ -452,6 +452,7 @@ $messages = $factory->messages($set, $context);
 
 1. 표면에서 받는 항목만 고른다.
 2. 유형의 `rules()` 를 받고 앞에 `required` 또는 `nullable` 을 붙인다. 관리자 회원 수정에서는 대상의 현재 값이 빈 필수 항목을 `nullable` 로 둔다. 새로 필수가 된 항목 때문에 관리자가 다른 칸을 못 고치는 일을 막기 위해서다.
+   문맥이 옛 화면(`FieldContext::onLegacyScreen()`, 부가 문맥 `extra.legacy_screen`)이면 그 화면에 입력칸이 없던 필수 항목, 곧 코어가 선언하지 않은 항목(운영자 추가, 모듈과 플러그인 선언)과 그 표면의 7.1.x 화면이 보내지 않던 코어 항목(`App\Fields\LegacyScreenFields::coreKeysFor()`, 가입이면 국가, 시간대, 홈페이지, 주소, 서명, 자기소개)의 규칙 앞에 `sometimes` 를 붙인다. 값을 보내지 않으면 건너뛰고, 보내면 필수와 형식을 그대로 본다. 경로가 여럿인 묶음 항목(기간, 주소)은 경로마다 `sometimes` 를 붙이지 않고 필수 규칙을 `required_with:<같은 항목의 다른 경로>` 로 바꾼다 — 통째로 보내지 않았을 때만 건너뛰고, 일부 칸만 보내면 나머지 필수 칸도 본다. 이 표식은 클라이언트가 싣는 값이라 가입처럼 인증 없는 요청에서는 누구든 빼고 보낼 수 있다(자기 계정의 입력칸만 비게 된다 — [사용자 템플릿 계약](user-template-contract.md) 「옛 화면 호환」). 코어 회원 폼 요청은 정의 버전 `fields_version` 이 없는 요청(회원 항목을 모르는 7.1.x 화면)에 이 문맥을 쓴다. 늦춰지는 항목 목록은 `relaxedOnLegacyScreen(string $set, FieldContext $context): array`(항목 키 => 요청 속성 경로)가 준다.
 3. 중복 금지 규칙, 핸들러의 `extraRules()`, 닉네임 정책 규칙, 표시 이름으로 쓰는 추가 항목의 금지어 규칙, 본인인증 잠금 규칙을 더한다.
 4. 필터 `core.field.filter_rules` 를 태운다.
 

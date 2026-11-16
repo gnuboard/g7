@@ -8,6 +8,7 @@ use App\Http\Resources\ActivityLogResource;
 use App\Listeners\CoreActivityLogListener;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
+use App\Models\ExtensionTrustKey;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -180,7 +181,14 @@ class CoreActivityLogListenerTest extends TestCase
         // #609 코어 업데이트 웹 단계 실행(core.core_update.started·completed·failed) +3 → 91.
         // #434 템플릿 환경설정 저장·기본값 되돌리기(core.template_settings.after_save·after_reset) +2 → 93.
         // #490 회원 추가 항목 값 변경(core.user.fields.after_update) +1 → 94.
-        $this->assertCount(94, $hooks);
+        // #916 확장 신뢰 키 등록·삭제(core.extension_trust_keys.after_create·after_delete) +2 → 96.
+        $this->assertCount(96, $hooks);
+        foreach ([
+            'core.extension_trust_keys.after_create' => 'handleExtensionTrustKeyAfterCreate',
+            'core.extension_trust_keys.after_delete' => 'handleExtensionTrustKeyAfterDelete',
+        ] as $hook => $method) {
+            $this->assertSame(['method' => $method, 'priority' => 20], $hooks[$hook] ?? null, $hook);
+        }
         $this->assertSame(
             ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
             $hooks['core.user.after_update_roles'] ?? null,
@@ -872,6 +880,68 @@ class CoreActivityLogListenerTest extends TestCase
             });
 
         $this->listener->handleRoleAfterDelete(99);
+    }
+
+    /**
+     * 확장 신뢰 키 등록 훅이 key_id·서명자 이름·vendor 범위와 모델 참조를 담아 기록하는지 확인합니다 (#916).
+     *
+     * @scenario request_area=admin
+     *
+     * @effects create_hook_logs_target_id_and_label
+     *
+     * @return void 없음
+     */
+    // @scenario case=settings_handlers
+    // @effects extension_trust_key_create_and_delete_are_logged
+    public function test_handle_extension_trust_key_after_create_logs_activity(): void
+    {
+        $key = new ExtensionTrustKey(['key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter', 'glitterlab']]);
+        $key->id = 7;
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) {
+                return $action === 'extension_trust_key.create'
+                    && $context['log_type'] === ActivityLogType::Admin
+                    && $context['description_key'] === 'activity_log.description.extension_trust_key_create'
+                    && $context['description_params'] === ['key_id' => 'glitter:0123456789abcdef', 'vendors' => 'glitter, glitterlab']
+                    && $context['properties'] === ['key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter', 'glitterlab']]
+                    && isset($context['loggable']);
+            });
+
+        $this->listener->handleExtensionTrustKeyAfterCreate($key);
+    }
+
+    /**
+     * 확장 신뢰 키 삭제 훅이 지운 키의 key_id·서명자 이름·vendor 범위를 기록하는지 확인합니다 (#916).
+     *
+     * 지운 행이라 모델 참조(loggable)는 싣지 않는다 — 역할·스케줄 삭제와 같다.
+     *
+     * @scenario request_area=admin
+     *
+     * @effects delete_hook_logs_removed_id
+     *
+     * @return void 없음
+     */
+    // @scenario case=settings_handlers
+    // @effects extension_trust_key_create_and_delete_are_logged
+    public function test_handle_extension_trust_key_after_delete_logs_activity(): void
+    {
+        $key = new ExtensionTrustKey(['key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter']]);
+        $key->id = 7;
+
+        $this->logChannel->shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $action, array $context) {
+                return $action === 'extension_trust_key.delete'
+                    && $context['log_type'] === ActivityLogType::Admin
+                    && $context['description_key'] === 'activity_log.description.extension_trust_key_delete'
+                    && $context['description_params'] === ['key_id' => 'glitter:0123456789abcdef', 'vendors' => 'glitter']
+                    && $context['properties'] === ['id' => 7, 'key_id' => 'glitter:0123456789abcdef', 'label' => 'glitter', 'vendor_scope' => ['glitter']]
+                    && ! isset($context['loggable']);
+            });
+
+        $this->listener->handleExtensionTrustKeyAfterDelete($key);
     }
 
     /**

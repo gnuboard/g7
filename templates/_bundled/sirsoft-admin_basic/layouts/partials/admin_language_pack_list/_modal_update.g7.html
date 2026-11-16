@@ -1,9 +1,12 @@
 <!-- 언어팩을 새 판본으로 올리기 전 되묻는 창. 지금 판본과 올라갈 판본은 목록에서 미리 담아 준
   값을 그대로 보여 준다(창이 서버를 다시 부르지 않는다).
   안내 문구가 짚는 것은 하나다 — **손으로 고친 번역이 어떻게 되는가**. 그 사정 때문에 새 판본이
-  있어도 자동으로 올리지 않고 이 확인을 거친다. -->
+  있어도 자동으로 올리지 않고 이 확인을 거친다.
+  패키지 무결성(#916): 새 판본이 미서명(409)·서명 불일치(422)로 거절되면 토스트 대신 공용 안내 조각이 사유를 그리고,
+  정책이 허용하면 실행 버튼이 「미서명으로 계속」으로 바뀌어 같은 요청에 `allow_unsigned=1` 만 더해 다시 보낸다. -->
 <partial editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_update_modal" description="언어팩 업데이트 확인 모달 — 모듈/플러그인 update 모달과 동일 수준. 로딩 스피너, reloadExtensions 후속 호출 포함.">
   <modal data-type="composite" data-ref="language_pack_update_modal" title="$t:admin.language_packs.modal.update.title" size="sm">
+    <include src="partials/_package_integrity_notice.g7.html"/>
     <div class="py-2 space-y-3">
       <p class="text-body flex items-center gap-2"><span data-ref="lp_update_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
         <img data-if="{{_local.updateIconUrl}}" src="{{_local.updateIconUrl}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
@@ -32,6 +35,9 @@
               <success>
                 <set-state target="global" :isLanguagePackUpdating="false"/>
                 <toast type="success" message="$t:admin.language_packs.messages.update_success"/>
+                <!-- 새 판본의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 올렸으면 그 사실을 알린다 -->
+                <toast if="{{response?.data?.integrity_status === 'verified'}}" type="success" message="$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"/>
+                <toast if="{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}" type="warning" message="$t:admin.package_integrity.result_unsigned"/>
                 <refetch-data-source dataSourceId="language_packs"/>
                 <reload-extensions/>
                 <close-modal target="language_pack_update_modal"/>
@@ -40,15 +46,24 @@
                 <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
-                <set-state target="global" :isLanguagePackUpdating="false"/>
-                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.update_failed'}}"/>
+                <!-- 무결성 거절(표지로 가른다)은 토스트 없이 위쪽 공용 안내 조각에 맡기고, 그 밖의 실패는 종전대로 오류 토스트다 -->
+                <conditions>
+                  <when if="{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}">
+                    <set-state target="global" :isLanguagePackUpdating="false" packageIntegrity="{{error.errors?.integrity ?? null}}" packageIntegrityMessage="{{error.message}}"/>
+                  </when>
+                  <else>
+                    <set-state target="global" :isLanguagePackUpdating="false" :packageIntegrity="null" :packageIntegrityMessage="null"/>
+                    <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.update_failed'}}"/>
+                  </else>
+                </conditions>
               </fail>
+              <body allow_unsigned="{{_global.packageIntegrity?.can_continue === true ? 1 : null}}" integrity_aware="1"/>
             </api-call>
           </sequence>
         </on>
         <icon data-if="{{!_global.isLanguagePackUpdating}}" name="fas fa-arrow-up" size="sm"/>
         <icon data-if="{{_global.isLanguagePackUpdating}}" name="fas fa-spinner" class="animate-spin" size="sm"/>
-        <span>{{_global.isLanguagePackUpdating ? '$t:admin.language_packs.updating' : '$t:admin.language_packs.actions.update_now'}}</span>
+        <span>{{_global.isLanguagePackUpdating ? '$t:admin.language_packs.updating' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.language_packs.actions.update_now')}}</span>
       </button>
     </footer>
   </modal>

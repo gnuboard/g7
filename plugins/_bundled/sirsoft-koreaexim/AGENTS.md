@@ -91,7 +91,8 @@
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
 | 인증키 포함 요청 URL·예외 기록 | 상태 코드와 번역된 요약만 기록 | 비밀값 보호 |
-| 통화 설정 일부 목록 덮어쓰기 | 모듈 applyExchangeRates 사용 | 기본통화·삭제 표식 보존 |
+| 통화 설정 일부 목록 덮어쓰기 | 이커머스 공개 계약 `ExchangeRateGateway::applyExchangeRates` 사용 | 기본통화·삭제 표식 보존 |
+| 이커머스 설정 서비스(`EcommerceSettingsService`)·Model·Repository 로 통화 설정을 읽고 쓴다 | `Contracts\Currency\ExchangeRateGateway` 를 주입받아 `getCurrencySettings()`·`applyExchangeRates()` 를 쓰고, 저장 실패는 `ExchangeRateSaveException` 을 잡아 `save_failed` 이력으로 남긴다 | 공개되지 않은 이커머스 구현은 예고 없이 바뀐다(이커머스 1.4.0 이상 필요) |
 | 통화 저장 훅에서 API 재요청 | 최신 성공 응답 재계산 | 응답 지연·호출 예산 방지 |
 
 <!-- @intent END -->

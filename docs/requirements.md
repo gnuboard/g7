@@ -92,7 +92,7 @@ FcgidOutputBufferSize 0
 | 선택 | `maxminddb` | GeoIP 데이터베이스 조회 (접속 국가·타임존 감지) |
 | 선택 | `simplexml` | AWS SDK(S3/SES/SQS) 응답 파싱 |
 | 선택 | `libxml` | XML 파싱 기반 라이브러리 (`dom`·`simplexml` 의 토대) |
-| 선택 | `sodium` | 최신 암호화 라이브러리 |
+| 선택 | `sodium` | 최신 암호화 라이브러리 — 확장·코어 업데이트·언어팩 패키지 서명(Ed25519) 검증에 쓴다. 없으면 서명이 있어도 「서명 검증 불가」로 미서명과 같이 다룬다(설치 마법사 권장 항목) |
 | 선택 | `phar` | Phar 아카이브 (Composer 실행) |
 | 선택 | `xmlwriter` | XML 문서 생성 |
 | 선택 | `zlib` | 데이터 압축 (gzip 응답 압축) |

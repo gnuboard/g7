@@ -231,4 +231,18 @@ return [
 
     // Imported review (no member/order) input error
     'imported_review_invalid_field' => 'Invalid imported review input: :field',
+
+    // Public payment contract (Contracts\Payment) errors for payment provider plugins — raised when provider code misuses the contract (#916)
+    'payment_contract' => [
+        'order_not_found' => 'Order not found: :order_number',
+        'provider_mismatch' => 'Payment belongs to provider [:owner], not [:caller].',
+        'transition_denied' => 'Payment transition denied for order :order_number: :reason',
+        'retry_prefix_mismatch' => 'Retry meta prefix [:prefix] must equal provider [:pg].',
+        'pg_attribute_not_allowed' => 'Column [:column] is not a payment provider attribute.',
+        'failure_status_invalid' => 'Payment failure status must be failed or cancelled.',
+        'provider_required' => 'Payment provider id is required.',
+        'order_meta_namespace_invalid' => 'Order meta namespace [:namespace] must start with [:prefix].',
+        'sample_column_not_allowed' => 'Column [:column] is not allowed for a sample payment.',
+        'currency_rate_missing' => 'Currency [:currency] is not configured with an exchange rate.',
+    ],
 ];

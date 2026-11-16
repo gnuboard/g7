@@ -2,6 +2,8 @@
 
 namespace App\CoreUpdate;
 
+use App\Extension\Integrity\PackageIntegrityOptions;
+
 /**
  * 웹 코어 업데이트의 착수 선택 (Value Object).
  *
@@ -29,12 +31,16 @@ final class CoreUpdateOptions
      * @param  bool  $rebuildSearchIndex  일괄 업데이트 후 검색 인덱스를 재생성할지 (기본 끔, 그 창에서만 유효)
      * @param  string  $layoutStrategy  전역 레이아웃 전략 (`overwrite`|`keep`)
      * @param  string|null  $zipFile  수동 ZIP 파일명 (`storage/app/core_pending` 하위, null 이면 자동 내려받기)
+     * @param  bool  $allowUnsigned  미서명 배포본을 운영자가 확인하고 계속하는지 (7.2.0 — 409 경고 창의 「미서명으로 계속」)
+     * @param  bool  $integrityAware  무결성을 아는 화면의 요청인지 (7.2.0 — 표식 `integrity_aware`. 없으면 옛 화면 호환으로 미서명 허용)
      */
     public function __construct(
         public readonly bool $updateBundledExtensions = true,
         public readonly bool $rebuildSearchIndex = false,
         public readonly string $layoutStrategy = self::LAYOUT_OVERWRITE,
         public readonly ?string $zipFile = null,
+        public readonly bool $allowUnsigned = false,
+        public readonly bool $integrityAware = false,
     ) {}
 
     /**
@@ -52,6 +58,8 @@ final class CoreUpdateOptions
             rebuildSearchIndex: (bool) ($validated['rebuild_search_index'] ?? false),
             layoutStrategy: $strategy === self::LAYOUT_KEEP ? self::LAYOUT_KEEP : self::LAYOUT_OVERWRITE,
             zipFile: self::normalizeZipFile($validated['zip_file'] ?? null),
+            allowUnsigned: (bool) ($validated['allow_unsigned'] ?? false),
+            integrityAware: (bool) ($validated['integrity_aware'] ?? false),
         );
     }
 
@@ -78,7 +86,21 @@ final class CoreUpdateOptions
             'rebuild_search_index' => $this->rebuildSearchIndex,
             'layout_strategy' => $this->layoutStrategy,
             'zip_file' => $this->zipFile,
+            'allow_unsigned' => $this->allowUnsigned,
+            'integrity_aware' => $this->integrityAware,
         ];
+    }
+
+    /**
+     * 패키지 무결성 선택으로 바꿉니다 (7.2.0).
+     *
+     * 표식이 없는 착수(옛 관리자 화면)는 `legacyClient` 로 넘긴다 — 미서명 허용 판정은 `UnsignedPackagePolicy` 가 한다.
+     *
+     * @return PackageIntegrityOptions 무결성 선택 (서명 파일은 ZIP 옆 `.sig.json` 자동 인식)
+     */
+    public function integrityOptions(): PackageIntegrityOptions
+    {
+        return new PackageIntegrityOptions($this->allowUnsigned, null, legacyClient: ! $this->integrityAware);
     }
 
     /**

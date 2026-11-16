@@ -10,10 +10,13 @@ _소유 모델이 없습니다._
 
 <!-- @intent START -->
 결제 상태는 이 플러그인이 아니라 `sirsoft-ecommerce`의 `Order`/`OrderPayment` 모델이
-소유합니다(§AGENTS.md "설계 원칙"). 이 플러그인은 그 모델을 직접 참조해 읽고 쓸 뿐, 자기
-Repository 조차 두지 않았습니다(§Repository) — `sirsoft-pay_kginicis`가 CBT(일본) 정산용
-Repository 2개를 갖는 것과 달리, 이 플러그인은 일본/CBT 결제를 아예 구현하지 않으므로
-그 계층이 존재할 이유가 없습니다.
+소유합니다(§AGENTS.md "설계 원칙"). 이 플러그인은 그 상태를 이커머스가 공개한 결제 계약
+(`Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge`)으로만 읽고 씁니다 — 조회는
+읽기 전용 DTO(`OrderRecord`·`PaymentRecord`·`ClaimPaymentRecord` 등)로 받고, 쓰기(결제완료·실패 기록·
+가상계좌 발급·결제 meta 병합·재결제 복구)는 계약 메서드를 주문번호로 부릅니다. 이커머스 Model·Service·
+Repository·테이블 이름은 쓰지 않으므로 자기 Repository 도 두지 않았습니다(§Repository) —
+`sirsoft-pay_kginicis`가 CBT(일본) 정산용 Repository 2개를 갖는 것과 달리, 이 플러그인은 일본/CBT
+결제를 아예 구현하지 않으므로 그 계층이 존재할 이유가 없습니다.
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -61,9 +64,16 @@ _Repository 가 없습니다._
 <!-- @generated:repositories END -->
 
 <!-- @intent START -->
-이 플러그인이 이커머스 `Order`/`OrderPayment`를 읽고 쓰는 지점(컨트롤러·리스너·`Concerns`
-트레이트)은 모두 이커머스가 이미 노출한 Eloquent 모델을 직접 참조합니다 — 자기 소유
-테이블이 없는 상태에서 남의 모델을 감싸는 Repository 를 새로 만드는 것은 위임만 하는
-빈 계층입니다. `sirsoft-pay_kginicis`의 CBT Repository 2개는 이 플러그인에는 없는
-일본 결제 전용 정산 데이터(자체 소유 테이블)를 다루기 위한 것이라 대칭이 아닙니다.
+이 플러그인이 이커머스 주문·결제를 읽고 쓰는 지점(컨트롤러·리스너·`Concerns` 트레이트)은 모두
+이커머스 공개 결제 계약을 생성자로 주입받아 부릅니다(트레이트는 호스트의 `$bridge` 를 씁니다) —
+잠금·트랜잭션·PG 식별자 범위(이 PG 행이거나 결제 전 행만 보임)는 계약이 맡습니다. 자기 소유 테이블이
+없는 상태에서 계약을 다시 감싸는 Repository 를 만드는 것은 위임만 하는 빈 계층입니다.
+`sirsoft-pay_kginicis`의 CBT Repository 2개는 이 플러그인에는 없는 일본 결제 전용 정산 데이터(자체 소유
+테이블)를 다루기 위한 것이라 대칭이 아닙니다.
+
+이커머스가 넘기는 훅 인자 Model(`payment.refund` 의 `Order`·`OrderPayment`, `claim_payment.*` 의
+`ClaimPayment`)과 이 플러그인 공개 훅(`payment.before_confirm`·`payment.after_confirm`·`escrow.*`)이 넘기는
+`Order` 는 이커머스 `public_api.readonly_models` 라 타입힌트·속성 읽기만 합니다. 판정 값(가상계좌 여부 등)과
+과세 분리 금액은 계약의 `describePayment()`·`pgTaxSplit()` 으로 읽고, 공개 훅에 실을 `Order` 는 계약의
+읽기 전용 조회(`findOrderModel()`)로 얻습니다.
 <!-- @intent END -->

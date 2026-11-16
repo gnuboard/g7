@@ -106,6 +106,7 @@ _단건 응답: `data` 객체의 필드._
 | latest_version | string | `7.0.3` | GitHub 릴리스에서 조회한 최신 코어 버전 (조회 값이 없으면 현재 버전과 동일) |
 | github_url | string | `https://github.com/gnuboard/g7` | 업데이트 조회 대상 GitHub 저장소 URL (`config('app.update.github_url')`) |
 | custom_preflight | object\|null | `null` | 직전 `core:update` 가 개발자 custom 자리 사전 검사로 시작 전에 멈췄고 그 대상 버전이 `latest_version` 과 같을 때만 실린다 (7.2.0). `to_version`·`checked_at`·`reserved_files`(릴리스에 들어 있던 예약 경로 파일)·`conflicts`(`package`·`installed`·`type`(`constraint`\|`duplicate`)·`core_package`·`core_version`). 그 밖에는 `null` |
+| signature_available | boolean\|null | `true` | 최신 릴리스에 서명 자산 짝(`g7-{version}.zip` + `g7-{version}.zip.sig.json`)이 있는지 (7.2.0). 릴리스를 읽지 못하면 `null`. `false` 면 업데이트 착수가 미서명 확인(409)을 요구한다. 확인 화면의 「릴리스 서명」 표시가 읽는다 |
 
 > 조회 실패 시(GitHub 접속 불가 등)에는 422 응답이 반환되며, `error` 객체에 `reason`(실패 사유) · `current_version` · `github_url` 이 담깁니다.
 
@@ -120,7 +121,8 @@ _단건 응답: `data` 객체의 필드._
         "current_version": "7.0.3",
         "latest_version": "7.0.3",
         "github_url": "https://github.com/gnuboard/g7",
-        "custom_preflight": null
+        "custom_preflight": null,
+        "signature_available": true
     }
 }
 ```
@@ -224,7 +226,7 @@ Accept: application/json
 | run.status | string | `running`·`rolling_back`·`rolled_back`·`rollback_failed`·`completed` |
 | run.from_version | string | 업데이트 이전 버전 |
 | run.to_version | string\|null | 대상 버전 (수동 ZIP 은 추출 후 결정되므로 그 전까지 `null`) |
-| run.options | object | 착수 선택 (`update_bundled_extensions`·`rebuild_search_index`·`layout_strategy`·`zip_file`) |
+| run.options | object | 착수 선택 (`update_bundled_extensions`·`rebuild_search_index`·`layout_strategy`·`zip_file`·`allow_unsigned`·`integrity_aware`(7.2.0)) |
 | run.next_step | string\|null | 다음에 수행할 단계 키 |
 | run.completed_steps | string[] | 완료한 단계 키 |
 | run.completed_count | int | 완료 단계 수 (진행률 계산용) |
@@ -298,7 +300,9 @@ Accept: application/json
 | update_bundled_extensions | body | boolean | 아니오 | | 번들 확장·언어팩을 함께 업데이트할지 (기본 `true`) |
 | rebuild_search_index | body | boolean | 아니오 | | 일괄 업데이트 후 검색 인덱스를 재생성할지 (기본 `false`, 그 실행에만 적용) |
 | layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 전역 레이아웃 처리 (기본 `overwrite` — 명령행 기본과 동일) |
-| zip_file | body | string | 아니오 | `<이름>.zip` | 운영자가 `storage/app/core_pending` 에 올려 둔 파일 **이름**. 경로 성분은 허용하지 않는다 |
+| zip_file | body | string | 아니오 | `<이름>.zip` | 운영자가 `storage/app/core_pending` 에 올려 둔 파일 **이름**. 경로 성분은 허용하지 않는다. 같은 자리에 `<이름>.zip.sig.json` 이 있으면 그 서명 파일로 검증한다 (7.2.0) |
+| allow_unsigned | body | boolean | 아니오 | | 서명 자산이 없는 릴리스·서명 파일이 없는 ZIP(또는 이 서버에서 서명을 검증할 수 없는 배포본)을 확인하고 계속 (7.2.0, 기본 `false`). 409 경고 창의 「미서명으로 계속」이 같은 요청을 `true` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
+| integrity_aware | body | boolean | 아니오 | | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `true` 를 보낸다. 이 칸이 없는 착수는 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 배포본을 확인 없이 진행한다(서버 경고 로그). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 
 **요청 예시**
 
@@ -324,11 +328,18 @@ Accept: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | `core.system.update` 권한이 없는 경우 |
 | 422 | Unprocessable Entity | 이미 실행 중 · 새 버전 없음 · 지정한 ZIP 부재 · 파라미터 검증 실패 |
+| 409 | Conflict | 미서명·검증 불가 배포본 (7.2.0) — `errors.package_unsigned: true` 와 `errors.integrity`. `errors.integrity.can_continue` 가 true 면 같은 요청을 `allow_unsigned: true` 로 다시 보내 계속하고, 「미서명 패키지 차단」이 켜져 있으면 false ([오류 응답](../../extension/package-signing.md#오류-응답)) |
+| 422 | Unprocessable Entity | 서명 불일치(`errors.package_signature_invalid: true`)·신뢰하지 않는 키(`errors.package_signer_untrusted: true`) — 코어 배포본은 코어 내장 공식 키로만 검증하므로 제작자 키로 서명한 배포본도 여기에 해당한다(`errors.integrity.reason` = `core_requires_builtin_key`) (7.2.0) |
 | 500 | Server Error | 착수 처리 중 예기치 못한 오류 |
 
 **설명** 실행을 등록만 하고 **어떤 단계도 수행하지 않는다.** 실제 진행은 이어지는
 `advance` 호출이 한 단계씩 한다. 착수 전에 새 버전 유무(자동 경로)나 지정한 ZIP 의
 실재(수동 경로)를 확인하므로, 점검 모드를 켠 뒤에 되돌리는 왕복이 생기지 않는다.
+
+**패키지 서명(7.2.0)** 착수할 때 자동 경로는 대상 판의 태그 릴리스에 서명 자산 짝이 있는지, 수동 ZIP 경로는 ZIP 과 옆 서명
+파일을 검증해 미서명·불일치를 점검 모드 전에 알린다. `download` 단계는 받은(또는 올려 둔) ZIP 을 풀기 전에 다시 검증하고,
+다 푼 뒤 배포본 `config/app.php` 의 버전을 서명된 버전과 대조한다. 그 단계에서 걸리면 실행이 실패로 멈추고 되돌린다.
+착수 선택 `run.options` 에 `allow_unsigned`·`integrity_aware` 가 함께 기록된다(웹 단계가 요청을 건너 이어져도 옛 화면 판정이 유지된다). 상세: [패키지 서명](../../extension/package-signing.md)
 
 ---
 

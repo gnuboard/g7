@@ -825,6 +825,34 @@
       ]
     },
     {
+      "comment": "신뢰 키 삭제 창 본문이 읽는 전역 상태(trustKeyDeleteTarget) — 「확장 신뢰 키」 카드의 키 행 [삭제] 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 확인 문구의 key_id 가 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "extension_trust_key_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "trustKeyDeleteTarget": {
+                "id": 1,
+                "key_id": "glitter:0123456789abcdef",
+                "label": "glitter",
+                "vendor_scope": [
+                  "glitter"
+                ]
+              },
+              "trustKeyPassword": "",
+              "isDeletingTrustKey": false
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(isProcessing, selectedIds_admin_users) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",

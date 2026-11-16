@@ -153,6 +153,8 @@ HTTP/1.1 200
 
 `code` 유무로 기록이 갈립니다 — 값이 있으면 결제 거절(`failure_stage=payment_failed`), 없으면 결제창 닫힘(`failure_stage=window_closed`)으로 남아 운영자가 원인을 구분할 수 있습니다.
 
+주문 조회, 비회원 조회 토큰 확인, 청구액 계산, 실패 기록은 모두 이커머스 공개 결제 계약(`PaymentGatewayBridge`)으로 합니다 — 주문은 `findOrderByNumber`, 비회원 토큰은 `verifyGuestOrderToken`, 금액 대조는 `resolveChargeAmount`, 기록은 `PaymentLifecycle::markPaymentWindowClosed` 입니다. 요청과 응답 모양은 계약 전환 전과 같습니다.
+
 이미 결제가 성립한 주문(`payment_status=paid`)과 결제 가능 상태가 아닌 주문은 성공 응답에 `status: ignored` 로 무시합니다 — 결제 성공 콜백(`success` → `confirmPayment`)과 경쟁할 때 주문/옵션 상태가 어긋나는 것을 차단합니다.
 
 보고가 끝내 도달하지 못한 주문(브라우저를 바로 닫는 등)은 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망으로 처리합니다.

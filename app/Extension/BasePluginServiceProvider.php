@@ -7,6 +7,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
+use App\Support\PrivateAttachmentDisk;
 
 /**
  * 플러그인 서비스 프로바이더 베이스 클래스.
@@ -146,7 +147,8 @@ final class InlinePluginExtensionAdapter implements CacheableExtensionInterface
      */
     public function getStorage(): StorageInterface
     {
-        return $this->storage ??= new PluginStorageDriver($this->identifier);
+        // 정상 경로(AbstractPlugin::getStorageDisk())와 같은 디스크 — 드라이버 생성자 기본값 'local' 이면 문맥마다 다른 디스크에 쓴다(#916 A6)
+        return $this->storage ??= new PluginStorageDriver($this->identifier, 'plugins');
     }
 
     /**
@@ -159,6 +161,14 @@ final class InlinePluginExtensionAdapter implements CacheableExtensionInterface
      */
     public function getStorageFor(string $category): StorageInterface
     {
+        // 비공개 원본 바인딩 키는 정상 경로와 같은 비공개 첨부 저장소 규칙을 따른다(#916) — 확장별 env 고정은 인스턴스가 없어 판정하지 못한다
+        if ($category === AbstractPlugin::PRIVATE_ATTACHMENT_BINDING) {
+            $disk = PrivateAttachmentDisk::forExtension('plugins');
+            $base = $this->getStorage();
+
+            return $disk === $base->getDisk() ? $base : $base->withDisk($disk);
+        }
+
         return $this->getStorage();
     }
 }

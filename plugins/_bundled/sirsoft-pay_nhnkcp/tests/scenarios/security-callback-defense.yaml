@@ -77,6 +77,16 @@ effects:
   - cli_arg_throws_runtime_exception_on_unsafe
   - cli_exec_uses_escapeshellarg
   - cli_no_shell_executed_on_unsafe_input
+  - cli_shell_metachar_stays_inside_quoted_argument   # $( | > ; 는 거부 대상이 아니라 escapeshellarg 로 감싼 한 인수 안에 남는다
+
+  # Replay 이중 방어의 나머지 — 감지 로그 형식, DB 유일 인덱스
+  - replay_logged_with_context
+  - replay_db_unique_blocks_concurrent_insert
+
+  # 취소 주문 재결제와 승인 뒤 실패
+  - cancelled_order_is_restored_only_after_approval_or_issuance_is_confirmed
+  - post_approve_failure_triggers_auto_cancel
+  - post_approval_failure_still_records_failure_with_tno
 
   # 비인증 브라우저 콜백의 주문 변조 차단 (KVE-2026-2018 + 형제)
   - unauthenticated_callback_cannot_cancel_another_users_order
@@ -121,6 +131,7 @@ effects:
   - guest_token_of_another_order_is_rejected
   - guest_with_order_token_can_report_close
   - member_owner_can_report_close
+  - owner_report_on_order_issued_by_another_pg_is_ignored
   - member_order_cannot_be_reported_without_login
   - other_member_cannot_report_close_of_member_order
   - order_without_address_is_rejected_without_ownership
@@ -167,18 +178,12 @@ effects:
   - kcp_escrow_notify_retries_on_tno_mismatch_without_hooks
   - kcp_escrow_notify_with_matching_tno_fires_purchase_confirmed_hook
 
-# 미작성 — 회차 16 W6 (G3): 어느 테스트도 아직 재지 않는 효과의 원장.
-# 재는 테스트가 생기면 effects 로 승격한다 (지우지 않는다 — 검사 도구가 개수를 노출한다).
-pending_effects:
-  - cancelled_order_is_restored_only_after_approval_or_issuance_is_confirmed
-  - post_approval_failure_still_records_failure_with_tno
-  - replay_logged_with_context
-  - replay_db_unique_blocks_concurrent_insert
-  - cli_arg_rejects_dollar_paren
-  - cli_arg_rejects_pipe
-  - cli_arg_rejects_redirect
-  - cli_arg_rejects_semicolon
-  - post_approve_failure_triggers_auto_cancel
+# 미작성 원장(회차 16 W6 G3)의 9건은 #916 에서 모두 정리했다.
+#   - 5건은 테스트를 써서 effects 로 승격(재생 로그·유일 인덱스·취소 주문 복구 시점·승인 뒤 자동 취소·승인 뒤 실패 기록).
+#   - cli_arg_rejects_dollar_paren / pipe / redirect / semicolon 4건은 원장에서 뺐다. 그런 「거부」 동작이 없다 —
+#     src/Services/NhnKcpApiService.php assertSafeCliValue(661-673)는 인용을 깨는 따옴표·백틱·제어문자만 거부하고,
+#     $( | > ; 는 CLI 인수 묶음 전체를 escapeshellarg 로 감싸(같은 파일 479, Linux 경로 579) 셸이 해석하지 못하게 한다.
+#     대신 그 메타문자가 검사를 통과하되 감싼 한 인수 안에 남는다는 효과(cli_shell_metachar_stays_inside_quoted_argument)를 잰다.
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentCallbackControllerTest.php
@@ -209,7 +214,7 @@ manual_verification:
     steps:
       - "관리자 PG 설정에서 site_cd (MID) 를 `SR_shop_001\"; id > /tmp/g7_kcp_poc; #` 로 설정 시도"
       - "또는 KCP CLI 호출 시 amt 인수에 `1000;id>/tmp/g7_kcp_poc;echo` 전달"
-      - "assertSafeCliValue 가 RuntimeException throw → CLI 미실행"
+      - "따옴표가 든 첫 값은 assertSafeCliValue 가 NhnKcpApiException 으로 거부 → CLI 미실행. `;`·`>` 만 든 둘째 값은 escapeshellarg 로 감싼 한 인수로 전달되어 셸이 해석하지 않음"
       - "/tmp/g7_kcp_poc 미생성 확인"
   - description: "Post-approve 실패 net cancel PoC"
     steps:

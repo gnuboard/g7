@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\HookManager;
 use App\Jobs\PurgeRetiredThumbnailDiskJob;
@@ -13,6 +14,7 @@ use App\Providers\SettingsServiceProvider;
 use App\Repositories\JsonConfigRepository;
 use App\Thumbnails\ThumbnailPresetRegistry;
 use App\Thumbnails\ThumbnailPresetSettings;
+use App\Thumbnails\ThumbnailStore;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
@@ -395,6 +397,140 @@ class ThumbnailSettingsSaveTest extends TestCase
             ->assertJsonValidationErrors(['upload.thumbnail_disk_public']);
 
         $this->saveUpload(['thumbnail_disk_public' => 'public', 'thumbnail_disk_gated' => 's3'])->assertStatus(200);
+    }
+
+    /**
+     * 플러그인 디스크 넷을 카탈로그에 올립니다 — 비공개 첨부 저장소 디스크 `vault`(정의 있음)와 `ghost`(정의 없음),
+     * 공개 자산 디스크이면서 비공개 카탈로그에도 올린 `cloudfront`, 비공개 카탈로그에 끼워 넣은 `public`.
+     *
+     * @return callable(): void 등록한 필터를 걷는 함수
+     */
+    private function registerPluginDisks(): callable
+    {
+        Config::set('filesystems.disks.vault', ['driver' => 'local', 'root' => storage_path('framework/testing/disks/vault')]);
+        Config::set('filesystems.disks.cloudfront', ['driver' => 'local', 'root' => storage_path('framework/testing/disks/cloudfront'), 'url' => 'https://cdn.test']);
+        Config::set('filesystems.disks.ghost', null);
+
+        $private = function (array $drivers): array {
+            foreach (['vault', 'ghost', 'cloudfront', 'public'] as $id) {
+                $drivers[] = ['id' => $id, 'label' => ['ko' => "플러그인 {$id}", 'en' => "Plugin {$id}"], 'provider' => 'test-plugin'];
+            }
+
+            return $drivers;
+        };
+        $public = function (array $drivers): array {
+            $drivers[] = ['id' => 'cloudfront', 'label' => ['ko' => 'CloudFront', 'en' => 'CloudFront'], 'provider' => 'test-plugin'];
+
+            return $drivers;
+        };
+
+        HookManager::addFilter('core.settings.available_private_attachment_drivers', $private);
+        HookManager::addFilter('core.settings.available_public_asset_drivers', $public);
+
+        return function () use ($private, $public): void {
+            HookManager::removeFilter('core.settings.available_private_attachment_drivers', $private);
+            HookManager::removeFilter('core.settings.available_public_asset_drivers', $public);
+        };
+    }
+
+    /**
+     * 권한이 걸린 이미지 썸네일 선택지 = thumbnails, s3, 비공개 첨부 저장소 카탈로그 디스크.
+     * 공개 자산 디스크(`public`, `cloudfront`)는 비공개 카탈로그에 함께 올라와도 빠지고, 정의 없는 디스크(`ghost`)도 빠진다.
+     *
+     * @scenario surface=admin_response
+     *
+     * @effects gated_thumbnail_disk_options_include_private_catalog
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function gated_thumbnail_disk_options_include_private_attachment_catalog(): void
+    {
+        $unregister = $this->registerPluginDisks();
+
+        try {
+            $response = $this->withHeaders([
+                'Authorization' => 'Bearer '.$this->token,
+                'Accept' => 'application/json',
+            ])->getJson('/api/admin/settings');
+
+            $response->assertStatus(200);
+            $options = array_column($response->json('data._meta.thumbnail_disk_options.gated'), null, 'id');
+
+            $this->assertSame(['thumbnails', 's3', 'vault'], array_keys($options));
+            $this->assertSame('플러그인 vault', $options['vault']['label']['ko'], '플러그인 디스크는 카탈로그 라벨을 쓴다');
+            $this->assertSame(__('settings.thumbnail_disks.s3', [], 'ko'), $options['s3']['label']['ko'], '코어 s3 는 썸네일 전용 라벨을 쓴다');
+
+            // 공개 쪽 선택지는 그대로 공개 자산 카탈로그다
+            $this->assertContains('cloudfront', array_column($response->json('data._meta.thumbnail_disk_options.public'), 'id'));
+            $this->assertNotContains('vault', array_column($response->json('data._meta.thumbnail_disk_options.public'), 'id'));
+        } finally {
+            $unregister();
+        }
+    }
+
+    /**
+     * 권한이 걸린 이미지 썸네일 저장은 선택지와 같은 목록으로 검증합니다 — 비공개 카탈로그 디스크는 저장되고
+     * 공개 자산 디스크(`public`, 플러그인 `cloudfront`)와 정의 없는 디스크는 422 입니다.
+     *
+     * @scenario surface=save_validation
+     *
+     * @effects thumbnail_disks_limited_per_kind, gated_thumbnail_disk_options_include_private_catalog
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function gated_thumbnail_disk_save_follows_the_same_options(): void
+    {
+        $unregister = $this->registerPluginDisks();
+        // 저장 위치를 바꾸면 옛 디스크 정리가 돈다 — 실제 디스크를 건드리지 않게 가짜로 둔다
+        Storage::fake('thumbnails');
+        Storage::fake('vault');
+
+        try {
+            foreach (['public', 'cloudfront', 'ghost'] as $disk) {
+                $response = $this->saveUpload(['thumbnail_disk_gated' => $disk]);
+                $response->assertStatus(422)->assertJsonValidationErrors(['upload.thumbnail_disk_gated' => __('validation.settings.thumbnail_disk_gated_invalid')]);
+            }
+
+            $this->saveUpload(['thumbnail_disk_gated' => 'vault'])->assertStatus(200);
+            $this->assertSame('vault', config('core.thumbnail.disk_gated'));
+            $this->assertSame('vault', app(ThumbnailStore::class)->diskFor(true));
+        } finally {
+            $unregister();
+        }
+    }
+
+    /**
+     * 공개 자산 디스크와 권한 썸네일 디스크가 둘 다 s3 이면 저장은 되고 응답 warnings 에 같은 버킷 경고가 실립니다.
+     * 어느 한쪽만 s3 이면 경고가 없습니다.
+     *
+     * @scenario surface=save_storage
+     *
+     * @effects gated_thumbnail_same_bucket_warning
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function gated_thumbnail_on_the_public_asset_bucket_returns_a_warning(): void
+    {
+        $warningsFor = fn (TestResponse $response) => array_values(array_filter(
+            (array) $response->json('data.warnings'),
+            fn ($warning) => ($warning['key'] ?? null) === 'upload.thumbnail_disk_gated'
+        ));
+        Storage::fake('thumbnails');
+
+        app(ConfigRepositoryInterface::class)->set('drivers.public_asset_disk', 'none');
+        $this->assertSame([], $warningsFor($this->saveUpload(['thumbnail_disk_gated' => 's3'])->assertStatus(200)));
+
+        app(ConfigRepositoryInterface::class)->set('drivers.public_asset_disk', 's3');
+        $this->assertSame([], $warningsFor($this->saveUpload(['thumbnail_disk_gated' => 'thumbnails'])->assertStatus(200)));
+
+        $warnings = $warningsFor($this->saveUpload(['thumbnail_disk_gated' => 's3'])->assertStatus(200));
+
+        $this->assertCount(1, $warnings);
+        $this->assertSame(__('settings.warnings.gated_thumbnail_same_as_public_asset', ['disk' => 's3']), $warnings[0]['message']);
+        $this->assertStringNotContainsString('settings.warnings', $warnings[0]['message']);
     }
 
     /**

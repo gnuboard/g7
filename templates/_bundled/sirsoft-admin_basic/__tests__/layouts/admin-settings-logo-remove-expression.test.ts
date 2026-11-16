@@ -11,9 +11,8 @@
  * 표현식 자체는 한 번도 평가되지 않는다. 그래서 이 테스트는 **실제 레이아웃 파일**에서 식을
  * 꺼내 평가한다.
  *
- * @scenario protected=current_site_logo, age=past_retention
- *
- * @effects site_logo_replacement_drops_previous, site_logo_stale_submitted_id_filtered
+ * 커버 축(마커 아님 — 평문): protected current_site_logo / age past_retention.
+ * 시험별 조합과 효과 마킹은 각 it 바로 앞 주석에 있다(소유 매니페스트 tests/scenarios/attachment-orphan-cleanup.yaml).
  */
 
 import fs from 'node:fs';
@@ -50,7 +49,8 @@ function findNode(node: any, predicate: (n: any) => boolean): any {
     if (!node || typeof node !== 'object') return null;
     if (predicate(node)) return node;
 
-    for (const child of node.children ?? []) {
+    // 업로더는 첨부 업로더 확장점(#916)의 default 안에 있다 — default 도 내려간다
+    for (const child of [...(node.children ?? []), ...(node.default ?? [])]) {
         const found = findNode(child, predicate);
         if (found) return found;
     }
@@ -89,10 +89,13 @@ const SAVED_LOGO = { id: 101, hash: 'abc123', original_filename: 'logo1.png' };
 const OTHER_LOGO = { id: 202, hash: 'def456', original_filename: 'logo2.png' };
 
 describe('사이트 로고 제거 — 레이아웃 표현식 평가', () => {
+    // @effects site_logo_remove_expression_declared_in_layout
     it('onRemove 식이 레이아웃에 선언되어 있다', () => {
         expect(typeof removeExpression).toBe('string');
     });
 
+    // @scenario protected=current_site_logo, age=past_retention
+    // @effects site_logo_replacement_drops_previous, site_logo_stale_submitted_id_filtered
     it('hash 로 통지된 항목이 form 에서 제거된다', () => {
         const result = evaluateBinding(removeExpression, {
             _local: { form: { general: { site_logo: [SAVED_LOGO, OTHER_LOGO] } } },
@@ -102,6 +105,7 @@ describe('사이트 로고 제거 — 레이아웃 표현식 평가', () => {
         expect(result.map((item) => item.id)).toEqual([OTHER_LOGO.id]);
     });
 
+    // @effects site_logo_replacement_drops_previous
     it('hash 가 없는 항목은 id 로도 제거된다', () => {
         const idOnly = { id: 303, original_filename: 'no-hash.png' };
 
@@ -113,6 +117,7 @@ describe('사이트 로고 제거 — 레이아웃 표현식 평가', () => {
         expect(result.map((item) => item.id)).toEqual([OTHER_LOGO.id]);
     });
 
+    // @effects site_logo_remove_expression_ignores_unknown_identifier
     it('대상이 아닌 식별자면 아무것도 제거하지 않는다', () => {
         const result = evaluateBinding(removeExpression, {
             _local: { form: { general: { site_logo: [SAVED_LOGO, OTHER_LOGO] } } },

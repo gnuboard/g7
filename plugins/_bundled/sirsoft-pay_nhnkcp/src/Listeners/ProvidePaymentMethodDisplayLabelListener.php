@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 
 /**
@@ -20,6 +22,13 @@ class ProvidePaymentMethodDisplayLabelListener implements HookListenerInterface
 
     /** 이 플러그인이 결제 레코드에 남기는 PG 식별자 */
     private const PG_PROVIDERS = ['nhnkcp'];
+
+    /**
+     * @param  PaymentLookup  $payments  이커머스 결제 조회 계약 (훅 인자 결제 행을 DTO 로)
+     */
+    public function __construct(
+        private readonly PaymentLookup $payments,
+    ) {}
 
     /**
      * 구독할 훅 매핑을 반환합니다.
@@ -41,7 +50,7 @@ class ProvidePaymentMethodDisplayLabelListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리).
      *
      * @param  mixed  ...$args  훅 인수
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -49,7 +58,7 @@ class ProvidePaymentMethodDisplayLabelListener implements HookListenerInterface
      * 자기 결제의 간편결제 표시 라벨을 채웁니다.
      *
      * @param  string|null  $label  앞선 구독자가 채운 표시 라벨 (없으면 null)
-     * @param  mixed  $payment  주문 결제 레코드 (이커머스 OrderPayment)
+     * @param  mixed  $payment  주문 결제 레코드 (이커머스 OrderPayment — 읽기 전용)
      * @return string|null 표시 라벨 — 간편결제가 아니거나 자기 결제가 아니면 받은 값 그대로
      */
     public function provideDisplayLabel(?string $label, mixed $payment = null): ?string
@@ -58,11 +67,11 @@ class ProvidePaymentMethodDisplayLabelListener implements HookListenerInterface
             return $label;
         }
 
-        if (! is_object($payment) || ! in_array($payment->pg_provider ?? null, self::PG_PROVIDERS, true)) {
+        if (! $payment instanceof OrderPayment || ! in_array($payment->pg_provider, self::PG_PROVIDERS, true)) {
             return $label;
         }
 
-        $display = $this->resolvePaymentDisplay($payment);
+        $display = $this->resolvePaymentDisplay($this->payments->describePayment($payment));
 
         // 간편결제 원 수단을 알아낸 결제만 라벨을 바꾼다 — 일반 카드·계좌이체는 이커머스 기본 라벨이 맞다.
         if (($display['embedded_pg_provider_label'] ?? null) === null) {

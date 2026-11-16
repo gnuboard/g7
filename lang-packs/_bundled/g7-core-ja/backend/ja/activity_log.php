@@ -142,6 +142,8 @@ return [
         'core_update_failed' => 'コアアップデート失敗（:from → :to）— ステップ: :step / 巻き戻し: :rollback',
         'settings_index' => '設定一覧の閲覧',
         'settings_save' => '設定の保存',
+        'extension_trust_key_create' => '拡張信頼鍵の登録 (:key_id、vendor: :vendors)',
+        'extension_trust_key_delete' => '拡張信頼鍵の削除 (:key_id、vendor: :vendors)',
         'settings_show' => '設定の閲覧',
         'settings_update' => '設定の編集',
         'settings_system_info' => 'システム情報の閲覧',

@@ -1,0 +1,66 @@
+# 시나리오 매니페스트 — 비공개 첨부 저장소 (#916 ①, 공개 #83 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: private_attachment_storage
+
+description: |
+  권한 게이트가 걸린 비공개 원본(코어·게시판·페이지 첨부, 클레임 이미지, 본문 미디어, 내보내기)이
+  `modules`·`attachments` 디스크에 고정돼 있어, 관리자가 S3 나 플러그인 저장소를 골라도 따라가지 않던 결함을 고친다.
+
+  - 드라이버 카탈로그에 `private_attachment` 카테고리가 생기고(코어 선택지 default·s3 + 플러그인 디스크),
+    저장값은 `drivers.private_attachment_disk` → `core.storage.private_attachment_disk` 로 주입된다.
+    카탈로그 밖 값은 422, 공개 자산과 같은 디스크면 저장은 되고 경고를 싣는다.
+  - 해석기 `PrivateAttachmentDisk`: 「기본」·빈 값·고아 디스크는 null. 코어 첨부는 `ATTACHMENT_DISK` env > 선택 > 종전 규칙,
+    확장은 확장 env 고정 > 선택 > 확장 기본 디스크. 확장 배선은 `private_attachments` 바인딩 키 하나만 이 선택을 따른다.
+  - 부팅 순서: 공개 자산·비공개 첨부는 런타임 해석 카테고리라 부팅 중 폴백으로 저장값을 덮지 않고 쓰는 시점에 고아를 거른다.
+    저장 드라이버(storage)는 예전 폴백을 유지한다. 스토리지 드라이버 저장·연결 시험도 정적 목록 대신 카탈로그로 판정한다.
+  - 비활성 확장의 폴백 어댑터도 같은 디스크 규칙을 쓰고, 「데이터까지 삭제」는 기본과 다른 원격 디스크의 확장 폴더까지 지운다.
+  - 코어 첨부 업로드는 선택한 디스크에 쓰고 행 disk 에 기록하며, 고르기 전 행은 원래 디스크에서 그대로 서빙된다.
+
+  확장 쪽 서비스 배선은 각 확장 매니페스트가 소유한다(이커머스·페이지 `private-attachment-storage.yaml`),
+  관리자 화면 카드는 sirsoft-admin_basic `admin-settings-private-attachment.yaml` 이 소유한다.
+
+axes:
+  case: [settings_catalog_exposed, catalog_disk_saved, unknown_disk, same_disk_as_public_asset, env_pinned, plugin_storage_driver, unregistered_storage_driver, connection_test_request, other_driver_categories, legacy_core_driver_value, late_disk_definition, orphan_disk, runtime_resolved_categories, storage_boot_fallback, resolver, core_priority, extension_default, extension_binding_key, inline_adapter_fallback, extension_delete_data, layout_attachment_ignores_private_disk]
+
+effects:
+  - private_attachment_settings_expose_catalog_and_meta                  # 설정 조회 응답에 비공개 첨부 카탈로그(기본·s3·플러그인 디스크)와 화면 메타가 실린다
+  - private_attachment_saved_value_reaches_resolver                      # 카탈로그 값은 저장되고 주입 뒤 해석기가 그 디스크를 돌려준다(「기본」은 빈 값)
+  - private_attachment_unknown_disk_rejected_with_422                    # 카탈로그에 없는 디스크 저장은 422
+  - private_attachment_same_disk_as_public_asset_saves_with_warning      # 공개 자산과 같은 디스크면 저장은 되고 warnings 에 그 칸 경고 1건
+  - private_attachment_env_pin_exposed_and_wins_for_core                 # 코어 ATTACHMENT_DISK env 고정은 메타 pins 에 실리고 코어 첨부 디스크로 우선한다
+  - private_attachment_env_pin_wins_over_selection                       # 확장의 env 고정(getPrivateAttachmentDiskPin)이 관리자 선택보다 우선한다
+  - plugin_storage_driver_saved_through_catalog                          # 플러그인이 등록한 스토리지 드라이버는 저장된다
+  - unregistered_storage_driver_rejected_with_422                        # 카탈로그에 없는 스토리지 드라이버는 422
+  - connection_test_request_uses_driver_catalog                          # 연결 시험 요청도 같은 카탈로그로 판정한다
+  - cache_session_queue_log_drivers_follow_catalog                       # 캐시·세션·큐·로그도 플러그인 드라이버는 저장, 카탈로그 밖 값은 그 칸 422
+  - legacy_core_driver_value_not_rejected_by_catalog                     # 카탈로그 밖이지만 예전부터 받던 코어 값(memcached)은 검증에서 막지 않는다
+  - runtime_resolved_selection_survives_boot_before_disk_defined         # 디스크가 booted 에 늦게 정의돼도 부팅 중 저장값을 덮지 않고 그 디스크로 해석된다
+  - orphan_runtime_resolved_disk_filtered_at_use_time                    # 끝내 정의되지 않은 디스크는 쓰는 시점에 null 로 걸러지고 저장값은 남는다
+  - runtime_resolved_categories_are_public_asset_and_private_attachment  # 런타임 해석 카테고리는 공개 자산·비공개 첨부 두 개다
+  - storage_category_keeps_boot_fallback                                 # storage 카테고리는 사용 불가 플러그인 값을 기본 드라이버로 되돌리는 폴백을 유지한다
+  - private_attachment_resolve_returns_null_for_default_blank_orphan     # 해석기는 「기본」·빈 값·고아 디스크를 null, 정의된 디스크는 그 이름으로 돌려준다
+  - private_attachment_orphan_only_for_undefined_non_default             # 고아 판정은 「기본」이 아니고 정의되지 않은 값일 때만
+  - private_attachment_core_priority_env_then_selection_then_legacy      # 코어 첨부 디스크는 env 명시 > 선택 > 종전 규칙(빈 env 는 명시가 아니다)
+  - private_attachment_extension_falls_back_to_extension_disk            # 확장은 선택이 있으면 그 디스크, 없으면 확장 기본 디스크
+  - private_attachment_binding_key_follows_selection_only                # 확장의 private_attachments 바인딩 키만 선택을 따르고 설정·공개 자산 카테고리는 따르지 않는다
+  - inline_adapter_fallback_uses_extension_base_disk                     # 모듈·플러그인 폴백 어댑터는 정상 경로와 같은 modules·plugins 디스크다
+  - inline_adapter_private_attachment_binding_follows_selection          # 폴백 어댑터의 비공개 첨부 바인딩도 선택을 따르고 미정의 디스크면 기본
+  - extension_delete_data_purges_remote_private_and_public_disks         # 「데이터까지 삭제」는 기본과 다른 비공개·공개 자산 디스크의 그 확장 폴더를 비우고 다른 확장 폴더는 남긴다
+  - extension_delete_data_purges_shared_disk_once_and_skips_base         # 두 디스크가 같으면 한 번만, 기본 디스크와 같으면 원격 정리 대상이 아니다
+  - extension_delete_data_remote_failure_warns_once_and_continues        # 원격 삭제 예외는 삭제를 막지 않고 수명주기 경고 1건으로 남는다
+  - extension_delete_data_minimal_instance_uses_core_selection           # 비활성·고아 확장의 최소 인스턴스도 코어 선택값으로 판정해 지운다
+  - extension_delete_data_path_runs_remote_cleanup_before_local_delete   # 매니저는 로컬 폴더 삭제 전에 디스크를 판정하고 로컬 삭제 직전에 원격 정리를 부른다
+  - attachment_upload_follows_private_attachment_selection               # 새 코어 첨부는 고른 디스크에 저장·행 disk 기록, 이전 행은 원래 디스크에서 서빙, env 명시가 우선
+  - layout_attachment_ignores_private_attachment_selection               # 레이아웃 배경 이미지는 비공개 첨부 저장소를 따르지 않는다 — 드라이버 기본 디스크·저장 디스크 모두 공개 자산 디스크, 없으면 종전 첨부 디스크 (D29)
+
+test_files:
+  - tests/Feature/Api/Admin/PrivateAttachmentStorageSettingsTest.php
+  - tests/Feature/Api/Admin/StoragePluginDriverSaveTest.php
+  - tests/Feature/Settings/RuntimeResolvedDriverCategoryBootTest.php
+  - tests/Unit/Support/PrivateAttachmentDiskTest.php
+  - tests/Unit/Extension/Storage/StorageCategoryDiskTest.php
+  - tests/Feature/Extension/InlineExtensionAdapterDiskTest.php
+  - tests/Feature/Extension/ExtensionStorageRemoteCleanupTest.php
+  - tests/Feature/Api/Public/AttachmentS3DiskServingTest.php
+  - tests/Unit/Services/TemplateLayoutAttachmentPrivateDiskTest.php

@@ -1117,16 +1117,18 @@ public function getPermissions(): array
 ```text
 ✅ 협력은 훅으로 — 코어가 소유한 계약 훅, 또는 상대 확장이 소유하고 문서화한 훅 키를 구독·호출
 ✅ 다른 확장을 이름으로 참조(식별자·네임스페이스·API 경로·번역 키·레이아웃 조각의 target_layout)하면 dependencies 또는 integrations 에 선언
+✅ PHP 로 다른 확장을 부를 때는 그 확장이 manifest public_api 로 공개한 계약(Contracts 인터페이스·DTO·Enum·공개 클래스)만 쓴다
 ❌ 선언하지 않은 확장의 클래스 import · API 경로 호출 · 번역 키 사용 · 그 확장 화면에 조각 끼우기
+❌ 의존을 선언했더라도 public_api 밖 클래스(Model·Service·Repository) import · 소유 테이블 DB::table 조회 · 훅이 넘긴 Model 로 save/update/query
 ```
 
-훅 키가 확장 사이의 계약입니다. 상대 확장이 설치되지 않았거나 다른 확장으로 대체된 사이트에서도 훅은 발화하지 않을 뿐 깨지지 않습니다. 반면 선언 없이 상대의 클래스·API 경로를 직접 쓰면 그 사이트에서 플러그인이 조용히 다르게 동작합니다.
+훅 키와 공개 계약이 확장 사이의 약속입니다. 상대 확장이 설치되지 않았거나 다른 확장으로 대체된 사이트에서도 훅은 발화하지 않을 뿐 깨지지 않습니다. 반면 선언 없이 상대의 클래스·API 경로를 직접 쓰면 그 사이트에서 플러그인이 조용히 다르게 동작합니다. 의존을 선언했어도 상대의 내부 구현(공개 API 로 선언하지 않은 클래스와 테이블)은 상대가 예고 없이 바꿀 수 있습니다 — 공개 범위는 [public_api 필드](module-basics.md#public_api-필드-선택)가 정합니다.
 
 ### 원칙
 
 #### 1. 격리성 (Isolation)
 
-다른 확장의 내부 구현(클래스·테이블·API 경로)에 기대지 않습니다. 상대가 내보내는 훅을 구독합니다.
+다른 확장의 내부 구현(공개 API 로 선언하지 않은 클래스·테이블·API 경로)에 기대지 않습니다. 상대가 내보내는 훅을 구독하거나, 상대가 `public_api` 로 공개한 계약 인터페이스를 서비스 컨테이너로 주입받습니다.
 
 ```php
 // ❌ DON'T: 선언하지 않은 다른 확장의 클래스·API 경로를 직접 사용
@@ -1347,6 +1349,15 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
   값을 되돌립니다.
 - 정적 검사가 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
   규칙은 [레이아웃 확장 — 조각의 전역 상태 키 접두 규칙](layout-extensions.md#조각의-전역-상태-키-접두-규칙)입니다.
+
+### 공개 PHP 표면 (public_api)
+
+다른 확장이 이 플러그인의 PHP 클래스를 불러 써야 하면 `plugin.json` 의 `public_api` 로 공개 범위를 선언합니다(코어 7.2.0+,
+`getPublicApi()`). 모양·규칙은 모듈과 같습니다 — [public_api 필드](module-basics.md#public_api-필드-선택).
+
+반대로 이 플러그인이 다른 확장을 PHP 로 부를 때는 상대가 공개한 계약만 씁니다. 예를 들어 결제 플러그인은 이커머스
+`Contracts\Payment\PaymentGatewayBridge` 를, 배너 플러그인은 게시판 `Contracts\BoardDirectory`·이커머스 `Contracts\Catalog\*` 를
+생성자로 주입받습니다. 상대가 `integrations` 로만 연동되는 확장이면 그 계약이 바인딩돼 있는지(`app()->bound(...)`) 먼저 확인합니다.
 
 ### 최근 검색어 범위 (search_scopes)
 

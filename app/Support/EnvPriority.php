@@ -153,6 +153,7 @@ final class EnvPriority
         'debug.outbound_proxy' => 'env 대응 없음 (g7.outbound_proxy 는 설정 전용)',
         'debug.outbound_proxy_bypass' => 'env 대응 없음 (g7.outbound_proxy 는 설정 전용)',
         'drivers.public_asset_disk' => 'env 대응 없음 (core.storage.public_asset_disk 는 설정 전용)',
+        'drivers.private_attachment_disk' => 'env 대응 없음 (core.storage.private_attachment_disk 는 설정 전용 — 코어 첨부 env 는 ATTACHMENT_DISK 가 별도 축으로 우선)',
         'drivers.image_driver' => 'env 대응 없음 (core.image.driver 는 설정 전용 — 이미지 처리 엔진 선택)',
         'drivers.queue_connections' => 'env 대응 없음 (QueueWorkerRegistry 가 읽는 큐 워커 등록 연결 목록 — 설정 전용 값)',
         'drivers.queue_names' => 'env 대응 없음 (QueueWorkerRegistry 가 읽는 연결별 큐 이름 목록 — 설정 전용 값)',

@@ -306,7 +306,7 @@ test('등록 화면에서 정적 위치를 동적 위치로 바꾸고 대상을 
   // 대상을 고르기 전에도 위치 기본값으로 요약·미리보기를 그린다
   await expect(page.getByText('위치 기본값입니다.', { exact: false })).toBeVisible();
   await expect(preview).toBeAttached();
-  await page.locator('button').filter({ hasText: '게시판을(를) 고르세요' }).click();
+  await page.locator('button').filter({ hasText: '게시판 항목을 고르세요' }).click();
   await page.getByPlaceholder('게시판 이름으로 찾기').fill('자유');
   const option = page.getByRole('option').first();
   await expect(option).toBeVisible({ timeout: 30_000 });

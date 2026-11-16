@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Concerns\HandlesPackageIntegrity;
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Console\Commands\Core\Concerns\BundledSourcePlacementPrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\UpgradeHandoffException;
 use App\Execution\SubprocessCommandRunner;
 use App\Extension\CoreVersionChecker;
@@ -18,6 +20,8 @@ use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\StorageLinkHelper;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Integrity\PackageVerification;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -41,6 +45,7 @@ class CoreUpdateCommand extends Command
     use BundledExtensionUpdatePrompt;
     use BundledSourcePlacementPrompt;
     use ClearsTemplateCaches;
+    use HandlesPackageIntegrity;
     use HasUnifiedConfirm;
     use LocalizesDescription;
     use ReportsLifecycleWarnings;
@@ -54,6 +59,8 @@ class CoreUpdateCommand extends Command
         {--local : 로컬 코드베이스를 업데이트 소스로 사용 (GitHub 스킵)}
         {--source= : 수동 업데이트용 소스 디렉토리 경로 (GitHub 다운로드 대신 지정 디렉토리 사용)}
         {--zip= : 수동 업데이트용 ZIP 파일 경로 (GitHub 다운로드 대신 지정 ZIP 추출 사용)}
+        {--allow-unsigned : 서명되지 않은 배포본(또는 이 서버에서 서명을 검증할 수 없는 배포본)을 확인 없이 계속 — 답할 수 없는 실행은 이 옵션이 없으면 실패. --yes·--force 는 이 확인을 대신하지 않음. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시}
+        {--signature= : --zip 의 서명 파일(.sig.json) 경로 — 생략하면 ZIP 옆 <zip>.sig.json 을 자동으로 씀}
         {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}
         {--bundled-sources= : 설치되지 않았고 이 프로젝트에도 없는 공식 번들 소스 처리 (none|all|식별자 목록, 쉼표 구분, type:id 허용). 미지정 시 대화형은 묻고 비대화형은 none}
         {--rebuild-search-index : 번들 확장 일괄 업데이트 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
@@ -188,6 +195,13 @@ class CoreUpdateCommand extends Command
                 }
                 $zipPath = $resolvedZip;
             }
+
+            // 패키지 무결성 선택(--allow-unsigned·--signature) — 서명 파일이 없으면 시작하지 않는다(7.2.0)
+            $integrityOptions = $this->packageIntegrityOptionsFromInput();
+            if ($integrityOptions === null) {
+                return Command::FAILURE;
+            }
+            $zipVerification = null;
 
             // --bundled-sources 문법(유형명) 검사 — 유지보수 모드 전에 실패시킨다
             try {
@@ -366,6 +380,40 @@ class CoreUpdateCommand extends Command
                 }
             }
 
+            // ── 패키지 서명 검증 (7.2.0) — 유지보수 모드 전에 멈춘다 ──
+            // --zip 은 해제 전 바이트를 검증하고, GitHub 다운로드는 릴리스의 서명 자산 유무로 미서명 정책을 먼저 묻는다
+            // (실제 검증은 내려받은 뒤). --source·--local 은 배포 패키지가 아니라 운영자가 둔 디렉토리라 대상이 아니다.
+            if ($zipPath || (! $sourceDir && ! $this->option('local'))) {
+                try {
+                    $integrityOptions = $this->runWithIntegrityConsent(function (PackageIntegrityOptions $integrity) use ($service, $zipPath, $toVersion, &$zipVerification) {
+                        if ($zipPath) {
+                            $zipVerification = $service->verifyCoreZipIntegrity($zipPath, $integrity);
+                        } else {
+                            $service->preflightReleaseIntegrity($toVersion, $integrity);
+                        }
+
+                        return $integrity;
+                    }, $integrityOptions);
+                } catch (PackageIntegrityException $e) {
+                    $this->error($e->getMessage());
+                    $log('패키지 서명 검증으로 중단: '.$e->integrityCode);
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                } catch (\RuntimeException $e) {
+                    // 서명 파일을 읽지 못함 등 — 유지보수 모드 전이라 정리할 것이 없다(진행 표시줄도 아직 없다)
+                    $this->error($e->getMessage());
+                    $log('패키지 서명 검증 실패: '.$e->getMessage());
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+
+                if ($zipVerification !== null) {
+                    $this->renderPackageIntegrity($zipVerification->toArray());
+                }
+            }
+
             // Step 2~10 프로그레스바 (9단계)
             $remainingSteps = self::TOTAL_STEPS - 1;
             $bar = $this->output->createProgressBar($remainingSteps);
@@ -443,6 +491,11 @@ class CoreUpdateCommand extends Command
                 $pendingPath = $service->extractZipToPending($zipPath, $onProgress);
                 $log("ZIP 추출 완료: {$pendingPath}");
 
+                // 서명된 버전과 푼 배포본의 config/app.php 버전 대조 (7.2.0)
+                if ($zipVerification instanceof PackageVerification) {
+                    $service->confirmCoreIntegrity($zipVerification, $pendingPath, $integrityOptions);
+                }
+
                 // 추출된 소스의 config/app.php 에서 toVersion 갱신
                 $zipConfigPath = $pendingPath.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
                 if (file_exists($zipConfigPath)) {
@@ -458,7 +511,7 @@ class CoreUpdateCommand extends Command
                 $log('로컬 소스 복제 완료');
             } else {
                 $log("버전 {$toVersion} 다운로드 시작");
-                $pendingPath = $service->downloadUpdate($toVersion, $onProgress);
+                $pendingPath = $service->downloadUpdate($toVersion, $onProgress, $integrityOptions);
                 $log('다운로드 및 검증 완료');
             }
 

@@ -53,6 +53,9 @@ class Module extends Model
         'config',
         'created_by',
         'updated_by',
+        // 설치·업데이트 때 받은 패키지의 서명 검증 결과 (7.2.0)
+        'integrity_status',
+        'integrity_key_id',
     ];
 
     /**

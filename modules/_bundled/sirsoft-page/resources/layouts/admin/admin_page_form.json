@@ -813,67 +813,147 @@
                                 ]
                             },
                             {
-                                "comment": "한도는 서버 공개 설정(publicLimits)을 그대로 따른다. 개수 상한이 없으면(max_count=null, 제한 없음)\n             maxFiles 를 비워(undefined) 컴포넌트 기본값을 쓰게 한다 — `?? 5` 로 받으면 \"제한 없음\" 이 5개 상한이 된다.\n             허용 형식이 비면(accept='') 빈 accept 가 파일 선택창에서 모든 형식을 열므로 기본 목록으로 떨어뜨린다(`||`).",
-                                "id": "file_uploader",
-                                "type": "composite",
-                                "name": "FileUploader",
-                                "actions": [
-                                    {
-                                        "comment": "업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결)",
-                                        "event": "onUploadComplete",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "form.attachments": "{{route?.id ? [...(_local.form?.attachments ?? []), ...($args[0] ?? [])] : (_local.form?.attachments ?? [])}}"
+                                "comment": "첨부 업로더 확장점 — 업로더 플러그인이 mode=\"replace\" 로 이 자리를 바꾼다. 저장 버튼의 upload:page_attachments 신호와\n             결과(_eventResult) 모양은 그대로다. 새 페이지는 임시 키로 올리고 정렬 주소가 없다",
+                                "id": "file_uploader_slot",
+                                "type": "extension_point",
+                                "name": "attachment_uploader",
+                                "props": {
+                                    "className": "page:contents",
+                                    "uploader": {
+                                        "version": 1,
+                                        "mode": "upload",
+                                        "endpoints": {
+                                            "upload": "/api/modules/sirsoft-page/admin/attachments",
+                                            "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
+                                            "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : null}}"
+                                        },
+                                        "fields": {
+                                            "temp_key": "{{_local.tempKey}}"
+                                        },
+                                        "policy": {
+                                            "accept": "{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
+                                            "maxSize": "{{attachmentSettings?.data?.max_size_mb ?? 10}}",
+                                            "maxFiles": "{{attachmentSettings?.data?.max_count ?? null}}",
+                                            "maxConcurrentUploads": 1,
+                                            "imageCompression": null
+                                        },
+                                        "collection": "page_attachments",
+                                        "attachmentable": {
+                                            "type": null,
+                                            "id": null
+                                        },
+                                        "triggerEvent": "upload:page_attachments",
+                                        "initialFiles": "{{_local.form?.attachments ?? []}}",
+                                        "disabled": "{{!!_computed.isReadOnly}}",
+                                        "autoUpload": false,
+                                        "ui": {
+                                            "confirmBeforeRemove": true
+                                        },
+                                        "context": {
+                                            "owner": "sirsoft-page",
+                                            "purpose": "page_attachments"
                                         }
-                                    },
+                                    }
+                                },
+                                "default": [
                                     {
-                                        "comment": "드래그 순서 변경 시 form.attachments 를 최종 순서로 덮어쓰기 (이커머스 상품 이미지와 동일 패턴)",
-                                        "event": "onReorder",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "form.attachments": "{{$args[0] ?? []}}"
-                                        }
-                                    },
-                                    {
-                                        "comment": "첨부 삭제 시 form.attachments 에서 제거",
-                                        "event": "onRemove",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "form.attachments": "{{(_local.form?.attachments ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
-                                        }
-                                    },
-                                    {
-                                        "comment": "업로드 검증 실패(용량/확장자/개수 초과 등) 시 사용자에게 toast 안내",
-                                        "event": "onUploadError",
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{$args[0]}}"
+                                        "comment": "한도는 서버 공개 설정(publicLimits)을 그대로 따른다. 개수 상한이 없으면(max_count=null, 제한 없음)\n                 maxFiles 를 비워(undefined) 컴포넌트 기본값을 쓰게 한다 — `?? 5` 로 받으면 \"제한 없음\" 이 5개 상한이 된다.\n                 허용 형식이 비면(accept='') 빈 accept 가 파일 선택창에서 모든 형식을 열므로 기본 목록으로 떨어뜨린다(`||`).",
+                                        "id": "file_uploader",
+                                        "type": "composite",
+                                        "name": "FileUploader",
+                                        "actions": [
+                                            {
+                                                "comment": "업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결)",
+                                                "event": "onUploadComplete",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.attachments": "{{route?.id ? [...(_local.form?.attachments ?? []), ...($args[0] ?? [])] : (_local.form?.attachments ?? [])}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "드래그 순서 변경 시 form.attachments 를 최종 순서로 덮어쓰기 (이커머스 상품 이미지와 동일 패턴)",
+                                                "event": "onReorder",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.attachments": "{{$args[0] ?? []}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "첨부 삭제 시 form.attachments 에서 제거",
+                                                "event": "onRemove",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.attachments": "{{(_local.form?.attachments ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "업로드 검증 실패(용량/확장자/개수 초과 등) 시 사용자에게 toast 안내",
+                                                "event": "onUploadError",
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{$args[0]}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "collection": "page_attachments",
+                                            "maxFiles": "{{attachmentSettings?.data?.max_count ?? undefined}}",
+                                            "maxSize": "{{attachmentSettings?.data?.max_size_mb ?? 10}}",
+                                            "accept": "{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
+                                            "initialFiles": "{{_local.form?.attachments ?? []}}",
+                                            "autoUpload": false,
+                                            "uploadTriggerEvent": "upload:page_attachments",
+                                            "disabled": "{{_computed.isReadOnly}}",
+                                            "confirmBeforeRemove": true,
+                                            "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
+                                            "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
+                                            "uploadParams": {
+                                                "temp_key": "{{_local.tempKey}}"
+                                            },
+                                            "apiEndpoints": {
+                                                "upload": "/api/modules/sirsoft-page/admin/attachments",
+                                                "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
+                                                "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"
+                                            }
                                         }
                                     }
                                 ],
-                                "props": {
-                                    "collection": "page_attachments",
-                                    "maxFiles": "{{attachmentSettings?.data?.max_count ?? undefined}}",
-                                    "maxSize": "{{attachmentSettings?.data?.max_size_mb ?? 10}}",
-                                    "accept": "{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
-                                    "initialFiles": "{{_local.form?.attachments ?? []}}",
-                                    "autoUpload": false,
-                                    "uploadTriggerEvent": "upload:page_attachments",
-                                    "disabled": "{{_computed.isReadOnly}}",
-                                    "confirmBeforeRemove": true,
-                                    "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
-                                    "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
-                                    "uploadParams": {
-                                        "temp_key": "{{_local.tempKey}}"
+                                "callbacks": {
+                                    "onUploadComplete": {
+                                        "comment": "수정 모드에서만 form.attachments 에 누적한다(기본 업로더와 같다)",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.attachments": "{{route?.id ? [...(_local.form?.attachments ?? []), ...($event ?? [])] : (_local.form?.attachments ?? [])}}"
+                                        }
                                     },
-                                    "apiEndpoints": {
-                                        "upload": "/api/modules/sirsoft-page/admin/attachments",
-                                        "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
-                                        "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"
+                                    "onReorder": {
+                                        "comment": "끌어 옮긴 최종 순서로 form.attachments 를 덮어쓴다(기본 업로더와 같다)",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.attachments": "{{$event ?? []}}"
+                                        }
+                                    },
+                                    "onRemove": {
+                                        "comment": "지운 첨부를 form.attachments 에서 뺀다(기본 업로더와 같다)",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "form.attachments": "{{(_local.form?.attachments ?? []).filter(item => (item.hash || item.id) !== $event)}}"
+                                        }
+                                    },
+                                    "onUploadError": {
+                                        "comment": "업로드 검증 실패 사유를 알린다",
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{$event}}"
+                                        }
                                     }
                                 }
                             }

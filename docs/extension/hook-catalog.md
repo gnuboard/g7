@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (726)
+- [코어](#코어) (734)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -177,6 +177,13 @@
 | `core.extension_custom_asset.save_validation_rules` | filter | 2 |  |
 | `core.extension_custom_asset.search_validation_rules` | filter | 2 |  |
 | `core.extension_custom_asset.upload_validation_rules` | filter | 2 |  |
+| `core.extension_trust_keys.after_create` | action | 1 |  |
+| `core.extension_trust_keys.after_delete` | action | 1 |  |
+| `core.extension_trust_keys.before_create` | action | 1 |  |
+| `core.extension_trust_keys.before_delete` | action | 1 |  |
+| `core.extension_trust_keys.destroy_validation_rules` | filter | 2 |  |
+| `core.extension_trust_keys.index_validation_rules` | filter | 2 |  |
+| `core.extension_trust_keys.store_validation_rules` | filter | 2 |  |
 | `core.field.filter_definitions` | filter | 4 |  |
 | `core.field.filter_rules` | filter | 4 |  |
 | `core.field.filter_sets` | filter | 1 |  |
@@ -254,6 +261,7 @@
 | `core.language_packs.install_from_url_validation_rules` | filter | 2 |  |
 | `core.language_packs.installed` | action | 1 |  |
 | `core.language_packs.manifest_preview_validation_rules` | filter | 2 |  |
+| `core.language_packs.perform_update_validation_rules` | filter | 2 |  |
 | `core.language_packs.uninstalled` | action | 1 |  |
 | `core.language_packs.updated` | action | 1 |  |
 | `core.layout.after_cache_clear` | action | 3 |  |

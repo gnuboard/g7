@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    // Reason sent when closing an unpaid virtual account (moved from the ecommerce key, #916)
+    'vbank_close_reason' => 'Order cancelled before deposit',
     'errors' => [
         'cash_receipt_issue_failed' => 'Failed to issue cash receipt.',
         'order_not_found' => 'Order not found.',
@@ -44,6 +46,9 @@ return [
         'pg_rejected' => 'KG Inicis rejected the payment cancellation.',
         'pg_failed' => 'An error occurred while communicating with the payment gateway. Please try again later.',
         'admin_cancel_reason' => 'Cancelled by administrator',
+    ],
+    'cbt_test_product' => [
+        'jpy_required' => 'To create the test product at 100 yen, the shop currency settings need Japanese yen (JPY) with an exchange rate. Add JPY in Ecommerce settings > Language & currency and try again.',
     ],
     'cbt_connectivity' => [
         'checked' => 'Connectivity diagnostic completed.',
@@ -149,5 +154,25 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+    ],
+    // Error messages of the payment screen and PG integration APIs
+    'responses' => [
+        'amount_mismatch' => 'Payment amount does not match the order amount.',
+        'buyer_verification_failed' => 'Order buyer verification failed.',
+        'cbt_disabled' => 'Japan CBT payment is disabled.',
+        'cbt_jpy_only' => 'CBT payment supports JPY payments only.',
+        'cbt_not_configured' => 'Japan CBT payment is not configured.',
+        'cbt_token_invalid' => 'CBT checkout token verification failed. Please start the payment again.',
+        'claim_amount_mismatch' => 'Payment amount does not match the claim payment amount.',
+        'claim_payment_not_found' => 'Claim payment not found.',
+        'claim_payment_not_payable' => 'This claim payment cannot be paid.',
+        'credentials_not_configured' => 'KG Inicis payment credentials are not configured.',
+        'currency_not_chargeable' => 'The charge cannot be calculated in the payment currency.',
+        'krw_only' => 'KG Inicis standard payment supports KRW payments only.',
+        'order_not_found' => 'Order not found.',
+        'order_not_payable' => 'This order cannot be paid.',
+        'ownership_verification_failed' => 'Order ownership verification failed.',
+        'timestamp_stale' => 'The request timestamp is stale or invalid. Please start the payment again.',
+        'too_many_requests' => 'Too many requests. Please try again later.',
     ],
 ];

@@ -72,7 +72,10 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 `assertSafeCliValue()` 사전검증 → `escapeshellarg()` 이중 quoting 후 `exec()` 실행 →
 `sirsoft-pay_nhnkcp.payment.after_confirm` 훅 → 이커머스 주문 결제 완료 처리.
 `PreventsReplayCallback` 트레이트가 콜백 진입 시점에 동일 `transaction_id` 가 이미 `paid`
-상태인지 먼저 확인해 재처리를 조기 차단합니다.
+상태인지 먼저 확인해 재처리를 조기 차단합니다. 주문·결제 상태는 모두 이커머스 공개 결제 계약
+(`PaymentGatewayBridge`)으로 읽고 씁니다 — 결제완료는 `completePayment`(에스크로 여부와 PG 식별자 기록을
+같은 트랜잭션에서), 실패 기록은 `failPayment`·`recordPaymentFailure`, 결제창 닫힘은 `markPaymentWindowClosed`,
+가상계좌 발급은 `onVbankAccountIssued`, 취소 주문 재결제 복구는 재시도 가능 판정 뒤 `restoreForRetry` 입니다.
 
 **모바일 결제 승인**: `/mobile/approval-key` API 호출(주문 소유자 확인 — 회원은 본인 로그인, 비회원 주문은
 `X-Guest-Order-Token`. 라우트는 `optional.sanctum`. 클레임 추가결제(`CP` 결제번호)도 결제 건이 딸린 주문으로 같은 판정 —
@@ -139,6 +142,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 이커머스 내부 클래스(Model 정적 조회·`new`·Service·Repository·`getTable()`·테이블 이름·`ecommerce_format_price`)로 주문·결제를 읽고 쓴다, 훅이 넘긴 Model 로 조회·쓰기를 한다 | 이커머스 공개 결제 계약 `Contracts\Payment\PaymentGatewayBridge`(하위 `PaymentLookup`·`OrderAccess`·`ClaimPaymentLookup`·`PaymentLifecycle`)와 `Contracts\Currency\PriceFormatter` 를 주입받아 쓴다. 훅 인자 Model(`readonly_models`)은 타입힌트·속성 읽기만 하고, 판정 값은 `describePayment()`·`pgTaxSplit()` 로 읽는다 | 공개되지 않은 이커머스 구현은 예고 없이 바뀐다. 잠금·트랜잭션·PG 식별자 범위(이 PG 행이거나 결제 전 행만)도 계약이 맡는다 — 정적 검사 `extension-internal-symbol-reference` 가 막는다 |
 | 입금된 가상계좌 환불에 환불계좌(`bank_code`·`account`·`depositor`)를 실어 `STSC`/`RN07` 로 보낸다 | 결제사를 부르지 않고 `VBANK_REQUIRES_BANK_TRANSFER` 로 돌려 운영자가 계좌 환불로 바꾸게 한다(부분취소 지원 판정도 false) | 그 필드명은 KCP 공개 사양 어디와도 맞지 않고 전체취소는 입금된 가상계좌를 환불하지 않는다 — 원인 없는 실패가 되거나 돈이 돌아가지 않는다 |
 | 복합과세(TG03)로 승인한 결제를 과세 분리 없이 부분취소 | `tax_flag=TG03` + `mod_tax_mny`·`mod_vat_mny`·`mod_free_mny`(합 = `mod_mny`)를 함께 보낸다 | 승인 때 나눈 과세·비과세 금액과 취소 금액이 어긋나 결제사가 거절하거나 세금 내역이 틀어진다 |
 | KCP CLI 인자(`site_cd`/`tx_cd`/`enc_data` 등)를 검증 없이 문자열 결합해 `exec()` 에 전달 | `assertSafeCliValue()` 로 위험 문자·제어문자 사전 거부 후 `escapeshellarg()` 로 quoting | 검증을 생략하면 서버가 받은 KCP 응답 값이 그대로 셸 명령 인자가 되어 명령 삽입(command injection)으로 이어질 수 있다 |
@@ -165,10 +169,10 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 57개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| PHPUnit | 58개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
 | Vitest | 34개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 56개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 58개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -4,10 +4,10 @@ namespace Plugins\Sirsoft\Tosspayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Plugins\Sirsoft\Tosspayments\Exceptions\TossPaymentsApiException;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 
@@ -22,10 +22,10 @@ class PaymentRefundListener implements HookListenerInterface
     private const PG_PROVIDER_ID = 'tosspayments';
 
     /**
-     * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository (취소 장부 동기화)
+     * @param  PaymentGatewayBridge  $bridge  이커머스 공개 결제 계약 (과세 구분 금액, 결제 판정 값, 취소 장부 저장)
      */
     public function __construct(
-        private readonly OrderPaymentRepositoryInterface $orderPaymentRepository,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -201,7 +201,7 @@ class PaymentRefundListener implements HookListenerInterface
             // 실패로 돌려주면, 모듈은 돈이 나간 환불을 실패로 기록하고 재시도가 같은 금액을 한 번
             // 더 취소하러 간다. 그래서 장부 동기화의 실패는 이 판정과 떼어 로그로만 남긴다
             // (재동기 경로는 `syncCancelSnapshot()` 참조).
-            $this->syncCancelSnapshotSafely($payment, $response, $paymentKey);
+            $this->syncCancelSnapshotSafely($order, $payment, $response, $paymentKey);
 
             Log::info('토스페이먼츠 결제 취소 성공', [
                 'order_id' => $order->id,
@@ -382,15 +382,16 @@ class PaymentRefundListener implements HookListenerInterface
      * 취소 응답의 `cancels` 는 그 결제의 **전체** 취소 이력이라, 다음 취소가 성공하면 장부가
      * 통째로 다시 맞춰진다.
      *
+     * @param  Order  $order  주문 (계약 호출의 주문번호)
      * @param  OrderPayment  $payment  결제 레코드
      * @param  array  $response  토스 취소 API 응답
      * @param  string  $paymentKey  토스 결제 키 (로그 문맥)
      * @return void 반환값 없음
      */
-    private function syncCancelSnapshotSafely(OrderPayment $payment, array $response, string $paymentKey): void
+    private function syncCancelSnapshotSafely(Order $order, OrderPayment $payment, array $response, string $paymentKey): void
     {
         try {
-            $this->syncCancelSnapshot($payment, $response);
+            $this->syncCancelSnapshot($order, $payment, $response);
         } catch (\Throwable $e) {
             Log::error('토스페이먼츠 취소 장부 동기화 실패 — 취소는 성립, 장부만 낡음', [
                 'order_payment_id' => $payment->id,
@@ -412,11 +413,15 @@ class PaymentRefundListener implements HookListenerInterface
      *
      * 승인 금액·승인 면세액은 상한의 근거라 **덮어쓰지 않고**, 장부(cancels)만 갱신한다.
      *
+     * 저장은 이커머스 공개 결제 계약 `mergePaymentMeta()` 로 한다 — 결제 행을 잠근 뒤 최상위 키
+     * `pg_raw_response` 만 바꾼다. 훅이 넘긴 결제 행 Model 은 읽기만 한다.
+     *
+     * @param  Order  $order  주문 (계약 호출의 주문번호)
      * @param  OrderPayment  $payment  결제 레코드
      * @param  array  $response  토스 취소 API 응답
      * @return void 반환값 없음
      */
-    private function syncCancelSnapshot(OrderPayment $payment, array $response): void
+    private function syncCancelSnapshot(Order $order, OrderPayment $payment, array $response): void
     {
         if (! isset($response['cancels']) || ! is_array($response['cancels'])) {
             return;
@@ -436,10 +441,7 @@ class PaymentRefundListener implements HookListenerInterface
             $raw['taxFreeAmount'] = $response['taxFreeAmount'];
         }
 
-        $meta['pg_raw_response'] = $raw;
-
-        // Listener 에서 모델 영속 메서드를 직접 부르지 않고 Repository 를 경유한다.
-        $this->orderPaymentRepository->savePendingChanges($payment->forceFill(['payment_meta' => $meta]));
+        $this->bridge->mergePaymentMeta((string) $order->order_number, self::PG_PROVIDER_ID, ['pg_raw_response' => $raw]);
     }
 
     /**
@@ -450,7 +452,8 @@ class PaymentRefundListener implements HookListenerInterface
      */
     private function requiresRefundReceiveAccount(OrderPayment $payment): bool
     {
-        return $payment->isVirtualAccount();
+        // 판정은 이커머스가 한다 — 훅 인자 결제 행을 계약 DTO 로 바꿔 읽는다(조회 없음).
+        return $this->bridge->describePayment($payment)->isVirtualAccount;
     }
 
     /**
@@ -511,17 +514,15 @@ class PaymentRefundListener implements HookListenerInterface
     /**
      * 결제사에 면세로 넘길 주문 금액(면세 + 영세)을 읽습니다.
      *
-     * 이커머스 1.3.3 의 `Order::pgTaxFreeAmount()` 를 쓰고, 그 메서드가 없는 구버전(영세 없음)은 면세 합계로 떨어진다 —
-     * 플러그인 갱신은 이커머스 의존 버전을 다시 검사하지 않아 구버전과 함께 돌 수 있다.
+     * 이커머스 공개 결제 계약 `pgTaxSplit()` 이 훅으로 받은 주문 값으로 계산한다(조회 없음). 계약은 이커머스 1.4.0 부터라
+     * 종전의 구버전 폴백(`method_exists`)은 필요 없다.
      *
      * @param  Order  $order  주문
      * @return float 면세 + 영세
      */
     private function pgTaxFreeOf(Order $order): float
     {
-        return method_exists($order, 'pgTaxFreeAmount')
-            ? $order->pgTaxFreeAmount()
-            : (float) ($order->total_tax_free_amount ?? 0);
+        return $this->bridge->pgTaxSplit($order)->taxFree;
     }
 
     /**
@@ -532,9 +533,7 @@ class PaymentRefundListener implements HookListenerInterface
      */
     private function pgTaxableOf(Order $order): float
     {
-        return method_exists($order, 'pgTaxableAmount')
-            ? $order->pgTaxableAmount()
-            : (float) ($order->total_tax_amount ?? 0);
+        return $this->bridge->pgTaxSplit($order)->taxable;
     }
 
     /**

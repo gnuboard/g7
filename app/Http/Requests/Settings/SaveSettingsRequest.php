@@ -54,11 +54,6 @@ class SaveSettingsRequest extends FormRequest
     private const SUPPORTED_ENCRYPTIONS = ['tls', 'ssl', ''];
 
     /**
-     * 지원되는 스토리지 드라이버 목록
-     */
-    private const SUPPORTED_STORAGE_DRIVERS = ['local', 's3'];
-
-    /**
      * S3 리전 형식 (AWS 리전 코드 + S3 호환 스토리지 임의값 허용 — R2 의 `auto` 등)
      */
     private const S3_REGION_FORMAT = 'regex:/^[a-z0-9-]+$/';
@@ -860,6 +855,9 @@ class SaveSettingsRequest extends FormRequest
             'security.two_factor_scope' => ['nullable', 'string', 'in:all,admin'],
             // 신규 설정이므로 미전송(기존 클라이언트)을 허용한다 — 미전송 시 기본값 false 유지
             'security.allow_internal_outbound_urls' => ['nullable', 'boolean'],
+            // 미서명 패키지 차단(7.2.0) — 켜면 서명 없는 확장·코어·언어팩 설치·업데이트를 「미서명으로 계속」으로도 진행할 수 없다.
+            // 신규 설정이라 미전송(기존 클라이언트)을 허용한다 — 미전송 시 기본값 false 유지
+            'security.extension_block_unsigned' => ['nullable', 'boolean'],
             // IP 접근 제한. 항목 형식과 자기 잠금 판정은 IpAccessMatcher 가 단독 소유한다(이중화 금지).
             // 중첩 필드는 **전부** 선언한다 — 컨트롤러는 validated() 만 저장하므로 규칙이 없는 하위 키는
             // 저장 응답이 성공인 채로 조용히 버려진다.
@@ -924,7 +922,8 @@ class SaveSettingsRequest extends FormRequest
             'advanced.pagination_max_page' => ['nullable', 'integer', 'min:'.config('core.settings_limits.advanced_pagination_max_page_min', 0), 'max:'.config('core.settings_limits.advanced_pagination_max_page_max', 100000)],
 
             // 드라이버 설정 (drivers 탭)
-            'drivers.storage_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_STORAGE_DRIVERS), $this->getDriverUsabilityRule('storage')]),
+            // 스토리지 드라이버 — 코어(local/s3) + 플러그인 훅 등록 드라이버. 카탈로그가 동적이라 정적 Rule::in 대신 레지스트리로 판정한다(#916 A4)
+            'drivers.storage_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('storage', 'validation.settings.storage_driver_invalid'), $this->getDriverUsabilityRule('storage')]),
             'drivers.s3_bucket' => ['nullable', 'string', 'max:255'],
             'drivers.s3_region' => ['nullable', 'string', 'max:64', self::S3_REGION_FORMAT],
             'drivers.s3_access_key' => ['nullable', 'string', 'max:255'],
@@ -932,16 +931,16 @@ class SaveSettingsRequest extends FormRequest
             'drivers.s3_url' => ['nullable', 'url', 'max:500'],
             'drivers.s3_endpoint' => ['nullable', 'url', 'max:500'],
             'drivers.s3_use_path_style' => ['nullable', 'boolean'],
-            'drivers.cache_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')]),
+            'drivers.cache_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('cache', 'validation.settings.cache_driver_invalid', self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')]),
             'drivers.redis_host' => ['nullable', 'string', 'max:255'],
             'drivers.redis_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_port_min', 1), 'max:'.config('core.settings_limits.drivers_redis_port_max', 65535)],
             'drivers.redis_password' => ['nullable', 'string', 'max:255'],
             'drivers.redis_database' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_database_min', 0), 'max:'.config('core.settings_limits.drivers_redis_database_max', 15)],
             'drivers.memcached_host' => ['nullable', 'string', 'max:255'],
             'drivers.memcached_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_memcached_port_min', 1), 'max:'.config('core.settings_limits.drivers_memcached_port_max', 65535)],
-            'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')]),
+            'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('session', 'validation.settings.session_driver_invalid', self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')]),
             'drivers.session_lifetime' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_session_lifetime_min', 1), 'max:'.config('core.settings_limits.drivers_session_lifetime_max', 43200)], // 1분 ~ 30일
-            'drivers.queue_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_QUEUE_DRIVERS), $this->getDriverUsabilityRule('queue')]),
+            'drivers.queue_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('queue', 'validation.settings.queue_driver_invalid', self::SUPPORTED_QUEUE_DRIVERS), $this->getDriverUsabilityRule('queue')]),
             // 큐 워커 등록 (#139) — 연결 중복(V2)·현재 드라이버 연결 누락(V3)·큐 목록 연결(V4)·빈 큐 목록(V5)·
             // 연결 안 큐 중복(V9)은 연결 이름을 문구에 넣어야 해서 withValidator 의 after 콜백이 판정한다.
             'drivers.queue_connections' => ['nullable', 'array'],
@@ -967,12 +966,14 @@ class SaveSettingsRequest extends FormRequest
             // 이미지 처리 엔진 (#869) — 코어 엔진(gd, imagick)은 이 서버에서 쓸 수 있는지, 플러그인 엔진은 카탈로그에 있는지 본다.
             // 화면 목록은 쓸 수 없는 코어 엔진을 이미 빼지만(DriverRegistryService::buildCoreDrivers) 직접 호출은 여기서 막는다.
             'drivers.image_driver' => ['nullable', 'string', 'max:100', $this->getImageDriverCatalogRule(), $this->getDriverUsabilityRule('image')],
-            'drivers.log_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_DRIVERS)]),
+            'drivers.log_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('log', 'validation.settings.log_driver_invalid', self::SUPPORTED_LOG_DRIVERS)]),
             'drivers.log_level' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_LEVELS)]),
             'drivers.log_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_log_days_min', 1), 'max:'.config('core.settings_limits.drivers_log_days_max', 365)],
             // 공개 자산 디스크 — 코어 3종(none/public/s3) + 플러그인 훅 등록 디스크.
             // 카탈로그가 동적(플러그인 훅)이라 정적 Rule::in 불가 → 레지스트리 조회 closure
             'drivers.public_asset_disk' => $this->getPublicAssetDiskRules(),
+            // 비공개 첨부 저장소 (#916) — 코어(default/s3) + 플러그인 훅 등록 디스크. 공개 자산과 같은 디스크도 저장은 허용하고 응답 warnings 로 알린다(D5)
+            'drivers.private_attachment_disk' => ['nullable', 'string', 'max:100', $this->getDriverCatalogRule('private_attachment', 'validation.settings.private_attachment_disk_invalid'), $this->getDriverUsabilityRule('storage')],
             // 웹서버 파일 위임 (#878) — 코어 3종(none/x-sendfile/x-accel-redirect). nginx 는 internal 위치 접두사가 필요하다.
             // 접두사는 prepareForValidation 에서 앞뒤 공백을 떼고 끝 `/` 를 붙인 뒤 형식을 본다.
             'drivers.file_delegation' => ['nullable', 'string', 'max:50', $this->getFileDelegationRule()],
@@ -1235,6 +1236,37 @@ class SaveSettingsRequest extends FormRequest
         return function ($attribute, $value, $fail) {
             if (filter_var($value, FILTER_VALIDATE_BOOLEAN) && ! app(PhpExtensionProbe::class)->functionAvailable('gzencode')) {
                 $fail(__('validation.settings.sitemap_gzip_requires_zlib'));
+            }
+        };
+    }
+
+    /**
+     * 값이 드라이버 카탈로그(코어 + 플러그인 훅 등록)에 있는지 검사하는 규칙을 반환합니다.
+     *
+     * 선택지의 단일 출처는 `DriverRegistryService` 다 — 화면 셀렉트가 그 목록을 그대로 그린다. 정적 목록으로 막으면
+     * 플러그인이 등록한 드라이버를 화면에서 골라도 저장이 422 로 끝난다(#916 A4).
+     *
+     * `$coreValues` 는 카탈로그에 없지만 예전부터 저장을 받던 코어 값이다(캐시 `memcached` 등) — 이미 그 값을 쓰는 사이트의
+     * 저장이 막히지 않게 계속 받는다.
+     *
+     * @param  string  $category  드라이버 카테고리
+     * @param  string  $messageKey  실패 메시지 다국어 키
+     * @param  array<int, string>  $coreValues  카탈로그 밖이지만 받는 코어 값
+     * @return \Closure 검증 클로저
+     */
+    private function getDriverCatalogRule(string $category, string $messageKey, array $coreValues = []): \Closure
+    {
+        return function ($attribute, $value, $fail) use ($category, $messageKey, $coreValues) {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            if (is_string($value) && in_array($value, $coreValues, true)) {
+                return;
+            }
+
+            if (! is_string($value) || ! app(DriverRegistryService::class)->isDriverAvailable($category, $value)) {
+                $fail(__($messageKey));
             }
         };
     }
@@ -1908,6 +1940,7 @@ class SaveSettingsRequest extends FormRequest
             'security.auth_token_lifetime.min' => __('validation.settings.auth_token_lifetime_min'),
             'security.auth_token_lifetime.max' => __('validation.settings.auth_token_lifetime_max'),
             'security.allow_internal_outbound_urls.boolean' => __('validation.settings.allow_internal_outbound_urls_boolean'),
+            'security.extension_block_unsigned.boolean' => __('extension_integrity.validation.block_unsigned_boolean'),
             'security.max_login_attempts.integer' => __('validation.settings.max_login_attempts_integer'),
             'security.max_login_attempts.min' => __('validation.settings.max_login_attempts_min'),
             'security.max_login_attempts.max' => __('validation.settings.max_login_attempts_max'),
@@ -2103,6 +2136,8 @@ class SaveSettingsRequest extends FormRequest
             'drivers.queue_record_retention_days.max' => __('validation.settings.queue_record_retention_days_max', ['max' => config('core.settings_limits.drivers_queue_record_retention_days_max', 90)]),
             'drivers.public_asset_disk.string' => __('validation.settings.public_asset_disk_invalid'),
             'drivers.public_asset_disk.max' => __('validation.settings.public_asset_disk_invalid'),
+            'drivers.private_attachment_disk.string' => __('validation.settings.private_attachment_disk_invalid'),
+            'drivers.private_attachment_disk.max' => __('validation.settings.private_attachment_disk_invalid'),
             'drivers.file_delegation.string' => __('validation.settings.file_delegation_invalid'),
             'drivers.file_delegation.max' => __('validation.settings.file_delegation_invalid'),
             'drivers.file_delegation_accel_prefix.required_if' => __('validation.settings.file_delegation_accel_prefix_required'),
@@ -2358,6 +2393,7 @@ class SaveSettingsRequest extends FormRequest
             'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
             'security.two_factor_scope' => __('validation.attributes.two_factor_scope'),
             'security.allow_internal_outbound_urls' => __('validation.attributes.allow_internal_outbound_urls'),
+            'security.extension_block_unsigned' => __('extension_integrity.attributes.extension_block_unsigned'),
             'security.ip_restriction_enabled' => __('validation.attributes.ip_restriction_enabled'),
             'security.admin_allowed_ips' => __('validation.attributes.admin_allowed_ips'),
             'security.ip_restriction_rules' => __('validation.attributes.ip_restriction_rules'),
@@ -2431,6 +2467,7 @@ class SaveSettingsRequest extends FormRequest
             'drivers.queue_job_log_enabled' => __('validation.attributes.queue_job_log_enabled'),
             'drivers.queue_record_retention_days' => __('validation.attributes.queue_record_retention_days'),
             'drivers.public_asset_disk' => __('validation.attributes.public_asset_disk'),
+            'drivers.private_attachment_disk' => __('validation.attributes.private_attachment_disk'),
             'drivers.file_delegation' => __('validation.attributes.file_delegation'),
             'drivers.file_delegation_accel_prefix' => __('validation.attributes.file_delegation_accel_prefix'),
         ];

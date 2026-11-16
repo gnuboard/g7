@@ -7,8 +7,8 @@ use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\ExchangeRateGateway;
 use Modules\Sirsoft\Ecommerce\Exceptions\ExchangeRateSaveException;
-use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Plugins\Sirsoft\Koreaexim\Enums\ItemStatus;
 use Plugins\Sirsoft\Koreaexim\Enums\RateType;
 use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
@@ -23,7 +23,7 @@ class ExchangeRateUpdateService
      * 처리에 필요한 의존 객체를 주입합니다.
      *
      * @param  RateRunRepositoryInterface  $runs  runs 입력값
-     * @param  EcommerceSettingsService  $settings  settings 입력값
+     * @param  ExchangeRateGateway  $gateway  쇼핑몰 환율 반영 계약
      * @param  KoreaeximApiClient  $client  client 입력값
      * @param  ExchangeRateCalculator  $calculator  calculator 입력값
      * @param  CacheInterface  $cache  cache 입력값
@@ -31,7 +31,7 @@ class ExchangeRateUpdateService
      */
     public function __construct(
         private RateRunRepositoryInterface $runs,
-        private EcommerceSettingsService $settings,
+        private ExchangeRateGateway $gateway,
         private KoreaeximApiClient $client,
         private ExchangeRateCalculator $calculator,
         private CacheInterface $cache,
@@ -97,7 +97,7 @@ class ExchangeRateUpdateService
                 return null;
             }
         }
-        $currency = $this->settings->getSettings('language_currency');
+        $currency = $this->currencySettings();
         $base = $currency['default_currency'];
         $baseRow = collect($currency['currencies'])->firstWhere('code', $base);
         $data = ['trigger' => $dryRun ? RunTrigger::DryRun : $trigger, 'status' => RunStatus::Skipped,
@@ -154,7 +154,15 @@ class ExchangeRateUpdateService
             return $this->finish($data, RunStatus::UnsupportedBase, $calculation['items']);
         }
         if (! $dryRun) {
-            $this->settings->applyExchangeRates($calculation['rates'], 'koreaexim');
+            try {
+                $this->gateway->applyExchangeRates($calculation['rates'], 'koreaexim');
+            } catch (ExchangeRateSaveException $e) {
+                // 쇼핑몰 설정 저장 실패 — 관리자 「지금 갱신」에서 500 으로 끝나지 않게 실패 이력으로 남긴다(#916).
+                // 이 응답은 재적용 원본이 되면 안 되므로 raw_response 를 싣지 않는다.
+                Log::error('[sirsoft-koreaexim] '.$e->getMessage(), ['trigger' => $data['trigger'] instanceof RunTrigger ? $data['trigger']->value : $data['trigger']]);
+
+                return $this->finish($data, RunStatus::SaveFailed, $calculation['items'], $e->getMessage());
+            }
             $data['raw_response'] = $response['rows'];
         }
 
@@ -168,7 +176,7 @@ class ExchangeRateUpdateService
      */
     public function reapply(): void
     {
-        if (! $this->setting('auto_manage', false) || ! $this->setting('auth_key', '') || $this->settings->getSetting('language_currency.rate_provider') !== 'koreaexim') {
+        if (! $this->setting('auto_manage', false) || ! $this->setting('auth_key', '') || $this->gateway->getCurrencySettings()->rateProvider !== 'koreaexim') {
             return;
         }
         $lock = Cache::lock('sirsoft-koreaexim:update', 900);
@@ -180,11 +188,11 @@ class ExchangeRateUpdateService
             if ($source === null) {
                 return;
             }
-            $currency = $this->settings->getSettings('language_currency');
+            $currency = $this->currencySettings();
             $type = RateType::tryFrom($this->setting('rate_type', 'deal_bas_r')) ?? RateType::DealBaseRate;
             $calculation = $this->calculator->calculate($source->raw_response, $currency['currencies'], $currency['default_currency'], $type, (int) $this->setting('rate_decimal_places', 6));
-            $result = $this->settings->applyExchangeRates($calculation['rates'], 'koreaexim');
-            if ($result['applied'] === []) {
+            $result = $this->gateway->applyExchangeRates($calculation['rates'], 'koreaexim');
+            if ($result->applied === []) {
                 return;
             }
             $this->finish(['trigger' => RunTrigger::CurrencyChanged, 'search_date' => $source->search_date, 'rate_type' => $type,
@@ -217,7 +225,7 @@ class ExchangeRateUpdateService
             'unchanged_count' => $counts[ItemStatus::Unchanged->value] ?? 0,
             'skipped_count' => ($counts[ItemStatus::Unsupported->value] ?? 0) + ($counts[ItemStatus::InvalidRate->value] ?? 0),
         ]), $items);
-        $notify = in_array($status, [RunStatus::AuthMissing, RunStatus::AuthError, RunStatus::QuotaExceeded, RunStatus::BadRequest, RunStatus::BadResponse, RunStatus::UnsupportedBase], true);
+        $notify = in_array($status, [RunStatus::AuthMissing, RunStatus::AuthError, RunStatus::QuotaExceeded, RunStatus::BadRequest, RunStatus::BadResponse, RunStatus::UnsupportedBase, RunStatus::SaveFailed], true);
         if ($status === RunStatus::NetworkError) {
             $attempts = $this->runs->todayRuns()->whereIn('trigger', [RunTrigger::Scheduled, RunTrigger::Retry])->count();
             $notify = $attempts >= 1 + (int) $this->setting('retry_max', 3);
@@ -244,5 +252,17 @@ class ExchangeRateUpdateService
     private function setting(string $key, mixed $default): mixed
     {
         return plugin_setting('sirsoft-koreaexim', $key, $default);
+    }
+
+    /**
+     * 쇼핑몰 통화 설정을 계산기가 읽는 배열 모양으로 읽습니다(공개 계약 경유, #916).
+     *
+     * @return array{default_currency: string, rate_provider: string|null, currencies: array<int, array<string, mixed>>} 통화 설정
+     */
+    private function currencySettings(): array
+    {
+        $settings = $this->gateway->getCurrencySettings();
+
+        return ['default_currency' => $settings->defaultCurrency, 'rate_provider' => $settings->rateProvider, 'currencies' => $settings->currencies];
     }
 }

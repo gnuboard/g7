@@ -1226,7 +1226,7 @@ class LanguagePackServiceTest extends TestCase
         $before = File::isDirectory($tempRoot) ? File::directories($tempRoot) : [];
 
         try {
-            $pack = $this->service->installFromUrl('https://packs.example.com/pack.zip', null);
+            $pack = $this->service->installFromUrl('https://packs.example.com/pack.zip', null, false, null, false, null, new \App\Extension\Integrity\PackageIntegrityOptions(true));
 
             $this->assertSame($identifier, $pack->identifier);
 

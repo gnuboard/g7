@@ -28,7 +28,7 @@
           </div>
         </div>
         <!-- 공개 자산 스토리지만 s3 인 구성(파일 스토리지는 로컬)에서도 접속 정보를 입력해야 하므로 두 축 중 하나라도 s3 면 노출한다 -->
-        <div data-ref="s3_settings" data-if="{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
+        <div data-ref="s3_settings" data-if="{{_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3' || _local.form?.drivers?.private_attachment_disk === 's3'}}" class="ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4">
           <div class="py-3">
             <label class="form-label">
               <span>$t:admin.settings.drivers.storage.s3_bucket</span>
@@ -159,6 +159,40 @@
           </div>
         </div>
         <div data-ref="public_asset_s3_help" data-if="{{_local.form?.drivers?.public_asset_disk === 's3'}}" class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:admin.settings.drivers.public_asset.s3_help</div>
+      </div>
+    </div>
+    <!-- 비공개 첨부 저장소 (#916) — 권한 확인 뒤 서버가 내려주는 원본(코어·게시판·페이지 첨부, 클레임 이미지, 본문 미디어, 내보내기 파일)의 디스크.
+         「기본」이면 지금까지처럼 사이트 스토리지 드라이버를 따른다. 플러그인이 비공개 디스크를 등록하면 선택지에 붙는다(available_drivers.private_attachment).
+         공개 자산과 같은 디스크를 고르면 저장은 되지만 버킷 공개 정책 위험을 알린다(D5). `.env` 로 디스크를 고정한 주체는 선택을 따르지 않으므로
+         `_meta.private_attachment.pins` 로 안내한다(D7). 옛 코어는 `_meta.private_attachment` 를 싣지 않으므로 `?.` 와 `?? []` 로 읽는다. -->
+    <div data-ref="card_private_attachment_settings" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.drivers.private_attachment.title</h3>
+      <div class="card-description">$t:admin.settings.drivers.private_attachment.desc</div>
+      <div class="row-stack">
+        <div data-ref="field_private_attachment_disk" class="">
+          <label class="form-label">$t:admin.settings.drivers.private_attachment.disk</label>
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
+            <select name="drivers.private_attachment_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['drivers.private_attachment_disk']?.[0] ?? ''}}" options="{{(_local.form?.available_drivers?.private_attachment ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"/>
+            <span data-if="{{_local.errors?.['drivers.private_attachment_disk']}}" class="form-error">{{_local.errors?.['drivers.private_attachment_disk']?.[0] ?? ''}}</span>
+            <p data-ref="unavailable_driver_notice_private_attachment" data-if="{{!!_local.form?.drivers?.private_attachment_disk &amp;&amp; !(_local.form?.available_drivers?.private_attachment ?? []).some(d => d.id === _local.form?.drivers?.private_attachment_disk)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-private_attachment">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.drivers?.private_attachment_disk ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <p data-ref="private_attachment_same_disk_warning" data-if="{{!['', 'default'].includes(_local.form?.drivers?.private_attachment_disk ?? '') &amp;&amp; !['', 'none'].includes(_local.form?.drivers?.public_asset_disk ?? '') &amp;&amp; _local.form?.drivers?.private_attachment_disk === _local.form?.drivers?.public_asset_disk}}" class="text-warning-soft" data-testid="private-attachment-same-disk-warning">$t:admin.settings.drivers.private_attachment.same_disk_warning</p>
+        <div data-ref="private_attachment_s3_help" data-if="{{_local.form?.drivers?.private_attachment_disk === 's3'}}" class="text-sm text-gray-500 dark:text-gray-400">$t:admin.settings.drivers.private_attachment.s3_help</div>
+        <div data-ref="private_attachment_pins" data-if="{{(_local.form?._meta?.private_attachment?.pins ?? []).length > 0}}" class="row-stack" data-testid="private-attachment-pins">
+          <span class="text-secondary text-sm font-medium">$t:admin.settings.drivers.private_attachment.pins_title</span>
+          <div data-each="pin in _local.form._meta.private_attachment.pins" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+            <span data-if="{{pin.owner === 'core'}}" class="text-heading">$t:admin.settings.drivers.private_attachment.pin_core</span>
+            <span data-if="{{pin.owner !== 'core'}}" class="text-heading font-mono">{{pin.owner}}</span>
+            <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">{{pin.env}}={{pin.disk}}</span>
+          </div>
+          <p class="text-label-subtle text-sm">$t:admin.settings.drivers.private_attachment.pins_hint</p>
+        </div>
       </div>
     </div>
     <!-- 웹서버 파일 위임 (#878) — 로컬 파일 응답(확장 자산·번들, 공개 스토리지, 확장 아이콘, 본문의 로컬 미디어)을 PHP 대신

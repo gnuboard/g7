@@ -254,7 +254,7 @@ _별도의 관리자 설정 항목이 없습니다._
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
+| `sirsoft-koreaexim` | 플러그인 | `>=1.4.0` |
 | `sirsoft-pay_kginicis` | 플러그인 | `>=1.4.0` |
 | `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.4.0` |
 | `sirsoft-pay_nicepayments` | 플러그인 | `>=1.4.0` |
@@ -271,7 +271,7 @@ _별도의 관리자 설정 항목이 없습니다._
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-board` | 모듈 | `*` |
-| `sirsoft-hero_section` | 플러그인 | `*` |
+| `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
 | `sirsoft-basic` | 템플릿 | `>=1.3.4` |
 <!-- @generated:integrations END -->

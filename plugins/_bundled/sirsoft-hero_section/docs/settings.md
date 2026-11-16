@@ -86,8 +86,8 @@
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-board` | 모듈 | `*` | ✅ |
-| `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
+| `sirsoft-board` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.4.0` | ✅ |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

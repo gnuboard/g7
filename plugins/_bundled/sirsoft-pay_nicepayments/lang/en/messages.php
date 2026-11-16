@@ -37,6 +37,8 @@ return [
     'defaults' => [
         'vbank_refund_msg' => 'Virtual account refund',
     ],
+    // Reason sent to the NicePayments cancel API when an unpaid virtual account is closed
+    'vbank_close_reason' => 'Order cancelled before deposit',
     'fields' => [
         'tid' => 'transaction ID (TID)',
         'moid' => 'order number',
@@ -48,5 +50,14 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+    ],
+    // Error messages of the payment screen and PG integration APIs
+    'responses' => [
+        'amount_mismatch' => 'Payment amount does not match the order amount.',
+        'currency_not_chargeable' => 'The charge cannot be calculated in the payment currency.',
+        'escrow_payment_not_found' => 'Escrow payment not found for the requested transaction ID.',
+        'order_not_found' => 'Order not found.',
+        'ownership_verification_failed' => 'Order ownership verification failed.',
+        'too_many_requests' => 'Too many requests. Please try again later.',
     ],
 ];

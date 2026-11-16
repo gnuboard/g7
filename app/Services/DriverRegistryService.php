@@ -29,6 +29,9 @@ class DriverRegistryService
     private const CORE_DRIVER_IDS = [
         'storage' => ['local', 's3'],
         'public_asset' => ['none', 'public', 's3'],
+        // 비공개 첨부 저장소(#916) — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
+        // default 는 「사이트 스토리지 드라이버를 따름」(업데이트 전 동작). 플러그인이 비공개 디스크를 등록하면 선택지에 붙는다.
+        'private_attachment' => ['default', 's3'],
         // 웹서버 파일 위임(#878). PHP 는 웹서버 모듈 유무를 확정하지 못하므로 셋 다 늘 고를 수 있다 —
         // 구성 여부는 드라이버 시험(DriverConnectionTester::testFileDelegation)의 힌트와 화면 안내로 맡긴다.
         'file_delegation' => ['none', 'x-sendfile', 'x-accel-redirect'],
@@ -57,6 +60,17 @@ class DriverRegistryService
     private const HIDE_UNUSABLE_CATEGORIES = ['image'];
 
     /**
+     * 쓰는 시점에 해석하는 디스크 카테고리 (#916 A7)
+     *
+     * 플러그인 디스크(CloudFront 등)는 모든 프로바이더 부팅이 끝난 뒤(`app->booted`) 정의되므로, 코어가 부팅 중 카탈로그로
+     * 판정하면 저장값을 기본값으로 덮는다. 이 카테고리는 부팅 시 폴백 쓰기를 하지 않고, 해석기(`PublicAssetDisk`·
+     * `PrivateAttachmentDisk`)가 쓰는 시점에 정의되지 않은 디스크를 걸러 낸다.
+     *
+     * @var list<string>
+     */
+    public const RUNTIME_RESOLVED_CATEGORIES = ['public_asset', 'private_attachment'];
+
+    /**
      * 카테고리별 기본 폴백 드라이버
      *
      * @var array<string, string>
@@ -64,6 +78,7 @@ class DriverRegistryService
     private const DEFAULT_DRIVERS = [
         'storage' => 'local',
         'public_asset' => 'none',
+        'private_attachment' => 'default',
         'file_delegation' => 'none',
         'cache' => 'file',
         'session' => 'database',
@@ -83,6 +98,7 @@ class DriverRegistryService
     public const CONFIG_KEYS = [
         'storage' => 'filesystems.default',
         'public_asset' => 'core.storage.public_asset_disk',
+        'private_attachment' => 'core.storage.private_attachment_disk',
         'file_delegation' => 'core.file_serving.delegation',
         'cache' => 'cache.default',
         'session' => 'session.driver',
@@ -107,6 +123,7 @@ class DriverRegistryService
     private const SETTINGS_KEYS = [
         'storage' => ['category' => 'drivers', 'key' => 'storage_driver'],
         'public_asset' => ['category' => 'drivers', 'key' => 'public_asset_disk'],
+        'private_attachment' => ['category' => 'drivers', 'key' => 'private_attachment_disk'],
         'file_delegation' => ['category' => 'drivers', 'key' => 'file_delegation'],
         'cache' => ['category' => 'drivers', 'key' => 'cache_driver'],
         'session' => ['category' => 'drivers', 'key' => 'session_driver'],
@@ -394,6 +411,17 @@ class DriverRegistryService
     public function getConfigValueForDriver(string $category, string $driverId): string|array
     {
         return $category === 'log' ? [$driverId] : $driverId;
+    }
+
+    /**
+     * 쓰는 시점에 해석하는 디스크 카테고리인지 확인합니다.
+     *
+     * @param  string  $category  드라이버 카테고리
+     * @return bool 런타임 해석 카테고리이면 true
+     */
+    public function isRuntimeResolved(string $category): bool
+    {
+        return in_array($category, self::RUNTIME_RESOLVED_CATEGORIES, true);
     }
 
     /**

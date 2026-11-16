@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-// audit:allow api-doc-coverage reason: 클레임 결제 Repository 를 서비스 로케이터 대신 생성자로 주입하고 private 메서드 PHPDoc 을 채운 내부 수정이다. 라우트·요청 파라미터·응답 구조는 불변이라 API 문서에 반영할 표면 변화가 없다(`api:docgen --scope=plugin:sirsoft-pay_kginicis --check` drift 없음).
+// audit:allow api-doc-coverage reason: 이커머스 내부 서비스·저장소 대신 공개 결제 계약(PaymentGatewayBridge)을 생성자로 주입한 내부 전환이다(#916). 응답은 공통 형식(ResponseHelper: success, message, data)으로 나가고 결제 화면이 읽는 data 항목과 오류 message 키는 그대로다. 오류 문구는 영어 고정에서 번역 키로 바뀌었다(#916). 이 엔드포인트의 API 문서는 원래 없다(`api:docgen --scope=plugin:sirsoft-pay_kginicis --check` drift 없음).
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
+use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesTimestampFreshness;
@@ -25,20 +24,18 @@ class MobileSignatureController
 
     /**
      * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
-     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
-     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      */
     public function __construct(
         private readonly KgInicisApiService $apiService,
-        private readonly OrderProcessingService $orderService,
-        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
-     * generate
+     * 모바일 결제창 요청 서명을 만듭니다.
      *
-     * @param  MobileSignatureRequest  $request
-     * @return JsonResponse
+     * @param  MobileSignatureRequest  $request  서명 요청 폼
+     * @return JsonResponse 서명 값 (주문 검증 실패면 4xx)
      */
     public function generate(MobileSignatureRequest $request): JsonResponse
     {
@@ -48,18 +45,12 @@ class MobileSignatureController
 
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Too many KG Inicis mobile signature requests. Please try again later.',
-            ], 429);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.too_many_requests', 429);
         }
         RateLimiter::hit($rateLimitKey, 60);
 
         if (! $this->isTimestampFresh((string) $validated['timestamp'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Timestamp is stale or invalid (signature replay protection).',
-            ], 422);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.timestamp_stale', 422);
         }
 
         $contextError = $this->validateOrderContext($request, $oid, $price);
@@ -68,10 +59,7 @@ class MobileSignatureController
         }
 
         if (! $this->apiService->hasMobilePaymentCredentials()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'KG Inicis mobile payment credentials are not configured.',
-            ], 422);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.credentials_not_configured', 422);
         }
 
         $chkfake = $this->apiService->generateMobileChkfake(
@@ -80,11 +68,9 @@ class MobileSignatureController
             $validated['timestamp'],
         );
 
-        return response()->json([
-            'data' => [
-                'chkfake' => $chkfake,
-                'mobile_payment_url' => $this->apiService->getMobilePaymentUrl(),
-            ],
+        return ResponseHelper::success('common.success', [
+            'chkfake' => $chkfake,
+            'mobile_payment_url' => $this->apiService->getMobilePaymentUrl(),
         ]);
     }
 
@@ -99,54 +85,36 @@ class MobileSignatureController
     private function validateOrderContext(MobileSignatureRequest $request, string $oid, int $price): ?JsonResponse
     {
         // 클레임 추가결제(CP 채번)는 주문이 아니다 — 결제 건 기준으로 같은 강도의 검증을 적용한다.
-        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+        if ($this->bridge->isClaimPaymentNumber($oid)) {
             return $this->validateClaimPaymentContext($request, $oid, $price);
         }
 
-        $order = $this->orderService->findByOrderNumber($oid);
+        $order = $this->bridge->findOrderByNumber($oid, 'kginicis');
         if (! $order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found.',
-            ], 404);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.order_not_found', 404);
         }
 
-        if (! $order->order_status->isBeforePayment()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order is not payable.',
-            ], 422);
+        if (! $order->orderStatus->isBeforePayment()) {
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.order_not_payable', 422);
         }
 
         if (strtoupper((string) $order->currency) !== 'KRW') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Standard KG Inicis signature is only available for KRW orders.',
-            ], 422);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.krw_only', 422);
         }
 
         if (! $this->requestMatchesOrderBuyer($request, $order)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order buyer verification failed.',
-            ], 403);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.buyer_verification_failed', 403);
         }
 
         $expectedPrice = $this->resolveExpectedPaymentPriceOrNull($order, 'mobile_signature', [
             'received_amount' => $price,
         ]);
         if ($expectedPrice === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment currency is not chargeable.',
-            ], 422);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.currency_not_chargeable', 422);
         }
 
         if ($price !== $expectedPrice) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment amount does not match the order amount.',
-            ], 422);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.amount_mismatch', 422);
         }
 
         return null;

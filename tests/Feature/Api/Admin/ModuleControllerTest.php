@@ -769,8 +769,10 @@ class ModuleControllerTest extends TestCase
         try {
             $file = new UploadedFile($zipPath, 'module.zip', 'application/zip', null, true);
 
+            // 미서명 ZIP 은 먼저 확인(409)을 받는다 — 확인하고 계속한 요청이 manifest 사유를 그대로 받는지 본다 (7.2.0)
             $response = $this->authRequest()->postJson('/api/admin/modules/install-from-file', [
                 'file' => $file,
+                'allow_unsigned' => true,
             ]);
 
             $response->assertStatus(422);
@@ -828,7 +830,7 @@ class ModuleControllerTest extends TestCase
         $moduleServiceMock = \Mockery::mock(ModuleService::class);
         $moduleServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->with('https://github.com/sirsoft/sample-module')
+            ->with('https://github.com/sirsoft/sample-module', \Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->andReturn([
                 'identifier' => 'sirsoft-samplemodule',
                 'name' => 'Sample Module',

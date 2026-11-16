@@ -2,24 +2,25 @@
 
 namespace Plugins\Sirsoft\HeroSection\Support\Targets;
 
-use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Contracts\BoardDirectory;
+use Modules\Sirsoft\Board\Contracts\Data\BoardSummary;
 use Plugins\Sirsoft\HeroSection\Contracts\TargetResolverInterface;
 use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
 
 /**
  * 게시판 대상 해석기 — 게시판 목록 위치(`board_hero`). 저장 키는 게시판 id, 화면 값은 주소의 slug(없을 때만 숫자 id — slug 가 먼저다).
  *
- * 게시판 모듈이 켜져 있을 때만 위치가 등록되므로 이 클래스도 그때만 만들어진다. 게시판 모듈의 저장소 계약만 쓴다.
+ * 게시판 모듈이 켜져 있고 조회 계약({@see BoardDirectory})이 바인딩돼 있을 때만 위치가 등록되므로 이 클래스도 그때만 만들어진다.
+ * 게시판 모듈이 공개한 계약만 쓴다(#916) — 게시판 Model·저장소는 게시판 내부다.
  */
 class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInterface
 {
     /**
      * BoardTargetResolver 생성자
      *
-     * @param  BoardRepositoryInterface  $boards  게시판 저장소
+     * @param  BoardDirectory  $boards  게시판 조회 계약
      */
-    public function __construct(private BoardRepositoryInterface $boards) {}
+    public function __construct(private BoardDirectory $boards) {}
 
     /**
      * {@inheritDoc}
@@ -34,7 +35,7 @@ class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInte
             return null;
         }
 
-        $board = $this->boards->findBySlug($value) ?? (ctype_digit($value) ? $this->boards->find((int) $value) : null);
+        $board = $this->boards->findBySlug($value) ?? (ctype_digit($value) ? $this->boards->findById((int) $value) : null);
 
         return $board === null ? null : (string) $board->id;
     }
@@ -58,20 +59,9 @@ class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInte
      */
     public function labels(array $keys): array
     {
-        $keys = array_values(array_unique(array_map('strval', $keys)));
-        if (count($keys) === 1) {
-            $board = $this->board($keys[0]);
-
-            return $board === null ? [] : [$keys[0] => $board->getLocalizedName()];
-        }
-
-        // 여러 건이면 게시판마다 묻지 않고 한 번에 읽는다 — 게시판 저장소에 id 묶음 조회가 없고, 게시판 수는 운영상 수십 개다
-        $byId = $this->boards->all()->keyBy(fn (Board $board) => (string) $board->id);
         $labels = [];
-        foreach ($keys as $key) {
-            if (isset($byId[$key])) {
-                $labels[$key] = $byId[$key]->getLocalizedName();
-            }
+        foreach ($this->boards->findByIds(self::ids($keys)) as $id => $board) {
+            $labels[(string) $id] = $board->label;
         }
 
         return $labels;
@@ -80,19 +70,17 @@ class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInte
     /**
      * {@inheritDoc}
      *
-     * @param  string  $keyword  검색어
+     * @param  string  $keyword  검색어(이름·slug)
      * @param  int  $limit  최대 건수
      * @return array<int, array{key: string, label: string, hint: string}> 고르기 항목
      */
     public function search(string $keyword, int $limit): array
     {
-        $boards = trim($keyword) === '' ? $this->boards->all() : $this->boards->search(trim($keyword));
-
-        return $boards->take($limit)->map(fn (Board $board) => [
+        return array_map(fn (BoardSummary $board) => [
             'key' => (string) $board->id,
-            'label' => $board->getLocalizedName(),
-            'hint' => (string) $board->slug,
-        ])->values()->all();
+            'label' => $board->label,
+            'hint' => $board->slug,
+        ], $this->boards->search($keyword, $limit));
     }
 
     /**
@@ -103,26 +91,20 @@ class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInte
      */
     public function siteUrl(string $key): ?string
     {
-        $board = $this->board($key);
-
-        return $board === null ? null : '/board/'.$board->slug;
+        return $this->board($key)?->url;
     }
 
     /**
      * {@inheritDoc}
      *
-     * @param  array<int, string>  $keys  board id 목록
-     * @return array<string, string> board id => 사이트 경로
+     * @param  array<int, string>  $keys  게시판 id 목록
+     * @return array<string, string> 게시판 id => 사이트 경로
      */
     public function siteUrls(array $keys): array
     {
-        // 게시판 저장소에 id 묶음 조회가 없어 한 번에 읽는다 — 게시판 수는 운영상 수십 개다(labels 와 같은 판단)
-        $byId = $this->boards->all()->keyBy(fn (Board $board) => (string) $board->id);
         $urls = [];
-        foreach (array_unique(array_map('strval', $keys)) as $key) {
-            if (isset($byId[$key])) {
-                $urls[$key] = '/board/'.$byId[$key]->slug;
-            }
+        foreach ($this->boards->findByIds(self::ids($keys)) as $id => $board) {
+            $urls[(string) $id] = $board->url;
         }
 
         return $urls;
@@ -132,10 +114,21 @@ class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInte
      * 저장 키로 게시판을 찾습니다.
      *
      * @param  string  $key  게시판 id
-     * @return Board|null 게시판
+     * @return BoardSummary|null 게시판 요약
      */
-    private function board(string $key): ?Board
+    private function board(string $key): ?BoardSummary
     {
-        return ctype_digit($key) ? $this->boards->find((int) $key) : null;
+        return ctype_digit($key) ? $this->boards->findById((int) $key) : null;
+    }
+
+    /**
+     * 저장 키 목록에서 숫자 id 만 남깁니다.
+     *
+     * @param  array<int, string>  $keys  저장 키 목록
+     * @return array<int, int> id 목록
+     */
+    private static function ids(array $keys): array
+    {
+        return array_values(array_unique(array_map('intval', array_filter($keys, fn ($key) => ctype_digit((string) $key)))));
     }
 }

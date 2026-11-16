@@ -7,7 +7,11 @@ return [
     |--------------------------------------------------------------------------
     */
     'attachment' => [
-        'disk' => env('SIRSOFT_BOARD_ATTACHMENT_DISK', 'modules'),
+        'disk' => env('SIRSOFT_BOARD_ATTACHMENT_DISK') ?: 'modules',
+        // .env 로 디스크를 명시했는지 — 명시하면 환경설정 > 드라이버 「비공개 첨부 저장소」 선택보다 우선하고 화면이
+        // 「.env 로 고정된 확장」으로 안내한다(#916 D7). env() 직접 호출은 config:cache 환경에서 null 로 고정되므로 config 에 태운다.
+        // 빈 값(`SIRSOFT_BOARD_ATTACHMENT_DISK=`)은 미명시로 본다.
+        'disk_explicit' => env('SIRSOFT_BOARD_ATTACHMENT_DISK') ?: null,
     ],
 
     /*

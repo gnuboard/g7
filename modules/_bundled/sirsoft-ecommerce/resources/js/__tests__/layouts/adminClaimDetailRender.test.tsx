@@ -451,6 +451,11 @@ function inlinePartials(node: any): any {
       const { meta, ...partialNode } = JSON.parse(fs.readFileSync(file, 'utf-8'));
       return inlinePartials(partialNode);
     }
+    // 첨부 업로더 확장점은 주입이 없으면 서버가 기본 업로더(default)를 children 으로 내려 준다 — 하네스는 서버를 거치지
+    // 않으므로 그 처리를 여기서 같은 규칙으로 한다(업로더 플러그인이 없는 사이트의 화면).
+    if (node.type === 'extension_point' && node.name === 'attachment_uploader' && node.children === undefined) {
+      return inlinePartials({ ...node, children: node.default ?? [] });
+    }
     const out: Record<string, any> = {};
     for (const [key, value] of Object.entries(node)) out[key] = inlinePartials(value);
     return out;

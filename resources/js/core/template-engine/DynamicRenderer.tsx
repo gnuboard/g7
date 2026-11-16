@@ -39,7 +39,7 @@ import {
   extractSingleBinding as canonicalExtractSingleBinding,
   isComplexExpression as canonicalIsComplexExpression,
 } from './BindingShape';
-import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep } from './rawMarkers';
+import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep, stripRawDeep } from './rawMarkers';
 import { stripTranslationParamMarkers } from './translationParamValues';
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import type { RenderEnvironment } from './helpers/RenderEnvironment';
@@ -2987,6 +2987,18 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
 
       if (value && typeof value === 'object') {
+        // 액션 정의 객체는 미리 번역하지 않는다 — props 바인딩(DataBindingEngine.resolveObject)과 반복 렌더
+        // (RenderHelpers.resolveValue)가 이미 건너뛰는 규칙을 번역 단계에도 맞춘다. 컴포넌트 정의를 담은 prop
+        // (Modal `footer`·`titlePrefix` 등)의 단추 액션까지 내려가면 `$t:키|이름={{response…}}` 를 응답이 오기 전
+        // 렌더 문맥(response 없음)으로 번역해 인자 자리가 빈 글자로 굳었다(설치 창 「(서명자: )」, #916).
+        // 액션 안의 `$t:` 는 실행 시점에 디스패처가 번역한다(toast·setError·showAlert·confirm, `$t:` 를 내는 식).
+        // 번역은 하지 않되 원문 표식은 벗긴다 — `{{raw:식}}` 결과가 액션 모양 객체면 handler 이름까지 감싸여 있어,
+        // 반복 렌더 경로(RenderHelpers 의 `stripRawDeep(finalProps)`)와 같게 표식만 걷는다.
+        // @since engine-v1.95.1
+        if (bindingEngine.isActionDefinition(value)) {
+          return stripRawDeep(value);
+        }
+
         const result: Record<string, any> = {};
         for (const [k, v] of Object.entries(value)) {
           result[k] = resolveTranslationsDeep(v);
@@ -2995,7 +3007,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
 
       return value;
-    }, [translationEngine, translationContext, extendedDataContext]);
+    }, [translationEngine, translationContext, extendedDataContext, bindingEngine]);
 
     /**
      * 복잡한 표현식 여부 감지

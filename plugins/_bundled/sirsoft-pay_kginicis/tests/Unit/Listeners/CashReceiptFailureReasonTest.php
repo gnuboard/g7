@@ -103,7 +103,7 @@ class CashReceiptFailureReasonTest extends PluginTestCase
     {
         Http::fake(fn () => throw new ConnectionException('cURL error 28: Operation timed out for https://iniapi.inicis.com/v2/pg/receipt'));
 
-        $result = (new RegisterCashReceiptProviderListener)->issue($this->defaultIssueResult(), $this->kgOrder(), self::PROVIDER_ID, [
+        $result = app(RegisterCashReceiptProviderListener::class)->issue($this->defaultIssueResult(), $this->kgOrder(), self::PROVIDER_ID, [
             'type' => 'income',
             'identifier' => '01012345678',
             'identifier_type' => 'phone',
@@ -131,7 +131,7 @@ class CashReceiptFailureReasonTest extends PluginTestCase
     {
         Http::fake(['*/v2/pg/refund' => Http::response(['resultCode' => '01', 'resultMsg' => '[500626]기취소 거래'], 200)]);
 
-        $result = (new RegisterCashReceiptProviderListener)->cancel($this->defaultCancelResult(), $this->kgOrder(), self::PROVIDER_ID, 'CR_TID_858');
+        $result = app(RegisterCashReceiptProviderListener::class)->cancel($this->defaultCancelResult(), $this->kgOrder(), self::PROVIDER_ID, 'CR_TID_858');
 
         $this->assertFalse($result['success']);
         $this->assertSame('[500626]기취소 거래', $result['error_message']);
@@ -150,7 +150,7 @@ class CashReceiptFailureReasonTest extends PluginTestCase
     {
         Http::fake(['*/v2/pg/refund' => Http::response(['resultCode' => '01'], 200)]);
 
-        $result = (new RegisterCashReceiptProviderListener)->cancel($this->defaultCancelResult(), $this->kgOrder(), self::PROVIDER_ID, 'CR_TID_858');
+        $result = app(RegisterCashReceiptProviderListener::class)->cancel($this->defaultCancelResult(), $this->kgOrder(), self::PROVIDER_ID, 'CR_TID_858');
 
         $this->assertSame('KG이니시스가 현금영수증 취소를 거절했습니다.', $result['error_message']);
     }

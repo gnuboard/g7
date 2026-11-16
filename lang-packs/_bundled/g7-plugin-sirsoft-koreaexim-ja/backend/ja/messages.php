@@ -14,6 +14,7 @@ return [
         'bad_response' => 'レスポンス形式エラー',
         'network_error' => 'ネットワークエラー',
         'unsupported_base' => '基本通貨未対応',
+        'save_failed' => '為替レート保存失敗',
     ],
     'RunTrigger' => [
         'scheduled' => '定期',

@@ -47,11 +47,17 @@ class StartCoreUpdateRequest extends FormRequest
             ])],
             // 디렉토리는 서버가 정한다 — 파일 이름만 받는다 (㉯ — D18).
             'zip_file' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^[^\/\\\\]+\.zip$/i'],
+            // 미서명 배포본 확인 후 계속(7.2.0) — 409 경고 창의 「미서명으로 계속」이 같은 요청에 1 을 실어 다시 보낸다.
+            // 「미서명 패키지 차단」이 켜져 있으면 이 값으로도 진행하지 않는다.
+            'allow_unsigned' => ['sometimes', 'nullable', 'boolean'],
+            // 무결성을 아는 화면의 표식(7.2.0) — 새 관리자 화면은 늘 true 를 싣는다. 없으면 「미서명으로 계속」을 그릴 수 없는
+            // 옛 화면(7.1.x 템플릿 복사본)으로 보고 미서명 배포본을 7.1 동작대로 허용한다(차단 스위치·서명 불일치·미신뢰는 그대로 거절).
+            'integrity_aware' => ['sometimes', 'nullable', 'boolean'],
         ];
 
         // 확장이 자기 선택 항목을 착수 화면에 얹을 수 있는 지점. **위 안전 기본값을
         // 뒤집는 키는 여기서도 받지 않는다** — 훅으로 `force` 를 되살릴 수 있으면 D27 이
-        // 선언으로만 남는다. 오케스트레이터가 읽는 것은 `CoreUpdateOptions` 의 네 필드뿐이다.
+        // 선언으로만 남는다. 오케스트레이터가 읽는 것은 `CoreUpdateOptions` 의 필드뿐이다.
         return HookManager::applyFilters('core.core_update.start_validation_rules', $rules, $this);
     }
 
@@ -64,7 +70,7 @@ class StartCoreUpdateRequest extends FormRequest
     {
         $normalized = [];
 
-        foreach (['update_bundled_extensions', 'rebuild_search_index'] as $key) {
+        foreach (['update_bundled_extensions', 'rebuild_search_index', 'allow_unsigned', 'integrity_aware'] as $key) {
             if (! $this->has($key)) {
                 continue;
             }
@@ -95,6 +101,8 @@ class StartCoreUpdateRequest extends FormRequest
             'rebuild_search_index' => (string) __('settings.core_update.web.attributes.rebuild_search_index'),
             'layout_strategy' => (string) __('settings.core_update.web.attributes.layout_strategy'),
             'zip_file' => (string) __('settings.core_update.web.attributes.zip_file'),
+            'allow_unsigned' => (string) __('extension_integrity.attributes.allow_unsigned'),
+            'integrity_aware' => (string) __('extension_integrity.attributes.integrity_aware'),
         ];
     }
 

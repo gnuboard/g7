@@ -19,6 +19,28 @@
     "integrations": {
         "modules": ["sirsoft-board"]
     },
+    "public_api": {
+        "version": 1,
+        "namespaces": [
+            "Modules\\Sirsoft\\Ecommerce\\Contracts",
+            "Modules\\Sirsoft\\Ecommerce\\Enums"
+        ],
+        "classes": [
+            "Modules\\Sirsoft\\Ecommerce\\Support\\ShopPathResolver",
+            "Modules\\Sirsoft\\Ecommerce\\Support\\ClaimPaymentCallback",
+            "Modules\\Sirsoft\\Ecommerce\\Support\\ClaimPaymentRedirect",
+            "Modules\\Sirsoft\\Ecommerce\\Support\\EcommerceScreenUrl",
+            "Modules\\Sirsoft\\Ecommerce\\Helpers\\DeviceDetector",
+            "Modules\\Sirsoft\\Ecommerce\\Exceptions\\PaymentAmountMismatchException",
+            "Modules\\Sirsoft\\Ecommerce\\Exceptions\\ExchangeRateSaveException"
+        ],
+        "readonly_models": [
+            "Modules\\Sirsoft\\Ecommerce\\Models\\Order",
+            "Modules\\Sirsoft\\Ecommerce\\Models\\OrderPayment",
+            "Modules\\Sirsoft\\Ecommerce\\Models\\ClaimPayment",
+            "Modules\\Sirsoft\\Ecommerce\\Models\\OrderRefund"
+        ]
+    },
     "github_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce",
     "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce/blob/main/CHANGELOG.md",
     "assets": {

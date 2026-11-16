@@ -769,6 +769,37 @@ class LayoutExtensionService
                     $withSourceMeta
                 );
             }
+
+            // 끌어 정렬 목록(`sortable`)의 행 템플릿은 `children`·props 가 아니라 노드의 `itemTemplate` 에 실린다.
+            // 그 안의 확장점(게시판 설정 반응 유형 표의 행마다 아이콘 업로더)이 채워지지 않으면 default 까지 사라진다.
+            if (isset($component['itemTemplate']) && is_array($component['itemTemplate']) && ! array_is_list($component['itemTemplate'])) {
+                $component['itemTemplate'] = $this->processExtensionPointsRecursive(
+                    [$component['itemTemplate']],
+                    $templateId,
+                    $dataSources,
+                    $scripts,
+                    $modals,
+                    $withSourceMeta
+                )[0];
+            }
+
+            // 반응형 재정의(`responsive.{구간}.children`)는 그 화면 폭에서 `children` 을 갈아 끼운다. 이 자리를 따라가지 않으면
+            // 재정의 안 확장점이 default 를 받지 못해 빈 칸으로 그려진다(게시판 설정 반응 유형의 좁은 화면 카드 업로더, #916 실측).
+            if (isset($component['responsive']) && is_array($component['responsive'])) {
+                foreach ($component['responsive'] as $breakpoint => $override) {
+                    if (! is_array($override) || ! isset($override['children']) || ! is_array($override['children'])) {
+                        continue;
+                    }
+                    $component['responsive'][$breakpoint]['children'] = $this->processExtensionPointsRecursive(
+                        $override['children'],
+                        $templateId,
+                        $dataSources,
+                        $scripts,
+                        $modals,
+                        $withSourceMeta
+                    );
+                }
+            }
         }
 
         return $components;

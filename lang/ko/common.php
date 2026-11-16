@@ -33,6 +33,7 @@ return [
         'github_url_invalid' => '유효하지 않은 GitHub URL 형식입니다.',
         'github_api_failed' => 'GitHub API 호출에 실패했습니다.',
         'github_download_failed' => 'GitHub에서 다운로드에 실패했습니다.',
+        'github_release_not_found' => ':repository 저장소에 태그 릴리스가 없습니다. 브랜치(main·master)는 설치하지 않습니다 — 제작자가 릴리스를 올린 뒤 다시 시도하세요.',
         'github_archive_download_failed' => '아카이브 다운로드에 실패했습니다. (:url)',
         'zip_file_not_found' => 'ZIP 파일을 찾을 수 없습니다.',
         'archive_php_extension_missing' => '압축을 풀려면 서버에 PHP 확장 :extensions 이(가) 필요합니다. 서버 관리자에게 설치를 요청하세요.',

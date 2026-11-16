@@ -1266,7 +1266,7 @@ class PluginControllerTest extends TestCase
         $pluginServiceMock = \Mockery::mock(PluginService::class);
         $pluginServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->with('https://github.com/sirsoft/sample-plugin')
+            ->with('https://github.com/sirsoft/sample-plugin', \Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
             ->andReturn([
                 'identifier' => 'sirsoft-sampleplugin',
                 'name' => 'Sample Plugin',

@@ -2,15 +2,14 @@
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 조회를 이커머스 공개 결제 계약으로 옮긴 내부 리팩토링 (#916)
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentFilters;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\TransactionQueryRequest;
@@ -21,13 +20,18 @@ class AdminTransactionController extends AdminBaseController
     use GuardsOrderScope;
     use ResolvesEasyPayDisplay;
 
+    /** 이 플러그인 결제 행의 결제사 id(옛 식별자 포함) */
+    private const PG_SCOPE = ['nicepayments', 'nicepay'];
+
     /**
      * 의존성을 주입받습니다.
      *
      * @param  NicePaymentsApiService  $apiService  나이스페이먼츠 API 서비스
+     * @param  PaymentGatewayBridge  $paymentGateway  이커머스 공개 결제 계약
      */
     public function __construct(
-        private NicePaymentsApiService $apiService
+        private NicePaymentsApiService $apiService,
+        private readonly PaymentGatewayBridge $paymentGateway,
     ) {
         parent::__construct();
     }
@@ -53,8 +57,8 @@ class AdminTransactionController extends AdminBaseController
     /**
      * 주문번호로 거래 조회 (TID 자동 매핑)
      *
-     * 어드민 주문 상세에서 거래 조회 버튼 클릭 시 사용. ecommerce_order_payments
-     * 의 transaction_id 를 찾아 queryByTid 로 위임.
+     * 어드민 주문 상세에서 거래 조회 버튼 클릭 시 사용. 이 플러그인 결제 행의
+     * 거래번호를 찾아 queryByTid 로 위임.
      *
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse 거래 정보 또는 매핑 없을 시 null
@@ -65,21 +69,17 @@ class AdminTransactionController extends AdminBaseController
             return $denied;
         }
 
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $payment = DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->whereNotNull('p.transaction_id')
-            ->where('p.transaction_id', '!=', '')
-            ->whereIn('p.pg_provider', ['nicepayments', 'nicepay'])
-            ->select(['p.transaction_id'])
-            ->first();
+        $payment = $this->paymentGateway->findPaymentByOrderNumber(
+            self::PG_SCOPE,
+            $orderNumber,
+            new PaymentFilters(hasTransactionId: true, nonEmptyTransactionId: true),
+        );
 
-        if (! $payment) {
+        if (! $payment || $payment->transactionId === null) {
             return ResponseHelper::success('common.success', null);
         }
 
-        return $this->queryByTid($payment->transaction_id);
+        return $this->queryByTid($payment->transactionId);
     }
 
     /**
@@ -93,13 +93,9 @@ class AdminTransactionController extends AdminBaseController
         try {
             $result = $this->apiService->queryTransaction($tid);
 
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-            $localPayment = DB::table((new OrderPayment)->getTable())
-                ->where('transaction_id', $tid)
-                ->select(['is_escrow', 'payment_meta', 'payment_method', 'embedded_pg_provider'])
-                ->first();
+            $localPayment = $this->paymentGateway->findPaymentByTransactionId(self::PG_SCOPE, $tid);
 
-            $result['_local_is_escrow'] = (bool) ($localPayment?->is_escrow ?? false);
+            $result['_local_is_escrow'] = $localPayment?->isEscrow ?? false;
             $display = $localPayment ? $this->resolvePaymentDisplay($localPayment) : [
                 'payment_method_label' => null,
                 'payment_method_display_label' => null,
@@ -112,8 +108,8 @@ class AdminTransactionController extends AdminBaseController
             $result['_pay_method_label'] = $display['payment_method_display_label'];
             $result['payment_method_display_label'] = $display['payment_method_display_label'];
 
-            if ($localPayment?->payment_meta) {
-                $meta = json_decode($localPayment->payment_meta, true);
+            if ($localPayment !== null && $localPayment->paymentMeta !== []) {
+                $meta = $localPayment->paymentMeta;
                 $result['EscrowYN'] = $meta['pg_raw_response']['EscrowYN']
                     ?? ($result['EscrowYN'] ?? 'N');
                 $result['_is_test_mode'] = (bool) ($meta['is_test_mode'] ?? false);

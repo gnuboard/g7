@@ -1557,7 +1557,8 @@ class Module extends AbstractModule
     public function getStorageDiskFor(string $category): string
     {
         if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
-            return $this->getStorageDisk();
+            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등, #916)을 거친다
+            return parent::getStorageDiskFor($category);
         }
 
         $override = module_setting('sirsoft-ecommerce', 'basic_info.public_asset_disk', '');
@@ -4384,6 +4385,10 @@ class Module extends AbstractModule
      * 파일을 못 지웠는데 기록을 만료로 바꾸면 남은 파일을 다시 찾을 수 없다. 그래서 테이블이 있으면(데이터를 남기는 제거)
      * 기록을 그대로 두고 실패를 돌려준다. 테이블이 이미 없으면(데이터도 삭제) 오류 로그만 남기고 성공으로 본다.
      *
+     * 파일은 저장할 때의 디스크(행 `disk` — 관리자가 고른 「비공개 첨부 저장소」)에 있다(#916). 그래서 기본 디스크에 더해
+     * 남은 행이 가리키는 디스크마다 `exports` 폴더를 지운다. 테이블이 이미 없으면 행을 볼 수 없으므로 지금의 비공개 첨부
+     * 디스크를 대신 지운다. config 에서 사라진(고아) 디스크는 건너뛴다 — 닿을 수 없는 디스크를 이유로 제거를 멈추지 않는다.
+     *
      * @return bool 파일을 지웠거나 더 할 수 있는 일이 없으면 true, 기록을 남긴 채 멈춰야 하면 false
      */
     public function purgeExportFiles(): bool
@@ -4395,11 +4400,18 @@ class Module extends AbstractModule
             Log::warning('[내보내기] 제거 중 테이블 확인 실패', ['error' => $e->getMessage()]);
         }
 
-        try {
-            $deleted = $this->getStorageFor(ExportService::STORAGE_CATEGORY)->deleteAll(ExportService::STORAGE_CATEGORY);
-        } catch (\Throwable $e) {
-            Log::error('[내보내기] 제거 중 파일 정리 실패', ['error' => $e->getMessage()]);
-            $deleted = false;
+        $deleted = true;
+        $base = $this->getStorageFor(ExportService::STORAGE_CATEGORY);
+        foreach ($this->exportFileDisks($hasTable, $base->getDisk()) as $disk) {
+            try {
+                $storage = $disk === $base->getDisk() ? $base : $base->withDisk($disk);
+                if (! $storage->deleteAll(ExportService::STORAGE_CATEGORY)) {
+                    $deleted = false;
+                }
+            } catch (\Throwable $e) {
+                Log::error('[내보내기] 제거 중 파일 정리 실패', ['disk' => $disk, 'error' => $e->getMessage()]);
+                $deleted = false;
+            }
         }
 
         if (! $deleted) {
@@ -4426,6 +4438,37 @@ class Module extends AbstractModule
         }
 
         return true;
+    }
+
+    /**
+     * 내보내기 파일이 있을 수 있는 디스크 목록을 반환합니다(기본 디스크 먼저, 고아 디스크 제외).
+     *
+     * @param  bool  $hasTable  내보내기 테이블이 남아 있는가 (데이터를 남기는 제거)
+     * @param  string  $baseDisk  모듈 기본 디스크
+     * @return array<int, string> 정리할 디스크 이름
+     */
+    private function exportFileDisks(bool $hasTable, string $baseDisk): array
+    {
+        $disks = [$baseDisk];
+
+        if ($hasTable) {
+            try {
+                if (Schema::hasColumn('ecommerce_exports', 'disk')) {
+                    $rowDisks = DB::table('ecommerce_exports')->whereNotNull('file_path')->distinct()->pluck('disk')->all();
+                    $disks = array_merge($disks, array_map('strval', $rowDisks));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('[내보내기] 제거 중 저장 디스크 확인 실패', ['error' => $e->getMessage()]);
+            }
+        } else {
+            // 행이 없으니 지금 새 파일이 가는 디스크를 지운다
+            $disks[] = $this->getStorageDiskFor(self::PRIVATE_ATTACHMENT_BINDING);
+        }
+
+        return array_values(array_filter(
+            array_unique($disks),
+            static fn (string $disk): bool => $disk !== '' && config("filesystems.disks.{$disk}") !== null
+        ));
     }
 
     /**

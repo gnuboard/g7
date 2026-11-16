@@ -22,6 +22,7 @@
 |--------|---------------|
 | 코어(`app`·`config`·`routes`·`database`·`resources/js/core`)가 확장 식별자·네임스페이스·API 경로·훅 키·소유 테이블·이벤트 이름을 직접 적음 | 코어가 훅·필터·API 를 정의하고, 답하는 확장이 있는지는 그 계약으로 판정 |
 | 확장이 매니페스트 `dependencies` 에 선언하지 않은 다른 확장의 식별자·API 경로·번역 키·클래스를 사용 | 의존하는 확장은 `dependencies` 에 선언한다. 선언 없이 협력할 때는 상대가 내보내는 **훅 키**를 구독·호출한다 |
+| 의존을 선언한 확장이라도 그 확장의 내부 PHP 클래스(Model·Service·Repository)를 import·생성·정적 호출하거나 소유 테이블을 직접 조회·갱신 | 다른 확장은 그 확장이 manifest `public_api` 로 공개한 계약(인터페이스·DTO·Enum·공개 클래스)과 공개 훅·API 만 쓴다. 훅이 넘긴 `readonly_models` 는 타입힌트·속성 읽기만 한다 ([public_api 필드](module-basics.md#public_api-필드-선택)) |
 | 설치·런타임 경로가 `_bundled/`(동봉 원본)를 읽거나 활성본이 없을 때 `_bundled` 로 폴백 | 설치본(활성 디렉토리)과 설치 기록만 읽는다. `_bundled` 는 설치·업데이트 원본과 개발 도구만 읽는다 |
 | 코어가 특정 템플릿 식별자를 골라 기본값·문맥으로 사용 | 템플릿은 설치 기록·활성 상태·템플릿이 선언한 매니페스트로 결정한다 |
 
@@ -66,6 +67,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [layout-extensions.md](layout-extensions.md) | 동적 UI 주입 (Overlay, Extension Point), 템플릿 오버라이드 |
+| [attachment-uploader.md](attachment-uploader.md) | 첨부 업로더 확장점 `attachment_uploader` — 업로더 계약, 업로더 플러그인 규약, 놓인 자리와 제외 대상 |
 
 ### 플러그인 개발
 
@@ -78,6 +80,8 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | 문서 | 설명 |
 |------|------|
 | [extension-manager.md](extension-manager.md) | Composer 오토로드, 서비스 등록, hidden 필터링 |
+| [extension-update-system.md](extension-update-system.md) | 업데이트 감지·실행·롤백, `_bundled`/`_pending`, GitHub·`--zip` 업데이트 |
+| [package-signing.md](package-signing.md) | 패키지 서명과 무결성 검증 — 서명 파일 형식, 제작자 서명 절차, 운영자 신뢰 키·미서명 정책, 검증 상태·오류 응답 |
 | [extension-icons.md](extension-icons.md) | 확장 아이콘 — 파일 관례·manifest icon 필드·규격·언어팩 합성 |
 
 ### 학습용 샘플
@@ -183,6 +187,17 @@ php artisan template:cache-clear             # 템플릿 캐시 정리
 ```bash
 php artisan extension:update-autoload   # Composer 오토로드 업데이트
 ```
+
+### 패키지 서명 (7.2.0)
+
+```bash
+php artisan extension:keygen --label=acme                 # 제작자 서명 키 만들기 (비밀키 파일 0600)
+php artisan extension:sign ./acme-shop --key=<키 파일>     # 결정적 ZIP + .sig.json 만들기 (ZIP 을 주면 서명만)
+php artisan extension:trust-key add <공개키> --label=acme --vendor=acme   # 운영자: 제작자 키 신뢰 등록
+php artisan extension:trust-key list                      # 내장 키·제작자 키 목록
+```
+
+상세: [package-signing.md](package-signing.md)
 
 ---
 

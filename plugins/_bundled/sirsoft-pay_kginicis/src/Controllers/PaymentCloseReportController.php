@@ -8,10 +8,9 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Exceptions\ProviderMismatch;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
@@ -30,12 +29,10 @@ class PaymentCloseReportController
     private const FAILURE_MESSAGE = '사용자가 KG 이니시스 결제창을 닫았습니다.';
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 처리 서비스
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약 (주문 조회·소유 확인·실패 기록)
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -53,7 +50,7 @@ class PaymentCloseReportController
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
             return ResponseHelper::error('common.failed', 429, [
-                'message' => ['Too many KG Inicis payment close reports. Please try again later.'],
+                'message' => [__('sirsoft-pay_kginicis::messages.responses.too_many_requests')],
             ]);
         }
         RateLimiter::hit($rateLimitKey, 60);
@@ -61,7 +58,7 @@ class PaymentCloseReportController
         // 클레임 추가결제(CP 채번)는 기록할 주문 결제 이력이 없다 — 결제 건은 결제 대기로 남아
         // 신청서 상세에서 재시도하므로 보고만 받고 무시한다 (주문 조회로 흘리면 404 가 프론트
         // 흐름을 끊고 error 로그만 쌓인다).
-        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+        if ($this->bridge->isClaimPaymentNumber($oid)) {
             return ResponseHelper::success('common.success', [
                 'recorded' => false,
                 'reason' => 'claim_payment',
@@ -75,14 +72,14 @@ class PaymentCloseReportController
             // authCallback 이 먼저 결제완료를 확정했다면 아래 최신 주문 조회에서 close-report 를 무시한다.
             $callbackLock = $this->acquireOrderCallbackLock('authCallback', $oid);
 
-            $order = $this->orderService->findByOrderNumber($oid);
+            $order = $this->bridge->findOrderByNumber($oid, 'kginicis');
             if (! $order) {
                 return ResponseHelper::error('common.failed', 404, [
-                    'message' => ['Order not found.'],
+                    'message' => [__('sirsoft-pay_kginicis::messages.responses.order_not_found')],
                 ]);
             }
 
-            if (! $order->order_status->isBeforePayment()) {
+            if (! $order->orderStatus->isBeforePayment()) {
                 return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'order_not_payable',
@@ -94,7 +91,7 @@ class PaymentCloseReportController
             // 성공한 것이므로 실패 처리하지 않는다(failPayment 가 옵션을 취소로 덮어 주문/옵션 상태가
             // 어긋나는 race 차단). failPayment 자체에도 동일 가드가 있으나, 여기서 차단해 불필요한
             // 마일리지 복원 시도·결제취소 이력 기록까지 미연에 방지한다.
-            if ($order->payment?->isPaid()) {
+            if ($order->payment?->isPaid) {
                 return ResponseHelper::success('common.success', [
                     'status' => 'ignored',
                     'reason' => 'payment_already_paid',
@@ -103,13 +100,13 @@ class PaymentCloseReportController
 
             if (strtoupper((string) $order->currency) !== 'KRW') {
                 return ResponseHelper::error('common.failed', 422, [
-                    'message' => ['Standard KG Inicis close report is only available for KRW orders.'],
+                    'message' => [__('sirsoft-pay_kginicis::messages.responses.krw_only')],
                 ]);
             }
 
-            if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
+            if (! $this->requestOwnsOrder($request, $order)) {
                 return ResponseHelper::error('common.failed', 403, [
-                    'message' => ['Order ownership verification failed.'],
+                    'message' => [__('sirsoft-pay_kginicis::messages.responses.ownership_verification_failed')],
                 ]);
             }
 
@@ -118,13 +115,13 @@ class PaymentCloseReportController
             ]);
             if ($expectedPrice === null) {
                 return ResponseHelper::error('common.failed', 422, [
-                    'message' => ['Payment currency is not chargeable.'],
+                    'message' => [__('sirsoft-pay_kginicis::messages.responses.currency_not_chargeable')],
                 ]);
             }
 
             if ($price !== $expectedPrice) {
                 return ResponseHelper::error('common.failed', 422, [
-                    'message' => ['Payment amount does not match the order amount.'],
+                    'message' => [__('sirsoft-pay_kginicis::messages.responses.amount_mismatch')],
                 ]);
             }
 
@@ -132,8 +129,10 @@ class PaymentCloseReportController
                 is_string($validated['payment_method'] ?? null) ? $validated['payment_method'] : null,
             );
 
-            $failedOrder = $this->orderService->failPayment(
-                $order,
+            // 현행 세 단계 순서 그대로: 결제 실패 → 간편결제 문맥 기록 → 결제 취소 이력(부록 A3 KG #120·#123·#124).
+            $failedOrder = $this->bridge->failPayment(
+                $order->orderNumber,
+                'kginicis',
                 self::FAILURE_CODE,
                 self::FAILURE_MESSAGE,
             );
@@ -142,14 +141,21 @@ class PaymentCloseReportController
 
             $this->persistEasyPayCloseContext($failedOrder, $selectedEasyPayMethod);
 
-            $this->orderService->recordPaymentCancellation(
-                $failedOrder,
+            $this->bridge->recordPaymentCancellation(
+                $failedOrder->orderNumber,
+                'kginicis',
                 self::FAILURE_CODE,
                 $closeReason !== '' ? $closeReason : self::FAILURE_MESSAGE,
             );
 
             return ResponseHelper::success('common.success', [
                 'status' => 'recorded',
+            ]);
+        } catch (ProviderMismatch) {
+            // 다른 결제사가 이미 결제(발급)한 행 — 결제 대기 행이 아니다. 거부는 첫 쓰기(결제 실패 처리)에서 나므로 아무것도 바뀌지 않았다.
+            return ResponseHelper::success('common.success', [
+                'status' => 'ignored',
+                'reason' => 'payment_not_ready',
             ]);
         } catch (LockTimeoutException) {
             return ResponseHelper::success('common.success', [
@@ -176,29 +182,27 @@ class PaymentCloseReportController
     /**
      * 결제창을 닫을 때 고른 간편결제 수단을 결제 메타에 남깁니다 (운영자 원인 파악용).
      *
-     * @param  Order  $order  실패 처리된 주문
+     * 컬럼과 meta 를 결제 행 잠금 아래 한 번에 쓴다(meta 는 현재 값에 병합).
+     *
+     * @param  OrderRecord  $order  실패 처리된 주문
      * @param  string|null  $selectedEasyPayMethod  정규화된 간편결제 수단 (없으면 기록 안 함)
-     * @return void
+     * @return void 반환값 없음
      */
-    private function persistEasyPayCloseContext(Order $order, ?string $selectedEasyPayMethod): void
+    private function persistEasyPayCloseContext(OrderRecord $order, ?string $selectedEasyPayMethod): void
     {
-        if ($selectedEasyPayMethod === null || ! $order->exists) {
+        // 결제 행이 없으면(또는 다른 결제사의 결제 뒤 행이면) 기록하지 않는다 — 현행 무동작과 같다.
+        if ($selectedEasyPayMethod === null || $order->payment === null) {
             return;
         }
 
-        $payment = $order->payment()->first();
-        if (! $payment) {
-            return;
-        }
-
-        $existingMeta = is_array($payment->payment_meta) ? $payment->payment_meta : [];
-        $payment->update([
-            'embedded_pg_provider' => $this->resolveEmbeddedPgProvider($selectedEasyPayMethod),
-            'payment_meta' => array_merge(
-                $existingMeta,
+        $this->bridge->recordPgAttributes(
+            $order->orderNumber,
+            'kginicis',
+            ['embedded_pg_provider' => $this->resolveEmbeddedPgProvider($selectedEasyPayMethod)],
+            array_merge(
                 $this->buildEasyPayPaymentMeta($selectedEasyPayMethod),
                 ['close_report_payment_method' => $selectedEasyPayMethod],
             ),
-        ]);
+        );
     }
 }

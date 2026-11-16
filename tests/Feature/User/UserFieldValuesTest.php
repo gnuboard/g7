@@ -5,6 +5,7 @@ namespace Tests\Feature\User;
 use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
 use App\Extension\HookManager;
 use App\Fields\FieldContext;
+use App\Fields\FieldRegistry;
 use App\Fields\FieldValueService;
 use App\Models\ActivityLog;
 use App\Models\FieldDefinition;
@@ -128,7 +129,9 @@ class UserFieldValuesTest extends TestCase
             'password' => 'Str0ng!Passw0rd#490', 'password_confirmation' => 'Str0ng!Passw0rd#490',
         ];
 
-        $this->postJson('/api/admin/users', $body, $this->auth())->assertStatus(422)->assertJsonValidationErrors(['custom_fields.grade']);
+        // 회원 항목을 그리는 화면은 정의 버전을 싣는다 — 싣지 않은 옛 관리자 화면의 호환은 LegacyMemberFieldScreenTest 가 잰다.
+        $this->postJson('/api/admin/users', $body + ['fields_version' => app(FieldRegistry::class)->version('core.user')], $this->auth())
+            ->assertStatus(422)->assertJsonValidationErrors(['custom_fields.grade']);
         $this->assertDatabaseMissing('users', ['email' => $body['email']]);
 
         $this->postJson('/api/admin/users', $body + ['custom_fields' => ['job' => '개발자', 'grade' => 'A']], $this->auth())->assertStatus(201);

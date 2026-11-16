@@ -208,7 +208,7 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-tosspayments::messages.responses.ownership_verification_failed'));
 
         $order->refresh();
         $this->assertEquals(OrderStatusEnum::PENDING_ORDER, $order->order_status);
@@ -336,5 +336,81 @@ class PaymentCloseReportControllerTest extends PluginTestCase
         $response->assertOk();
         $this->assertSame('ignored', $response->json('data.status'));
         $this->assertSame('order_not_payable', $response->json('data.reason'));
+    }
+
+    /**
+     * 이 결제사가 이미 가상계좌를 발급한(입금 대기) 주문의 닫힘 보고는 무시한다.
+     *
+     * 발급 저장이 커밋된 뒤 후속 처리(장바구니 정리)가 실패하면 성공 콜백이 실패 화면으로 보내고, 실패 화면 스크립트가
+     * 닫힘을 보고한다. 그 보고가 발급된 주문을 실패, 취소로 덮으면 고객은 받은 계좌로 입금할 수 없다 — 결제창이
+     * 승인, 발급 단계로 넘어가기 전(READY)만 실패로 기록한다(NHN KCP 닫힘 보고와 같은 가드).
+     *
+     * @effects close_report_ignores_own_issued_vbank_waiting_deposit
+     *
+     * @return void 반환값 없음
+     */
+    public function test_close_report_ignores_own_issued_vbank_waiting_deposit(): void
+    {
+        $order = $this->makeOrder('ORD-TOSS-CLOSE-009');
+        $order->update(['order_status' => OrderStatusEnum::PENDING_PAYMENT->value]);
+        $order->payment->update([
+            'payment_method' => PaymentMethodEnum::VBANK->value,
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT->value,
+            'transaction_id' => 'TOSS-VBANK-KEY-009',
+            'vbank_issued_at' => now(),
+        ]);
+        $this->actAsOrderOwner($order);
+
+        $response = $this->postJson(self::URL, [
+            'orderId' => 'ORD-TOSS-CLOSE-009',
+            'amount' => 10000,
+            'code' => 'confirm_failed',
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('ignored', $response->json('data.status'));
+        $this->assertSame('payment_not_ready', $response->json('data.reason'));
+
+        $fresh = $order->fresh('payment');
+        $this->assertSame(OrderStatusEnum::PENDING_PAYMENT, $fresh->order_status);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $fresh->payment->payment_status);
+    }
+
+    /**
+     * 다른 결제사가 이미 가상계좌를 발급한 주문의 닫힘 보고는 무시하고, 그 결제사의 결제 행을 바꾸지 않는다.
+     *
+     * 결제 행이 다른 결제사 것이면 이커머스 계약이 쓰기를 `ProviderMismatch` 로 거부한다. 보고는 오류(500)가
+     * 아니라 「결제 대기 행이 아님」으로 끝나야 한다 — 나이스페이먼츠 닫힘 보고와 같은 응답이다.
+     *
+     * @effects close_report_ignores_order_issued_by_another_pg
+     *
+     * @return void 반환값 없음
+     */
+    public function test_close_report_ignores_order_issued_by_another_pg(): void
+    {
+        $order = $this->makeOrder('ORD-TOSS-CLOSE-008');
+        $order->update(['order_status' => OrderStatusEnum::PENDING_PAYMENT->value]);
+        $order->payment->update([
+            'pg_provider' => 'nicepayments',
+            'payment_method' => PaymentMethodEnum::VBANK->value,
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT->value,
+            'transaction_id' => 'NICE-VBANK-TID-008',
+            'vbank_issued_at' => now(),
+        ]);
+        $this->actAsOrderOwner($order);
+
+        $response = $this->postJson(self::URL, [
+            'orderId' => 'ORD-TOSS-CLOSE-008',
+            'amount' => 10000,
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('ignored', $response->json('data.status'));
+        $this->assertSame('payment_not_ready', $response->json('data.reason'));
+
+        $fresh = $order->fresh('payment');
+        $this->assertSame(OrderStatusEnum::PENDING_PAYMENT, $fresh->order_status);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $fresh->payment->payment_status);
+        $this->assertSame('nicepayments', $fresh->payment->pg_provider);
     }
 }

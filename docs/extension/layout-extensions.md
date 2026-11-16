@@ -505,6 +505,7 @@ Extension Point는 레이아웃의 다음 섹션에서 사용할 수 있습니�
 | `components`   | ✅   | 메인 컴포넌트 트리 (기본)            |
 | `modals`       | ✅   | 모달 내부 컴포넌트 트리 (v1.17.0+)   |
 | 반복 렌더 템플릿 | ✅ | DataGrid·CardGrid 의 셀 템플릿(`props.columns[].cellChildren`·`props.cardColumns[].cellChildren`), 확장 행·하위 행 템플릿(`props.expandChildren`·`props.subRowChildren`) (7.1.0+) |
+| 끌어 정렬 행 템플릿 | ✅ | `<sortable>` 의 `<item-template>`(노드의 `itemTemplate`) (7.2.0+) |
 
 ```text
 v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
@@ -532,6 +533,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `address_search_slot` | 배송지·회원정보의 주소 입력 칸(5곳) | 다음 우편번호 | 주소 검색 단추가 없다 |
 | `html_content` | 페이지 본문·약관·개인정보 창, 게시글 본문·원글·답글, 글쓰기의 원글 미리보기 | 편집기 플러그인(CKEditor5) | 편집기 본문 서식(`ck-content`)이 빠진 채 기본 HTML 로 보인다 |
 | `html_editor` | 글쓰기 본문 입력 칸 | 편집기 플러그인(CKEditor5) | 본문이 서식 편집기 대신 기본 입력 칸으로 나온다 |
+| `attachment_uploader` (7.2.0+) | 게시판 글쓰기 첨부, 마이페이지 클레임 신청 사진·리뷰 작성 사진(선택형). 속성 `uploader`(업로더 계약)와 기본 업로더 이벤트와 같은 콜백을 넘긴다 | 업로더 플러그인(번들 사용처 없음) | 업로더 플러그인을 켜도 그 칸은 기본 업로더 그대로다. 계약은 [attachment-uploader.md](attachment-uploader.md) |
 | `identity_provider_ui:provider` | 본인인증 요구 창(`_user_base` 모달) | 본인인증 플러그인 2종(KG이니시스·NHN KCP) | 본인인증 창에 제공자 인증 단추가 없다 |
 | `home_hero` (7.2.0+) | 사이트 홈 본문 맨 위(본문 상자 밖 전폭 슬롯 `page_top`). 본문 상자 클래스를 속성 `contentClass`·`contentClassTablet`·`contentClassDesktop` 으로 넘긴다 | 히어로섹션 | 사이트 홈 상단 배너 슬라이더가 보이지 않는다 |
 | `shop_hero` (7.2.0+) | 쇼핑몰 메인 본문 맨 위(본문 상자 밖 전폭 슬롯 `page_top`). 속성은 `home_hero` 와 같다 | 히어로섹션 | 쇼핑몰 메인 상단 배너 슬라이더가 보이지 않는다 |
@@ -549,6 +551,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `member_field_input` | 회원 항목을 그리는 조각(가입, 내 정보, 추가 정보 입력, 소셜과 SSO 가입 창, 게시판 비회원 입력, 주문서 추가 입력)에서 `renderer` 가 `extension` 인 항목 자리. 속성 `field`, `error`, `disabled`, `formKey` 를 넘긴다 | (번들 사용처 없음. 회원 항목 유형을 더한 확장의 자리) | 확장이 더한 유형의 항목에 입력칸이 없다. 계약은 [user-template-contract.md](user-template-contract.md#회원-항목-확장점-2종) |
 
 - `html_editor` 의 props(7.1.5): `name`·`content`/`value`·`isHtml`·`multilingual`·`placeholder`·`label`·`rows`·`disabled`/`readOnly`·`showHtmlModeToggle`, 그리고 **`mediaUpload`** — 본문 미디어 업로드 계약(`ContentMediaUploadTarget` 또는 `null`). 편집기 플러그인은 이 값을 읽기만 하고, 없으면 종전 동작이다. 형식·서버 도구는 [본문 미디어 업로드 계약](content-media.md).
+- `attachment_uploader` 의 props(7.2.0): **`uploader`** — 첨부 업로더 계약(버전 1: 업로드 주소·정책·컬렉션·초기 파일·업로드 신호 이름 등). 기본 업로더는 `default` 에 있고, 업로더 플러그인은 `mode="replace"` 로 바꾼다. 관리자 템플릿의 같은 자리(환경설정 일반·SEO)와 모듈·플러그인 화면 전체 목록, 플러그인 규약은 [첨부 업로더 확장점](attachment-uploader.md).
 - 슬롯형 확장점은 `<extension-point name="…"><default/></extension-point>` 로 둔다. 주입이 없으면 아무것도 그리지 않는다.
 - 메뉴 겹침(`home_hero`·`shop_hero` 를 여는 템플릿 선택 계약, 7.2.0+): 맨 위 배너가 `<html data-header-overlay="dark|light">`(배너 바탕 밝기)를 달면 템플릿은 보이는 헤더 높이를 `--g7-header-height`(px)로 문서 뿌리에 알리고, 배너 자리를 그만큼 위로 당겨 헤더를 배너 위에 투명하게 겹친다(글자는 dark → 흰색, light → 검은색, 스크롤하면 원래 배경). 배너는 이 값만큼 문구를 아래에서 시작한다. 지원하지 않는 템플릿은 아무것도 하지 않으면 된다 — 변수가 없어 배너가 겹침 없이 그려진다. sirsoft-basic 구현: `templates/_bundled/sirsoft-basic/src/support/headerOverlay.ts`·`templates/_bundled/sirsoft-basic/src/styles/main.css`.
 - 모달 안의 목록(예: 탈퇴 경고)은 노드 id 를 겨냥하는 Overlay 가 닿지 않으므로 확장점으로 연다.
@@ -586,6 +589,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 - 기준 폼을 못 찾으면(크게 고친 복사 템플릿) 넣지 않고 경고 로그를 (템플릿, 화면, 앵커)마다 한 번 남긴다. 화면은 오늘과 같다.
 - 이 보완을 원하지 않는 템플릿은 그 확장점을 직접 둔다(예: `<extension-point name="auth_login_extensions" data-if="{{false}}"/>`).
 - 안내 문구는 어느 템플릿에서나 보이는 코어 키 `core.compat.*` 를 쓴다.
+- 회원 항목 조각(`partials/member/_member_fields`)과 그 확장점(`member_field_input`, 관리자 `member_field_type_options`)은 심이 채우지 않는다. 대신 서버가 회원 폼 요청(가입, 내 정보 수정, 관리자 회원 추가와 수정)에 정의 버전 `fields_version` 이 없으면 옛 화면으로 보고, 그 화면에 입력칸이 없던 항목(운영자 추가 항목, 확장 선언 항목, 7.1.x 화면에 없던 기본 항목)의 필수 규칙을 값을 보냈을 때만 건다. 추가 정보 입력 대기 표시는 남기지 않는다. 표는 [user-template-contract.md](user-template-contract.md#옛-화면-호환-71x-템플릿).
 
 ##### 게시판 확장 자리 5종의 props
 

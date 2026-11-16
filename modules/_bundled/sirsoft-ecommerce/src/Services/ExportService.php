@@ -36,6 +36,7 @@ use Modules\Sirsoft\Ecommerce\Jobs\GenerateExportJob;
 use Modules\Sirsoft\Ecommerce\Models\Export;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportDownloadRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Ecommerce\Support\ExportAccess;
 use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -49,9 +50,15 @@ use Throwable;
  *
  * 큐가 sync 여도(D16) 요청을 받는다 — 응답을 먼저 보내고 같은 PHP 프로세스가 응답 뒤에 만든다.
  * 저장소가 공개 디스크여도(D17) 만든다 — 경고만 남기고 운영자 책임으로 둔다.
+ *
+ * 저장소는 관리자가 고른 「비공개 첨부 저장소」 디스크다(「기본」이면 `modules`). 파일을 저장할 때 그 디스크를 행(`disk`)에
+ * 남기고, 다운로드·삭제·만료 정리는 행 disk 로 간다 — 저장소를 바꿔도 그 전에 만든 파일에 닿는다. 행 disk 가 비었거나
+ * config 에서 사라진(고아) 디스크면 주입 스토리지로 폴백한다(`ResolvesRowStorage`).
  */
 class ExportService
 {
+    use ResolvesRowStorage;
+
     /**
      * 저장소 카테고리
      */
@@ -114,7 +121,7 @@ class ExportService
      * @param  ExportFormatRegistry  $formats  형식 레지스트리
      * @param  ExportValueFormatter  $formatter  셀 값 변환기
      * @param  UserRepositoryInterface  $users  회원 Repository
-     * @param  StorageInterface  $storage  모듈 저장소 (비공개 기본 디스크)
+     * @param  StorageInterface  $storage  모듈 저장소 (비공개 첨부 저장소 디스크 — 새 파일을 여기에 저장한다)
      * @param  CacheInterface  $cache  모듈 캐시 (일회용 다운로드 토큰)
      */
     public function __construct(
@@ -690,6 +697,8 @@ class ExportService
                     'status' => ExportStatusEnum::COMPLETED->value,
                     'file_name' => $this->fileName($type, $format, $export->requested_at ?? $completedAt, $ctx->timezone),
                     'file_path' => $path,
+                    // 저장한 디스크 — 다운로드·삭제·정리는 이 디스크로 간다(저장소를 바꾼 뒤에도 이 파일에 닿는다)
+                    'disk' => $this->storage->getDisk(),
                     'file_size' => filesize($tempPath) ?: 0,
                     'checksum_sha256' => hash_file('sha256', $tempPath),
                     'processed_rows' => $processed,
@@ -1032,7 +1041,8 @@ class ExportService
         $format = $this->formats->find($export->format);
         $mime = $format?->mimeType() ?? 'application/octet-stream';
 
-        $response = $this->storage->response(self::STORAGE_CATEGORY, (string) $export->file_path, (string) $export->file_name, [
+        // 행 disk 로 낸다 — 저장소를 바꾸기 전에 만든 파일은 그때의 디스크에 있다
+        $response = $this->storageForRow($export->disk)->response(self::STORAGE_CATEGORY, (string) $export->file_path, (string) $export->file_name, [
             'Content-Type' => $mime,
             'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
         ]);
@@ -1206,7 +1216,10 @@ class ExportService
     }
 
     /**
-     * 저장된 파일을 지웁니다(경로가 없으면 지운 것으로 본다).
+     * 저장된 파일을 행 disk 에서 지웁니다(경로가 없으면 지운 것으로 본다).
+     *
+     * 삭제·만료 정리·삭제 실패 재시도가 모두 여기를 지난다. 지금 주입된 디스크로 지우면 저장소를 바꾸기 전 파일은
+     * 「없음 → 지운 것」으로 처리돼 개인정보가 담긴 파일이 그때의 디스크에 영구히 남는다.
      *
      * @param  Export  $export  작업
      * @return bool 지웠거나 지울 파일이 없으면 true, 삭제에 실패하면 false
@@ -1218,12 +1231,12 @@ class ExportService
         }
 
         try {
-            if ($this->storage->delete(self::STORAGE_CATEGORY, (string) $export->file_path)) {
+            if ($this->storageForRow($export->disk)->delete(self::STORAGE_CATEGORY, (string) $export->file_path)) {
                 return true;
             }
-            Log::warning('[내보내기] 파일 삭제 실패', ['export_id' => $export->id]);
+            Log::warning('[내보내기] 파일 삭제 실패', ['export_id' => $export->id, 'disk' => $export->disk]);
         } catch (Throwable $e) {
-            Log::warning('[내보내기] 파일 삭제 실패', ['export_id' => $export->id, 'error' => $e->getMessage()]);
+            Log::warning('[내보내기] 파일 삭제 실패', ['export_id' => $export->id, 'disk' => $export->disk, 'error' => $e->getMessage()]);
         }
 
         return false;

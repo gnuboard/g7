@@ -122,6 +122,35 @@ function publishBusy(busy: boolean): void {
     (window as any).G7Core?.state?.setGlobal?.({ coreUpdateBusy: busy });
 }
 
+/** 패키지 무결성 거절 표지 (#916) — 같은 409 를 작업 잠금도 쓰므로 상태 코드가 아니라 이 표지로 가른다. */
+const INTEGRITY_MARKERS = ['package_unsigned', 'package_signature_invalid', 'package_signer_untrusted'] as const;
+
+/**
+ * 착수 거절이 패키지 무결성 거절이면 그 내용을 꺼낸다.
+ *
+ * @param error 착수 요청 예외
+ * @returns 무결성 거절이면 `{ integrity, message }`, 아니면 null
+ */
+function integrityRejectionOf(error: any): { integrity: any; message: string } | null {
+    const errors = error?.response?.data?.errors ?? error?.data?.errors ?? error?.response?.errors ?? null;
+
+    if (!errors || typeof errors !== 'object' || !INTEGRITY_MARKERS.some((marker) => !!errors[marker])) {
+        return null;
+    }
+
+    return { integrity: errors.integrity ?? null, message: messageOf(error) };
+}
+
+/**
+ * 무결성 거절 안내를 전역에 싣는다 — 공용 안내 조각(`_package_integrity_notice`)이 이 두 값을 읽는다.
+ *
+ * @param integrity 응답 `errors.integrity` (지울 때 null)
+ * @param message 응답 `message` (지울 때 null)
+ */
+function publishIntegrity(integrity: unknown, message: string | null): void {
+    (window as any).G7Core?.state?.setGlobal?.({ packageIntegrity: integrity, packageIntegrityMessage: message });
+}
+
 /**
  * 응답 봉투에서 데이터부를 꺼낸다.
  *
@@ -369,7 +398,11 @@ async function drive(initial?: any): Promise<any> {
  * 착수 선택(`action.params`)은 레이아웃이 폼 상태에서 채워 넘긴다. **여기 없는 값은
  * 서버에도 없다** — `force`·`prune`·백업 생략은 웹 동선에 존재하지 않는 선택이다(D27).
  *
- * @param action 액션 정의 (params: update_bundled_extensions · rebuild_search_index · layout_strategy · zip_file)
+ * 서버가 미서명 패키지(409)·서명 불일치(422)로 착수를 거절하면(#916) 토스트 대신 거절 내용을 전역에 실어
+ * 화면의 공용 안내 조각이 그리게 한다. 정책이 허용하면 화면의 시작 버튼이 「미서명으로 계속」이 되어
+ * 같은 선택에 `allow_unsigned` 만 더해 이 핸들러를 다시 부른다(서버는 앞 요청을 보관하지 않는다).
+ *
+ * @param action 액션 정의 (params: update_bundled_extensions · rebuild_search_index · layout_strategy · zip_file · allow_unsigned)
  */
 export async function startCoreUpdateHandler(action?: any): Promise<void> {
     const G7Core = (window as any).G7Core;
@@ -385,12 +418,21 @@ export async function startCoreUpdateHandler(action?: any): Promise<void> {
         update_bundled_extensions: params.update_bundled_extensions !== false,
         rebuild_search_index: params.rebuild_search_index === true,
         layout_strategy: params.layout_strategy === 'keep' ? 'keep' : 'overwrite',
+        // 무결성을 아는 화면의 표식 — 늘 싣는다. 서버는 이 표식이 없는 착수를 「미서명으로 계속」을 그릴 수 없는
+        // 옛 화면(7.1.x 템플릿 복사본)으로 보고 미서명 배포본을 확인 없이 허용한다(#916 옛 화면 호환).
+        integrity_aware: true,
     };
 
     // 수동 ZIP 은 **고른 경우에만** 싣는다 — 빈 값을 보내면 서버가 그것을 지정으로
     // 읽어 자동 내려받기 경로가 사라진다 (㉯ — D18).
     if (typeof params.zip_file === 'string' && params.zip_file.trim() !== '') {
         payload.zip_file = params.zip_file.trim();
+    }
+
+    // 미서명 확인(#916) — 거절 안내를 본 운영자가 「미서명으로 계속」을 눌렀을 때만 싣는다.
+    // 레이아웃 표현식이 문자열로 넘길 수도 있어 참 값을 넓게 받는다.
+    if (params.allow_unsigned === true || params.allow_unsigned === 1 || params.allow_unsigned === '1' || params.allow_unsigned === 'true') {
+        payload.allow_unsigned = true;
     }
 
     // 새 실행은 새 예산으로 시작한다 — 되돌리지 않으면 같은 화면에서 두 번째 업데이트를
@@ -401,12 +443,23 @@ export async function startCoreUpdateHandler(action?: any): Promise<void> {
 
     try {
         const status = unwrap(await G7Core.api.post(START_URL, payload));
+        // 착수됐으면 지난 거절 안내는 이번 실행과 무관하다
+        publishIntegrity(null, null);
         publish(status);
 
         await drive(status);
     } catch (error) {
-        logger.error('코어 업데이트 착수 실패', error);
-        G7Core?.toast?.error?.(messageOf(error));
+        const rejection = integrityRejectionOf(error);
+
+        if (rejection) {
+            // 무결성 거절은 실패 토스트가 아니라 화면 안 안내로 보인다 — 계속 여부를 운영자가 고른다
+            logger.warn('코어 업데이트 착수가 패키지 무결성 검사로 거절되었습니다.', rejection.integrity);
+            publishIntegrity(rejection.integrity, rejection.message);
+        } else {
+            logger.error('코어 업데이트 착수 실패', error);
+            publishIntegrity(null, null);
+            G7Core?.toast?.error?.(messageOf(error));
+        }
         await refreshCoreUpdateStatusHandler();
     } finally {
         publishBusy(false);

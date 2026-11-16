@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
+use App\Exceptions\PackageIntegrityException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\LanguagePack\BulkActivateRequest;
@@ -14,6 +15,7 @@ use App\Http\Requests\LanguagePack\InstallFromFileRequest;
 use App\Http\Requests\LanguagePack\InstallFromGithubRequest;
 use App\Http\Requests\LanguagePack\InstallFromUrlRequest;
 use App\Http\Requests\LanguagePack\ManifestPreviewRequest;
+use App\Http\Requests\LanguagePack\PerformLanguagePackUpdateRequest;
 use App\Http\Requests\LanguagePack\UninstallLanguagePackRequest;
 use App\Http\Resources\LanguagePackCollection;
 use App\Http\Resources\LanguagePackResource;
@@ -121,7 +123,8 @@ class LanguagePackController extends AdminBaseController
             $pack = $this->service->installFromFile(
                 $request->file('file'),
                 (bool) ($validated['auto_activate'] ?? false),
-                $this->getCurrentUser()?->id
+                $this->getCurrentUser()?->id,
+                $request->packageIntegrityOptions()
             );
 
             return $this->success(
@@ -129,6 +132,9 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -155,7 +161,9 @@ class LanguagePackController extends AdminBaseController
             $pack = $this->service->installFromGithub(
                 $validated['github_url'],
                 (bool) ($validated['auto_activate'] ?? false),
-                $this->getCurrentUser()?->id
+                $this->getCurrentUser()?->id,
+                false,
+                $request->packageIntegrityOptions()
             );
 
             return $this->success(
@@ -163,6 +171,9 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -224,7 +235,10 @@ class LanguagePackController extends AdminBaseController
                 $validated['url'],
                 $validated['checksum'] ?? null,
                 (bool) ($validated['auto_activate'] ?? false),
-                $this->getCurrentUser()?->id
+                $this->getCurrentUser()?->id,
+                false,
+                $validated['signature_url'] ?? null,
+                $request->packageIntegrityOptions()
             );
 
             return $this->success(
@@ -232,6 +246,9 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -382,12 +399,11 @@ class LanguagePackController extends AdminBaseController
     /**
      * 언어팩을 신버전으로 업데이트합니다 (GitHub 재다운로드 + 적용).
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  PerformLanguagePackUpdateRequest  $request  업데이트 요청 (미서명 계속 여부)
      * @param  int  $id  언어팩 ID
      * @return JsonResponse 업데이트된 언어팩
      */
-    // audit:allow controller-base-request-injection reason: 입력 검증 없음. Request 는 Resource::toArray($request) 전달용
-    public function performUpdate(Request $request, int $id): JsonResponse
+    public function performUpdate(PerformLanguagePackUpdateRequest $request, int $id): JsonResponse
     {
         $pack = $this->service->find($id);
         if (! $pack) {
@@ -395,12 +411,15 @@ class LanguagePackController extends AdminBaseController
         }
 
         try {
-            $updated = $this->service->performUpdate($pack);
+            $updated = $this->service->performUpdate($pack, false, $request->packageIntegrityOptions());
 
             return $this->success(
                 'language_packs.update_success',
                 (new LanguagePackResource($updated))->toArray($request)
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);

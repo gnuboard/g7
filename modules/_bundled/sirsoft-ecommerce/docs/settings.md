@@ -438,7 +438,7 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
+| `sirsoft-koreaexim` | 플러그인 | `>=1.4.0` |
 | `sirsoft-pay_kginicis` | 플러그인 | `>=1.4.0` |
 | `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.4.0` |
 | `sirsoft-pay_nicepayments` | 플러그인 | `>=1.4.0` |
@@ -455,7 +455,7 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-board` | 모듈 | `*` |
-| `sirsoft-hero_section` | 플러그인 | `*` |
+| `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
 | `sirsoft-basic` | 템플릿 | `>=1.3.4` |
 <!-- @generated:dependencies END -->

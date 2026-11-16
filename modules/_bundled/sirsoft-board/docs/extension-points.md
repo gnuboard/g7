@@ -649,6 +649,13 @@ Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 
 보인 채 잠기며, 바꿀 수 없다는 안내를 냅니다 — 칸을 열어 두면 선택지가 안내(빈 값) 하나뿐이라 그것을 고르고
 저장하는 순간 저장된 문의 게시판이 지워집니다. 남의 화면에 조각을 새로 붙일 때도 그 화면에 올 수 있는 역할이
 게시판 API 권한을 갖는지 먼저 확인합니다.
+
+이 모듈 관리자 화면의 첨부 업로더 — 관리자 글쓰기 첨부(`_attachments`)와 게시판 설정 반응 유형 아이콘 4곳(넓은 표의 행·새 행, 좁은 화면 카드의
+행·새 행) — 은 코어 확장점 `attachment_uploader` 의 기본 업로더(default)다(7.2.0). 업로더 플러그인이 `mode="replace"` 로 바꿀 수 있다.
+계약 `uploader` 의 `context.owner` 는 `sirsoft-board`, `purpose` 는 `admin_post_attachments`·`reaction_type_icon` 이다. 글쓰기 첨부는 저장 버튼의
+`upload:board_attachments` 신호로 올리고(새 글은 정렬 주소 `null`), 업로드 권한이 없으면 계약의 `disabled` 가 참이다. 반응 아이콘은 고르는 즉시
+올리고 정렬 API 가 없어 정렬 주소가 `null` 이다(끌어 정렬 표의 행 템플릿 안 확장점도 서버가 채운다). 사용자 글쓰기의 첨부 자리는 사용자 템플릿이
+같은 확장점으로 연다. 계약과 규약은 코어 문서 `docs/extension/attachment-uploader.md`.
 <!-- @intent END -->
 
 ### 사용자 화면 자리 (sirsoft-basic)
@@ -677,6 +684,21 @@ props 계약:
 (`sirsoft-board.post.after_create`·`after_update` 등, 위 「발행 훅」 표)으로 처리합니다. 목록·상세에 그 값을 실어 보내는 것도
 조회 훅의 몫입니다. 자리마다의 놓는 곳·호스트 규칙은 코어 레이아웃 확장 문서의 「템플릿이 열어 두어야 하는 확장점」을 봅니다.
 <!-- @intent END -->
+
+## 공개 PHP 계약
+
+1.3.0 부터 다른 확장은 이 모듈의 Model, Service, Repository, 테이블을 직접 쓰지 않고 매니페스트 `public_api` 가 공개하는
+`Modules\Sirsoft\Board\Contracts` 네임스페이스만 쓴다. 계약은 서비스 컨테이너로 주입받고(`app(BoardDirectory::class)`), 메서드가
+늘어도 계약 판(`VERSION`)은 그대로이며 구현은 이 모듈만 한다.
+
+| 계약 | 하는 일 | 주요 메서드 |
+|---|---|---|
+| `Contracts\BoardDirectory` | 게시판 찾기와 이름, 주소(배너 위치 등에서 게시판을 고를 때) | `findBySlug`, `findById`, `findByIds`, `labelsBySlugs`, `search`(slug 와 다국어 이름 부분 일치) |
+
+- 값은 읽기 전용 객체 `Contracts\Data\BoardSummary`(`id`, `slug`, `label` 현재 언어 이름, `url` 사이트 게시판 목록 경로)다.
+  `fromModel()` 은 이 모듈 내부용이라 쓰지 않는다.
+- 이 계약에 기대는 확장은 `dependencies`(또는 버전 제약형 `integrations`)에 `sirsoft-board: ">=1.3.0"` 을 적는다. 선택 연동이면
+  계약이 바인딩됐는지(`app()->bound(BoardDirectory::class)`)도 함께 보고 기능을 켠다.
 
 ## 미들웨어
 

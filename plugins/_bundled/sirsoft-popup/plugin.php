@@ -347,7 +347,8 @@ class Plugin extends AbstractPlugin
     public function getStorageDiskFor(string $category): string
     {
         if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
-            return $this->getStorageDisk();
+            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등, #916)을 거친다
+            return parent::getStorageDiskFor($category);
         }
 
         $override = plugin_setting('sirsoft-popup', 'public_asset_disk', '');

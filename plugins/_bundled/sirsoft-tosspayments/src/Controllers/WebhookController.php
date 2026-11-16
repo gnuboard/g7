@@ -7,11 +7,10 @@ namespace Plugins\Sirsoft\Tosspayments\Controllers;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentCompletion;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\DepositAfterCancelRecorder;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\Tosspayments\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\Tosspayments\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\Tosspayments\Concerns\VerifiesTossApprovedAmount;
@@ -36,12 +35,12 @@ class WebhookController
     private const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 공개 결제 계약 (주문 조회, 결제완료·실패, 취소 후 입금 기록)
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
      * @param  TossPaymentsApiService  $apiService  토스페이먼츠 API 서비스 (발급 금액 기록이 없는 결제행의 결제 조회)
      */
     public function __construct(
-        private OrderProcessingService $orderService,
+        private PaymentGatewayBridge $bridge,
         private PluginSettingsService $pluginSettingsService,
         private TossPaymentsApiService $apiService,
     ) {}
@@ -70,7 +69,7 @@ class WebhookController
         ]);
 
         try {
-            $order = $this->orderService->findByOrderNumber($orderId);
+            $order = $this->bridge->findOrderByNumber($orderId, self::TOSS_PROVIDER);
 
             if (! $order) {
                 Log::error('TossPayments: deposit webhook - order not found', ['orderId' => $orderId]);
@@ -78,7 +77,6 @@ class WebhookController
                 return $this->plain('FAIL');
             }
 
-            $order->load('payment');
             $payment = $order->payment;
 
             if (! $payment) {
@@ -88,14 +86,14 @@ class WebhookController
             }
 
             // 1. 리플레이 — 이미 결제완료된 거래이면 멱등 200
-            if ($this->wasAlreadyPaid($payment->transaction_id)) {
-                $this->logReplayDetected((string) $payment->transaction_id, $orderId, 'deposit webhook');
+            if ($this->wasAlreadyPaid($payment->transactionId)) {
+                $this->logReplayDetected((string) $payment->transactionId, $orderId, 'deposit webhook');
 
                 return $this->plain('OK');
             }
 
             // 2. secret 대조 (위조 방지) — 설정으로 강제 시에만
-            $storedSecret = (string) ($payment->payment_meta['toss_secret'] ?? '');
+            $storedSecret = (string) ($payment->paymentMeta['toss_secret'] ?? '');
             if ($this->shouldVerifySecret() && ! $this->secretMatches($storedSecret, $secret)) {
                 Log::warning('TossPayments: deposit webhook secret mismatch', [
                     'orderId' => $orderId,
@@ -113,16 +111,16 @@ class WebhookController
             //
             // 들어온 돈은 기록하고 운영자에게 알린다(P-D1 · Q11) — 주문은 되살리지 않고 자동 환불도 하지 않는다.
             // 금액은 발급 때 대조해 둔 청구액이다(통보 본문에는 금액이 없다). 같은 거래의 재전송은 한 번만 기록된다.
-            if ($order->order_status === OrderStatusEnum::CANCELLED) {
+            if ($order->orderStatus === OrderStatusEnum::CANCELLED) {
                 Log::warning('TossPayments: deposit webhook - order is cancelled', [
                     'orderId' => $orderId,
                 ]);
 
                 if ($status === 'DONE') {
-                    app(DepositAfterCancelRecorder::class)->record(
-                        $order,
-                        (float) ($payment->payment_meta['toss_approved_amount'] ?? $payment->paid_amount_local ?? 0),
-                        'tosspayments',
+                    $this->bridge->recordDepositAfterCancel(
+                        $order->orderNumber,
+                        self::TOSS_PROVIDER,
+                        (float) ($payment->paymentMeta['toss_approved_amount'] ?? $payment->paidAmountLocal),
                         $transactionKey !== '' ? $transactionKey : null,
                     );
                 }
@@ -131,9 +129,7 @@ class WebhookController
             }
 
             // 4. 저장 컨텍스트 검증 — 입금대기 상태여야 함
-            $paymentStatus = $payment->payment_status instanceof PaymentStatusEnum
-                ? $payment->payment_status->value
-                : (string) $payment->payment_status;
+            $paymentStatus = $payment->paymentStatus->value;
 
             if ($paymentStatus !== PaymentStatusEnum::WAITING_DEPOSIT->value) {
                 Log::warning('TossPayments: deposit webhook - not waiting for deposit', [
@@ -152,12 +148,12 @@ class WebhookController
                 // 되고, 결제 통화와 단위도 다르다. 발급 때 청구액과 대조해 둔 금액을 쓰고, 그 기록이
                 // 없는 결제행(이 대조가 생기기 전에 발급된 건)은 토스 결제 조회로 서버에서 확인한다.
                 $approvedAmount = $this->tossApprovedAmount([
-                    'totalAmount' => $payment->payment_meta['toss_approved_amount'] ?? null,
+                    'totalAmount' => $payment->paymentMeta['toss_approved_amount'] ?? null,
                 ]);
 
                 if ($approvedAmount === null) {
                     try {
-                        $approvedAmount = $this->lookupDepositedAmount($orderId, (string) $payment->transaction_id);
+                        $approvedAmount = $this->lookupDepositedAmount($orderId, (string) $payment->transactionId);
                     } catch (\Throwable $e) {
                         // 조회 실패는 일시 장애일 수 있다 — 대조를 건너뛰지 않고 재전송을 받도록 실패로 답한다.
                         Log::error('TossPayments: deposit webhook - payment lookup failed', [
@@ -190,16 +186,25 @@ class WebhookController
                 // 달라지는 별개 식별자(`txrd_…`)이고, 그것으로 취소를 부르면 토스가
                 // **「존재하지 않는 결제 정보 입니다」** 로 거절한다(S1-D10 — 실측: 가상계좌 환불이
                 // 승인까지 간 뒤 실행에서만 실패). 발급 때 저장된 값이 없을 때만 폴백으로 쓴다.
-                $this->orderService->completePayment($order, [
-                    'transaction_id' => $payment->transaction_id ?: ($transactionKey ?: null),
-                    'payment_meta' => array_merge($payment->payment_meta ?? [], [
-                        'deposit_confirmed_at' => $validated['createdAt'] ?? null,
-                        'webhook_status' => 'DONE',
-                        // 입금통보의 거래 식별자는 추적용으로 따로 남긴다.
-                        'deposit_transaction_key' => $transactionKey ?: null,
-                        'toss_approved_amount' => $approvedAmount,
-                    ]),
-                ], $approvedAmount);
+                //
+                // 결제 meta 는 이커머스가 넘겨 주는 현재 meta 에 입금 정보를 얹어 통째로 바꾼다(종전 병합과 같은 결과).
+                $depositMeta = [
+                    'deposit_confirmed_at' => $validated['createdAt'] ?? null,
+                    'webhook_status' => 'DONE',
+                    // 입금통보의 거래 식별자는 추적용으로 따로 남긴다.
+                    'deposit_transaction_key' => $transactionKey ?: null,
+                    'toss_approved_amount' => $approvedAmount,
+                ];
+
+                $this->bridge->completePayment(
+                    $order->orderNumber,
+                    self::TOSS_PROVIDER,
+                    new PaymentCompletion(
+                        transactionId: $payment->transactionId ?: ($transactionKey ?: null),
+                        paymentMeta: fn (array $current): array => array_merge($current, $depositMeta),
+                    ),
+                    $approvedAmount,
+                );
 
                 Log::info('TossPayments: deposit confirmed', ['orderId' => $orderId]);
 
@@ -207,7 +212,7 @@ class WebhookController
             }
 
             // status === CANCELED → 입금 취소
-            $this->orderService->failPayment($order, 'DEPOSIT_CANCELED', 'Virtual account deposit canceled');
+            $this->bridge->failPayment($order->orderNumber, self::TOSS_PROVIDER, 'DEPOSIT_CANCELED', 'Virtual account deposit canceled');
 
             Log::info('TossPayments: deposit canceled', ['orderId' => $orderId]);
 
@@ -245,7 +250,7 @@ class WebhookController
         // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 조회 분기를 그대로 태우면 정상 동작마다
         // `order not found` warning 이 남아 운영자 로그에서 결함으로 읽힌다. 이 핸들러는 상태
         // 동기화 로깅 전용이라 클레임 결제 건에 대해 별도로 반영할 상태가 없으므로 그대로 종결한다.
-        if (ClaimPayment::isClaimPaymentNumber($orderId)) {
+        if ($this->bridge->isClaimPaymentNumber($orderId)) {
             Log::info('TossPayments: payment-status webhook - claim payment (no order lookup)', [
                 'payment_number' => $orderId,
                 'toss_status' => $pgStatus,
@@ -254,7 +259,7 @@ class WebhookController
             return $this->plain('OK');
         }
 
-        $order = $this->orderService->findByOrderNumber($orderId);
+        $order = $this->bridge->findOrderByNumber($orderId, self::TOSS_PROVIDER);
 
         if (! $order) {
             Log::warning('TossPayments: payment-status webhook - order not found', ['orderId' => $orderId]);
@@ -262,9 +267,7 @@ class WebhookController
             return $this->plain('OK');
         }
 
-        $order->load('payment');
-        $localStatus = $order->payment?->payment_status;
-        $localStatusValue = $localStatus instanceof PaymentStatusEnum ? $localStatus->value : (string) $localStatus;
+        $localStatusValue = (string) $order->payment?->paymentStatus->value;
 
         Log::info('TossPayments: payment-status synced', [
             'orderId' => $orderId,

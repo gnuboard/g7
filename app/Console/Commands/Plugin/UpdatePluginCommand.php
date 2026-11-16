@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Concerns\HandlesPackageIntegrity;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
@@ -13,6 +14,7 @@ use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Exceptions\ExtensionUpdateFailedException;
+use App\Extension\Integrity\PackageIntegrityOptions;
 use App\Extension\PluginManager;
 use App\Extension\Vendor\VendorMode;
 use Illuminate\Console\Command;
@@ -20,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 
 class UpdatePluginCommand extends Command
 {
+    use HandlesPackageIntegrity;
     use HasProgressBar;
     use HasUnifiedConfirm;
     use LocalizesDescription;
@@ -40,6 +43,8 @@ class UpdatePluginCommand extends Command
         {--layout-strategy=overwrite : 레이아웃 전략 (overwrite|keep)}
         {--source=auto : 업데이트 소스 (auto|bundled|github) — bundled 는 _bundled 만 사용(GitHub 우회)}
         {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 plugin.json 기준)}
+        {--allow-unsigned : 서명되지 않은 패키지(또는 이 서버에서 서명을 검증할 수 없는 패키지)를 확인 없이 계속 — 답할 수 없는 실행(cron·CI)은 이 옵션이 없으면 실패. --force 는 이 확인을 대신하지 않음. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시}
+        {--signature= : --zip 의 서명 파일(.sig.json) 경로 — 생략하면 ZIP 옆 <zip>.sig.json 을 자동으로 씀}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}
         {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
@@ -103,6 +108,12 @@ class UpdatePluginCommand extends Command
         }
 
         $sourceOverride = $sourceOption === 'auto' ? null : $sourceOption;
+
+        // 패키지 무결성 선택(--allow-unsigned·--signature) — 서명 파일이 없으면 시작하지 않는다(7.2.0)
+        $integrityOptions = $this->packageIntegrityOptionsFromInput();
+        if ($integrityOptions === null) {
+            return Command::FAILURE;
+        }
 
         try {
             $this->pluginManager->loadPlugins();
@@ -190,7 +201,8 @@ class UpdatePluginCommand extends Command
             };
 
             try {
-                $updateResult = $this->pluginManager->updatePlugin(
+                // 패키지 서명 검증 — 미서명이면 대화형은 묻고, 답할 수 없는 실행은 --allow-unsigned 없이는 실패(7.2.0)
+                $updateResult = $this->runWithIntegrityConsent(fn (PackageIntegrityOptions $integrity) => $this->pluginManager->updatePlugin(
                     $identifier,
                     $force,
                     $onProgress,
@@ -199,7 +211,8 @@ class UpdatePluginCommand extends Command
                     $onUpgradeStep,
                     $sourceOverride,
                     $zipPath,
-                );
+                    $integrity,
+                ), $integrityOptions);
                 $this->finishProgress();
                 $this->reportStuckUpdateRecovery(suggestActivate: true);
             } catch (\Exception $e) {
@@ -227,6 +240,7 @@ class UpdatePluginCommand extends Command
                 $this->renderLayoutIncludeWarnings($updateResult['layout_warnings'] ?? []);
                 $this->renderDependencyWarnings($updateResult);
                 $this->renderIntegrationNotices($updateResult['integration_notices'] ?? []);
+                $this->renderPackageIntegrity($updateResult['integrity'] ?? null);
 
                 Log::info('플러그인 업데이트 완료', [
                     'plugin' => $identifier,

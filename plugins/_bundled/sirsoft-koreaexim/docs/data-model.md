@@ -50,12 +50,12 @@
 |---|---|---|---|
 | `ItemStatus` | `string` | 5 | `applied`, `unchanged`, `unsupported`, `invalid_rate`, `base_currency` |
 | `RateType` | `string` | 3 | `deal_bas_r`, `ttb`, `tts` |
-| `RunStatus` | `string` | 12 | `success`, `partial`, `no_data`, `skipped`, `dry_run`, `auth_missing`, `auth_error`, `quota_exceeded`, `외 4개` |
+| `RunStatus` | `string` | 13 | `success`, `partial`, `no_data`, `skipped`, `dry_run`, `auth_missing`, `auth_error`, `quota_exceeded`, `외 5개` |
 | `RunTrigger` | `string` | 5 | `scheduled`, `retry`, `manual`, `dry_run`, `currency_changed` |
 <!-- @generated:enums END -->
 
 <!-- @intent START -->
-상태·실행 계기·환율 종류를 Enum으로 공유합니다. no_data와 skipped는 실패와 구분하며 invalid_rate 항목은 종전 환율을 유지합니다. 표시 라벨은 각 Enum의 번역 키를 사용합니다.
+상태·실행 계기·환율 종류를 Enum으로 공유합니다. no_data와 skipped는 실패와 구분하며 invalid_rate 항목은 종전 환율을 유지합니다. save_failed 는 은행 응답은 정상이지만 쇼핑몰 통화 설정 저장이 실패한 실행이며, 실패 알림 대상이고 재적용 원본(raw_response)을 남기지 않습니다. 표시 라벨은 각 Enum의 번역 키를 사용합니다.
 <!-- @intent END -->
 
 ## Repository

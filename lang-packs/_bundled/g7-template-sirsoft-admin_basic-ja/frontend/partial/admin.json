@@ -5,6 +5,13 @@
       "with_label": "実名: {{name}}"
     }
   },
+  "extension_public_api": {
+    "title": "公開API (他の拡張が使えるPHPの表面)",
+    "hint": "他の拡張は、以下で公開されている名前空間・クラスと公開フックのみを使ってください。それ以外のクラスは内部実装のため、予告なく変更される場合があります。",
+    "namespaces": "名前空間",
+    "classes": "クラス",
+    "readonly_models": "読み取り専用Model (型ヒント・プロパティの読み取りのみ)"
+  },
   "extension_integrations": {
     "title": "一緒に使うと連携する拡張機能",
     "hint": "以下の拡張機能がインストールされていると、機能が相互に連携します。なくてもこの拡張機能はそのまま動作します。",
@@ -27,6 +34,35 @@
     "deactivate_confirm": "無効化",
     "uninstall_notice": "以下の拡張機能がこの拡張機能と連携しています — 削除するとこの拡張機能を使っていたメニュー・画面が消えます。",
     "notice_toast": "一緒に使うと連携する拡張機能のお知らせ: {{items}}"
+  },
+  "package_integrity": {
+    "signature_label": "パッケージ署名",
+    "status_verified": "署名確認済み: {{signer}}",
+    "status_unsigned": "署名なし",
+    "status_unverifiable": "署名確認不可 (サーバーに sodium なし)",
+    "status_bundled": "バンドル原本",
+    "status_none": "記録なし",
+    "unsigned_title": "署名のないパッケージです",
+    "unverifiable_title": "このサーバーでは署名を確認できません",
+    "invalid_title": "署名が一致しないため処理を中止しました",
+    "untrusted_title": "信頼していない鍵で署名されたパッケージです",
+    "package": "パッケージ: {{identifier}} {{version}}",
+    "signer_key": "署名鍵: {{key}}",
+    "continue_hint": "制作者を信頼できる場合にのみ、下の「未署名で続行」を押してください。同じリクエストを署名確認なしで再送信します。",
+    "blocked_hint": "環境設定 > セキュリティの「未署名パッケージのブロック」がオンになっているため続行できません。署名されたパッケージを使うか、ブロックをオフにしてください。",
+    "invalid_hint": "パッケージの内容が変更されたか、署名ファイルが別のパッケージのものです。配布元から ZIP と署名ファイルを再度ダウンロードしてください。",
+    "untrusted_hint": "環境設定 > セキュリティの「拡張信頼鍵」に制作者の鍵が登録されているか、その鍵の vendor 範囲がこの識別子と合っているかを確認してください。",
+    "continue_unsigned": "未署名で続行",
+    "result_verified": "パッケージ署名を確認しました (署名者: {{signer}})。",
+    "result_unsigned": "署名を確認していないパッケージで続行しました。",
+    "signature_file_label": "署名ファイル (.sig.json、任意)",
+    "no_signature_selected": "選択された署名ファイルがありません。",
+    "signature_file_hint": "リリースに ZIP と一緒に公開された署名ファイル(ZIP 名の後ろに .sig.json)を選ぶと、インストール前に署名を確認します。選ばない場合は署名のないパッケージとして扱います。",
+    "signature_url_label": "署名ファイルの URL (任意)",
+    "signature_url_hint": "ZIP と一緒に配布された .sig.json ファイルの https URL です。空欄にすると署名のないパッケージとして扱います(URL を推測して別途リクエストすることはありません)。",
+    "core_signature_label": "リリース署名",
+    "core_signature_available": "署名あり",
+    "core_signature_missing": "署名なし"
   },
   "sidebar": {
     "no_accessible_menus": "アクセス可能なメニューがありません",
@@ -738,16 +774,22 @@
     },
     "install_modal": {
       "title": "言語パックインストール",
-      "description": "ZIP ファイルまたは GitHub URL で言語パックをインストールします。",
+      "description": "ZIP ファイル、GitHub URL または ZIP の URL で言語パックをインストールします。",
       "tabs": {
         "zip": "ZIP ファイル",
-        "github": "GitHub"
+        "github": "GitHub",
+        "url": "URL"
       },
       "file_label": "ZIP ファイル",
       "no_file_selected": "選択されたファイルがありません。",
       "file_requirements": "以下の manifest ファイルが ZIP ルートに含まれている必要があります。",
       "github_url_label": "GitHub URL",
-      "github_requirements": "Public リポジトリのみサポートしています。以下の manifest ファイルがリポジトリルートにある必要があります。"
+      "github_requirements": "Public リポジトリのみサポートしています。以下の manifest ファイルがリポジトリルートにある必要があります。",
+      "url_label": "パッケージ URL (https)",
+      "url_hint": "言語パックの ZIP を直接ダウンロードできる https URL です。",
+      "checksum_label": "SHA-256 チェックサム (任意)",
+      "checksum_hint": "配布元が案内した ZIP の SHA-256 値(16進数64文字)を入力すると、ダウンロードしたファイルと照合します。",
+      "url_requirements": "ダウンロードした ZIP のルートに以下の manifest ファイルが含まれている必要があります。"
     },
     "installing": "インストール中...",
     "messages": {
@@ -1002,7 +1044,7 @@
       "file_requirements": "モジュール パッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、グヌボード7 モジュール標準構造に従う必要があります。",
       "github_url_label": "GitHub リポジトリ URL",
-      "github_url_hint": "GitHub リポジトリのデフォルト ブランチからモジュールをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからモジュールを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルート ディレクトリに",
       "github_public_only": "ファイルが存在する必要があります。"
     },
@@ -1234,7 +1276,7 @@
       "file_requirements": "プラグインパッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、Gnutboard7プラグイン標準構造に従う必要があります。",
       "github_url_label": "GitHubリポジトリURL",
-      "github_url_hint": "GitHubリポジトリのデフォルトブランチからプラグインをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからプラグインを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルートディレクトリに",
       "github_public_only": "ファイルが必要です。"
     },
@@ -1649,7 +1691,8 @@
       "queue_default": "既定値",
       "overridden_badge": "運営者が変更",
       "owned_badge": "{{owner}} 登録タスク — 名前・タイプ・コマンドはロック",
-      "timezone_badge": "タイムゾーン: {{timezone}}"
+      "timezone_badge": "タイムゾーン: {{timezone}}",
+      "allow_unsigned_hint": "インストール・アップデートのコマンド(module:update など)を登録するときは、--allow-unsigned を一緒に指定しないと署名のないパッケージで停止します。"
     },
     "modals": {
       "create_title": "スケジュール登録",
@@ -2072,7 +2115,8 @@
           "purge_failed": "サムネイルを削除できませんでした。",
           "purge_all": "両方とも削除",
           "pregenerate": "既存画像のサムネイルを作成",
-          "cdn_purge_notice": "公開サムネイルを公開ストレージ（CDN）に置く場合、削除や元画像の削除時の CDN キャッシュ無効化は CDN プラグインが処理します。プラグインがない場合、CDN に残ったコピーが期限切れになるまで表示されることがあります。"
+          "cdn_purge_notice": "公開サムネイルを公開ストレージ（CDN）に置く場合、削除や元画像の削除時の CDN キャッシュ無効化は CDN プラグインが処理します。プラグインがない場合、CDN に残ったコピーが期限切れになるまで表示されることがあります。",
+          "same_bucket_warning": "ドライバータブの公開アセットディスクも Amazon S3 のため、権限が必要な画像のサムネイルと同じバケットを使います。バケットに公開読み取りポリシーがあると、これらのサムネイルもバケットの URL から直接読み取られる可能性があります。サムネイルのパス（thumbnails/）に公開ポリシーが適用されていないか確認してください。"
         },
         "purge_all_modal": {
           "title": "サムネイルをすべて削除",
@@ -2427,6 +2471,28 @@
         "auto_hosts_empty": "有効な拡張機能が宣言した外部スクリプトホストはありません。",
         "preview": "適用されるポリシーのプレビュー",
         "preview_hint": "保存済みの値に基づきます。モードやホストを変更した場合は保存してから確認してください。"
+      },
+      "extension_trust": {
+        "title": "拡張信頼鍵",
+        "desc": "拡張・言語パック・コアのパッケージ署名を確認するときに信頼する公開鍵です。コア内蔵鍵はコアと一緒に配布され、制作者の鍵はここで追加します。鍵の追加と削除は保存ボタンとは別にすぐ反映されます。",
+        "block_unsigned": "未署名パッケージのブロック",
+        "block_unsigned_desc": "オンにすると、署名がない、またはこのサーバーで署名を確認できないパッケージのインストール・アップデートをブロックします(「未署名で続行」も表示されません)。保存ボタンを押すと反映されます。",
+        "sodium_missing": "このサーバーに PHP sodium 拡張がないため署名を確認できません。署名されたパッケージも「署名確認不可」として扱い、未署名と同じポリシーに従います。",
+        "builtin_title": "コア内蔵鍵",
+        "builtin_hint": "コアと一緒に配布される鍵のため、ここでは変更できません。",
+        "builtin_empty": "コア内蔵鍵はまだありません。コアのアップデートで一緒に配布されます。",
+        "vendor_title": "制作者の鍵",
+        "vendor_empty": "登録された制作者の鍵はありません。",
+        "add_key": "鍵を追加",
+        "delete_key": "削除",
+        "field_key_id": "鍵 ID",
+        "field_signer": "署名者",
+        "field_vendor_scope": "vendor 範囲",
+        "field_created_at": "登録日",
+        "status_active": "使用中",
+        "status_retired": "新規署名停止",
+        "status_revoked": "失効",
+        "load_failed": "信頼鍵の一覧を読み込めませんでした。"
       }
     },
     "member": {
@@ -2781,6 +2847,16 @@
         "desc": "完全公開アセット（商品・カテゴリ・レビュー・エディタ画像、レイアウト背景画像など）を直接URLで配信するディスクを設定します。使用しない場合は既存のストリーミング方式で動作します。有効化後にアップロードしたファイルのみ直接URLが発行され、そのアドレスは保存されたレイアウトにそのまま残ります。",
         "disk": "ディスク",
         "s3_help": "S3を選択する場合は、上のファイルストレージカードのS3 URL（CDNドメイン）設定が必要です。未設定の場合はストリーミングで動作します。"
+      },
+      "private_attachment": {
+        "title": "非公開添付ストレージ",
+        "desc": "権限を確認したうえでサーバーが配信するファイル(掲示板・ページ・コアの添付、クレーム画像、本文メディア、エクスポートファイル)を保存するディスクです。「既定」の場合はこれまでどおりサイトのストレージドライバーに従います。変更後にアップロードしたファイルのみ新しいディスクに保存され、既にアップロードしたファイルは元のディスクからそのまま配信されます。",
+        "disk": "ディスク",
+        "same_disk_warning": "公開アセットストレージと同じディスクです。バケットに公開読み取りポリシーがあると、非公開ファイルもバケットのアドレスから直接読まれる可能性があります。公開ポリシーのないバケットまたはパスを使用してください。",
+        "s3_help": "S3を選ぶと、上のファイルストレージカードのS3接続情報を使います。バケットの公開読み取りは無効にしてください。",
+        "pins_title": ".envで固定された拡張",
+        "pin_core": "コアの添付",
+        "pins_hint": "これらの項目は.envに記載したディスクを使うため、上の選択に従いません。選択に従わせるには.envから該当する値を削除してください。"
       },
       "file_delegation": {
         "title": "Webサーバーファイル委任",
@@ -3653,6 +3729,29 @@
       "language_packs": "言語パックを表示する権限がありません。「言語パック閲覧」権限が必要です。",
       "identity_providers": "本人認証プロバイダを表示する権限がありません。「プロバイダ設定閲覧」権限が必要です。",
       "identity_policies": "本人認証ポリシーを表示する権限がありません。「ポリシー閲覧」権限が必要です。"
+    },
+    "extension_trust_key_modal": {
+      "add_title": "制作者の信頼鍵を追加",
+      "add_desc": "拡張の制作者から提供された公開鍵を登録します。この鍵で署名されたパッケージのうち、vendor 範囲に含まれる識別子のみを信頼します。",
+      "public_key": "公開鍵",
+      "public_key_placeholder": "base64 でエンコードした 32 バイトの Ed25519 公開鍵",
+      "public_key_hint": "制作者が extension:keygen コマンドで作成した1行の公開鍵をそのまま貼り付けます。鍵 ID はサーバーが計算します。",
+      "label": "署名者名",
+      "label_placeholder": "例: glitter",
+      "label_hint": "英数字・アンダースコア・ハイフンで32文字以内とし、sirsoft で始めることはできません。鍵 ID の先頭部分になります。",
+      "vendor_scope": "vendor 範囲",
+      "vendor_scope_placeholder": "例: glitter, glitter-labs",
+      "vendor_scope_hint": "この鍵の署名を信頼する拡張識別子の vendor(ハイフンの前の部分)を、カンマ区切りで1つ以上入力します。sirsoft は指定できません。",
+      "password_notice": "信頼鍵を変更すると、どのパッケージを信頼するかが変わるため、ご本人のパスワードを再確認します。",
+      "submit": "鍵を追加",
+      "submitting": "追加中...",
+      "add_success": "信頼鍵を追加しました。",
+      "delete_title": "制作者の信頼鍵を削除",
+      "delete_confirm": "鍵 {{key_id}} を削除します。",
+      "delete_warning": "この鍵で署名された拡張は、次回のインストール・アップデートから「信頼していない鍵」としてブロックされます。",
+      "delete_submit": "削除",
+      "deleting": "削除中...",
+      "delete_success": "信頼鍵を削除しました。"
     }
   },
   "templates": {
@@ -3708,7 +3807,7 @@
       "file_requirements": "テンプレートパッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、グヌボード7テンプレート標準構造に従う必要があります。",
       "github_url_label": "GitHub リポジトリURL",
-      "github_url_hint": "GitHub リポジトリのデフォルトブランチからテンプレートをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからテンプレートを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルートディレクトリに",
       "github_public_only": "ファイルが必要です。"
     },
@@ -3902,7 +4001,7 @@
       "file_requirements": "テンプレートパッケージは必ず",
       "file_structure_hint": "ファイルを含む必要があり、Gnuboard7テンプレート標準構造に従う必要があります。",
       "github_url_label": "GitHub リポジトリURL",
-      "github_url_hint": "GitHub リポジトリのデフォルトブランチからテンプレートをダウンロードします。",
+      "github_url_hint": "GitHub リポジトリの最新タグ付きリリースからテンプレートを取得します。リリースのないリポジトリはインストールしません。",
       "github_requirements": "ルートディレクトリに",
       "github_public_only": "ファイルが必要です。"
     },
@@ -4565,7 +4664,9 @@
       "settings_thumbnail_pregenerate_modal": "既存画像のサムネイルを作成",
       "member_field_form_modal": "会員項目の追加と編集",
       "member_field_delete_modal": "会員項目の削除確認",
-      "member_field_required_modal": "会員項目の必須切り替え確認"
+      "member_field_required_modal": "会員項目の必須切り替え確認",
+      "extension_trust_key_add_modal": "拡張信頼鍵の追加",
+      "extension_trust_key_delete_modal": "拡張信頼鍵の削除"
     },
     "admin_template_list": {
       "template_activate_modal": "テンプレート有効化確認",

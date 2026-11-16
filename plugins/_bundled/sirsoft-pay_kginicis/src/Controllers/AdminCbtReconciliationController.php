@@ -8,6 +8,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
@@ -23,10 +24,12 @@ class AdminCbtReconciliationController extends AdminBaseController
      *
      * @param  CbtReconciliationService  $reconciliationService  해외 결제 정산 레코드 서비스
      * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약 (주문 권한 범위 판정)
      */
     public function __construct(
         private readonly CbtReconciliationService $reconciliationService,
         private readonly KgInicisApiService $apiService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
     }

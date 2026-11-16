@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회를 이커머스 공개 결제 계약으로 바꾼 내부 전환 (#916)
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 
 class AdminOrderListController extends AdminBaseController
@@ -20,9 +18,12 @@ class AdminOrderListController extends AdminBaseController
 
     /**
      * 컨트롤러를 생성합니다.
+     *
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      */
-    public function __construct()
-    {
+    public function __construct(
+        private readonly PaymentGatewayBridge $bridge,
+    ) {
         parent::__construct();
     }
 
@@ -41,21 +42,11 @@ class AdminOrderListController extends AdminBaseController
      */
     public function testModeMap(): JsonResponse
     {
-        $orders = (new Order)->getTable();
-        $payments = (new OrderPayment)->getTable();
-
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $rows = DB::table($orders.' as o')
-            ->join($payments.' as p', 'p.order_id', '=', 'o.id')
-            ->where('p.pg_provider', 'kginicis')
-            ->where('p.created_at', '>=', now()->subMonths(6))
-            ->select(['o.order_number', 'p.transaction_id', 'p.payment_meta'])
-            ->get();
-
         $map = [];
-        foreach ($rows as $row) {
-            if ($this->isTestPayment($row->transaction_id, $row->payment_meta)) {
-                $map[$row->order_number] = true;
+        // 배지에는 주문번호, 거래번호, 결제 meta 세 칸만 필요하다 — 결제 행 전체를 올리지 않는 요약 조회를 쓴다
+        foreach ($this->bridge->listPaymentBriefsByProvider('kginicis', now()->subMonths(6)) as $payment) {
+            if ($payment->orderNumber !== '' && $this->isTestPayment($payment->transactionId, $payment->paymentMeta)) {
+                $map[$payment->orderNumber] = true;
             }
         }
 
@@ -75,14 +66,12 @@ class AdminOrderListController extends AdminBaseController
      *   3) transaction_id 에 "Test" 문자열 포함  (구식 보조 패턴)
      *
      * @param  string|null  $transactionId  KG 이니시스 TID
-     * @param  string|null  $paymentMeta  payment_meta JSON 문자열
+     * @param  array<string, mixed>  $meta  payment_meta
      * @return bool 테스트 결제 여부
      */
-    private function isTestPayment(?string $transactionId, ?string $paymentMeta): bool
+    private function isTestPayment(?string $transactionId, array $meta): bool
     {
-        if ($paymentMeta !== null && $paymentMeta !== '') {
-            $meta = json_decode($paymentMeta, true) ?? [];
-
+        if ($meta !== []) {
             if (isset($meta['is_test_mode']) && $meta['is_test_mode'] === true) {
                 return true;
             }

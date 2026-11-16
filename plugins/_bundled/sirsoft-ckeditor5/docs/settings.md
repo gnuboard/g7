@@ -32,6 +32,13 @@
 않는 디스크 값이 들어오면 `resolvePublicAssetDisk()` 가 스트리밍 서빙으로 안전하게 폴백하므로,
 설정 오타가 이미지 소실로 이어지지는 않습니다.
 
+`public_asset_disk` 는 본문 이미지 카테고리(`images`)에만 적용됩니다. `plugin.php` 의 `getStorageDiskFor()` 는 그 밖의
+키를 `parent::getStorageDiskFor($category)` 로 넘겨 코어 규칙을 따릅니다 — 비공개 원본 바인딩 키(`private_attachments`)는
+관리자가 환경설정 > 드라이버에서 고른 「비공개 첨부 저장소」로, 나머지는 플러그인 기본 디스크로 풀립니다. 지금은 비공개
+원본을 두는 서비스가 없어 동작 차이는 없지만, 나중에 `$storageCategoryServices` 에 `private_attachments` 로 서비스를 묶으면
+이 경로가 그 서비스의 디스크가 됩니다. 공개 외 키를 직접 기본 디스크로 돌려주도록 고치면 관리자의 저장소 선택이 무시됩니다
+(규약: 코어 문서 `docs/extension/storage-driver.md`).
+
 저장했던 디스크를 등록하던 확장이 꺼져 값이 카탈로그에서 사라지면, 코어의 설정 응답이 값을
 실제 동작인 스트리밍(`none`)으로 바꿔 싣고 옛 디스크 이름을 `public_asset_disk_unavailable`
 로 함께 내려줍니다. 설정 화면은 이 키가 있을 때 선택 칸 아래에 "쓸 수 없게 된 디스크" 안내
