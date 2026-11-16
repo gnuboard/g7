@@ -617,6 +617,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "inquiries"
+                                },
                                 "props": {
                                     "className": "text-primary font-bold"
                                 },

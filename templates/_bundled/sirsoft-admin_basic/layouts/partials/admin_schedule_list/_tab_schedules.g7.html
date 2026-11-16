@@ -15,28 +15,28 @@
           <span class="text-label-subtle">$t:admin.schedules.stats.total</span>
           <icon name="clock" class="text-xl text-gray-500 dark:text-gray-500"/>
         </div>
-        <div class="text-page-heading mt-2">{{schedules?.data?.statistics?.total ?? 0}}</div>
+        <div class="text-page-heading mt-2"><blur-until-loaded sources="schedules"/>{{schedules?.data?.statistics?.total ?? 0}}</div>
       </div>
       <div class="admin-card">
         <div class="flex-between">
           <span class="text-label-subtle">$t:admin.schedules.stats.active</span>
           <icon name="check-circle" class="text-xl text-green-600"/>
         </div>
-        <div class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">{{schedules?.data?.statistics?.active ?? 0}}</div>
+        <div class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400"><blur-until-loaded sources="schedules"/>{{schedules?.data?.statistics?.active ?? 0}}</div>
       </div>
       <div class="admin-card">
         <div class="flex-between">
           <span class="text-label-subtle">$t:admin.schedules.stats.success</span>
           <icon name="check" class="text-xl text-blue-500"/>
         </div>
-        <div class="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{{schedules?.data?.statistics?.success ?? 0}}</div>
+        <div class="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400"><blur-until-loaded sources="schedules"/>{{schedules?.data?.statistics?.success ?? 0}}</div>
       </div>
       <div class="admin-card">
         <div class="flex-between">
           <span class="text-label-subtle">$t:admin.schedules.stats.failed</span>
           <icon name="circle-xmark" class="text-xl text-red-500"/>
         </div>
-        <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">{{schedules?.data?.statistics?.failed ?? 0}}</div>
+        <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400"><blur-until-loaded sources="schedules"/>{{schedules?.data?.statistics?.failed ?? 0}}</div>
       </div>
     </div>
     <div data-ref="search_filter_area" class="admin-card">
@@ -347,7 +347,7 @@
         </button>
       </div>
       <div data-ref="list_info_right" class="flex-center gap-3 py-3">
-        <span class="text-body font-medium">$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
+        <span class="text-body font-medium"><blur-until-loaded sources="schedules"/>$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
         <select name="sort_by" aria-label="$t:common.sort_order" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}">
           <options>
             <option value="created_at_desc">$t:admin.schedules.sort.created_at_desc</option>

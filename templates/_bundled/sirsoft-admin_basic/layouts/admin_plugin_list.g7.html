@@ -510,7 +510,7 @@
           </on>
         </extension-card-grid>
         <div data-ref="pagination_info" class="mt-4 text-label text-center">
-          <span>$t:admin.plugins.pagination_info|total={{plugins?.data?.pagination?.total ?? 0}}|from={{((plugins?.data?.pagination?.current_page ?? 1) - 1) * (plugins?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.pagination?.current_page ?? 1) * (plugins?.data?.pagination?.per_page ?? 12), plugins?.data?.pagination?.total ?? 0)}}</span>
+          <span><blur-until-loaded sources="plugins"/>$t:admin.plugins.pagination_info|total={{plugins?.data?.pagination?.total ?? 0}}|from={{((plugins?.data?.pagination?.current_page ?? 1) - 1) * (plugins?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.pagination?.current_page ?? 1) * (plugins?.data?.pagination?.per_page ?? 12), plugins?.data?.pagination?.total ?? 0)}}</span>
         </div>
       </div>
     </div>

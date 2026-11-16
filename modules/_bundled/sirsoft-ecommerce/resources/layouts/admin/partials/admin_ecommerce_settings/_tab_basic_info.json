@@ -126,7 +126,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{!_local.form?.basic_info?.no_route}}",
+                                            "if": "{{settings !== undefined && (!_local.form?.basic_info?.no_route)}}",
                                             "props": {
                                                 "className": "text-required"
                                             },

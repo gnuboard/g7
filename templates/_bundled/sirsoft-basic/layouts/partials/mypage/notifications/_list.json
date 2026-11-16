@@ -54,6 +54,10 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "blur_until_loaded": {
+                                        "enabled": true,
+                                        "data_sources": "notification_unread_count"
+                                    },
                                     "props": {
                                         "className": "text-sm text-red-600 dark:text-red-400 font-medium"
                                     },

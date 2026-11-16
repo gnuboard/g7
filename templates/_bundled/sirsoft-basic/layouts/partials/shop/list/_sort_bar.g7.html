@@ -4,7 +4,7 @@
 <partial description="정렬 줄 (총 상품 수, 초기화, 품절 제외, 정렬)">
   <div data-ref="shop_sort_bar" class="flex flex-wrap items-center justify-between gap-2 py-3 bg-gray-50 dark:bg-gray-800/50">
     <!-- 총 상품 수 -->
-    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
+    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"><blur-until-loaded sources="products"/>$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
     <!-- 오른쪽: 초기화 버튼 + 품절 제외 + 정렬 -->
     <div class="flex flex-wrap items-center gap-2">
       <!-- 전체 초기화 버튼 (필터 적용 시에만 표시) -->

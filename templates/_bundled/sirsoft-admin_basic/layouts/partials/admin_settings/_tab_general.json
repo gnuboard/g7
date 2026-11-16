@@ -779,6 +779,10 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "blur_until_loaded": {
+                                                "enabled": true,
+                                                "data_sources": "staticCacheStatus"
+                                            },
                                             "props": {
                                                 "className": "text-heading"
                                             },
@@ -805,6 +809,10 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "blur_until_loaded": {
+                                                "enabled": true,
+                                                "data_sources": "staticCacheStatus"
+                                            },
                                             "props": {
                                                 "className": "text-heading"
                                             },
@@ -842,7 +850,7 @@
                                             "id": "static_cache_published_at_never",
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{!staticCacheStatus?.data?.published_at}}",
+                                            "if": "{{staticCacheStatus !== undefined && (!staticCacheStatus?.data?.published_at)}}",
                                             "props": {
                                                 "className": "text-heading"
                                             },

@@ -55,6 +55,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "gdprNoticeLog"
+                                },
                                 "text": "$t:sirsoft-gdpr.annual_notice.total|count={{gdprNoticeLog?.data?.pagination?.total ?? 0}}"
                             },
                             {

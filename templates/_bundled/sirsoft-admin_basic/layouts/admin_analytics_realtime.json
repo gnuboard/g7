@@ -324,7 +324,7 @@
                                         "id": "transport_badge_polling",
                                         "type": "composite",
                                         "name": "Badge",
-                                        "if": "{{analytics_status?.data?.broadcasting?.configured !== true}}",
+                                        "if": "{{analytics_status !== undefined && (analytics_status?.data?.broadcasting?.configured !== true)}}",
                                         "props": {
                                             "color": "gray",
                                             "text": "$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}",

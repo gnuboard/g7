@@ -488,7 +488,7 @@
                         "id": "totp_security_intro_card",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{!totpEnrollment?.data?.enrolled && !_local.secret && !_local.backupCodes}}",
+                        "if": "{{totpEnrollment !== undefined && !totpEnrollment?.data?.enrolled && !_local.secret && !_local.backupCodes}}",
                         "props": {
                             "className": "card-stack-item"
                         },

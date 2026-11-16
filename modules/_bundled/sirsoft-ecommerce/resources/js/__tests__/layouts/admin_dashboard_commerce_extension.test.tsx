@@ -334,7 +334,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
         const card = findById(commerceExt as any, 'pending_inquiries_card');
         // 활성 목록이 없는 옛 코어에서는 서버가 내려 준 board_active 로 가른다
-        expect(card.if).toBe(`{{(${guard}) && commerce_pending_inquiries?.data?.board_active !== false}}`);
+        expect(card.if).toBe(`{{(${guard}) && commerce_pending_inquiries !== undefined && commerce_pending_inquiries?.data?.board_active !== false}}`);
 
         const visible = (scope: Record<string, unknown>) => {
             const body = card.if.slice(2, -2);
@@ -344,7 +344,9 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
                 scope.commerce_pending_inquiries,
             );
         };
-        expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: undefined })).toBe(true);
+        // 받는 중(undefined)에는 그리지 않는다 — 게시판이 꺼진 상점에서 카드가 보였다가 사라졌다(#915)
+        expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: undefined })).toBe(false);
+        expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: { data: { board_active: true } } })).toBe(true);
         expect(visible({ _global: { activeModules: ['sirsoft-ecommerce'] }, commerce_pending_inquiries: undefined })).toBe(false);
         expect(visible({ _global: {}, commerce_pending_inquiries: { data: { board_active: true } } })).toBe(true);
         expect(visible({ _global: {}, commerce_pending_inquiries: { data: { board_active: false } } })).toBe(false);

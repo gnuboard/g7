@@ -10,7 +10,10 @@
     <div class="admin-page-content">
       <page-header data-type="composite" title="$t:sirsoft-gdpr.annual_notice.log_title" description="$t:sirsoft-gdpr.annual_notice.log_description" backPath="/admin/plugins/sirsoft-gdpr/settings"/>
       <div class="flex-between my-4">
-        <span>$t:sirsoft-gdpr.annual_notice.total|count={{gdprNoticeLog?.data?.pagination?.total ?? 0}}</span>
+        <span>
+          <blur-until-loaded sources="gdprNoticeLog"/>
+          $t:sirsoft-gdpr.annual_notice.total|count={{gdprNoticeLog?.data?.pagination?.total ?? 0}}
+        </span>
         <button type="button" class="btn btn-secondary">
           <on type="click"><refetch-data-source dataSourceId="gdprNoticeLog"/></on>
           <span>$t:common.refresh</span>

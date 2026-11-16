@@ -570,6 +570,12 @@
             "default": "그누보드7",
             "description": "사이트 이름"
           },
+          "userLoading": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다) 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다. 레이아웃이 {{_global.currentUser === undefined}} 로 넘긴다"
+          },
           "boardEnabled": {
             "type": "boolean",
             "required": false,

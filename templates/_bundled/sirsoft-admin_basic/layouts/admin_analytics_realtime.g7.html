@@ -114,7 +114,7 @@
           </div>
           <div class="flex-1"/>
           <badge data-type="composite" data-ref="transport_badge_ws" data-if="{{analytics_status?.data?.broadcasting?.configured === true}}" color="green" text="$t:admin.analytics.realtime.badge_ws" size="sm"/>
-          <badge data-type="composite" data-ref="transport_badge_polling" data-if="{{analytics_status?.data?.broadcasting?.configured !== true}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
+          <badge data-type="composite" data-ref="transport_badge_polling" data-if="{{analytics_status !== undefined &amp;&amp; (analytics_status?.data?.broadcasting?.configured !== true)}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
         </div>
       </div>
       <div data-ref="realtime_grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">

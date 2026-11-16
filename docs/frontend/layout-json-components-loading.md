@@ -45,6 +45,16 @@
 - `sequence` 안에서 `refetch-data-source` 를 **기다린 뒤** `open-modal` 하는 창은 열린 동안 받는 중이 없다. 열렸는데 값이 없으면 받기 실패(engine-v1.81.2 부터 refetch 실패는 값 `null`, 그 전에는 값을 바꾸지 않음)이므로 `undefined` 로 가리지 않고 안내를 보인다.
 - 금액·「무료배송」처럼 받은 값이 있어야 뜻이 생기는 표기는 받은 응답이 있을 때만 그린다(`{{!!order?.data && …}}`).
 - 반환값 상태표: [G7Core.state.getDataSource](state-management-advanced.md#g7corestategetdatasourcedatasourceid). 정적 검사 대상(위반 시 차단).
+- **여러 소스를 읽는 조건은 소스마다 가른다.** 진행형 소스는 응답이 오는 대로 하나씩 반영되므로, 한 소스만 먼저 온 순간에도 참이 되면 잠깐 틀린 화면이 보인다.
+
+  ```text
+  ❌ {{settings?.data?.enabled === true && consent?.data?.done !== true}}                      — settings 만 먼저 오면 참(동의한 사람에게도 보임)
+  ✅ {{settings?.data?.enabled === true && consent !== undefined && consent?.data?.done !== true}}
+  ```
+
+- **로그인 사용자도 받는 데이터다.** `_global.currentUser` 는 회원이면 응답 전까지 `undefined`, 비회원이면 엔진이 실패 대체값(`[]`)을 넣는다. 비회원 분기는 `{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}` 로 쓴다 — `{{!_global.currentUser?.uuid}}` 만으로 쓰면 회원에게 로그인 단추·비회원 입력란이 잠깐 보인다.
+- **계산값·폼 값도 같다.** `_computed.x` 가 받는 데이터로 만든 값이거나, 조건이 `_local.form`(소스의 `initLocal`)을 읽으면 그 소스로 가른다(`{{settings !== undefined && …}}`). 진행형 소스의 `initLocal` 은 받은 데이터를 그린 **다음 박자**에 들어온다 — 받은 데이터와 `initLocal` 값을 함께 보는 안내는 `initLocal` 로 받은 표지 키가 있을 때만 판단한다.
+- `?? 0` 으로 메운 숫자는 그 소스를 기다리는 `blur_until_loaded` 아래에 둔다 — 받기 전 「0」이 또렷이 보이지 않게.
 
 ### 폼을 채우는 소스의 받기 실패
 

@@ -82,7 +82,7 @@
       </div>
       <!-- 건수 줄 — 형제 관리자 목록과 같은 자리. 필터를 걸었을 때 몇 건이 남았는지 표를 세지 않고 안다. -->
       <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
-        <span class="text-label">$t:sirsoft-board.admin.scraps.total_count|count={{scraps?.data?.pagination?.total ?? 0}}</span>
+        <span class="text-label"><blur-until-loaded sources="scraps"/>$t:sirsoft-board.admin.scraps.total_count|count={{scraps?.data?.pagination?.total ?? 0}}</span>
       </div>
       <data-grid :pageHrefMergeQuery="true" pageHref="/admin/boards/scraps?page={page}" data-type="composite" data-ref="scraps_data_grid" rowLabelField="post_title" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="{{scraps === undefined ? '' : (scraps === null ? $t('sirsoft-board.common.list_load_failed') : $t('sirsoft-board.admin.scraps.table_empty'))}}" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.scraps.columns.scrapped_at" :sortable="true">
@@ -203,7 +203,7 @@
         </on>
       </data-grid>
       <div data-ref="pagination_info" class="mt-4 text-label text-center">
-        <span>$t:sirsoft-board.admin.scraps.pagination_info|total={{scraps?.data?.pagination?.total ?? 0}}|from={{scraps?.data?.pagination?.from ?? 0}}|to={{scraps?.data?.pagination?.to ?? 0}}</span>
+        <span><blur-until-loaded sources="scraps"/>$t:sirsoft-board.admin.scraps.pagination_info|total={{scraps?.data?.pagination?.total ?? 0}}|from={{scraps?.data?.pagination?.from ?? 0}}|to={{scraps?.data?.pagination?.to ?? 0}}</span>
       </div>
     </div>
   </slot>

@@ -36,7 +36,7 @@
                 {
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(_local.form?.available_pg_providers ?? []).length === 0}}",
+                    "if": "{{settings !== undefined && ((_local.form?.available_pg_providers ?? []).length === 0)}}",
                     "props": {
                         "className": "flex-center gap-2 text-label-subtle"
                     },
@@ -144,7 +144,7 @@
                                     "comment": "등록된 프로바이더가 0개면 안내만 노출한다",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{(_local.form?.available_cash_receipt_providers ?? []).length === 0}}",
+                                    "if": "{{settings !== undefined && ((_local.form?.available_cash_receipt_providers ?? []).length === 0)}}",
                                     "props": {
                                         "className": "flex-center gap-2 text-label-subtle"
                                     },

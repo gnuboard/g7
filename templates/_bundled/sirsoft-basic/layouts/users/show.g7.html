@@ -95,12 +95,12 @@
             <responsive on="portable" class="grid grid-cols-2 gap-3"/>
             <!-- 게시글 수 -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center">
-              <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{postStats.data?.posts_count ?? 0 | number}}</div>
+              <div class="text-3xl font-bold text-blue-600 dark:text-blue-400"><blur-until-loaded sources="postStats"/>{{postStats.data?.posts_count ?? 0 | number}}</div>
               <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:user.profile.posts_count</div>
             </div>
             <!-- 댓글 수 -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center">
-              <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{postStats.data?.comments_count ?? 0 | number}}</div>
+              <div class="text-3xl font-bold text-green-600 dark:text-green-400"><blur-until-loaded sources="postStats"/>{{postStats.data?.comments_count ?? 0 | number}}</div>
               <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:user.profile.comments_count</div>
             </div>
           </div>
@@ -147,7 +147,7 @@
             </div>
           </div>
           <!-- 최근 게시글 없음 상태 (게시판 모듈이 꺼져 있으면 숨김 — 「글이 없다」가 아니라 기능이 없는 것이다) -->
-          <div data-ref="user_profile_recent_posts_empty" data-if="{{!recentPosts.data?.data?.length &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div data-ref="user_profile_recent_posts_empty" data-if="{{recentPosts !== undefined &amp;&amp; !recentPosts.data?.data?.length &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:user.profile.recent_posts</h3>
               <a href="/users/{{route.userId}}/posts" class="inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">

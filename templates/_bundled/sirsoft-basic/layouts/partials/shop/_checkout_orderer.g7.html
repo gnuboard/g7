@@ -60,7 +60,7 @@
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:shop.checkout.orderer_email</span>
-        <span data-if="{{!_global.currentUser?.uuid}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
+        <span data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <input aria-label="$t:shop.checkout.orderer_email" type="email" name="orderer_email" value="{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}" placeholder="$t:shop.checkout.orderer_email_placeholder" class="{{_local.errors?.['orderer.email'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
         <responsive on="portable" class="{{_local.errors?.['orderer.email'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
@@ -72,7 +72,7 @@
       <span data-if="{{_local.errors?.['orderer.email']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['orderer.email']?.[0] ?? ''}}</span>
     </div>
     <!-- 비회원 조회 비밀번호 — 비로그인 사용자만 노출. CreateOrderRequest 가 비회원 시 guest_lookup_password(min:8|confirmed) + _confirmation(required) 검증 -->
-    <div data-if="{{!_global.currentUser?.uuid}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+    <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
       <responsive on="portable" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"/>
       <!-- 섹션 제목 + 안내 -->
       <div class="mb-3">

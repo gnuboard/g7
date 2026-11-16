@@ -384,7 +384,7 @@
             "comment": "비회원 작성자 정보 입력 (이름/비밀번호) - 신규 작성 시에만 표시 (비로그인 + 수정모드가 아닐 때)",
             "type": "basic",
             "name": "Div",
-            "if": "{{form_meta?.data && !_global.currentUser?.uuid && !route.id}}",
+            "if": "{{form_meta?.data && _global.currentUser !== undefined && !_global.currentUser?.uuid && !route.id}}",
             "props": {
                 "className": "grid grid-cols-1 sm:grid-cols-2 gap-4"
             },
