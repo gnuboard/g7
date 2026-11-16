@@ -1179,6 +1179,10 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "blur_until_loaded": {
+                                        "enabled": true,
+                                        "data_sources": "ecommerceIdentityPolicies"
+                                    },
                                     "props": {
                                         "className": "text-tertiary"
                                     },

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-11-15
+
+### Fixed
+
+- 토스페이먼츠 설정을 받는 동안 에스크로 운영 안내가 먼저 보이던 문제를 고쳤습니다. 설정을 받은 뒤 에스크로를 쓰는 경우에만 보입니다.
+
 ## [1.1.2] - 2026-11-01
 
 ### Changed

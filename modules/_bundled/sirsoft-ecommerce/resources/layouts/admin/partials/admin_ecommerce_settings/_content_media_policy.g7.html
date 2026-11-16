@@ -10,7 +10,8 @@
     <div data-ref="content_media_policy_use_custom" class="flex-start justify-between">
       <div class="flex-1">
         <label class="text-heading">$t:core.content_media.policy.use_custom</label>
-        <p data-if="{{!_local.form?.product_display?.content_media?.use_custom}}" class="form-hint">$t:core.content_media.policy.follows_attachment</p>
+        <!-- 폼(_local.form)은 설정을 받은 뒤 initLocal 로 채워진다 — 채워지기 전에 「첨부 정책을 따름」을 먼저 보였다가 숨기지 않게 폼이 있을 때만 판단한다 -->
+        <p data-if="{{_local.form !== undefined &amp;&amp; (!_local.form?.product_display?.content_media?.use_custom)}}" class="form-hint">$t:core.content_media.policy.follows_attachment</p>
       </div>
       <toggle data-type="composite" name="product_display.content_media.use_custom" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
     </div>

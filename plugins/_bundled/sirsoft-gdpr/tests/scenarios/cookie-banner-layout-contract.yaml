@@ -27,6 +27,9 @@ effects:
   - banner_category_info_user_friendly                   # 운영자용 정보 키 비노출·자세히 보기 토글
   - banner_operator_footer_line_variants                 # 운영 주체·저장 위치 3분기 + 둘 다 비면 생략
   - banner_uses_builtin_handlers_and_prefixed_keys       # 내장 핸들러만·i18n 키 접두사
+  - banner_waits_for_consent_status                      # 동의 상태를 받는 중(undefined)이면 배너·버튼을 그리지 않는다 — 설정이 먼저 와도(#915)
+  - banner_shows_when_status_fails                       # 동의 상태를 받지 못하면(null) 배너를 띄운다(안전한 쪽)
+  - banner_hidden_on_identity_mismatch                   # 동의 상태의 신원(is_member)이 지금 로그인 여부와 다르면 판정하지 않는다
 
 test_files:
   - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/cookie_banner.test.tsx

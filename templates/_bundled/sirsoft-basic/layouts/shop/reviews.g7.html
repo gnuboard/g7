@@ -22,7 +22,7 @@
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:shop.reviews.title</h1>
       <!-- 필터 줄: 총 건수 + 사진 후기만 + 별점 + 정렬 -->
       <div data-ref="review_feed_filters" class="flex flex-wrap items-center justify-between gap-3 py-3 mb-4 bg-gray-50 dark:bg-gray-800/50">
-        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.reviews.total_count|count={{reviewFeed?.data?.reviews?.meta?.total ?? 0}}</span>
+        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"><blur-until-loaded sources="reviewFeed"/>$t:shop.reviews.total_count|count={{reviewFeed?.data?.reviews?.meta?.total ?? 0}}</span>
         <div class="flex flex-wrap items-center gap-3">
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <checkbox id="review_feed_photo_only" name="photo_only" checked="{{query.photo_only === '1'}}" :autoBinding="false" class="w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded">

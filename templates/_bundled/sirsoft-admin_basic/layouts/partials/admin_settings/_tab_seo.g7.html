@@ -185,7 +185,7 @@
             </options>
           </select>
         </div>
-        <div data-ref="field_sitemap_schedule_time" data-if="{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}">
+        <div data-ref="field_sitemap_schedule_time" data-if="{{settings !== undefined &amp;&amp; ((_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly')}}">
           <label class="form-label">$t:admin.settings.seo.sitemap_schedule_time</label>
           <input type="text" name="seo.sitemap_schedule_time" disabled="{{_computed.isReadOnly}}" placeholder="02:00" class=""/>
           <p class="form-hint">$t:admin.settings.seo.sitemap_schedule_time_hint</p>

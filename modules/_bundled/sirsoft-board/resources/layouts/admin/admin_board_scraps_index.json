@@ -278,6 +278,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "scraps"
+                                },
                                 "props": {
                                     "className": "text-label"
                                 },
@@ -706,6 +710,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "scraps"
+                                },
                                 "text": "$t:sirsoft-board.admin.scraps.pagination_info|total={{scraps?.data?.pagination?.total ?? 0}}|from={{scraps?.data?.pagination?.from ?? 0}}|to={{scraps?.data?.pagination?.to ?? 0}}"
                             }
                         ]

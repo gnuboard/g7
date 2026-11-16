@@ -39,7 +39,7 @@
                             "comment": "비회원 작성자 정보 입력 (이름/비밀번호)",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!_global.currentUser?.uuid}}",
+                            "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
                             "props": {
                                 "className": "flex flex-col sm:flex-row gap-3"
                             },

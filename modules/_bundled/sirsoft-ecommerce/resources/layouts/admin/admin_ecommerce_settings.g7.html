@@ -218,7 +218,7 @@
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
-      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
+      <div data-ref="read_only_banner" data-if="{{settings !== undefined &amp;&amp; (_computed.isReadOnly)}}" class="alert-warning">
         <icon name="fas fa-lock" class="text-yellow-700 dark:text-yellow-400"/>
         <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.common.read_only_notice</span>
       </div>

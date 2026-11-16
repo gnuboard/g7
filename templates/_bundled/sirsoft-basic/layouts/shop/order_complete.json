@@ -621,7 +621,7 @@
                                 "comment": "비회원 안내 — 비로그인 사용자에게 주문 조회 방법과 회원 전환 안내. 회원에게는 미노출.",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{!_global.currentUser?.uuid}}",
+                                "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -995,7 +995,7 @@
                                                 "id": "save_shipping_address_button",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "if": "{{_global.currentUser?.uuid && !_computed.shippingAddressAlreadySaved}}",
+                                                "if": "{{_global.currentUser?.uuid && userAddresses !== undefined && !_computed.shippingAddressAlreadySaved}}",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1300,7 +1300,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "if": "{{!_global.currentUser?.uuid}}",
+                                        "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
                                         "responsive": {
                                             "portable": {
                                                 "props": {

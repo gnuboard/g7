@@ -436,7 +436,7 @@
           </div>
           <div data-ref="card_auto_blocking_policy_fields" class="p-6 space-y-6">
             <!-- 쿠키 배너 노출 (banner_enabled) OFF 시 안내 박스. ON 으로 전환하면 배너 + 자동 차단이 함께 활성됨 (마이페이지 카드는 이 토글과 무관, 항상 노출) -->
-            <div data-ref="blocked_domains_off_hint" data-if="{{!_local.form?.banner_enabled}}" class="bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 gdpr-accent-info rounded-lg p-4 flex-center gap-2">
+            <div data-ref="blocked_domains_off_hint" data-if="{{gdprSettings !== undefined &amp;&amp; !_local.form?.banner_enabled}}" class="bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 border-l-4 gdpr-accent-info rounded-lg p-4 flex-center gap-2">
               <icon name="circle-info" size="sm" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
               <span class="text-xs text-gray-800 dark:text-gray-100">$t:sirsoft-gdpr.settings.fields.blocked_domains.auto_blocking_off_hint</span>
             </div>

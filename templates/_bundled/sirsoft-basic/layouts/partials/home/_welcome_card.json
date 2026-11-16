@@ -63,7 +63,7 @@
                     "id": "register_button",
                     "type": "basic",
                     "name": "A",
-                    "if": "{{!_global.currentUser?.uuid}}",
+                    "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
                     "actions": [
                         {
                             "type": "click",

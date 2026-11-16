@@ -844,7 +844,7 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
-                                                                        "if": "{{!user?.data?.language}}",
+                                                                        "if": "{{user !== undefined && (!user?.data?.language)}}",
                                                                         "props": {
                                                                             "className": "text-primary text-sm"
                                                                         },
@@ -1175,7 +1175,7 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "if": "{{user?.data?.is_locked !== true}}",
+                                                                "if": "{{user !== undefined && (user?.data?.is_locked !== true)}}",
                                                                 "props": {
                                                                     "className": "text-primary text-sm"
                                                                 },
@@ -1374,7 +1374,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!user?.data?.password_status?.applies}}",
+                                                "if": "{{user !== undefined && (!user?.data?.password_status?.applies)}}",
                                                 "props": {
                                                     "className": "text-primary text-sm"
                                                 },
@@ -1633,6 +1633,10 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "blur_until_loaded": {
+                                                            "enabled": true,
+                                                            "data_sources": "user"
+                                                        },
                                                         "props": {
                                                             "className": "text-primary text-sm"
                                                         },
@@ -1656,6 +1660,10 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "blur_until_loaded": {
+                                                            "enabled": true,
+                                                            "data_sources": "user"
+                                                        },
                                                         "props": {
                                                             "className": "text-primary text-sm"
                                                         },

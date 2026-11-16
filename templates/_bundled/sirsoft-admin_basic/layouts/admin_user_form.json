@@ -1758,7 +1758,7 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "if": "{{user?.data?.is_locked !== true}}",
+                                                                "if": "{{user !== undefined && (user?.data?.is_locked !== true)}}",
                                                                 "props": {
                                                                     "className": "text-primary text-sm py-2"
                                                                 },
@@ -1938,7 +1938,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "if": "{{!user?.data?.password_status?.applies}}",
+                                                        "if": "{{user !== undefined && (!user?.data?.password_status?.applies)}}",
                                                         "props": {
                                                             "className": "text-primary text-sm"
                                                         },
@@ -2085,7 +2085,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{!user?.data?.password_status?.applies}}",
+                                                        "if": "{{user !== undefined && (!user?.data?.password_status?.applies)}}",
                                                         "text": "$t:admin.users.form.password_policy.status_not_applies"
                                                     }
                                                 ]

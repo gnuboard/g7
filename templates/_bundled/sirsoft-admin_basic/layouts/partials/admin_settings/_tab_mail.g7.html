@@ -21,7 +21,7 @@
             </p>
           </div>
         </div>
-        <div data-ref="smtp_settings_fields" data-if="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp'}}" class="row-stack">
+        <div data-ref="smtp_settings_fields" data-if="{{settings !== undefined &amp;&amp; (!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp')}}" class="row-stack">
           <div class="grid-2col-responsive">
             <div data-ref="field_encryption">
               <label class="form-label">$t:admin.settings.mail.encryption</label>

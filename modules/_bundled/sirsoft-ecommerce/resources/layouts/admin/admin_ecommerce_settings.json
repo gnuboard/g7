@@ -455,7 +455,7 @@
                         "id": "read_only_banner",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_computed.isReadOnly}}",
+                        "if": "{{settings !== undefined && (_computed.isReadOnly)}}",
                         "props": {
                             "className": "alert-warning"
                         },

@@ -83,7 +83,8 @@ function buildLayout(section: any, externals: any[]) {
   return {
     version: '1.0.0',
     layout_name: 'external_resources_section_test',
-    initGlobal: { selectedTemplate: { externals } },
+    // 상세 응답 형태 — metadata 는 상세에만 있는 필드라 「없음」 안내가 상세를 받은 뒤에만 보이는 표지다(#915)
+    initGlobal: { selectedTemplate: { externals, metadata: [] } },
     components: [section],
   };
 }
@@ -102,11 +103,19 @@ describe('템플릿 정보 모달 - 외부 리소스 섹션', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  /**
+   * @scenario externals=with_id
+   * @effects detail_externals_section_present
+   */
   it('external_resources_section 이 template partial 에 존재한다', () => {
     expect(section).toBeDefined();
     expect(section.id).toBe('external_resources_section');
   });
 
+  /**
+   * @scenario externals=empty
+   * @effects detail_externals_empty_message
+   */
   it('externals 가 비어 있으면 "외부 리소스가 없습니다" 메시지가 표시된다', async () => {
     testUtils = createLayoutTest(buildLayout(section, []), {
       translations,
@@ -118,6 +127,10 @@ describe('템플릿 정보 모달 - 외부 리소스 섹션', () => {
     expect(screen.getByText('외부 리소스가 없습니다.')).toBeTruthy();
   });
 
+  /**
+   * @scenario externals=with_id
+   * @effects detail_externals_row_renders_id_type_url
+   */
   it('externals 항목의 id, type, url 이 모두 렌더링된다', async () => {
     testUtils = createLayoutTest(
       buildLayout(section, [
@@ -145,6 +158,10 @@ describe('템플릿 정보 모달 - 외부 리소스 섹션', () => {
     ).toBeTruthy();
   });
 
+  /**
+   * @scenario externals=without_id
+   * @effects detail_externals_row_without_id_omits_badge
+   */
   it('id 가 없는 항목은 type 과 url 만 표시된다', async () => {
     testUtils = createLayoutTest(
       buildLayout(section, [

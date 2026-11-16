@@ -169,7 +169,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "if": "{{(_local.form?._meta?.csp?.auto_hosts ?? []).length === 0}}",
+                            "if": "{{settings !== undefined && ((_local.form?._meta?.csp?.auto_hosts ?? []).length === 0)}}",
                             "props": {
                                 "className": "text-hint"
                             },
@@ -432,7 +432,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "if": "{{(_local.form?._meta?.csp?.style_auto_hosts ?? []).length === 0}}",
+                            "if": "{{settings !== undefined && ((_local.form?._meta?.csp?.style_auto_hosts ?? []).length === 0)}}",
                             "props": {
                                 "className": "text-hint"
                             },

@@ -554,6 +554,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "wishlists"
+                                },
                                 "props": {
                                     "className": "text-primary font-bold"
                                 },

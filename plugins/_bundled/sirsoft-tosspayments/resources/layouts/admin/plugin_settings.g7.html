@@ -260,7 +260,7 @@
               </options>
             </select>
             <p class="form-hint">$t:sirsoft-tosspayments.settings.use_escrow_hint</p>
-            <div data-ref="escrow_operation_notice" data-if="{{_local.form?.use_escrow !== 'off'}}" class="mt-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 space-y-1">
+            <div data-ref="escrow_operation_notice" data-if="{{settings !== undefined &amp;&amp; (_local.form?.use_escrow !== 'off')}}" class="mt-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 space-y-1">
               <p class="text-sm text-amber-800 dark:text-amber-200">$t:sirsoft-tosspayments.settings.escrow_no_partial_cancel_notice</p>
               <p class="text-sm text-amber-800 dark:text-amber-200">
                 <span>$t:sirsoft-tosspayments.settings.escrow_shipping_info_notice</span>

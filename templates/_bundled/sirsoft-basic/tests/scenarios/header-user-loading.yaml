@@ -1,0 +1,26 @@
+# 시나리오 매니페스트 — 헤더 사용자 메뉴: 사용자 정보를 받는 동안 같은 폭의 빈 자리(#915)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: header_user_loading
+
+description: >-
+  회원이 새로고침하면 사용자 정보(_global.currentUser)를 받기 전 헤더가 먼저 그려진다. 받는 중을 비회원으로 읽으면
+  회원에게 「로그인·회원가입」이 잠깐 보였다가 이름으로 바뀌고 오른쪽 묶음 폭이 바뀌어 검색창이 출렁였다. 레이아웃이
+  `userLoading`(_global.currentUser === undefined)을 넘기면 헤더는 받는 동안 회색 원(아바타 크기)·이름 막대를 그린다.
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/HeaderUserLoading.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   viewer — 비회원(guest, 엔진 대체값 [])·회원(member)
+#   load_state — loading(받는 중)·loaded(받은 뒤)
+axes:
+  viewer: [guest, member]
+  load_state: [loading, loaded]
+
+effects:
+  - header_skeleton_while_user_loading   # 받는 중에는 로그인·회원가입·주문조회·사용자 메뉴 대신 role=status 빈 자리(아바타 원 + 이름 막대)
+  - header_guest_links_after_load   # 받은 뒤 비회원이면 로그인·회원가입 링크(userLoading 기본 false — 편집기·옛 레이아웃은 기존 그대로)
+  - header_member_menu_after_load   # 받은 뒤 회원이면 아바타·이름, 로그인 링크 없음

@@ -251,7 +251,8 @@ async function renderCard(form: Json, proxy: Json = { status: 'ok', client_ip: C
     componentRegistry: setupRegistry(),
     translations: { admin: adminKo },
     initialState: { _local: { form }, _global: { settingsAbilities: SETTINGS_ABILITIES } },
-    initialData: { trustedProxy: { data: proxy }, _computed: computedFor(form) },
+    // settings 는 폼(_local.form)을 채우는 소스 — 받은 뒤 상태를 재현한다(받는 중이면 안내를 그리지 않는다, #915)
+    initialData: { settings: { data: {} }, trustedProxy: { data: proxy }, _computed: computedFor(form) },
   });
   await testUtils.render();
 

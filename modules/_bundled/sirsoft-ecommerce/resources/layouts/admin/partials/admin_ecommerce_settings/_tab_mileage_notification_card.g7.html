@@ -10,7 +10,7 @@
       </div>
       <toggle data-type="composite" name="mileage.expiry_notification_enabled" value="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
     </div>
-    <div data-if="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
+    <div data-if="{{settings !== undefined &amp;&amp; (_local.form?.mileage?.expiry_notification_enabled ?? true)}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before</label>
         <div class="flex items-center gap-2">

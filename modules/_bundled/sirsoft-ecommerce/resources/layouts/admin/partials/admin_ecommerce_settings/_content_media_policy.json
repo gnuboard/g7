@@ -70,9 +70,10 @@
                             "text": "$t:core.content_media.policy.use_custom"
                         },
                         {
+                            "comment": "폼(_local.form)은 설정을 받은 뒤 initLocal 로 채워진다 — 채워지기 전에 「첨부 정책을 따름」을 먼저 보였다가 숨기지 않게 폼이 있을 때만 판단한다",
                             "type": "basic",
                             "name": "P",
-                            "if": "{{!_local.form?.product_display?.content_media?.use_custom}}",
+                            "if": "{{_local.form !== undefined && (!_local.form?.product_display?.content_media?.use_custom)}}",
                             "props": {
                                 "className": "form-hint"
                             },

@@ -285,7 +285,7 @@
           <span>$t:board.replying_to|name={{comment?.author?.name || $t('board.unknown_author')}}</span>
         </div>
         <!-- 비회원 작성자 정보 입력 (이름/비밀번호) -->
-        <div data-if="{{!_global.currentUser?.uuid}}" class="flex gap-3 mb-3">
+        <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="flex gap-3 mb-3">
           <input type="text" name="guest_reply_author_name" value="{{_local.guest_reply_author_name ?? ''}}" placeholder="$t:board.guest_author_name" class="flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <on type="input">
               <!-- 답글의 비회원 이름 — 새 댓글 입력창과 다른 칸이다(둘이 동시에 열려 있을 수 있어 값을 나눠 담는다). -->

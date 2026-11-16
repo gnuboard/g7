@@ -365,7 +365,7 @@
         </div>
         <div data-if="{{ecommerceIdentityPolicies !== undefined &amp;&amp; ((ecommerceIdentityPolicies?.data?.data ?? []).length === 0)}}" class="py-10 text-center text-label-subtle">$t:admin.identity.policies.empty</div>
         <div data-ref="policy_pagination" class="footer-buttons-between">
-          <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
+          <span class="text-tertiary"><blur-until-loaded sources="ecommerceIdentityPolicies"/>$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
           <div class="flex-center gap-1">
             <a href="/admin/ecommerce/settings?tab=identity_policies&amp;page={{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}" :mergeQuery="true" disabled="{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
               <on type="click">

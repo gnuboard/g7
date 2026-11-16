@@ -1,0 +1,25 @@
+# 시나리오 매니페스트 — 관리자 회원 상세: 계정 잠금 상태와 잠금 해제
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_user_detail_unlock
+
+description: >-
+  관리자 회원 상세의 계정 잠금 구획. 잠긴 계정에서만 [잠금 해제]가 보이고, 누르면 관리자 해제 주소를 POST 로 부른 뒤
+  상세를 다시 받아 성공 안내를 보인다. 잠금 상태 칸은 영구·기한부·정상 세 갈래이며 「정상」은 회원 정보를 받은
+  뒤에만 판정한다(받는 중을 「잠금 아님」으로 읽지 않는다, #915). 문구 키는 ko/en 에 있다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-detail-unlock.test.tsx
+
+coverage_strategy: full
+
+axes:
+  surface: [unlock_button, unlock_call, unlock_refresh, lock_status_field, i18n]
+
+effects:
+  - unlock_button_only_for_locked_account   # 잠긴 계정에서만 잠금 해제 단추
+  - unlock_posts_admin_endpoint   # 관리자 해제 주소를 POST 로 부른다
+  - unlock_success_refetches_and_notifies   # 성공하면 상세를 다시 받고 성공 안내
+  - lock_status_three_branches_after_load   # 영구·기한부·정상 세 갈래, 정상은 받은 뒤에만
+  - unlock_keys_defined_ko_en   # 문구 키가 ko/en 에 있다
+  - unlock_keys_resolve_ko_en   # 번역 엔진이 ko/en 으로 푼다

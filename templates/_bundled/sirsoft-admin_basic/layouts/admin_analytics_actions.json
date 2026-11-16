@@ -393,7 +393,7 @@
                         "id": "report_grid_wrap",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{(query.tab || 'search') !== 'dimensions' || (!!query.dimension && !(analytics_registered?.data?.dimensions ?? []).some(d => d.key === query.dimension && d.pii))}}",
+                        "if": "{{(query.tab || 'search') !== 'dimensions' || (analytics_registered !== undefined && !!query.dimension && !(analytics_registered?.data?.dimensions ?? []).some(d => d.key === query.dimension && d.pii))}}",
                         "children": [
                             {
                                 "partial": "partials/admin_analytics/_partial_report_grid.json"

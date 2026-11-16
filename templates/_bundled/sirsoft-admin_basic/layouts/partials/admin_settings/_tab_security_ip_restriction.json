@@ -180,7 +180,7 @@
                                             "id": "ip_restriction_add_current_ip",
                                             "type": "basic",
                                             "name": "Button",
-                                            "if": "{{!(_local.form?.security?.admin_allowed_ips ?? []).includes(trustedProxy?.data?.client_ip)}}",
+                                            "if": "{{settings !== undefined && trustedProxy !== undefined && (!(_local.form?.security?.admin_allowed_ips ?? []).includes(trustedProxy?.data?.client_ip))}}",
                                             "actions": [
                                                 {
                                                     "comment": "현재 IP 를 목록 끝에 더한다 — 자기 잠금을 피하는 가장 흔한 첫 조작이라 한 번에 넣게 한다.\n                     이미 들어 있으면 버튼 자체가 사라진다. 저장은 하단 공용 버튼이 한다.",
@@ -756,7 +756,7 @@
                             "id": "ip_rules_empty",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(_local.form?.security?.ip_restriction_rules ?? []).length === 0}}",
+                            "if": "{{settings !== undefined && ((_local.form?.security?.ip_restriction_rules ?? []).length === 0)}}",
                             "props": {
                                 "className": "py-6 text-center text-label-subtle"
                             },

@@ -283,7 +283,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "if": "{{_computed.archiveFreshness?.last_run_at == null}}",
+                            "if": "{{_computed.archiveFreshness != null && (_computed.archiveFreshness?.last_run_at == null)}}",
                             "props": {
                                 "className": "text-warning-soft flex-1 min-w-0"
                             },
@@ -415,7 +415,7 @@
             "id": "alert_on_view_too_many",
             "type": "basic",
             "name": "Div",
-            "if": "{{_computed.archiveFreshness?.on_view?.status === 'too_many_visits' && _computed.archiveFreshness?.scheduler?.alive !== true}}",
+            "if": "{{_computed.archiveFreshness != null && (_computed.archiveFreshness?.on_view?.status === 'too_many_visits' && _computed.archiveFreshness?.scheduler?.alive !== true)}}",
             "props": {
                 "className": "alert-warning"
             },

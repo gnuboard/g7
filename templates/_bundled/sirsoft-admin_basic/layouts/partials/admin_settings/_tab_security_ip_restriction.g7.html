@@ -41,7 +41,7 @@
           <label class="form-label">$t:admin.settings.security.ip_restriction.admin_allowed_ips</label>
           <div data-if="{{!!trustedProxy?.data?.client_ip}}" class="flex-center gap-2">
             <span data-ref="ip_restriction_current_ip" class="badge badge-blue font-mono">$t:admin.settings.security.ip_restriction.current_ip|ip={{trustedProxy?.data?.client_ip ?? ''}}</span>
-            <button data-ref="ip_restriction_add_current_ip" data-if="{{!(_local.form?.security?.admin_allowed_ips ?? []).includes(trustedProxy?.data?.client_ip)}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed">
+            <button data-ref="ip_restriction_add_current_ip" data-if="{{settings !== undefined &amp;&amp; trustedProxy !== undefined &amp;&amp; (!(_local.form?.security?.admin_allowed_ips ?? []).includes(trustedProxy?.data?.client_ip))}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 현재 IP 를 목록 끝에 더한다 — 자기 잠금을 피하는 가장 흔한 첫 조작이라 한 번에 넣게 한다.
                      이미 들어 있으면 버튼 자체가 사라진다. 저장은 하단 공용 버튼이 한다. -->
@@ -199,7 +199,7 @@
             </div>
           </div>
         </div>
-        <div data-ref="ip_rules_empty" data-if="{{(_local.form?.security?.ip_restriction_rules ?? []).length === 0}}" class="py-6 text-center text-label-subtle">$t:admin.settings.security.ip_restriction.rules_empty</div>
+        <div data-ref="ip_rules_empty" data-if="{{settings !== undefined &amp;&amp; ((_local.form?.security?.ip_restriction_rules ?? []).length === 0)}}" class="py-6 text-center text-label-subtle">$t:admin.settings.security.ip_restriction.rules_empty</div>
         <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('security.ip_restriction_rules'))}}" class="form-error">{{Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('security.ip_restriction_rules'))?.[1]?.[0] ?? ''}}</span>
         <!-- 외부 콜백 경고(적색) — 관리자 영역 밖을 막는 규칙은 결제 승인·입금 통보 같은 외부 서버 요청까지 끊을 수 있다.
              코어가 아는 콜백 경로는 판정 전에 빠지지만, 확장이 다른 경로로 받는 요청은 운영자가 스스로 조심해야 한다. -->

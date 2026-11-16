@@ -5,7 +5,7 @@
     <div data-ref="default_pg_card" class="admin-card">
       <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.title</h3>
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.description</div>
-      <div data-if="{{(_local.form?.available_pg_providers ?? []).length === 0}}" class="flex-center gap-2 text-label-subtle">
+      <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.available_pg_providers ?? []).length === 0)}}" class="flex-center gap-2 text-label-subtle">
         <icon name="circle-info" class="text-sm"/>
         <span>$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.not_installed</span>
       </div>
@@ -28,7 +28,7 @@
         <div>
           <label class="block text-sm font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_label</label>
           <!-- 등록된 프로바이더가 0개면 안내만 노출한다 -->
-          <div data-if="{{(_local.form?.available_cash_receipt_providers ?? []).length === 0}}" class="flex-center gap-2 text-label-subtle">
+          <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.available_cash_receipt_providers ?? []).length === 0)}}" class="flex-center gap-2 text-label-subtle">
             <icon name="circle-info" class="text-sm"/>
             <span>$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.provider_not_installed</span>
           </div>
