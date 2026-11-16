@@ -95,11 +95,11 @@
           </div>
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.memory</span>
-            <span class="text-heading">{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)</span>
+            <span class="text-heading"><blur-until-loaded sources="systemInfo"/>{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)</span>
           </div>
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.disk</span>
-            <span class="text-heading">{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)</span>
+            <span class="text-heading"><blur-until-loaded sources="systemInfo"/>{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)</span>
           </div>
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.php_memory</span>
@@ -204,7 +204,7 @@
               </div>
             </div>
           </div>
-          <div data-if="{{!systemInfo?.data?.database_config?.has_read_write_split}}" class="flex-center bg-gray-50 dark:bg-gray-900 rounded-lg p-4 justify-center">
+          <div data-if="{{systemInfo !== undefined &amp;&amp; (!systemInfo?.data?.database_config?.has_read_write_split)}}" class="flex-center bg-gray-50 dark:bg-gray-900 rounded-lg p-4 justify-center">
             <p class="text-label-subtle">$t:admin.settings.info.no_read_db</p>
           </div>
         </div>

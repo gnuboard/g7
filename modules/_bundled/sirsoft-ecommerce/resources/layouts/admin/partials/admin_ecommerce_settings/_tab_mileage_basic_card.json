@@ -238,6 +238,10 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "settings"
+                            },
                             "props": {
                                 "className": "text-sm text-gray-600 dark:text-gray-400"
                             },

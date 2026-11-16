@@ -44,6 +44,10 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "cartItems"
+                    },
                     "props": {
                         "className": "font-medium text-gray-900 dark:text-white"
                     },
@@ -76,7 +80,7 @@
             "comment": "선택 없음 안내",
             "type": "basic",
             "name": "Div",
-            "if": "{{!_local.isCalculating && (!_local.selectedItems || _local.selectedItems.length === 0)}}",
+            "if": "{{cartItems !== undefined && _local.cartSelectionReady !== undefined && !_local.isCalculating && (!_local.selectedItems || _local.selectedItems.length === 0)}}",
             "props": {
                 "className": "py-8 text-center"
             },
@@ -416,6 +420,10 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "blur_until_loaded": {
+                                                "enabled": true,
+                                                "data_sources": "cartItems"
+                                            },
                                             "props": {
                                                 "className": "font-medium {{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                             },

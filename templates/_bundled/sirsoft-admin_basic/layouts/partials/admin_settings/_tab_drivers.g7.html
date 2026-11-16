@@ -406,7 +406,7 @@
           기준 응답(queueStatus)을 그린다 — 폼만 바꾼 상태면 「저장 뒤 반영」 안내를 띄운다. 오류는 서버 422 키를 그대로 칸 아래에 단다. -->
         <div data-ref="queue_worker_section" data-testid="queue-worker-section" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 row-stack">
           <h4 class="text-heading">$t:admin.settings.drivers.queue.worker.title</h4>
-          <p data-if="{{(_local.form?.drivers?.queue_driver ?? 'sync') === 'sync'}}" data-testid="queue-worker-not-required" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.not_required</p>
+          <p data-if="{{settings !== undefined &amp;&amp; ((_local.form?.drivers?.queue_driver ?? 'sync') === 'sync')}}" data-testid="queue-worker-not-required" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.not_required</p>
           <div data-if="{{(_local.form?.drivers?.queue_driver ?? 'sync') !== (_local.originalDrivers?.queue_driver ?? 'sync')}}" data-testid="queue-status-saved-driver-differs" class="alert-info">
             <div class="flex-start gap-2">
               <icon name="info-circle" class="text-base text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"/>

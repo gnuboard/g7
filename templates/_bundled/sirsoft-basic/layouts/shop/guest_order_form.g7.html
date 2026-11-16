@@ -27,7 +27,7 @@
         </on>
       </div>
     </div>
-    <container data-type="layout" data-if="{{!_global?.currentUser?.uuid}}" class="py-12">
+    <container data-type="layout" data-if="{{_global?.currentUser !== undefined &amp;&amp; !_global?.currentUser?.uuid}}" class="py-12">
       <responsive on="portable" class="py-6"/>
       <flex data-type="layout" justify="center" align="start">
         <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">

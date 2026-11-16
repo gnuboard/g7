@@ -165,7 +165,7 @@
         </div>
     </div>
       <!-- 등록 시작 전 — 안내와 시작 버튼만. -->
-      <div data-ref="totp_security_intro_card" data-if="{{!totpEnrollment?.data?.enrolled && !_local.secret && !_local.backupCodes}}" class="card-stack-item">
+      <div data-ref="totp_security_intro_card" data-if="{{totpEnrollment !== undefined && !totpEnrollment?.data?.enrolled && !_local.secret && !_local.backupCodes}}" class="card-stack-item">
         <h3 data-ref="totp_security_intro_title" class="card-title">$t:sirsoft-totp.admin.security.intro.title</h3>
         <div data-ref="totp_security_intro_desc" class="card-description">$t:sirsoft-totp.admin.security.intro.description</div>
         <ol data-ref="totp_security_intro_steps" class="list-decimal list-inside text-sm text-gray-700 dark:text-gray-300 space-y-1 mt-3">

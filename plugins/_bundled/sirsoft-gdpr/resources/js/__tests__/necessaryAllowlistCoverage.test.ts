@@ -488,6 +488,27 @@ const PHP_LOCKED = parsePhpScopeMap(
 const PROVIDER_LISTENERS = discoverProviderListeners();
 
 /**
+ * 코어가 선언한 필수 저장 키(`App\Support\CoreNecessaryStorage::keys()`, 코어 7.1.5) — 플러그인은 실행 시점에
+ * 이 목록을 확장 제공 목록에 합친다(plugin.php `providedNecessaryStorage` 의 CoreNecessaryStorage 갈래, 1.1.4).
+ * 이 출처를 빼고 판정하면 코어가 새 키를 선언하는 순간 「덮이지 않은 키」로 붉어진다.
+ *
+ * @return 코어가 선언한 키 집합(클래스가 없는 옛 코어면 빈 집합)
+ */
+function discoverCoreNecessaryKeys(): Set<string> {
+    const file = path.join(REPO_ROOT, 'app', 'Support', 'CoreNecessaryStorage.php');
+    if (!fs.existsSync(file)) return new Set();
+    const source = fs.readFileSync(file, 'utf-8');
+    const consts = new Map([...source.matchAll(/const\s+(\w+)\s*=\s*'([^']+)'/g)].map((m) => [m[1], m[2]]));
+    const body = sliceBracketBlock(source, 'public static function keys(): array');
+    const keys = new Set<string>();
+    for (const m of body.matchAll(/self::(\w+)/g)) if (consts.has(m[1])) keys.add(consts.get(m[1]) as string);
+    for (const m of body.matchAll(/=>\s*\[([^\]]*)\]/g)) for (const s of m[1].matchAll(/'([^']+)'/g)) keys.add(s[1]);
+    return keys;
+}
+
+const CORE_NECESSARY_KEYS = discoverCoreNecessaryKeys();
+
+/**
  * 키가 실행 시점에 정해져 **정적으로 해석할 수 없는** 쓰기 지점.
  *
  * 이 목록은 사각을 지우는 것이 아니라 드러내 고정한다. 정렬된 문자열로 비교하므로
@@ -617,9 +638,16 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
             .filter((d) => !lockedKeys.has(d.key))
             .filter((d) => !isInShippedCatalog(d))
             .filter((d) => !isProvidedByExtension(d))
+            .filter((d) => !CORE_NECESSARY_KEYS.has(d.key))
             .map((d) => `${d.key} (${d.matchType}) ← ${d.origin}`);
 
         expect(uncovered).toEqual([]);
+    });
+
+    /** @effects storage_keys_population_covered_by_allowlist */
+
+    it('코어 선언 필수 키 파싱이 비어 있지 않다 (파서가 죽으면 위 축이 코어 키를 놓친다)', () => {
+        expect(CORE_NECESSARY_KEYS.has('g7_search_history')).toBe(true);
     });
 
     /** @effects storage_keys_population_covered_by_allowlist */

@@ -10,7 +10,7 @@
         <responsive on="portable" class="flex flex-col gap-2 p-3 border-b border-gray-200 dark:border-gray-700"/>
         <!-- 좌측: 카운트 + 안 읽은 알림만 필터 -->
         <div class="flex items-center gap-4">
-          <span class="text-sm text-red-600 dark:text-red-400 font-medium">$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}</span>
+          <span class="text-sm text-red-600 dark:text-red-400 font-medium"><blur-until-loaded sources="notification_unread_count"/>$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}</span>
           <!-- 안 읽은 알림만 필터 토글 -->
           <label class="flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" checked="{{_local.userNotificationsUnreadOnly ?? false}}" class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer">

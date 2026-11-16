@@ -52,6 +52,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "text-page-heading mt-2"
                             },
@@ -94,6 +98,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "mt-2 text-2xl font-bold text-green-600 dark:text-green-400"
                             },
@@ -136,6 +144,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400"
                             },
@@ -178,6 +190,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "mt-2 text-2xl font-bold text-red-600 dark:text-red-400"
                             },
@@ -1308,6 +1324,10 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "text-body font-medium"
                             },

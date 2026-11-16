@@ -96,7 +96,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         });
 
         /** @effects banner_shows_until_current_subject_dismisses */
-        it('banner_enabled + has_consented + dismissedFor 3중 조건 — 데이터소스 경로는 한 단계 (?.data?.<key>)', () => {
+        it('banner_enabled + 받는 중 가드 + 신원 일치 + has_consented + dismissedFor 조건 — 데이터소스 경로는 한 단계 (?.data?.<key>)', () => {
             // 회귀 가드:
             // 1. ResponseHelper::success($msg, $data) 응답은 데이터소스에서 그대로 보존되므로 단일 객체 응답은 `<id>.data.<key>` 한 단계 경로.
             //    과거 통합본에서 `?.data?.data?` 두 단계로 작성되어 항상 undefined → if false → 배너 미출력 사고.
@@ -105,8 +105,11 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             // 4. dismissedFor 는 "누가 닫았는지"(uuid|'guest') 를 저장해 현재 사용자(_global.currentUser?.uuid)와 비교한다.
             //    boolean(gdprBannerDismissed) 만 저장하던 이전 방식은 게스트로 닫은 뒤 미동의 계정으로 로그인해도
             //    배너가 계속 숨겨지는 회귀가 있었다 (닫은 주체를 구분하지 않았기 때문).
+            // 5. 동의 상태를 받는 중(undefined)이면 띄우지 않는다 — 설정 응답이 먼저 오면 동의를 마친 방문자에게도
+            //    배너가 잠깐 보였다(#915). 받기에 실패(null)하면 동의를 다시 받도록 띄운다.
+            // 6. 동의 상태가 지금 사용자의 것(is_member 와 로그인 여부 일치)일 때만 판정한다 — 로그인 직후 앞 게스트의 값을 잇지 않는다.
             expect(banner?.if).toBe(
-                "{{gdprPublicSettings?.data?.banner_enabled === true && gdprMyConsent?.data?.has_consented !== true && _global.gdprBannerDismissedFor !== (_global.currentUser?.uuid ?? 'guest')}}"
+                "{{gdprPublicSettings?.data?.banner_enabled === true && gdprMyConsent !== undefined && (gdprMyConsent === null || (gdprMyConsent?.data?.is_member === true) === !!_global.currentUser?.uuid) && gdprMyConsent?.data?.has_consented !== true && _global.gdprBannerDismissedFor !== (_global.currentUser?.uuid ?? 'guest')}}"
             );
         });
 
@@ -117,7 +120,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
          */
         describe('닫은 주체(dismissedFor) vs 현재 사용자 비교 — 실제 평가', () => {
             const evaluateBannerIf = (
-                gdprMyConsent: { data?: { has_consented?: boolean } } | undefined,
+                gdprMyConsent: { data?: { has_consented?: boolean; is_member?: boolean; needs_renewal?: boolean } } | null | undefined,
                 _global: { gdprBannerDismissedFor?: string; currentUser?: { uuid?: string } }
             ): boolean => {
                 const gdprPublicSettings = { data: { banner_enabled: true } };
@@ -130,7 +133,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             /** @effects banner_shows_until_current_subject_dismisses */
             it('게스트로 배너를 닫으면(dismissedFor="guest") 같은 게스트 방문에는 배너가 다시 뜨지 않는다', () => {
                 const shown = evaluateBannerIf(
-                    { data: { has_consented: false } },
+                    { data: { has_consented: false, is_member: false } },
                     { gdprBannerDismissedFor: 'guest', currentUser: undefined }
                 );
                 expect(shown).toBe(false);
@@ -139,7 +142,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             /** @effects banner_shows_until_current_subject_dismisses */
             it('게스트로 배너를 닫은 뒤 미동의 계정으로 로그인하면 배너가 다시 뜬다 (회귀 재현 케이스)', () => {
                 const shown = evaluateBannerIf(
-                    { data: { has_consented: false } },
+                    { data: { has_consented: false, is_member: true } },
                     { gdprBannerDismissedFor: 'guest', currentUser: { uuid: 'user-uuid-1' } }
                 );
                 expect(shown).toBe(true);
@@ -148,7 +151,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             /** @effects banner_shows_until_current_subject_dismisses */
             it('회원 A 가 닫은 뒤 같은 세션에서 회원 A 로 계속 조회하면 배너가 다시 뜨지 않는다', () => {
                 const shown = evaluateBannerIf(
-                    { data: { has_consented: false } },
+                    { data: { has_consented: false, is_member: true } },
                     { gdprBannerDismissedFor: 'user-uuid-1', currentUser: { uuid: 'user-uuid-1' } }
                 );
                 expect(shown).toBe(false);
@@ -157,7 +160,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             /** @effects banner_shows_until_current_subject_dismisses */
             it('회원 A 가 닫은 뒤 (동일 세션에서) 회원 B 로 전환되면 배너가 다시 뜬다', () => {
                 const shown = evaluateBannerIf(
-                    { data: { has_consented: false } },
+                    { data: { has_consented: false, is_member: true } },
                     { gdprBannerDismissedFor: 'user-uuid-1', currentUser: { uuid: 'user-uuid-2' } }
                 );
                 expect(shown).toBe(true);
@@ -168,7 +171,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 // currentUser 가 undefined 로 바뀌므로 식별자는 fallback 'guest' 로 평가된다.
                 // dismissedFor 는 이전 회원 uuid 로 남아있어 'guest' 와 불일치 → 재노출(안전측 동작).
                 const shown = evaluateBannerIf(
-                    { data: { has_consented: false } },
+                    { data: { has_consented: false, is_member: false } },
                     { gdprBannerDismissedFor: 'user-uuid-1', currentUser: undefined }
                 );
                 expect(shown).toBe(true);
@@ -183,10 +186,63 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 expect(shown).toBe(false);
             });
 
+            /**
+             * 받는 중 — 설정 응답이 먼저 와도 동의 상태(undefined)를 받기 전에는 띄우지 않는다(#915 — 동의를 마친 방문자의 새로고침 깜빡임).
+             *
+             * @scenario surface=visibility
+             * @effects banner_waits_for_consent_status
+             */
+            it('동의 상태를 받는 중이면(undefined) 배너를 띄우지 않는다 — 게스트·회원 모두', () => {
+                expect(evaluateBannerIf(undefined, { currentUser: undefined })).toBe(false);
+                expect(evaluateBannerIf(undefined, { currentUser: { uuid: 'user-uuid-1' } })).toBe(false);
+            });
+
+            /**
+             * 받기 실패(null) — 동의 여부를 모르면 동의를 다시 받도록 띄운다(안전한 쪽).
+             *
+             * @scenario surface=visibility
+             * @effects banner_shows_when_status_fails
+             */
+            it('동의 상태를 받지 못하면(null) 배너를 띄운다 — 신원 판정 없이', () => {
+                expect(evaluateBannerIf(null, { currentUser: undefined })).toBe(true);
+                expect(evaluateBannerIf(null, { currentUser: { uuid: 'user-uuid-1' } })).toBe(true);
+            });
+
+            /**
+             * 신원 불일치 — 회원 응답인데 로그인 사용자를 아직 모르거나, 게스트 응답인데 로그인해 있으면 판정하지 않는다
+             * (로그인 직후 앞 게스트의 동의 상태로 배너가 남던 경우).
+             *
+             * @scenario surface=visibility
+             * @effects banner_hidden_on_identity_mismatch
+             */
+            it('동의 상태가 지금 사용자의 것이 아니면 배너를 띄우지 않는다', () => {
+                // 회원 응답 + 사용자 정보 받는 중
+                expect(evaluateBannerIf({ data: { has_consented: false, is_member: true } }, { currentUser: undefined })).toBe(false);
+                // 게스트 응답 + 회원으로 로그인됨(앞 게스트 값을 이어 쓰는 중)
+                expect(evaluateBannerIf({ data: { has_consented: false, is_member: false } }, { currentUser: { uuid: 'user-uuid-1' } })).toBe(false);
+                // 회원 응답 + 같은 회원 — 판정한다
+                expect(evaluateBannerIf({ data: { has_consented: false, is_member: true } }, { currentUser: { uuid: 'user-uuid-1' } })).toBe(true);
+                // 게스트 응답 + 비회원(엔진이 실패 대체값 [] 를 넣는다) — 판정한다
+                expect(evaluateBannerIf({ data: { has_consented: false, is_member: false } }, { currentUser: [] as unknown as { uuid?: string } })).toBe(true);
+            });
+
+            /**
+             * 재동의 회원(⑦)의 버튼 구성은 받은 뒤 한 번에 그려진다 — 「모두 동의」는 배너 안에 있어 받는 중에는 배너째 없다.
+             *
+             * @scenario surface=visibility
+             * @effects banner_waits_for_consent_status
+             */
+            it('「모두 동의」 버튼은 배너 안에 있다 — 동의 상태를 받기 전에는 먼저 보이지 않는다', () => {
+                const accept = JSON.stringify(banner).includes('!(gdprMyConsent?.data?.is_member === true && gdprMyConsent?.data?.needs_renewal === true)');
+                expect(accept).toBe(true);
+                expect(evaluateBannerIf(undefined, { currentUser: { uuid: 'user-uuid-1' } })).toBe(false);
+                expect(evaluateBannerIf({ data: { has_consented: false, is_member: true, needs_renewal: true } }, { currentUser: { uuid: 'user-uuid-1' } })).toBe(true);
+            });
+
             /** @effects banner_shows_until_current_subject_dismisses */
             it('dismissedFor 가 아직 설정되지 않은 최초 방문(게스트)에는 배너가 뜬다', () => {
                 const shown = evaluateBannerIf(
-                    { data: { has_consented: false } },
+                    { data: { has_consented: false, is_member: false } },
                     { gdprBannerDismissedFor: undefined, currentUser: undefined }
                 );
                 expect(shown).toBe(true);

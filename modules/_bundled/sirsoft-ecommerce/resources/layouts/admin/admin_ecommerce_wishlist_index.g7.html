@@ -183,7 +183,7 @@
         </button>
       </div>
       <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.wishlists.table.total_count|count={{wishlists?.data?.pagination?.total ?? 0}}</span>
+        <span class="text-primary font-bold"><blur-until-loaded sources="wishlists"/>$t:sirsoft-ecommerce.admin.wishlists.table.total_count|count={{wishlists?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="table_header_controls" class="flex items-center gap-3">
           <select data-ref="sort_select" aria-label="$t:common.sort_order" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>

@@ -27,8 +27,8 @@
   <slot name="content">
     <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">
       <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
-      <!-- 회원가입 폼 -->
-      <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <!-- 회원가입 폼 — 사용자 정보를 받은 비회원에게만 그린다(받는 중·회원이면 위 조각이 홈으로 보낸다, #915). -->
+      <div data-if="{{_global.currentUser !== undefined &amp;&amp; (!_global.currentUser?.uuid || _local.isLoginAction)}}" class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.register.title</h2>
         <include src="partials/auth/_register_form.g7.html"/>
         <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">

@@ -75,6 +75,7 @@
 - 확장 개발자용: `IdentityVerificationManager::resolveForPurpose()` 는 명시한 인증 수단이 등록되지 않았거나 그 목적을 지원하지 않으면 다른 수단으로 바꾸지 않고 `IdentityProviderUnavailableException` 을 던집니다. 정책 강제 리스너는 훅 인자 중 `target_email` 키가 있는 배열(없으면 요청의 `email` 입력)로 비회원 인증 대상을 묶습니다 — 비회원 대상이 있는 정책 훅을 발행하는 확장은 `['target_email' => …]` 를 인자로 넘기세요. `IdentityVerificationLogRepositoryInterface`·`UserRepositoryInterface`(`extendTokenExpiration()`·`deleteSessionsByUserIds()`)·`PasswordResetTokenRepositoryInterface`(`deleteMatching()`)에 메서드가 추가되어, 이 인터페이스를 직접 구현해 바꿔 끼운 확장은 메서드를 구현해야 합니다.
 - PHP 의존성 패키지를 최신 안정 버전으로 갱신했습니다 (Laravel 12.72.0, Symfony 7.4.23, Sanctum 4.4, Reverb 1.13, Scout 11.10 등 — 메이저 상승 없음). 기간 한정 서명 링크의 만료 판정 우회, 경로 문자열 정리의 상위 폴더 탈출, 프록시 주소 대역 판정에 대한 상류 보안 수정이 함께 들어옵니다. Composer 를 실행할 수 없는 환경을 위한 코어와 이커머스 모듈의 `vendor-bundle.zip` 도 같은 구성으로 다시 만들었습니다. 코어 업데이트가 `vendor/` 를 새 구성으로 교체합니다.
 - 이메일 주소 검사가 254자까지만 받습니다. 정확히 255자인 이메일은 이제 「유효한 이메일 주소여야 합니다」 오류를 냅니다(종전에는 통과).
+- 확장 개발자용: 레이아웃 데이터 로딩 안내(`docs/frontend/layout-json-components-loading.md`) 「받는 중 판정」에 네 가지 기준을 더했습니다 — 소스 여럿이 따로 도착할 때 조건이 기대는 소스를 모두 기다리는 법, 로그인 사용자(`_global.currentUser`)를 받는 중과 비회원의 구분, 계산값·폼 값은 그 값을 채우는 소스로 판정하는 법, 받기 전 「0」으로 보이는 숫자를 흐리게 두는 법입니다. 새로고침 때 받기 전 상태가 「없음」·「0」·비회원 화면으로 잠깐 보이는 일을 막는 데 씁니다.
 
 ### Removed
 

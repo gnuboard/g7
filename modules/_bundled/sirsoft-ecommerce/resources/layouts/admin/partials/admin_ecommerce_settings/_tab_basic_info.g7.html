@@ -20,7 +20,7 @@
         <div data-ref="field_route_path" class="form-group">
           <label class="form-label">
             <span>$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.route_path</span>
-            <span data-if="{{!_local.form?.basic_info?.no_route}}" class="text-required">*</span>
+            <span data-if="{{settings !== undefined &amp;&amp; (!_local.form?.basic_info?.no_route)}}" class="text-required">*</span>
           </label>
           <input type="text" name="basic_info.route_path" placeholder="shop" disabled="{{_computed.isReadOnly || _local.form?.basic_info?.no_route === true}}" class="{{_local.errors?.['basic_info.route_path'] ? 'input input-error w-60' : 'input w-60'}}{{_local.form?.basic_info?.no_route ? 'opacity-50 cursor-not-allowed' : ''}}"/>
           <span data-if="{{_local.errors?.['basic_info.route_path']}}" class="form-error">{{_local.errors?.['basic_info.route_path']?.[0] ?? ''}}</span>

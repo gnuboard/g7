@@ -194,6 +194,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 회원/비회원 분기를 `{{!_global.currentUser?.uuid}}` 만으로, 받은 뒤에만 뜻이 있는 안내를 `!ds?.data?.x`·`(ds?.data ?? []).length === 0` 만으로 판정 | 비회원 분기는 `{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}`, 안내는 `{{ds !== undefined && (…)}}`, `?? 0` 숫자는 `blur_until_loaded` 아래. 헤더는 `userLoading` 을 넘긴다 | 화면이 먼저 그려진 뒤 받는 데이터는 받기 전 `undefined` 다 — 비회원(엔진이 `[]` 를 넣음)·「없음」으로 읽으면 회원에게 로그인 버튼·비회원 입력란이, 데이터가 있는데 「없습니다」·「0」이 먼저 보인다(#915, `__tests__/layouts/loadingNegativeState.test.tsx` 가 전수로 잠근다) |
 | 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
 | 첨부 그림·다운로드 주소를 `isCrossOriginAssetUrl` 로만 판정 | `isDirectAssetUrl`(교차 출처 + `data:`·`blob:`) | `data:`·`blob:` 미리보기 주소를 인증 XHR 로 보내 `/api/data:…` 404 가 난다(7.1.3, sirsoft-admin_basic 판정 이식) |
 | `extends` 없는 독립 레이아웃에서 `toast`·`openModal` 사용 | `_user_base` 를 상속하거나, 독립 레이아웃이라면 `Toast`·모달 호스트 컴포넌트를 직접 마운트 | 호스트가 없으면 핸들러는 성공으로 기록되는데 화면에는 아무것도 나타나지 않는다 |
@@ -226,9 +227,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 362개 | `vitest.config.ts` |
+| Vitest | 364개 | `vitest.config.ts` |
 | Playwright | 37개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 153개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 155개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

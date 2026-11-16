@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-11-15
+
+### Fixed
+
+- 2단계 인증 설정 화면에서 등록 상태를 받는 동안 「보안 강화 안내」 카드가 먼저 보이던 문제와, 관리자 회원 상세의 2단계 인증 카드에 회원 정보를 받기 전 「확인할 수 없음」이 먼저 보이던 문제를 고쳤습니다.
+
 ## [1.0.3] - 2026-11-15
 
 ### Security

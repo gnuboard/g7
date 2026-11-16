@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-11-15
+
+### Fixed
+
+- 환율 설정의 상태 카드에서 오늘 호출 수가 받기 전에 「0」으로 먼저 보이던 문제를 고쳤습니다. 받는 동안 흐리게 보여 줍니다.
+
 ## [1.0.2] - 2026-11-10
 
 ### Fixed

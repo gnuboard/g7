@@ -1,0 +1,26 @@
+# 시나리오 매니페스트 — 템플릿 정보 창의 외부 리소스 절(template.json externals 행)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_template_detail_externals
+
+description: >-
+  템플릿 정보 창의 외부 리소스 절은 템플릿 매니페스트가 선언한 외부 리소스를 한 줄씩(식별자 배지·종류·주소) 그린다.
+  식별자가 없는 항목은 배지를 빼고 종류·주소만 그린다. 상세를 받은 뒤 외부 리소스가 없으면 「없음」 안내를 보인다
+  (상세를 받기 전 목록 행 상태의 「없음」 숨김은 loading-exposure 매니페스트가 잠근다).
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-detail-externals.test.tsx
+
+axes:
+  externals:
+    - empty
+    - with_id
+    - without_id
+
+exclusions: []
+
+effects:
+  - detail_externals_section_present
+  - detail_externals_empty_message
+  - detail_externals_row_renders_id_type_url
+  - detail_externals_row_without_id_omits_badge

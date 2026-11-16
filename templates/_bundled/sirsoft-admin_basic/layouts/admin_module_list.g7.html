@@ -505,7 +505,7 @@
           </on>
         </extension-card-grid>
         <div data-ref="pagination_info" class="mt-4 text-label text-center">
-          <span>$t:admin.modules.pagination_info|total={{modules?.data?.pagination?.total ?? 0}}|from={{((modules?.data?.pagination?.current_page ?? 1) - 1) * (modules?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.pagination?.current_page ?? 1) * (modules?.data?.pagination?.per_page ?? 12), modules?.data?.pagination?.total ?? 0)}}</span>
+          <span><blur-until-loaded sources="modules"/>$t:admin.modules.pagination_info|total={{modules?.data?.pagination?.total ?? 0}}|from={{((modules?.data?.pagination?.current_page ?? 1) - 1) * (modules?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.pagination?.current_page ?? 1) * (modules?.data?.pagination?.per_page ?? 12), modules?.data?.pagination?.total ?? 0)}}</span>
         </div>
       </div>
     </div>

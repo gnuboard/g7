@@ -23,6 +23,10 @@
             "id": "realtime_count",
             "type": "basic",
             "name": "Span",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "analytics_realtime"
+            },
             "props": {
                 "className": "text-heading"
             },

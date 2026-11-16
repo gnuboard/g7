@@ -76,6 +76,13 @@ interface HeaderProps {
   siteName?: string;
   /** 현재 로그인된 사용자 */
   user?: User | null;
+  /**
+   * 로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고
+   * 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다). 레이아웃이 `{{_global.currentUser === undefined}}` 로 넘긴다.
+   * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다(#915).
+   * 기본값 false — 편집기 미리보기·바인딩이 없는 옛 레이아웃은 지금처럼 그린다.
+   */
+  userLoading?: boolean;
   /** 장바구니 아이템 수 */
   cartCount?: number;
   /** 읽지 않은 알림 수 */
@@ -189,6 +196,7 @@ const Header: React.FC<HeaderProps> = ({
   logo,
   siteName = '그누보드7',
   user,
+  userLoading = false,
   cartCount = 0,
   notificationCount = 0,
   boards = [],
@@ -457,8 +465,10 @@ const Header: React.FC<HeaderProps> = ({
               darkText={t('common.theme.dark')}
             />
 
-            {/* 알림센터 드롭다운 — 로그인 사용자에게만 노출 */}
-            {user?.uuid && (
+            {/* 알림센터 드롭다운 — 로그인 사용자에게만 노출. 사용자 정보를 받는 동안에는 같은 크기의 빈 자리(받은 뒤 회원이면
+                종 단추가 같은 크기로 들어온다 — 받는 사람은 사실상 회원뿐이다) */}
+            {userLoading && <Span aria-hidden="true" className="block w-9 h-9" data-skeleton="notification" />}
+            {!userLoading && user?.uuid && (
               <NotificationCenter
                 notifications={notifications}
                 unreadCount={notificationCount}
@@ -555,8 +565,15 @@ const Header: React.FC<HeaderProps> = ({
                 root id 가 컨테이너별로 스코프되도록(SlotContainer 가 id 로 자식 root id 를 고유화) 한다. */}
             <SlotContainer slotId="header_currency" id="header_currency_slot_desktop" className="flex items-center" />
 
-            {/* 사용자 메뉴 */}
-            {user?.uuid ? (
+            {/* 사용자 메뉴 — 사용자 정보를 받는 동안에는 회원 단추 모양의 빈 자리(아바타 sm 원 + 이름 막대 + 펼침 표시 자리 — 이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다).
+                받는 중을 비회원으로 읽으면 회원에게 로그인·회원가입이 잠깐 보였다(#915) */}
+            {userLoading ? (
+              <Div role="status" aria-label={t('common.loading')} className="flex items-center gap-2 p-2" data-testid="header-user-skeleton">
+                <Span aria-hidden="true" data-skeleton="avatar" className="block w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <Span aria-hidden="true" data-skeleton="name" className="hidden sm:block h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <Span aria-hidden="true" className="block w-4 h-4" />
+              </Div>
+            ) : user?.uuid ? (
               <Div ref={userMenuRef} className="relative">
                 <Button
                   onClick={() => setShowUserMenu(!showUserMenu)}

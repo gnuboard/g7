@@ -56,7 +56,7 @@
         </on>
         <icon name="file-text" size="sm"/>
         <span>$t:mypage.board_activities.tabs.my_posts</span>
-        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_posts ?? 0) | number}}</span>
+        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"><blur-until-loaded sources="myActivityStats"/>{{(myActivityStats?.data?.total_posts ?? 0) | number}}</span>
       </button>
       <!-- 내가 쓴 댓글 탭 -->
       <button type="button" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
@@ -66,7 +66,7 @@
         </on>
         <icon name="comment" size="sm"/>
         <span>$t:mypage.board_activities.tabs.my_comments</span>
-        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_comments ?? 0) | number}}</span>
+        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"><blur-until-loaded sources="myActivityStats"/>{{(myActivityStats?.data?.total_comments ?? 0) | number}}</span>
       </button>
       <!-- 내 반응 탭 — 이 소스는 `auto_fetch=false` 라 탭을 눌러야 처음 받는다 -->
       <button type="button" data-testid="mypage-subtab-my-reactions" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reactions' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
@@ -76,7 +76,7 @@
         </on>
         <icon name="heart" size="sm"/>
         <span>$t:mypage.board_activities.tabs.my_reactions</span>
-        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_reactions ?? 0) | number}}</span>
+        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"><blur-until-loaded sources="myActivityStats"/>{{(myActivityStats?.data?.total_reactions ?? 0) | number}}</span>
       </button>
       <!-- 내 신고 탭 -->
       <button type="button" data-testid="mypage-subtab-my-reports" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reports' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
@@ -86,7 +86,7 @@
         </on>
         <icon name="flag" size="sm"/>
         <span>$t:mypage.board_activities.tabs.my_reports</span>
-        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_reports ?? 0) | number}}</span>
+        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"><blur-until-loaded sources="myActivityStats"/>{{(myActivityStats?.data?.total_reports ?? 0) | number}}</span>
       </button>
     </div>
     <!-- 내가 쓴 글 콘텐츠 -->

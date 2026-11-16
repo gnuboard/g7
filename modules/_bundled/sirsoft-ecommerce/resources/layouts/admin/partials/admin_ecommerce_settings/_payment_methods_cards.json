@@ -369,7 +369,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
-                                        "if": "{{!(_local.form?.mileage?.enabled)}}",
+                                        "if": "{{settings !== undefined && (!(_local.form?.mileage?.enabled))}}",
                                         "props": {
                                             "className": "form-hint text-amber-700 dark:text-amber-400"
                                         },

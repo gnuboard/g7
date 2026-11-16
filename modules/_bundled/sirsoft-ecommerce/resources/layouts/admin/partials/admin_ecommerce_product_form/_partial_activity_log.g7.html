@@ -16,7 +16,7 @@
     <div data-ref="activity_log_body" data-if="{{_local.ui.activityLogExpanded !== false}}" class="row-stack">
       <div data-ref="activity_log_filters" class="flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700">
         <responsive on="portable" class="row-stack p-4 border-b border-gray-200 dark:border-gray-700"/>
-        <div class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.activity_log.total_count|count={{activity_logs.data?.meta?.total ?? 0}}</div>
+        <div class="text-label-subtle"><blur-until-loaded sources="activity_logs"/>$t:sirsoft-ecommerce.admin.product.activity_log.total_count|count={{activity_logs.data?.meta?.total ?? 0}}</div>
         <div class="flex-center gap-4">
           <responsive on="portable" class="row-stack w-full"/>
           <div class="flex-center gap-2">

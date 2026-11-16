@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.5] - 2026-11-15
+
+### Fixed
+
+- 홈 화면에서 메모 목록을 받는 동안 「메모 없음」 안내가 먼저 보이던 문제를 고쳤습니다. 목록을 받은 뒤에 0건일 때만 보입니다.
+
 ## [0.2.4] - 2026-11-01
 
 ### Fixed
